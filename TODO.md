@@ -1,0 +1,4 @@
+- put all configs into writable stores
+- wire up configs to controls
+- create derived stores to hold calculated geometry
+- create components that take geometry instances as prop and render svg
