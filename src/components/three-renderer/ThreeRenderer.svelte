@@ -11,10 +11,12 @@
 	import type { LevelConfig } from '../../lib/shade';
 	import { getShade } from '../../lib/shade';
 	import type { Ring, Level, StrutGroup, RibbonGroup } from '../../lib/shade';
-	import type { RotatedShapeLevel, Band } from '../../lib/rotated-shape';
+	import type { RotatedShapeLevel, Band, RenderConfig } from '../../lib/rotated-shape';
+	import { getRenderable } from "../../lib/rotated-shape"
 	import RibbonMesh from '../strut/RibbonMesh.svelte';
   import RotatedShapeLevelMesh from '../rotated-shape-level/RotatedShapeLevelMesh.svelte';
   import RotatedShapeBandMesh from '../rotated-shape-band/RotatedShapeBandMesh.svelte';
+	import {renderConfig} from "../../lib/stores"
 
 	export let rslevels: RotatedShapeLevel[] = [];
   export let rsbands: Band[] = []
@@ -32,20 +34,21 @@
 	let strutLimit = 100;
   let showRSLevels = false;
   let showRSBands = true;
-	let rsBandConfig = {bandStart: 0, bandCount: 100, facetStart: 0, facetCount: 100}
-
-	$: displayRSBands = rsbands
-		.slice(rsBandConfig.bandStart, rsBandConfig.bandCount + rsBandConfig.bandStart)
-		.map(band => ({...band, facets: band.facets.slice(rsBandConfig.facetStart, rsBandConfig.facetCount + rsBandConfig.facetStart)}))
-
+	
+	$: displayRSBands = getRenderable($renderConfig, rsbands)
 	$: displaylevels = rslevels.slice(0,20)
+
+	$: {
+		showRSLevels = !!$renderConfig.show?.levels
+		showRSBands = !!$renderConfig.show?.bands
+	}
 
 </script>
 
 <div>last vertex</div>
 <!-- <div>{lastVertex}</div> -->
 <Canvas>
-	<T.PerspectiveCamera makeDefault position={[0, 100, -5]} fov={50}>
+	<T.PerspectiveCamera makeDefault position={[0, 600, -5]} fov={50}>
 		<OrbitControls maxPolarAngle={degToRad(160)} enableZoom={true} target={{ y: 0.5 }} />
 	</T.PerspectiveCamera>
 
@@ -53,16 +56,16 @@
 	<T.DirectionalLight position={[-3, 10, -10]} intensity={0.5} />
 	<T.AmbientLight intensity={0.2} />
 
-	<T.Group position={[0, 0, -30]}>
-    {#if showRSLevels}
+	<T.Group position={[0, 0, 0]}>
+    {#if $renderConfig?.show?.levels}
       {#each displaylevels as rslevel}
         <RotatedShapeLevelMesh {rslevel} />
       {/each}
     {/if}
 
-		{#if showRSBands}
+		{#if $renderConfig?.show?.bands}
 			{#each displayRSBands as rsband, i}
-				<RotatedShapeBandMesh {rsband} />
+				<RotatedShapeBandMesh {rsband} showTabs={$renderConfig?.show?.tabs} />
 			{/each}
 		{/if}
 

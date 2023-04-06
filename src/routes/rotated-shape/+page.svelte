@@ -1,16 +1,21 @@
 <script lang="ts">
 	import ThreeRenderer from '../../components/three-renderer/ThreeRenderer.svelte';
 	import CutPattern from '../../components/cut-pattern/CutPattern.svelte';
-	import { generateRotatedShapeGeometry, type ZCurveConfig } from '../../lib/rotated-shape';
-	import type { RotatedShapeGeometryConfig } from '../../lib/rotated-shape';
+	import { generateRotatedShapeGeometry, generateZCurve, type LevelSetConfig } from '../../lib/rotated-shape';
+	import type { RotatedShapeGeometryConfig, ZCurveConfig, BandSetConfig } from '../../lib/rotated-shape';
 	import PathEdit from '../../components/path-edit/PathEdit.svelte';
-	import { curveConfig } from "../../lib/stores"
+	import { curveConfig, levelConfig, bandConfig } from "../../lib/stores"
+	import Controls from '../../components/controls/Controls.svelte';
 
 	
-	let zCurveConfig: ZCurveConfig = $curveConfig
+	let defaultZCurveConfig: ZCurveConfig = $curveConfig
+	let defaultLevelConfig: LevelSetConfig = {...$levelConfig}
+	let defaultBandConfig: BandSetConfig = $bandConfig
 	
 	let config: RotatedShapeGeometryConfig = {
-		zCurveConfig
+		levelConfig: defaultLevelConfig,
+		zCurveConfig: defaultZCurveConfig,
+		bandConfig: defaultBandConfig,
 	};
 
 	let data = generateRotatedShapeGeometry(config);
@@ -20,33 +25,22 @@
 	$: {
 		config = {
 			...config,
+			levelConfig: {...$levelConfig},
 			zCurveConfig: $curveConfig,
+			bandConfig: $bandConfig
 		}
+		console.debug(" PAGE CONFIG", config)
 		data = generateRotatedShapeGeometry(config)
 		levels = data.levels
 		bands = data.bands
 	}
-
-	// const update = () => {
-	// 	console.debug("updating", config.zCurveConfig.curves[0]);
-	// 	config = {
-	// 		...config,
-	// 		zCurveConfig: {type: "ZCurveConfig", curves: [$curveConfig]}
-	// 	}
-	// 	const newData = generateRotatedShapeGeometry(config)
-	// 	console.debug("regenerated \nold:", levels[9].vertices[0].x,"\nnew:", newData.levels[9].vertices[0].x)
-	// 	levels = newData.levels
-	// 	bands = newData.bands
-	// 	console.debug("reassigned:", levels[9].vertices[0].x)
-	// 	console.debug("new levels", levels, "new bands", bands)
-	// }
 
 </script>
 
 <main>
 	<section class="container three">
 		<h2>3d</h2>
-		<p>{levels[9].vertices[0].x}</p>
+		<!-- <p>{levels[9].vertices[0].x}</p> -->
 		<ThreeRenderer rslevels={levels} rsbands={bands} />
 	</section>
 	<section class="container svg">
@@ -54,10 +48,13 @@
 		<CutPattern rslevels={levels} rsbands={bands} />
 	</section>
 	<section class="container controls">
-		<h2>Controls</h2>
-		<!-- <button on:click={update}>Update</button> -->
-		<PathEdit />
-		<!-- <Controls {shadeConfig} {reactiveShadeConfig} shadeDispatch={dispatch}/> -->
+		<header>
+			<h2>Controls</h2>
+		</header>
+		<div class="group">
+			<PathEdit />
+			<Controls />
+		</div>
 	</section>
 </main>
 
@@ -82,7 +79,15 @@
 	section.container.controls {
 		grid-column: 2 / 3;
 		grid-row: 1 / 2;
+		display: flex;
+		flex-direction: column;
 	}
+	.container.controls .group {
+		display: flex;
+		flex-direction: row;
+		justify-content: flex-start;
+	}
+
 	section.container.svg {
 		grid-column: 2/ 3;
 		grid-row: 2 / 3;

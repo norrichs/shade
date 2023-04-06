@@ -4,7 +4,6 @@
 	import ThreeRenderer from '../../components/three-renderer/ThreeRenderer.svelte';
 	import CutPattern from '../../components/cut-pattern/CutPattern.svelte';
 	import Controls from '../../components/controls/Controls.svelte';
-	import { reducible } from '../../lib/stores.js';
   import {useShadeReducer} from "../../lib/use-shade-reducer"
 
 	const sides = 20;

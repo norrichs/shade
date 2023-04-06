@@ -1,34 +1,107 @@
 <script lang="ts">
-  import { T } from '@threlte/core' 
-  import { Edges } from '@threlte/extras'
-	import { DoubleSide, CurvePath, BufferGeometry, MeshNormalMaterial } from 'three';
-  import type {Band} from '../../lib/rotated-shape'
+	import { T } from '@threlte/core';
+	import { Edges } from '@threlte/extras';
+	import {
+		DoubleSide,
+		CurvePath,
+		BufferGeometry,
+		MeshNormalMaterial,
+		EdgesGeometry,
+		LineBasicMaterial,
+		MeshToonMaterial,
+		MeshPhysicalMaterial
+	} from 'three';
+	import type { Band } from '../../lib/rotated-shape';
 
-  export let rsband: Band
+	export let rsband: Band;
+	export let showTabs: boolean = true;
 
-  $: points = rsband.facets.map((facet) => {
-    return [
-      facet.triangle.a,
-      facet.triangle.b,
-      facet.triangle.c,
-    ]
-  }).flat(1)
+	$: bandPoints = rsband.facets
+		.map((facet) => [facet.triangle.a, facet.triangle.b, facet.triangle.c])
+		.flat(1);
 
-  let edgeColor = "black"
-  const geometry = new BufferGeometry()
-  const material = new MeshNormalMaterial()
-  
-  $: {
-    material.side = DoubleSide
-    edgeColor = "black"
-    geometry.setFromPoints(points)
-    geometry.computeVertexNormals()
-  }
-  
+	$: tabPoints = !showTabs
+		? []
+		: rsband.facets
+				.map((facet) => {
+					if (facet.tab) {
+            const {a, b, c, d} = facet.tab.outer
+            return [
+              a, b, d,
+              b, c, d
+            ]
+					}
+          return []
+				})
+				.flat(1);
+  $: tabPoints2 = !showTabs
+		? []
+		: rsband.facets
+				.map((facet) => {
+					if (facet.tab) {
+            return [facet.tab.footprint.triangle.a, facet.tab.footprint.triangle.b, facet.tab.footprint.triangle.c]
+					}
+          return []
+				})
+				.flat(1);
 
+	let edgeColor = 'black';
+	let bandGeometry: BufferGeometry; // = new BufferGeometry()
+	let tabGeometry: BufferGeometry;
+  let tabGeometry2: BufferGeometry;
+	let edges: EdgesGeometry; // = new EdgesGeometry()
+	const bandMaterial = new MeshPhysicalMaterial({
+		color: 'aqua',
+		transparent: true,
+		opacity: 0.8,
+		clearcoat: 1,
+		clearcoatRoughness: 0,
+		side: DoubleSide
+	});
+	const tabMaterial = new MeshPhysicalMaterial({
+		color: 'green',
+		transparent: true,
+		opacity: 0.8,
+		clearcoat: 1,
+		clearcoatRoughness: 0,
+		side: DoubleSide
+	});
+	const tabMaterial2 = new MeshPhysicalMaterial({
+		color: 'red',
+		transparent: true,
+		opacity: 0.8,
+		clearcoat: 1,
+		clearcoatRoughness: 0,
+		side: DoubleSide
+	});
+
+	const lineMaterial = new LineBasicMaterial({ color: 'black' });
+
+	$: {
+		edgeColor = 'black';
+		bandGeometry = new BufferGeometry().setFromPoints(bandPoints);
+		bandGeometry.computeVertexNormals();
+		edges = new EdgesGeometry(bandGeometry.clone().scale(1, 1, 1), 1);
+	}
+
+	$: {
+		tabGeometry = new BufferGeometry().setFromPoints(tabPoints);
+    tabGeometry2 = new BufferGeometry().setFromPoints(tabPoints2)
+		tabGeometry.computeVertexNormals();
+    tabGeometry2.computeVertexNormals();
+	}
 </script>
 
-
-<T.Mesh args={[geometry, material]}>
-  <Edges color={edgeColor}/>
-</T.Mesh>
+<T.Group>
+	<T.LineSegments geometry={edges} material={lineMaterial} />
+	<!-- <T.EdgesGeometry color="black" args={[geometry, 0.01]} /> -->
+	<T.Mesh geometry={bandGeometry} material={bandMaterial} />
+	{#if showTabs}
+    <T.Mesh geometry={tabGeometry} material={tabMaterial} />
+		<!-- <T.Mesh geometry={tabGeometry2} material={tabMaterial2} /> -->
+	{/if}
+</T.Group>
+<!-- <T.BufferGeometry args={[points]} /> -->
+<!-- <Edges color={edgeColor}/> -->
+<!-- </T.Mesh> -->
+<!-- <T.EdgesGeometry args={[geometry]} /> -->
