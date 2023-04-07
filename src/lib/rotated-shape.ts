@@ -680,3 +680,10 @@ export const generateRotatedShapeGeometry = (
 	// console.debug("tabbed bands[0]", bands[0].facets.map((f) => ({triangle: f.triangle, tabtriangle: f.tab?.footprint.triangle, freeVertex: f.tab?.footprint.freeVertex})))
 	return { levels, bands };
 };
+
+
+// Refactor the data pipeline:
+// 	1) levels
+//	2) 3d bands, 3d struts, 3d tabs
+//	3) flattened bands, flattened struts, flattened tabs
+//	4) flattened geometry -> cut patterns

@@ -4,10 +4,9 @@
 </script>
 
 <script lang="ts">
-	import type { BezierConfig } from '../../lib/rotated-shape';
-	import { isBezierCurveConfig } from '../../lib/rotated-shape';
-	import { GreaterStencilFunc, Vector2 } from 'three';
+	import type { BezierConfig, PointConfig } from '../../lib/rotated-shape';
 	import { curveConfig } from '../../lib/stores';
+	import { beforeNavigate } from '$app/navigation';
 
 	const canv = {
 		minX: 0,
@@ -17,7 +16,23 @@
 	};
 
 	let zCurve = $curveConfig;
-	let _partnerAngle: number, _angle: number, _handleY: number;
+
+	const onDoubleClickPoint = (pointIndex: number, curveIndex: number): void => {
+		if (pointIndex === 1 || pointIndex === 2) return
+		if ((pointIndex === 3 && curveIndex === zCurve.curves.length - 1) || (pointIndex === 0 && curveIndex === 0)) return
+		//point
+		const point = zCurve.curves[curveIndex].points[pointIndex]
+		const partner = zCurve.curves[pointIndex === 3 ? curveIndex + 1 : curveIndex - 1].points[pointIndex === 3 ? 0 : 3]
+		const newType = point.pointType === undefined || point.pointType === "smooth" ? "angled" : "smooth"
+		
+		console.debug("dblclick", point, partner)
+
+		point.pointType = newType;
+		partner.pointType = newType;
+
+		console.debug("after", point, partner)
+		update()
+	};
 
 	const onDragMove = (
 		x: number,
@@ -39,13 +54,11 @@
 			console.debug('isJoined', isJoined, zCurve.curves, curveIndex, pointIndex);
 
 			const partner = !isJoined ? null : zCurve.curves[curveIndex + (pointIndex <= 1 ? -1 : 1)];
-			// const partnerDirection = !partner ? 0 : pointIndex === 0 ? -1 : 1
-			// const partnerHandle = !partner ? null : zCurve.curves[curveIndex + (pointIndex === - ? -1 : 1)].
-			const isAngled =
+			const partnerPointIndex = pointIndex <= 1 ? 3 : 0
+			const isAngled = 
 				isJoined &&
 				(curve.points[pointIndex].pointType === 'angled' ||
-					(partner?.type === 'BezierConfig' &&
-						partner.points[pointIndex === 0 ? 3 : 0].pointType === 'angled'));
+						(partner && partner.points[partnerPointIndex].pointType === 'angled'));
 
 			if (isPoint && isJoined && partner?.type === 'BezierConfig') {
 				console.debug('is joined point');
@@ -68,7 +81,8 @@
 				handle.x += dx;
 				handle.y += dy;
 			} else if (isHandle && isJoined && !isAngled && partner?.type === 'BezierConfig') {
-				console.debug('is joined handle');
+				console.log('is smooth joined handle', !isAngled, isJoined, isHandle, partner.type);
+				console.debug("isAngled algo", curve.points[pointIndex].pointType, partner.points[pointIndex === 0 ? 3 : 0].pointType)
 				// coordinate partner handle
 				const [handle, point] =
 					pointIndex <= 1 ? [curve.points[1], curve.points[0]] : [curve.points[2], curve.points[3]];
@@ -88,37 +102,44 @@
 				// partner handle co linear wtih point->handle, but the length is constant
 				partnerHandle.x = partnerPoint.x + Math.cos(partnerAngle) * partnerHandleLength;
 				partnerHandle.y = partnerPoint.y + Math.sin(partnerAngle) * partnerHandleLength;
+			} else {
+				console.log("is angled joined handle", isAngled, isJoined, isHandle)
 			}
 
 			// move the point being directly manipulated
-			console.debug(isPoint, isJoined, isAngled);
+			console.log(isPoint, isJoined, isAngled);
 			curve.points[pointIndex].x = x;
 			curve.points[pointIndex].y = y;
 			zCurve.curves[curveIndex] = curve;
 		}
 	};
 
+	const addBezier = () => {
+		const lastPoint = zCurve.curves[zCurve.curves.length -1].points[3]
+		lastPoint.pointType = "angled"
+		const newCurve: BezierConfig = {
+			type: "BezierConfig",
+			points: [
+				{...lastPoint},
+				{type: "PointConfig", x: lastPoint.x + 5, y: lastPoint.y},
+				{type: "PointConfig", x: lastPoint.x + 10, y: lastPoint.y},
+				{type: "PointConfig", pointType: "angled", x: lastPoint.x + 20, y: lastPoint.y},
+			]
+		}
+		zCurve.curves.push(newCurve)
+		$curveConfig = zCurve;
+		zCurve = $curveConfig;
+	}
+
 	const update = () => {
 		$curveConfig = zCurve;
 		zCurve = $curveConfig;
 	};
-	// TODO - move handles with points
-	// flip y axis
-	// fill space
-	// add height modes: fixed, scaled
-	// join ends
-	// coordinate joined handles
 </script>
 
 
-<div
-	style="
-  display: block; position: relative;
-  width: 400px; height: 400px;
-  margin: 20px;
-  border: dotted 1px black; border-radius: 4px;
-"
->
+
+<div class="container">
 	<svg
 		viewBox={`${canv.minX} ${canv.minY} ${canv.maxX - canv.minX} ${canv.maxY - canv.minY}`}
 		style="overflow:visible"
@@ -158,12 +179,12 @@
 		{#if curve.type === 'BezierConfig'}
 			{#each curve.points as point, p}
 				<div
-					class={p === 1 || p === 2 ? 'Handle' : 'Point'}
+					class={`${p === 1 || p === 2 ? 'Handle' : 'Point'} ${
+						point.pointType === 'angled' ? 'angled' : 'smooth'
+					}`}
 					style="left:{point.x}px; top:{canv.maxY - point.y}px"
 					on:dragend={update}
-					on:click={() => {
-						console.log('clicked');
-					}}
+					on:dblclick={() => onDoubleClickPoint(p, curveIndex)}
 					use:asDraggable={{
 						onDragStart: { x: point.x, y: canv.maxY - point.y },
 						onDragMove: (x, y, dx, dy) => onDragMove(x, canv.maxY - y, dx, -dy, curveIndex, p),
@@ -176,6 +197,8 @@
 			{/each}
 		{/if}
 	{/each}
+	<button on:click={addBezier}>+</button>
+	<button>-</button>
 </div>
 
 <style>
@@ -188,7 +211,15 @@
 		-ms-user-select: none;
 		user-select: none;
 	}
-
+	.container {
+		display: block;
+		position: relative;
+		width: 400px;
+		height: 400px;
+		margin: 20px;
+		border: dotted 1px black;
+		border-radius: 4px;
+	}
 	.Handle {
 		display: block;
 		position: absolute;
@@ -208,7 +239,6 @@
 		width: 8px;
 		height: 8px;
 		border: solid 1px black;
-		background: green;
 		cursor: move;
 	}
 
@@ -216,6 +246,15 @@
 		background: red;
 	}
 	.Point.smooth {
-		background: green;
+		background: blue;
+	}
+	button {
+		background-color: lightgreen;
+		border-radius: 50%;
+		border: 0;
+		padding: 0;
+		font-size: 20px;
+		width: 30px;
+		aspect-ratio: 1;
 	}
 </style>
