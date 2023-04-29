@@ -18,6 +18,22 @@
 
 ## Major Features
 
+- curve-based interface for specifying varying parameters
+  - ends are y-locked to ZCurve
+  - for: rot, coordinate offsets, detail
+
+
+- new level parameter: detail
+  - depends on radial shape having endpoints locked
+  - when generating level prototypes
+    - translate points from (x,y) to (r, theta)
+    - baseline = endpoints r
+    - for each non-endpoint, calculate relative_r = (r - baseline_r)
+    - scale relative_r by detail parameter
+    - new_r = baseline + scaled(relative_r)
+    - translate (new_r, theta) -> (x, y)
+
+
 - re-implement struts and rings
   - set up in LevelConfig
   - width: number

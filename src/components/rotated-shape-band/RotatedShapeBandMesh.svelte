@@ -11,7 +11,7 @@
 		MeshToonMaterial,
 		MeshPhysicalMaterial
 	} from 'three';
-	import type { Band } from '../../lib/rotated-shape';
+	import type { Band, TabStyle } from '../../lib/rotated-shape';
 
 	export let rsband: Band;
 	export let showTabs: boolean = true;
@@ -24,31 +24,38 @@
 		? []
 		: rsband.facets
 				.map((facet) => {
-					if (facet.tab) {
-            const {a, b, c, d} = facet.tab.outer
-            return [
-              a, b, d,
-              b, c, d
-            ]
+					if (facet.tab && facet.tab.style === 'full') {
+						const { a, b, c } = facet.tab.outer;
+						return [a, b, c];
+					} else if (
+						facet.tab &&
+						['trapezoid', 'multi-facet-full', 'multi-facet-trap'].includes(facet.tab.style)
+					) {
+						const { a, b, c, d } = facet.tab.outer;
+						return [a, b, c, a, c, d ];
 					}
-          return []
+					return [];
 				})
 				.flat(1);
-  $: tabPoints2 = !showTabs
-		? []
-		: rsband.facets
-				.map((facet) => {
-					if (facet.tab) {
-            return [facet.tab.footprint.triangle.a, facet.tab.footprint.triangle.b, facet.tab.footprint.triangle.c]
-					}
-          return []
-				})
-				.flat(1);
+	// $: tabPoints2 = !showTabs
+	// 	? []
+	// 	: rsband.facets
+	// 			.map((facet) => {
+	// 				if (facet.tab?.style === "full") {
+	// 					return [
+	// 						facet.tab.footprint.triangle.a,
+	// 						facet.tab.footprint.triangle.b,
+	// 						facet.tab.footprint.triangle.c
+	// 					];
+	// 				}
+	// 				return [];
+	// 			})
+	// 			.flat(1);
 
-	let edgeColor = 'black';
+	let edgeColor = 'magenta';
 	let bandGeometry: BufferGeometry; // = new BufferGeometry()
 	let tabGeometry: BufferGeometry;
-  let tabGeometry2: BufferGeometry;
+	// let tabGeometry2: BufferGeometry;
 	let edges: EdgesGeometry; // = new EdgesGeometry()
 	const bandMaterial = new MeshPhysicalMaterial({
 		color: 'aqua',
@@ -86,9 +93,9 @@
 
 	$: {
 		tabGeometry = new BufferGeometry().setFromPoints(tabPoints);
-    tabGeometry2 = new BufferGeometry().setFromPoints(tabPoints2)
+		// tabGeometry2 = new BufferGeometry().setFromPoints(tabPoints2);
 		tabGeometry.computeVertexNormals();
-    tabGeometry2.computeVertexNormals();
+		// tabGeometry2.computeVertexNormals();
 	}
 </script>
 
@@ -97,7 +104,7 @@
 	<!-- <T.EdgesGeometry color="black" args={[geometry, 0.01]} /> -->
 	<T.Mesh geometry={bandGeometry} material={bandMaterial} />
 	{#if showTabs}
-    <T.Mesh geometry={tabGeometry} material={tabMaterial} />
+		<T.Mesh geometry={tabGeometry} material={tabMaterial} />
 		<!-- <T.Mesh geometry={tabGeometry2} material={tabMaterial2} /> -->
 	{/if}
 </T.Group>

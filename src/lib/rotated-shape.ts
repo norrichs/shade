@@ -1,5 +1,5 @@
 import { CurvePath, Vector2, Vector3, CubicBezierCurve, Triangle, LineCurve } from 'three';
-import type { TrianglePoint } from './cut-pattern';
+import type { TrianglePoint, TriangleSide, EdgeConfig } from './cut-pattern';
 import { generateEdgeConfig } from './cut-pattern';
 // import { rad } from "../lib/util"
 
@@ -30,33 +30,66 @@ type LevelOffset = {
 export type LevelSetConfig = {
 	// zCurveConfig: ZCurveConfig,
 	zCurveSampleMethod: 'arcLength' | 'levelInterval';
-	levelPrototype: RotatedShapeLevelPrototype;
+	levelPrototypeSampleMethod: { byDivisions: 'whole' | 'offsetHalf'; dividePer: 'shape' | 'curve' };
 	levels: number;
-	sides: number;
 	baseRadius?: number;
 	levelOffset: LevelOffset;
 	height?: number;
 };
 
-export type FacetTab = FullTab | TrapTab;
-type TabFootprint = { triangle: Triangle; freeVertex: 'a' | 'b' | 'c' };
+export type FacetTab = FullTab | TrapTab | MultiFacetFullTab | MultiFacetTrapTab;
+
+type TabFootprint = { triangle: Triangle; free: 'a' | 'b' | 'c' };
+type TabFootprintInvert = { triangle: Triangle; free: 'ab' | 'ac' | 'bc' };
 
 export type FullTab = {
 	style: 'full';
 	footprint: TabFootprint;
+	direction: TabDirection;
 	outer: { a: Vector3; b: Vector3; c: Vector3 };
 	scored?: { a: Vector3; b: Vector3 };
 };
 export type TrapTab = {
 	style: 'trapezoid';
 	footprint: TabFootprint;
+	direction: TabDirection;
 	outer: { a: Vector3; b: Vector3; c: Vector3; d: Vector3 };
 	scored?: { a: Vector3; b: Vector3 };
 };
 
+export type MultiFacetFullTab = {
+	style: 'multi-facet-full';
+	footprint: [TabFootprint, TabFootprintInvert];
+	direction: TabDirection;
+	outer: { a: Vector3; b: Vector3; c: Vector3; d: Vector3 };
+	scored?: { a: Vector3; b: Vector3 };
+};
+
+export type MultiFacetTrapTab = {
+	style: 'multi-facet-trapezoid';
+	footprint: [TabFootprint, TabFootprintInvert];
+	direction: TabDirection;
+	outer: { a: Vector3; b: Vector3; c: Vector3; d: Vector3 };
+	scored?: { a: Vector3; b: Vector3 };
+	width: number;
+	inset?: number;
+};
+
+export const isFullTab = (tab: FacetTab | FacetTab[] | undefined): tab is FullTab =>
+	!Array.isArray(tab) && tab?.style === 'full';
+export const isTrapTab = (tab: FacetTab | FacetTab[] | undefined): tab is TrapTab =>
+	!Array.isArray(tab) && tab?.style === 'trapezoid';
+export const isMultiFacetFullTab = (
+	tab: FacetTab | FacetTab[] | undefined
+): tab is MultiFacetFullTab => !Array.isArray(tab) && tab?.style === 'multi-facet-full';
+export const isMultiFacetTrapTab = (
+	tab: FacetTab | FacetTab[] | undefined
+): tab is MultiFacetTrapTab => !Array.isArray(tab) && tab?.style === 'multi-facet-trapezoid';
+
+// TODO - remove all FacetTab[] = a facet can only have a single attached tab
 export type Facet = {
 	triangle: Triangle;
-	tab?: FacetTab;
+	tab?: FacetTab; // | FacetTab[];
 };
 
 type BandOrientation = -1 | 0 | 1;
@@ -131,10 +164,9 @@ export const generateRegularPolygonLevel = (
 	return output;
 };
 
-export type RadialShapeLevelPrototypeConfig = RadialShapeConfig & { divisions: number };
-
 export type RadialShapeConfig = {
 	type: 'RadialShapeConfig';
+	divisions: number;
 	symmetry: 'asymmetric' | 'radial' | 'lateral' | 'radial-lateral';
 	symmetryNumber: number;
 	curves: BezierConfig[];
@@ -142,7 +174,6 @@ export type RadialShapeConfig = {
 
 const validateRadialShapeConfig = (config: RadialShapeConfig): Validation => {
 	const validation: Validation = { isValid: true, msg: [] };
-	console.debug('radialShapeConfig validation stub', config);
 	// if "asymmetric" or "lateral" symmetryNumber === 1
 
 	// if "radial", angle = Math.PI * 2 / symmetryNumber
@@ -191,7 +222,6 @@ const rotatedCurve = (
 		return v;
 	});
 	const [v0, v1] = vectors;
-	console.debug('rotated vectors', vectors, (angle * index * 180) / Math.PI);
 	return new LineCurve(v0, v1);
 };
 
@@ -221,8 +251,8 @@ const normalizeConfigPoints = (
 	maxLength = 1
 ): RadialShapeConfig => {
 	const lengths: number[] = [];
-	console.debug('shapeConfig', shapeConfig);
-	shapeConfig.curves.forEach((curve) =>
+	const normalizedShapeConfig: RadialShapeConfig = window.structuredClone(shapeConfig);
+	normalizedShapeConfig.curves.forEach((curve) =>
 		curve.points.forEach((point) => {
 			const length = Math.sqrt(Math.pow(point.x, 2) + Math.pow(point.y, 2));
 			lengths.push(length);
@@ -230,35 +260,67 @@ const normalizeConfigPoints = (
 	);
 	const ratio = maxLength / Math.max(...lengths);
 
-	shapeConfig.curves = shapeConfig.curves.map((curve: BezierConfig) => {
-		const points: [PointConfig, PointConfig, PointConfig, PointConfig] = curve.points.map((point) => {
-			point.x = point.x * ratio;
-			point.y = point.y * ratio;
-			return point;
-    }) as [PointConfig, PointConfig, PointConfig, PointConfig];
-    curve.points = points
+	normalizedShapeConfig.curves = normalizedShapeConfig.curves.map((curve: BezierConfig) => {
+		const points: [PointConfig, PointConfig, PointConfig, PointConfig] = curve.points.map(
+			(point) => {
+				point.x = point.x * ratio;
+				point.y = point.y * ratio;
+				return point;
+			}
+		) as [PointConfig, PointConfig, PointConfig, PointConfig];
+		curve.points = points;
 		return curve;
 	});
-
-	console.debug('normalized', shapeConfig);
-	return shapeConfig;
+	return normalizedShapeConfig;
 };
 
-export const generateRadialShapeLevelPrototype = (
-	config: RadialShapeLevelPrototypeConfig
+const generateLevelPrototype = (
+	config: RadialShapeConfig,
+	levelConfig: LevelSetConfig
+): RotatedShapeLevelPrototype | RotatedShapeLevelPrototype[] => {
+	if (levelConfig.levelPrototypeSampleMethod.byDivisions === 'offsetHalf') {
+		return [
+			generateRadialShapeLevelPrototype(config, levelConfig, 0),
+			generateRadialShapeLevelPrototype(config, levelConfig, 1)
+		];
+	}
+	return generateRadialShapeLevelPrototype(config, levelConfig, 0);
+};
+
+const generateRadialShapeLevelPrototype = (
+	config: RadialShapeConfig,
+	levelConfig: LevelSetConfig,
+	levelNumber: number
 ): RotatedShapeLevelPrototype => {
-	const { divisions, ...shapeConfig } = config;
-
-	const shape = generateRadialShape(normalizeConfigPoints(shapeConfig, 1));
-
+	const shape = generateRadialShape(normalizeConfigPoints(config, 1));
 	const points: Vector2[] = [];
-	shape.curves.forEach((curve) => {
-		points.push(...curve.getPoints(divisions).slice(1));
-	});
+
+	const { dividePer, byDivisions } = levelConfig.levelPrototypeSampleMethod;
+	if (dividePer === 'curve') {
+		if (byDivisions === 'whole') {
+			shape.curves.forEach((curve) => {
+				points.push(...curve.getPoints(config.divisions).slice(1)); // removes first point from each curve to avoid dupes
+			});
+		} else if (byDivisions === 'offsetHalf') {
+			shape.curves.forEach((curve, i) => {
+				const curvePoints = curve.getPoints(config.divisions * 2 - 1);
+				const ends = [curvePoints[0], curvePoints[curvePoints.length - 1]];
+				const halfPoints = curvePoints.filter((point, i, points) => i % 2 === levelNumber % 2);
+				const recombined = halfPoints; //[ends[0], ...halfPoints, ends[1]].slice(1)
+				points.push(...recombined);
+			});
+		}
+	} else if (levelConfig.levelPrototypeSampleMethod.dividePer === 'shape') {
+		const totalLength = shape.getLength();
+		shape.curves.forEach((curve) => {
+			const ratio = curve.getLength() / totalLength;
+			points.push(...curve.getPoints(Math.ceil(config.divisions * ratio)).slice(1)); // removes first point from each curve to avoid dupes
+		});
+	}
 
 	return {
 		center: new Vector2(0, 0),
-		vertices: points // these points include duplicates where a curve starts at the same place another ends
+		vertices: points
 	};
 };
 
@@ -285,7 +347,8 @@ const isLevelOffset = (levelOffset: LevelOffset | LevelOffset[]): levelOffset is
 
 const generateLevelSet = (
 	levelConfig: LevelSetConfig,
-	zCurveConfig: ZCurveConfig
+	zCurveConfig: ZCurveConfig,
+	levelPrototype: RotatedShapeLevelPrototype | RotatedShapeLevelPrototype[]
 ): RotatedShapeLevel[] => {
 	const validation = validateLevelSetConfig(levelConfig);
 	if (!validation.isValid) {
@@ -320,8 +383,14 @@ const generateLevelSet = (
 	}
 	const levels: RotatedShapeLevel[] = new Array(levelConfig.levels);
 	levelOffsets.forEach((levelOffset, l) => {
-		// console.debug("generate a level", levelOffset.scaleX, levelOffset.scaleY, levelConfig.levelPrototype.vertices)
-		levels[l] = generateLevel(levelOffset, levelConfig.levelPrototype, l);
+		let thisLevelPrototype: RotatedShapeLevelPrototype;
+		if (Array.isArray(levelPrototype)) {
+			thisLevelPrototype = levelPrototype[l % levelPrototype.length];
+		} else {
+			thisLevelPrototype = levelPrototype;
+		}
+
+		levels[l] = generateLevel(levelOffset, thisLevelPrototype, l);
 	});
 
 	return levels;
@@ -373,9 +442,12 @@ const validateBandConfig = (config: BandSetConfig, levels: RotatedShapeLevel[]):
 	return validation;
 };
 
-const generateBandSet = (config: BandSetConfig, levels: RotatedShapeLevel[]): Band[] => {
+const generateBandSet = (
+	config: RotatedShapeGeometryConfig,
+	levels: RotatedShapeLevel[]
+): Band[] => {
 	const circumferenceBands = generateCircumferenceBands(config, levels);
-	if (config.bandStyle.startsWith('helical')) {
+	if (config.bandConfig.bandStyle.startsWith('helical')) {
 		return generateHelicalBands(circumferenceBands);
 	}
 	return circumferenceBands;
@@ -419,8 +491,11 @@ const getBandStyle = (bandOrientation: BandOrientation): BandStyle => {
 	return 'circumference';
 };
 
-const generateCircumferenceBands = (config: BandSetConfig, levels: RotatedShapeLevel[]): Band[] => {
-	const validation = validateBandConfig(config, levels);
+const generateCircumferenceBands = (
+	config: RotatedShapeGeometryConfig,
+	levels: RotatedShapeLevel[]
+): Band[] => {
+	const validation = validateBandConfig(config.bandConfig, levels);
 	if (!validation.isValid) {
 		throw new Error(validation.msg.join('\n'));
 	}
@@ -428,68 +503,265 @@ const generateCircumferenceBands = (config: BandSetConfig, levels: RotatedShapeL
 
 	for (let i = 0; i < levels.length - 1; i++) {
 		const band: Band = {
-			orientation: getBandOrientation(config.bandStyle),
+			orientation: getBandOrientation(config.bandConfig.bandStyle),
 			facets: []
 		};
-		levels[i].vertices.forEach((vertex, v, vertices) => {
-			const triangle1 = new Triangle(
-				vertex.clone(),
-				vertices[(v + 1) % vertices.length].clone(),
-				levels[i + 1].vertices[v].clone()
-			);
-			const triangle2 = new Triangle(
-				levels[i + 1].vertices[(v + 1) % vertices.length].clone(),
-				triangle1.c.clone(),
-				triangle1.b.clone()
-			);
-			band.facets.push({ triangle: triangle1 }, { triangle: triangle2 });
-		});
+		if (config.levelConfig.levelPrototypeSampleMethod.byDivisions === 'whole') {
+			levels[i].vertices.forEach((vertex, v, vertices) => {
+				const triangle1 = new Triangle(
+					vertex.clone(),
+					vertices[(v + 1) % vertices.length].clone(),
+					levels[i + 1].vertices[v].clone()
+				);
+				const triangle2 = new Triangle(
+					levels[i + 1].vertices[(v + 1) % vertices.length].clone(),
+					triangle1.c.clone(),
+					triangle1.b.clone()
+				);
+				band.facets.push({ triangle: triangle1 }, { triangle: triangle2 });
+			});
+		} else if (config.levelConfig.levelPrototypeSampleMethod.byDivisions === 'offsetHalf') {
+			levels[i].vertices.forEach((vertex, v, vertices) => {
+				const triangle1 = new Triangle(
+					vertices[(v + Math.floor(i / 2)) % vertices.length].clone(),
+					vertices[(v + 1 + Math.floor(i / 2)) % vertices.length].clone(),
+					levels[i + 1].vertices[(v + i - Math.floor(i / 2)) % vertices.length].clone()
+				);
+				const triangle2 = new Triangle(
+					levels[i + 1].vertices[(v + 1 + Math.ceil(i / 2)) % vertices.length].clone(),
+					triangle1.c.clone(),
+					triangle1.b.clone()
+				);
+				band.facets.push({ triangle: triangle1 }, { triangle: triangle2 });
+			});
+		}
 		bands.push(band);
 	}
 	return bands;
 };
 
-const generateTabs = (bands: Band[], config: Omit<BandSetConfig, 'levels'>) => {
+/////////////////////////////////////////
+// Struts
+/////////////////////////////////////////
 
-	const getFreeVertex = (orientation: BandOrientation): 'a' | 'b' | 'c' => {
-		if (orientation === -1) return 'a';
-		if (orientation === 1) return 'b';
-		return 'c';
+export type Strut = {
+	tiling: Tiling;
+	orientation: StrutOrientation;
+	radiate: RadiateOrientation;
+	facets: Facet[];
+};
+
+export type StrutConfig = {
+	tiling: Tiling;
+	orientation: StrutOrientation;
+	radiate: RadiateOrientation;
+	width: number;
+};
+
+type Tiling = 'helical-right' | 'helical-left' | 'circumference' | 'triangular' | 'hexagon';
+type StrutOrientation = 'inside' | 'outside' | 'half';
+type RadiateOrientation = 'level' | 'orthogonal';
+
+const generateStruts = (levels: RotatedShapeLevel[], config: StrutConfig): Strut[] => {
+	// let struts: Strut[]
+	// if (config.tiling === "helical-right") {
+	const struts: Strut[] = levels[0].vertices.map((vertex, i) =>
+		generateHelicalStrut(i, levels, config)
+	);
+	// }
+
+	return struts;
+};
+
+const getStrutVector = (
+	pointCloseness: 'outer' | 'inner',
+	pointData: { vector: Vector3; origin: Vector3 },
+	width: number,
+	orientation: StrutOrientation,
+	radiate: RadiateOrientation
+): Vector3 => {
+	const { vector, origin } = pointData;
+	const offsets = {
+		outer: {
+			inside: 0,
+			outside: width,
+			half: width / 2
+		},
+		inner: {
+			inside: -width,
+			outside: 0,
+			half: -width / 2
+		}
 	};
+	// radial level vector, with length offset per inner / outer spec, made absolute by adding to center of level
+
+	// orthogonal vectors - start at absolute vertex vector, add 'origin' vector, scaled to orientation  and closeness
+	if (radiate === 'level') {
+		return vector
+			.clone()
+			.setLength(vector.length() + offsets[pointCloseness][orientation])
+			.addScaledVector(origin, 1);
+	} else if (radiate === 'orthogonal') {
+		return origin
+			.clone()
+			.setLength(offsets[pointCloseness][orientation])
+			.addScaledVector(vector, 1);
+	}
+};
+
+const generateHelicalStrut = (
+	bandIndex: number,
+	levels: RotatedShapeLevel[],
+	config: StrutConfig
+): Strut => {
+	const { width, tiling, orientation, radiate } = config;
+	if (tiling !== 'helical-right') throw new Error('Only helical-right tiling supported');
+	const strut: Strut = {
+		tiling,
+		orientation,
+		radiate,
+		facets: [] as Facet[]
+	};
+
+	for (let i = 0; i < levels.length - 1; i++) {
+		const lower =
+			radiate === 'level'
+				? {
+						vector: levels[i].vertices[bandIndex].clone().addScaledVector(levels[i].center, -1),
+						origin: levels[i].center
+				  }
+				: {
+						vector: levels[i].vertices[bandIndex].clone(),
+						origin: getOrthogonalOrigin(i, bandIndex, levels)
+				  };
+		const upper =
+			radiate === 'level'
+				? {
+						vector: levels[i + 1].vertices[bandIndex]
+							.clone()
+							.addScaledVector(levels[i + 1].center, -1),
+						origin: levels[i + 1].center
+				  }
+				: {
+						vector: levels[i + 1].vertices[bandIndex].clone(),
+						origin: getOrthogonalOrigin(i + 1, bandIndex, levels)
+				  };
+
+		const facet1: Facet = {
+			triangle: new Triangle(
+				getStrutVector('outer', upper, width, orientation, radiate),
+				getStrutVector('inner', lower, width, orientation, radiate),
+				getStrutVector('outer', lower, width, orientation, radiate)
+			)
+		};
+		const facet2: Facet = {
+			triangle: new Triangle(
+				getStrutVector('inner', lower, width, orientation, radiate),
+				getStrutVector('outer', upper, width, orientation, radiate),
+				getStrutVector('inner', upper, width, orientation, radiate)
+			)
+		};
+
+		strut.facets.push(facet1, facet2);
+	}
+	return strut;
+};
+
+const getOrthogonalOrigin = (
+	levelIndex: number,
+	vertexIndex: number,
+	levels: RotatedShapeLevel[]
+): Vector3 => {
+	// TODO - for first and last layers, use instead of returning the level radiated version, return the next or previous
+
+	const vec = levels[levelIndex].vertices[vertexIndex].clone();
+	if (levelIndex > 0 && levelIndex < levels.length - 1) {
+		const preVec = levels[levelIndex - 1].vertices[vertexIndex].clone().addScaledVector(vec, -1);
+		const postVec = levels[levelIndex + 1].vertices[vertexIndex].clone().addScaledVector(vec, -1);
+		const angle = preVec.angleTo(postVec);
+		const rotAxis = preVec.clone().cross(postVec).setLength(1);
+		const ortho = postVec.clone().applyAxisAngle(rotAxis, angle / 2).setLength(1);
+		const origin = vec.clone().addScaledVector(ortho, 1);
+		if (levelIndex === 2 && vertexIndex === 3) {
+			const measuredAngle = new Vector3(0,0,1).angleTo(ortho)
+			console.debug("angle", angle / 2 * 180 / Math.PI, "ortho:", ortho, "measured angle", measuredAngle * 180 / Math.PI, "preVec", preVec, "postVec", postVec)
+		}
+		return origin;
+	} else if (levelIndex === 0) {
+		return getOrthogonalOrigin(1, vertexIndex, levels);
+	} else if (levelIndex === levels.length - 1) {
+		return getOrthogonalOrigin(levels.length - 2, vertexIndex, levels);
+	} else {
+		return levels[levelIndex].center.clone().addScaledVector(vec, -1).setLength(-1);
+	}
+};
+
+/////////////////////////////////////////
+// Tabs
+/////////////////////////////////////////
+
+export const generateFullTab = (
+	tabStyle: TabStyle,
+	footprint: Triangle,
+	tabConfig: TabConfig
+): FullTab => {
+	const { a, b, c } = footprint;
+	const fullTab: FullTab = {
+		style: 'full',
+		direction: tabStyle.direction,
+		footprint: {
+			triangle: footprint,
+			free: getFreeVertex(tabConfig.follow, tabConfig.lead)
+		},
+		outer: { a: a.clone(), b: b.clone(), c: c.clone() }
+	};
+	return fullTab;
+};
+
+const isEven = (n: number): boolean => n % 2 === 0;
+const getSide = (facetIndex: number): StripSide =>
+	Math.abs(facetIndex) % 2 === 0 ? 'lesser' : 'greater';
+const shouldAddTabToSide = (side: StripSide, f: number, direction: TabDirection) =>
+	(direction === side || direction === 'both') && side === getSide(f);
+
+const generateTabs = (bands: Band[], config: BandSetConfig, struts?: Strut[]) => {
+	console.debug('generateTabs', struts, config);
+
+	const { direction } = config.tabStyle;
+
 	if (config.tabStyle) {
 		const tabbedBands: Band[] = bands.map((band, b) => {
 			return {
 				...band,
 				facets: band.facets.map((facet, f) => {
 					if (config.tabStyle.style === 'full') {
-						if (config.tabStyle.direction === 1 && f % 2 === 1) {
+						// if ((direction === 'greater' || direction === "both") && !isEven(f)) {
+						if (shouldAddTabToSide('greater', f, direction)) {
+							const modelForTab: Facet = bands[(b + 1) % bands.length].facets[f - 1];
+							const tab: FullTab = generateFullTab(
+								config.tabStyle,
+								modelForTab.triangle,
+								generateEdgeConfig(config.bandStyle, isEven(f), true)
+							);
+							return { ...facet, tab };
+						}
+						// if ((direction === 'lesser' || direction === "both") && isEven(f)) {
+						if (shouldAddTabToSide('lesser', f, direction)) {
 							const modelForTab: Facet =
-								bands[(b + config.tabStyle.direction) % bands.length].facets[
-									f + (f % 2 === 0 ? 1 : -1)
-								];
-							const tab: FullTab = {
-								style: "full",
-								footprint: {
-									triangle: modelForTab.triangle,
-									freeVertex: getFreeVertex(band.orientation)
-								},
-								outer: {
-									a: modelForTab.triangle.a.clone(),
-									b: modelForTab.triangle.b.clone(),
-									c: modelForTab.triangle.c.clone()
-								}
-							};
+								bands[(bands.length + b - 1) % bands.length].facets[(f + 1) % band.facets.length];
+							const tab: FullTab = generateFullTab(
+								config.tabStyle,
+								modelForTab.triangle,
+								generateEdgeConfig(config.bandStyle, isEven(f), true)
+							);
 							return { ...facet, tab };
 						}
 					} else if (config.tabStyle.style === 'trapezoid') {
-						if (config.tabStyle.direction === 1 && f % 2 === 1) {
-							const modelForTab: Facet =
-								bands[(b + config.tabStyle.direction) % bands.length].facets[
-									f + (f % 2 === 0 ? 1 : -1)
-								];
+						if (shouldAddTabToSide('greater', f, direction)) {
+							const modelForTab: Facet = bands[(b + 1) % bands.length].facets[f - 1];
 							const reverseEdgeConfig = generateEdgeConfig(
 								getBandStyle(bands[0].orientation),
-								f % 2 === 1,
+								!isEven(f),
 								true
 							);
 							const tab: TrapTab | undefined = generateTrapTab(
@@ -499,16 +771,112 @@ const generateTabs = (bands: Band[], config: Omit<BandSetConfig, 'levels'>) => {
 							);
 							return { ...facet, tab };
 						}
+						if (shouldAddTabToSide('lesser', f, direction)) {
+							const modelForTab: Facet =
+								bands[(bands.length + b - 1) % bands.length].facets[(f + 1) % band.facets.length];
+							const reverseEdgeConfig = generateEdgeConfig(
+								getBandStyle(bands[0].orientation),
+								isEven(f),
+								true
+							);
+							const tab: TrapTab | undefined = generateTrapTab(
+								config.tabStyle,
+								modelForTab.triangle,
+								{ lead: reverseEdgeConfig.lead, follow: reverseEdgeConfig.follow }
+							);
+							return { ...facet, tab };
+						}
+					} else if (
+						config.tabStyle.style === 'multi-facet-full' &&
+						config.tabStyle.footprint === 'strut' &&
+						struts &&
+						struts[0].tiling === config.bandStyle
+					) {
+						if (shouldAddTabToSide('greater', f, direction)) {
+							const strut = struts[(b + 1) % bands.length];
+							// const facetOffset = f >= strut.facets.length - 1 ? -1 : config.tabStyle.directionMulti;
+							const modelForTab: [Facet, Facet] = [strut.facets[f - 1], strut.facets[f]];
+							const edgeConfig = generateEdgeConfig(config.bandStyle, f % 2 === 0, true);
+							const tab: MultiFacetFullTab = generateMultiFacetFullTab(
+								...modelForTab,
+								edgeConfig,
+								'greater',
+								config.tabStyle
+							);
+							return { ...facet, tab };
+						}
+						if (shouldAddTabToSide('lesser', f, direction)) {
+							const strut = struts[b];
+							// const facetOffset = f >= strut.facets.length - 1 ? 0 : config.tabStyle.directionMulti;
+							const modelForTab: [Facet, Facet] = [strut.facets[f], strut.facets[f + 1]];
+							const edgeConfig = generateEdgeConfig(config.bandStyle, f % 2 === 0, true);
+							const tab: MultiFacetFullTab = generateMultiFacetFullTab(
+								...modelForTab,
+								edgeConfig,
+								'lesser',
+								config.tabStyle
+							);
+							return { ...facet, tab };
+						}
 					}
 					return facet;
 				})
 			};
 		});
-		console.debug('generateTabs tabbedBands', tabbedBands);
+		console.debug('tabbed bands', tabbedBands);
 		return tabbedBands;
 	}
-
 	return bands;
+};
+
+export const generateMultiFacetFullTab = (
+	baseFacet: Facet,
+	pointFacet: Facet,
+	edgeConfig: EdgeConfig,
+	side: StripSide,
+	tabStyle: TabStyle
+): MultiFacetFullTab => {
+	// get 2 triangles
+	//	choose an edge from one and a point from the other
+	if (tabStyle.style !== 'multi-facet-full') throw new Error();
+	// console.debug("--------------------- generateMultiFacetFullTab")
+	// console.debug("  baseFacet", baseFacet, "\n  pointFacet", pointFacet, "\n  edgeConfig", edgeConfig, "\n  tabStyle", tabStyle);
+
+	const edgeConfig2: EdgeConfig =
+		side === 'greater'
+			? { lead: edgeConfig.follow, follow: edgeConfig.lead }
+			: { lead: getFreeVertex(edgeConfig.follow, edgeConfig.lead), follow: edgeConfig.lead };
+
+	const footprint: [TabFootprint, TabFootprintInvert] = [
+		{
+			triangle: baseFacet.triangle.clone(),
+			free: getFreeVertex(edgeConfig.lead, edgeConfig.follow)
+		},
+		{
+			triangle: pointFacet.triangle.clone(),
+			free: getFreeSide(getFreeVertex(edgeConfig2.lead, edgeConfig2.follow))
+		}
+	];
+	const outer =
+		side === 'lesser'
+			? {
+					a: footprint[0].triangle[edgeConfig.follow].clone(),
+					b: footprint[1].triangle[edgeConfig.lead].clone(),
+					c: footprint[0].triangle[footprint[0].free].clone(),
+					d: footprint[0].triangle[edgeConfig.lead].clone()
+			  }
+			: { 
+					a: footprint[0].triangle[edgeConfig.lead].clone(),
+					b: footprint[1].triangle[edgeConfig.follow].clone(),
+					c: footprint[0].triangle[footprint[0].free].clone(),
+					d: footprint[0].triangle[edgeConfig.follow].clone()
+			  };
+	return {
+		style: 'multi-facet-full',
+		direction: tabStyle.direction,
+		footprint,
+		outer
+	};
 };
 
 export type TabConfig = {
@@ -525,6 +893,10 @@ const getFreeVertex = (constrained1: TrianglePoint, constrained2: TrianglePoint)
 	else throw new Error(`No free point found given [${constrained1}, ${constrained2}]`);
 };
 
+const getFreeSide = (constrained: TrianglePoint): TriangleSide => {
+	return ['ab', 'ac', 'bc'].find((str) => !str.includes(constrained)) as TriangleSide;
+};
+
 type TabWidth = { style: 'fixed'; value: number } | { style: 'fraction'; value: number };
 
 const getTriangleSegment = (
@@ -538,12 +910,10 @@ const getTriangleSegment = (
 	const lineVector = triangleSide(triangle, pivot, free);
 	const angle = baseVector.angleTo(lineVector);
 	let length;
+	console.debug('width', width);
 	if (width.style === 'fraction') {
 		length = lineVector.length() * width.value;
 	} else {
-		console.debug('triangle', triangle);
-		console.debug('linevector length', lineVector.length(), lineVector);
-		console.debug('width', width);
 		length = Math.min(width.value / Math.sin(angle), lineVector.length());
 	}
 	const point = triangle[pivot].clone().addScaledVector(lineVector.clone().setLength(length), 1);
@@ -555,25 +925,13 @@ const triangleSide = (triangle: Triangle, start: TrianglePoint, end: TrianglePoi
 	return triangle[end].clone().addScaledVector(triangle[start], -1);
 };
 
-export const generateFullTab = (tabStyle: TabStyle, footprint: Triangle, tabConfig: TabConfig): FullTab => {
-	const {a, b, c} = footprint
-  const fullTab: FullTab = {
-    style: "full",
-		footprint: {
-			triangle: footprint,
-			freeVertex: getFreeVertex(tabConfig.follow, tabConfig.lead)
-		},
-		outer: { a, b, c}
-  }
-	return fullTab
-};
-
 export const generateTrapTab = (
 	tabStyle: TabStyle,
 	footprint: Triangle,
 	config: TabConfig
 ): TrapTab | undefined => {
-	if (tabStyle.style === 'full') return undefined;
+	if (tabStyle.style !== 'trapezoid')
+		throw new Error('Generating trapezoid tab with wrong config:' + tabStyle.style);
 	const base = triangleSide(footprint, config.follow, config.lead);
 	const { follow, lead } = config;
 	const free = getFreeVertex(follow, lead);
@@ -601,8 +959,9 @@ export const generateTrapTab = (
 		style: 'trapezoid',
 		footprint: {
 			triangle: footprint,
-			freeVertex: getFreeVertex(config.lead, config.follow)
+			free: getFreeVertex(config.lead, config.follow)
 		},
+		direction: tabStyle.direction,
 		outer: { a, b, c, d },
 		scored: getScored()
 	};
@@ -611,28 +970,59 @@ export const generateTrapTab = (
 
 export type BandStyle = 'circumference' | 'helical-left' | 'helical-right';
 type TabScore = 0.5 | 0.75 | 0.9;
+type StripSide = 'greater' | 'lesser';
+type TabDirection = StripSide | 'both';
+// TODO - add a direction setting which will result in tabs on both sides
 export type TabStyle =
-	| { style: 'full'; direction: -1 | 1; scored?: TabScore } // for circumference bands, left and right are relative to rotation direction
-	| { style: 'trapezoid'; direction: -1 | 1; width: TabWidth; inset?: number; scored?: TabScore };
+	| { style: 'full'; direction: TabDirection; scored?: TabScore } // for circumference bands, left and right are relative to rotation direction
+	| {
+			style: 'trapezoid';
+			direction: TabDirection;
+			width: TabWidth;
+			inset?: number;
+			scored?: TabScore;
+	  }
+	| {
+			style: 'multi-facet-full';
+			direction: TabDirection;
+			directionMulti: -1 | 1;
+			footprint: 'strut' | 'band';
+			scored?: TabScore;
+	  }
+	| {
+			style: 'multi-facet-trapezoid';
+			direction: TabDirection;
+			directionMulti: -1 | 1;
+			footprint: 'strut' | 'band';
+			width: TabWidth;
+			inset?: number;
+			scored?: TabScore;
+	  };
 
 export type BandSetConfig = {
 	bandStyle: BandStyle;
+	offsetBy: -2 | -1 | 0 | 1 | 2;
 	tabStyle: TabStyle;
 };
 
 export type RenderRange =
 	| { rangeStyle: 'filter'; filterFunction: (args: unknown) => boolean }
 	| {
+			[key: string]: number | string | undefined;
 			rangeStyle: 'slice';
 			bandStart: number;
 			bandCount?: number;
 			facetStart: number;
 			facetCount?: number;
+			levelCount: number;
+			levelStart?: number;
+			strutStart: number;
+			strutCount?: number;
 	  };
 
 export type RenderConfig = {
-	bandRange?: RenderRange;
-	show?: {
+	ranges: RenderRange;
+	show: {
 		[key: string]: boolean;
 		tabs: boolean;
 		levels: boolean;
@@ -642,45 +1032,51 @@ export type RenderConfig = {
 	};
 };
 
-export const getRenderable = (config: RenderConfig, bands: Band[]): Band[] => {
-	if (config.bandRange?.rangeStyle === 'slice') {
-		const { bandStart, bandCount, facetStart, facetCount } = config.bandRange;
-		return bands.slice(bandStart, bandCount ? bandStart + bandCount : bands.length).map((band) => ({
-			...band,
-			facets: band.facets.slice(
-				facetStart,
-				facetCount ? facetStart + facetCount : band.facets.length
-			)
-		}));
+type Strip = Band | Strut;
+
+const isStrut = (strip: Strip): strip is Strut => (strip as Strut).tiling !== undefined;
+
+export const getRenderable = <T extends Strip>(config: RenderConfig, strips: T[]): T[] => {
+	if (config.ranges?.rangeStyle === 'slice') {
+		const { bandStart, bandCount, facetStart, facetCount, strutStart, strutCount } = config.ranges;
+		const stripStart = isStrut(strips[0]) ? strutStart : bandStart;
+		const stripCount = isStrut(strips[0]) ? strutCount : bandCount;
+
+		return strips
+			.slice(stripStart, stripCount ? stripStart + stripCount : strips.length)
+			.map((strip) => ({
+				...strip,
+				facets: strip.facets.slice(
+					facetStart,
+					facetCount ? facetStart + facetCount : strip.facets.length
+				)
+			}));
 	}
-	return bands;
+	return strips;
 };
 
 export type RotatedShapeGeometryConfig = {
+	shapeConfig: RadialShapeConfig;
 	levelConfig: LevelSetConfig;
 	zCurveConfig: ZCurveConfig;
 	bandConfig: BandSetConfig;
-};
-
-const defaultBandConfig: Omit<BandSetConfig, 'levels'> = {
-	bandStyle: 'helical-right',
-	tabStyle: { style: 'full', direction: 1 }
+	strutConfig: StrutConfig;
 };
 
 export const generateRotatedShapeGeometry = (
 	config: RotatedShapeGeometryConfig
-): { levels: RotatedShapeLevel[]; bands: Band[] } => {
+): { levels: RotatedShapeLevel[]; bands: Band[]; struts: Strut[] } => {
 	console.debug('generateRotatedShapeGeometry config:', config);
-	const levels = generateLevelSet(config.levelConfig, config.zCurveConfig);
-	const unTabbedBands = generateBandSet({ ...(config.bandConfig || defaultBandConfig) }, levels);
-	// console.debug("----  unTabbedBands", unTabbedBands)
+	const rotatedShapePrototype: RotatedShapeLevelPrototype | RotatedShapeLevelPrototype[] =
+		generateLevelPrototype(config.shapeConfig, config.levelConfig);
+	const levels = generateLevelSet(config.levelConfig, config.zCurveConfig, rotatedShapePrototype);
+	const struts = generateStruts(levels, config.strutConfig);
+	const unTabbedBands = generateBandSet(config, levels);
 	const bands = !config.bandConfig?.tabStyle
 		? unTabbedBands
-		: generateTabs(unTabbedBands, config.bandConfig);
-	// console.debug("tabbed bands[0]", bands[0].facets.map((f) => ({triangle: f.triangle, tabtriangle: f.tab?.footprint.triangle, freeVertex: f.tab?.footprint.freeVertex})))
-	return { levels, bands };
+		: generateTabs(unTabbedBands, config.bandConfig, struts);
+	return { levels, bands, struts };
 };
-
 
 // Refactor the data pipeline:
 // 	1) levels

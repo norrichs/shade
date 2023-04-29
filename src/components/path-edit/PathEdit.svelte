@@ -1,204 +1,291 @@
 <script context="module">
-	// import  DragDropTouch  from 'svelte-drag-drop-touch'
 	import { asDraggable } from 'svelte-drag-and-drop-actions';
 </script>
 
 <script lang="ts">
-	import type { BezierConfig, PointConfig } from '../../lib/rotated-shape';
-	import { curveConfig } from '../../lib/stores';
-	import { beforeNavigate } from '$app/navigation';
+	import type { Writable } from 'svelte/store';
+	import { blankCurveConfig } from '../../lib/stores';
+	import { onPathPointMove, togglePointType, addCurve, removeCurve, splitCurves } from './path-edit';
+	import type {
+		BezierConfig,
+		PointConfig,
+		RadialShapeConfig,
+		ZCurveConfig
+	} from '$lib/rotated-shape';
+
+	export let curveStore: Writable<ZCurveConfig | RadialShapeConfig> = blankCurveConfig;
+
+	let symmetry: number = 1;
+	let reflect: boolean = true;
+	let fill: boolean = true;
 
 	const canv = {
-		minX: 0,
-		minY: 0,
-		maxX: 400,
-		maxY: 400
+		minX: -200,
+		minY: -200,
+		maxX: 200,
+		maxY: 200
 	};
 
-	let zCurve = $curveConfig;
+	$: curves = $curveStore.curves;
+	$: limitAngle = getLimitAngle($curveStore)
 
-	const onDoubleClickPoint = (pointIndex: number, curveIndex: number): void => {
-		if (pointIndex === 1 || pointIndex === 2) return
-		if ((pointIndex === 3 && curveIndex === zCurve.curves.length - 1) || (pointIndex === 0 && curveIndex === 0)) return
-		//point
-		const point = zCurve.curves[curveIndex].points[pointIndex]
-		const partner = zCurve.curves[pointIndex === 3 ? curveIndex + 1 : curveIndex - 1].points[pointIndex === 3 ? 0 : 3]
-		const newType = point.pointType === undefined || point.pointType === "smooth" ? "angled" : "smooth"
-		
-		console.debug("dblclick", point, partner)
+	$: {
+		symmetry = $curveStore.type === 'RadialShapeConfig' ? $curveStore.symmetryNumber : 1;
+		reflect =
+			$curveStore.type === 'RadialShapeConfig'
+				? $curveStore.symmetry === 'lateral' || $curveStore.symmetry === 'radial-lateral'
+				: true;
+	}
 
-		point.pointType = newType;
-		partner.pointType = newType;
-
-		console.debug("after", point, partner)
-		update()
-	};
-
-	const onDragMove = (
-		x: number,
-		y: number,
-		dx: number,
-		dy: number,
-		curveIndex: number,
-		pointIndex: number
+	const transform = (
+		curves: BezierConfig[],
+		config: { reflect: boolean; radialSymmetry: number }
 	) => {
-		const curve = zCurve.curves[curveIndex];
-		if (curve.type === 'BezierConfig') {
-			const isPoint = pointIndex === 0 || pointIndex === 3;
-			const isHandle = !isPoint;
-			const isJoined =
-				(pointIndex <= 1 &&
-					curveIndex > 0 &&
-					zCurve.curves[curveIndex - 1].type === 'BezierConfig') ||
-				(pointIndex >= 2 && zCurve.curves[curveIndex + 1]?.type === 'BezierConfig');
-			console.debug('isJoined', isJoined, zCurve.curves, curveIndex, pointIndex);
-
-			const partner = !isJoined ? null : zCurve.curves[curveIndex + (pointIndex <= 1 ? -1 : 1)];
-			const partnerPointIndex = pointIndex <= 1 ? 3 : 0
-			const isAngled = 
-				isJoined &&
-				(curve.points[pointIndex].pointType === 'angled' ||
-						(partner && partner.points[partnerPointIndex].pointType === 'angled'));
-
-			if (isPoint && isJoined && partner?.type === 'BezierConfig') {
-				console.debug('is joined point');
-				// coordinate associated points of joined point - handle, partner point, partner handle
-				const [partnerHandle, partnerPoint] =
-					pointIndex <= 1
-						? [partner.points[2], partner.points[3]]
-						: [partner.points[1], partner.points[0]];
-				const handle = curve.points[pointIndex <= 1 ? 1 : 2];
-				handle.x += dx;
-				handle.y += dy;
-				partnerHandle.x += dx;
-				partnerHandle.y += dy;
-				partnerPoint.x += dx;
-				partnerPoint.y += dy;
-				console.debug('coordinated partner ?');
-			} else if (isPoint && !isJoined) {
-				console.debug('is unjoined point', isPoint, isJoined);
-				const handle = curve.points[pointIndex <= 1 ? 1 : 2];
-				handle.x += dx;
-				handle.y += dy;
-			} else if (isHandle && isJoined && !isAngled && partner?.type === 'BezierConfig') {
-				console.log('is smooth joined handle', !isAngled, isJoined, isHandle, partner.type);
-				console.debug("isAngled algo", curve.points[pointIndex].pointType, partner.points[pointIndex === 0 ? 3 : 0].pointType)
-				// coordinate partner handle
-				const [handle, point] =
-					pointIndex <= 1 ? [curve.points[1], curve.points[0]] : [curve.points[2], curve.points[3]];
-				const [partnerHandle, partnerPoint] =
-					pointIndex <= 1
-						? [partner.points[2], partner.points[3]]
-						: [partner.points[1], partner.points[0]];
-				const partnerHandleLength = Math.sqrt(
-					Math.pow(partnerHandle.x - partnerPoint.x, 2) +
-						Math.pow(partnerHandle.y - partnerPoint.y, 2)
-				);
-				const handleLength = Math.sqrt(Math.pow(x - point.x, 2) + Math.pow(y - point.y, 2));
-				// const partnerAngle = Math.PI + Math.atan((handle.y - point.y) /  (handle.x - point.x))
-				const partnerAngle =
-					Math.PI + Math.acos((x - point.x) / handleLength) * (y - point.y < 0 ? -1 : 1);
-
-				// partner handle co linear wtih point->handle, but the length is constant
-				partnerHandle.x = partnerPoint.x + Math.cos(partnerAngle) * partnerHandleLength;
-				partnerHandle.y = partnerPoint.y + Math.sin(partnerAngle) * partnerHandleLength;
-			} else {
-				console.log("is angled joined handle", isAngled, isJoined, isHandle)
-			}
-
-			// move the point being directly manipulated
-			console.log(isPoint, isJoined, isAngled);
-			curve.points[pointIndex].x = x;
-			curve.points[pointIndex].y = y;
-			zCurve.curves[curveIndex] = curve;
+		let transformed: BezierConfig[] = window.structuredClone(curves);
+		if (config.reflect) {
+			transformed = transformed.map((curve) => {
+				const reflectedCurve: BezierConfig = {
+					...curve,
+					points: curve.points.map((point) => {
+						const reflectedPoint: PointConfig = {
+							...point,
+							x: -point.x
+						};
+						return reflectedPoint;
+					}) as [PointConfig, PointConfig, PointConfig, PointConfig]
+				};
+				return reflectedCurve;
+			});
 		}
+		return transformed;
 	};
 
-	const addBezier = () => {
-		const lastPoint = zCurve.curves[zCurve.curves.length -1].points[3]
-		lastPoint.pointType = "angled"
-		const newCurve: BezierConfig = {
-			type: "BezierConfig",
-			points: [
-				{...lastPoint},
-				{type: "PointConfig", x: lastPoint.x + 5, y: lastPoint.y},
-				{type: "PointConfig", x: lastPoint.x + 10, y: lastPoint.y},
-				{type: "PointConfig", pointType: "angled", x: lastPoint.x + 20, y: lastPoint.y},
-			]
+	const getPathFromCurves = (curves: BezierConfig[]): string => {
+		const starter = `M ${curves[0].points[0].x} ${-curves[0].points[0].y}`;
+		return curves.reduce(
+			(path, c) => `
+			${path} C 
+			${c.points[1].x} ${-c.points[1].y}, 
+			${c.points[2].x} ${-c.points[2].y},
+			${c.points[3].x} ${-c.points[3].y} `,
+			starter
+		);
+	};
+
+	const getFillFromCurves = (curves: BezierConfig[]): string => {
+		const starter = `M 0 ${-curves[0].points[0].y}, L${curves[0].points[0].x} ${-curves[0].points[0].y}`;
+		return (
+			curves.reduce(
+				(path, c) => `
+			${path} C 
+			${c.points[1].x} ${-c.points[1].y}, 
+			${c.points[2].x} ${-c.points[2].y},
+			${c.points[3].x} ${-c.points[3].y} `,
+				starter
+			) + `L 0 ${-curves[curves.length - 1].points[3].y}`
+		);
+	};
+
+	const getShapeFillFromCurves = (curves: BezierConfig[]): string => {
+		const starter = `M ${curves[0].points[0].x} ${-curves[0].points[0].y}`;
+		return curves.reduce(
+			(path, c) => `
+			${path} C
+			${-c.points[1].x} ${c.points[1].y}, 
+			${-c.points[2].x} ${c.points[2].y},
+			${-c.points[3].x} ${c.points[3].y}
+		`, starter);
+	};
+
+	const reflectCurvesAroundX = (curves: BezierConfig[]): BezierConfig[] => {
+		return curves
+			.map((curve) => ({
+				...curve,
+				points: curve.points.map((point) => ({ ...point, x: -point.x, y: point.y })).reverse() as [
+					PointConfig,
+					PointConfig,
+					PointConfig,
+					PointConfig
+				]
+			}))
+			.reverse();
+	};
+
+	const rotateCurvesAroundOrigin = (curves: BezierConfig[], angle: number): BezierConfig[] => {
+		const localCurves: BezierConfig[] = window.structuredClone(curves)
+		return localCurves.map((curve) => ({
+			...curve,
+			points: curve.points.map((point) => {
+				const r = Math.sqrt(Math.pow(point.x, 2) + Math.pow(point.y, 2)) //* angle / 2;
+				const a = Math.atan(point.y / point.x)
+				return { ...point, x: r * Math.cos(a + angle), y: r * Math.sin(a + angle) };
+			}) as [PointConfig, PointConfig, PointConfig, PointConfig]
+		}));
+	};
+
+	const radializeCurves = (
+		curves: BezierConfig[],
+		config: RadialShapeConfig | ZCurveConfig
+	): BezierConfig[] => {
+		if (config.type === 'ZCurveConfig') {
+			return curves;
 		}
-		zCurve.curves.push(newCurve)
-		$curveConfig = zCurve;
-		zCurve = $curveConfig;
+		const localCurves: BezierConfig[] = window.structuredClone(curves);
+		const isReflected = config.symmetry === 'lateral' || config.symmetry === 'radial-lateral';
+		const isRadial = config.symmetry === 'radial' || config.symmetry === 'radial-lateral';
+
+		// console.debug("radializeCurves", localCurves, "isReflected", isReflected, "isRadial", isRadial)
+
+		if (isRadial) {
+			let resultCurves: BezierConfig[] = [];
+			let unitCurves: BezierConfig[] = window.structuredClone(localCurves);
+			const angle = (Math.PI * 2) / config.symmetryNumber;
+			if (isReflected) {
+				unitCurves.push(...reflectCurvesAroundX(localCurves));
+			}
+			for (let i = 0; i <= config.symmetryNumber; i++) {
+				resultCurves.push(...rotateCurvesAroundOrigin(unitCurves, angle * i));
+			}
+			return resultCurves ;
+		}
+
+		return curves;
+	};
+
+	const getLimitAngle = (config: RadialShapeConfig | ZCurveConfig): number | null => {
+		if (config.type === "RadialShapeConfig" && (config.symmetry === "radial" || config.symmetry === "radial-lateral")) {
+			return Math.PI * 2 / config.symmetryNumber
+		} else {
+			return null;
+		}
+	}
+
+	const isLimited = (cMax: number, c: number, pMax: number, p: number) => {
+		return (c === cMax && p === pMax) || (c === 0 && p === 0)
 	}
 
 	const update = () => {
-		$curveConfig = zCurve;
-		zCurve = $curveConfig;
+		$curveStore.curves = curves;
+		curves = $curveStore.curves;
 	};
 </script>
-
-
 
 <div class="container">
 	<svg
 		viewBox={`${canv.minX} ${canv.minY} ${canv.maxX - canv.minX} ${canv.maxY - canv.minY}`}
 		style="overflow:visible"
 	>
-		{#each zCurve.curves as c}
-			{#if c.type === 'BezierConfig'}
-				<circle cx="0" cy="0" r="2" />
-				<path
-					d="M {c.points[0].x} {canv.maxY - c.points[0].y}
-						 C {c.points[1].x} {canv.maxY - c.points[1].y}, {c.points[2].x} {canv.maxY - c.points[2].y}, {c
-						.points[3].x} {canv.maxY - c.points[3].y}"
-					stroke="black"
-					stroke-width="1"
-					fill="transparent"
-				/>
-				<line
-					x1={c.points[0].x}
-					y1={canv.maxY - c.points[0].y}
-					x2={c.points[1].x}
-					y2={canv.maxY - c.points[1].y}
-					stroke="red"
-					stroke-width=".5"
-				/>
-				<line
-					x1={c.points[2].x}
-					y1={canv.maxY - c.points[2].y}
-					x2={c.points[3].x}
-					y2={canv.maxY - c.points[3].y}
-					stroke="red"
-					stroke-width=".5"
-				/>
-			{/if}
+		<circle cx="0" cy="0" r="4" fill="none" stroke="black" stroke-width="0.5" />
+		{#if $curveStore.type === 'ZCurveConfig'}
+			<path
+				d={getFillFromCurves(curves)}
+				stroke="none"
+				fill={fill ? 'rgba(255,0,0,0.5)' : 'transparent'}
+			/>
+			<path
+				d={getFillFromCurves(transform(curves, { reflect, radialSymmetry: symmetry }))}
+				stroke="none"
+				fill="rgba(255,0,0,0.5)"
+			/>
+		{/if}
+		{#if $curveStore.type === 'RadialShapeConfig'}
+			<path
+				d={getShapeFillFromCurves(radializeCurves(curves, $curveStore))}
+				stroke="black"
+				fill="rgba(255,90,0,0.6)"
+			/>
+		{/if}
+		<path
+			d={getPathFromCurves(curves)}
+			stroke="rgba(0,0,255,0.5)"
+			stroke-width="5"
+			fill="transparent"
+		/>
+		{#each curves as c}
+			<line
+				x1={c.points[0].x}
+				y1={-c.points[0].y}
+				x2={c.points[1].x}
+				y2={-c.points[1].y}
+				stroke="gray"
+				stroke-width=".5"
+			/>
+			<line
+				x1={c.points[2].x}
+				y1={-c.points[2].y}
+				x2={c.points[3].x}
+				y2={-c.points[3].y}
+				stroke="gray"
+				stroke-width="1"
+			/>
 		{/each}
 	</svg>
 
-	{#each zCurve.curves as curve, curveIndex}
-		{#if curve.type === 'BezierConfig'}
-			{#each curve.points as point, p}
-				<div
-					class={`${p === 1 || p === 2 ? 'Handle' : 'Point'} ${
-						point.pointType === 'angled' ? 'angled' : 'smooth'
-					}`}
-					style="left:{point.x}px; top:{canv.maxY - point.y}px"
-					on:dragend={update}
-					on:dblclick={() => onDoubleClickPoint(p, curveIndex)}
-					use:asDraggable={{
-						onDragStart: { x: point.x, y: canv.maxY - point.y },
-						onDragMove: (x, y, dx, dy) => onDragMove(x, canv.maxY - y, dx, -dy, curveIndex, p),
-						minX: 0,
-						minY: 0,
-						maxX: 400,
-						maxY: 400
-					}}
-				/>
-			{/each}
-		{/if}
+	{#each curves as curve, curveIndex}
+		{#each curve.points as point, p}
+			<div
+				class={`${p === 1 || p === 2 ? 'Handle' : 'Point'} ${
+					point.pointType === 'angled' ? 'angled' : 'smooth'
+				}`}
+				style="left:{point.x - canv.minX}px; top:{-point.y - canv.minY}px"
+				on:dragend={update}
+				on:dblclick={() => togglePointType(p, curveIndex, curves, update)}
+				use:asDraggable={{
+					onDragStart: { x: point.x, y: -point.y },
+					onDragMove: (x, y, dx, dy) =>
+						(curves = onPathPointMove(
+							x, 
+							-y, 
+							dx, 
+							-dy, 
+							curveIndex, 
+							p, 
+							curves, 
+							limitAngle && isLimited(curves.length - 1, curveIndex, curve.points.length - 1, p) ? limitAngle : Math.PI * 2,
+							$curveStore.type === "RadialShapeConfig"
+							)),
+					minX: canv.minX,
+					minY: canv.minY,
+					maxX: canv.maxX,
+					maxY: canv.maxY
+				}}
+			/>
+		{/each}
 	{/each}
-	<button on:click={addBezier}>+</button>
-	<button>-</button>
+	
+	<div class="controls">
+		<button
+			on:click={() => {
+				curves = addCurve(curves);
+				update();
+			}}>+</button
+		>
+		<button
+			on:click={() => {
+				curves = splitCurves(curves);
+				update();
+			}}>sp</button>
+		<button
+			on:click={() => {
+				curves = removeCurve(curves);
+				update();
+			}}>-</button
+		>
+		{#if $curveStore.type === "RadialShapeConfig"}
+			<label for="input-symmetry-number">rs</label>
+			<input id="input-symmetry-number" type="number" min="1" max="99" bind:value={$curveStore.symmetryNumber} />
+			<label for="input-divisions">div</label>
+			<input id="input-divisions" type="number" min="0" max="99" bind:value={$curveStore.divisions} />
+			<!-- <label for="input-divisions">rs</label> -->
+			<select id="select-symmetry" bind:value={$curveStore.symmetry} placeholder="mode">
+				<option>asymmetric</option>
+				<option>radial</option>
+				<option>lateral</option>
+				<option>radial-lateral</option>
+			</select>
+		{/if}
+	</div>
+
 </div>
 
 <style>
@@ -212,7 +299,9 @@
 		user-select: none;
 	}
 	.container {
-		display: block;
+		display: flex;
+		flex-direction: column;
+		padding: 0;
 		position: relative;
 		width: 400px;
 		height: 400px;
@@ -256,5 +345,17 @@
 		font-size: 20px;
 		width: 30px;
 		aspect-ratio: 1;
+	}
+	.controls {
+		padding: 4px;
+		display: flex;
+		flex-direction: row;
+		gap: 8px;
+		border: 1px dotted black;
+		border-radius: 4px;
+		margin: 2px -1px;
+	}
+	.controls input {
+		width: 32px;
 	}
 </style>

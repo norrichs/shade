@@ -1,67 +1,86 @@
 <script lang="ts">
-  import { T } from '@threlte/core' 
-  import { Edges } from '@threlte/extras'
-	import { DoubleSide, CurvePath, BufferGeometry, MeshNormalMaterial } from 'three';
-	import { degToRad } from 'three/src/math/MathUtils'
-	import type { LevelConfig } from '../../lib/shade';
-  import type {StrutGroup, Strut} from '../../lib/shade'
+	import { T } from '@threlte/core';
+	import { Edges } from '@threlte/extras';
+	import {
+		DoubleSide,
+		CurvePath,
+		BufferGeometry,
+		MeshNormalMaterial,
+		EdgesGeometry,
+		LineBasicMaterial,
+		MeshToonMaterial,
+		MeshPhysicalMaterial
+	} from 'three';
+	import type { Strut } from '../../lib/rotated-shape';
 
-  export let strutGroup: StrutGroup
+	export let strut: Strut;
+	export let showTabs: boolean = false;
 
-  // const points = [
-  //   ...strut.left.t0.getPoints().slice(1,4), 
-  //   ...strut.left.t0.getPoints().slice(1,4), 
-  //   ...strut.left.t0.getPoints().slice(1,4)
-  // ]
-  // console.debug("points", points)
-  // const geometry = new BufferGeometry()
-  // geometry.setFromPoints(points)
-  // geometry.computeVertexNormals()
+	$: bandPoints = strut.facets
+		.map((facet) => [facet.triangle.a, facet.triangle.b, facet.triangle.c])
+		.flat(1);
 
-  const material = new MeshNormalMaterial()
-  material.side = DoubleSide
-  const geometry1 = new BufferGeometry()
-  geometry1.setFromPoints(strutGroup.left.t0)
-  geometry1.computeVertexNormals()
-  const geometry2 = new BufferGeometry()
-  geometry2.setFromPoints(strutGroup.left.t1)
-  geometry2.computeVertexNormals()
-  const geometry3 = new BufferGeometry()
-  geometry3.setFromPoints(strutGroup.left.t2)
-  geometry3.computeVertexNormals()
+	$: tabPoints = !showTabs
+		? []
+		: strut.facets
+				.map((facet) => {
+					if (facet.tab) {
+            if (facet.tab.style === "trapezoid") {
+              const {a, b, c, d} = facet.tab.outer
+              return [
+                a, b, d,
+                b, c, d
+              ]
+            } else if (facet.tab.style === "full") {
+              const {a, b, c} = facet.tab.outer
+              return [a, b, c]
+            }
+					}
+          return []
+				})
+				.flat(1);
 
-  const geometry4 = new BufferGeometry()
-  geometry4.setFromPoints(strutGroup.right.t0)
-  geometry4.computeVertexNormals()
-  const geometry5 = new BufferGeometry()
-  geometry5.setFromPoints(strutGroup.right.t1)
-  geometry5.computeVertexNormals()
-  const geometry6 = new BufferGeometry()
-  geometry6.setFromPoints(strutGroup.right.t2)
-  geometry6.computeVertexNormals()
+	let edgeColor = 'black';
+	let strutGeometry: BufferGeometry; // = new BufferGeometry()
+	let tabGeometry: BufferGeometry;
+	let edges: EdgesGeometry; // = new EdgesGeometry()
+	const strutMaterial = new MeshPhysicalMaterial({
+		color: 'orangered',
+		transparent: true,
+		opacity: 0.8,
+		clearcoat: 1,
+		clearcoatRoughness: 0,
+		side: DoubleSide
+	});
+	const tabMaterial = new MeshPhysicalMaterial({
+		color: 'green',
+		transparent: true,
+		opacity: 0.8,
+		clearcoat: 1,
+		clearcoatRoughness: 0,
+		side: DoubleSide
+	});
 
 
+	const lineMaterial = new LineBasicMaterial({ color: 'black' });
 
+	$: {
+		edgeColor = 'black';
+		strutGeometry = new BufferGeometry().setFromPoints(bandPoints);
+		strutGeometry.computeVertexNormals();
+		edges = new EdgesGeometry(strutGeometry.clone().scale(1, 1, 1), 1);
+	}
+
+	$: {
+		tabGeometry = new BufferGeometry().setFromPoints(tabPoints);
+		tabGeometry.computeVertexNormals();
+	}
 </script>
 
-<!-- <T.Mesh args={[geometry, material]} /> -->
-<T.Group >
-  <T.Mesh args={[geometry1, material]}>
-    <Edges color="black"/>
-  </T.Mesh>
-  <T.Mesh args={[geometry2, material]} >
-    <Edges color="black"/>
-  </T.Mesh>
-  <T.Mesh args={[geometry3, material]} >
-    <Edges color="black"/>
-  </T.Mesh>
-  <T.Mesh args={[geometry4, material]} >
-    <Edges color="black"/>
-  </T.Mesh>
-  <T.Mesh args={[geometry5, material]} >
-    <Edges color="black"/>
-  </T.Mesh>
-  <T.Mesh args={[geometry6, material]} >
-    <Edges color="black"/>
-  </T.Mesh>
+<T.Group>
+	<T.LineSegments geometry={edges} material={lineMaterial} />
+	<T.Mesh geometry={strutGeometry} material={strutMaterial} />
+	{#if showTabs}
+    <T.Mesh geometry={tabGeometry} material={tabMaterial} />
+	{/if}
 </T.Group>

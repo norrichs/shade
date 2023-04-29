@@ -11,37 +11,33 @@
 	import type { LevelConfig } from '../../lib/shade';
 	import { getShade } from '../../lib/shade';
 	import type { Ring, Level, StrutGroup, RibbonGroup } from '../../lib/shade';
-	import type { RotatedShapeLevel, Band, RenderConfig } from '../../lib/rotated-shape';
+	import type { RotatedShapeLevel, Band, RenderConfig, Strut } from '../../lib/rotated-shape';
 	import { getRenderable } from "../../lib/rotated-shape"
 	import RibbonMesh from '../strut/RibbonMesh.svelte';
   import RotatedShapeLevelMesh from '../rotated-shape-level/RotatedShapeLevelMesh.svelte';
   import RotatedShapeBandMesh from '../rotated-shape-band/RotatedShapeBandMesh.svelte';
-	import {renderConfig} from "../../lib/stores"
+	import {renderConfig, bandConfig} from "../../lib/stores"
 
 	export let rslevels: RotatedShapeLevel[] = [];
   export let rsbands: Band[] = []
-	export let rings: Ring[] = [];
-	export let levels: Level[] = [];
-	export let struts: StrutGroup[][] = [];
-	export let ribbons: RibbonGroup[] = [];
+	export let struts: Strut[] = [];
 
-	console.debug("ThreeRender rsbands", rsbands)
+	let displayRSBands: Band[]
 
-	let showLevels = false;
-	let showRings = false;
-	let showRibbons = 0;
-	let showStruts = false;
-	let strutLimit = 100;
-  let showRSLevels = false;
-  let showRSBands = true;
-	
-	$: displayRSBands = getRenderable($renderConfig, rsbands)
-	$: displaylevels = rslevels.slice(0,20)
+	let displayStruts: Strut[]
+	console.debug("ThreeRender struts", struts)
 
 	$: {
-		showRSLevels = !!$renderConfig.show?.levels
-		showRSBands = !!$renderConfig.show?.bands
+		displayRSBands = getRenderable($renderConfig, rsbands)
+		console.debug("displayRSBands", displayRSBands)
 	}
+	$: {
+		if (struts.length > 0) {
+			displayStruts = getRenderable($renderConfig, struts)
+		}
+	}
+	$: displaylevels = rslevels
+
 
 </script>
 
@@ -68,36 +64,9 @@
 				<RotatedShapeBandMesh {rsband} showTabs={$renderConfig?.show?.tabs} />
 			{/each}
 		{/if}
-
-
-		{#if showLevels}
-			{#each levels as level, l}
-				{#if l === 0 || l === levels.length - 1}
-					<LevelMesh {level} />
-				{/if}
-			{/each}
-		{/if}
-		{#if showRings}
-			{#each rings as ring}
-				<RingMesh {ring} />
-			{/each}
-		{/if}
-
-		{#if showStruts}
-			{#each struts as strutLevel}
-				{#each strutLevel as strutGroup, i}
-					{#if i < strutLimit}
-						<StrutMesh {strutGroup} />
-					{/if}
-				{/each}
-			{/each}
-		{/if}
-
-		{#if !!showRibbons}
-			{#each ribbons as ribbon, i}
-				{#if i < showRibbons}
-					<RibbonMesh {ribbon} config={{ doLeft: true, doRight: true }} />
-				{/if}
+		{#if $renderConfig?.show?.struts}
+			{#each displayStruts as strut}
+				<StrutMesh {strut} showTabs={false} />
 			{/each}
 		{/if}
 	</T.Group>

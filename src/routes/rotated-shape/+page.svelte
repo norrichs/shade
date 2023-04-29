@@ -1,59 +1,94 @@
 <script lang="ts">
 	import ThreeRenderer from '../../components/three-renderer/ThreeRenderer.svelte';
 	import CutPattern from '../../components/cut-pattern/CutPattern.svelte';
-	import { generateRotatedShapeGeometry, generateZCurve, type LevelSetConfig } from '../../lib/rotated-shape';
-	import type { RotatedShapeGeometryConfig, ZCurveConfig, BandSetConfig } from "../../lib/rotated-shape"
+	import {generateRotatedShapeGeometry} from "../../lib/rotated-shape"
+	import type {
+		RotatedShapeGeometryConfig,
+		ZCurveConfig,
+		LevelSetConfig,
+		RadialShapeConfig,
+		BandSetConfig,
+		StrutConfig,
+		RotatedShapeLevel,
+		Strut,
+	} from '../../lib/rotated-shape';
 	import PathEdit from '../../components/path-edit/PathEdit.svelte';
-	import { curveConfig, levelConfig, bandConfig } from "../../lib/stores"
+	import { strutConfig, curveConfig, radialShapeConfig, levelConfig, bandConfig, renderConfig } from '../../lib/stores';
 	import Controls from '../../components/controls/Controls.svelte';
+	import SelectBar from '../../components/select-bar/SelectBar.svelte';
 
-	
-	let defaultZCurveConfig: ZCurveConfig = $curveConfig
-	let defaultLevelConfig: LevelSetConfig = {...$levelConfig}
-	let defaultBandConfig: BandSetConfig = $bandConfig
-	
+	let defaultZCurveConfig: ZCurveConfig = $curveConfig;
+	let defaultLevelConfig: LevelSetConfig = { ...$levelConfig };
+	let defaultBandConfig: BandSetConfig = $bandConfig;
+	let defaultStrutConfig: StrutConfig = $strutConfig;
 	let config: RotatedShapeGeometryConfig = {
+		shapeConfig: $radialShapeConfig,
 		levelConfig: defaultLevelConfig,
 		zCurveConfig: defaultZCurveConfig,
 		bandConfig: defaultBandConfig,
+		strutConfig: defaultStrutConfig,
 	};
 
 	let data = generateRotatedShapeGeometry(config);
-	let levels = data.levels
-	let bands = data.bands
+	let levels = data.levels;
+	let displayLevels: RotatedShapeLevel[];
+	let struts: Strut[]
+	let bands = data.bands;
+	let showControl: { name: string; value: unknown };
 
 	$: {
 		config = {
 			...config,
-			levelConfig: {...$levelConfig},
+			shapeConfig: $radialShapeConfig,
+			levelConfig: { ...$levelConfig },
 			zCurveConfig: $curveConfig,
-			bandConfig: $bandConfig
+			bandConfig: $bandConfig,
+			strutConfig: $strutConfig,
+		};
+		console.debug(' PAGE CONFIG', config);
+		data = generateRotatedShapeGeometry(config);
+		levels = data.levels;
+		if ($renderConfig.ranges?.rangeStyle === "slice") {
+			const {levelStart, levelCount} = $renderConfig.ranges
+			displayLevels = levels.slice(levelStart || 0, levelCount ? (levelStart || 0) + levelCount : undefined)
+		} else {
+			displayLevels = levels
 		}
-		console.debug(" PAGE CONFIG", config)
-		data = generateRotatedShapeGeometry(config)
-		levels = data.levels
-		bands = data.bands
+		bands = data.bands;
+		struts = data.struts;
 	}
-
 </script>
 
 <main>
 	<section class="container three">
-		<h2>3d</h2>
-		<!-- <p>{levels[9].vertices[0].x}</p> -->
-		<ThreeRenderer rslevels={levels} rsbands={bands} />
+		<ThreeRenderer rslevels={levels} rsbands={bands} struts={struts}/>
 	</section>
 	<section class="container svg">
-		<h2>Cut Pattern</h2>
-		<CutPattern rslevels={levels} rsbands={bands} />
+		<CutPattern rslevels={displayLevels} rsbands={bands} />
 	</section>
 	<section class="container controls">
 		<header>
-			<h2>Controls</h2>
+			<SelectBar
+				bind:value={showControl}
+				options={[
+					{ name: 'None' },
+					{ name: 'Zcurve', value: curveConfig },
+					{ name: 'Shape', value: radialShapeConfig },
+					{ name: '3D' },
+					{ name: 'Levels' },
+					{ name: 'Struts' },
+					{ name: 'Cut'}
+				]}
+			/>
 		</header>
 		<div class="group">
-			<PathEdit />
-			<Controls />
+			<div>
+				<!-- <div>{showControl?.name}</div> -->
+				{#if showControl?.name === 'Zcurve' || showControl?.name === 'Shape'}
+					<PathEdit curveStore={showControl.value} />
+				{/if}
+			</div>
+			<Controls showControl={showControl?.name} />
 		</div>
 	</section>
 </main>
