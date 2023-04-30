@@ -1,41 +1,40 @@
 <script lang="ts">
 	// import type { Ring, Level, StrutGroup, RibbonGroup } from '../../lib/shade';
 	import { Vector3 } from 'three';
-	import type { RotatedShapeLevel, Band } from '../../lib/rotated-shape';
+	import type { RotatedShapeLevel, Band, Strut } from '../../lib/rotated-shape';
 	import {
 		generateBandPatterns,
-		generateLevelSetPattern,
-		type FacetedBandPattern
+		generateLevelSetPatterns,
+		generateStrutPatterns
 	} from '../../lib/cut-pattern';
 	import type {
 		PatternConfig,
-		BandPattern,
+		ProjectionType,
+		Pattern,
 		OutlinedBandPattern,
-		LevelSetPattern
+		FacetedBandPattern,
+		FacetedStrutPattern,
+		OutlinedStrutPattern,
+		LevelSetPattern,
+		PatternViewConfig
 	} from '../../lib/cut-pattern';
 	import { getRenderable } from '../../lib/rotated-shape';
-	import {
-		renderConfig,
-		bandConfig,
-		patternConfig,
-		patternViewConfig,
-		type PatternViewConfig
-	} from '../../lib/stores';
+	import { renderConfig, bandConfig, patternConfig, patternViewConfig } from '../../lib/stores';
 	import type { FacetPattern } from '../../lib/cut-pattern';
 
 	export let rslevels: RotatedShapeLevel[] = [];
 	export let rsbands: Band[] = [];
+	export let struts: Strut[] = [];
 
 	let showRSBands = true;
 
 	const getViewBox = (config: PatternViewConfig) => {
 		const { width, height, zoom, centerOffset } = config;
-		const minX = - centerOffset.x - (width / 2)
-		const minY = - centerOffset.y - (height / 2)
-		const logZoom = 1 / Math.pow(10, zoom)
-		
-		return `${minX * logZoom} ${minY * logZoom} ${width * logZoom} ${height * logZoom}`
+		const minX = -centerOffset.x - width / 2;
+		const minY = -centerOffset.y - height / 2;
+		const logZoom = 1 / Math.pow(10, zoom);
 
+		return `${minX * logZoom} ${minY * logZoom} ${width * logZoom} ${height * logZoom}`;
 	};
 
 	let zoomLevel: number = 1000;
@@ -43,11 +42,27 @@
 	let showTabs = true;
 
 	$: displayedFacets = getRenderable($renderConfig, rsbands);
+	$: displayedStrutFacets = getRenderable($renderConfig, struts);
 
-	let patterns: BandPattern;
-	// let outlinedPattern: OutlinedBandPattern;
-	// let facetedPattern: FacetedBandPattern;
-	// let levelPattern: LevelSetPattern;
+	let bandPatterns: OutlinedBandPattern | FacetedBandPattern;
+	let levelPatterns: LevelSetPattern;
+	let strutPatterns: FacetedStrutPattern | OutlinedStrutPattern;
+
+	type Patterns = 
+	| {
+		projectionType: "faceted";
+		bandPatterns?: FacetedBandPattern;
+		levelPatterns?: LevelSetPattern;
+		strutPatterns?: FacetedStrutPattern;
+	}
+	| {
+		projectionType: "outlined";
+		bandPatterns?: OutlinedBandPattern;
+		levelPatterns?: LevelSetPattern;
+		strutPatterns?: OutlinedStrutPattern;
+	}
+
+	let patterns: Patterns;
 
 	const show_svg = () => {
 		const svg = document.getElementById('pattern-svg');
@@ -58,7 +73,7 @@
 		const svg_win = window.open(url, 'svg_win');
 	};
 
-	// const zoomToPattern = (pattern: BandPattern) => {
+	// const zoomToPattern = (pattern: Pattern) => {
 	// 	let maxX = 0,
 	// 		minX = 0,
 	// 		maxY = 0,
@@ -98,24 +113,47 @@
 	$: viewBoxValue = getViewBox($patternViewConfig);
 
 	$: {
-		if ($patternConfig.projectionType === 'outlined') {
-			patterns = generateBandPatterns(
-				$patternConfig,
-				$bandConfig.bandStyle,
-				$bandConfig.tabStyle,
-				displayedFacets
-			) as OutlinedBandPattern;
-		} else if ($patternConfig.projectionType === 'faceted') {
-			patterns = generateBandPatterns(
-				$patternConfig,
-				$bandConfig.bandStyle,
-				$bandConfig.tabStyle,
-				displayedFacets
-			) as FacetedBandPattern;
-			console.debug('cutPattern faceted Pattern', patterns);
-		} else if ($patternConfig.projectionType === 'levels') {
-			patterns = generateLevelSetPattern(rslevels, $patternConfig);
-			console.debug('cutPattern level Pattern', patterns);
+		// if ($patternConfig.projectionType === 'outlined') {
+		bandPatterns = generateBandPatterns(
+			$patternConfig,
+			$bandConfig.bandStyle,
+			$bandConfig.tabStyle,
+			displayedFacets
+		); // as OutlinedBandPattern;
+		// }
+		// else if ($patternConfig.projectionType === 'faceted') {
+		// 	bandPatterns = generateBandPatterns(
+		// 		$patternConfig,
+		// 		$bandConfig.bandStyle,
+		// 		$bandConfig.tabStyle,
+		// 		displayedFacets
+		// 	) as FacetedBandPattern;
+		// 	console.debug('cutPattern faceted Pattern', bandPatterns);
+		// }
+	}
+	$: {
+		if ($patternConfig.patternType === 'levels') {
+			levelPatterns = generateLevelSetPatterns(rslevels, $patternConfig);
+			console.debug('cutPattern level Pattern', levelPatterns);
+		}
+	}
+	$: {
+		// if ($patternConfig.projectionType === 'outlined') {
+		strutPatterns = generateStrutPatterns($patternConfig, displayedStrutFacets);
+		// }
+	}
+	$: {
+		patterns = {
+			projectionType: $patternConfig.projectionType
+		};
+		if (bandPatterns?.bands?.length > 0) {
+			patterns.bandPatterns = bandPatterns
+		}
+		if (levelPatterns?.levels?.length > 0) {
+			patterns.levelPatterns = levelPatterns
+		}
+		if (strutPatterns?.struts?.length > 0) {
+			patterns.strutPatterns = strutPatterns
 		}
 	}
 </script>
@@ -136,87 +174,87 @@
 				viewBox={viewBoxValue}
 				xmlns="http://www.w3.org/2000/svg"
 			>
-				{#if patterns?.projectionType === 'outlined'}
-					{#each patterns.bands as band, i}
-						<path d={band.outline.svgPath} fill="red" stroke="black" stroke-width="0.2" />
-						<text x={band.outline.points[0].x} y={band.outline.points[0].y}>{i}</text>
-					{/each}
+				{#if patterns.projectionType === 'outlined'}
+					{#if patterns.bandPatterns}
+						{#each patterns.bandPatterns?.bands as band, i}
+							<path d={band.outline.svgPath} fill="red" stroke="black" stroke-width="0.2" />
+							<text x={band.outline.points[0].x} y={band.outline.points[0].y}>{i}</text>
+						{/each}
+					{/if}
+					{#if patterns.levelPatterns}
+						{#each patterns.levelPatterns.levels as level, i}
+							<path d={level.outline.svgPath} fill="green" stroke="black" stroke-width="0.3" />
+							<circle cx={0} cy={0} r={6} stroke="magenta" />
+						{/each}
+					{/if}
+					{#if patterns.strutPatterns}
+						{#each patterns.strutPatterns.struts as strut, i}
+							<path d={strut.outline.svgPath} fill="deeppink" stroke="black" stroke-width="0.3" />
+							<circle cx={0} cy={0} r={6} stroke="black" />
+						{/each}
+					{/if}
 				{:else if patterns?.projectionType === 'faceted'}
-					{#each patterns.bands as band}
-						{#each band.facets as facet, f}
-							<path
-								d={facet.svgPath}
-								fill={`rgb(100, ${50 + (200 * f) / band.facets.length},100)`}
-								stroke="orangered"
-								stroke-width="0.5"
-							/>
-							{#if showTabs && facet.tab}
+					{#if patterns.bandPatterns}
+						{#each patterns.bandPatterns.bands as band}
+							{#each band.facets as facet, f}
 								<path
-									d={facet.tab.svgPath}
-									fill={`rgb(0, ${50 + (200 * f) / band.facets.length},255)`}
+									d={facet.svgPath}
+									fill={`rgb(100, ${50 + (200 * f) / band.facets.length},100)`}
 									stroke="orangered"
 									stroke-width="0.5"
 								/>
-							{/if}
-							{#if showPoints && f === band.facets.length - 1}
-								<!-- <circle
-									cx={facet.triangle.a.x}
-									cy={facet.triangle.a.y}
-									r={zoomLevel / 100}
-									fill="red"
-									opacity="0.5"
-								/> -->
-								<text
-									x={facet.triangle.a.x + zoomLevel / 50}
-									y={facet.triangle.a.y + zoomLevel / 50}
-									class="point-label-text">a</text
-								>
-								<!-- <circle
-									cx={facet.triangle.b.x}
-									cy={facet.triangle.b.y}
-									r={zoomLevel / 100}
-									fill="green"
-									opacity="0.5"
-								/> -->
-								<text
-									x={facet.triangle.b.x + zoomLevel / 50}
-									y={facet.triangle.b.y + zoomLevel / 50}
-									class="point-label-text">b</text
-								>
-								<!-- <circle
-									cx={facet.triangle.c.x}
-									cy={facet.triangle.c.y}
-									r={zoomLevel / 100}
-									fill="blue"
-									opacity="0.5"
-								/> -->
-								<text
-									x={facet.triangle.c.x + zoomLevel / 50}
-									y={facet.triangle.c.y + zoomLevel / 50}
-									class="point-label-text">c</text
-								>
-							{/if}
+								{#if showTabs && facet.tab}
+									<path
+										d={facet.tab.svgPath}
+										fill={`rgb(0, ${50 + (200 * f) / band.facets.length},255)`}
+										stroke="orangered"
+										stroke-width="0.5"
+									/>
+								{/if}
+							{/each}
 						{/each}
-					{/each}
-				{:else if patterns?.projectionType === 'levels'}
-					{#each patterns.levels as level, i}
-						<path d={level.outline.svgPath} fill="green" stroke="black" stroke-width="0.5" />
-						<circle cx={0} cy={0} r={6} stroke="magenta" />
-						<!-- <text x={level.outline.points[0].x} y={level.outline.points[0].y}>{i}</text> -->
-					{/each}
+					{/if}
 				{/if}
 			</svg>
 			<div class="view-control-box">
-				<label  for="svg-width">width</label>
-				<input id="svg-width" type="number" bind:value={$patternViewConfig.width} class="view-control"/>
-				<label  for="svg-height">height</label>
-				<input id="svg-height" type="number" bind:value={$patternViewConfig.height} class="view-control"/>
-				<label  for="svg-zoom">zoom</label>
-				<input id="svg-zoom" type="number" min={-1} max={2} step={0.1} bind:value={$patternViewConfig.zoom} class="view-control"/>
-				<label  for="svg-offset-x">offset x</label>
-				<input id="svg-offset-x" type="number" bind:value={$patternViewConfig.centerOffset.x} class="view-control"/>
-				<label  for="svg-offset-y">offset y</label>
-				<input id="svg-offset-y" type="number" bind:value={$patternViewConfig.centerOffset.y} class="view-control"/>
+				<label for="svg-width">width</label>
+				<input
+					id="svg-width"
+					type="number"
+					bind:value={$patternViewConfig.width}
+					class="view-control"
+				/>
+				<label for="svg-height">height</label>
+				<input
+					id="svg-height"
+					type="number"
+					bind:value={$patternViewConfig.height}
+					class="view-control"
+				/>
+				<label for="svg-zoom">zoom</label>
+				<input
+					id="svg-zoom"
+					type="number"
+					min={-1}
+					max={2}
+					step={0.1}
+					bind:value={$patternViewConfig.zoom}
+					class="view-control"
+				/>
+				<label for="svg-offset-x">offset x</label>
+				<input
+					id="svg-offset-x"
+					type="number"
+					bind:value={$patternViewConfig.centerOffset.x}
+					class="view-control"
+				/>
+				<label for="svg-offset-y">offset y</label>
+				<input
+					id="svg-offset-y"
+					type="number"
+					bind:value={$patternViewConfig.centerOffset.y}
+					class="view-control"
+				/>
 			</div>
 		</div>
 	</div>

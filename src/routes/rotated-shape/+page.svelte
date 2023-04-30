@@ -64,7 +64,7 @@
 		<ThreeRenderer rslevels={levels} rsbands={bands} struts={struts}/>
 	</section>
 	<section class="container svg">
-		<CutPattern rslevels={displayLevels} rsbands={bands} />
+		<CutPattern rslevels={displayLevels} rsbands={bands} struts={struts}/>
 	</section>
 	<section class="container controls">
 		<header>

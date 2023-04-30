@@ -5,7 +5,9 @@ import type {
 	Facet,
 	TabStyle,
 	RotatedShapeLevel,
-	FacetTab
+	FacetTab,
+	Strut,
+	Strip
 } from './rotated-shape';
 import {
 	generateMultiFacetFullTab,
@@ -18,8 +20,25 @@ import {
 } from './rotated-shape';
 import { bandConfig } from './stores';
 
+export type PatternViewConfig = {
+	width: number;
+	height: number;
+	zoom: number;
+	centerOffset: {
+		x: number;
+		y: number;
+	};
+};
+export type ProjectionType = 'faceted' | 'outlined';
+type LevelPatternConfig = {
+	patternType: 'levels';
+	projectionType: 'outlined';
+};
+export const isLevelPatternConfig = (config: PatternConfig): config is LevelPatternConfig =>
+	config.patternType === 'levels';
 export type PatternConfig =
 	| {
+			patternType: 'strip';
 			projectionType: 'faceted';
 			axis: Axis;
 			origin: Vector3;
@@ -28,6 +47,7 @@ export type PatternConfig =
 			showTabs: boolean;
 	  }
 	| {
+			patternType: 'strip';
 			projectionType: 'outlined';
 			axis: Axis;
 			origin: Vector3;
@@ -35,7 +55,7 @@ export type PatternConfig =
 			offset: Vector3;
 			showTabs: boolean;
 	  }
-	| { projectionType: 'levels' };
+	| LevelPatternConfig;
 
 export type FacetPattern = {
 	svgPath: string;
@@ -96,11 +116,16 @@ export type LevelPattern = {
 	};
 };
 
-export type BandPattern = FacetedBandPattern | OutlinedBandPattern | LevelSetPattern;
+export type Pattern = FacetedBandPattern | OutlinedBandPattern | LevelSetPattern;
 
 export type FacetedBandPattern = { projectionType: 'faceted'; bands: { facets: FacetPattern[] }[] };
 export type OutlinedBandPattern = { projectionType: 'outlined'; bands: OutlinePattern[] };
 export type LevelSetPattern = { projectionType: 'levels'; levels: LevelPattern[] };
+export type FacetedStrutPattern = {
+	projectionType: 'faceted';
+	struts: { facets: FacetPattern[] }[];
+};
+export type OutlinedStrutPattern = { projectionType: 'outlined'; struts: OutlinePattern[] };
 
 type Axis = 'z' | 'x' | 'y';
 
@@ -109,7 +134,7 @@ export type TriangleSide = 'ab' | 'ac' | 'bc';
 
 type AlignTrianglesConfig = {
 	isEven: boolean;
-	isTabOnGreaterSide: boolean,
+	isTabOnGreaterSide: boolean;
 	lead: {
 		vec: Vector3;
 		p: TrianglePoint;
@@ -136,20 +161,22 @@ const orderedPointsList = (points: { [key: string]: Vector3 }) => {
 };
 
 const orderByTabStyle = (style: TabStyle['style'], isEven: boolean, points: Vector3[]) => {
-	if (style.startsWith('multi-facet') && !isEven) {
-		return points.reverse();
+	if (style.startsWith('multi-facet')) {
+		return isEven ? points.reverse() : points;
+	} else if (style === 'full') {
+		return isEven ? points : points.reverse();
 	}
 	return points;
 };
 
-const getOutlinePoints = (band: Band, bandStyle: BandStyle): Vector3[] => {
+const getOutlinePoints = (strip: Strip, bandStyle: BandStyle): Vector3[] => {
 	const points: Vector3[] = [];
 	if (bandStyle === 'circumference' || bandStyle === 'helical-right') {
 		// top edges
 		let { lead, follow } = generateEdgeConfig(bandStyle, false, true);
 
-		for (let i = 1; i < band.facets.length; i += 2) {
-			const facet = band.facets[i];
+		for (let i = 1; i < strip.facets.length; i += 2) {
+			const facet = strip.facets[i];
 			points.push(facet.triangle[follow]);
 			if (facet.tab) {
 				points.push(
@@ -158,31 +185,78 @@ const getOutlinePoints = (band: Band, bandStyle: BandStyle): Vector3[] => {
 			}
 		}
 
-		points.push(band.facets[band.facets.length - 1].triangle[lead]);
+		points.push(strip.facets[strip.facets.length - 1].triangle[lead]);
 		const swap = lead;
 		lead = follow;
 		follow = swap;
 
-		for (let i = band.facets.length - 2; i >= 0; i -= 2) {
-			const facet = band.facets[i];
+		for (let i = strip.facets.length - 2; i >= 0; i -= 2) {
+			const facet = strip.facets[i];
 			points.push(facet.triangle[lead]);
 			if (facet.tab) {
 				points.push(
-					...Object.entries(facet.tab.outer)
-						.sort((a, b) => {
-							if (a[0] < b[0]) return -1;
-							if (a[0] > b[0]) return 1;
-							return 0;
-						})
-						.map((entry) => entry[1])
+					...orderByTabStyle(facet.tab.style, i % 2 === 0, orderedPointsList(facet.tab.outer))
 				);
 			}
 		}
 
-		points.push(band.facets[0].triangle[follow]);
+		points.push(strip.facets[0].triangle[follow]);
 	}
 
 	return points;
+};
+
+export const generateStrutPatterns = (
+	config: PatternConfig,
+	struts: Strut[]
+): FacetedStrutPattern | OutlinedStrutPattern => {
+	if (config.patternType === 'levels') throw new Error("wrong pattern type 'levels'");
+	const tiling = struts[0].tiling
+	if (!struts.every(strut => strut.tiling === tiling)) throw new Error("tiling property inconsistent")
+
+	const flattenedGeometry: Strut[] = struts.map((strut, i) => {
+		return getFlatStrip(strut, {
+			bandStyle: strut.tiling,
+			origin: config.origin.clone().addScaledVector(config.offset, i),
+			direction: config.direction
+		});
+	});
+
+	if (config.projectionType === 'faceted') {
+		const facetedPattern: FacetedStrutPattern = {
+			projectionType: 'faceted',
+			struts: flattenedGeometry.map((flatStrut) => {
+				const strutPattern = {
+					...flatStrut,
+					facets: flatStrut.facets.map((facet) => {
+						const pattern: FacetPattern = {
+							svgPath: getPathFromPoints([facet.triangle.a, facet.triangle.b, facet.triangle.c]),
+							triangle: facet.triangle.clone()
+						};
+						return pattern;
+					})
+				};
+				return strutPattern;
+			})
+		};
+		return facetedPattern;
+	}
+	
+	const outlinedPattern: OutlinedStrutPattern = {
+		projectionType: 'outlined',
+		struts: flattenedGeometry.map((flatStrut) => {
+			const outline: Vector3[] = getOutlinePoints(flatStrut, tiling);
+			const pattern: OutlinePattern = {
+				outline: {
+					points: outline,
+					svgPath: getPathFromPoints(outline)
+				}
+			};
+			return pattern;
+		})
+	};
+	return outlinedPattern;
+
 };
 
 export const generateBandPatterns = (
@@ -190,14 +264,20 @@ export const generateBandPatterns = (
 	bandStyle: BandStyle,
 	tabStyle: TabStyle,
 	bands: Band[]
-): BandPattern => {
-	if (config.projectionType === 'levels') throw new Error();
+): FacetedBandPattern | OutlinedBandPattern => {
+	if (isLevelPatternConfig(config)) {
+		throw new Error('Not a Strip pattern config');
+	}
 	const flattenedGeometry: Band[] = bands.map((band, i) =>
-		getFlatStrip(band, tabStyle, {
-			bandStyle: bandStyle,
-			origin: config.origin.clone().addScaledVector(config.offset, i),
-			direction: config.direction
-		})
+		getFlatStrip(
+			band,
+			{
+				bandStyle: bandStyle,
+				origin: config.origin.clone().addScaledVector(config.offset, i),
+				direction: config.direction
+			},
+			tabStyle
+		)
 	);
 
 	if (config.projectionType === 'faceted') {
@@ -283,7 +363,7 @@ const generateFacetTabPattern = (facetTab: FacetTab | FacetTab[] | undefined) =>
 	}
 };
 
-export const generateLevelSetPattern = (
+export const generateLevelSetPatterns = (
 	levels: RotatedShapeLevel[],
 	config: PatternConfig
 ): LevelSetPattern => {
@@ -320,7 +400,7 @@ const alignTriangle = (triangle: Triangle, config: AlignTrianglesConfig): Triang
 	// for odd facets (which should also be Greater Side), reverse the lead / follow vectors, and the angle?
 
 	const parity = config.isEven ? 1 : -1;
-	const tabParity = config.isTabOnGreaterSide ? -1 : 1
+	const tabParity = config.isTabOnGreaterSide ? -1 : 1;
 	const zAxis = new Vector3(0, 0, 1);
 	const pointSet: TrianglePoint[] = ['a', 'b', 'c'];
 
@@ -335,8 +415,12 @@ const alignTriangle = (triangle: Triangle, config: AlignTrianglesConfig): Triang
 	const angle = segmentOldPivotConstrained.angleTo(segmentOldPivotFree);
 
 	const alignedTriangle = new Triangle();
-	alignedTriangle[pivot] = config.isTabOnGreaterSide ? config.lead.vec.clone() : config.follow.vec.clone();
-	alignedTriangle[constrained] = config.isTabOnGreaterSide ? config.follow.vec.clone() : config.lead.vec.clone();
+	alignedTriangle[pivot] = config.isTabOnGreaterSide
+		? config.lead.vec.clone()
+		: config.follow.vec.clone();
+	alignedTriangle[constrained] = config.isTabOnGreaterSide
+		? config.follow.vec.clone()
+		: config.lead.vec.clone();
 	const segment = alignedTriangle[constrained]
 		.clone()
 		.addScaledVector(alignedTriangle[pivot], -1)
@@ -353,7 +437,11 @@ const getFirstTriangleParity = (bandStyle: BandStyle): boolean => {
 	return true;
 };
 
-const getFlatStrip = (band: Band, tabStyle: TabStyle, flatStripConfig: FlatStripConfig) => {
+const getFlatStrip = <T extends Strut | Band>(
+	strip: T,
+	flatStripConfig: FlatStripConfig,
+	tabStyle?: TabStyle
+): T => {
 	const config = {
 		axis: new Vector3(0, 0, 1),
 		origin: new Vector3(0, 0, 0),
@@ -361,9 +449,9 @@ const getFlatStrip = (band: Band, tabStyle: TabStyle, flatStripConfig: FlatStrip
 		...flatStripConfig
 	};
 
-	const flatStrip: Band = { ...band, facets: [] };
+	const flatStrip: Strip = { ...strip, facets: [] };
 
-	band.facets.forEach((facet, i) => {
+	strip.facets.forEach((facet, i) => {
 		const alignedFacet: Facet = { ...facet };
 
 		// let edgeConfig
@@ -398,7 +486,7 @@ const getFlatStrip = (band: Band, tabStyle: TabStyle, flatStripConfig: FlatStrip
 		}
 		alignedFacet.triangle = alignTriangle(facet.triangle, alignConfig);
 
-		if (facet.tab) {
+		if (facet.tab && tabStyle) {
 			edgeConfig = generateEdgeConfig(config.bandStyle, i % 2 === 0, true);
 			const tabAlignConfig = {
 				isEven: Math.abs((i - 1) % 2) === 0,
@@ -409,9 +497,9 @@ const getFlatStrip = (band: Band, tabStyle: TabStyle, flatStripConfig: FlatStrip
 			if (facet.tab.style === 'full' || facet.tab.style === 'trapezoid') {
 				const tabFootprint = alignTriangle(facet.tab.footprint.triangle, tabAlignConfig);
 
-				if (tabStyle.style === 'full') {
+				if (tabStyle?.style === 'full') {
 					alignedFacet.tab = generateFullTab(tabStyle, tabFootprint, edgeConfig);
-				} else if (tabStyle.style === 'trapezoid') {
+				} else if (tabStyle?.style === 'trapezoid') {
 					alignedFacet.tab = generateTrapTab(tabStyle, tabFootprint, edgeConfig);
 				}
 			} else if (facet.tab?.style.startsWith('multi-facet')) {
@@ -471,7 +559,7 @@ const getFlatStrip = (band: Band, tabStyle: TabStyle, flatStripConfig: FlatStrip
 		flatStrip.facets.push(alignedFacet);
 	});
 
-	return flatStrip;
+	return flatStrip as T;
 };
 
 // Looks up the edge configuration for a given triangle

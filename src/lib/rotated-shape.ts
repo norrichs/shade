@@ -558,7 +558,7 @@ export type StrutConfig = {
 	width: number;
 };
 
-type Tiling = 'helical-right' | 'helical-left' | 'circumference' | 'triangular' | 'hexagon';
+type Tiling = BandStyle;
 type StrutOrientation = 'inside' | 'outside' | 'half';
 type RadiateOrientation = 'level' | 'orthogonal';
 
@@ -601,12 +601,11 @@ const getStrutVector = (
 			.clone()
 			.setLength(vector.length() + offsets[pointCloseness][orientation])
 			.addScaledVector(origin, 1);
-	} else if (radiate === 'orthogonal') {
-		return origin
-			.clone()
-			.setLength(offsets[pointCloseness][orientation])
-			.addScaledVector(vector, 1);
 	}
+	return origin
+		.clone()
+		.setLength(offsets[pointCloseness][orientation])
+		.addScaledVector(vector, 1);
 };
 
 const generateHelicalStrut = (
@@ -997,7 +996,7 @@ export type TabStyle =
 			width: TabWidth;
 			inset?: number;
 			scored?: TabScore;
-	  };
+	}
 
 export type BandSetConfig = {
 	bandStyle: BandStyle;
@@ -1032,7 +1031,7 @@ export type RenderConfig = {
 	};
 };
 
-type Strip = Band | Strut;
+export type Strip = Band | Strut;
 
 const isStrut = (strip: Strip): strip is Strut => (strip as Strut).tiling !== undefined;
 

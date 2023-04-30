@@ -8,7 +8,7 @@ import type {
 	BandSetConfig,
 	RadialShapeConfig
 } from './rotated-shape';
-import type { PatternConfig } from './cut-pattern';
+import type { PatternConfig, PatternViewConfig } from './cut-pattern';
 import { Vector3 } from 'three';
 import { rad } from './util';
 
@@ -89,7 +89,7 @@ export const levelConfig = writable<LevelSetConfig>(defaultLevelSetConfig);
 export const initTabStyle = (style: TabStyle['style']): TabStyle => {
 	const defaultTabStyles: { [key: string]: TabStyle } = {
 		full: { style: 'full', direction: 'lesser' },
-		trapezoid: { style: 'trapezoid', direction: 'both', width: { style: 'fixed', value: 5 } },
+		trapezoid: { style: 'trapezoid', direction: 'lesser', width: { style: 'fixed', value: 5 } },
 		'multi-facet-full': {
 			style: 'multi-facet-full',
 			direction: 'both',
@@ -129,21 +129,21 @@ const defaultRenderConfig: RenderConfig = {
 	ranges: {
 		rangeStyle: 'slice',
 		bandStart: 0,
-		bandCount: 1,
+		bandCount: undefined,
 		facetStart: 0,
 		facetCount: undefined,
 		levelStart: 0,
 		levelCount: 1,
 		strutStart: 0,
-		strutCount: 11
+		strutCount: undefined
 	},
 	show: {
-		tabs: false,
+		tabs: true,
 		levels: false,
 		bands: true,
 		edges: true,
 		patterns: true,
-		struts: true
+		struts: false
 	}
 };
 
@@ -151,7 +151,8 @@ export const renderConfig = writable<RenderConfig>(defaultRenderConfig);
 
 const defaultPatternConfig: PatternConfig = {
 	showTabs: true,
-	projectionType: 'outlined',
+  projectionType: 'outlined',
+  patternType: "strip",
 	axis: 'z',
 	origin: new Vector3(0, 0, 0),
 	direction: new Vector3(0, 1, 0),
@@ -159,7 +160,7 @@ const defaultPatternConfig: PatternConfig = {
 };
 export const patternConfig = writable<PatternConfig>(defaultPatternConfig);
 
-const defaultPatternViewConfig = {
+const defaultPatternViewConfig: PatternViewConfig = {
 	width: 400,
 	height: 400,
 	zoom: 0.4,
@@ -169,14 +170,6 @@ const defaultPatternViewConfig = {
 	}
 };
 
-export type PatternViewConfig = {
-	width: number;
-	height: number;
-	zoom: number;
-	centerOffset: {
-		x: number;
-		y: number;
-	};
-};
+
 
 export const patternViewConfig = writable<PatternViewConfig>(defaultPatternViewConfig);
