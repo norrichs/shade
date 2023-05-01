@@ -56,6 +56,7 @@
 		<select id="radiate" bind:value={$strutConfig.radiate}>
 			<option>level</option>
 			<option>orthogonal</option>
+			<option>hybrid</option>
 		</select>
 	</section>
 {:else if showControl === '3D'}

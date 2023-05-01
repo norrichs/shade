@@ -119,8 +119,8 @@ export const bandConfig = writable<BandSetConfig>(defaultBandConfig);
 const defaultStrutConfig: StrutConfig = {
 	tiling: 'helical-right',
 	orientation: 'inside',
-	radiate: 'orthogonal',
-	width: 5
+	radiate: 'hybrid',
+	width: 15
 };
 
 export const strutConfig = writable<StrutConfig>(defaultStrutConfig);
@@ -139,7 +139,7 @@ const defaultRenderConfig: RenderConfig = {
 	},
 	show: {
 		tabs: false,
-		levels: false,
+		levels: true,
 		bands: false,
 		edges: true,
 		patterns: true,

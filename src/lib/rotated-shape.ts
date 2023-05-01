@@ -560,7 +560,7 @@ export type StrutConfig = {
 
 type Tiling = BandStyle;
 type StrutOrientation = 'inside' | 'outside' | 'half';
-type RadiateOrientation = 'level' | 'orthogonal';
+type RadiateOrientation = 'level' | 'orthogonal' | 'hybrid';
 
 const generateStruts = (levels: RotatedShapeLevel[], config: StrutConfig): Strut[] => {
 	const struts: Strut[] = levels[0].vertices.map((vertex, i) =>
@@ -569,15 +569,13 @@ const generateStruts = (levels: RotatedShapeLevel[], config: StrutConfig): Strut
 	return struts;
 };
 
-// TODO - refactor getStrutVector and generateHelicalStrut so that getStrutVector works with the same kind of offset for each radiate type
 const getStrutVector = (
-	pointCloseness: 'outer' | 'inner',
-	pointData: { vector: Vector3; origin: Vector3 },
+	closeness: 'outer' | 'inner',
+	pointData: { base: Vector3; offset: Vector3 },
 	width: number,
-	orientation: StrutOrientation,
-	radiate: RadiateOrientation
+	orientation: StrutOrientation
 ): Vector3 => {
-	const { vector, origin } = pointData;
+	const { base, offset } = pointData;
 	const offsets = {
 		outer: {
 			inside: 0,
@@ -590,18 +588,10 @@ const getStrutVector = (
 			half: -width / 2
 		}
 	};
-	// radial level vector, with length offset per inner / outer spec, made absolute by adding to center of level
-
-	// orthogonal vectors - start at absolute vertex vector, add 'origin' vector, scaled to orientation  and closeness
-	if (radiate === 'level') {
-		return vector
-			.clone()
-			.setLength(vector.length() + offsets[pointCloseness][orientation])
-			.addScaledVector(origin, 1);
-	}
-	// return vector.clone().addScaledVector(origin.setLength(offsets[pointCloseness][orientation]), 1)
-	return origin.clone().setLength(offsets[pointCloseness][orientation]).addScaledVector(vector, 1);
+	return base.clone().addScaledVector(offset, -offsets[closeness][orientation]);
 };
+
+type StrutLevel = { base: Vector3; offset: Vector3 };
 
 const generateHelicalStrut = (
 	bandIndex: number,
@@ -618,41 +608,28 @@ const generateHelicalStrut = (
 	};
 
 	for (let i = 0; i < levels.length - 1; i++) {
-		const lower =
-			radiate === 'level'
-				? {
-						vector: levels[i].vertices[bandIndex].clone().addScaledVector(levels[i].center, -1),
-						origin: levels[i].center
-				  }
-				: {
-						vector: levels[i].vertices[bandIndex].clone(),
-						origin: getOrthogonalOrigin(i, bandIndex, levels)
-				  };
-		const upper =
-			radiate === 'level'
-				? {
-						vector: levels[i + 1].vertices[bandIndex]
-							.clone()
-							.addScaledVector(levels[i + 1].center, -1),
-						origin: levels[i + 1].center
-				  }
-				: {
-						vector: levels[i + 1].vertices[bandIndex].clone(),
-						origin: getOrthogonalOrigin(i + 1, bandIndex, levels)
-				  };
+		const lower = { base: levels[i].vertices[bandIndex].clone(), offset: new Vector3() };
+		const upper = { base: levels[i + 1].vertices[bandIndex].clone(), offset: new Vector3() };
+		// if (radiate === 'level') {
+		// 	lower.offset = levels[i].center.clone().addScaledVector(lower.base, -1).setLength(1);
+		// 	upper.offset = levels[i + 1].center.clone().addScaledVector(upper.base, -1).setLength(1);
+		// } else if (radiate === 'orthogonal') {
+		lower.offset = getStrutOffset(i, bandIndex, lower.base, levels, radiate);
+		upper.offset = getStrutOffset(i + 1, bandIndex, upper.base, levels, radiate);
+		// }
 
 		const facet1: Facet = {
 			triangle: new Triangle(
-				getStrutVector('outer', upper, width, orientation, radiate),
-				getStrutVector('inner', lower, width, orientation, radiate),
-				getStrutVector('outer', lower, width, orientation, radiate)
+				getStrutVector('outer', upper, width, orientation),
+				getStrutVector('inner', lower, width, orientation),
+				getStrutVector('outer', lower, width, orientation)
 			)
 		};
 		const facet2: Facet = {
 			triangle: new Triangle(
-				getStrutVector('inner', lower, width, orientation, radiate),
-				getStrutVector('outer', upper, width, orientation, radiate),
-				getStrutVector('inner', upper, width, orientation, radiate)
+				getStrutVector('inner', lower, width, orientation),
+				getStrutVector('outer', upper, width, orientation),
+				getStrutVector('inner', upper, width, orientation)
 			)
 		};
 
@@ -661,46 +638,94 @@ const generateHelicalStrut = (
 	return strut;
 };
 
-const getOrthogonalOrigin = (
+const getOrthogonalAxis = (vec1: Vector3, vec2: Vector3, vec3: Vector3): Vector3 => {
+	return vec1
+		.clone()
+		.addScaledVector(vec2, -1)
+		.cross(vec1.clone().addScaledVector(vec3, -1))
+		.setLength(1);
+};
+const getLevelOrthogonalAxis = (level: RotatedShapeLevel) => {
+	return getOrthogonalAxis(level.center, level.vertices[0], level.vertices[1]);
+};
+// TODO - calculate a hybrid offset -
+//			get a unit vector with the direction from vertex to center
+//			get angles from this vector to preVec and postVec
+//			get rotAxis as cross product of unit vector and level orthogonal axis
+//			rotate unit vector by difference beteen up and down angles
+const getStrutOffset = (
 	levelIndex: number,
 	vertexIndex: number,
-	levels: RotatedShapeLevel[]
+	base: Vector3,
+	levels: RotatedShapeLevel[],
+	radiate: RadiateOrientation
 ): Vector3 => {
-	// TODO - for first and last layers, use instead of returning the level radiated version, return the next or previous
+	const centerDirectionVec = levels[levelIndex].center
+		.clone()
+		.addScaledVector(base, -1)
+		.setLength(1);
+	if (radiate === 'level') {
+		return centerDirectionVec;
+	}
 
-	const vec = levels[levelIndex].vertices[vertexIndex].clone();
 	if (levelIndex > 0 && levelIndex < levels.length - 1) {
-		const preVec = levels[levelIndex - 1].vertices[vertexIndex].clone().addScaledVector(vec, -1);
-		const postVec = levels[levelIndex + 1].vertices[vertexIndex].clone().addScaledVector(vec, -1);
+		const preVec = levels[levelIndex - 1].vertices[vertexIndex].clone().addScaledVector(base, -1);
+		const postVec = levels[levelIndex + 1].vertices[vertexIndex].clone().addScaledVector(base, -1);
 		const angle = preVec.angleTo(postVec);
-		const rotAxis = preVec.clone().cross(postVec).setLength(1);
-		const ortho = preVec
-			.clone()
-			.applyAxisAngle(rotAxis, angle / 2)
-			.setLength(1);
-		const origin = ortho.clone().addScaledVector(vec, 1);
-		if (levelIndex === 2 && vertexIndex === 3) {
-			const measuredAngle = new Vector3(0, 0, 1).angleTo(ortho);
-			console.debug(
-				'angle',
-				Math.floor((angle * 180) / Math.PI),
-				'ortho:',
-				ortho,
-				'measured angle',
-				Math.floor((measuredAngle * 180) / Math.PI),
-				'preVec',
-				preVec,
-				'postVec',
-				postVec
-			);
+
+		if (radiate === 'orthogonal') {
+			const rotAxis = preVec.clone().cross(postVec).setLength(1);
+			return preVec
+				.clone()
+				.applyAxisAngle(rotAxis, angle / 2)
+				.setLength(1);
+		} else {
+			// const angle = (centerDirectionVec.angleTo(preVec) + centerDirectionVec.angleTo(postVec)) / 2;
+			const rotAxis = getLevelOrthogonalAxis(levels[levelIndex]).cross(centerDirectionVec);
+
+			// TODO - get the angle between  the centerDirctionVec and the rotated preVec, use to rotate centerDirectionVec
+			const orthoVec = preVec
+				.clone()
+				.setLength(1)
+				.applyAxisAngle(rotAxis, -angle / 2);
+			const diffAngle = orthoVec.angleTo(centerDirectionVec);
+
+			if (vertexIndex === 3) {
+				console.debug(
+					levelIndex,
+					'hybrid\n  diffAngle',
+					Math.floor((diffAngle * 180) / Math.PI),
+					'ortho',
+					Math.floor(orthoVec.angleTo(new Vector3(0, 0, 1)) * 180 / Math.PI)
+				);
+				// console.debug(
+				// 	'hybrid radiate - angles:',
+				// 	Math.floor(angle * 180 / Math.PI),
+				// 	Math.floor(centerDirectionVec.angleTo(preVec) * 180 / Math.PI),
+				// 	Math.floor(centerDirectionVec.angleTo(postVec) * 180 / Math.PI),
+				// 	'rotAxis',
+				// 	rotAxis,
+				// 	'centerDirection',
+				// 	centerDirectionVec,
+				// 	"rotAxis length",
+				// 	rotAxis.length()
+				// );
+			}
+			const invert = orthoVec.angleTo(new Vector3(0, 0, 1)) > Math.PI / 2 ? 1 : -1
+			return centerDirectionVec.applyAxisAngle(rotAxis, diffAngle * invert);
 		}
-		return origin;
 	} else if (levelIndex === 0) {
-		return getOrthogonalOrigin(1, vertexIndex, levels);
+		return getStrutOffset(1, vertexIndex, levels[1].vertices[vertexIndex].clone(), levels, radiate);
 	} else if (levelIndex === levels.length - 1) {
-		return getOrthogonalOrigin(levels.length - 2, vertexIndex, levels);
+		return getStrutOffset(
+			levels.length - 2,
+			vertexIndex,
+			levels[levels.length - 2].vertices[vertexIndex].clone(),
+			levels,
+			radiate
+		);
 	} else {
-		return levels[levelIndex].center.clone().addScaledVector(vec, -1).setLength(-1);
+		return levels[levelIndex].center.clone().addScaledVector(base, -1).setLength(-1);
 	}
 };
 
@@ -1075,6 +1100,7 @@ export const getRenderable = (
 		if (isRotatedShapeLevels(shapes as Strip[] | RotatedShapeLevel[])) {
 			start = levelStart;
 			count = levelCount;
+			console.debug('GetRenderable levels', start, count);
 			return shapes.slice(start, count ? start + count : shapes.length);
 		} else if (isStrip(shapes)) {
 			start = isStrut(shapes[0]) ? strutStart : bandStart;

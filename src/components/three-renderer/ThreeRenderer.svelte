@@ -23,20 +23,24 @@
 	export let struts: Strut[] = [];
 
 	let displayRSBands: Band[]
-
 	let displayStruts: Strut[]
+	let displayLevels: RotatedShapeLevel[]
 	console.debug("ThreeRender struts", struts)
 
 	$: {
-		displayRSBands = getRenderable($renderConfig, rsbands)
+		displayRSBands = getRenderable($renderConfig, rsbands) as Band[]
 		console.debug("displayRSBands", displayRSBands)
 	}
 	$: {
 		if (struts.length > 0) {
-			displayStruts = getRenderable($renderConfig, struts)
+			displayStruts = getRenderable($renderConfig, struts) as Strut[]
 		}
 	}
-	$: displaylevels = rslevels
+	$: {
+		if (rslevels.length > 0) {
+			displayLevels = getRenderable($renderConfig, rslevels) as RotatedShapeLevel[]
+		}
+	}
 
 
 </script>
@@ -54,7 +58,7 @@
 
 	<T.Group position={[0, 0, 0]}>
     {#if $renderConfig?.show?.levels}
-      {#each displaylevels as rslevel}
+      {#each displayLevels as rslevel}
         <RotatedShapeLevelMesh {rslevel} />
       {/each}
     {/if}
