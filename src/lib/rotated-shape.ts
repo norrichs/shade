@@ -563,16 +563,13 @@ type StrutOrientation = 'inside' | 'outside' | 'half';
 type RadiateOrientation = 'level' | 'orthogonal';
 
 const generateStruts = (levels: RotatedShapeLevel[], config: StrutConfig): Strut[] => {
-	// let struts: Strut[]
-	// if (config.tiling === "helical-right") {
 	const struts: Strut[] = levels[0].vertices.map((vertex, i) =>
 		generateHelicalStrut(i, levels, config)
 	);
-	// }
-
 	return struts;
 };
 
+// TODO - refactor getStrutVector and generateHelicalStrut so that getStrutVector works with the same kind of offset for each radiate type
 const getStrutVector = (
 	pointCloseness: 'outer' | 'inner',
 	pointData: { vector: Vector3; origin: Vector3 },
@@ -602,10 +599,8 @@ const getStrutVector = (
 			.setLength(vector.length() + offsets[pointCloseness][orientation])
 			.addScaledVector(origin, 1);
 	}
-	return origin
-		.clone()
-		.setLength(offsets[pointCloseness][orientation])
-		.addScaledVector(vector, 1);
+	// return vector.clone().addScaledVector(origin.setLength(offsets[pointCloseness][orientation]), 1)
+	return origin.clone().setLength(offsets[pointCloseness][orientation]).addScaledVector(vector, 1);
 };
 
 const generateHelicalStrut = (
@@ -679,11 +674,25 @@ const getOrthogonalOrigin = (
 		const postVec = levels[levelIndex + 1].vertices[vertexIndex].clone().addScaledVector(vec, -1);
 		const angle = preVec.angleTo(postVec);
 		const rotAxis = preVec.clone().cross(postVec).setLength(1);
-		const ortho = postVec.clone().applyAxisAngle(rotAxis, angle / 2).setLength(1);
-		const origin = vec.clone().addScaledVector(ortho, 1);
+		const ortho = preVec
+			.clone()
+			.applyAxisAngle(rotAxis, angle / 2)
+			.setLength(1);
+		const origin = ortho.clone().addScaledVector(vec, 1);
 		if (levelIndex === 2 && vertexIndex === 3) {
-			const measuredAngle = new Vector3(0,0,1).angleTo(ortho)
-			console.debug("angle", angle / 2 * 180 / Math.PI, "ortho:", ortho, "measured angle", measuredAngle * 180 / Math.PI, "preVec", preVec, "postVec", postVec)
+			const measuredAngle = new Vector3(0, 0, 1).angleTo(ortho);
+			console.debug(
+				'angle',
+				Math.floor((angle * 180) / Math.PI),
+				'ortho:',
+				ortho,
+				'measured angle',
+				Math.floor((measuredAngle * 180) / Math.PI),
+				'preVec',
+				preVec,
+				'postVec',
+				postVec
+			);
 		}
 		return origin;
 	} else if (levelIndex === 0) {
@@ -740,7 +749,7 @@ const generateTabs = (bands: Band[], config: BandSetConfig, struts?: Strut[]) =>
 							const tab: FullTab = generateFullTab(
 								config.tabStyle,
 								modelForTab.triangle,
-								generateEdgeConfig(config.bandStyle, isEven(f), true)
+								generateEdgeConfig(config.bandStyle, isEven(f), false, true)
 							);
 							return { ...facet, tab };
 						}
@@ -751,7 +760,7 @@ const generateTabs = (bands: Band[], config: BandSetConfig, struts?: Strut[]) =>
 							const tab: FullTab = generateFullTab(
 								config.tabStyle,
 								modelForTab.triangle,
-								generateEdgeConfig(config.bandStyle, isEven(f), true)
+								generateEdgeConfig(config.bandStyle, isEven(f), false, true)
 							);
 							return { ...facet, tab };
 						}
@@ -761,6 +770,7 @@ const generateTabs = (bands: Band[], config: BandSetConfig, struts?: Strut[]) =>
 							const reverseEdgeConfig = generateEdgeConfig(
 								getBandStyle(bands[0].orientation),
 								!isEven(f),
+								false,
 								true
 							);
 							const tab: TrapTab | undefined = generateTrapTab(
@@ -776,6 +786,7 @@ const generateTabs = (bands: Band[], config: BandSetConfig, struts?: Strut[]) =>
 							const reverseEdgeConfig = generateEdgeConfig(
 								getBandStyle(bands[0].orientation),
 								isEven(f),
+								false,
 								true
 							);
 							const tab: TrapTab | undefined = generateTrapTab(
@@ -795,7 +806,7 @@ const generateTabs = (bands: Band[], config: BandSetConfig, struts?: Strut[]) =>
 							const strut = struts[(b + 1) % bands.length];
 							// const facetOffset = f >= strut.facets.length - 1 ? -1 : config.tabStyle.directionMulti;
 							const modelForTab: [Facet, Facet] = [strut.facets[f - 1], strut.facets[f]];
-							const edgeConfig = generateEdgeConfig(config.bandStyle, f % 2 === 0, true);
+							const edgeConfig = generateEdgeConfig(config.bandStyle, f % 2 === 0, false, true);
 							const tab: MultiFacetFullTab = generateMultiFacetFullTab(
 								...modelForTab,
 								edgeConfig,
@@ -808,7 +819,7 @@ const generateTabs = (bands: Band[], config: BandSetConfig, struts?: Strut[]) =>
 							const strut = struts[b];
 							// const facetOffset = f >= strut.facets.length - 1 ? 0 : config.tabStyle.directionMulti;
 							const modelForTab: [Facet, Facet] = [strut.facets[f], strut.facets[f + 1]];
-							const edgeConfig = generateEdgeConfig(config.bandStyle, f % 2 === 0, true);
+							const edgeConfig = generateEdgeConfig(config.bandStyle, f % 2 === 0, false, true);
 							const tab: MultiFacetFullTab = generateMultiFacetFullTab(
 								...modelForTab,
 								edgeConfig,
@@ -864,7 +875,7 @@ export const generateMultiFacetFullTab = (
 					c: footprint[0].triangle[footprint[0].free].clone(),
 					d: footprint[0].triangle[edgeConfig.lead].clone()
 			  }
-			: { 
+			: {
 					a: footprint[0].triangle[edgeConfig.lead].clone(),
 					b: footprint[1].triangle[edgeConfig.follow].clone(),
 					c: footprint[0].triangle[footprint[0].free].clone(),
@@ -996,7 +1007,7 @@ export type TabStyle =
 			width: TabWidth;
 			inset?: number;
 			scored?: TabScore;
-	}
+	  };
 
 export type BandSetConfig = {
 	bandStyle: BandStyle;
@@ -1013,8 +1024,8 @@ export type RenderRange =
 			bandCount?: number;
 			facetStart: number;
 			facetCount?: number;
-			levelCount: number;
-			levelStart?: number;
+			levelStart: number;
+			levelCount?: number;
 			strutStart: number;
 			strutCount?: number;
 	  };
@@ -1033,25 +1044,51 @@ export type RenderConfig = {
 
 export type Strip = Band | Strut;
 
-const isStrut = (strip: Strip): strip is Strut => (strip as Strut).tiling !== undefined;
+export const isStrut = (strip: Strip): strip is Strut => (strip as Strut).tiling !== undefined;
+export const isBand = (strip: Strip): strip is Strut =>
+	(strip as Band).facets !== undefined && (strip as Strut).tiling === undefined;
 
-export const getRenderable = <T extends Strip>(config: RenderConfig, strips: T[]): T[] => {
+export const isRotatedShapeLevels = (
+	shapes: (Strip | RotatedShapeLevel)[]
+): shapes is RotatedShapeLevel[] =>
+	(shapes as unknown as RotatedShapeLevel[]).every((shape) => shape.level && shape.center);
+
+export const isStrip = (shapes: (Strip | RotatedShapeLevel)[]): shapes is Strip[] =>
+	(shapes as unknown as RotatedShapeLevel[]).every((shape) => !shape.level && !shape.center);
+
+export const getRenderable = (
+	config: RenderConfig,
+	shapes: (RotatedShapeLevel | Strip)[]
+): (RotatedShapeLevel | Strip)[] => {
 	if (config.ranges?.rangeStyle === 'slice') {
-		const { bandStart, bandCount, facetStart, facetCount, strutStart, strutCount } = config.ranges;
-		const stripStart = isStrut(strips[0]) ? strutStart : bandStart;
-		const stripCount = isStrut(strips[0]) ? strutCount : bandCount;
-
-		return strips
-			.slice(stripStart, stripCount ? stripStart + stripCount : strips.length)
-			.map((strip) => ({
-				...strip,
-				facets: strip.facets.slice(
+		const {
+			bandStart,
+			bandCount,
+			facetStart,
+			facetCount,
+			strutStart,
+			strutCount,
+			levelCount,
+			levelStart
+		} = config.ranges;
+		let start, count;
+		if (isRotatedShapeLevels(shapes as Strip[] | RotatedShapeLevel[])) {
+			start = levelStart;
+			count = levelCount;
+			return shapes.slice(start, count ? start + count : shapes.length);
+		} else if (isStrip(shapes)) {
+			start = isStrut(shapes[0]) ? strutStart : bandStart;
+			count = isStrut(shapes[0]) ? strutCount : bandCount;
+			return shapes.slice(start, count ? start + count : shapes.length).map((shape) => ({
+				...shape,
+				facets: shape.facets.slice(
 					facetStart,
-					facetCount ? facetStart + facetCount : strip.facets.length
+					facetCount ? facetStart + facetCount : shape.facets.length
 				)
 			}));
+		}
 	}
-	return strips;
+	return shapes;
 };
 
 export type RotatedShapeGeometryConfig = {

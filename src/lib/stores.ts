@@ -18,10 +18,10 @@ const defaultZCurveConfig: ZCurveConfig = {
 		{
 			type: 'BezierConfig',
 			points: [
-				{ type: 'PointConfig', x: 100, y: -20 },
-				{ type: 'PointConfig', x: 150, y: -10 },
-				{ type: 'PointConfig', x: 150, y: 40 },
-				{ type: 'PointConfig', x: 100, y: 50 }
+				{ type: 'PointConfig', x: 50, y: -20 },
+				{ type: 'PointConfig', x: 150, y: -20 },
+				{ type: 'PointConfig', x: 150, y: 50 },
+				{ type: 'PointConfig', x: 50, y: 50 }
 			]
 		},
 		// {
@@ -135,35 +135,34 @@ const defaultRenderConfig: RenderConfig = {
 		levelStart: 0,
 		levelCount: 1,
 		strutStart: 0,
-		strutCount: undefined
+		strutCount: 1
 	},
 	show: {
-		tabs: true,
+		tabs: false,
 		levels: false,
-		bands: true,
+		bands: false,
 		edges: true,
 		patterns: true,
-		struts: false
+		struts: true
 	}
 };
 
 export const renderConfig = writable<RenderConfig>(defaultRenderConfig);
 
 const defaultPatternConfig: PatternConfig = {
-	showTabs: true,
-  projectionType: 'outlined',
-  patternType: "strip",
+	showPattern: {band: "none", strut: "faceted", level: "none"},
 	axis: 'z',
 	origin: new Vector3(0, 0, 0),
 	direction: new Vector3(0, 1, 0),
-	offset: new Vector3(0, 0, 0)
+	offset: new Vector3(0, 0, 0),
+	showTabs: true,
 };
 export const patternConfig = writable<PatternConfig>(defaultPatternConfig);
 
 const defaultPatternViewConfig: PatternViewConfig = {
 	width: 400,
 	height: 400,
-	zoom: 0.4,
+	zoom: 0.8,
 	centerOffset: {
 		x: 0,
 		y: 0

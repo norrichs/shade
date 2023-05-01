@@ -16,7 +16,8 @@ import {
 	isFullTab,
 	isTrapTab,
 	isMultiFacetFullTab,
-	isMultiFacetTrapTab
+	isMultiFacetTrapTab,
+	isStrut
 } from './rotated-shape';
 import { bandConfig } from './stores';
 
@@ -29,33 +30,40 @@ export type PatternViewConfig = {
 		y: number;
 	};
 };
-export type ProjectionType = 'faceted' | 'outlined';
-type LevelPatternConfig = {
-	patternType: 'levels';
-	projectionType: 'outlined';
+// export type ProjectionType = 'faceted' | 'outlined';
+// type LevelPatternConfig = {
+// 	patternType: 'levels';
+// 	projectionType: 'outlined';
+// };
+// export const isLevelPatternConfig = (config: PatternConfig): config is LevelPatternConfig =>
+// 	config.showPattern.level !== 'none';
+
+type PatternStyle = 'faceted' | 'outlined' | 'none';
+
+type PatternShowConfig = {
+	[key: string]: PatternStyle;
+	band: PatternStyle;
+	strut: PatternStyle;
+	level: PatternStyle;
 };
-export const isLevelPatternConfig = (config: PatternConfig): config is LevelPatternConfig =>
-	config.patternType === 'levels';
-export type PatternConfig =
-	| {
-			patternType: 'strip';
-			projectionType: 'faceted';
-			axis: Axis;
-			origin: Vector3;
-			direction: Vector3;
-			offset: Vector3;
-			showTabs: boolean;
-	  }
-	| {
-			patternType: 'strip';
-			projectionType: 'outlined';
-			axis: Axis;
-			origin: Vector3;
-			direction: Vector3;
-			offset: Vector3;
-			showTabs: boolean;
-	  }
-	| LevelPatternConfig;
+export type PatternConfig = {
+	showPattern: PatternShowConfig;
+	axis: Axis;
+	origin: Vector3;
+	direction: Vector3;
+	offset: Vector3;
+	showTabs: boolean;
+};
+// | {
+// 		patternType: 'strip';
+// 		projectionType: 'outlined';
+// 		axis: Axis;
+// 		origin: Vector3;
+// 		direction: Vector3;
+// 		offset: Vector3;
+// 		showTabs: boolean;
+//   }
+// | LevelPatternConfig;
 
 export type FacetPattern = {
 	svgPath: string;
@@ -120,7 +128,7 @@ export type Pattern = FacetedBandPattern | OutlinedBandPattern | LevelSetPattern
 
 export type FacetedBandPattern = { projectionType: 'faceted'; bands: { facets: FacetPattern[] }[] };
 export type OutlinedBandPattern = { projectionType: 'outlined'; bands: OutlinePattern[] };
-export type LevelSetPattern = { projectionType: 'levels'; levels: LevelPattern[] };
+export type LevelSetPattern = { projectionType: 'outlined'; levels: LevelPattern[] };
 export type FacetedStrutPattern = {
 	projectionType: 'faceted';
 	struts: { facets: FacetPattern[] }[];
@@ -173,7 +181,7 @@ const getOutlinePoints = (strip: Strip, bandStyle: BandStyle): Vector3[] => {
 	const points: Vector3[] = [];
 	if (bandStyle === 'circumference' || bandStyle === 'helical-right') {
 		// top edges
-		let { lead, follow } = generateEdgeConfig(bandStyle, false, true);
+		let { lead, follow } = generateEdgeConfig(bandStyle, false, isStrut(strip), true);
 
 		for (let i = 1; i < strip.facets.length; i += 2) {
 			const facet = strip.facets[i];
@@ -210,9 +218,10 @@ export const generateStrutPatterns = (
 	config: PatternConfig,
 	struts: Strut[]
 ): FacetedStrutPattern | OutlinedStrutPattern => {
-	if (config.patternType === 'levels') throw new Error("wrong pattern type 'levels'");
-	const tiling = struts[0].tiling
-	if (!struts.every(strut => strut.tiling === tiling)) throw new Error("tiling property inconsistent")
+	if (config.showPattern.strut === 'none') throw new Error('Strut patterns not configured');
+	const tiling = struts[0].tiling;
+	if (!struts.every((strut) => strut.tiling === tiling))
+		throw new Error('tiling property inconsistent');
 
 	const flattenedGeometry: Strut[] = struts.map((strut, i) => {
 		return getFlatStrip(strut, {
@@ -222,7 +231,7 @@ export const generateStrutPatterns = (
 		});
 	});
 
-	if (config.projectionType === 'faceted') {
+	if (config.showPattern.strut === 'faceted') {
 		const facetedPattern: FacetedStrutPattern = {
 			projectionType: 'faceted',
 			struts: flattenedGeometry.map((flatStrut) => {
@@ -241,7 +250,7 @@ export const generateStrutPatterns = (
 		};
 		return facetedPattern;
 	}
-	
+
 	const outlinedPattern: OutlinedStrutPattern = {
 		projectionType: 'outlined',
 		struts: flattenedGeometry.map((flatStrut) => {
@@ -256,7 +265,6 @@ export const generateStrutPatterns = (
 		})
 	};
 	return outlinedPattern;
-
 };
 
 export const generateBandPatterns = (
@@ -265,9 +273,7 @@ export const generateBandPatterns = (
 	tabStyle: TabStyle,
 	bands: Band[]
 ): FacetedBandPattern | OutlinedBandPattern => {
-	if (isLevelPatternConfig(config)) {
-		throw new Error('Not a Strip pattern config');
-	}
+	if (config.showPattern.band === 'none') throw new Error('Band patterns not configured');
 	const flattenedGeometry: Band[] = bands.map((band, i) =>
 		getFlatStrip(
 			band,
@@ -280,7 +286,7 @@ export const generateBandPatterns = (
 		)
 	);
 
-	if (config.projectionType === 'faceted') {
+	if (config.showPattern.band === 'faceted') {
 		const facetedPattern: FacetedBandPattern = {
 			projectionType: 'faceted',
 			bands: flattenedGeometry.map((flatBand) => {
@@ -367,7 +373,8 @@ export const generateLevelSetPatterns = (
 	levels: RotatedShapeLevel[],
 	config: PatternConfig
 ): LevelSetPattern => {
-	const pattern: LevelSetPattern = { projectionType: 'levels', levels: [] };
+	if (config.showPattern.level === 'none') throw new Error('Level patterns not configured');
+	const pattern: LevelSetPattern = { projectionType: 'outlined', levels: [] };
 
 	const axis = new Vector2(0, 1);
 	const center = new Vector2(0, 0);
@@ -450,18 +457,17 @@ const getFlatStrip = <T extends Strut | Band>(
 	};
 
 	const flatStrip: Strip = { ...strip, facets: [] };
-
 	strip.facets.forEach((facet, i) => {
 		const alignedFacet: Facet = { ...facet };
 
 		// let edgeConfig
-		let edgeConfig = generateEdgeConfig(flatStripConfig.bandStyle, Math.abs((i - 1) % 2) == 0);
+		let edgeConfig = generateEdgeConfig(flatStripConfig.bandStyle, Math.abs((i - 1) % 2) == 0, isStrut(strip), false);
 		let alignConfig: AlignTrianglesConfig;
+
 		if (i === 0) {
-			const firstAlignedPoints: { pivot: TrianglePoint; constrained: TrianglePoint } = {
-				pivot: 'a',
-				constrained: 'c'
-			};
+			const firstAlignedPoints: { pivot: TrianglePoint; constrained: TrianglePoint } = !isStrut(strip)
+				? { pivot: 'a', constrained: 'c' }
+				: { pivot: 'c', constrained: 'a' };
 			const firstLength = getLength(
 				facet.triangle[firstAlignedPoints.pivot],
 				facet.triangle[firstAlignedPoints.constrained]
@@ -487,7 +493,7 @@ const getFlatStrip = <T extends Strut | Band>(
 		alignedFacet.triangle = alignTriangle(facet.triangle, alignConfig);
 
 		if (facet.tab && tabStyle) {
-			edgeConfig = generateEdgeConfig(config.bandStyle, i % 2 === 0, true);
+			edgeConfig = generateEdgeConfig(config.bandStyle, i % 2 === 0, false, true);
 			const tabAlignConfig = {
 				isEven: Math.abs((i - 1) % 2) === 0,
 				isTabOnGreaterSide: Math.abs((i - 1) % 2) === 1,
@@ -504,7 +510,7 @@ const getFlatStrip = <T extends Strut | Band>(
 				}
 			} else if (facet.tab?.style.startsWith('multi-facet')) {
 				if (facet.tab.style === 'multi-facet-full') {
-					const edgeConfig0 = generateEdgeConfig(config.bandStyle, i % 2 === 0, true);
+					const edgeConfig0 = generateEdgeConfig(config.bandStyle, i % 2 === 0, false, true);
 					const alignConfig0: AlignTrianglesConfig = {
 						isEven: i % 2 === 0,
 						isTabOnGreaterSide: i % 2 === 1,
@@ -518,7 +524,7 @@ const getFlatStrip = <T extends Strut | Band>(
 					// Configure second triangle of tab
 					const edgeConfig1 =
 						i % 2 === 0
-							? generateEdgeConfig(config.bandStyle, i % 2 !== 0, false)
+							? generateEdgeConfig(config.bandStyle, i % 2 !== 0, false, false)
 							: ({ lead: 'b', follow: 'a' } as EdgeConfig);
 					const alignConfig1: AlignTrianglesConfig = {
 						isEven: false,
@@ -541,7 +547,7 @@ const getFlatStrip = <T extends Strut | Band>(
 							...facet.tab.footprint[1],
 							triangle: tabTriangle1
 						},
-						generateEdgeConfig(flatStripConfig.bandStyle, i % 2 === 0, true),
+						generateEdgeConfig(flatStripConfig.bandStyle, i % 2 === 0, false, true),
 						i % 2 === 0 ? 'lesser' : 'greater',
 						tabStyle
 					);
@@ -574,24 +580,36 @@ export type EdgeConfig = { lead: TrianglePoint; follow: TrianglePoint };
 export const generateEdgeConfig = (
 	bandStyle: BandStyle,
 	isEven: boolean,
-	isTabEdge = false
+	isStrut: boolean,
+	isTabEdge: boolean,
 ): EdgeConfig => {
-	if (bandStyle === 'circumference') {
-		if (isEven && isTabEdge) return { lead: 'b', follow: 'a' };
-		else if (isEven && !isTabEdge) return { lead: 'b', follow: 'c' };
-		else if (!isEven && isTabEdge) return { lead: 'a', follow: 'b' };
-		else return { lead: 'a', follow: 'c' };
-	} else if (bandStyle === 'helical-right') {
-		if (isEven && isTabEdge) return { lead: 'c', follow: 'a' };
-		else if (isEven && !isTabEdge) return { lead: 'c', follow: 'b' };
-		else if (!isEven && isTabEdge) return { lead: 'a', follow: 'c' };
-		else return { lead: 'a', follow: 'b' };
+	if (isStrut) {
+		if (bandStyle === 'helical-right') {
+			if (isEven) return { lead: 'a', follow: 'b' };
+			else return { lead: 'c', follow: 'b' }
+			// else if (isEven && !isTabEdge) return { lead: 'c', follow: 'b' };
+			// else if (!isEven && isTabEdge) return { lead: 'a', follow: 'c' };
+			// else return { lead: 'a', follow: 'b' };
+		} else throw new Error("Only helical-right struts supported")
 	} else {
-		if (isEven && isTabEdge) return { lead: 'c', follow: 'b' };
-		else if (isEven && !isTabEdge) return { lead: 'c', follow: 'a' };
-		else if (!isEven && isTabEdge) return { lead: 'b', follow: 'c' };
-		else return { lead: 'b', follow: 'a' };
+		if (bandStyle === 'circumference') {
+			if (isEven && isTabEdge) return { lead: 'b', follow: 'a' };
+			else if (isEven && !isTabEdge) return { lead: 'b', follow: 'c' };
+			else if (!isEven && isTabEdge) return { lead: 'a', follow: 'b' };
+			else return { lead: 'a', follow: 'c' };
+		} else if (bandStyle === 'helical-right') {
+			if (isEven && isTabEdge) return { lead: 'c', follow: 'a' };
+			else if (isEven && !isTabEdge) return { lead: 'c', follow: 'b' };
+			else if (!isEven && isTabEdge) return { lead: 'a', follow: 'c' };
+			else return { lead: 'a', follow: 'b' };
+		} else {
+			if (isEven && isTabEdge) return { lead: 'c', follow: 'b' };
+			else if (isEven && !isTabEdge) return { lead: 'c', follow: 'a' };
+			else if (!isEven && isTabEdge) return { lead: 'b', follow: 'c' };
+			else return { lead: 'b', follow: 'a' };
+		}
 	}
+
 };
 
 function getPathFromPoints(points: (Vector3 | Vector2)[]): string {

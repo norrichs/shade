@@ -52,6 +52,11 @@
 			<option>outside</option>
 			<option>half</option>
 		</select>
+		<label for="radiate">Radiate Style</label>
+		<select id="radiate" bind:value={$strutConfig.radiate}>
+			<option>level</option>
+			<option>orthogonal</option>
+		</select>
 	</section>
 {:else if showControl === '3D'}
 	<section>
@@ -61,6 +66,7 @@
 					<label for={rangeKey}>{rangeKey}</label>
 					<input id={rangeKey} type="number" bind:value={$renderConfig.ranges[rangeKey]} />
 				{/each}
+
 				{#if $renderConfig.show}
 					<div style="grid-column: 1 / 3; font-size: 20px;">Show</div>
 					{#each Object.keys($renderConfig.show) as key}
@@ -107,9 +113,7 @@
 				value={$levelConfig.levels}
 				on:input={handleLevelsInput}
 			/>
-
-			<label>Sampling:</label>
-			<div>
+			<!-- <div> -->
 				<label for="by-divisions">Divisions</label>
 				<select id="by-divisions" bind:value={$levelConfig.levelPrototypeSampleMethod.byDivisions}>
 					<option>whole</option>
@@ -120,7 +124,7 @@
 					<option>shape</option>
 					<option>curve</option>
 				</select>
-			</div>
+			<!-- </div>	 -->
 			<label for="x_offset">X</label>
 			<input id="x_offset" type="number" bind:value={$levelConfig.levelOffset.x} />
 			<label for="y_offset">Y</label>
@@ -136,14 +140,16 @@
 		{/if}
 	</section>
 {:else if showControl === 'Cut'}
+	<h4>Cut Pattern</h4>
 	<section class="control-group">
-		<h4>Cut Pattern</h4>
-		<label for="projection-type">Type</label>
-		<select id="projection-type" bind:value={$patternConfig.projectionType}>
-			<option>faceted</option>
-			<option>outlined</option>
-			<option>levels</option>
-		</select>
+		{#each Object.entries($patternConfig.showPattern) as show}
+			<label for={`show-${show[0]}`}>{show[0]}</label>
+			<select id={`show-${show[0]}`} bind:value={$patternConfig.showPattern[show[0]]}>
+				<option>faceted</option>
+				<option>outlined</option>
+				<option>none</option>
+			</select>
+		{/each}
 	</section>
 {/if}
 
