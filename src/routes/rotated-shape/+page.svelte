@@ -13,7 +13,7 @@
 		Strut,
 	} from '../../lib/rotated-shape';
 	import PathEdit from '../../components/path-edit/PathEdit.svelte';
-	import { strutConfig, curveConfig, radialShapeConfig, levelConfig, bandConfig, renderConfig } from '../../lib/stores';
+	import { strutConfig, curveConfig, depthCurveConfig, radialShapeConfig, levelConfig, bandConfig, renderConfig } from '../../lib/stores';
 	import Controls from '../../components/controls/Controls.svelte';
 	import SelectBar from '../../components/select-bar/SelectBar.svelte';
 
@@ -23,6 +23,7 @@
 	let defaultStrutConfig: StrutConfig = $strutConfig;
 	let config: RotatedShapeGeometryConfig = {
 		shapeConfig: $radialShapeConfig,
+		depthCurveConfig: $depthCurveConfig,
 		levelConfig: defaultLevelConfig,
 		zCurveConfig: defaultZCurveConfig,
 		bandConfig: defaultBandConfig,
@@ -42,6 +43,7 @@
 			shapeConfig: $radialShapeConfig,
 			levelConfig: { ...$levelConfig },
 			zCurveConfig: $curveConfig,
+			depthCurveConfig: $depthCurveConfig,
 			bandConfig: $bandConfig,
 			strutConfig: $strutConfig,
 		};
@@ -73,6 +75,7 @@
 				options={[
 					{ name: 'None' },
 					{ name: 'Zcurve', value: curveConfig },
+					{ name: 'DepthCurve', value: depthCurveConfig},
 					{ name: 'Shape', value: radialShapeConfig },
 					{ name: '3D' },
 					{ name: 'Levels' },
@@ -84,7 +87,7 @@
 		<div class="group">
 			<div>
 				<!-- <div>{showControl?.name}</div> -->
-				{#if showControl?.name === 'Zcurve' || showControl?.name === 'Shape'}
+				{#if showControl?.name === 'Zcurve' || showControl?.name === 'Shape' || showControl?.name === 'DepthCurve'}
 					<PathEdit curveStore={showControl.value} />
 				{/if}
 			</div>

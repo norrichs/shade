@@ -4,6 +4,7 @@ import type {
 	StrutConfig,
 	LevelSetConfig,
 	ZCurveConfig,
+	DepthCurveConfig,
 	RenderConfig,
 	BandSetConfig,
 	RadialShapeConfig
@@ -21,22 +22,39 @@ const defaultZCurveConfig: ZCurveConfig = {
 				{ type: 'PointConfig', x: 50, y: -20 },
 				{ type: 'PointConfig', x: 150, y: -20 },
 				{ type: 'PointConfig', x: 150, y: 50 },
-				{ type: 'PointConfig', x: 50, y: 50 }
+				{ type: 'PointConfig', x: 150, y: 100 }
 			]
 		},
 		// {
 		// 	type: 'BezierConfig',
 		// 	points: [
-		// 		{ type: 'PointConfig', x: 100, y: 50 },
+		// 		{ type: 'PointConfig', x: 150, y: 100 },
 		// 		{ type: 'PointConfig', x: 100, y: 60 },
 		// 		{ type: 'PointConfig', x: 100, y: 90 },
-		// 		{ type: 'PointConfig', x: 0, y: 100 }
+		// 		{ type: 'PointConfig', x: 20, y: 100 }
 		// 	]
 		// }
 	]
 };
 export const curveConfig = writable<ZCurveConfig>(defaultZCurveConfig);
 export const blankCurveConfig = writable<ZCurveConfig>({ type: 'ZCurveConfig', curves: [] });
+
+const defaultDepthCurveConfig: DepthCurveConfig = {
+	type: 'DepthCurveConfig',
+	depthCurveBaseline: 10,
+	curves: [
+		{
+			type: 'BezierConfig',
+			points: [
+				{ type: 'PointConfig', x: 10, y: -100 },
+				{ type: 'PointConfig', x: 10, y: -75 },
+				{ type: 'PointConfig', x: 10, y: 75 },
+				{ type: 'PointConfig', x: 10, y: 100 }
+			]
+		}
+	]
+};
+export const depthCurveConfig = writable<DepthCurveConfig>(defaultDepthCurveConfig);
 
 const symmetryNumber = 5;
 const a0 = (Math.PI * 2) / symmetryNumber;
@@ -81,7 +99,8 @@ const defaultLevelSetConfig: LevelSetConfig = {
 		rotY: rad(0),
 		rotZ: rad(0),
 		scaleX: 1,
-		scaleY: 1
+		scaleY: 1,
+		depth: 1,
 	}
 };
 export const levelConfig = writable<LevelSetConfig>(defaultLevelSetConfig);
@@ -135,7 +154,7 @@ const defaultRenderConfig: RenderConfig = {
 		levelStart: 0,
 		levelCount: 1,
 		strutStart: 0,
-		strutCount: 1
+		strutCount: undefined
 	},
 	show: {
 		tabs: false,
@@ -143,7 +162,7 @@ const defaultRenderConfig: RenderConfig = {
 		bands: false,
 		edges: true,
 		patterns: true,
-		struts: true
+		struts: false
 	}
 };
 

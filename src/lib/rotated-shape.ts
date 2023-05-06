@@ -25,6 +25,7 @@ type LevelOffset = {
 	rotZ: number;
 	scaleX: number;
 	scaleY: number;
+	depth: number;
 };
 
 export type LevelSetConfig = {
@@ -130,6 +131,12 @@ export type ZCurveConfig = {
 	curves: BezierConfig[];
 };
 
+export type DepthCurveConfig = {
+	type: 'DepthCurveConfig';
+	depthCurveBaseline: number;
+	curves: BezierConfig[];
+};
+
 export const generateZCurve = (config: ZCurveConfig): CurvePath<Vector2> => {
 	const zCurve = new CurvePath<Vector2>();
 	for (const curve of config.curves) {
@@ -145,6 +152,25 @@ export const generateZCurve = (config: ZCurveConfig): CurvePath<Vector2> => {
 		}
 	}
 	return zCurve;
+};
+
+const getDepthValues = (config: DepthCurveConfig, levelCount: number): number[] => {
+	const dCurve = new CurvePath<Vector2>();
+	for (const curve of config.curves) {
+		if (curve.type === 'BezierConfig') {
+			dCurve.add(
+				new CubicBezierCurve(
+					new Vector2(curve.points[0].x, curve.points[0].y),
+					new Vector2(curve.points[1].x, curve.points[1].y),
+					new Vector2(curve.points[2].x, curve.points[2].y),
+					new Vector2(curve.points[3].x, curve.points[3].y)
+				)
+			);
+		}
+	}
+	const points = dCurve.getPoints(levelCount - 1);
+	const values = points.map((point) => point.x / config.depthCurveBaseline);
+	return values;
 };
 
 // utility function to generate a regular polygon of type RotatedShapeLevelPrototype
@@ -348,12 +374,15 @@ const isLevelOffset = (levelOffset: LevelOffset | LevelOffset[]): levelOffset is
 const generateLevelSet = (
 	levelConfig: LevelSetConfig,
 	zCurveConfig: ZCurveConfig,
+	depthCurveConfig: DepthCurveConfig,
 	levelPrototype: RotatedShapeLevelPrototype | RotatedShapeLevelPrototype[]
 ): RotatedShapeLevel[] => {
 	const validation = validateLevelSetConfig(levelConfig);
 	if (!validation.isValid) {
 		throw new Error(validation.msg.join('\n'));
 	}
+
+	const depths = getDepthValues(depthCurveConfig, levelConfig.levels);
 
 	// scale z-curve to height and baseRadius
 	const zCurve = generateZCurve(zCurveConfig);
@@ -378,6 +407,7 @@ const generateLevelSet = (
 				levelOffsets[l].rotZ = rotZ * l;
 				levelOffsets[l].scaleX = scaleX * zCurveLevel.x; //* zCurveScale.x
 				levelOffsets[l].scaleY = scaleY * zCurveLevel.x; //* zCurveScale.x
+				levelOffsets[l].depth = depths[l];
 			});
 		}
 	}
@@ -396,6 +426,23 @@ const generateLevelSet = (
 	return levels;
 };
 
+const getPolar = (x: number, y: number, cx = 0, cy = 0): { r: number; theta: number } => {
+	const r = Math.sqrt(Math.pow(x - cx, 2) + Math.pow(y - cy, 2));
+	const sinx = Math.sin(x - cx);
+	const cosy = Math.cos(y - cy);
+	const theta =
+	sinx >= 0 && cosy >= 0
+	? Math.asin(sinx)
+	: sinx >= 0 && cosy < 0
+	? Math.PI - Math.asin(sinx)
+	: sinx < 0 && cosy < 0
+	? Math.PI + Math.asin(sinx)
+	: Math.PI * 2 + Math.asin(sinx);
+	
+	console.debug("polar sinx cosy", sinx, cosy, "r theta", r, Math.floor(theta * 180 / Math.PI))
+	return { r, theta };
+};
+
 const generateLevel = (
 	offset: LevelOffset,
 	prototype: RotatedShapeLevelPrototype,
@@ -408,9 +455,20 @@ const generateLevel = (
 	const yAxis = new Vector3(0, 1, 0);
 	// center for coordinate offset
 	const center = new Vector3(offset.x, offset.y, offset.z);
-	const vertices = prototype.vertices.map((pV) => {
+
+	// const radialVertices = prototype.vertices.map((p) => getPolar(p.x, p.y));
+	const minLength = Math.min(...prototype.vertices.map((v) => v.length()));
+	const depthedVertices = prototype.vertices.map((v) => {
+		const length = v.length();
+		return v.clone().setLength(minLength + (length - minLength) * offset.depth)
+	});
+
+	// console.debug("vertices", prototype.vertices, "radial vertices", radialVertices, "depthedVertices", depthedVertices)
+
+	const vertices = depthedVertices.map((pV) => {
 		const scaledVertex: Vector3 = new Vector3(pV.x, pV.y, 0);
 		// check this
+
 		scaledVertex.setLength(
 			Math.sqrt(Math.pow(offset.scaleX * pV.x, 2) + Math.pow(offset.scaleY * pV.y, 2))
 		);
@@ -696,22 +754,10 @@ const getStrutOffset = (
 					'hybrid\n  diffAngle',
 					Math.floor((diffAngle * 180) / Math.PI),
 					'ortho',
-					Math.floor(orthoVec.angleTo(new Vector3(0, 0, 1)) * 180 / Math.PI)
+					Math.floor((orthoVec.angleTo(new Vector3(0, 0, 1)) * 180) / Math.PI)
 				);
-				// console.debug(
-				// 	'hybrid radiate - angles:',
-				// 	Math.floor(angle * 180 / Math.PI),
-				// 	Math.floor(centerDirectionVec.angleTo(preVec) * 180 / Math.PI),
-				// 	Math.floor(centerDirectionVec.angleTo(postVec) * 180 / Math.PI),
-				// 	'rotAxis',
-				// 	rotAxis,
-				// 	'centerDirection',
-				// 	centerDirectionVec,
-				// 	"rotAxis length",
-				// 	rotAxis.length()
-				// );
 			}
-			const invert = orthoVec.angleTo(new Vector3(0, 0, 1)) > Math.PI / 2 ? 1 : -1
+			const invert = orthoVec.angleTo(new Vector3(0, 0, 1)) > Math.PI / 2 ? 1 : -1;
 			return centerDirectionVec.applyAxisAngle(rotAxis, diffAngle * invert);
 		}
 	} else if (levelIndex === 0) {
@@ -1121,6 +1167,7 @@ export type RotatedShapeGeometryConfig = {
 	shapeConfig: RadialShapeConfig;
 	levelConfig: LevelSetConfig;
 	zCurveConfig: ZCurveConfig;
+	depthCurveConfig: DepthCurveConfig;
 	bandConfig: BandSetConfig;
 	strutConfig: StrutConfig;
 };
@@ -1131,7 +1178,12 @@ export const generateRotatedShapeGeometry = (
 	console.debug('generateRotatedShapeGeometry config:', config);
 	const rotatedShapePrototype: RotatedShapeLevelPrototype | RotatedShapeLevelPrototype[] =
 		generateLevelPrototype(config.shapeConfig, config.levelConfig);
-	const levels = generateLevelSet(config.levelConfig, config.zCurveConfig, rotatedShapePrototype);
+	const levels = generateLevelSet(
+		config.levelConfig,
+		config.zCurveConfig,
+		config.depthCurveConfig,
+		rotatedShapePrototype
+	);
 	const struts = generateStruts(levels, config.strutConfig);
 	const unTabbedBands = generateBandSet(config, levels);
 	const bands = !config.bandConfig?.tabStyle

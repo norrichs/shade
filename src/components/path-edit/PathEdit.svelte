@@ -10,10 +10,11 @@
 		BezierConfig,
 		PointConfig,
 		RadialShapeConfig,
-		ZCurveConfig
+		ZCurveConfig,
+		DepthCurveConfig,
 	} from '$lib/rotated-shape';
 
-	export let curveStore: Writable<ZCurveConfig | RadialShapeConfig> = blankCurveConfig;
+	export let curveStore: Writable<ZCurveConfig | RadialShapeConfig | DepthCurveConfig> = blankCurveConfig;
 
 	let symmetry: number = 1;
 	let reflect: boolean = true;
@@ -152,7 +153,7 @@
 		return curves;
 	};
 
-	const getLimitAngle = (config: RadialShapeConfig | ZCurveConfig): number | null => {
+	const getLimitAngle = (config: RadialShapeConfig | ZCurveConfig | DepthCurveConfig): number | null => {
 		if (config.type === "RadialShapeConfig" && (config.symmetry === "radial" || config.symmetry === "radial-lateral")) {
 			return Math.PI * 2 / config.symmetryNumber
 		} else {
