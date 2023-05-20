@@ -395,7 +395,6 @@ export const generateLevelSetPatterns = (
 		levelPattern.outline.svgPath = getPathFromPoints(levelPattern.outline.points);
 		return levelPattern;
 	});
-	// console.debug('level pattern', pattern);
 	return pattern;
 };
 
@@ -532,7 +531,6 @@ const getFlatStrip = <T extends Strut | Band>(
 						lead: { vec: tabTriangle0[edgeConfig1.lead], p: edgeConfig1.lead },
 						follow: { vec: tabTriangle0[edgeConfig1.follow], p: edgeConfig1.follow }
 					};
-					// console.debug("side", i % 2 === 0 ? "lesser" : "greater", "alignConfig1", alignConfig)
 					const tabTriangle1: Triangle = alignTriangle(
 						facet.tab.footprint[1].triangle,
 						alignConfig1

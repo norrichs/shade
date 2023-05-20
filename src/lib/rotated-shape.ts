@@ -168,7 +168,8 @@ const getDepthValues = (config: DepthCurveConfig, levelCount: number): number[] 
 			);
 		}
 	}
-	const points = dCurve.getPoints(levelCount - 1);
+	const points = dCurve.getSpacedPoints(levelCount - 1)
+		// dCurve.getPoints(levelCount - 1);
 	const values = points.map((point) => point.x / config.depthCurveBaseline);
 	return values;
 };
@@ -438,8 +439,6 @@ const getPolar = (x: number, y: number, cx = 0, cy = 0): { r: number; theta: num
 	: sinx < 0 && cosy < 0
 	? Math.PI + Math.asin(sinx)
 	: Math.PI * 2 + Math.asin(sinx);
-	
-	console.debug("polar sinx cosy", sinx, cosy, "r theta", r, Math.floor(theta * 180 / Math.PI))
 	return { r, theta };
 };
 
@@ -462,8 +461,6 @@ const generateLevel = (
 		const length = v.length();
 		return v.clone().setLength(minLength + (length - minLength) * offset.depth)
 	});
-
-	// console.debug("vertices", prototype.vertices, "radial vertices", radialVertices, "depthedVertices", depthedVertices)
 
 	const vertices = depthedVertices.map((pV) => {
 		const scaledVertex: Vector3 = new Vector3(pV.x, pV.y, 0);
@@ -747,16 +744,6 @@ const getStrutOffset = (
 				.setLength(1)
 				.applyAxisAngle(rotAxis, -angle / 2);
 			const diffAngle = orthoVec.angleTo(centerDirectionVec);
-
-			if (vertexIndex === 3) {
-				console.debug(
-					levelIndex,
-					'hybrid\n  diffAngle',
-					Math.floor((diffAngle * 180) / Math.PI),
-					'ortho',
-					Math.floor((orthoVec.angleTo(new Vector3(0, 0, 1)) * 180) / Math.PI)
-				);
-			}
 			const invert = orthoVec.angleTo(new Vector3(0, 0, 1)) > Math.PI / 2 ? 1 : -1;
 			return centerDirectionVec.applyAxisAngle(rotAxis, diffAngle * invert);
 		}
@@ -804,8 +791,6 @@ const shouldAddTabToSide = (side: StripSide, f: number, direction: TabDirection)
 	(direction === side || direction === 'both') && side === getSide(f);
 
 const generateTabs = (bands: Band[], config: BandSetConfig, struts?: Strut[]) => {
-	console.debug('generateTabs', struts, config);
-
 	const { direction } = config.tabStyle;
 
 	if (config.tabStyle) {
@@ -904,7 +889,6 @@ const generateTabs = (bands: Band[], config: BandSetConfig, struts?: Strut[]) =>
 				})
 			};
 		});
-		console.debug('tabbed bands', tabbedBands);
 		return tabbedBands;
 	}
 	return bands;
@@ -920,9 +904,6 @@ export const generateMultiFacetFullTab = (
 	// get 2 triangles
 	//	choose an edge from one and a point from the other
 	if (tabStyle.style !== 'multi-facet-full') throw new Error();
-	// console.debug("--------------------- generateMultiFacetFullTab")
-	// console.debug("  baseFacet", baseFacet, "\n  pointFacet", pointFacet, "\n  edgeConfig", edgeConfig, "\n  tabStyle", tabStyle);
-
 	const edgeConfig2: EdgeConfig =
 		side === 'greater'
 			? { lead: edgeConfig.follow, follow: edgeConfig.lead }
@@ -991,7 +972,6 @@ const getTriangleSegment = (
 	const lineVector = triangleSide(triangle, pivot, free);
 	const angle = baseVector.angleTo(lineVector);
 	let length;
-	console.debug('width', width);
 	if (width.style === 'fraction') {
 		length = lineVector.length() * width.value;
 	} else {
@@ -1146,7 +1126,6 @@ export const getRenderable = (
 		if (isRotatedShapeLevels(shapes as Strip[] | RotatedShapeLevel[])) {
 			start = levelStart;
 			count = levelCount;
-			console.debug('GetRenderable levels', start, count);
 			return shapes.slice(start, count ? start + count : shapes.length);
 		} else if (isStrip(shapes)) {
 			start = isStrut(shapes[0]) ? strutStart : bandStart;
@@ -1164,18 +1143,19 @@ export const getRenderable = (
 };
 
 export type RotatedShapeGeometryConfig = {
+	[key: string]: RadialShapeConfig | LevelSetConfig | ZCurveConfig | DepthCurveConfig | BandSetConfig | StrutConfig | RenderConfig;
 	shapeConfig: RadialShapeConfig;
 	levelConfig: LevelSetConfig;
 	zCurveConfig: ZCurveConfig;
 	depthCurveConfig: DepthCurveConfig;
 	bandConfig: BandSetConfig;
 	strutConfig: StrutConfig;
+	renderConfig: RenderConfig;
 };
 
 export const generateRotatedShapeGeometry = (
 	config: RotatedShapeGeometryConfig
 ): { levels: RotatedShapeLevel[]; bands: Band[]; struts: Strut[] } => {
-	console.debug('generateRotatedShapeGeometry config:', config);
 	const rotatedShapePrototype: RotatedShapeLevelPrototype | RotatedShapeLevelPrototype[] =
 		generateLevelPrototype(config.shapeConfig, config.levelConfig);
 	const levels = generateLevelSet(

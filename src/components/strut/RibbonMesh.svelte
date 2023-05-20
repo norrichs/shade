@@ -13,7 +13,6 @@
     doRight: true
   }
 
-  console.debug("RM ribbon", ribbon, ribbon.left.flat())
   
   const material = new MeshNormalMaterial()
   material.side = DoubleSide
@@ -29,7 +28,6 @@
   geometry.left.computeVertexNormals()
   geometry.right.computeVertexNormals()
 
-  console.debug("RibbonMesh", geometry)
 
 
 

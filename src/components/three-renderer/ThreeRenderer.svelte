@@ -25,11 +25,9 @@
 	let displayRSBands: Band[]
 	let displayStruts: Strut[]
 	let displayLevels: RotatedShapeLevel[]
-	console.debug("ThreeRender struts", struts)
 
 	$: {
 		displayRSBands = getRenderable($renderConfig, rsbands) as Band[]
-		console.debug("displayRSBands", displayRSBands)
 	}
 	$: {
 		if (struts.length > 0) {

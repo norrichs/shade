@@ -66,43 +66,6 @@
 		const svg_win = window.open(url, 'svg_win');
 	};
 
-	// const zoomToPattern = (pattern: Pattern) => {
-	// 	let maxX = 0,
-	// 		minX = 0,
-	// 		maxY = 0,
-	// 		minY = 0;
-
-	// 	if (pattern.projectionType === 'faceted') {
-	// 		pattern.bands.forEach((band) => {
-	// 			band.facets.forEach((facet) => {
-	// 				const points_x = [facet.triangle.a.x, facet.triangle.b.x, facet.triangle.c.x];
-	// 				if (facet.tab) {
-	// 					points_x.push(facet.tab.triangle.a.x, facet.tab.triangle.b.x, facet.tab.triangle.c.x);
-	// 				}
-	// 				const points_y = [facet.triangle.a.y, facet.triangle.b.y, facet.triangle.c.y];
-	// 				if (facet.tab) {
-	// 					points_y.push(facet.tab.triangle.a.y, facet.tab.triangle.b.y, facet.tab.triangle.c.y);
-	// 				}
-	// 				points_x.forEach((x) => {
-	// 					maxX = maxX > x ? maxX : x;
-	// 					minX = minX < x ? minX : x;
-	// 				});
-	// 				points_y.forEach((y) => {
-	// 					maxY = maxY > y ? maxY : y;
-	// 					minY = minY < y ? minY : y;
-	// 				});
-	// 			});
-	// 		});
-	// 	}
-
-	// 	// set a number of variables which are bound to the control of SVG viewport
-	// 	// width and height (do not change)
-	// 	//
-	// 	console.debug(`${minX} ${minY} ${maxX} ${maxY}`);
-	// 	viewBoxValue = `${minX} ${minY} ${maxX} ${maxY}`;
-	// 	return `${minX} ${minY} ${maxX} ${maxY}`;
-	// };
-
 	$: viewBoxValue = getViewBox($patternViewConfig);
 
 	$: {

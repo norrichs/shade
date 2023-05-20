@@ -18,12 +18,8 @@
 	}
 
 	$: {
-		console.debug("** ** ** tabStyle", tabStyle, $bandConfig.tabStyle)
-		
 		$bandConfig.tabStyle = $bandConfig.tabStyle.style !== tabStyle.style ? initTabStyle(tabStyle.style) : window.structuredClone(tabStyle)
 		tabStyle = window.structuredClone($bandConfig.tabStyle)
-		console.debug("** ** ** tabStyle", tabStyle, $bandConfig.tabStyle)
-
 	}
 
 	const handleLevelsInput = (e: Event & { currentTarget: EventTarget & HTMLInputElement }) => {

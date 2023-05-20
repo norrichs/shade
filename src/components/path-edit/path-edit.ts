@@ -32,11 +32,8 @@ export const onPathPointMove = (
 	//  if isHandle && isEnd && isSmooth
 	//		rotated partner move(other end handle)
 
-	// console.debug("angle", 180 / Math.PI * Math.atan(y / x))  // TODO - switch to using sin / cos for angle calculation to avoid discontinuity
-
 	const curve = curves[curveIndex];
 	const isPoint = pointIndex === 0 || pointIndex === 3;
-	console.debug("isEndLocked", isEndLocked)
 	const isEnd = isEndLocked &&
 		((curveIndex === 0 && pointIndex <= 1) || (curveIndex === curves.length - 1 && pointIndex >= 2))
 	const isHandle = !isPoint;
@@ -53,14 +50,12 @@ export const onPathPointMove = (
 			(partner && partner.points[partnerPointIndex].pointType === 'angled'));
 
 	if (isEnd && isPoint) {
-		console.debug("isEnd point")
 		const thisPoint  = curves[curveIndex].points[pointIndex]
 		const endPartner = curves[curveIndex === 0 ? curves.length - 1 : 0].points[pointIndex === 0 ? 3 : 0]
 		// for end point, calc radius, then set point and partner to be r, expected theta
 		const r = Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2))
 		const angle = curveIndex === 0 ? 0 : limitAngle;
 		const partnerAngle = angle === 0 ? limitAngle : 0
-		console.debug("r", r, "angle", angle * 180 / Math.PI, "partnerAngle", partnerAngle * 180 / Math.PI)
 		
 		thisPoint.x = - r * Math.sin(angle)
 		thisPoint.y = r * Math.cos(angle)
@@ -68,11 +63,9 @@ export const onPathPointMove = (
 		endPartner.x = - r * Math.sin(partnerAngle)
 		endPartner.y = r * Math.cos(partnerAngle)
 
-		console.debug(thisPoint.x, thisPoint.y, endPartner.x, endPartner.y)
 		return curves
 
 	} else if (isEnd && isHandle) {
-		console.debug("isEnd handle")
 	} else if (isPoint && isJoined && partner) {
 		// coordinate associated points of joined point - handle, partner point, partner handle
 		const [partnerHandle, partnerPoint] =
@@ -171,7 +164,6 @@ const getMidpoint = (p0: PointConfig, p1: PointConfig): PointConfig => {
 
 export const splitCurves = (curves: BezierConfig[]): BezierConfig[] => {
 	const newCurves: BezierConfig[] = window.structuredClone(curves)
-	console.debug("splitCurves", curves, newCurves)
 	const insertIndex = Math.ceil((curves.length - 1) / 2)
 	const p = newCurves[insertIndex].points
 	const m0 = getMidpoint(p[0], p[1])

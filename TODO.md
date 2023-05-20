@@ -18,6 +18,19 @@
 
 ## Major Features
 
+- Data persistence
+  - local storage hook
+    - for all config objects, onChange, write a local storage representation
+    - onLoad, use local storage configs if they exists, otherwise, use defaults
+    - reset function restores to defaults
+    - current config state can be persisted to named local storage representation
+    - export config to file
+
+- SVG export
+  - usning `transform` implement a shape arranging function which will aarrange shapes in construction order (eg strut0, band0, strut1, band1, etc) with spacing and canvas placement based on shape bounds (also rotate based on longest axis, etc)
+  - add cuttable numbers to each
+  
+
 - curve-based interface for specifying varying parameters
   - ends are y-locked to ZCurve
   - for: rot, coordinate offsets, detail

@@ -16,6 +16,7 @@
 	import { strutConfig, curveConfig, depthCurveConfig, radialShapeConfig, levelConfig, bandConfig, renderConfig } from '../../lib/stores';
 	import Controls from '../../components/controls/Controls.svelte';
 	import SelectBar from '../../components/select-bar/SelectBar.svelte';
+	import SaveControl from '../../components/save-control/SaveControl.svelte'
 
 	let defaultZCurveConfig: ZCurveConfig = $curveConfig;
 	let defaultLevelConfig: LevelSetConfig = { ...$levelConfig };
@@ -37,6 +38,23 @@
 	let bands = data.bands;
 	let showControl: { name: string; value: unknown };
 
+	const updateGeometry = () => {
+		config = {
+			...config,
+			shapeConfig: $radialShapeConfig,
+			levelConfig: { ...$levelConfig },
+			zCurveConfig: $curveConfig,
+			depthCurveConfig: $depthCurveConfig,
+			bandConfig: $bandConfig,
+			strutConfig: $strutConfig,
+		};
+
+		console.debug("udpateGeometry",config.shapeConfig)
+		data = generateRotatedShapeGeometry(config)
+	}
+
+
+
 	$: {
 		config = {
 			...config,
@@ -47,7 +65,7 @@
 			bandConfig: $bandConfig,
 			strutConfig: $strutConfig,
 		};
-		console.debug(' PAGE CONFIG', config);
+		// console.debug(' PAGE CONFIG', config);
 		data = generateRotatedShapeGeometry(config);
 		levels = data.levels;
 		if ($renderConfig.ranges?.rangeStyle === "slice") {
@@ -80,7 +98,8 @@
 					{ name: '3D' },
 					{ name: 'Levels' },
 					{ name: 'Struts' },
-					{ name: 'Cut'}
+					{ name: 'Cut'},
+					{ name: 'Save' },
 				]}
 			/>
 		</header>
@@ -92,6 +111,7 @@
 				{/if}
 			</div>
 			<Controls showControl={showControl?.name} />
+			<SaveControl show={showControl?.name === "Save"} config={config} update={updateGeometry}/>
 		</div>
 	</section>
 </main>

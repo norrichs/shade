@@ -135,8 +135,6 @@
 		const isReflected = config.symmetry === 'lateral' || config.symmetry === 'radial-lateral';
 		const isRadial = config.symmetry === 'radial' || config.symmetry === 'radial-lateral';
 
-		// console.debug("radializeCurves", localCurves, "isReflected", isReflected, "isRadial", isRadial)
-
 		if (isRadial) {
 			let resultCurves: BezierConfig[] = [];
 			let unitCurves: BezierConfig[] = window.structuredClone(localCurves);
