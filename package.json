@@ -39,6 +39,7 @@
 	"type": "module",
 	"dependencies": {
 		"@sveltejs/adapter-static": "^2.0.1",
+		"@sveltejs/adapter-vercel": "^3.0.0",
 		"svelte-drag-and-drop-actions": "^1.0.0",
 		"svelte-drag-drop-touch": "^0.1.9"
 	}
