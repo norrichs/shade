@@ -1,7 +1,14 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
-	import { renderConfig, levelConfig, bandConfig, patternConfig, strutConfig, initTabStyle } from '../../lib/stores';
-	import type {TabStyle} from '../../lib/rotated-shape'
+	import {
+		renderConfig,
+		levelConfig,
+		bandConfig,
+		patternConfig,
+		strutConfig,
+		initTabStyle
+	} from '../../lib/stores';
+	import type { TabStyle } from '../../lib/rotated-shape';
 
 	export let showControl: string;
 
@@ -9,7 +16,9 @@
 	let rotX: number = ($levelConfig.levelOffset.rotX * 180) / Math.PI;
 	let rotY: number = ($levelConfig.levelOffset.rotY * 180) / Math.PI;
 
-	let tabStyle: TabStyle = window.structuredClone($bandConfig.tabStyle) 
+	let tabStyle: TabStyle = window.structuredClone($bandConfig.tabStyle);
+
+	console.debug("renderConfig", $renderConfig)
 
 	$: {
 		$levelConfig.levelOffset.rotZ = (rotZ * Math.PI) / 180;
@@ -18,19 +27,24 @@
 	}
 
 	$: {
-		$bandConfig.tabStyle = $bandConfig.tabStyle.style !== tabStyle.style ? initTabStyle(tabStyle.style) : window.structuredClone(tabStyle)
-		tabStyle = window.structuredClone($bandConfig.tabStyle)
+		$bandConfig.tabStyle =
+			$bandConfig.tabStyle.style !== tabStyle.style
+				? initTabStyle(tabStyle.style)
+				: window.structuredClone(tabStyle);
+		tabStyle = window.structuredClone($bandConfig.tabStyle);
 	}
 
-	const handleLevelsInput = (e: Event & { currentTarget: EventTarget & HTMLInputElement }) => {
-		const preval = e.currentTarget.valueAsNumber;
-		$levelConfig.levels = preval && preval > 1 && typeof preval === 'number' ? preval : 2;
-	};
+	// const handleLevelsInput = (e: Event & { currentTarget: EventTarget & HTMLInputElement }) => {
+	// 	const preval = e.currentTarget.valueAsNumber;
+	// 	$levelConfig.levels = preval && preval > 1 && typeof preval === 'number' ? preval : 2;
+	// };
 </script>
+
 {#if showControl === 'Struts'}
 	<section class="control-group">
-		<div>Struts</div><div></div>
-		<label for="render-struts" >Show</label>
+		<div>Struts</div>
+		<div />
+		<label for="render-struts">Show</label>
 		<input id="render-struts" type="checkbox" bind:checked={$renderConfig.show.struts} />
 		<label for="strut-tiling">Tiling</label>
 		<select id="strut-tiling" bind:value={$strutConfig.tiling}>
@@ -41,7 +55,7 @@
 			<option disabled>hexagonal</option>
 		</select>
 		<label for="strut-width">Width</label>
-		<input id="strut-width" type=number min=0 bind:value={$strutConfig.width} />
+		<input id="strut-width" type="number" min="0" bind:value={$strutConfig.width} />
 		<label for="strut-orientation">Orientation</label>
 		<select id="strut-orientation" bind:value={$strutConfig.orientation}>
 			<option>inside</option>
@@ -59,7 +73,7 @@
 	<section>
 		{#if $renderConfig.ranges?.rangeStyle === 'slice'}
 			<section class="control-group">
-				{#each Object.keys($renderConfig.ranges).filter(key => key !== "rangeStyle") as rangeKey}
+				{#each Object.keys($renderConfig.ranges).filter((key) => key !== 'rangeStyle') as rangeKey}
 					<label for={rangeKey}>{rangeKey}</label>
 					<input id={rangeKey} type="number" bind:value={$renderConfig.ranges[rangeKey]} />
 				{/each}
@@ -93,35 +107,46 @@
 				<option>lesser</option>
 				<option>both</option>
 			</select>
-			{#if tabStyle?.style === "trapezoid" && tabStyle?.width?.value !== undefined}
+			{#if tabStyle?.style === 'trapezoid' && tabStyle?.width?.value !== undefined}
 				<label for="tab-width">Tab Width</label>
-				<input id="tab-width" type="number" min=1 bind:value={tabStyle.width.value} />
+				<input id="tab-width" type="number" min="1" bind:value={tabStyle.width.value} />
 			{/if}
 		</section>
 	</section>
 {:else if showControl === 'Levels'}
 	<section class="control-group">
 		{#if $levelConfig}
-			<label for="levels">Levels</label>
+			<!-- <label for="levels">Levels</label>
 			<input
 				id="levels"
 				type="number"
 				min="1"
 				value={$levelConfig.levels}
 				on:input={handleLevelsInput}
-			/>
-			<!-- <div> -->
-				<label for="by-divisions">Divisions</label>
-				<select id="by-divisions" bind:value={$levelConfig.levelPrototypeSampleMethod.byDivisions}>
-					<option>whole</option>
-					<option>offsetHalf</option>
-				</select>
-				<label for="divide-per">Per</label>
-				<select id="divide-per" bind:value={$levelConfig.levelPrototypeSampleMethod.dividePer}>
-					<option>shape</option>
-					<option>curve</option>
-				</select>
-			<!-- </div>	 -->
+			/> -->
+
+			<label for="by-divisions">Divisions</label>
+			<select id="by-divisions" bind:value={$levelConfig.levelPrototypeSampleMethod.byDivisions}>
+				<option>whole</option>
+				<option>offsetHalf</option>
+			</select>
+			<label for="divide-per">Per</label>
+			<select id="divide-per" bind:value={$levelConfig.levelPrototypeSampleMethod.dividePer}>
+				<option>shape</option>
+				<option>curve</option>
+			</select>
+
+			<label for="zCurve-sample-method">Z Curve Sample</label>
+			<select id="zCurve-sample-method" bind:value={$levelConfig.zCurveSampleMethod}>
+				<!-- <option value="levelInterval">By Level</option> -->
+				<option value={{ method: 'divideCurvePath', divisions: 10 }}>By Whole Curve</option>
+				<option value={{ method: 'divideCurve', divisions: 3 }}>By Sub-curve</option>
+			</select>
+			{#if typeof $levelConfig.zCurveSampleMethod === 'object' && Object.hasOwn($levelConfig.zCurveSampleMethod, 'method')}
+				<label for="zCurve-divisions">Divisions</label>
+				<input id="zCurve-divisions" type="number" min=1 bind:value={$levelConfig.zCurveSampleMethod.divisions}/>
+			{/if}
+
 			<label for="x_offset">X</label>
 			<input id="x_offset" type="number" bind:value={$levelConfig.levelOffset.x} />
 			<label for="y_offset">Y</label>
@@ -133,7 +158,7 @@
 			<label for="roty_offset">rotation Y</label>
 			<input id="roty_offset" type="number" min={-360} max={360} bind:value={rotY} />
 			<label for="rotz_offset">rotation Z</label>
-			<input id="rotz_offset" type="number" min={-360} max={360} bind:value={rotZ} />
+			<input id="rotz_offset" type="number" min={-360} max={360} step={0.05} bind:value={rotZ} />
 		{/if}
 	</section>
 {:else if showControl === 'Cut'}

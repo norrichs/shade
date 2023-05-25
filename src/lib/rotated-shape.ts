@@ -30,9 +30,10 @@ type LevelOffset = {
 
 export type LevelSetConfig = {
 	// zCurveConfig: ZCurveConfig,
-	zCurveSampleMethod: 'arcLength' | 'levelInterval';
+	type: 'LevelSetConfig';
+	zCurveSampleMethod: CurveSampleMethod;
 	levelPrototypeSampleMethod: { byDivisions: 'whole' | 'offsetHalf'; dividePer: 'shape' | 'curve' };
-	levels: number;
+	levels?: number;
 	baseRadius?: number;
 	levelOffset: LevelOffset;
 	height?: number;
@@ -168,8 +169,8 @@ const getDepthValues = (config: DepthCurveConfig, levelCount: number): number[] 
 			);
 		}
 	}
-	const points = dCurve.getSpacedPoints(levelCount - 1)
-		// dCurve.getPoints(levelCount - 1);
+	const points = dCurve.getSpacedPoints(levelCount - 1);
+	// dCurve.getPoints(levelCount - 1);
 	const values = points.map((point) => point.x / config.depthCurveBaseline);
 	return values;
 };
@@ -191,9 +192,14 @@ export const generateRegularPolygonLevel = (
 	return output;
 };
 
+export type CurveSampleMethod =
+	| { method: 'divideCurvePath'; divisions: number }
+	| { method: 'divideCurve'; divisions: number };
+
 export type RadialShapeConfig = {
 	type: 'RadialShapeConfig';
-	divisions: number;
+	// divisions: number;
+	sampleMethod: CurveSampleMethod;
 	symmetry: 'asymmetric' | 'radial' | 'lateral' | 'radial-lateral';
 	symmetryNumber: number;
 	curves: BezierConfig[];
@@ -305,6 +311,7 @@ const generateLevelPrototype = (
 	config: RadialShapeConfig,
 	levelConfig: LevelSetConfig
 ): RotatedShapeLevelPrototype | RotatedShapeLevelPrototype[] => {
+	console.debug('levelConfig', levelConfig);
 	if (levelConfig.levelPrototypeSampleMethod.byDivisions === 'offsetHalf') {
 		return [
 			generateRadialShapeLevelPrototype(config, levelConfig, 0),
@@ -322,26 +329,28 @@ const generateRadialShapeLevelPrototype = (
 	const shape = generateRadialShape(normalizeConfigPoints(config, 1));
 	const points: Vector2[] = [];
 
-	const { dividePer, byDivisions } = levelConfig.levelPrototypeSampleMethod;
-	if (dividePer === 'curve') {
+	const { byDivisions } = levelConfig.levelPrototypeSampleMethod;
+	const { sampleMethod } = config;
+	console.debug('sampleMethod', sampleMethod, config);
+	if (sampleMethod.method === 'divideCurve') {
+		// const {divisions} = sampleMethod
 		if (byDivisions === 'whole') {
 			shape.curves.forEach((curve) => {
-				points.push(...curve.getPoints(config.divisions).slice(1)); // removes first point from each curve to avoid dupes
+				points.push(...curve.getPoints(sampleMethod.divisions).slice(1)); // removes first point from each curve to avoid dupes
 			});
 		} else if (byDivisions === 'offsetHalf') {
-			shape.curves.forEach((curve, i) => {
-				const curvePoints = curve.getPoints(config.divisions * 2 - 1);
-				const ends = [curvePoints[0], curvePoints[curvePoints.length - 1]];
+			shape.curves.forEach((curve) => {
+				const curvePoints = curve.getPoints(sampleMethod.divisions * 2 - 1);
 				const halfPoints = curvePoints.filter((point, i, points) => i % 2 === levelNumber % 2);
-				const recombined = halfPoints; //[ends[0], ...halfPoints, ends[1]].slice(1)
+				const recombined = halfPoints;
 				points.push(...recombined);
 			});
 		}
-	} else if (levelConfig.levelPrototypeSampleMethod.dividePer === 'shape') {
+	} else if (sampleMethod.method === 'divideCurvePath') {
 		const totalLength = shape.getLength();
 		shape.curves.forEach((curve) => {
 			const ratio = curve.getLength() / totalLength;
-			points.push(...curve.getPoints(Math.ceil(config.divisions * ratio)).slice(1)); // removes first point from each curve to avoid dupes
+			points.push(...curve.getPoints(Math.ceil(sampleMethod.divisions * ratio)).slice(1)); // removes first point from each curve to avoid dupes
 		});
 	}
 
@@ -356,18 +365,18 @@ export type Validation = {
 	msg: string[];
 };
 
-const validateLevelSetConfig = (config: LevelSetConfig): Validation => {
-	const validation: Validation = { isValid: true, msg: [] };
-	if (config.zCurveSampleMethod === 'arcLength') {
-		if (Array.isArray(config.levelOffset) || config.levelOffset.z !== 0) {
-			validation.isValid = validation.isValid && false;
-			validation.msg.push(
-				'sampling zCurve by arc divisions, level z offsets should not be directly configured'
-			);
-		}
-	}
-	return validation;
-};
+// const validateLevelSetConfig = (config: LevelSetConfig): Validation => {
+// 	const validation: Validation = { isValid: true, msg: [] };
+// 	if (config.zCurveSampleMethod === 'levelInterval') {
+// 		if (Array.isArray(config.levelOffset) || config.levelOffset.z !== 0) {
+// 			validation.isValid = validation.isValid && false;
+// 			validation.msg.push(
+// 				'sampling zCurve by arc divisions, level z offsets should not be directly configured'
+// 			);
+// 		}
+// 	}
+// 	return validation;
+// };
 
 const isLevelOffset = (levelOffset: LevelOffset | LevelOffset[]): levelOffset is LevelOffset =>
 	!Array.isArray(levelOffset);
@@ -378,41 +387,46 @@ const generateLevelSet = (
 	depthCurveConfig: DepthCurveConfig,
 	levelPrototype: RotatedShapeLevelPrototype | RotatedShapeLevelPrototype[]
 ): RotatedShapeLevel[] => {
-	const validation = validateLevelSetConfig(levelConfig);
-	if (!validation.isValid) {
-		throw new Error(validation.msg.join('\n'));
-	}
+	// const validation = validateLevelSetConfig(levelConfig);
+	// if (!validation.isValid) {
+	// 	throw new Error(validation.msg.join('\n'));
+	// }
 
-	const depths = getDepthValues(depthCurveConfig, levelConfig.levels);
+	const depths = getDepthValues(depthCurveConfig, levelConfig.zCurveSampleMethod.divisions + 1);
 
 	// scale z-curve to height and baseRadius
 	const zCurve = generateZCurve(zCurveConfig);
-	const levelOffsets: LevelOffset[] = new Array(levelConfig.levels);
+	const levelCount = levelConfig.zCurveSampleMethod.method === "divideCurve"
+		? zCurveConfig.curves.length * levelConfig.zCurveSampleMethod.divisions
+		: levelConfig.zCurveSampleMethod.divisions
+	const levelOffsets: LevelOffset[] = new Array(levelCount);
 
 	// generate offsets from config
-	if (levelConfig.zCurveSampleMethod === 'arcLength') {
-		const zCurveRawPoints = zCurve.getSpacedPoints(levelConfig.levels - 1);
-
-		const configLevelOffset: LevelOffset = isLevelOffset(levelConfig.levelOffset)
-			? levelConfig.levelOffset
-			: levelConfig.levelOffset[0];
-		if (isLevelOffset(levelConfig.levelOffset)) {
-			zCurveRawPoints.forEach((zCurveLevel, l) => {
-				levelOffsets[l] = { ...configLevelOffset };
-				const { x, y, rotX, rotY, rotZ, scaleX, scaleY } = configLevelOffset;
-				levelOffsets[l].x = x * l;
-				levelOffsets[l].y = y * l;
-				levelOffsets[l].z = zCurveLevel.y;
-				levelOffsets[l].rotX = rotX * l;
-				levelOffsets[l].rotY = rotY * l;
-				levelOffsets[l].rotZ = rotZ * l;
-				levelOffsets[l].scaleX = scaleX * zCurveLevel.x; //* zCurveScale.x
-				levelOffsets[l].scaleY = scaleY * zCurveLevel.x; //* zCurveScale.x
-				levelOffsets[l].depth = depths[l];
-			});
-		}
+	let zCurveRawPoints: Vector2[];
+	if (levelConfig.zCurveSampleMethod.method === "divideCurvePath") {
+		zCurveRawPoints = zCurve.getSpacedPoints(levelConfig.zCurveSampleMethod.divisions);
+	} else {
+		zCurveRawPoints = zCurve.getPoints(levelConfig.zCurveSampleMethod.divisions);
 	}
-	const levels: RotatedShapeLevel[] = new Array(levelConfig.levels);
+	const configLevelOffset: LevelOffset = isLevelOffset(levelConfig.levelOffset)
+		? levelConfig.levelOffset
+		: levelConfig.levelOffset[0];
+	if (isLevelOffset(levelConfig.levelOffset)) {
+		zCurveRawPoints.forEach((zCurveLevel, l) => {
+			levelOffsets[l] = { ...configLevelOffset };
+			const { x, y, rotX, rotY, rotZ, scaleX, scaleY } = configLevelOffset;
+			levelOffsets[l].x = x * l;
+			levelOffsets[l].y = y * l;
+			levelOffsets[l].z = zCurveLevel.y;
+			levelOffsets[l].rotX = rotX * l;
+			levelOffsets[l].rotY = rotY * l;
+			levelOffsets[l].rotZ = rotZ * l;
+			levelOffsets[l].scaleX = scaleX * zCurveLevel.x; //* zCurveScale.x
+			levelOffsets[l].scaleY = scaleY * zCurveLevel.x; //* zCurveScale.x
+			levelOffsets[l].depth = depths[l];
+		});
+	}
+	const levels: RotatedShapeLevel[] = new Array(levelCount);
 	levelOffsets.forEach((levelOffset, l) => {
 		let thisLevelPrototype: RotatedShapeLevelPrototype;
 		if (Array.isArray(levelPrototype)) {
@@ -432,13 +446,13 @@ const getPolar = (x: number, y: number, cx = 0, cy = 0): { r: number; theta: num
 	const sinx = Math.sin(x - cx);
 	const cosy = Math.cos(y - cy);
 	const theta =
-	sinx >= 0 && cosy >= 0
-	? Math.asin(sinx)
-	: sinx >= 0 && cosy < 0
-	? Math.PI - Math.asin(sinx)
-	: sinx < 0 && cosy < 0
-	? Math.PI + Math.asin(sinx)
-	: Math.PI * 2 + Math.asin(sinx);
+		sinx >= 0 && cosy >= 0
+			? Math.asin(sinx)
+			: sinx >= 0 && cosy < 0
+			? Math.PI - Math.asin(sinx)
+			: sinx < 0 && cosy < 0
+			? Math.PI + Math.asin(sinx)
+			: Math.PI * 2 + Math.asin(sinx);
 	return { r, theta };
 };
 
@@ -459,7 +473,7 @@ const generateLevel = (
 	const minLength = Math.min(...prototype.vertices.map((v) => v.length()));
 	const depthedVertices = prototype.vertices.map((v) => {
 		const length = v.length();
-		return v.clone().setLength(minLength + (length - minLength) * offset.depth)
+		return v.clone().setLength(minLength + (length - minLength) * offset.depth);
 	});
 
 	const vertices = depthedVertices.map((pV) => {
@@ -607,6 +621,7 @@ export type Strut = {
 };
 
 export type StrutConfig = {
+	type: 'StrutConfig';
 	tiling: Tiling;
 	orientation: StrutOrientation;
 	radiate: RadiateOrientation;
@@ -1061,6 +1076,7 @@ export type TabStyle =
 	  };
 
 export type BandSetConfig = {
+	type: 'BandSetConfig';
 	bandStyle: BandStyle;
 	offsetBy: -2 | -1 | 0 | 1 | 2;
 	tabStyle: TabStyle;
@@ -1082,6 +1098,7 @@ export type RenderRange =
 	  };
 
 export type RenderConfig = {
+	type: 'RenderConfig';
 	ranges: RenderRange;
 	show: {
 		[key: string]: boolean;
@@ -1143,7 +1160,14 @@ export const getRenderable = (
 };
 
 export type RotatedShapeGeometryConfig = {
-	[key: string]: RadialShapeConfig | LevelSetConfig | ZCurveConfig | DepthCurveConfig | BandSetConfig | StrutConfig | RenderConfig;
+	[key: string]:
+		| RadialShapeConfig
+		| LevelSetConfig
+		| ZCurveConfig
+		| DepthCurveConfig
+		| BandSetConfig
+		| StrutConfig
+		| RenderConfig;
 	shapeConfig: RadialShapeConfig;
 	levelConfig: LevelSetConfig;
 	zCurveConfig: ZCurveConfig;
@@ -1164,6 +1188,7 @@ export const generateRotatedShapeGeometry = (
 		config.depthCurveConfig,
 		rotatedShapePrototype
 	);
+	console.debug('generateRotatedShapeGeometry - levels', levels);
 	const struts = generateStruts(levels, config.strutConfig);
 	const unTabbedBands = generateBandSet(config, levels);
 	const bands = !config.bandConfig?.tabStyle

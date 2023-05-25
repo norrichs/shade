@@ -274,7 +274,7 @@
 			<label for="input-symmetry-number">rs</label>
 			<input id="input-symmetry-number" type="number" min="1" max="99" bind:value={$curveStore.symmetryNumber} />
 			<label for="input-divisions">div</label>
-			<input id="input-divisions" type="number" min="0" max="99" bind:value={$curveStore.divisions} />
+			<input id="input-divisions" type="number" min="0" max="99" bind:value={$curveStore.sampleMethod.divisions} />
 			<!-- <label for="input-divisions">rs</label> -->
 			<select id="select-symmetry" bind:value={$curveStore.symmetry} placeholder="mode">
 				<option>asymmetric</option>

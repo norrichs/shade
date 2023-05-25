@@ -1,4 +1,4 @@
-import { writable } from 'svelte/store';
+import { writable, derived } from 'svelte/store';
 import { setLocal, getLocal, getPersistedConfig, AUTO_PERSIST_KEY } from './storage';
 import type {
 	TabStyle,
@@ -9,67 +9,69 @@ import type {
 	RenderConfig,
 	BandSetConfig,
 	RadialShapeConfig,
-	RotatedShapeGeometryConfig
+	RotatedShapeGeometryConfig,
+	CurveSampleMethod
 } from './rotated-shape';
 import type { PatternConfig, PatternViewConfig } from './cut-pattern';
 import { Vector3 } from 'three';
 import { rad } from './util';
 
-const persistable = <T>(defaultInit: T, name: keyof RotatedShapeGeometryConfig) => {
-	const init = getPersistedConfig(name) || defaultInit
+const USE_PERSISTED = false;
 
-	const { subscribe, set, update } = writable<T>(init)
+const persistable = <T>(
+	defaultInit: T,
+	name: keyof RotatedShapeGeometryConfig,
+	usePersisted = true
+) => {
+	const init = (usePersisted && getPersistedConfig(name)) || defaultInit;
+
+	const { subscribe, set, update } = writable<T>(init);
 
 	return {
 		subscribe,
 		update: function (value: T) {
-			update(value => value);
-			const persistObj = getLocal(AUTO_PERSIST_KEY)
+			update((value) => value);
+			const persistObj = getLocal(AUTO_PERSIST_KEY);
 			persistObj[name] = value;
-			setLocal(AUTO_PERSIST_KEY, persistObj)
+			setLocal(AUTO_PERSIST_KEY, persistObj);
 		},
 		set: (value: T) => {
-			const persistObj = getLocal(AUTO_PERSIST_KEY) || {}
+			const persistObj = getLocal(AUTO_PERSIST_KEY) || {};
 			persistObj[name] = value;
-			setLocal(AUTO_PERSIST_KEY, persistObj)
+			setLocal(AUTO_PERSIST_KEY, persistObj);
 			set(value);
 		},
 		reset: () => {
-			console.debug("setting default")
-			set(defaultInit)
+			console.debug('setting default');
+			set(defaultInit);
 		}
-	}
-}
+	};
+};
 
 export const resetStore = () => {
 	levelConfig.reset();
-}
-
-
-
+};
 
 export const spreadConfigToStores = (config: RotatedShapeGeometryConfig) => {
 	if (config.levelConfig) {
-		levelConfig.set(config.levelConfig)
+		levelConfig.set(config.levelConfig);
 	}
 	if (config.bandConfig) {
-		bandConfig.set(config.bandConfig)
+		bandConfig.set(config.bandConfig);
 	}
 	if (config.depthCurveConfig) {
-		depthCurveConfig.set(config.depthCurveConfig)
+		depthCurveConfig.set(config.depthCurveConfig);
 	}
 	if (config.shapeConfig) {
-		radialShapeConfig.set(config.shapeConfig)
+		radialShapeConfig.set(config.shapeConfig);
 	}
 	if (config.strutConfig) {
-		strutConfig.set(config.strutConfig)
+		strutConfig.set(config.strutConfig);
 	}
 	if (config.zCurveConfig) {
-		curveConfig.set(config.zCurveConfig)
+		curveConfig.set(config.zCurveConfig);
 	}
-}
-
-
+};
 
 const defaultZCurveConfig: ZCurveConfig = {
 	type: 'ZCurveConfig',
@@ -82,7 +84,7 @@ const defaultZCurveConfig: ZCurveConfig = {
 				{ type: 'PointConfig', x: 150, y: 50 },
 				{ type: 'PointConfig', x: 150, y: 100 }
 			]
-		},
+		}
 		// {
 		// 	type: 'BezierConfig',
 		// 	points: [
@@ -94,7 +96,6 @@ const defaultZCurveConfig: ZCurveConfig = {
 		// }
 	]
 };
-export const curveConfig = persistable<ZCurveConfig>(defaultZCurveConfig, "zCurveConfig");
 export const blankCurveConfig = writable<ZCurveConfig>({ type: 'ZCurveConfig', curves: [] });
 
 const defaultDepthCurveConfig: DepthCurveConfig = {
@@ -112,16 +113,16 @@ const defaultDepthCurveConfig: DepthCurveConfig = {
 		}
 	]
 };
-export const depthCurveConfig = persistable<DepthCurveConfig>(defaultDepthCurveConfig, "depthCurveConfig");
 
 const symmetryNumber = 6;
 const a0 = (Math.PI * 2) / symmetryNumber;
 const radius = 100;
+
 const defaultRadialShapeConfig: RadialShapeConfig = {
 	type: 'RadialShapeConfig',
 	symmetry: 'radial',
 	symmetryNumber: symmetryNumber,
-	divisions: 5,
+	sampleMethod: { method: 'divideCurvePath', divisions: 5 },
 	curves: [
 		{
 			type: 'BezierConfig',
@@ -143,12 +144,12 @@ const defaultRadialShapeConfig: RadialShapeConfig = {
 	]
 };
 
-export const radialShapeConfig = persistable<RadialShapeConfig>(defaultRadialShapeConfig, "shapeConfig");
-
 const defaultLevelSetConfig: LevelSetConfig = {
-	zCurveSampleMethod: 'arcLength',
+	type: 'LevelSetConfig',
+	zCurveSampleMethod: { method: 'divideCurvePath', divisions: 10 },
+	// move below into shapeConfig
 	levelPrototypeSampleMethod: { byDivisions: 'whole', dividePer: 'curve' },
-	levels: 30,
+	// levels: 30,
 	levelOffset: {
 		x: 0,
 		y: 0,
@@ -158,10 +159,9 @@ const defaultLevelSetConfig: LevelSetConfig = {
 		rotZ: rad(0),
 		scaleX: 1,
 		scaleY: 1,
-		depth: 1,
+		depth: 1
 	}
 };
-export const levelConfig = persistable<LevelSetConfig>(defaultLevelSetConfig, "levelSetConfig");
 
 export const initTabStyle = (style: TabStyle['style']): TabStyle => {
 	const defaultTabStyles: { [key: string]: TabStyle } = {
@@ -185,23 +185,22 @@ export const initTabStyle = (style: TabStyle['style']): TabStyle => {
 };
 
 const defaultBandConfig: BandSetConfig = {
+	type: 'BandSetConfig',
 	bandStyle: 'helical-right',
 	offsetBy: 0,
 	tabStyle: initTabStyle('multi-facet-full')
 };
 
-export const bandConfig = persistable<BandSetConfig>(defaultBandConfig, "bandConfig");
-
 const defaultStrutConfig: StrutConfig = {
+	type: 'StrutConfig',
 	tiling: 'helical-right',
 	orientation: 'inside',
 	radiate: 'hybrid',
 	width: 5
 };
 
-export const strutConfig = persistable<StrutConfig>(defaultStrutConfig, "strutConfig");
-
 const defaultRenderConfig: RenderConfig = {
+	type: 'RenderConfig',
 	ranges: {
 		rangeStyle: 'slice',
 		bandStart: 0,
@@ -223,17 +222,14 @@ const defaultRenderConfig: RenderConfig = {
 	}
 };
 
-export const renderConfig = persistable<RenderConfig>(defaultRenderConfig, "renderConfig");
-
 const defaultPatternConfig: PatternConfig = {
-	showPattern: {band: "none", strut: "faceted", level: "none"},
+	showPattern: { band: 'none', strut: 'faceted', level: 'none' },
 	axis: 'z',
 	origin: new Vector3(0, 0, 0),
 	direction: new Vector3(0, 1, 0),
 	offset: new Vector3(0, 0, 0),
-	showTabs: true,
+	showTabs: true
 };
-export const patternConfig = writable<PatternConfig>(defaultPatternConfig);
 
 const defaultPatternViewConfig: PatternViewConfig = {
 	width: 400,
@@ -245,6 +241,83 @@ const defaultPatternViewConfig: PatternViewConfig = {
 	}
 };
 
-
-
+export const curveConfig = persistable<ZCurveConfig>(
+	defaultZCurveConfig,
+	'zCurveConfig',
+	USE_PERSISTED
+);
+export const depthCurveConfig = persistable<DepthCurveConfig>(
+	defaultDepthCurveConfig,
+	'depthCurveConfig',
+	USE_PERSISTED
+);
+export const radialShapeConfig = persistable<RadialShapeConfig>(
+	defaultRadialShapeConfig,
+	'shapeConfig',
+	USE_PERSISTED
+);
+export const levelConfig = persistable<LevelSetConfig>(
+	defaultLevelSetConfig,
+	'levelSetConfig',
+	USE_PERSISTED
+);
+export const bandConfig = persistable<BandSetConfig>(
+	defaultBandConfig,
+	'bandConfig',
+	USE_PERSISTED
+);
+export const strutConfig = persistable<StrutConfig>(
+	defaultStrutConfig,
+	'strutConfig',
+	USE_PERSISTED
+);
+export const renderConfig = persistable<RenderConfig>(
+	defaultRenderConfig,
+	'renderConfig',
+	USE_PERSISTED
+);
+export const patternConfig = writable<PatternConfig>(defaultPatternConfig);
 export const patternViewConfig = writable<PatternViewConfig>(defaultPatternViewConfig);
+
+export const config = derived(
+	[
+		radialShapeConfig,
+		levelConfig,
+		curveConfig,
+		depthCurveConfig,
+		bandConfig,
+		strutConfig,
+		renderConfig
+	],
+	([
+		$radialShapeConfig,
+		$levelConfig,
+		$curveConfig,
+		$depthCurveConfig,
+		$bandConfig,
+		$strutConfig,
+		$renderConfig
+	]) => {
+		const getLevels = (sampleMethod: CurveSampleMethod, curveCount: number) => {
+			if (sampleMethod.method === 'divideCurve') {
+				return sampleMethod.divisions * curveCount + 1;
+			}
+			return sampleMethod.divisions + 1;
+		};
+
+		const returnConfig: RotatedShapeGeometryConfig = {
+			shapeConfig: $radialShapeConfig,
+			levelConfig: {
+				...$levelConfig,
+				levels: getLevels($levelConfig.zCurveSampleMethod, $curveConfig.curves.length)
+			},
+			zCurveConfig: $curveConfig,
+			depthCurveConfig: $depthCurveConfig,
+			bandConfig: $bandConfig,
+			strutConfig: $strutConfig,
+			renderConfig: $renderConfig
+		};
+		return returnConfig;
+	}
+);
+

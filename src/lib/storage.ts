@@ -30,7 +30,7 @@ export const persistConfig = (config: RotatedShapeGeometryConfig, onSave: () => 
 export const getPersistedConfig = (name: keyof RotatedShapeGeometryConfig) => {
 	const persistedConfig = getLocal(AUTO_PERSIST_KEY);
 	console.debug("persistedConfig", persistedConfig)
-	return persistedConfig ? persistedConfig[name] : undefined;
+	return persistedConfig && persistedConfig[name] ? persistedConfig[name] : undefined;
 };
 
 export const getLocal = (key: string) => {
