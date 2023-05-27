@@ -1161,13 +1161,15 @@ export const getRenderable = (
 
 export type RotatedShapeGeometryConfig = {
 	[key: string]:
-		| RadialShapeConfig
-		| LevelSetConfig
-		| ZCurveConfig
-		| DepthCurveConfig
-		| BandSetConfig
-		| StrutConfig
-		| RenderConfig;
+	| RadialShapeConfig
+	| LevelSetConfig
+	| ZCurveConfig
+	| DepthCurveConfig
+	| BandSetConfig
+	| StrutConfig
+	| RenderConfig
+	| string
+	| undefined;
 	shapeConfig: RadialShapeConfig;
 	levelConfig: LevelSetConfig;
 	zCurveConfig: ZCurveConfig;
@@ -1175,6 +1177,8 @@ export type RotatedShapeGeometryConfig = {
 	bandConfig: BandSetConfig;
 	strutConfig: StrutConfig;
 	renderConfig: RenderConfig;
+	id?: string;
+	name?: string;
 };
 
 export const generateRotatedShapeGeometry = (

@@ -5,12 +5,30 @@
 // write a button component that allows saving a named config
 
 import type { RotatedShapeGeometryConfig } from './rotated-shape';
+import { generateUUID } from 'three/src/math/MathUtils';
 export const AUTO_PERSIST_KEY = 'config-auto-persist';
 
 export const resetLocal = (key: string) => {
 	if (confirm("really?")) {
 		localStorage.setItem(key, "");
 	}
+}
+
+export const listLocalConfigs = () => {
+	const storedConfigKeys= Object.keys(localStorage).filter((key) => key.startsWith("stored-config-"))
+	const storedConfigMeta = storedConfigKeys.map((key) => {
+		const config = getLocal(key)
+		return {id: key, name: config.name || ""}
+	})
+	console.debug(storedConfigMeta)
+	return storedConfigMeta
+}
+
+export const saveLocalConfig = (config: RotatedShapeGeometryConfig) => {
+	if (!config.id) {
+		config.id = `stored-config-${generateUUID()}`
+	}
+	setLocal(config.id, config);
 }
 
 export const setLocal = (key: string, config: RotatedShapeGeometryConfig) => {
@@ -42,6 +60,12 @@ export const getLocal = (key: string) => {
 	}
 	return null;
 };
+
+export const deleteLocal = (key: string) => {
+	localStorage.removeItem(key)
+}
+
+
 
 // export const resetToDefault = (retrieved: any) => {
 //   retrieved = null;
