@@ -19,7 +19,8 @@
 		PatternViewConfig
 	} from '../../lib/cut-pattern';
 	import { getRenderable } from '../../lib/rotated-shape';
-	import { renderConfig, bandConfig, patternConfig, patternViewConfig } from '../../lib/stores';
+	import { patternConfig, patternViewConfig } from '../../lib/stores';
+	import { config } from '../../lib/stores';
 	import type { FacetPattern } from '../../lib/cut-pattern';
 
 	export let rslevels: RotatedShapeLevel[] = [];
@@ -27,6 +28,8 @@
 	export let struts: Strut[] = [];
 
 	let showRSBands = true;
+
+	const {renderConfig, bandConfig} = $config
 
 	const getViewBox = (config: PatternViewConfig) => {
 		const { width, height, zoom, centerOffset } = config;
@@ -41,9 +44,9 @@
 	let showPoints = true;
 	let showTabs = true;
 
-	$: displayedBandFacets = getRenderable($renderConfig, rsbands) as Band[];
-	$: displayedLevels = getRenderable($renderConfig, rslevels) as RotatedShapeLevel[];
-	$: displayedStrutFacets = getRenderable($renderConfig, struts) as Strut[];
+	$: displayedBandFacets = getRenderable(renderConfig, rsbands) as Band[];
+	$: displayedLevels = getRenderable(renderConfig, rslevels) as RotatedShapeLevel[];
+	$: displayedStrutFacets = getRenderable(renderConfig, struts) as Strut[];
 
 	type Patterns = {
 		band: OutlinedBandPattern | FacetedBandPattern | {projectionType: "none"};
@@ -74,8 +77,8 @@
 		} else {
 			patterns.band = generateBandPatterns(
 				$patternConfig,
-				$bandConfig.bandStyle,
-				$bandConfig.tabStyle,
+				bandConfig.bandStyle,
+				bandConfig.tabStyle,
 				displayedBandFacets
 			); 
 		}
