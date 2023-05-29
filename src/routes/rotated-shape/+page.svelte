@@ -15,13 +15,14 @@
 	} from '../../lib/rotated-shape';
 	import PathEdit from '../../components/path-edit/PathEdit.svelte';
 	import {
-		strutConfig,
-		curveConfig,
-		depthCurveConfig,
-		radialShapeConfig,
-		levelConfig,
-		bandConfig,
-		renderConfig,
+		// strutConfig,
+		// curveConfig,
+		// depthCurveConfig,
+		// radialShapeConfig,
+		// levelConfig,
+		// bandConfig,
+		// renderConfig,
+		config0,
 		config
 	} from '../../lib/stores';
 	import Controls from '../../components/controls/Controls.svelte';
@@ -78,8 +79,8 @@
 		// console.debug(' PAGE CONFIG', config);
 		data = generateRotatedShapeGeometry($config);
 		levels = data.levels;
-		if ($renderConfig.ranges?.rangeStyle === 'slice') {
-			const { levelStart, levelCount } = $renderConfig.ranges;
+		if ($config0.renderConfig.ranges?.rangeStyle === 'slice') {
+			const { levelStart, levelCount } = $config0.renderConfig.ranges;
 			displayLevels = levels.slice(
 				levelStart || 0,
 				levelCount ? (levelStart || 0) + levelCount : undefined
@@ -90,20 +91,10 @@
 		bands = data.bands;
 		struts = data.struts;
 	}
-	type ShowControlCurveValue =
-		| { type: 'RadialShapeConfig'; configStore: Writable<RadialShapeConfig> }
-		| { type: 'DepthCurveConfig'; configStore: Writable<DepthCurveConfig> }
-		| { type: 'ZCurveConfig'; configStore: Writable<ZCurveConfig> }
-
-	const isShowControlCurveValue = (value: ShowControlCurveValue | unknown): value is ShowControlCurveValue => {
-		return !!value && typeof value === "object" && Object.hasOwn(value, "type")
-	}
-	
-	const getPathEditCurve = (showControlValue: ShowControlCurveValue | unknown) => {
-		if (isShowControlCurveValue(showControlValue)) {
-			return showControlValue.configStore
-		}
-		return undefined;
+	type ShowControlCurveValue = 'RadialShapeConfig' | 'DepthCurveConfig' | 'ZCurveConfig';
+	const isShowControlCurveValue = (value: unknown): value is ShowControlCurveValue => {
+		console.debug("isShowControlCurveValue", value)
+		return ['RadialShapeConfig', 'DepthCurveConfig', 'ZCurveConfig'].includes(value as string)
 	}
 </script>
 
@@ -120,12 +111,9 @@
 				bind:value={showControl}
 				options={[
 					{ name: 'None' },
-					{ name: 'Zcurve', value: { type: 'ZCurveConfig', configStore: curveConfig } },
-					{
-						name: 'DepthCurve',
-						value: { type: 'DepthCurveConfig', configStore: depthCurveConfig }
-					},
-					{ name: 'Shape', value: { type: 'RadialShapeConfig', configStore: radialShapeConfig } },
+					{ name: 'Zcurve', value: 'ZCurveConfig' },
+					{ name: 'DepthCurve', value: 'DepthCurveConfig'},
+					{ name: 'Shape', value: 'RadialShapeConfig' },
 					{ name: '3D' },
 					{ name: 'Levels' },
 					{ name: 'Struts' },
@@ -137,8 +125,8 @@
 		<div class="group">
 			<div>
 				<!-- <div>{showControl?.name}</div> -->
-				{#if ["Zcurve", "Shape", "DepthCurve"].includes(showControl?.name)}
-					<PathEdit curveStore={getPathEditCurve(showControl.value)} />
+				{#if ['Zcurve', 'Shape', 'DepthCurve'].includes(showControl?.name)}
+					<PathEdit curveStoreType={isShowControlCurveValue(showControl.value) ? showControl.value : "ZCurveConfig"} />
 				{/if}
 			</div>
 			<Controls showControl={showControl?.name} />

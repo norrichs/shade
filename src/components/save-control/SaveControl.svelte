@@ -13,7 +13,7 @@
 
 
 	} from '../../lib/storage';
-	import { spreadConfigToStores, resetStore } from '../../lib/stores';
+	import { resetStore, config0 } from '../../lib/stores';
 
 	export let show = false;
 	export let config: RotatedShapeGeometryConfig;
@@ -55,10 +55,7 @@
 				refreshList()
 				}}>Save</button>
 			<button
-				on:click={() => {
-					const retrieved = getLocal(storageKey);
-					spreadConfigToStores(retrieved);
-				}}>Retrieve</button
+				on:click={() => $config0 = getLocal(storageKey)}>Retrieve</button
 			>
 			<!-- <button on:click={()=>test = resetToDefault(test)}>Reset</button> -->
 		</div>
@@ -66,7 +63,7 @@
 			{#each localConfigs as localConfig}
 				<div class="row" class:loaded-config-row={localConfig.id === config.id}>
 					<input class="name-input" type="text" bind:value={localConfig.name} placeholder="name..." />
-					<button on:click={() => spreadConfigToStores(getLocal(localConfig.id))}>Load</button>
+					<button on:click={() => $config0 = getLocal(localConfig.id)}>Load</button>
 					<button on:click={() => {
 						deleteLocal(localConfig.id)
 						refreshList()

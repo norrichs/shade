@@ -20,7 +20,7 @@ export const listLocalConfigs = () => {
 		const config = getLocal(key)
 		return {id: key, name: config.name || ""}
 	})
-	console.debug(storedConfigMeta)
+	// console.debug(storedConfigMeta)
 	return storedConfigMeta
 }
 
@@ -32,9 +32,6 @@ export const saveLocalConfig = (config: RotatedShapeGeometryConfig) => {
 }
 
 export const setLocal = (key: string, config: RotatedShapeGeometryConfig) => {
-	// store current as shades_config_current
-
-	console.debug('setLocal', config);
 	const str = JSON.stringify(config);
 
 	localStorage.setItem(key, str);
@@ -45,7 +42,7 @@ export const persistConfig = (config: RotatedShapeGeometryConfig, onSave: () => 
 	onSave();
 };
 
-export const getPersistedConfig = (name: keyof RotatedShapeGeometryConfig) => {
+export const getPersistedConfig = (name: (keyof RotatedShapeGeometryConfig) | "RotatedShapeGeometryConfig") => {
 	const persistedConfig = getLocal(AUTO_PERSIST_KEY);
 	console.debug("persistedConfig", persistedConfig)
 	return persistedConfig && persistedConfig[name] ? persistedConfig[name] : undefined;
@@ -55,7 +52,7 @@ export const getLocal = (key: string) => {
 	const retrieved = localStorage.getItem(key);
 	if (retrieved) {
 		const parsed = JSON.parse(retrieved);
-		console.debug(parsed);
+		// console.debug(parsed);
 		return parsed;
 	}
 	return null;

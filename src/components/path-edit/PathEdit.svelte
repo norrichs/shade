@@ -4,7 +4,7 @@
 
 <script lang="ts">
 	import type { Writable } from 'svelte/store';
-	import { blankCurveConfig } from '../../lib/stores';
+	import { blankCurveConfig, config0 } from '../../lib/stores';
 	import { onPathPointMove, togglePointType, addCurve, removeCurve, splitCurves } from './path-edit';
 	import type {
 		BezierConfig,
@@ -14,7 +14,33 @@
 		DepthCurveConfig,
 	} from '$lib/rotated-shape';
 
-	export let curveStore: Writable<ZCurveConfig | RadialShapeConfig | DepthCurveConfig> = blankCurveConfig;
+
+	type CurveConfig = ZCurveConfig | RadialShapeConfig | DepthCurveConfig
+	type ShowControlCurveValue = 'RadialShapeConfig' | 'DepthCurveConfig' | 'ZCurveConfig';
+
+	const isCurveConfig = (subConfig: any): subConfig is CurveConfig => {
+		console.debug("isCurveConfig", subConfig);
+		return typeof subConfig === "object" &&
+		[ "ZCurveConfig", "RadialShapeConfig", "DepthCurveConfig"].includes((subConfig as CurveConfig).type)
+	}
+
+	// export let curveStore: Writable<ZCurveConfig | RadialShapeConfig | DepthCurveConfig> = blankCurveConfig;
+
+	export let curveStoreType: ShowControlCurveValue;
+	const curveConfigByType = {
+		"ZCurveConfig": "zCurveConfig",
+		"DepthCurveConfig": "depthCurveConfig",
+		"RadialShapeConfig": "shapeConfig"
+	}
+	let curveStore: CurveConfig
+	let thisConfig
+	
+
+	$: {
+		console.debug("reactive", curveStoreType)
+		thisConfig = $config0[curveConfigByType[curveStoreType]]
+		curveStore = isCurveConfig(thisConfig) ? thisConfig : $config0.zCurveConfig
+	}
 
 	let symmetry: number = 1;
 	let reflect: boolean = true;
@@ -27,14 +53,14 @@
 		maxY: 200
 	};
 
-	$: curves = $curveStore.curves;
-	$: limitAngle = getLimitAngle($curveStore)
+	$: curves = curveStore.curves;
+	$: limitAngle = getLimitAngle(curveStore)
 
 	$: {
-		symmetry = $curveStore.type === 'RadialShapeConfig' ? $curveStore.symmetryNumber : 1;
+		symmetry = curveStore.type === 'RadialShapeConfig' ? curveStore.symmetryNumber : 1;
 		reflect =
-			$curveStore.type === 'RadialShapeConfig'
-				? $curveStore.symmetry === 'lateral' || $curveStore.symmetry === 'radial-lateral'
+			curveStore.type === 'RadialShapeConfig'
+				? curveStore.symmetry === 'lateral' || curveStore.symmetry === 'radial-lateral'
 				: true;
 	}
 
@@ -164,8 +190,10 @@
 	}
 
 	const update = () => {
-		$curveStore.curves = curves;
-		curves = $curveStore.curves;
+		($config0[curveConfigByType[curveStoreType]] as CurveConfig).curves = curves
+		curves = ($config0[curveConfigByType[curveStoreType]] as CurveConfig).curves
+		// curveStore.curves = curves;
+		// curves = curveStore.curves;
 	};
 </script>
 
@@ -175,7 +203,7 @@
 		style="overflow:visible"
 	>
 		<circle cx="0" cy="0" r="4" fill="none" stroke="black" stroke-width="0.5" />
-		{#if $curveStore.type === 'ZCurveConfig'}
+		{#if curveStore.type === 'ZCurveConfig'}
 			<path
 				d={getFillFromCurves(curves)}
 				stroke="none"
@@ -187,9 +215,9 @@
 				fill="rgba(255,0,0,0.5)"
 			/>
 		{/if}
-		{#if $curveStore.type === 'RadialShapeConfig'}
+		{#if curveStore.type === 'RadialShapeConfig'}
 			<path
-				d={getShapeFillFromCurves(radializeCurves(curves, $curveStore))}
+				d={getShapeFillFromCurves(radializeCurves(curves, curveStore))}
 				stroke="black"
 				fill="rgba(255,90,0,0.6)"
 			/>
@@ -241,7 +269,7 @@
 							p, 
 							curves, 
 							limitAngle && isLimited(curves.length - 1, curveIndex, curve.points.length - 1, p) ? limitAngle : Math.PI * 2,
-							$curveStore.type === "RadialShapeConfig"
+							curveStore.type === "RadialShapeConfig"
 							)),
 					minX: canv.minX,
 					minY: canv.minY,
@@ -270,13 +298,13 @@
 				update();
 			}}>-</button
 		>
-		{#if $curveStore.type === "RadialShapeConfig"}
+		{#if curveStore.type === "RadialShapeConfig"}
 			<label for="input-symmetry-number">rs</label>
-			<input id="input-symmetry-number" type="number" min="1" max="99" bind:value={$curveStore.symmetryNumber} />
+			<input id="input-symmetry-number" type="number" min="1" max="99" bind:value={curveStore.symmetryNumber} />
 			<label for="input-divisions">div</label>
-			<input id="input-divisions" type="number" min="0" max="99" bind:value={$curveStore.sampleMethod.divisions} />
+			<input id="input-divisions" type="number" min="0" max="99" bind:value={curveStore.sampleMethod.divisions} />
 			<!-- <label for="input-divisions">rs</label> -->
-			<select id="select-symmetry" bind:value={$curveStore.symmetry} placeholder="mode">
+			<select id="select-symmetry" bind:value={curveStore.symmetry} placeholder="mode">
 				<option>asymmetric</option>
 				<option>radial</option>
 				<option>lateral</option>

@@ -20,7 +20,7 @@ const USE_PERSISTED = false;
 
 const persistable = <T>(
 	defaultInit: T,
-	name: keyof RotatedShapeGeometryConfig,
+	name: keyof RotatedShapeGeometryConfig | 'RadialShapeGeometryConfig',
 	usePersisted = true
 ) => {
 	const init = (usePersisted && getPersistedConfig(name)) || defaultInit;
@@ -31,6 +31,7 @@ const persistable = <T>(
 		subscribe,
 		update: function (value: T) {
 			update((value) => value);
+			console.debug("update persistable", name, value)
 			const persistObj = getLocal(AUTO_PERSIST_KEY);
 			persistObj[name] = value;
 			setLocal(AUTO_PERSIST_KEY, persistObj);
@@ -39,6 +40,7 @@ const persistable = <T>(
 			const persistObj = getLocal(AUTO_PERSIST_KEY) || {};
 			persistObj[name] = value;
 			setLocal(AUTO_PERSIST_KEY, persistObj);
+			console.debug("set persisable", name,  value)
 			set(value);
 		},
 		reset: () => {
@@ -52,26 +54,26 @@ export const resetStore = () => {
 	levelConfig.reset();
 };
 
-export const spreadConfigToStores = (config: RotatedShapeGeometryConfig) => {
-	if (config.levelConfig) {
-		levelConfig.set(config.levelConfig);
-	}
-	if (config.bandConfig) {
-		bandConfig.set(config.bandConfig);
-	}
-	if (config.depthCurveConfig) {
-		depthCurveConfig.set(config.depthCurveConfig);
-	}
-	if (config.shapeConfig) {
-		radialShapeConfig.set(config.shapeConfig);
-	}
-	if (config.strutConfig) {
-		strutConfig.set(config.strutConfig);
-	}
-	if (config.zCurveConfig) {
-		curveConfig.set(config.zCurveConfig);
-	}
-};
+// export const spreadConfigToStores = (config: RotatedShapeGeometryConfig) => {
+// 	if (config.levelConfig) {
+// 		levelConfig.set(config.levelConfig);
+// 	}
+// 	if (config.bandConfig) {
+// 		bandConfig.set(config.bandConfig);
+// 	}
+// 	if (config.depthCurveConfig) {
+// 		depthCurveConfig.set(config.depthCurveConfig);
+// 	}
+// 	if (config.shapeConfig) {
+// 		radialShapeConfig.set(config.shapeConfig);
+// 	}
+// 	if (config.strutConfig) {
+// 		strutConfig.set(config.strutConfig);
+// 	}
+// 	if (config.zCurveConfig) {
+// 		curveConfig.set(config.zCurveConfig);
+// 	}
+// };
 
 const defaultZCurveConfig: ZCurveConfig = {
 	type: 'ZCurveConfig',
@@ -241,16 +243,16 @@ const defaultPatternViewConfig: PatternViewConfig = {
 	}
 };
 
-export const curveConfig = persistable<ZCurveConfig>(
-	defaultZCurveConfig,
-	'zCurveConfig',
-	USE_PERSISTED
-);
-export const depthCurveConfig = persistable<DepthCurveConfig>(
-	defaultDepthCurveConfig,
-	'depthCurveConfig',
-	USE_PERSISTED
-);
+// export const curveConfig = persistable<ZCurveConfig>(
+// 	defaultZCurveConfig,
+// 	'zCurveConfig',
+// 	USE_PERSISTED
+// );
+// export const depthCurveConfig = persistable<DepthCurveConfig>(
+// 	defaultDepthCurveConfig,
+// 	'depthCurveConfig',
+// 	USE_PERSISTED
+// );
 export const radialShapeConfig = persistable<RadialShapeConfig>(
 	defaultRadialShapeConfig,
 	'shapeConfig',
@@ -279,45 +281,79 @@ export const renderConfig = persistable<RenderConfig>(
 export const patternConfig = writable<PatternConfig>(defaultPatternConfig);
 export const patternViewConfig = writable<PatternViewConfig>(defaultPatternViewConfig);
 
-export const config = derived(
-	[
-		radialShapeConfig,
-		levelConfig,
-		curveConfig,
-		depthCurveConfig,
-		bandConfig,
-		strutConfig,
-		renderConfig
-	],
-	([
-		$radialShapeConfig,
-		$levelConfig,
-		$curveConfig,
-		$depthCurveConfig,
-		$bandConfig,
-		$strutConfig,
-		$renderConfig
-	]) => {
-		const getLevels = (sampleMethod: CurveSampleMethod, curveCount: number) => {
-			if (sampleMethod.method === 'divideCurve') {
-				return sampleMethod.divisions * curveCount + 1;
-			}
-			return sampleMethod.divisions + 1;
-		};
-
-		const returnConfig: RotatedShapeGeometryConfig = {
-			shapeConfig: $radialShapeConfig,
-			levelConfig: {
-				...$levelConfig,
-				levels: getLevels($levelConfig.zCurveSampleMethod, $curveConfig.curves.length)
-			},
-			zCurveConfig: $curveConfig,
-			depthCurveConfig: $depthCurveConfig,
-			bandConfig: $bandConfig,
-			strutConfig: $strutConfig,
-			renderConfig: $renderConfig
-		};
-		return returnConfig;
+const getLevels = (sampleMethod: CurveSampleMethod, curveCount: number) => {
+	if (sampleMethod.method === 'divideCurve') {
+		return sampleMethod.divisions * curveCount + 1;
 	}
+	return sampleMethod.divisions + 1;
+}; 
+
+const generateDefaultConfig = (): RotatedShapeGeometryConfig => {
+	const config: RotatedShapeGeometryConfig = {
+		id: AUTO_PERSIST_KEY,
+		name: "",
+		shapeConfig: defaultRadialShapeConfig,
+		levelConfig: {
+			...defaultLevelSetConfig,
+			levels: getLevels(defaultLevelSetConfig.zCurveSampleMethod, defaultZCurveConfig.curves.length)
+		},
+		zCurveConfig: defaultZCurveConfig,
+		depthCurveConfig: defaultDepthCurveConfig,
+		bandConfig: defaultBandConfig,
+		strutConfig: defaultStrutConfig,
+		renderConfig: defaultRenderConfig
+	};
+	return config;
+};
+
+export const config0 = persistable<RotatedShapeGeometryConfig>(
+	generateDefaultConfig(),
+	'RotatedShapeGeometryConfig',
+	USE_PERSISTED
 );
 
+export const config = derived(config0, ($config0) => {
+	const derivedConfig: RotatedShapeGeometryConfig = {
+		...$config0,
+		levelConfig: {
+			...$config0.levelConfig,
+			levels: getLevels($config0.levelConfig.zCurveSampleMethod, $config0.zCurveConfig.curves.length)
+		}
+	}
+	return derivedConfig;
+})
+
+// export const config = derived(
+// 	[
+// 		radialShapeConfig,
+// 		levelConfig,
+// 		curveConfig,
+// 		depthCurveConfig,
+// 		bandConfig,
+// 		strutConfig,
+// 		renderConfig
+// 	],
+// 	([
+// 		$radialShapeConfig,
+// 		$levelConfig,
+// 		$curveConfig,
+// 		$depthCurveConfig,
+// 		$bandConfig,
+// 		$strutConfig,
+// 		$renderConfig
+// 	]) => {
+// 		const returnConfig: RotatedShapeGeometryConfig = {
+// 			shapeConfig: $radialShapeConfig,
+// 			levelConfig: {
+// 				...$levelConfig,
+// 				levels: getLevels($levelConfig.zCurveSampleMethod, $curveConfig.curves.length)
+// 			},
+// 			zCurveConfig: $curveConfig,
+// 			depthCurveConfig: $depthCurveConfig,
+// 			bandConfig: $bandConfig,
+// 			strutConfig: $strutConfig,
+// 			renderConfig: $renderConfig
+// 		};
+// 		return returnConfig;
+// 	}
+// );

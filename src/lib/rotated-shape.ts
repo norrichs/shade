@@ -331,7 +331,7 @@ const generateRadialShapeLevelPrototype = (
 
 	const { byDivisions } = levelConfig.levelPrototypeSampleMethod;
 	const { sampleMethod } = config;
-	console.debug('sampleMethod', sampleMethod, config);
+	// console.debug('sampleMethod', sampleMethod, config);
 	if (sampleMethod.method === 'divideCurve') {
 		// const {divisions} = sampleMethod
 		if (byDivisions === 'whole') {

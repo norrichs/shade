@@ -18,8 +18,6 @@
 
 	let tabStyle: TabStyle = window.structuredClone($bandConfig.tabStyle);
 
-	console.debug("renderConfig", $renderConfig)
-
 	$: {
 		$levelConfig.levelOffset.rotZ = (rotZ * Math.PI) / 180;
 		$levelConfig.levelOffset.rotX = (rotX * Math.PI) / 180;
