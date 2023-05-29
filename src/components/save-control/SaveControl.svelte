@@ -70,14 +70,16 @@
 						placeholder="name..."
 					/>
 					<button on:click={() => ($config0 = getLocal(localConfig.id))}>Load</button>
-					<button on:click={() =>{ saveLocalConfig(config, false); refreshList()}}>Save</button>
 					<button
 						on:click={() => {
 							deleteLocal(localConfig.id);
 							config0.reset();
 							refreshList();
-						}}>Delete</button
-					>
+						}
+					}>Delete</button>
+					{#if localConfig.id === config.id}
+						<button on:click={() =>{ saveLocalConfig(config, false); refreshList()}}>Save</button>
+					{/if}
 				</div>
 			{/each}
 		{/if}

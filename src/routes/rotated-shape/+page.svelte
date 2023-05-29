@@ -102,9 +102,9 @@
 	<section class="container three">
 		<ThreeRenderer rslevels={levels} rsbands={bands} {struts} />
 	</section>
-	<section class="container svg">
+	<!-- <section class="container svg">
 		<CutPattern rslevels={displayLevels} rsbands={bands} {struts} />
-	</section>
+	</section> -->
 	<section class="container controls">
 		<header>
 			<SelectBar
