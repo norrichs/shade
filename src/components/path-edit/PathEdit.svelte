@@ -40,6 +40,10 @@
 		console.debug("reactive", curveStoreType)
 		thisConfig = $config0[curveConfigByType[curveStoreType]]
 		curveStore = isCurveConfig(thisConfig) ? thisConfig : $config0.zCurveConfig
+
+		console.debug("thisConfig", thisConfig)
+		console.debug("curveStore", curveStore)
+		console.debug("config0", $config0)
 	}
 
 	let symmetry: number = 1;
@@ -299,7 +303,7 @@
 			}}>-</button
 		>
 		{#if curveStore.type === "RadialShapeConfig"}
-			<label for="input-symmetry-number">rs</label>
+			<label for="input-symmetry-number">Symmetry</label>
 			<input id="input-symmetry-number" type="number" min="1" max="99" bind:value={curveStore.symmetryNumber} />
 			<label for="input-divisions">div</label>
 			<input id="input-divisions" type="number" min="0" max="99" bind:value={curveStore.sampleMethod.divisions} />

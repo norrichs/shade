@@ -15,34 +15,12 @@
 	} from '../../lib/rotated-shape';
 	import PathEdit from '../../components/path-edit/PathEdit.svelte';
 	import {
-		// strutConfig,
-		// curveConfig,
-		// depthCurveConfig,
-		// radialShapeConfig,
-		// levelConfig,
-		// bandConfig,
-		// renderConfig,
 		config0,
 		config
 	} from '../../lib/stores';
 	import Controls from '../../components/controls/Controls.svelte';
 	import SelectBar from '../../components/select-bar/SelectBar.svelte';
 	import SaveControl from '../../components/save-control/SaveControl.svelte';
-
-	// let defaultZCurveConfig: ZCurveConfig = $curveConfig;
-	// let defaultLevelConfig: LevelSetConfig = { ...$levelConfig };
-	// let defaultBandConfig: BandSetConfig = $bandConfig;
-	// let defaultStrutConfig: StrutConfig = $strutConfig;
-
-	// let config: RotatedShapeGeometryConfig = {
-	// 	shapeConfig: $radialShapeConfig,
-	// 	depthCurveConfig: $depthCurveConfig,
-	// 	levelConfig: defaultLevelConfig,
-	// 	zCurveConfig: defaultZCurveConfig,
-	// 	bandConfig: defaultBandConfig,
-	// 	strutConfig: defaultStrutConfig,
-	// 	renderConfig: $renderConfig
-	// };
 
 	let data = generateRotatedShapeGeometry($config);
 	let levels = data.levels;
@@ -52,35 +30,16 @@
 	let showControl: { name: string; value: unknown };
 
 	const updateGeometry = () => {
-		// config = {
-		// 	...config,
-		// 	shapeConfig: $radialShapeConfig,
-		// 	levelConfig: { ...$levelConfig },
-		// 	zCurveConfig: $curveConfig,
-		// 	depthCurveConfig: $depthCurveConfig,
-		// 	bandConfig: $bandConfig,
-		// 	strutConfig: $strutConfig
-		// };
-
 		console.debug('udpateGeometry', $config.shapeConfig);
 		data = generateRotatedShapeGeometry($config);
 	};
 
 	$: {
-		// config = {
-		// 	...config,
-		// 	shapeConfig: $radialShapeConfig,
-		// 	levelConfig: { ...$levelConfig },
-		// 	zCurveConfig: $curveConfig,
-		// 	depthCurveConfig: $depthCurveConfig,
-		// 	bandConfig: $bandConfig,
-		// 	strutConfig: $strutConfig
-		// };
-		// console.debug(' PAGE CONFIG', config);
+		console.debug("page reactive - generate")
 		data = generateRotatedShapeGeometry($config);
 		levels = data.levels;
-		if ($config0.renderConfig.ranges?.rangeStyle === 'slice') {
-			const { levelStart, levelCount } = $config0.renderConfig.ranges;
+		if ($config.renderConfig.ranges?.rangeStyle === 'slice') {
+			const { levelStart, levelCount } = $config.renderConfig.ranges;
 			displayLevels = levels.slice(
 				levelStart || 0,
 				levelCount ? (levelStart || 0) + levelCount : undefined
