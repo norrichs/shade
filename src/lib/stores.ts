@@ -16,7 +16,7 @@ import type { PatternConfig, PatternViewConfig } from './cut-pattern';
 import { Vector3 } from 'three';
 import { rad } from './util';
 
-const USE_PERSISTED = false;
+const USE_PERSISTED = true;
 
 const persistable = <T>(
 	defaultInit: T,
@@ -31,7 +31,7 @@ const persistable = <T>(
 		subscribe,
 		update: function (value: T) {
 			update((value) => value);
-			console.debug("update persistable", name, value)
+			console.debug('update persistable', name, value);
 			const persistObj = getLocal(AUTO_PERSIST_KEY);
 			persistObj[name] = value;
 			setLocal(AUTO_PERSIST_KEY, persistObj);
@@ -40,7 +40,7 @@ const persistable = <T>(
 			const persistObj = getLocal(AUTO_PERSIST_KEY) || {};
 			persistObj[name] = value;
 			setLocal(AUTO_PERSIST_KEY, persistObj);
-			console.debug("set persisable", name,  value)
+			console.debug('set persisable', name, value);
 			set(value);
 		},
 		reset: () => {
@@ -286,12 +286,12 @@ const getLevels = (sampleMethod: CurveSampleMethod, curveCount: number) => {
 		return sampleMethod.divisions * curveCount + 1;
 	}
 	return sampleMethod.divisions + 1;
-}; 
+};
 
 const generateDefaultConfig = (): RotatedShapeGeometryConfig => {
 	const config: RotatedShapeGeometryConfig = {
 		id: AUTO_PERSIST_KEY,
-		name: "",
+		name: '',
 		shapeConfig: defaultRadialShapeConfig,
 		levelConfig: {
 			...defaultLevelSetConfig,
@@ -306,8 +306,20 @@ const generateDefaultConfig = (): RotatedShapeGeometryConfig => {
 	return config;
 };
 
+const loadAutoPersisted = () => {
+	console.debug("loadAutoPersisted?")
+	const autoPersisted = getPersistedConfig(AUTO_PERSIST_KEY);
+	if (autoPersisted && USE_PERSISTED) {
+		console.debug("yes")
+		return autoPersisted;
+	} else {
+		console.debug("no")
+		return generateDefaultConfig();
+	}
+};
+
 export const config0 = persistable<RotatedShapeGeometryConfig>(
-	generateDefaultConfig(),
+	loadAutoPersisted(),
 	'RotatedShapeGeometryConfig',
 	USE_PERSISTED
 );
@@ -317,11 +329,14 @@ export const config = derived(config0, ($config0) => {
 		...$config0,
 		levelConfig: {
 			...$config0.levelConfig,
-			levels: getLevels($config0.levelConfig.zCurveSampleMethod, $config0.zCurveConfig.curves.length)
+			levels: getLevels(
+				$config0.levelConfig.zCurveSampleMethod,
+				$config0.zCurveConfig.curves.length
+			)
 		}
-	}
+	};
 	return derivedConfig;
-})
+});
 
 // export const config = derived(
 // 	[

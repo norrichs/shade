@@ -24,10 +24,12 @@ export const listLocalConfigs = () => {
 	return storedConfigMeta
 }
 
-export const saveLocalConfig = (config: RotatedShapeGeometryConfig) => {
-	if (!config.id) {
+export const saveLocalConfig = (config: RotatedShapeGeometryConfig, asNew = false) => {
+	if (asNew || !config.id || !config.id.startsWith("stored-config")) {
+		console.debug("Save local config, new ID")
 		config.id = `stored-config-${generateUUID()}`
 	}
+	console.debug("Save local config", config.id, config)
 	setLocal(config.id, config);
 }
 

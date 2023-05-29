@@ -311,7 +311,6 @@ const generateLevelPrototype = (
 	config: RadialShapeConfig,
 	levelConfig: LevelSetConfig
 ): RotatedShapeLevelPrototype | RotatedShapeLevelPrototype[] => {
-	console.debug('levelConfig', levelConfig);
 	if (levelConfig.levelPrototypeSampleMethod.byDivisions === 'offsetHalf') {
 		return [
 			generateRadialShapeLevelPrototype(config, levelConfig, 0),

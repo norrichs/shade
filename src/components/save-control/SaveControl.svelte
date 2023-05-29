@@ -6,12 +6,8 @@
 		resetLocal,
 		AUTO_PERSIST_KEY,
 		listLocalConfigs,
-
 		setLocal,
-
 		deleteLocal
-
-
 	} from '../../lib/storage';
 	import { resetStore, config0 } from '../../lib/stores';
 
@@ -26,8 +22,7 @@
 
 	let localConfigs = listLocalConfigs();
 
-	const refreshList = () => localConfigs = listLocalConfigs()
-
+	const refreshList = () => (localConfigs = listLocalConfigs());
 </script>
 
 <section class:show>
@@ -44,30 +39,45 @@
 			<button
 				on:click={() => {
 					resetLocal(AUTO_PERSIST_KEY);
-					resetStore();
-					console.debug('value after reset', config.shapeConfig);
-					refreshList()
+					config0.reset();
+					refreshList();
 					update();
 				}}>Reset</button
 			>
-			<button on:click={() => {
-				saveLocalConfig(config)
-				refreshList()
-				}}>Save</button>
 			<button
-				on:click={() => $config0 = getLocal(storageKey)}>Retrieve</button
+				on:click={() => {
+					saveLocalConfig(config, true);
+					refreshList();
+				}}>New Save</button
 			>
+			<button on:click={() => ($config0 = getLocal(storageKey))}>Retrieve</button>
 			<!-- <button on:click={()=>test = resetToDefault(test)}>Reset</button> -->
 		</div>
 		{#if localConfigs?.length > 0}
 			{#each localConfigs as localConfig}
 				<div class="row" class:loaded-config-row={localConfig.id === config.id}>
-					<input class="name-input" type="text" bind:value={localConfig.name} placeholder="name..." />
-					<button on:click={() => $config0 = getLocal(localConfig.id)}>Load</button>
-					<button on:click={() => {
-						deleteLocal(localConfig.id)
-						refreshList()
-					}}>Delete</button>
+					<input
+						class="name-input"
+						type="text"
+						bind:value={localConfig.name}
+						on:input={() => {
+							console.debug('onChange ', localConfig.name);
+							const config = getLocal(localConfig.id);
+							if (config) {
+								saveLocalConfig({ ...config, name: localConfig.name }, false);
+							}
+						}}
+						placeholder="name..."
+					/>
+					<button on:click={() => ($config0 = getLocal(localConfig.id))}>Load</button>
+					<button on:click={() =>{ saveLocalConfig(config, false); refreshList()}}>Save</button>
+					<button
+						on:click={() => {
+							deleteLocal(localConfig.id);
+							config0.reset();
+							refreshList();
+						}}>Delete</button
+					>
 				</div>
 			{/each}
 		{/if}
