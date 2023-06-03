@@ -1,374 +1,255 @@
-import { writable, derived } from 'svelte/store';
-import { setLocal, getLocal, getPersistedConfig, AUTO_PERSIST_KEY } from './storage';
-import type {
-	TabStyle,
-	StrutConfig,
-	LevelSetConfig,
-	ZCurveConfig,
-	DepthCurveConfig,
-	RenderConfig,
-	BandSetConfig,
-	RadialShapeConfig,
-	RotatedShapeGeometryConfig,
-	CurveSampleMethod
-} from './rotated-shape';
-import type { PatternConfig, PatternViewConfig } from './cut-pattern';
+import { derived, writable, type Writable } from 'svelte/store';
 import { Vector3 } from 'three';
+import type { PatternConfig, PatternViewConfig } from './cut-pattern';
+import { persistable, bootStrapUsePersisted, USE_PERSISTED_KEY, AUTO_PERSIST_KEY} from './persistable';
+import type {
+  BandSetConfig, CurveSampleMethod, DepthCurveConfig, LevelSetConfig, RadialShapeConfig, RenderConfig, RotatedShapeGeometryConfig, StrutConfig, TabStyle, ZCurveConfig
+} from './rotated-shape';
+import { getPersistedConfig } from './storage';
 import { rad } from './util';
 
-const USE_PERSISTED = true;
+export interface Persistable<T> extends Writable<T> {
+  reset(): void;
+}
 
-const persistable = <T>(
-	defaultInit: T,
-	name: keyof RotatedShapeGeometryConfig | 'RadialShapeGeometryConfig',
-	usePersisted = true
-) => {
-	const init = (usePersisted && getPersistedConfig(name)) || defaultInit;
+// TODO - make it so that all persistable stores are aware of the value stored in usePersisted
+//				the value is to be used during initiation of the persistable stores - e.g. load the local storage version or the default
+//				maybe we persist the derived store? (config) rather than (config0)
 
-	const { subscribe, set, update } = writable<T>(init);
-
-	return {
-		subscribe,
-		update: function (value: T) {
-			update((value) => value);
-			console.debug('update persistable', name, value);
-			const persistObj = getLocal(AUTO_PERSIST_KEY);
-			persistObj[name] = value;
-			setLocal(AUTO_PERSIST_KEY, persistObj);
-		},
-		set: (value: T) => {
-			const persistObj = getLocal(AUTO_PERSIST_KEY) || {};
-			persistObj[name] = value;
-			setLocal(AUTO_PERSIST_KEY, persistObj);
-			console.debug('set persisable', name, value);
-			set(value);
-		},
-		reset: () => {
-			console.debug('setting default');
-			set(defaultInit);
-		}
-	};
-};
-
-export const resetStore = () => {
-	levelConfig.reset();
-};
-
-// export const spreadConfigToStores = (config: RotatedShapeGeometryConfig) => {
-// 	if (config.levelConfig) {
-// 		levelConfig.set(config.levelConfig);
-// 	}
-// 	if (config.bandConfig) {
-// 		bandConfig.set(config.bandConfig);
-// 	}
-// 	if (config.depthCurveConfig) {
-// 		depthCurveConfig.set(config.depthCurveConfig);
-// 	}
-// 	if (config.shapeConfig) {
-// 		radialShapeConfig.set(config.shapeConfig);
-// 	}
-// 	if (config.strutConfig) {
-// 		strutConfig.set(config.strutConfig);
-// 	}
-// 	if (config.zCurveConfig) {
-// 		curveConfig.set(config.zCurveConfig);
-// 	}
-// };
+export const usePersisted = persistable(false, USE_PERSISTED_KEY, USE_PERSISTED_KEY, true)
 
 const defaultZCurveConfig: ZCurveConfig = {
-	type: 'ZCurveConfig',
-	curves: [
-		{
-			type: 'BezierConfig',
-			points: [
-				{ type: 'PointConfig', x: 50, y: -20 },
-				{ type: 'PointConfig', x: 150, y: -20 },
-				{ type: 'PointConfig', x: 150, y: 50 },
-				{ type: 'PointConfig', x: 150, y: 100 }
-			]
-		}
-		// {
-		// 	type: 'BezierConfig',
-		// 	points: [
-		// 		{ type: 'PointConfig', x: 150, y: 100 },
-		// 		{ type: 'PointConfig', x: 100, y: 60 },
-		// 		{ type: 'PointConfig', x: 100, y: 90 },
-		// 		{ type: 'PointConfig', x: 20, y: 100 }
-		// 	]
-		// }
-	]
+  type: 'ZCurveConfig',
+  curves: [
+    {
+      type: 'BezierConfig',
+      points: [
+        { type: 'PointConfig', x: 50, y: -20 },
+        { type: 'PointConfig', x: 150, y: -20 },
+        { type: 'PointConfig', x: 150, y: 50 },
+        { type: 'PointConfig', x: 150, y: 100 }
+      ]
+    }
+  ]
 };
 export const blankCurveConfig = writable<ZCurveConfig>({ type: 'ZCurveConfig', curves: [] });
 
 const defaultDepthCurveConfig: DepthCurveConfig = {
-	type: 'DepthCurveConfig',
-	depthCurveBaseline: 10,
-	curves: [
-		{
-			type: 'BezierConfig',
-			points: [
-				{ type: 'PointConfig', x: 10, y: -100 },
-				{ type: 'PointConfig', x: 10, y: -75 },
-				{ type: 'PointConfig', x: 10, y: 75 },
-				{ type: 'PointConfig', x: 10, y: 100 }
-			]
-		}
-	]
+  type: 'DepthCurveConfig',
+  depthCurveBaseline: 10,
+  curves: [
+    {
+      type: 'BezierConfig',
+      points: [
+        { type: 'PointConfig', x: 10, y: -100 },
+        { type: 'PointConfig', x: 10, y: -75 },
+        { type: 'PointConfig', x: 10, y: 75 },
+        { type: 'PointConfig', x: 10, y: 100 }
+      ]
+    }
+  ]
 };
 
-const symmetryNumber = 6;
-const a0 = (Math.PI * 2) / symmetryNumber;
-const radius = 100;
-
-const defaultRadialShapeConfig: RadialShapeConfig = {
-	type: 'RadialShapeConfig',
-	symmetry: 'radial',
-	symmetryNumber: symmetryNumber,
-	sampleMethod: { method: 'divideCurvePath', divisions: 5 },
-	curves: [
-		{
-			type: 'BezierConfig',
-			points: [
-				{ type: 'PointConfig', x: 0, y: radius },
-				{
-					type: 'PointConfig',
-					x: -Math.sin(a0 / 6) * radius * 1.5,
-					y: Math.cos(a0 / 6) * radius * 1.5
-				},
-				{
-					type: 'PointConfig',
-					x: -Math.sin((a0 * 5) / 6) * radius * 1.5,
-					y: Math.cos((a0 * 5) / 6) * radius * 1.5
-				},
-				{ type: 'PointConfig', x: -Math.sin(a0) * radius, y: Math.cos(a0) * radius }
-			]
-		}
-	]
+export const generateDefaultRadialShapeConfig = (symmetryNumber: number, sampleMethod: CurveSampleMethod): RadialShapeConfig => {
+  const segmentAngle = Math.PI * 2 / symmetryNumber;
+  return {
+    type: 'RadialShapeConfig',
+    symmetry: 'radial',
+    symmetryNumber,
+    sampleMethod,
+    curves: [
+      {
+        type: 'BezierConfig',
+        points: [
+          { type: 'PointConfig', x: 0, y: 100 },
+          {
+            type: 'PointConfig',
+            x: -Math.sin(segmentAngle / 6) * 100 * 1.5,
+            y: Math.cos(segmentAngle / 6) * 100 * 1.5
+          },
+          {
+            type: 'PointConfig',
+            x: -Math.sin((segmentAngle * 5) / 6) * 100 * 1.5,
+            y: Math.cos((segmentAngle * 5) / 6) * 100 * 1.5
+          },
+          { type: 'PointConfig', x: -Math.sin(segmentAngle) * 100, y: Math.cos(segmentAngle) * 100 }
+        ]
+      }
+    ]
+  }
 };
 
 const defaultLevelSetConfig: LevelSetConfig = {
-	type: 'LevelSetConfig',
-	zCurveSampleMethod: { method: 'divideCurvePath', divisions: 10 },
-	// move below into shapeConfig
-	levelPrototypeSampleMethod: { byDivisions: 'whole', dividePer: 'curve' },
-	// levels: 30,
-	levelOffset: {
-		x: 0,
-		y: 0,
-		z: 0,
-		rotX: rad(0),
-		rotY: rad(0),
-		rotZ: rad(0),
-		scaleX: 1,
-		scaleY: 1,
-		depth: 1
-	}
+  type: 'LevelSetConfig',
+  zCurveSampleMethod: { method: 'divideCurvePath', divisions: 10 },
+  // move below into shapeConfig
+  levelPrototypeSampleMethod: { byDivisions: 'whole', dividePer: 'curve' },
+  // levels: 30,
+  levelOffset: {
+    x: 0,
+    y: 0,
+    z: 0,
+    rotX: rad(0),
+    rotY: rad(0),
+    rotZ: rad(0),
+    scaleX: 1,
+    scaleY: 1,
+    depth: 1
+  }
 };
 
 export const initTabStyle = (style: TabStyle['style']): TabStyle => {
-	const defaultTabStyles: { [key: string]: TabStyle } = {
-		full: { style: 'full', direction: 'lesser' },
-		trapezoid: { style: 'trapezoid', direction: 'lesser', width: { style: 'fixed', value: 5 } },
-		'multi-facet-full': {
-			style: 'multi-facet-full',
-			direction: 'both',
-			directionMulti: 1,
-			footprint: 'strut'
-		},
-		'multi-facet-trapezoid': {
-			style: 'multi-facet-trapezoid',
-			direction: 'both',
-			directionMulti: 1,
-			footprint: 'strut',
-			width: { style: 'fixed', value: 5 }
-		}
-	};
-	return defaultTabStyles[style];
+  const defaultTabStyles: { [key: string]: TabStyle } = {
+    full: { style: 'full', direction: 'lesser' },
+    trapezoid: { style: 'trapezoid', direction: 'lesser', width: { style: 'fixed', value: 5 } },
+    'multi-facet-full': {
+      style: 'multi-facet-full',
+      direction: 'both',
+      directionMulti: 1,
+      footprint: 'strut'
+    },
+    'multi-facet-trapezoid': {
+      style: 'multi-facet-trapezoid',
+      direction: 'both',
+      directionMulti: 1,
+      footprint: 'strut',
+      width: { style: 'fixed', value: 5 }
+    }
+  };
+  return defaultTabStyles[style];
 };
 
 const defaultBandConfig: BandSetConfig = {
-	type: 'BandSetConfig',
-	bandStyle: 'helical-right',
-	offsetBy: 0,
-	tabStyle: initTabStyle('multi-facet-full')
+  type: 'BandSetConfig',
+  bandStyle: 'helical-right',
+  offsetBy: 0,
+  tabStyle: initTabStyle('multi-facet-full')
 };
 
 const defaultStrutConfig: StrutConfig = {
-	type: 'StrutConfig',
-	tiling: 'helical-right',
-	orientation: 'inside',
-	radiate: 'hybrid',
-	width: 5
+  type: 'StrutConfig',
+  tiling: 'helical-right',
+  orientation: 'inside',
+  radiate: 'hybrid',
+  width: 5
 };
 
 const defaultRenderConfig: RenderConfig = {
-	type: 'RenderConfig',
-	ranges: {
-		rangeStyle: 'slice',
-		bandStart: 0,
-		bandCount: undefined,
-		facetStart: 0,
-		facetCount: undefined,
-		levelStart: 0,
-		levelCount: 1,
-		strutStart: 0,
-		strutCount: undefined
-	},
-	show: {
-		tabs: false,
-		levels: false,
-		bands: true,
-		edges: false,
-		patterns: true,
-		struts: true
-	}
+  type: 'RenderConfig',
+  ranges: {
+    rangeStyle: 'slice',
+    bandStart: 0,
+    bandCount: undefined,
+    facetStart: 0,
+    facetCount: undefined,
+    levelStart: 0,
+    levelCount: 1,
+    strutStart: 0,
+    strutCount: undefined
+  },
+  show: {
+    tabs: false,
+    levels: false,
+    bands: true,
+    edges: false,
+    patterns: true,
+    struts: true
+  }
 };
 
 const defaultPatternConfig: PatternConfig = {
-	showPattern: { band: 'none', strut: 'faceted', level: 'none' },
-	axis: 'z',
-	origin: new Vector3(0, 0, 0),
-	direction: new Vector3(0, 1, 0),
-	offset: new Vector3(0, 0, 0),
-	showTabs: true
+  showPattern: { band: 'none', strut: 'faceted', level: 'none' },
+  axis: 'z',
+  origin: new Vector3(0, 0, 0),
+  direction: new Vector3(0, 1, 0),
+  offset: new Vector3(0, 0, 0),
+  showTabs: true
 };
 
 const defaultPatternViewConfig: PatternViewConfig = {
-	width: 400,
-	height: 400,
-	zoom: 0.2,
-	centerOffset: {
-		x: 0,
-		y: 0
-	}
+  width: 400,
+  height: 400,
+  zoom: 0.2,
+  centerOffset: {
+    x: 0,
+    y: 0
+  }
 };
 
-// export const curveConfig = persistable<ZCurveConfig>(
-// 	defaultZCurveConfig,
-// 	'zCurveConfig',
-// 	USE_PERSISTED
-// );
-// export const depthCurveConfig = persistable<DepthCurveConfig>(
-// 	defaultDepthCurveConfig,
-// 	'depthCurveConfig',
-// 	USE_PERSISTED
-// );
-export const radialShapeConfig = persistable<RadialShapeConfig>(
-	defaultRadialShapeConfig,
-	'shapeConfig',
-	USE_PERSISTED
-);
-export const levelConfig = persistable<LevelSetConfig>(
-	defaultLevelSetConfig,
-	'levelSetConfig',
-	USE_PERSISTED
-);
-export const bandConfig = persistable<BandSetConfig>(
-	defaultBandConfig,
-	'bandConfig',
-	USE_PERSISTED
-);
+/// subconfigs, to be transitioned into overall config
+
 export const strutConfig = persistable<StrutConfig>(
-	defaultStrutConfig,
+  defaultStrutConfig,
 	'strutConfig',
-	USE_PERSISTED
+	AUTO_PERSIST_KEY,
+  bootStrapUsePersisted()
 );
 export const renderConfig = persistable<RenderConfig>(
-	defaultRenderConfig,
+  defaultRenderConfig,
 	'renderConfig',
-	USE_PERSISTED
+	AUTO_PERSIST_KEY,
+  bootStrapUsePersisted()
 );
+
+/// Configs to be kept separate from geometry config
 export const patternConfig = writable<PatternConfig>(defaultPatternConfig);
 export const patternViewConfig = writable<PatternViewConfig>(defaultPatternViewConfig);
 
 const getLevels = (sampleMethod: CurveSampleMethod, curveCount: number) => {
-	if (sampleMethod.method === 'divideCurve') {
-		return sampleMethod.divisions * curveCount + 1;
-	}
-	return sampleMethod.divisions + 1;
+  if (sampleMethod.method === 'divideCurve') {
+    return sampleMethod.divisions * curveCount + 1;
+  }
+  return sampleMethod.divisions + 1;
 };
 
 const generateDefaultConfig = (): RotatedShapeGeometryConfig => {
-	const config: RotatedShapeGeometryConfig = {
-		id: AUTO_PERSIST_KEY,
-		name: '',
-		shapeConfig: defaultRadialShapeConfig,
-		levelConfig: {
-			...defaultLevelSetConfig,
-			levels: getLevels(defaultLevelSetConfig.zCurveSampleMethod, defaultZCurveConfig.curves.length)
-		},
-		zCurveConfig: defaultZCurveConfig,
-		depthCurveConfig: defaultDepthCurveConfig,
-		bandConfig: defaultBandConfig,
-		strutConfig: defaultStrutConfig,
-		renderConfig: defaultRenderConfig
-	};
-	return config;
+  const config: RotatedShapeGeometryConfig = {
+    id: AUTO_PERSIST_KEY,
+    name: '',
+    shapeConfig: generateDefaultRadialShapeConfig(6, { method: 'divideCurvePath', divisions: 5 }),
+    levelConfig: {
+      ...defaultLevelSetConfig,
+      levels: getLevels(defaultLevelSetConfig.zCurveSampleMethod, defaultZCurveConfig.curves.length)
+    },
+    zCurveConfig: defaultZCurveConfig,
+    depthCurveConfig: defaultDepthCurveConfig,
+    bandConfig: defaultBandConfig,
+    strutConfig: defaultStrutConfig,
+    renderConfig: defaultRenderConfig
+  };
+  return config;
 };
 
-const loadAutoPersisted = () => {
-	console.debug("loadAutoPersisted?")
-	const autoPersisted = getPersistedConfig(AUTO_PERSIST_KEY);
-	if (autoPersisted && USE_PERSISTED) {
-		console.debug("yes")
-		return autoPersisted;
-	} else {
-		console.debug("no")
-		return generateDefaultConfig();
-	}
+const loadAutoPersisted = (usePersisted: boolean) => {
+  console.debug("*** loadAutoPersisted?")
+  const autoPersisted = getPersistedConfig(AUTO_PERSIST_KEY, "RotatedShapeGeometryConfig");
+  if (autoPersisted && usePersisted) {
+    console.debug("    yes")
+    return autoPersisted;
+  } else {
+    console.debug("    no")
+    return generateDefaultConfig();
+  }
 };
 
 export const config0 = persistable<RotatedShapeGeometryConfig>(
-	loadAutoPersisted(),
+	loadAutoPersisted(bootStrapUsePersisted()),
 	'RotatedShapeGeometryConfig',
-	USE_PERSISTED
+	AUTO_PERSIST_KEY,
+	bootStrapUsePersisted()
 );
 
 export const config = derived(config0, ($config0) => {
-	const derivedConfig: RotatedShapeGeometryConfig = {
-		...$config0,
-		levelConfig: {
-			...$config0.levelConfig,
-			levels: getLevels(
-				$config0.levelConfig.zCurveSampleMethod,
-				$config0.zCurveConfig.curves.length
-			)
-		}
-	};
-	return derivedConfig;
+  const derivedConfig: RotatedShapeGeometryConfig = {
+    ...$config0,
+    levelConfig: {
+      ...$config0.levelConfig,
+      levels: getLevels(
+        $config0.levelConfig.zCurveSampleMethod,
+        $config0.zCurveConfig.curves.length
+      )
+    }
+  };
+  console.debug("update derived config", derivedConfig.id)
+  return derivedConfig;
 });
-
-// export const config = derived(
-// 	[
-// 		radialShapeConfig,
-// 		levelConfig,
-// 		curveConfig,
-// 		depthCurveConfig,
-// 		bandConfig,
-// 		strutConfig,
-// 		renderConfig
-// 	],
-// 	([
-// 		$radialShapeConfig,
-// 		$levelConfig,
-// 		$curveConfig,
-// 		$depthCurveConfig,
-// 		$bandConfig,
-// 		$strutConfig,
-// 		$renderConfig
-// 	]) => {
-// 		const returnConfig: RotatedShapeGeometryConfig = {
-// 			shapeConfig: $radialShapeConfig,
-// 			levelConfig: {
-// 				...$levelConfig,
-// 				levels: getLevels($levelConfig.zCurveSampleMethod, $curveConfig.curves.length)
-// 			},
-// 			zCurveConfig: $curveConfig,
-// 			depthCurveConfig: $depthCurveConfig,
-// 			bandConfig: $bandConfig,
-// 			strutConfig: $strutConfig,
-// 			renderConfig: $renderConfig
-// 		};
-// 		return returnConfig;
-// 	}
-// );

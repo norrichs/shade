@@ -172,6 +172,7 @@ const getDepthValues = (config: DepthCurveConfig, levelCount: number): number[] 
 	const points = dCurve.getSpacedPoints(levelCount - 1);
 	// dCurve.getPoints(levelCount - 1);
 	const values = points.map((point) => point.x / config.depthCurveBaseline);
+	console.debug("DEPTH VALUES", values, config.depthCurveBaseline)
 	return values;
 };
 
@@ -1191,12 +1192,12 @@ export const generateRotatedShapeGeometry = (
 		config.depthCurveConfig,
 		rotatedShapePrototype
 	);
-	console.debug('generateRotatedShapeGeometry - levels', levels);
 	const struts = generateStruts(levels, config.strutConfig);
 	const unTabbedBands = generateBandSet(config, levels);
 	const bands = !config.bandConfig?.tabStyle
 		? unTabbedBands
 		: generateTabs(unTabbedBands, config.bandConfig, struts);
+	console.debug("generateRotatedShapeGeometry - levels", levels, "bands", bands, "struts", struts)
 	return { levels, bands, struts };
 };
 

@@ -1,22 +1,12 @@
 <script lang="ts">
-	import { Canvas, InteractiveObject, OrbitControls, T } from '@threlte/core';
-	import { spring } from 'svelte/motion';
-	import { Edges } from '@threlte/extras';
+	import { Canvas, OrbitControls, T } from '@threlte/core';
 	import { degToRad } from 'three/src/math/MathUtils';
-	import LevelCircle from '../../components/level/LevelCircle.svelte';
-	import LevelSegmentMesh from '../../components/level/LevelSegmentMesh.svelte';
 	import StrutMesh from '../../components/strut/StrutMesh.svelte';
-	import LevelMesh from '../../components/level/LevelMesh.svelte';
-	import RingMesh from '../../components/ring/RingMesh.svelte';
-	import type { LevelConfig } from '../../lib/shade';
-	import { getShade } from '../../lib/shade';
-	import type { Ring, Level, StrutGroup, RibbonGroup } from '../../lib/shade';
 	import type { RotatedShapeLevel, Band, RenderConfig, Strut } from '../../lib/rotated-shape';
 	import { getRenderable } from "../../lib/rotated-shape"
-	import RibbonMesh from '../strut/RibbonMesh.svelte';
   import RotatedShapeLevelMesh from '../rotated-shape-level/RotatedShapeLevelMesh.svelte';
   import RotatedShapeBandMesh from '../rotated-shape-band/RotatedShapeBandMesh.svelte';
-	import {renderConfig, bandConfig} from "../../lib/stores"
+	import {renderConfig} from "../../lib/stores"
 
 	export let rslevels: RotatedShapeLevel[] = [];
   export let rsbands: Band[] = []
@@ -26,7 +16,9 @@
 	let displayStruts: Strut[]
 	let displayLevels: RotatedShapeLevel[]
 
+	console.debug("ThreeRenderer")
 	$: {
+		console.debug("$renderConfig", $renderConfig)
 		displayRSBands = getRenderable($renderConfig, rsbands) as Band[]
 	}
 	$: {
@@ -37,6 +29,7 @@
 	$: {
 		if (rslevels.length > 0) {
 			displayLevels = getRenderable($renderConfig, rslevels) as RotatedShapeLevel[]
+			console.debug("displayLevels", displayRSBands)
 		}
 	}
 

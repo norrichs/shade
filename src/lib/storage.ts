@@ -6,7 +6,7 @@
 
 import type { RotatedShapeGeometryConfig } from './rotated-shape';
 import { generateUUID } from 'three/src/math/MathUtils';
-export const AUTO_PERSIST_KEY = 'config-auto-persist';
+import { AUTO_PERSIST_KEY } from './persistable';
 
 export const resetLocal = (key: string) => {
 	if (confirm("really?")) {
@@ -44,10 +44,10 @@ export const persistConfig = (config: RotatedShapeGeometryConfig, onSave: () => 
 	onSave();
 };
 
-export const getPersistedConfig = (name: (keyof RotatedShapeGeometryConfig) | "RotatedShapeGeometryConfig") => {
-	const persistedConfig = getLocal(AUTO_PERSIST_KEY);
-	console.debug("persistedConfig", persistedConfig)
-	return persistedConfig && persistedConfig[name] ? persistedConfig[name] : undefined;
+export const getPersistedConfig = (key: string, name: (keyof RotatedShapeGeometryConfig) | "RotatedShapeGeometryConfig") => {
+	const persistedConfig = getLocal(key);
+	console.debug("key", key, "name", name, "getPersistedConfig", persistedConfig, "return", persistedConfig && persistedConfig[name] ? persistedConfig[name] : undefined)
+	return persistedConfig && (persistedConfig[name] !== undefined) && (persistedConfig[name] !== null) ? persistedConfig[name] : undefined;
 };
 
 export const getLocal = (key: string) => {

@@ -1,15 +1,14 @@
 <script lang="ts">
 	import type { RotatedShapeGeometryConfig } from '$lib/rotated-shape';
+	import {AUTO_PERSIST_KEY} from "$lib/persistable"
 	import {
 		saveLocalConfig,
 		getLocal,
 		resetLocal,
-		AUTO_PERSIST_KEY,
 		listLocalConfigs,
-		setLocal,
 		deleteLocal
 	} from '../../lib/storage';
-	import { resetStore, config0 } from '../../lib/stores';
+	import { config0, usePersisted } from '../../lib/stores';
 
 	export let show = false;
 	export let config: RotatedShapeGeometryConfig;
@@ -35,7 +34,7 @@
 	<div class="column">
 		<div class="row">
 			<label for="persistent">Persist</label>
-			<input type="checkbox" bind:checked={persistLocalStorage} />
+			<input type="checkbox" bind:checked={$usePersisted} />
 			<button
 				on:click={() => {
 					resetLocal(AUTO_PERSIST_KEY);

@@ -4,46 +4,59 @@
 
 <script lang="ts">
 	import type { Writable } from 'svelte/store';
-	import { blankCurveConfig, config0 } from '../../lib/stores';
-	import { onPathPointMove, togglePointType, addCurve, removeCurve, splitCurves } from './path-edit';
+	import { config0, generateDefaultRadialShapeConfig } from '../../lib/stores';
+	import {
+		onPathPointMove,
+		togglePointType,
+		addCurve,
+		removeCurve,
+		splitCurves
+	} from './path-edit';
 	import type {
 		BezierConfig,
 		PointConfig,
 		RadialShapeConfig,
 		ZCurveConfig,
-		DepthCurveConfig,
+		DepthCurveConfig
 	} from '$lib/rotated-shape';
 
-
-	type CurveConfig = ZCurveConfig | RadialShapeConfig | DepthCurveConfig
+	type CurveConfig = ZCurveConfig | RadialShapeConfig | DepthCurveConfig;
 	type ShowControlCurveValue = 'RadialShapeConfig' | 'DepthCurveConfig' | 'ZCurveConfig';
 
 	const isCurveConfig = (subConfig: any): subConfig is CurveConfig => {
-		console.debug("isCurveConfig", subConfig);
-		return typeof subConfig === "object" &&
-		[ "ZCurveConfig", "RadialShapeConfig", "DepthCurveConfig"].includes((subConfig as CurveConfig).type)
-	}
+		console.debug('isCurveConfig', subConfig);
+		return (
+			typeof subConfig === 'object' &&
+			['ZCurveConfig', 'RadialShapeConfig', 'DepthCurveConfig'].includes(
+				(subConfig as CurveConfig).type
+			)
+		);
+	};
 
 	// export let curveStore: Writable<ZCurveConfig | RadialShapeConfig | DepthCurveConfig> = blankCurveConfig;
 
 	export let curveStoreType: ShowControlCurveValue;
 	const curveConfigByType = {
-		"ZCurveConfig": "zCurveConfig",
-		"DepthCurveConfig": "depthCurveConfig",
-		"RadialShapeConfig": "shapeConfig"
-	}
-	let curveStore: CurveConfig
-	let thisConfig
-	
+		ZCurveConfig: 'zCurveConfig',
+		DepthCurveConfig: 'depthCurveConfig',
+		RadialShapeConfig: 'shapeConfig'
+	};
+	let curveStore: CurveConfig;
+	let thisConfig;
+
+	const reverseUpdate = () => {
+		thisConfig = $config0[curveConfigByType[curveStoreType]];
+		curveStore = isCurveConfig(thisConfig) ? thisConfig : $config0.zCurveConfig;
+	};
 
 	$: {
-		console.debug("reactive", curveStoreType)
-		thisConfig = $config0[curveConfigByType[curveStoreType]]
-		curveStore = isCurveConfig(thisConfig) ? thisConfig : $config0.zCurveConfig
+		console.debug('reactive', curveStoreType);
+		thisConfig = $config0[curveConfigByType[curveStoreType]];
+		curveStore = isCurveConfig(thisConfig) ? thisConfig : $config0.zCurveConfig;
 
-		console.debug("thisConfig", thisConfig)
-		console.debug("curveStore", curveStore)
-		console.debug("config0", $config0)
+		console.debug('thisConfig', thisConfig);
+		console.debug('curveStore', curveStore);
+		console.debug('config0', $config0);
 	}
 
 	let symmetry: number = 1;
@@ -58,7 +71,7 @@
 	};
 
 	$: curves = curveStore.curves;
-	$: limitAngle = getLimitAngle(curveStore)
+	$: limitAngle = getLimitAngle(curveStore);
 
 	$: {
 		symmetry = curveStore.type === 'RadialShapeConfig' ? curveStore.symmetryNumber : 1;
@@ -104,7 +117,8 @@
 	};
 
 	const getFillFromCurves = (curves: BezierConfig[]): string => {
-		const starter = `M 0 ${-curves[0].points[0].y}, L${curves[0].points[0].x} ${-curves[0].points[0].y}`;
+		const starter = `M 0 ${-curves[0].points[0].y}, L${curves[0].points[0].x} ${-curves[0].points[0]
+			.y}`;
 		return (
 			curves.reduce(
 				(path, c) => `
@@ -125,7 +139,9 @@
 			${-c.points[1].x} ${c.points[1].y}, 
 			${-c.points[2].x} ${c.points[2].y},
 			${-c.points[3].x} ${c.points[3].y}
-		`, starter);
+		`,
+			starter
+		);
 	};
 
 	const reflectCurvesAroundX = (curves: BezierConfig[]): BezierConfig[] => {
@@ -143,12 +159,12 @@
 	};
 
 	const rotateCurvesAroundOrigin = (curves: BezierConfig[], angle: number): BezierConfig[] => {
-		const localCurves: BezierConfig[] = window.structuredClone(curves)
+		const localCurves: BezierConfig[] = window.structuredClone(curves);
 		return localCurves.map((curve) => ({
 			...curve,
 			points: curve.points.map((point) => {
-				const r = Math.sqrt(Math.pow(point.x, 2) + Math.pow(point.y, 2)) //* angle / 2;
-				const a = Math.atan(point.y / point.x)
+				const r = Math.sqrt(Math.pow(point.x, 2) + Math.pow(point.y, 2)); //* angle / 2;
+				const a = Math.atan(point.y / point.x);
 				return { ...point, x: r * Math.cos(a + angle), y: r * Math.sin(a + angle) };
 			}) as [PointConfig, PointConfig, PointConfig, PointConfig]
 		}));
@@ -175,33 +191,79 @@
 			for (let i = 0; i <= config.symmetryNumber; i++) {
 				resultCurves.push(...rotateCurvesAroundOrigin(unitCurves, angle * i));
 			}
-			return resultCurves ;
+			return resultCurves;
 		}
 
 		return curves;
 	};
 
-	const getLimitAngle = (config: RadialShapeConfig | ZCurveConfig | DepthCurveConfig): number | null => {
-		if (config.type === "RadialShapeConfig" && (config.symmetry === "radial" || config.symmetry === "radial-lateral")) {
-			return Math.PI * 2 / config.symmetryNumber
+	const getLimitAngle = (
+		config: RadialShapeConfig | ZCurveConfig | DepthCurveConfig
+	): number | null => {
+		if (
+			config.type === 'RadialShapeConfig' &&
+			(config.symmetry === 'radial' || config.symmetry === 'radial-lateral')
+		) {
+			return (Math.PI * 2) / config.symmetryNumber;
 		} else {
 			return null;
 		}
-	}
+	};
 
 	const isLimited = (cMax: number, c: number, pMax: number, p: number) => {
-		return (c === cMax && p === pMax) || (c === 0 && p === 0)
-	}
+		return (c === cMax && p === pMax) || (c === 0 && p === 0);
+	};
+
+	const handleSymmetryChange = (event: any) => {
+		console.debug('onChange ', event);
+		const symmetry = event?.target?.valueAsNumber || 5;
+		$config0.shapeConfig = generateDefaultRadialShapeConfig(symmetry, {
+			method: 'divideCurve',
+			divisions: 4
+		});
+		reverseUpdate();
+	};
 
 	const update = () => {
-		($config0[curveConfigByType[curveStoreType]] as CurveConfig).curves = curves
-		curves = ($config0[curveConfigByType[curveStoreType]] as CurveConfig).curves
+		console.debug('update PathEdit');
+		($config0[curveConfigByType[curveStoreType]] as CurveConfig).curves = curves;
+		curves = ($config0[curveConfigByType[curveStoreType]] as CurveConfig).curves;
 		// curveStore.curves = curves;
 		// curves = curveStore.curves;
 	};
 </script>
 
 <div class="container">
+	{#if curveStore.type === 'DepthCurveConfig'}
+		<div class="data-grid">
+			{#each curveStore.curves as curve, i}
+				<input
+					class="data-grid-number"
+					type="number"
+					bind:value={curveStore.curves[i].points[0].x}
+					on:input={update}
+				/>
+				<input
+					class="data-grid-number"
+					type="number"
+					bind:value={curveStore.curves[i].points[0].y}
+					on:input={update}
+				/>
+				<input
+					class="data-grid-number"
+					type="number"
+					bind:value={curveStore.curves[i].points[3].x}
+					on:input={update}
+				/>
+				<input
+					class="data-grid-number"
+					type="number"
+					bind:value={curveStore.curves[i].points[3].y}
+					on:input={update}
+				/>
+			{/each}
+		</div>
+	{/if}
 	<svg
 		viewBox={`${canv.minX} ${canv.minY} ${canv.maxX - canv.minX} ${canv.maxY - canv.minY}`}
 		style="overflow:visible"
@@ -265,16 +327,18 @@
 					onDragStart: { x: point.x, y: -point.y },
 					onDragMove: (x, y, dx, dy) =>
 						(curves = onPathPointMove(
-							x, 
-							-y, 
-							dx, 
-							-dy, 
-							curveIndex, 
-							p, 
-							curves, 
-							limitAngle && isLimited(curves.length - 1, curveIndex, curve.points.length - 1, p) ? limitAngle : Math.PI * 2,
-							curveStore.type === "RadialShapeConfig"
-							)),
+							x,
+							-y,
+							dx,
+							-dy,
+							curveIndex,
+							p,
+							curves,
+							limitAngle && isLimited(curves.length - 1, curveIndex, curve.points.length - 1, p)
+								? limitAngle
+								: Math.PI * 2,
+							curveStore.type === 'RadialShapeConfig'
+						)),
 					minX: canv.minX,
 					minY: canv.minY,
 					maxX: canv.maxX,
@@ -283,7 +347,7 @@
 			/>
 		{/each}
 	{/each}
-	
+
 	<div class="controls">
 		<button
 			on:click={() => {
@@ -295,18 +359,42 @@
 			on:click={() => {
 				curves = splitCurves(curves);
 				update();
-			}}>sp</button>
+			}}>sp</button
+		>
 		<button
 			on:click={() => {
 				curves = removeCurve(curves);
 				update();
 			}}>-</button
 		>
-		{#if curveStore.type === "RadialShapeConfig"}
+
+		{#if curveStore.type === 'RadialShapeConfig'}
 			<label for="input-symmetry-number">Symmetry</label>
-			<input id="input-symmetry-number" type="number" min="1" max="99" bind:value={curveStore.symmetryNumber} />
+			<input
+				id="input-symmetry-number"
+				type="number"
+				min="1"
+				max="99"
+				bind:value={curveStore.symmetryNumber}
+				on:change={handleSymmetryChange}
+			/>
+			<label for="select-sample-method">Sample Method</label>
+			<select bind:value={curveStore.sampleMethod.method} on:change={update}>
+				<option value="divideCurvePath">Whole</option>
+				<option value="divideCurve">Curve</option>
+			</select>
 			<label for="input-divisions">div</label>
-			<input id="input-divisions" type="number" min="0" max="99" bind:value={curveStore.sampleMethod.divisions} />
+			<input
+				id="input-divisions"
+				type="number"
+				min="0"
+				max="99"
+				bind:value={curveStore.sampleMethod.divisions}
+				on:input={() => {
+					update();
+					console.debug('changed divisions');
+				}}
+			/>
 			<!-- <label for="input-divisions">rs</label> -->
 			<select id="select-symmetry" bind:value={curveStore.symmetry} placeholder="mode">
 				<option>asymmetric</option>
@@ -316,7 +404,6 @@
 			</select>
 		{/if}
 	</div>
-
 </div>
 
 <style>
@@ -329,6 +416,24 @@
 		-ms-user-select: none;
 		user-select: none;
 	}
+	.data-grid {
+		--grid-dimension: 50px;
+		position: absolute;
+		width: calc(var(--grid-dimension) * 2);
+		display: grid;
+		grid-template-columns: var(--grid-dimension) var(--grid-dimension);
+		background-color: beige;
+		place-items: center;
+	}
+	.data-grid > input.data-grid-number {
+		margin: 0;
+		height: 100%;
+		width: 100%;
+		max-width: 100%;
+		border: none;
+		background-color: azure;
+	}
+
 	.container {
 		display: flex;
 		flex-direction: column;
