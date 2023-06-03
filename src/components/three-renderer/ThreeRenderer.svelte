@@ -6,7 +6,7 @@
 	import { getRenderable } from "../../lib/rotated-shape"
   import RotatedShapeLevelMesh from '../rotated-shape-level/RotatedShapeLevelMesh.svelte';
   import RotatedShapeBandMesh from '../rotated-shape-band/RotatedShapeBandMesh.svelte';
-	import {renderConfig} from "../../lib/stores"
+	import {config} from "../../lib/stores"
 
 	export let rslevels: RotatedShapeLevel[] = [];
   export let rsbands: Band[] = []
@@ -18,17 +18,17 @@
 
 	console.debug("ThreeRenderer")
 	$: {
-		console.debug("$renderConfig", $renderConfig)
-		displayRSBands = getRenderable($renderConfig, rsbands) as Band[]
+		console.debug("$renderConfig", $config.renderConfig)
+		displayRSBands = getRenderable($config.renderConfig, rsbands) as Band[]
 	}
 	$: {
 		if (struts.length > 0) {
-			displayStruts = getRenderable($renderConfig, struts) as Strut[]
+			displayStruts = getRenderable($config.renderConfig, struts) as Strut[]
 		}
 	}
 	$: {
 		if (rslevels.length > 0) {
-			displayLevels = getRenderable($renderConfig, rslevels) as RotatedShapeLevel[]
+			displayLevels = getRenderable($config.renderConfig, rslevels) as RotatedShapeLevel[]
 			console.debug("displayLevels", displayRSBands)
 		}
 	}
@@ -48,18 +48,18 @@
 	<T.AmbientLight intensity={0.2} />
 
 	<T.Group position={[0, 0, 0]}>
-    {#if $renderConfig?.show?.levels}
+    {#if $config.renderConfig?.show?.levels}
       {#each displayLevels as rslevel}
         <RotatedShapeLevelMesh {rslevel} />
       {/each}
     {/if}
 
-		{#if $renderConfig?.show?.bands}
+		{#if $config.renderConfig?.show?.bands}
 			{#each displayRSBands as rsband, i}
-				<RotatedShapeBandMesh {rsband} showTabs={$renderConfig?.show?.tabs} />
+				<RotatedShapeBandMesh {rsband} showTabs={$config.renderConfig?.show?.tabs} />
 			{/each}
 		{/if}
-		{#if $renderConfig?.show?.struts}
+		{#if $config.renderConfig?.show?.struts}
 			{#each displayStruts as strut}
 				<StrutMesh {strut} showTabs={false} />
 			{/each}

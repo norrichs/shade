@@ -145,7 +145,7 @@ const defaultRenderConfig: RenderConfig = {
     levelStart: 0,
     levelCount: 1,
     strutStart: 0,
-    strutCount: undefined
+    strutCount: 0
   },
   show: {
     tabs: false,
@@ -184,12 +184,12 @@ export const strutConfig = persistable<StrutConfig>(
 	AUTO_PERSIST_KEY,
   bootStrapUsePersisted()
 );
-export const renderConfig = persistable<RenderConfig>(
-  defaultRenderConfig,
-	'renderConfig',
-	AUTO_PERSIST_KEY,
-  bootStrapUsePersisted()
-);
+// export const renderConfig = persistable<RenderConfig>(
+//   defaultRenderConfig,
+// 	'renderConfig',
+// 	AUTO_PERSIST_KEY,
+//   bootStrapUsePersisted()
+// );
 
 /// Configs to be kept separate from geometry config
 export const patternConfig = writable<PatternConfig>(defaultPatternConfig);

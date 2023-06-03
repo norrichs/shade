@@ -26,6 +26,7 @@
 </script>
 
 {#if showControl === 'Struts'}
+
 	<section class="control-group">
 		<div>Struts</div>
 		<div />
@@ -54,7 +55,9 @@
 			<option>hybrid</option>
 		</select>
 	</section>
+
 {:else if showControl === '3D'}
+
 	<section>
 		{#if $config0.renderConfig.ranges?.rangeStyle === 'slice'}
 			<section class="control-group">
@@ -84,24 +87,25 @@
 				<option>helical-left</option>
 			</select>
 			<label for="tab-style">Tab Style</label>
-			<select id="tab-style" bind:value={tabStyle.style}>
+			<select id="tab-style" bind:value={tabStyle.style} on:change={() => $config0.renderConfig.show.tabs = true}>
 				<option>full</option>
 				<option>trapezoid</option>
 				<option>multi-facet-full</option>
 				<option disabled>multi-facet-trap</option>
 			</select>
 			<label for="tab-direction">Tab Direction</label>
-			<select id="tab-direction" bind:value={tabStyle.direction}>
+			<select id="tab-direction" bind:value={tabStyle.direction} on:change={() => $config0.renderConfig.show.tabs = true}>
 				<option>greater</option>
 				<option>lesser</option>
 				<option>both</option>
 			</select>
 			{#if tabStyle?.style === 'trapezoid' && tabStyle?.width?.value !== undefined}
 				<label for="tab-width">Tab Width</label>
-				<input id="tab-width" type="number" min="1" bind:value={tabStyle.width.value} />
+				<input id="tab-width" type="number" min="1" bind:value={tabStyle.width.value} on:change={() => $config0.renderConfig.show.tabs = true}/>
 			{/if}
 		</section>
 	</section>
+
 {:else if showControl === 'Levels'}
 	<section class="control-group">
 		{#if $config0.levelConfig}
