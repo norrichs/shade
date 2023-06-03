@@ -3,8 +3,8 @@
 </script>
 
 <script lang="ts">
-	import type { Writable } from 'svelte/store';
-	import { config0, generateDefaultRadialShapeConfig } from '../../lib/stores';
+	import { generateDefaultRadialShapeConfig } from '$lib/shades-config';
+	import { config0 } from '$lib/stores';
 	import {
 		onPathPointMove,
 		togglePointType,
@@ -32,8 +32,6 @@
 			)
 		);
 	};
-
-	// export let curveStore: Writable<ZCurveConfig | RadialShapeConfig | DepthCurveConfig> = blankCurveConfig;
 
 	export let curveStoreType: ShowControlCurveValue;
 	const curveConfigByType = {

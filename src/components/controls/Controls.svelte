@@ -1,6 +1,7 @@
 <script lang="ts">
-	import { patternConfig, initTabStyle, config0 } from '../../lib/stores';
-	import type { TabStyle } from '../../lib/rotated-shape';
+	import { patternConfig, config0 } from '$lib/stores';
+	import {initTabStyle} from "$lib/shades-config"
+	import type { TabStyle } from '$lib/rotated-shape';
 
 	export let showControl: string;
 
@@ -157,16 +158,25 @@
 		{/if}
 	</section>
 {:else if showControl === 'Cut'}
-	<h4>Cut Pattern</h4>
-	<section class="control-group">
-		{#each Object.entries($patternConfig.showPattern) as show}
-			<label for={`show-${show[0]}`}>{show[0]}</label>
-			<select id={`show-${show[0]}`} bind:value={$patternConfig.showPattern[show[0]]}>
-				<option>faceted</option>
-				<option>outlined</option>
-				<option>none</option>
-			</select>
-		{/each}
+<section>
+		<h4>Cut Pattern</h4>
+		<div class="control-group">
+			{#each Object.entries($patternConfig.showPattern) as show}
+				<label for={`show-${show[0]}`}>{show[0]}</label>
+				<select id={`show-${show[0]}`} bind:value={$patternConfig.showPattern[show[0]]}>
+					<option>faceted</option>
+					<option>outlined</option>
+					<option>none</option>
+				</select>
+			{/each}
+		</div>
+		<h4>Cutouts</h4>
+		<div class="control-group">
+			<label for="checkbox-apply-cutout">
+				Apply Cutout?
+			</label>
+			<input type="checkbox" id="checkbox-apply-cutout" />
+		</div>
 	</section>
 {/if}
 
