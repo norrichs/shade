@@ -179,7 +179,6 @@
 		width: 400px;
 		display: grid;
 		grid-template-columns: 1fr 2fr;
-		grid-template-rows: repeat(10, 1.5em);
 	}
 	.control-group input {
 		width: 40px;
