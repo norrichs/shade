@@ -11,7 +11,7 @@
 		MeshToonMaterial,
 		MeshPhysicalMaterial
 	} from 'three';
-	import type { Strut } from '../../lib/rotated-shape';
+	import type { Strut } from '$lib/rotated-shape';
 
 	export let strut: Strut;
 	export let showTabs: boolean = false;
@@ -25,18 +25,15 @@
 		: strut.facets
 				.map((facet) => {
 					if (facet.tab) {
-            if (facet.tab.style === "trapezoid") {
-              const {a, b, c, d} = facet.tab.outer
-              return [
-                a, b, d,
-                b, c, d
-              ]
-            } else if (facet.tab.style === "full") {
-              const {a, b, c} = facet.tab.outer
-              return [a, b, c]
-            }
+						if (facet.tab.style === 'trapezoid') {
+							const { a, b, c, d } = facet.tab.outer;
+							return [a, b, d, b, c, d];
+						} else if (facet.tab.style === 'full') {
+							const { a, b, c } = facet.tab.outer;
+							return [a, b, c];
+						}
 					}
-          return []
+					return [];
 				})
 				.flat(1);
 
@@ -61,7 +58,6 @@
 		side: DoubleSide
 	});
 
-
 	const lineMaterial = new LineBasicMaterial({ color: 'black' });
 
 	$: {
@@ -81,6 +77,6 @@
 	<T.LineSegments geometry={edges} material={lineMaterial} />
 	<T.Mesh geometry={strutGeometry} material={strutMaterial} />
 	{#if showTabs}
-    <T.Mesh geometry={tabGeometry} material={tabMaterial} />
+		<T.Mesh geometry={tabGeometry} material={tabMaterial} />
 	{/if}
 </T.Group>

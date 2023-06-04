@@ -2,29 +2,26 @@
 	import ThreeRenderer from '../../components/three-renderer/ThreeRenderer.svelte';
 	import CutPattern from '../../components/cut-pattern/CutPattern.svelte';
 	import type { Writable } from 'svelte/store';
-	import { generateRotatedShapeGeometry, type DepthCurveConfig } from '../../lib/rotated-shape';
+	import { generateRotatedShapeGeometry, type DepthCurveConfig } from '$lib/rotated-shape';
 	import type {
-		RotatedShapeGeometryConfig,
+		ShadesConfig,
 		ZCurveConfig,
-		LevelSetConfig,
-		RadialShapeConfig,
-		BandSetConfig,
+		LevelConfig,
+		ShapeConfig,
+		BandConfig,
 		StrutConfig,
-		RotatedShapeLevel,
+		Level,
 		Strut
-	} from '../../lib/rotated-shape';
+	} from '$lib/rotated-shape';
 	import PathEdit from '../../components/path-edit/PathEdit.svelte';
-	import {
-		config0,
-		config
-	} from '../../lib/stores';
+	import { config0, config } from '$lib/stores';
 	import Controls from '../../components/controls/Controls.svelte';
 	import SelectBar from '../../components/select-bar/SelectBar.svelte';
 	import SaveControl from '../../components/save-control/SaveControl.svelte';
 
 	let data = generateRotatedShapeGeometry($config);
 	let levels = data.levels;
-	let displayLevels: RotatedShapeLevel[];
+	let displayLevels: Level[];
 	let struts: Strut[];
 	let bands = data.bands;
 	let showControl: { name: string; value: unknown };
@@ -34,7 +31,7 @@
 	};
 
 	$: {
-		console.log("page reactive - generate")
+		console.log('page reactive - generate');
 		data = generateRotatedShapeGeometry($config);
 		levels = data.levels;
 		if ($config.renderConfig.ranges?.rangeStyle === 'slice') {
@@ -49,18 +46,18 @@
 		bands = data.bands;
 		struts = data.struts;
 	}
-	type ShowControlCurveValue = 'RadialShapeConfig' | 'DepthCurveConfig' | 'ZCurveConfig';
+	type ShowControlCurveValue = 'ShapeConfig' | 'DepthCurveConfig' | 'ZCurveConfig';
 	const isShowControlCurveValue = (value: unknown): value is ShowControlCurveValue => {
-		return ['RadialShapeConfig', 'DepthCurveConfig', 'ZCurveConfig'].includes(value as string)
-	}
+		return ['ShapeConfig', 'DepthCurveConfig', 'ZCurveConfig'].includes(value as string);
+	};
 </script>
 
 <main>
 	<section class="container three">
-		<ThreeRenderer rslevels={levels} rsbands={bands} {struts} />
+		<ThreeRenderer {levels} {bands} {struts} />
 	</section>
 	<section class="container svg">
-		<CutPattern rslevels={displayLevels} rsbands={bands} {struts} />
+		<CutPattern levels={displayLevels} {bands} {struts} />
 	</section>
 	<section class="container controls">
 		<header>
@@ -69,8 +66,8 @@
 				options={[
 					{ name: 'None' },
 					{ name: 'Zcurve', value: 'ZCurveConfig' },
-					{ name: 'DepthCurve', value: 'DepthCurveConfig'},
-					{ name: 'Shape', value: 'RadialShapeConfig' },
+					{ name: 'DepthCurve', value: 'DepthCurveConfig' },
+					{ name: 'Shape', value: 'ShapeConfig' },
 					{ name: '3D' },
 					{ name: 'Levels' },
 					{ name: 'Struts' },
@@ -82,7 +79,11 @@
 		<div class="group">
 			<div>
 				{#if ['Zcurve', 'Shape', 'DepthCurve'].includes(showControl?.name)}
-					<PathEdit curveStoreType={isShowControlCurveValue(showControl.value) ? showControl.value : "ZCurveConfig"} />
+					<PathEdit
+						curveStoreType={isShowControlCurveValue(showControl.value)
+							? showControl.value
+							: 'ZCurveConfig'}
+					/>
 				{/if}
 			</div>
 			<Controls showControl={showControl?.name} />

@@ -1,17 +1,17 @@
 <script lang="ts">
-	import type { RotatedShapeGeometryConfig } from '$lib/rotated-shape';
-	import {AUTO_PERSIST_KEY} from "$lib/persistable"
+	import type { ShadesConfig } from '$lib/rotated-shape';
+	import { AUTO_PERSIST_KEY } from '$lib/persistable';
 	import {
 		saveLocalConfig,
 		getLocal,
 		resetLocal,
 		listLocalConfigs,
 		deleteLocal
-	} from '../../lib/storage';
-	import { config0, usePersisted } from '../../lib/stores';
+	} from '$lib/storage';
+	import { config0, usePersisted } from '$lib/stores';
 
 	export let show = false;
-	export let config: RotatedShapeGeometryConfig;
+	export let config: ShadesConfig;
 	export let update: () => void;
 
 	let test: string | null;
@@ -73,10 +73,15 @@
 							deleteLocal(localConfig.id);
 							config0.reset();
 							refreshList();
-						}
-					}>Delete</button>
+						}}>Delete</button
+					>
 					{#if localConfig.id === config.id}
-						<button on:click={() =>{ saveLocalConfig(config, false); refreshList()}}>Save</button>
+						<button
+							on:click={() => {
+								saveLocalConfig(config, false);
+								refreshList();
+							}}>Save</button
+						>
 					{/if}
 				</div>
 			{/each}

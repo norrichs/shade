@@ -11,18 +11,18 @@
 		MeshToonMaterial,
 		MeshPhysicalMaterial
 	} from 'three';
-	import type { Band, TabStyle } from '../../lib/rotated-shape';
+	import type { Band, TabStyle } from '$lib/rotated-shape';
 
-	export let rsband: Band;
+	export let band: Band;
 	export let showTabs: boolean = true;
 
-	$: bandPoints = rsband.facets
+	$: bandPoints = band.facets
 		.map((facet) => [facet.triangle.a, facet.triangle.b, facet.triangle.c])
 		.flat(1);
 
 	$: tabPoints = !showTabs
 		? []
-		: rsband.facets
+		: band.facets
 				.map((facet) => {
 					if (facet.tab && facet.tab.style === 'full') {
 						const { a, b, c } = facet.tab.outer;
@@ -32,14 +32,14 @@
 						['trapezoid', 'multi-facet-full', 'multi-facet-trap'].includes(facet.tab.style)
 					) {
 						const { a, b, c, d } = facet.tab.outer;
-						return [a, b, c, a, c, d ];
+						return [a, b, c, a, c, d];
 					}
 					return [];
 				})
 				.flat(1);
 	// $: tabPoints2 = !showTabs
 	// 	? []
-	// 	: rsband.facets
+	// 	: band.facets
 	// 			.map((facet) => {
 	// 				if (facet.tab?.style === "full") {
 	// 					return [

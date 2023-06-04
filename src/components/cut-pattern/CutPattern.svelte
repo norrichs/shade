@@ -1,33 +1,28 @@
 <script lang="ts">
-	// import type { Ring, Level, StrutGroup, RibbonGroup } from '../../lib/shade';
-	import { Vector3 } from 'three';
-	import type { RotatedShapeLevel, Band, Strut } from '../../lib/rotated-shape';
+	import type { Level, Band, Strut } from '$lib/rotated-shape';
 	import {
 		generateBandPatterns,
 		generateLevelSetPatterns,
 		generateStrutPatterns
-	} from '../../lib/cut-pattern';
+	} from '$lib/cut-pattern';
 	import type {
-		// PatternConfig,
-		// ProjectionType,
-		// Pattern,
 		OutlinedBandPattern,
 		FacetedBandPattern,
 		FacetedStrutPattern,
 		OutlinedStrutPattern,
 		LevelSetPattern,
 		PatternViewConfig
-	} from '../../lib/cut-pattern';
-	import { getRenderable } from '../../lib/rotated-shape';
-	import { patternConfig, patternViewConfig } from '../../lib/stores';
-	import { config } from '../../lib/stores';
-	import type { FacetPattern } from '../../lib/cut-pattern';
+	} from '$lib/cut-pattern';
+	import { getRenderable } from '$lib/rotated-shape';
+	// import { patternConfig, patternViewConfig } from '$lib/stores';
+	import { config, config0 } from '$lib/stores';
+	import type { FacetPattern } from '$lib/cut-pattern';
 
-	export let rslevels: RotatedShapeLevel[] = [];
-	export let rsbands: Band[] = [];
+	export let levels: Level[] = [];
+	export let bands: Band[] = [];
 	export let struts: Strut[] = [];
 
-	let showRSBands = true;
+	let showBands = true;
 
 	const { renderConfig, bandConfig } = $config;
 
@@ -44,8 +39,8 @@
 	let showPoints = true;
 	let showTabs = true;
 
-	$: displayedBandFacets = getRenderable(renderConfig, rsbands) as Band[];
-	$: displayedLevels = getRenderable(renderConfig, rslevels) as RotatedShapeLevel[];
+	$: displayedBandFacets = getRenderable(renderConfig, bands) as Band[];
+	$: displayedLevels = getRenderable(renderConfig, levels) as Level[];
 	$: displayedStrutFacets = getRenderable(renderConfig, struts) as Strut[];
 
 	type Patterns = {
@@ -69,14 +64,14 @@
 		const svg_win = window.open(url, 'svg_win');
 	};
 
-	$: viewBoxValue = getViewBox($patternViewConfig);
+	$: viewBoxValue = getViewBox($config.patternViewConfig);
 
 	$: {
-		if ($patternConfig.showPattern.band === 'none') {
+		if ($config.patternConfig.showPattern.band === 'none') {
 			patterns.band = { projectionType: 'none' };
 		} else {
 			patterns.band = generateBandPatterns(
-				$patternConfig,
+				$config.patternConfig,
 				bandConfig.bandStyle,
 				bandConfig.tabStyle,
 				displayedBandFacets
@@ -85,17 +80,17 @@
 		}
 	}
 	$: {
-		if ($patternConfig.showPattern.level === 'none') {
+		if ($config.patternConfig.showPattern.level === 'none') {
 			patterns.level = { projectionType: 'none' };
 		} else {
-			patterns.level = generateLevelSetPatterns(displayedLevels, $patternConfig);
+			patterns.level = generateLevelSetPatterns(displayedLevels, $config.patternConfig);
 		}
 	}
 	$: {
-		if ($patternConfig.showPattern.strut === 'none') {
+		if ($config.patternConfig.showPattern.strut === 'none') {
 			patterns.strut = { projectionType: 'none' };
 		} else {
-			patterns.strut = generateStrutPatterns($patternConfig, displayedStrutFacets);
+			patterns.strut = generateStrutPatterns($config.patternConfig, displayedStrutFacets);
 		}
 	}
 
@@ -125,14 +120,14 @@
 		<!-- <button on:click={() => zoomToPattern(patterns)}>Zoom To Pattern</button> -->
 	</header>
 	<div>
-		<label for="showRSBands"> RSBands </label>
-		<input type="checkbox" name="showRSBands" bind:checked={showRSBands} />
-		<div class="container-svg" class:showRSBands>
+		<label for="showBands"> Bands </label>
+		<input type="checkbox" name="showBands" bind:checked={showBands} />
+		<div class="container-svg" class:showBands>
 			{#if experimental.show}
 				<svg
 					id="pattern-svg"
-					height={$patternViewConfig.height}
-					width={$patternViewConfig.width}
+					height={$config.patternViewConfig.height}
+					width={$config.patternViewConfig.width}
 					viewBox={viewBoxValue}
 				>
 					<!-- <path d={experimental.outer + experimental.inner} stroke="black" stroke-width=0.5 fill="red" fill-rule="evenodd" /> -->
@@ -156,8 +151,8 @@
 			{:else}
 				<svg
 					id="pattern-svg"
-					height={$patternViewConfig.height}
-					width={$patternViewConfig.width}
+					height={$config.patternViewConfig.height}
+					width={$config.patternViewConfig.width}
 					viewBox={viewBoxValue}
 					xmlns="http://www.w3.org/2000/svg"
 				>
@@ -169,7 +164,16 @@
 
 					{#if patterns.band.projectionType === 'outlined'}
 						{#each patterns.band.bands as band, i}
-							<path d={[band.outline.svgPath, ...(band.cutouts ? band.cutouts.map((cutout) => cutout.svgPath) : []) ].join('') } fill="red" stroke="black" stroke-width="0.2" fill-rule="evenodd"/>
+							<path
+								d={[
+									band.outline.svgPath,
+									...(band.cutouts ? band.cutouts.map((cutout) => cutout.svgPath) : [])
+								].join('')}
+								fill="red"
+								stroke="black"
+								stroke-width="0.2"
+								fill-rule="evenodd"
+							/>
 							<!-- <path d={band.outline.svgPath} fill="red" stroke="black" stroke-width="0.2" /> -->
 							<!-- {#if band.cutouts}
 								{#each band.cutouts as cutout}
@@ -222,14 +226,14 @@
 				<input
 					id="svg-width"
 					type="number"
-					bind:value={$patternViewConfig.width}
+					bind:value={$config0.patternViewConfig.width}
 					class="view-control"
 				/>
 				<label for="svg-height">height</label>
 				<input
 					id="svg-height"
 					type="number"
-					bind:value={$patternViewConfig.height}
+					bind:value={$config0.patternViewConfig.height}
 					class="view-control"
 				/>
 				<label for="svg-zoom">zoom</label>
@@ -239,21 +243,21 @@
 					min={-1}
 					max={2}
 					step={0.1}
-					bind:value={$patternViewConfig.zoom}
+					bind:value={$config0.patternViewConfig.zoom}
 					class="view-control"
 				/>
 				<label for="svg-offset-x">offset x</label>
 				<input
 					id="svg-offset-x"
 					type="number"
-					bind:value={$patternViewConfig.centerOffset.x}
+					bind:value={$config0.patternViewConfig.centerOffset.x}
 					class="view-control"
 				/>
 				<label for="svg-offset-y">offset y</label>
 				<input
 					id="svg-offset-y"
 					type="number"
-					bind:value={$patternViewConfig.centerOffset.y}
+					bind:value={$config0.patternViewConfig.centerOffset.y}
 					class="view-control"
 				/>
 			</div>
@@ -284,7 +288,7 @@
 	.showRibbons {
 		display: flex;
 	}
-	.showRSBands {
+	.showBands {
 		display: flex;
 	}
 	.point-label-text {

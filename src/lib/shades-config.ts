@@ -1,13 +1,13 @@
 import type { CutoutConfig, PatternConfig, PatternViewConfig } from './cut-pattern';
 import { AUTO_PERSIST_KEY } from './persistable';
 import type {
-	BandSetConfig,
+	BandConfig,
 	CurveSampleMethod,
 	DepthCurveConfig,
-	LevelSetConfig,
-	RadialShapeConfig,
+	LevelConfig,
+	ShapeConfig,
 	RenderConfig,
-	RotatedShapeGeometryConfig,
+	ShadesConfig,
 	StrutConfig,
 	TabStyle,
 	ZCurveConfig
@@ -45,13 +45,13 @@ const defaultDepthCurveConfig: DepthCurveConfig = {
 	]
 };
 
-export const generateDefaultRadialShapeConfig = (
+export const generateDefaultShapeConfig = (
 	symmetryNumber: number,
 	sampleMethod: CurveSampleMethod
-): RadialShapeConfig => {
+): ShapeConfig => {
 	const segmentAngle = (Math.PI * 2) / symmetryNumber;
 	return {
-		type: 'RadialShapeConfig',
+		type: 'ShapeConfig',
 		symmetry: 'radial',
 		symmetryNumber,
 		sampleMethod,
@@ -81,8 +81,8 @@ export const generateDefaultRadialShapeConfig = (
 	};
 };
 
-const defaultLevelSetConfig: LevelSetConfig = {
-	type: 'LevelSetConfig',
+const defaultLevelConfig: LevelConfig = {
+	type: 'LevelConfig',
 	zCurveSampleMethod: { method: 'divideCurvePath', divisions: 10 },
 	// move below into shapeConfig
 	levelPrototypeSampleMethod: { byDivisions: 'whole', dividePer: 'curve' },
@@ -121,8 +121,8 @@ export const initTabStyle = (style: TabStyle['style']): TabStyle => {
 	return defaultTabStyles[style];
 };
 
-const defaultBandConfig: BandSetConfig = {
-	type: 'BandSetConfig',
+const defaultBandConfig: BandConfig = {
+	type: 'BandConfig',
 	bandStyle: 'helical-right',
 	offsetBy: 0,
 	tabStyle: initTabStyle('multi-facet-full')
@@ -177,19 +177,19 @@ const defaultCutoutConfig: CutoutConfig[] = [
 				}
 			]
 		]
-  },
-  {
+	},
+	{
 		tilePattern: { type: 'alternating-band', nthBand: 1 },
 		holeConfigs: [
 			[
 				{
 					type: 'HoleConfigBand',
-          locate: {
-            skipEnds: 6,
-            everyNth: 1,
-            centered: 0,
-            scale: "absolute"
-          },
+					locate: {
+						skipEnds: 6,
+						everyNth: 1,
+						centered: 0,
+						scale: 'absolute'
+					},
 					geometry: [
 						{ type: 'CircleConfig', center: { type: 'PointConfig2', x: 0, y: 0 }, radius: 6 }
 					]
@@ -226,20 +226,23 @@ export const getLevels = (sampleMethod: CurveSampleMethod, curveCount: number) =
 	return sampleMethod.divisions + 1;
 };
 
-export const generateDefaultConfig = (): RotatedShapeGeometryConfig => {
-	const config: RotatedShapeGeometryConfig = {
+export const generateDefaultConfig = (): ShadesConfig => {
+	const config: ShadesConfig = {
 		id: AUTO_PERSIST_KEY,
 		name: '',
-		shapeConfig: generateDefaultRadialShapeConfig(6, { method: 'divideCurvePath', divisions: 5 }),
+		shapeConfig: generateDefaultShapeConfig(6, { method: 'divideCurvePath', divisions: 5 }),
 		levelConfig: {
-			...defaultLevelSetConfig,
-			levels: getLevels(defaultLevelSetConfig.zCurveSampleMethod, defaultZCurveConfig.curves.length)
+			...defaultLevelConfig,
+			levels: getLevels(defaultLevelConfig.zCurveSampleMethod, defaultZCurveConfig.curves.length)
 		},
 		zCurveConfig: defaultZCurveConfig,
 		depthCurveConfig: defaultDepthCurveConfig,
 		bandConfig: defaultBandConfig,
 		strutConfig: defaultStrutConfig,
-		renderConfig: defaultRenderConfig
+    renderConfig: defaultRenderConfig,
+    cutoutConfig: defaultCutoutConfig[1],
+    patternConfig: defaultPatternConfig,
+    patternViewConfig: defaultPatternViewConfig,
 	};
 	return config;
 };

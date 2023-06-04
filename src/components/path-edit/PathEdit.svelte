@@ -3,7 +3,7 @@
 </script>
 
 <script lang="ts">
-	import { generateDefaultRadialShapeConfig } from '$lib/shades-config';
+	import { generateDefaultShapeConfig } from '$lib/shades-config';
 	import { config0 } from '$lib/stores';
 	import {
 		onPathPointMove,
@@ -15,20 +15,18 @@
 	import type {
 		BezierConfig,
 		PointConfig2,
-		RadialShapeConfig,
+		ShapeConfig,
 		ZCurveConfig,
 		DepthCurveConfig
 	} from '$lib/rotated-shape';
 
-	type CurveConfig = ZCurveConfig | RadialShapeConfig | DepthCurveConfig;
-	type ShowControlCurveValue = 'RadialShapeConfig' | 'DepthCurveConfig' | 'ZCurveConfig';
+	type CurveConfig = ZCurveConfig | ShapeConfig | DepthCurveConfig;
+	type ShowControlCurveValue = 'ShapeConfig' | 'DepthCurveConfig' | 'ZCurveConfig';
 
 	const isCurveConfig = (subConfig: any): subConfig is CurveConfig => {
 		return (
 			typeof subConfig === 'object' &&
-			['ZCurveConfig', 'RadialShapeConfig', 'DepthCurveConfig'].includes(
-				(subConfig as CurveConfig).type
-			)
+			['ZCurveConfig', 'ShapeConfig', 'DepthCurveConfig'].includes((subConfig as CurveConfig).type)
 		);
 	};
 
@@ -36,7 +34,7 @@
 	const curveConfigByType = {
 		ZCurveConfig: 'zCurveConfig',
 		DepthCurveConfig: 'depthCurveConfig',
-		RadialShapeConfig: 'shapeConfig'
+		ShapeConfig: 'shapeConfig'
 	};
 	let curveStore: CurveConfig;
 	let thisConfig;
@@ -66,9 +64,9 @@
 	$: limitAngle = getLimitAngle(curveStore);
 
 	$: {
-		symmetry = curveStore.type === 'RadialShapeConfig' ? curveStore.symmetryNumber : 1;
+		symmetry = curveStore.type === 'ShapeConfig' ? curveStore.symmetryNumber : 1;
 		reflect =
-			curveStore.type === 'RadialShapeConfig'
+			curveStore.type === 'ShapeConfig'
 				? curveStore.symmetry === 'lateral' || curveStore.symmetry === 'radial-lateral'
 				: true;
 	}
@@ -164,7 +162,7 @@
 
 	const radializeCurves = (
 		curves: BezierConfig[],
-		config: RadialShapeConfig | ZCurveConfig
+		config: ShapeConfig | ZCurveConfig
 	): BezierConfig[] => {
 		if (config.type === 'ZCurveConfig') {
 			return curves;
@@ -189,11 +187,9 @@
 		return curves;
 	};
 
-	const getLimitAngle = (
-		config: RadialShapeConfig | ZCurveConfig | DepthCurveConfig
-	): number | null => {
+	const getLimitAngle = (config: ShapeConfig | ZCurveConfig | DepthCurveConfig): number | null => {
 		if (
-			config.type === 'RadialShapeConfig' &&
+			config.type === 'ShapeConfig' &&
 			(config.symmetry === 'radial' || config.symmetry === 'radial-lateral')
 		) {
 			return (Math.PI * 2) / config.symmetryNumber;
@@ -208,7 +204,7 @@
 
 	const handleSymmetryChange = (event: any) => {
 		const symmetry = event?.target?.valueAsNumber || 5;
-		$config0.shapeConfig = generateDefaultRadialShapeConfig(symmetry, {
+		$config0.shapeConfig = generateDefaultShapeConfig(symmetry, {
 			method: 'divideCurve',
 			divisions: 4
 		});
@@ -269,7 +265,7 @@
 				fill="rgba(255,0,0,0.5)"
 			/>
 		{/if}
-		{#if curveStore.type === 'RadialShapeConfig'}
+		{#if curveStore.type === 'ShapeConfig'}
 			<path
 				d={getShapeFillFromCurves(radializeCurves(curves, curveStore))}
 				stroke="black"
@@ -325,7 +321,7 @@
 							limitAngle && isLimited(curves.length - 1, curveIndex, curve.points.length - 1, p)
 								? limitAngle
 								: Math.PI * 2,
-							curveStore.type === 'RadialShapeConfig'
+							curveStore.type === 'ShapeConfig'
 						)),
 					minX: canv.minX,
 					minY: canv.minY,
@@ -356,7 +352,7 @@
 			}}>-</button
 		>
 
-		{#if curveStore.type === 'RadialShapeConfig'}
+		{#if curveStore.type === 'ShapeConfig'}
 			<label for="input-symmetry-number">Symmetry</label>
 			<input
 				id="input-symmetry-number"

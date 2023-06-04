@@ -5,7 +5,7 @@ import type {
 	Facet,
 	FacetTab,
 	TabStyle,
-	RotatedShapeLevel,
+	Level,
 	Strut,
 	Strip,
 	PointConfig2,
@@ -402,7 +402,7 @@ const trunc = (num: number, maxLength = 5): string => {
 const arcCircle = (c: { x: number; y: number; r: number }): string => {
 	const { x, y, r } = c;
 	// return `M ${trunc(x + r)} ${trunc(y)} A ${trunc(r)} ${trunc(r)} 0 0 0 ${trunc(x - r)} ${trunc(y)} A ${trunc(r)} ${trunc(r)} 0 0 0 ${trunc(x + r)} ${trunc(y)} z`;
-  return `
+	return `
 M ${x + r} ${y} 
 A ${r} ${r} 0 0 0 ${x - r} ${y} 
 A ${r} ${r} 0 0 0 ${x + r} ${y} z`;
@@ -540,7 +540,7 @@ const generateFacetTabPattern = (facetTab: FacetTab | FacetTab[] | undefined) =>
 };
 
 export const generateLevelSetPatterns = (
-	levels: RotatedShapeLevel[],
+	levels: Level[],
 	config: PatternConfig
 ): LevelSetPattern => {
 	if (config.showPattern.level === 'none') throw new Error('Level patterns not configured');
