@@ -6,11 +6,6 @@ export const AUTO_PERSIST_KEY = 'config-auto-persist';
 
 export const bootStrapUsePersisted = (): boolean => {
 	const retrievedUsePersisted = getLocal(USE_PERSISTED_KEY);
-	console.debug(
-		'bootStrapUsePersisted',
-		retrievedUsePersisted,
-		retrievedUsePersisted ? retrievedUsePersisted[USE_PERSISTED_KEY] : undefined
-	);
 	return retrievedUsePersisted ? retrievedUsePersisted[USE_PERSISTED_KEY] : undefined;
 };
 
@@ -24,16 +19,15 @@ export const persistable = <T>(
 	key = AUTO_PERSIST_KEY,
 	doPersistData: boolean
 ) => {
-	// console.debug("init persistable", name, "doPersistData", doPersistData)
 	const persistObj = doPersistData ? getPersistedConfig(key, name) : undefined;
 	const init = persistObj || defaultInit;
 
-	console.debug(
+	console.log(
 		'initialize persistable',
 		name,
-		'with:',
+		'\n  with:',
 		init,
-		'because doPersistData',
+		'\n  doPersistData',
 		doPersistData
 	);
 	const { subscribe, set, update } = writable<T>(init);
@@ -42,7 +36,6 @@ export const persistable = <T>(
 		subscribe,
 		update: function (value: T) {
 			update((value) => value);
-			console.debug('update persistable', name, value);
 			const persistObj = getLocal(key);
 			persistObj[name] = value;
 			setLocal(key, persistObj);
@@ -51,11 +44,11 @@ export const persistable = <T>(
 			const persistObj = getLocal(key) || {};
 			persistObj[name] = value;
 			setLocal(key, persistObj);
-			console.debug('set persistable', name, value);
+			console.log('set persistable', name, value, "\n  current local", getLocal(AUTO_PERSIST_KEY))
 			set(value);
 		},
 		reset: () => {
-			console.debug('setting default');
+			console.log('setting default', defaultInit);
 			set(defaultInit);
 		}
 	};

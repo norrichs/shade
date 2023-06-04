@@ -16,9 +16,7 @@
 	let displayStruts: Strut[]
 	let displayLevels: RotatedShapeLevel[]
 
-	console.debug("ThreeRenderer")
 	$: {
-		console.debug("$renderConfig", $config.renderConfig)
 		displayRSBands = getRenderable($config.renderConfig, rsbands) as Band[]
 	}
 	$: {
@@ -29,7 +27,6 @@
 	$: {
 		if (rslevels.length > 0) {
 			displayLevels = getRenderable($config.renderConfig, rslevels) as RotatedShapeLevel[]
-			console.debug("displayLevels", displayRSBands)
 		}
 	}
 

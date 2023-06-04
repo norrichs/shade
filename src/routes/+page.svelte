@@ -4,14 +4,12 @@
 
   let retrievedLocalUsePersisted;
   $: {
-    console.debug("routes/page - $usePersisted", $usePersisted)
     retrievedLocalUsePersisted = getLocal("global-use-persisted") ? getLocal("global-use-persisted")["global-use-persisted"] : undefined
-    console.debug("retrieved", retrievedLocalUsePersisted)
   }
-  const sniffLocal = () => {
-    console.debug(localStorage)
-  }
-  sniffLocal()
+  // const sniffLocal = () => {
+  //   console.debug(localStorage)
+  // }
+  // sniffLocal()
 
 </script>
 

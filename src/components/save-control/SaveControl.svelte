@@ -60,7 +60,6 @@
 						type="text"
 						bind:value={localConfig.name}
 						on:input={() => {
-							console.debug('onChange ', localConfig.name);
 							const config = getLocal(localConfig.id);
 							if (config) {
 								saveLocalConfig({ ...config, name: localConfig.name }, false);

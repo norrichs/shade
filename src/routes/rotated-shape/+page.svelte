@@ -30,12 +30,11 @@
 	let showControl: { name: string; value: unknown };
 
 	const updateGeometry = () => {
-		console.debug('udpateGeometry', $config.shapeConfig);
 		data = generateRotatedShapeGeometry($config);
 	};
 
 	$: {
-		console.debug("page reactive - generate")
+		console.log("page reactive - generate")
 		data = generateRotatedShapeGeometry($config);
 		levels = data.levels;
 		if ($config.renderConfig.ranges?.rangeStyle === 'slice') {
@@ -52,7 +51,6 @@
 	}
 	type ShowControlCurveValue = 'RadialShapeConfig' | 'DepthCurveConfig' | 'ZCurveConfig';
 	const isShowControlCurveValue = (value: unknown): value is ShowControlCurveValue => {
-		console.debug("isShowControlCurveValue", value)
 		return ['RadialShapeConfig', 'DepthCurveConfig', 'ZCurveConfig'].includes(value as string)
 	}
 </script>

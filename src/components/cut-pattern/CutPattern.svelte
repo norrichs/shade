@@ -29,7 +29,7 @@
 
 	let showRSBands = true;
 
-	const {renderConfig, bandConfig} = $config
+	const { renderConfig, bandConfig } = $config;
 
 	const getViewBox = (config: PatternViewConfig) => {
 		const { width, height, zoom, centerOffset } = config;
@@ -49,15 +49,15 @@
 	$: displayedStrutFacets = getRenderable(renderConfig, struts) as Strut[];
 
 	type Patterns = {
-		band: OutlinedBandPattern | FacetedBandPattern | {projectionType: "none"};
-		strut: OutlinedStrutPattern | FacetedStrutPattern | {projectionType: "none"};
-		level: LevelSetPattern | {projectionType: "none"};
-	}
+		band: OutlinedBandPattern | FacetedBandPattern | { projectionType: 'none' };
+		strut: OutlinedStrutPattern | FacetedStrutPattern | { projectionType: 'none' };
+		level: LevelSetPattern | { projectionType: 'none' };
+	};
 
 	let patterns: Patterns = {
-		band: {projectionType: "none"},
-		strut: {projectionType: "none"},
-		level: {projectionType: "none"},
+		band: { projectionType: 'none' },
+		strut: { projectionType: 'none' },
+		level: { projectionType: 'none' }
 	};
 
 	const show_svg = () => {
@@ -72,101 +72,151 @@
 	$: viewBoxValue = getViewBox($patternViewConfig);
 
 	$: {
-		if ($patternConfig.showPattern.band === "none") {
-			patterns.band = {projectionType: "none"}
+		if ($patternConfig.showPattern.band === 'none') {
+			patterns.band = { projectionType: 'none' };
 		} else {
 			patterns.band = generateBandPatterns(
 				$patternConfig,
 				bandConfig.bandStyle,
 				bandConfig.tabStyle,
 				displayedBandFacets
-			); 
+			);
+			console.debug('-- patterns.band', patterns.band);
 		}
 	}
 	$: {
-		if ($patternConfig.showPattern.level === "none") {
-			patterns.level = {projectionType: "none"}
-		}else {
+		if ($patternConfig.showPattern.level === 'none') {
+			patterns.level = { projectionType: 'none' };
+		} else {
 			patterns.level = generateLevelSetPatterns(displayedLevels, $patternConfig);
 		}
 	}
 	$: {
-		if ($patternConfig.showPattern.strut === "none") {
-			patterns.strut = {projectionType: "none"}
+		if ($patternConfig.showPattern.strut === 'none') {
+			patterns.strut = { projectionType: 'none' };
 		} else {
 			patterns.strut = generateStrutPatterns($patternConfig, displayedStrutFacets);
 		}
 	}
+
+	let experimental = {
+		show: false,
+		outer: `M 0 0 L 100 0 L 50 86.6z`,
+		inner: `M 10 5 L 90 5 L 50 75z`,
+		circle: [50, 28.9, 10]
+	};
+
+	const arcCircle = (c: [number, number, number]): string => {
+		const [x, y, r] = c;
+		return `M ${x + r} ${y}
+						A ${r} ${r} 0 0 0 ${x - r} ${y}
+						A ${r} ${r} 0 0 0 ${x + r} ${y}
+						z 
+		`;
+	};
 </script>
 
 <div class="container">
 	<header>
 		<button on:click={show_svg}>Download</button>
+		<button on:click={() => (experimental = { ...experimental, show: !experimental.show })}
+			>Experiment</button
+		>
 		<!-- <button on:click={() => zoomToPattern(patterns)}>Zoom To Pattern</button> -->
 	</header>
 	<div>
 		<label for="showRSBands"> RSBands </label>
 		<input type="checkbox" name="showRSBands" bind:checked={showRSBands} />
 		<div class="container-svg" class:showRSBands>
-			<svg
-				id="pattern-svg"
-				height={$patternViewConfig.height}
-				width={$patternViewConfig.width}
-				viewBox={viewBoxValue}
-				xmlns="http://www.w3.org/2000/svg"
-				
-			>
+			{#if experimental.show}
+				<svg
+					id="pattern-svg"
+					height={$patternViewConfig.height}
+					width={$patternViewConfig.width}
+					viewBox={viewBoxValue}
+				>
+					<!-- <path d={experimental.outer + experimental.inner} stroke="black" stroke-width=0.5 fill="red" fill-rule="evenodd" /> -->
+					<path
+						d={experimental.outer +
+							arcCircle([experimental.circle[0], experimental.circle[1], experimental.circle[2]])}
+						stroke="black"
+						stroke-width="0.5"
+						fill="red"
+						fill-rule="evenodd"
+					/>
+					<circle
+						cx={experimental.circle[0]}
+						cy={experimental.circle[1]}
+						r={experimental.circle[2]}
+						stroke="black"
+						stroke-width="0.1"
+						fill="none"
+					/>
+				</svg>
+			{:else}
+				<svg
+					id="pattern-svg"
+					height={$patternViewConfig.height}
+					width={$patternViewConfig.width}
+					viewBox={viewBoxValue}
+					xmlns="http://www.w3.org/2000/svg"
+				>
+					{#if patterns.level.projectionType !== 'none'}
+						{#each patterns.level.levels as level, i}
+							<path d={level.outline.svgPath} fill="green" stroke="black" stroke-width="0.3" />
+						{/each}
+					{/if}
 
-				{#if patterns.level.projectionType !== "none"}
-					{#each patterns.level.levels as level, i}
-						<path d={level.outline.svgPath} fill="green" stroke="black" stroke-width="0.3" />
-					{/each}
-				{/if}
-
-				{#if patterns.band.projectionType === "outlined"}
-					{#each patterns.band.bands as band, i}
-						<path d={band.outline.svgPath} fill="red" stroke="black" stroke-width="0.2" />
-						<text x={band.outline.points[0].x} y={band.outline.points[0].y}>{i}</text>
-					{/each}
-				{:else if patterns.band.projectionType === "faceted"}
-					{#each patterns.band.bands as band}
-						{#each band.facets as facet, f}
-							<path
-								d={facet.svgPath}
-								fill={`rgb(100, ${50 + (200 * f) / band.facets.length},100)`}
-								stroke="orangered"
-								stroke-width="0.2"
-							/>
-							{#if showTabs && facet.tab}
+					{#if patterns.band.projectionType === 'outlined'}
+						{#each patterns.band.bands as band, i}
+							<path d={[band.outline.svgPath, ...(band.cutouts ? band.cutouts.map((cutout) => cutout.svgPath) : []) ].join('') } fill="red" stroke="black" stroke-width="0.2" fill-rule="evenodd"/>
+							<!-- <path d={band.outline.svgPath} fill="red" stroke="black" stroke-width="0.2" /> -->
+							<!-- {#if band.cutouts}
+								{#each band.cutouts as cutout}
+									<path d={cutout.svgPath} stroke="green" stroke-width="1" fill="none"/>
+								{/each}
+							{/if} -->
+							<text x={band.outline.points[0].x} y={band.outline.points[0].y}>{i}</text>
+						{/each}
+					{:else if patterns.band.projectionType === 'faceted'}
+						{#each patterns.band.bands as band}
+							{#each band.facets as facet, f}
 								<path
-									d={facet.tab.svgPath}
-									fill={`rgb(0, ${50 + (200 * f) / band.facets.length},255)`}
+									d={facet.svgPath}
+									fill={`rgb(100, ${50 + (200 * f) / band.facets.length},100)`}
 									stroke="orangered"
 									stroke-width="0.2"
 								/>
-							{/if}
+								{#if showTabs && facet.tab}
+									<path
+										d={facet.tab.svgPath}
+										fill={`rgb(0, ${50 + (200 * f) / band.facets.length},255)`}
+										stroke="orangered"
+										stroke-width="0.2"
+									/>
+								{/if}
+							{/each}
 						{/each}
-					{/each}
-				{/if}
-				
-				{#if patterns.strut.projectionType === "outlined"}
-					{#each patterns.strut.struts as strut, i}
-						<path d={strut.outline.svgPath} fill="deeppink" stroke="black" stroke-width="0.3" />
-					{/each}
-				{:else if patterns.strut.projectionType === "faceted"}
-					{#each patterns.strut.struts as strut}
-						{#each strut.facets as facet, f}
-							<path 
-								d={facet.svgPath}
-								fill={`rgb(100, ${50 + (200 * f) / strut.facets.length},100)`}
-								stroke="orangered"
-								stroke-width="0.2"
-							/>
-						{/each}
-					{/each}
-				{/if}
+					{/if}
 
-			</svg>
+					{#if patterns.strut.projectionType === 'outlined'}
+						{#each patterns.strut.struts as strut, i}
+							<path d={strut.outline.svgPath} fill="deeppink" stroke="black" stroke-width="0.3" />
+						{/each}
+					{:else if patterns.strut.projectionType === 'faceted'}
+						{#each patterns.strut.struts as strut}
+							{#each strut.facets as facet, f}
+								<path
+									d={facet.svgPath}
+									fill={`rgb(100, ${50 + (200 * f) / strut.facets.length},100)`}
+									stroke="orangered"
+									stroke-width="0.2"
+								/>
+							{/each}
+						{/each}
+					{/if}
+				</svg>
+			{/if}
 			<div class="view-control-box">
 				<label for="svg-width">width</label>
 				<input

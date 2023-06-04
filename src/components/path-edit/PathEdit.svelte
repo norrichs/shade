@@ -14,7 +14,7 @@
 	} from './path-edit';
 	import type {
 		BezierConfig,
-		PointConfig,
+		PointConfig2,
 		RadialShapeConfig,
 		ZCurveConfig,
 		DepthCurveConfig
@@ -24,7 +24,6 @@
 	type ShowControlCurveValue = 'RadialShapeConfig' | 'DepthCurveConfig' | 'ZCurveConfig';
 
 	const isCurveConfig = (subConfig: any): subConfig is CurveConfig => {
-		console.debug('isCurveConfig', subConfig);
 		return (
 			typeof subConfig === 'object' &&
 			['ZCurveConfig', 'RadialShapeConfig', 'DepthCurveConfig'].includes(
@@ -48,13 +47,8 @@
 	};
 
 	$: {
-		console.debug('reactive', curveStoreType);
 		thisConfig = $config0[curveConfigByType[curveStoreType]];
 		curveStore = isCurveConfig(thisConfig) ? thisConfig : $config0.zCurveConfig;
-
-		console.debug('thisConfig', thisConfig);
-		console.debug('curveStore', curveStore);
-		console.debug('config0', $config0);
 	}
 
 	let symmetry: number = 1;
@@ -89,12 +83,12 @@
 				const reflectedCurve: BezierConfig = {
 					...curve,
 					points: curve.points.map((point) => {
-						const reflectedPoint: PointConfig = {
+						const reflectedPoint: PointConfig2 = {
 							...point,
 							x: -point.x
 						};
 						return reflectedPoint;
-					}) as [PointConfig, PointConfig, PointConfig, PointConfig]
+					}) as [PointConfig2, PointConfig2, PointConfig2, PointConfig2]
 				};
 				return reflectedCurve;
 			});
@@ -147,10 +141,10 @@
 			.map((curve) => ({
 				...curve,
 				points: curve.points.map((point) => ({ ...point, x: -point.x, y: point.y })).reverse() as [
-					PointConfig,
-					PointConfig,
-					PointConfig,
-					PointConfig
+					PointConfig2,
+					PointConfig2,
+					PointConfig2,
+					PointConfig2
 				]
 			}))
 			.reverse();
@@ -164,7 +158,7 @@
 				const r = Math.sqrt(Math.pow(point.x, 2) + Math.pow(point.y, 2)); //* angle / 2;
 				const a = Math.atan(point.y / point.x);
 				return { ...point, x: r * Math.cos(a + angle), y: r * Math.sin(a + angle) };
-			}) as [PointConfig, PointConfig, PointConfig, PointConfig]
+			}) as [PointConfig2, PointConfig2, PointConfig2, PointConfig2]
 		}));
 	};
 
@@ -213,7 +207,6 @@
 	};
 
 	const handleSymmetryChange = (event: any) => {
-		console.debug('onChange ', event);
 		const symmetry = event?.target?.valueAsNumber || 5;
 		$config0.shapeConfig = generateDefaultRadialShapeConfig(symmetry, {
 			method: 'divideCurve',
@@ -223,11 +216,8 @@
 	};
 
 	const update = () => {
-		console.debug('update PathEdit');
 		($config0[curveConfigByType[curveStoreType]] as CurveConfig).curves = curves;
 		curves = ($config0[curveConfigByType[curveStoreType]] as CurveConfig).curves;
-		// curveStore.curves = curves;
-		// curves = curveStore.curves;
 	};
 </script>
 
@@ -390,10 +380,8 @@
 				bind:value={curveStore.sampleMethod.divisions}
 				on:input={() => {
 					update();
-					console.debug('changed divisions');
 				}}
 			/>
-			<!-- <label for="input-divisions">rs</label> -->
 			<select id="select-symmetry" bind:value={curveStore.symmetry} placeholder="mode">
 				<option>asymmetric</option>
 				<option>radial</option>

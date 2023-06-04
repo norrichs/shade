@@ -6,16 +6,24 @@ import {
 	USE_PERSISTED_KEY,
 	AUTO_PERSIST_KEY
 } from './persistable';
-import type {
-	RotatedShapeGeometryConfig,
-} from './rotated-shape';
+import type { RotatedShapeGeometryConfig } from './rotated-shape';
 import { getPersistedConfig } from './storage';
-import { defaultPatternConfig, defaultPatternViewConfig, generateDefaultConfig, getLevels } from './shades-config';
+import {
+	defaultPatternConfig,
+	defaultPatternViewConfig,
+	generateDefaultConfig,
+	getLevels
+} from './shades-config';
 
 export const usePersisted = persistable(false, USE_PERSISTED_KEY, USE_PERSISTED_KEY, true);
 
 /// Configs to be kept separate from geometry config
-export const patternConfig = writable<PatternConfig>(defaultPatternConfig);
+export const patternConfig = persistable<PatternConfig>(
+	defaultPatternConfig,
+	'PatternConfig',
+	AUTO_PERSIST_KEY,
+	bootStrapUsePersisted()
+);
 export const patternViewConfig = writable<PatternViewConfig>(defaultPatternViewConfig);
 
 const loadAutoPersisted = (usePersisted: boolean) => {
@@ -45,6 +53,5 @@ export const config = derived(config0, ($config0) => {
 			)
 		}
 	};
-	console.debug('update derived config', derivedConfig.id);
 	return derivedConfig;
 });

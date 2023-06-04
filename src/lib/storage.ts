@@ -20,16 +20,13 @@ export const listLocalConfigs = () => {
 		const config = getLocal(key)
 		return {id: key, name: config.name || ""}
 	})
-	// console.debug(storedConfigMeta)
 	return storedConfigMeta
 }
 
 export const saveLocalConfig = (config: RotatedShapeGeometryConfig, asNew = false) => {
 	if (asNew || !config.id || !config.id.startsWith("stored-config")) {
-		console.debug("Save local config, new ID")
 		config.id = `stored-config-${generateUUID()}`
 	}
-	console.debug("Save local config", config.id, config)
 	setLocal(config.id, config);
 }
 
@@ -46,7 +43,7 @@ export const persistConfig = (config: RotatedShapeGeometryConfig, onSave: () => 
 
 export const getPersistedConfig = (key: string, name: (keyof RotatedShapeGeometryConfig) | "RotatedShapeGeometryConfig") => {
 	const persistedConfig = getLocal(key);
-	console.debug("key", key, "name", name, "getPersistedConfig", persistedConfig, "return", persistedConfig && persistedConfig[name] ? persistedConfig[name] : undefined)
+	// console.debug("key", key, "name", name, "getPersistedConfig", persistedConfig, "return", persistedConfig && persistedConfig[name] ? persistedConfig[name] : undefined)
 	return persistedConfig && (persistedConfig[name] !== undefined) && (persistedConfig[name] !== null) ? persistedConfig[name] : undefined;
 };
 

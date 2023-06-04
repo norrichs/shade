@@ -102,7 +102,7 @@ export type Band = {
 	endTab?: FacetTab;
 };
 
-export const isBezierCurveConfig = (curve: BezierConfig | PointConfig): curve is BezierConfig =>
+export const isBezierCurveConfig = (curve: BezierConfig | PointConfig2): curve is BezierConfig =>
 	Object.hasOwn(curve, 'p0') &&
 	Object.hasOwn(curve, 'p1') &&
 	Object.hasOwn(curve, 'p2') &&
@@ -110,21 +110,29 @@ export const isBezierCurveConfig = (curve: BezierConfig | PointConfig): curve is
 	curve.type === 'BezierConfig';
 
 export type BezierConfig = {
-	[key: string]: PointConfig[] | string;
+	[key: string]: PointConfig2[] | string;
 	type: 'BezierConfig';
-	points: [PointConfig, PointConfig, PointConfig, PointConfig];
+	points: [PointConfig2, PointConfig2, PointConfig2, PointConfig2];
 };
 
-export type PointConfig = {
-	type: 'PointConfig';
+export type PointConfig2 = {
+	type: 'PointConfig2';
 	x: number;
 	y: number;
 	pointType?: 'smooth' | 'angled';
 };
 
+export type PointConfig3 = {
+	type: 'PointConfig2';
+	x: number;
+	y: number;
+	z: number;
+	pointType?: 'smooth' | 'angled';
+};
+
 export type LineConfig = {
 	type: 'LineConfig';
-	points: [PointConfig, PointConfig];
+	points: [PointConfig2, PointConfig2];
 };
 
 export type ZCurveConfig = {
@@ -172,7 +180,6 @@ const getDepthValues = (config: DepthCurveConfig, levelCount: number): number[] 
 	const points = dCurve.getSpacedPoints(levelCount - 1);
 	// dCurve.getPoints(levelCount - 1);
 	const values = points.map((point) => point.x / config.depthCurveBaseline);
-	console.debug("DEPTH VALUES", values, config.depthCurveBaseline)
 	return values;
 };
 
@@ -295,13 +302,13 @@ const normalizeConfigPoints = (
 	const ratio = maxLength / Math.max(...lengths);
 
 	normalizedShapeConfig.curves = normalizedShapeConfig.curves.map((curve: BezierConfig) => {
-		const points: [PointConfig, PointConfig, PointConfig, PointConfig] = curve.points.map(
+		const points: [PointConfig2, PointConfig2, PointConfig2, PointConfig2] = curve.points.map(
 			(point) => {
 				point.x = point.x * ratio;
 				point.y = point.y * ratio;
 				return point;
 			}
-		) as [PointConfig, PointConfig, PointConfig, PointConfig];
+		) as [PointConfig2, PointConfig2, PointConfig2, PointConfig2];
 		curve.points = points;
 		return curve;
 	});
@@ -331,7 +338,6 @@ const generateRadialShapeLevelPrototype = (
 
 	const { byDivisions } = levelConfig.levelPrototypeSampleMethod;
 	const { sampleMethod } = config;
-	// console.debug('sampleMethod', sampleMethod, config);
 	if (sampleMethod.method === 'divideCurve') {
 		// const {divisions} = sampleMethod
 		if (byDivisions === 'whole') {
@@ -421,8 +427,8 @@ const generateLevelSet = (
 			levelOffsets[l].rotX = rotX * l;
 			levelOffsets[l].rotY = rotY * l;
 			levelOffsets[l].rotZ = rotZ * l;
-			levelOffsets[l].scaleX = scaleX * zCurveLevel.x; //* zCurveScale.x
-			levelOffsets[l].scaleY = scaleY * zCurveLevel.x; //* zCurveScale.x
+			levelOffsets[l].scaleX = scaleX * zCurveLevel.x * 2; //* zCurveScale.x
+			levelOffsets[l].scaleY = scaleY * zCurveLevel.x * 2; //* zCurveScale.x
 			levelOffsets[l].depth = depths[l];
 		});
 	}
@@ -1197,7 +1203,7 @@ export const generateRotatedShapeGeometry = (
 	const bands = !config.bandConfig?.tabStyle
 		? unTabbedBands
 		: generateTabs(unTabbedBands, config.bandConfig, struts);
-	console.debug("generateRotatedShapeGeometry - levels", levels, "bands", bands, "struts", struts)
+	console.log("generateRotatedShapeGeometry - levels", levels, "bands", bands, "struts", struts)
 	return { levels, bands, struts };
 };
 
