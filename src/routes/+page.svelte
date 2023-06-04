@@ -14,9 +14,8 @@
 	// sniffLocal()
 </script>
 
-<h1>Welcome to SvelteKit</h1>
-<p>Visit <a href="https://kit.svelte.dev">kit.svelte.dev</a> to read the documentation</p>
-<p><a href="/rotated-shape">Rotated Shape</a></p>
+<h1>Welcome</h1>
+<p><a href="/shades">Rotated Shape</a></p>
 <div>
 	<label for="use-persisted-checkbox">persist settings?</label>
 	<input type="checkbox" bind:checked={$usePersisted} />

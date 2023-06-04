@@ -18,7 +18,7 @@
 		ShapeConfig,
 		ZCurveConfig,
 		DepthCurveConfig
-	} from '$lib/rotated-shape';
+	} from '$lib/generate-shape';
 
 	type CurveConfig = ZCurveConfig | ShapeConfig | DepthCurveConfig;
 	type ShowControlCurveValue = 'ShapeConfig' | 'DepthCurveConfig' | 'ZCurveConfig';

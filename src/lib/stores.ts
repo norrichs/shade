@@ -6,7 +6,7 @@ import {
 	USE_PERSISTED_KEY,
 	AUTO_PERSIST_KEY
 } from './persistable';
-import type { ShadesConfig } from './rotated-shape';
+import type { ShadesConfig } from './generate-shape';
 import { getPersistedConfig } from './storage';
 import {
 	defaultPatternConfig,
@@ -52,6 +52,7 @@ export const config = derived(config0, ($config0) => {
 				$config0.zCurveConfig.curves.length
 			)
 		}
-	};
+  };
+  console.debug("set derived config", derivedConfig)
 	return derivedConfig;
 });

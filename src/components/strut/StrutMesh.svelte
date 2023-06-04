@@ -11,7 +11,7 @@
 		MeshToonMaterial,
 		MeshPhysicalMaterial
 	} from 'three';
-	import type { Strut } from '$lib/rotated-shape';
+	import type { Strut } from '$lib/generate-shape';
 
 	export let strut: Strut;
 	export let showTabs: boolean = false;

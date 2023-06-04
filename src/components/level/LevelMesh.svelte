@@ -2,7 +2,7 @@
 	import { T } from '@threlte/core';
 	import { Edges } from '@threlte/extras';
 	import { DoubleSide, CurvePath, BufferGeometry, MeshNormalMaterial } from 'three';
-	import type { Level } from '$lib/rotated-shape';
+	import type { Level } from '$lib/generate-shape';
 
 	export let level: Level;
 

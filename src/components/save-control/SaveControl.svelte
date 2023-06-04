@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { ShadesConfig } from '$lib/rotated-shape';
+	import type { ShadesConfig } from '$lib/generate-shape';
 	import { AUTO_PERSIST_KEY } from '$lib/persistable';
 	import {
 		saveLocalConfig,
@@ -27,9 +27,9 @@
 <section class:show>
 	<header>
 		<h3>Data settings</h3>
-		<p>
+		<button on:click={() => console.log(config)}>
 			{`${config.name} - ${config.id}`}
-		</p>
+		</button>
 	</header>
 	<div class="column">
 		<div class="row">

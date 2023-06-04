@@ -1,4 +1,4 @@
-import type { BezierConfig, PointConfig2 } from '$lib/rotated-shape';
+import type { BezierConfig, PointConfig2 } from '$lib/generate-shape';
 
 export const onPathPointMove = (
 	x: number,
@@ -67,7 +67,7 @@ export const onPathPointMove = (
 
 		return curves;
 	} else if (isEnd && isHandle) {
-		throw new Error('pathEdit stub');
+		console.error('pathEdit stub');
 	} else if (isPoint && isJoined && partner) {
 		// coordinate associated points of joined point - handle, partner point, partner handle
 		const [partnerHandle, partnerPoint] =

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Level, Band, Strut } from '$lib/rotated-shape';
+	import type { Level, Band, Strut } from '$lib/generate-shape';
 	import {
 		generateBandPatterns,
 		generateLevelSetPatterns,
@@ -13,18 +13,14 @@
 		LevelSetPattern,
 		PatternViewConfig
 	} from '$lib/cut-pattern';
-	import { getRenderable } from '$lib/rotated-shape';
-	// import { patternConfig, patternViewConfig } from '$lib/stores';
+	import { getRenderable } from '$lib/generate-shape';
 	import { config, config0 } from '$lib/stores';
-	import type { FacetPattern } from '$lib/cut-pattern';
 
 	export let levels: Level[] = [];
 	export let bands: Band[] = [];
 	export let struts: Strut[] = [];
 
 	let showBands = true;
-
-	const { renderConfig, bandConfig } = $config;
 
 	const getViewBox = (config: PatternViewConfig) => {
 		const { width, height, zoom, centerOffset } = config;
@@ -35,13 +31,13 @@
 		return `${minX * logZoom} ${minY * logZoom} ${width * logZoom} ${height * logZoom}`;
 	};
 
-	let zoomLevel: number = 1000;
-	let showPoints = true;
 	let showTabs = true;
 
-	$: displayedBandFacets = getRenderable(renderConfig, bands) as Band[];
-	$: displayedLevels = getRenderable(renderConfig, levels) as Level[];
-	$: displayedStrutFacets = getRenderable(renderConfig, struts) as Strut[];
+	$: renderConfig = $config.renderConfig
+
+	$: displayedBandFacets = getRenderableOnGeometry(bands)
+	$: displayedLevels = getRenderableOnGeometry(levels)
+	$: displayedStrutFacets = getRenderableOnGeometry(struts)
 
 	type Patterns = {
 		band: OutlinedBandPattern | FacetedBandPattern | { projectionType: 'none' };
@@ -55,6 +51,10 @@
 		level: { projectionType: 'none' }
 	};
 
+	const getRenderableOnGeometry = <T extends (Band[] | Level[] | Strut[])>(geometry: T) => {
+		return getRenderable($config.renderConfig, geometry) as T
+	}
+
 	const show_svg = () => {
 		const svg = document.getElementById('pattern-svg');
 		if (!svg) return;
@@ -64,21 +64,25 @@
 		const svg_win = window.open(url, 'svg_win');
 	};
 
-	$: viewBoxValue = getViewBox($config.patternViewConfig);
-
-	$: {
+	const updateBandPatterns = (facets: Band[]) => {
+		console.debug('reactive generateBandPatterns', displayedBandFacets);
 		if ($config.patternConfig.showPattern.band === 'none') {
 			patterns.band = { projectionType: 'none' };
 		} else {
 			patterns.band = generateBandPatterns(
 				$config.patternConfig,
-				bandConfig.bandStyle,
-				bandConfig.tabStyle,
+				$config.bandConfig.bandStyle,
+				$config.bandConfig.tabStyle,
 				displayedBandFacets
 			);
-			console.debug('-- patterns.band', patterns.band);
 		}
-	}
+		console.debug('-- patterns.band', patterns.band);
+	};
+
+	$: viewBoxValue = getViewBox($config.patternViewConfig);
+
+	$: updateBandPatterns(displayedBandFacets);
+
 	$: {
 		if ($config.patternConfig.showPattern.level === 'none') {
 			patterns.level = { projectionType: 'none' };
@@ -161,8 +165,9 @@
 							<path d={level.outline.svgPath} fill="green" stroke="black" stroke-width="0.3" />
 						{/each}
 					{/if}
-
-					{#if patterns.band.projectionType === 'outlined'}
+					{#if patterns?.band.projectionType === 'none'}
+						<circle />
+					{:else if patterns.band.projectionType === 'outlined'}
 						{#each patterns.band.bands as band, i}
 							<path
 								d={[
@@ -174,12 +179,6 @@
 								stroke-width="0.2"
 								fill-rule="evenodd"
 							/>
-							<!-- <path d={band.outline.svgPath} fill="red" stroke="black" stroke-width="0.2" /> -->
-							<!-- {#if band.cutouts}
-								{#each band.cutouts as cutout}
-									<path d={cutout.svgPath} stroke="green" stroke-width="1" fill="none"/>
-								{/each}
-							{/if} -->
 							<text x={band.outline.points[0].x} y={band.outline.points[0].y}>{i}</text>
 						{/each}
 					{:else if patterns.band.projectionType === 'faceted'}

@@ -11,7 +11,7 @@
 		MeshToonMaterial,
 		MeshPhysicalMaterial
 	} from 'three';
-	import type { Band, TabStyle } from '$lib/rotated-shape';
+	import type { Band, TabStyle } from '$lib/generate-shape';
 
 	export let band: Band;
 	export let showTabs: boolean = true;

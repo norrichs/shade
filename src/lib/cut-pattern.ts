@@ -10,7 +10,7 @@ import type {
 	Strip,
 	PointConfig2,
 	BezierConfig
-} from './rotated-shape';
+} from './generate-shape';
 import {
 	generateMultiFacetFullTab,
 	generateFullTab,
@@ -20,7 +20,7 @@ import {
 	isMultiFacetFullTab,
 	isMultiFacetTrapTab,
 	isStrut
-} from './rotated-shape';
+} from './generate-shape';
 import { validateCutoutConfig } from './validators';
 
 export type PatternViewConfig = {
@@ -58,12 +58,14 @@ type TilePattern =
 	  };
 
 type CircleConfig = {
+  [key: string]: 'CircleConfig' | PointConfig2 | number;
 	type: 'CircleConfig';
 	center: PointConfig2;
 	radius: number;
 };
 
 type PathConfig = {
+  [key: string]: 'PathConfig' | BezierConfig[]
 	type: 'PathConfig';
 	curves: BezierConfig[];
 };
@@ -84,7 +86,8 @@ type HoleConfigSquare = {
 
 type HoleConfigBand = {
 	type: 'HoleConfigBand';
-	locate: {
+  locate: {
+    [key: string]: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | number | 'relative-width' | 'absolute' | 'relative-length';
 		skipEnds: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
 		everyNth: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
 		centered: number;
@@ -99,6 +102,7 @@ export type CutoutConfig = {
 };
 
 export type PatternConfig = {
+  [key: string]: PatternShowConfig | CutoutConfig | Axis | PointConfig2 | boolean | undefined;
 	showPattern: PatternShowConfig;
 	cutouts?: CutoutConfig;
 	axis: Axis;
@@ -325,7 +329,8 @@ export const generateBandPatterns = (
 	tabStyle: TabStyle,
 	bands: Band[]
 ): FacetedBandPattern | OutlinedBandPattern => {
-	if (config.showPattern.band === 'none') throw new Error('Band patterns not configured');
+  if (config.showPattern.band === 'none') throw new Error('Band patterns not configured');
+  console.debug("generateBandPatterns", config, "tabStyle", tabStyle)
 	const flattenedGeometry: Band[] = bands.map((band, i) =>
 		getFlatStrip(
 			band,
@@ -340,7 +345,7 @@ export const generateBandPatterns = (
 			tabStyle
 		)
 	);
-
+      console.debug("got flattened")
 	if (config.showPattern.band === 'faceted') {
 		const facetedPattern: FacetedBandPattern = {
 			projectionType: 'faceted',
@@ -363,7 +368,8 @@ export const generateBandPatterns = (
 			})
 		};
 		return facetedPattern;
-	} else {
+  } else {
+    console.debug("outlined")
 		const validity: any = {};
 		if (config.cutouts) {
 			validity.cutouts = validateCutoutConfig(config.cutouts);
@@ -395,17 +401,9 @@ export const generateBandPatterns = (
 	}
 };
 
-const trunc = (num: number, maxLength = 5): string => {
-	return num.toString().slice(0, maxLength);
-};
-
 const arcCircle = (c: { x: number; y: number; r: number }): string => {
 	const { x, y, r } = c;
-	// return `M ${trunc(x + r)} ${trunc(y)} A ${trunc(r)} ${trunc(r)} 0 0 0 ${trunc(x - r)} ${trunc(y)} A ${trunc(r)} ${trunc(r)} 0 0 0 ${trunc(x + r)} ${trunc(y)} z`;
-	return `
-M ${x + r} ${y} 
-A ${r} ${r} 0 0 0 ${x - r} ${y} 
-A ${r} ${r} 0 0 0 ${x + r} ${y} z`;
+  return `M ${x + r} ${y} A ${r} ${r} 0 0 0 ${x - r} ${y} A ${r} ${r} 0 0 0 ${x + r} ${y} z`;
 };
 
 const getSVGCutouts = (
@@ -483,8 +481,8 @@ const getSVGCutouts = (
 		// });
 	}
 
-	const result = [{ svgPath: '' }];
-	return result;
+	const blankResult = [{ svgPath: '' }];
+	return blankResult;
 };
 
 // {
@@ -711,7 +709,7 @@ const getFlatStrip = <T extends Strut | Band>(
 						facet.tab.footprint[1].triangle,
 						alignConfig1
 					);
-
+          console.debug("getFlatStrip - generateMultiFacetFullTab", tabStyle)
 					alignedFacet.tab = generateMultiFacetFullTab(
 						{
 							...facet.tab.footprint[0],

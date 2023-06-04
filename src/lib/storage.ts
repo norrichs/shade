@@ -4,7 +4,7 @@
 // write a store that does autosave using the storage functions
 // write a button component that allows saving a named config
 
-import type { ShadesConfig } from './rotated-shape';
+import type { ShadesConfig } from './generate-shape';
 import { generateUUID } from 'three/src/math/MathUtils';
 import { AUTO_PERSIST_KEY } from './persistable';
 

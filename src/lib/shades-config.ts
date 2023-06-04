@@ -11,7 +11,7 @@ import type {
 	StrutConfig,
 	TabStyle,
 	ZCurveConfig
-} from './rotated-shape';
+} from './generate-shape';
 import { rad } from './util';
 
 const defaultZCurveConfig: ZCurveConfig = {
@@ -101,6 +101,7 @@ const defaultLevelConfig: LevelConfig = {
 };
 
 export const initTabStyle = (style: TabStyle['style']): TabStyle => {
+  console.debug("initTabStyle", style)
 	const defaultTabStyles: { [key: string]: TabStyle } = {
 		full: { style: 'full', direction: 'lesser' },
 		trapezoid: { style: 'trapezoid', direction: 'lesser', width: { style: 'fixed', value: 5 } },
@@ -185,7 +186,7 @@ const defaultCutoutConfig: CutoutConfig[] = [
 				{
 					type: 'HoleConfigBand',
 					locate: {
-						skipEnds: 6,
+						skipEnds: 3,
 						everyNth: 1,
 						centered: 0,
 						scale: 'absolute'
@@ -239,10 +240,10 @@ export const generateDefaultConfig = (): ShadesConfig => {
 		depthCurveConfig: defaultDepthCurveConfig,
 		bandConfig: defaultBandConfig,
 		strutConfig: defaultStrutConfig,
-    renderConfig: defaultRenderConfig,
-    cutoutConfig: defaultCutoutConfig[1],
-    patternConfig: defaultPatternConfig,
-    patternViewConfig: defaultPatternViewConfig,
+		renderConfig: defaultRenderConfig,
+		cutoutConfig: defaultCutoutConfig[1],
+		patternConfig: defaultPatternConfig,
+		patternViewConfig: defaultPatternViewConfig
 	};
 	return config;
 };

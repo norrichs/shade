@@ -2,7 +2,7 @@
 	import ThreeRenderer from '../../components/three-renderer/ThreeRenderer.svelte';
 	import CutPattern from '../../components/cut-pattern/CutPattern.svelte';
 	import type { Writable } from 'svelte/store';
-	import { generateRotatedShapeGeometry, type DepthCurveConfig } from '$lib/rotated-shape';
+	import { generateRotatedShapeGeometry, type DepthCurveConfig } from '$lib/generate-shape';
 	import type {
 		ShadesConfig,
 		ZCurveConfig,
@@ -12,7 +12,7 @@
 		StrutConfig,
 		Level,
 		Strut
-	} from '$lib/rotated-shape';
+	} from '$lib/generate-shape';
 	import PathEdit from '../../components/path-edit/PathEdit.svelte';
 	import { config0, config } from '$lib/stores';
 	import Controls from '../../components/controls/Controls.svelte';

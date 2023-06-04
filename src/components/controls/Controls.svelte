@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { patternConfig, config0 } from '$lib/stores';
 	import {initTabStyle} from "$lib/shades-config"
-	import type { TabStyle } from '$lib/rotated-shape';
+	import type { TabStyle } from '$lib/generate-shape';
 
 	export let showControl: string;
 
@@ -18,6 +18,7 @@
 	}
 
 	$: {
+		console.debug("reactive - tabstyle")
 		$config0.bandConfig.tabStyle =
 			$config0.bandConfig.tabStyle.style !== tabStyle.style
 				? initTabStyle(tabStyle.style)
@@ -157,8 +158,9 @@
 			<input id="rotz_offset" type="number" min={-360} max={360} step={0.05} bind:value={rotZ} />
 		{/if}
 	</section>
+
 {:else if showControl === 'Cut'}
-<section>
+	<section>
 		<h4>Cut Pattern</h4>
 		<div class="control-group">
 			{#each Object.entries($patternConfig.showPattern) as show}
@@ -171,6 +173,40 @@
 			{/each}
 		</div>
 		<h4>Cutouts</h4>
+		<div class="readout">
+			{#if $config0.cutoutConfig}
+				<span>{$config0.cutoutConfig.tilePattern.type}</span>
+				{#if $config0.cutoutConfig.tilePattern.type === "alternating-band"}
+				<span> - nthBand: {$config0.cutoutConfig.tilePattern.nthBand}</span>
+				{/if}
+
+				<div>{$config0.cutoutConfig.holeConfigs[0][0].type}</div>
+				{#if $config0.cutoutConfig.holeConfigs[0][0].type === "HoleConfigBand"}
+					<div>Locate</div>
+					{#each Object.keys($config0.cutoutConfig.holeConfigs[0][0].locate) as key}
+						<div style="padding-left: 0.5em;">
+							<label for={`locate-${key}`}>{key}: </label>
+							{#if typeof $config0.cutoutConfig.holeConfigs[0][0].locate[key] === "number"}
+								<input id={`locate-${key}`} type="number" bind:value={$config0.cutoutConfig.holeConfigs[0][0].locate[key]}/>
+							{:else}
+								<span id={`locate-${key}`}>{$config0.cutoutConfig.holeConfigs[0][0].locate[key]}</span>
+							{/if}
+						</div>
+					{/each}
+					<div>Geometry</div>
+					{#each Object.keys($config0.cutoutConfig.holeConfigs[0][0].geometry[0]) as key}
+						<div style="padding-left: 0.5em;">
+							<label for={`geometry-${key}`}>{key}: </label>
+							{#if typeof $config0.cutoutConfig.holeConfigs[0][0].geometry[0][key] === "number"}
+								<input id={`geometry-${key}`} type="number" bind:value={$config0.cutoutConfig.holeConfigs[0][0].geometry[0][key]}/>
+							{:else}
+								<span>{$config0.cutoutConfig.holeConfigs[0][0].geometry[0][key]}</span>
+							{/if}
+						</div>
+					{/each}
+				{/if}
+			{/if}
+		</div>
 		<div class="control-group">
 			<label for="checkbox-apply-cutout">
 				Apply Cutout?
@@ -195,5 +231,14 @@
 	}
 	.control-group select {
 		width: 120px;
+	}
+	.readout {
+		margin: 0.5em;
+		padding: 0.5em;
+		border: 1px solid black;
+		border-radius: 8px;
+		background-color: aliceblue;
+		font-family:'Courier New', Courier, monospace;
+		font-size: 0.75em;
 	}
 </style>

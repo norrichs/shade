@@ -2,8 +2,8 @@
 	import { Canvas, OrbitControls, T } from '@threlte/core';
 	import { degToRad } from 'three/src/math/MathUtils';
 	import StrutMesh from '../../components/strut/StrutMesh.svelte';
-	import type { Level, Band, RenderConfig, Strut } from '$lib/rotated-shape';
-	import { getRenderable } from '$lib/rotated-shape';
+	import type { Level, Band, RenderConfig, Strut } from '$lib/generate-shape';
+	import { getRenderable } from '$lib/generate-shape';
 	import LevelMesh from '../level/LevelMesh.svelte';
 	import RotatedShapeBandMesh from '../band/BandMesh.svelte';
 	import { config } from '$lib/stores';
@@ -12,12 +12,12 @@
 	export let bands: Band[] = [];
 	export let struts: Strut[] = [];
 
-	let displayRSBands: Band[];
+	let displayBands: Band[];
 	let displayStruts: Strut[];
 	let displayLevels: Level[];
 
 	$: {
-		displayRSBands = getRenderable($config.renderConfig, bands) as Band[];
+		displayBands = getRenderable($config.renderConfig, bands) as Band[];
 	}
 	$: {
 		if (struts.length > 0) {
@@ -32,7 +32,6 @@
 </script>
 
 <div>last vertex</div>
-<!-- <div>{lastVertex}</div> -->
 <Canvas>
 	<T.PerspectiveCamera makeDefault position={[0, 600, -5]} fov={50}>
 		<OrbitControls maxPolarAngle={degToRad(160)} enableZoom={true} target={{ y: 0.5 }} />
@@ -50,7 +49,7 @@
 		{/if}
 
 		{#if $config.renderConfig?.show?.bands}
-			{#each displayRSBands as band, i}
+			{#each displayBands as band, i}
 				<RotatedShapeBandMesh {band} showTabs={$config.renderConfig?.show?.tabs} />
 			{/each}
 		{/if}
