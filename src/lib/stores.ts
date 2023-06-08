@@ -1,5 +1,4 @@
-import { derived, writable } from 'svelte/store';
-import type { PatternConfig, PatternViewConfig } from './cut-pattern';
+import { derived } from 'svelte/store';
 import {
 	persistable,
 	bootStrapUsePersisted,
@@ -9,22 +8,13 @@ import {
 import type { ShadesConfig } from './generate-shape';
 import { getPersistedConfig } from './storage';
 import {
-	defaultPatternConfig,
-	defaultPatternViewConfig,
+	// defaultPatternConfig,
+	// defaultPatternViewConfig,
 	generateDefaultConfig,
 	getLevels
 } from './shades-config';
 
 export const usePersisted = persistable(false, USE_PERSISTED_KEY, USE_PERSISTED_KEY, true);
-
-/// Configs to be kept separate from geometry config
-export const patternConfig = persistable<PatternConfig>(
-	defaultPatternConfig,
-	'PatternConfig',
-	AUTO_PERSIST_KEY,
-	bootStrapUsePersisted()
-);
-export const patternViewConfig = writable<PatternViewConfig>(defaultPatternViewConfig);
 
 const loadAutoPersisted = (usePersisted: boolean) => {
 	const autoPersisted = getPersistedConfig(AUTO_PERSIST_KEY, 'ShadesConfig');
@@ -53,6 +43,6 @@ export const config = derived(config0, ($config0) => {
 			)
 		}
   };
-  console.debug("set derived config", derivedConfig)
+  console.log("set derived config", derivedConfig)
 	return derivedConfig;
 });

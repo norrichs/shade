@@ -33,11 +33,11 @@
 
 	let showTabs = true;
 
-	$: renderConfig = $config.renderConfig
+	$: renderConfig = $config.renderConfig;
 
-	$: displayedBandFacets = getRenderableOnGeometry(bands)
-	$: displayedLevels = getRenderableOnGeometry(levels)
-	$: displayedStrutFacets = getRenderableOnGeometry(struts)
+	$: displayedBandFacets = getRenderableOnGeometry(bands);
+	$: displayedLevels = getRenderableOnGeometry(levels);
+	$: displayedStrutFacets = getRenderableOnGeometry(struts);
 
 	type Patterns = {
 		band: OutlinedBandPattern | FacetedBandPattern | { projectionType: 'none' };
@@ -51,9 +51,9 @@
 		level: { projectionType: 'none' }
 	};
 
-	const getRenderableOnGeometry = <T extends (Band[] | Level[] | Strut[])>(geometry: T) => {
-		return getRenderable($config.renderConfig, geometry) as T
-	}
+	const getRenderableOnGeometry = <T extends Band[] | Level[] | Strut[]>(geometry: T) => {
+		return getRenderable($config.renderConfig, geometry) as T;
+	};
 
 	const show_svg = () => {
 		const svg = document.getElementById('pattern-svg');
@@ -65,18 +65,17 @@
 	};
 
 	const updateBandPatterns = (facets: Band[]) => {
-		console.debug('reactive generateBandPatterns', displayedBandFacets);
 		if ($config.patternConfig.showPattern.band === 'none') {
 			patterns.band = { projectionType: 'none' };
 		} else {
 			patterns.band = generateBandPatterns(
 				$config.patternConfig,
+				$config.cutoutConfig,
 				$config.bandConfig.bandStyle,
 				$config.bandConfig.tabStyle,
 				displayedBandFacets
 			);
 		}
-		console.debug('-- patterns.band', patterns.band);
 	};
 
 	$: viewBoxValue = getViewBox($config.patternViewConfig);
@@ -278,21 +277,8 @@
 		box-shadow: 0 0 10px 2px black;
 		position: relative;
 	}
-	.showRings {
-		display: flex;
-	}
-	.showStruts {
-		display: flex;
-	}
-	.showRibbons {
-		display: flex;
-	}
 	.showBands {
 		display: flex;
-	}
-	.point-label-text {
-		font-size: 5px;
-		font-family: Arial, Helvetica, sans-serif;
 	}
 	.view-control-box {
 		position: absolute;

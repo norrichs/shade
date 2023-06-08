@@ -217,8 +217,8 @@ export type ShapeConfig = {
 	curves: BezierConfig[];
 };
 
-const validateShapeConfig = (config: ShapeConfig): Validation => {
-	const validation: Validation = { isValid: true, msg: [] };
+// const validateShapeConfig = (config: ShapeConfig): Validation => {
+// 	const validation: Validation = { isValid: true, msg: [] };
 	// if "asymmetric" or "lateral" symmetryNumber === 1
 
 	// if "radial", angle = Math.PI * 2 / symmetryNumber
@@ -231,8 +231,8 @@ const validateShapeConfig = (config: ShapeConfig): Validation => {
 	//  if "radial" end === start.applyAngle(angle)
 	//  if "radial-lateral", end is colinear with Vector2(1, 0).applyAngle(angle)
 
-	return validation;
-};
+// 	return validation;
+// };
 
 const rotatedCurve = (
 	config: BezierConfig | LineConfig,
@@ -271,8 +271,8 @@ const rotatedCurve = (
 };
 
 const generateRadialShape = (config: ShapeConfig): CurvePath<Vector2> => {
-	const validation = validateShapeConfig(config);
-	if (!validation.isValid) throw new Error(validation.msg.join('\n'));
+	// const validation = validateShapeConfig(config);
+	// if (!validation.isValid) throw new Error(validation.msg.join('\n'));
 
 	const { symmetry, symmetryNumber, curves } = config;
 	const shape = new CurvePath<Vector2>();
@@ -348,7 +348,7 @@ const generateRadialShapeLevelPrototype = (
 		} else if (byDivisions === 'offsetHalf') {
 			shape.curves.forEach((curve) => {
 				const curvePoints = curve.getPoints(sampleMethod.divisions * 2 - 1);
-				const halfPoints = curvePoints.filter((point, i, points) => i % 2 === levelNumber % 2);
+				const halfPoints = curvePoints.filter((point, i) => i % 2 === levelNumber % 2);
 				const recombined = halfPoints;
 				points.push(...recombined);
 			});
@@ -447,21 +447,6 @@ const generateLevelSet = (
 	});
 
 	return levels;
-};
-
-const getPolar = (x: number, y: number, cx = 0, cy = 0): { r: number; theta: number } => {
-	const r = Math.sqrt(Math.pow(x - cx, 2) + Math.pow(y - cy, 2));
-	const sinx = Math.sin(x - cx);
-	const cosy = Math.cos(y - cy);
-	const theta =
-		sinx >= 0 && cosy >= 0
-			? Math.asin(sinx)
-			: sinx >= 0 && cosy < 0
-			? Math.PI - Math.asin(sinx)
-			: sinx < 0 && cosy < 0
-			? Math.PI + Math.asin(sinx)
-			: Math.PI * 2 + Math.asin(sinx);
-	return { r, theta };
 };
 
 const generateLevel = (
@@ -662,8 +647,6 @@ const getStrutVector = (
 	};
 	return base.clone().addScaledVector(offset, -offsets[closeness][orientation]);
 };
-
-type StrutLevel = { base: Vector3; offset: Vector3 };
 
 const generateHelicalStrut = (bandIndex: number, levels: Level[], config: StrutConfig): Strut => {
 	const { width, tiling, orientation, radiate } = config;

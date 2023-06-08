@@ -58,14 +58,14 @@ type TilePattern =
 	  };
 
 type CircleConfig = {
-  [key: string]: 'CircleConfig' | PointConfig2 | number;
+	[key: string]: 'CircleConfig' | PointConfig2 | number;
 	type: 'CircleConfig';
 	center: PointConfig2;
 	radius: number;
 };
 
 type PathConfig = {
-  [key: string]: 'PathConfig' | BezierConfig[]
+	[key: string]: 'PathConfig' | BezierConfig[];
 	type: 'PathConfig';
 	curves: BezierConfig[];
 };
@@ -86,8 +86,22 @@ type HoleConfigSquare = {
 
 type HoleConfigBand = {
 	type: 'HoleConfigBand';
-  locate: {
-    [key: string]: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | number | 'relative-width' | 'absolute' | 'relative-length';
+	locate: {
+		[key: string]:
+			| 0
+			| 1
+			| 2
+			| 3
+			| 4
+			| 5
+			| 6
+			| 7
+			| 8
+			| 9
+			| number
+			| 'relative-width'
+			| 'absolute'
+			| 'relative-length';
 		skipEnds: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
 		everyNth: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
 		centered: number;
@@ -102,9 +116,8 @@ export type CutoutConfig = {
 };
 
 export type PatternConfig = {
-  [key: string]: PatternShowConfig | CutoutConfig | Axis | PointConfig2 | boolean | undefined;
+	[key: string]: PatternShowConfig | CutoutConfig | Axis | PointConfig2 | boolean | undefined;
 	showPattern: PatternShowConfig;
-	cutouts?: CutoutConfig;
 	axis: Axis;
 	origin: PointConfig2;
 	direction: PointConfig2;
@@ -325,12 +338,12 @@ export const generateStrutPatterns = (
 
 export const generateBandPatterns = (
 	config: PatternConfig,
+	cutoutConfig: CutoutConfig,
 	bandStyle: BandStyle,
 	tabStyle: TabStyle,
 	bands: Band[]
 ): FacetedBandPattern | OutlinedBandPattern => {
-  if (config.showPattern.band === 'none') throw new Error('Band patterns not configured');
-  console.debug("generateBandPatterns", config, "tabStyle", tabStyle)
+	if (config.showPattern.band === 'none') throw new Error('Band patterns not configured');
 	const flattenedGeometry: Band[] = bands.map((band, i) =>
 		getFlatStrip(
 			band,
@@ -345,7 +358,6 @@ export const generateBandPatterns = (
 			tabStyle
 		)
 	);
-      console.debug("got flattened")
 	if (config.showPattern.band === 'faceted') {
 		const facetedPattern: FacetedBandPattern = {
 			projectionType: 'faceted',
@@ -368,20 +380,15 @@ export const generateBandPatterns = (
 			})
 		};
 		return facetedPattern;
-  } else {
-    console.debug("outlined")
-		const validity: any = {};
-		if (config.cutouts) {
-			validity.cutouts = validateCutoutConfig(config.cutouts);
-		}
-
+	} else {
+		const validity = { cutouts: validateCutoutConfig(cutoutConfig) };
 		const outlinedPattern: OutlinedBandPattern = {
 			projectionType: 'outlined',
 			bands: flattenedGeometry.map((flatBand, bandIndex) => {
 				const outline: Vector3[] = getOutlinePoints(flatBand, bandStyle);
 				const svgCutouts =
 					config.cutouts && validity.cutouts.isValid
-						? getSVGCutouts(flatBand, bandIndex, config.cutouts)
+						? getSVGCutouts(flatBand, bandIndex, cutoutConfig)
 						: undefined;
 
 				const pattern: OutlinePattern = {
@@ -396,14 +403,13 @@ export const generateBandPatterns = (
 				return pattern;
 			})
 		};
-		console.debug('outlinedPattern', outlinedPattern);
 		return outlinedPattern;
 	}
 };
 
 const arcCircle = (c: { x: number; y: number; r: number }): string => {
 	const { x, y, r } = c;
-  return `M ${x + r} ${y} A ${r} ${r} 0 0 0 ${x - r} ${y} A ${r} ${r} 0 0 0 ${x + r} ${y} z`;
+	return `M ${x + r} ${y} A ${r} ${r} 0 0 0 ${x - r} ${y} A ${r} ${r} 0 0 0 ${x + r} ${y} z`;
 };
 
 const getSVGCutouts = (
@@ -411,12 +417,9 @@ const getSVGCutouts = (
 	bandIndex: number,
 	config: CutoutConfig
 ): { svgPath: string }[] | undefined => {
-	console.debug('getSVGCutouts() stub', flatBand, bandIndex, config);
-
 	const { tilePattern } = config;
 	const holeConfig = config.holeConfigs[0][0];
 	if (tilePattern.type === 'alternating-band' && holeConfig.type === 'HoleConfigBand') {
-		console.debug(' - Alternating Band');
 		if (bandIndex % tilePattern.nthBand === 0) {
 			const holes = flatBand.facets
 				.filter((facet, i, facets) => {
@@ -428,7 +431,7 @@ const getSVGCutouts = (
 
 					return isLevel && !isEnd && isNth;
 				})
-				.map((facet, i) => {
+				.map((facet) => {
 					const vectorAB = facet.triangle.b.clone().addScaledVector(facet.triangle.a, -1);
 					const vectorACenter = vectorAB
 						.clone()
@@ -446,38 +449,32 @@ const getSVGCutouts = (
 			return holes;
 		}
 	} else if (config.tilePattern.type === 'each-facet') {
-		console.debug('- Each Facet');
 		// const axis = new Vector3(0, 1, 0);
 		// const holes: string[] = [];
 		// flatBand.facets.forEach((facet, i) => {
 		// 	const { a, b, c } = facet.triangle;
 		// 	const ab = b.clone().addScaledVector(a, -1);
 		// 	const ac = c.clone().addScaledVector(a, -1);
-
 		// 	const [a0, b0, c0] = config.holeConfigs[0][0].corners.map(
 		// 		(point) => new Vector3(point.x, point.y, 0)
 		// 	);
 		// 	const ab0 = b0.clone().addScaledVector(a0, -1);
 		// 	const ac0 = c0.clone().addScaledVector(a0, -1);
-
 		// 	const lengthRatio = ac.length() / ac0.length();
 		// 	const angleRatio = ac.angleTo(ab) / ac0.angleTo(ab0);
 		// 	// const offsetA = { x: a.x - a0.x, y: a.y - a0.y };
 		// 	// we'll need to correct for direction of angle.  use dot product or whatever to convert some angles to negative
 		//   const offsetAngle = axis.angleTo(ab) - axis.angleTo(ab0);
-
 		//   const geometryStrings: string[] = [];
 		//   const geometry = config.holeConfigs[0][0].geometry[0]
 		// if (geometry.type === "CircleConfig") {
 		//   const adjustedCenter =
 		// }
 		// TODO - refactor HoleConfig type to enforce a unit triangle or unit rectangle
-
 		// Algorithm to use
 		// forEach point
 		// 1) scale vertical and scale horizontal
 		// 2) rotate around anchor
-
 		// });
 	}
 
@@ -709,7 +706,6 @@ const getFlatStrip = <T extends Strut | Band>(
 						facet.tab.footprint[1].triangle,
 						alignConfig1
 					);
-          console.debug("getFlatStrip - generateMultiFacetFullTab", tabStyle)
 					alignedFacet.tab = generateMultiFacetFullTab(
 						{
 							...facet.tab.footprint[0],

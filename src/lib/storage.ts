@@ -45,7 +45,6 @@ export const persistConfig = (config: ShadesConfig, onSave: () => void) => {
 
 export const getPersistedConfig = (key: string, name: keyof ShadesConfig | 'ShadesConfig') => {
 	const persistedConfig = getLocal(key);
-	// console.debug("key", key, "name", name, "getPersistedConfig", persistedConfig, "return", persistedConfig && persistedConfig[name] ? persistedConfig[name] : undefined)
 	return persistedConfig && persistedConfig[name] !== undefined && persistedConfig[name] !== null
 		? persistedConfig[name]
 		: undefined;
@@ -55,7 +54,6 @@ export const getLocal = (key: string) => {
 	const retrieved = localStorage.getItem(key);
 	if (retrieved) {
 		const parsed = JSON.parse(retrieved);
-		// console.debug(parsed);
 		return parsed;
 	}
 	return null;

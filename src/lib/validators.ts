@@ -1,20 +1,12 @@
 import type { CutoutConfig } from './cut-pattern';
 
-type Validity = {
+export type Validity = {
 	isValid: boolean;
 	messages: string[];
 };
 
 export const validateCutoutConfig = (config: CutoutConfig): Validity => {
 	const validity: Validity = { isValid: true, messages: [] };
-	console.debug(
-		config,
-		'validator',
-		"['each-facet', 'alternating-facet'].includes(config.tilePattern.type)",
-		['each-facet', 'alternating-facet'].includes(config.tilePattern.type),
-		"config.holeConfigs.flat().some((hole) => hole.type === 'HoleConfigSquare')",
-		config.holeConfigs.flat().some((hole) => hole.type === 'HoleConfigSquare')
-	);
 	if (
 		['each-facet', 'alternating-facet'].includes(config.tilePattern.type) &&
 		config.holeConfigs.flat().some((hole) => hole.type === 'HoleConfigSquare')

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { patternConfig, config0 } from '$lib/stores';
+	import { config0 } from '$lib/stores';
 	import {initTabStyle} from "$lib/shades-config"
 	import type { TabStyle } from '$lib/generate-shape';
 
@@ -18,7 +18,6 @@
 	}
 
 	$: {
-		console.debug("reactive - tabstyle")
 		$config0.bandConfig.tabStyle =
 			$config0.bandConfig.tabStyle.style !== tabStyle.style
 				? initTabStyle(tabStyle.style)
@@ -163,9 +162,9 @@
 	<section>
 		<h4>Cut Pattern</h4>
 		<div class="control-group">
-			{#each Object.entries($patternConfig.showPattern) as show}
+			{#each Object.entries($config0.patternConfig.showPattern) as show}
 				<label for={`show-${show[0]}`}>{show[0]}</label>
-				<select id={`show-${show[0]}`} bind:value={$patternConfig.showPattern[show[0]]}>
+				<select id={`show-${show[0]}`} bind:value={$config0.patternConfig.showPattern[show[0]]}>
 					<option>faceted</option>
 					<option>outlined</option>
 					<option>none</option>

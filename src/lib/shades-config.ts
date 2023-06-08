@@ -101,7 +101,6 @@ const defaultLevelConfig: LevelConfig = {
 };
 
 export const initTabStyle = (style: TabStyle['style']): TabStyle => {
-  console.debug("initTabStyle", style)
 	const defaultTabStyles: { [key: string]: TabStyle } = {
 		full: { style: 'full', direction: 'lesser' },
 		trapezoid: { style: 'trapezoid', direction: 'lesser', width: { style: 'fixed', value: 5 } },
