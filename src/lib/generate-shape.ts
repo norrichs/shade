@@ -1031,6 +1031,7 @@ type StripSide = 'greater' | 'lesser';
 type TabDirection = StripSide | 'both';
 // TODO - add a direction setting which will result in tabs on both sides
 export type TabStyle =
+	| { style: "none"; }
 	| { style: 'full'; direction: TabDirection; scored?: TabScore } // for circumference bands, left and right are relative to rotation direction
 	| {
 			style: 'trapezoid';

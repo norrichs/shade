@@ -89,6 +89,7 @@
 			</select>
 			<label for="tab-style">Tab Style</label>
 			<select id="tab-style" bind:value={tabStyle.style} on:change={() => $config0.renderConfig.show.tabs = true}>
+				<option>none</option>
 				<option>full</option>
 				<option>trapezoid</option>
 				<option>multi-facet-full</option>
@@ -167,6 +168,7 @@
 				<select id={`show-${show[0]}`} bind:value={$config0.patternConfig.showPattern[show[0]]}>
 					<option>faceted</option>
 					<option>outlined</option>
+					<option>patterned</option>
 					<option>none</option>
 				</select>
 			{/each}

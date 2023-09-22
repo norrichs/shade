@@ -11,10 +11,18 @@
 		FacetedStrutPattern,
 		OutlinedStrutPattern,
 		LevelSetPattern,
-		PatternViewConfig
+		PatternViewConfig,
+		PatternedBandPattern
 	} from '$lib/cut-pattern';
 	import { getRenderable } from '$lib/generate-shape';
 	import { config, config0 } from '$lib/stores';
+	import {
+		generateFlowerOfLifeOutlinedBand,
+		svgTransformFromMatchedTriangle,
+		svgTriangle
+	} from '$lib/flower-of-life/flower-of-life';
+	import { simpleTriangle } from '$lib/flower-of-life/utils';
+	import { flatten } from '$lib/flatten/flatten';
 
 	export let levels: Level[] = [];
 	export let bands: Band[] = [];
@@ -40,7 +48,11 @@
 	$: displayedStrutFacets = getRenderableOnGeometry(struts);
 
 	type Patterns = {
-		band: OutlinedBandPattern | FacetedBandPattern | { projectionType: 'none' };
+		band:
+			| OutlinedBandPattern
+			| FacetedBandPattern
+			| PatternedBandPattern
+			| { projectionType: 'none' };
 		strut: OutlinedStrutPattern | FacetedStrutPattern | { projectionType: 'none' };
 		level: LevelSetPattern | { projectionType: 'none' };
 	};
@@ -112,6 +124,57 @@
 						z 
 		`;
 	};
+
+	type FlattenMode = 'native-replace' | 'recombine';
+
+	let flattenedPatternedSVG: { bands: string[] } = { bands: [] };
+
+	const handleFlatten = (
+		mode: FlattenMode,
+		range: 'all' | 'debug' | { band: [number, number]; facet: [number, number] }
+	) => {
+		let bands = [];
+		if (range === 'all') {
+			console.debug('do all?');
+			if (patterns.band.projectionType === 'patterned' && patterns.band.bands) {
+				const bandCount = patterns.band.bands.length;
+
+				for (let i = 0; i < bandCount; i++) {
+					bands.push(Array.from(document.getElementsByClassName(`band-svg-${i}`)));
+				}
+				console.debug('band elements', bands);
+			}
+		} else {
+			const b = 0;
+			const f = 5;
+			bands = [document.getElementById(`facet-svg-${b}-${f}`)];
+		}
+
+		// if (Array.isArray(elems) && mode === 'native-replace') {
+		// 	for (let elem of elems) {
+		// 		console.debug('trigger flatten', elem?.getAttribute('id'));
+		// 		flatten(elem, false, false, false, true, 'native-replace');
+		// 	}
+		// }
+		if (Array.isArray(bands) && mode === 'recombine') {
+			for (let band of bands) {
+				const facets = [];
+				if (Array.isArray(band)) {
+					for (let facet of band) {
+						console.debug('trigger flatten', facet?.getAttribute('id'));
+						const newCoords = flatten(facet, false, false, false, true, 'recombine');
+						console.debug('new coordinates', newCoords);
+						facets.push(newCoords);
+					}
+				}
+				flattenedPatternedSVG.bands.push(
+					generateFlowerOfLifeOutlinedBand(facets, { range: [0, facets.length - 1] })
+				);
+			}
+			flattenedPatternedSVG = flattenedPatternedSVG
+			console.debug('flattened pattern svg', flattenedPatternedSVG);
+		}
+	};
 </script>
 
 <div class="container">
@@ -120,11 +183,18 @@
 		<button on:click={() => (experimental = { ...experimental, show: !experimental.show })}
 			>Experiment</button
 		>
+		<button on:click={() => handleFlatten('native-replace', 'debug')}>Flatten Replace Native</button
+		>
+		<button on:click={() => handleFlatten('recombine', 'debug')}>Flatten Recombine</button>
+		<button on:click={() => handleFlatten('recombine', 'all')}>Flatten Recombine All</button>
 		<!-- <button on:click={() => zoomToPattern(patterns)}>Zoom To Pattern</button> -->
-	</header>
-	<div>
 		<label for="showBands"> Bands </label>
 		<input type="checkbox" name="showBands" bind:checked={showBands} />
+		{#if flattenedPatternedSVG.bands.length > 0}
+			<div>FLATTENED PATTERNED</div>
+		{/if}
+	</header>
+	<div>
 		<div class="container-svg" class:showBands>
 			{#if experimental.show}
 				<svg
@@ -159,6 +229,17 @@
 					viewBox={viewBoxValue}
 					xmlns="http://www.w3.org/2000/svg"
 				>
+					{#if flattenedPatternedSVG.bands.length > 0}
+						{#each flattenedPatternedSVG.bands as band, b}
+							<path
+								d={band}
+								fill="red"
+								fill-rule="evenodd"
+								id={`flattened-patterned-band-${b}`}
+							/>
+						{/each}
+					{/if}
+
 					{#if patterns.level.projectionType !== 'none'}
 						{#each patterns.level.levels as level, i}
 							<path d={level.outline.svgPath} fill="green" stroke="black" stroke-width="0.3" />
@@ -194,6 +275,33 @@
 										d={facet.tab.svgPath}
 										fill={`rgb(0, ${50 + (200 * f) / band.facets.length},255)`}
 										stroke="orangered"
+										stroke-width="0.2"
+									/>
+								{/if}
+							{/each}
+						{/each}
+					{:else if patterns.band.projectionType === 'patterned'}
+						{#each patterns.band.bands as band, b}
+							{#each band.facets as facet, f}
+								<path
+									id={`facet-svg-${b}-${f}`}
+									class={`patterned-path-transformed band-svg-${b} facet-svg-${f}`}
+									d={facet.svgPath}
+									stroke="deeppink"
+									stroke-width="0.2"
+									transform={facet.svgTransform}
+									fill-rule="evenodd"
+								/>
+								<path
+									d={svgTriangle(simpleTriangle(facet.triangle))}
+									class="cutpattern-outline"
+									stroke-width="0.2"
+								/>
+								{#if showTabs && facet.tab}
+									<path
+										d={facet.tab.svgPath}
+										fill={`rgb(0, ${50 + (200 * f) / band.facets.length},255)`}
+										stroke="deeppink"
 										stroke-width="0.2"
 									/>
 								{/if}
@@ -264,9 +372,27 @@
 </div>
 
 <style>
+	#pattern-svg {
+		background-color: rgba(0,0,0,0.03);
+	}
+	.patterned-path-transformed {
+		fill: rgba(255, 20, 145, 0.288);
+		stroke: deeppink;
+	}
+
+	.patterned-path-flattened {
+		fill: rgba(102, 51, 153, 0.771);
+		stroke: deeppink;
+	}
+
+	.cutpattern-outline {
+		fill: rgba(145, 255, 0, 0.171);
+		stroke: rgba(0, 0, 0, 0.28);
+	}
+
 	.container {
 		display: flex;
-		flex-direction: row;
+		flex-direction: column;
 		justify-content: flex-start;
 	}
 	.container-svg {

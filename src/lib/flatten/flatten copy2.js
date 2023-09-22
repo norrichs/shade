@@ -43,6 +43,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
+import { getTransformMatrix, parseTransformString } from './matrix';
+
 SVGElement.prototype.getTransformToElement =
 	SVGElement.prototype.getTransformToElement ||
 	function (toElement) {
@@ -59,7 +61,7 @@ var convertToString = function (arr) {
 // toAbsolute: converts all segments to Absolute
 // dec: number of digits after decimal separator
 // Returns: no return value
-export function flatten(elem, toCubics, toAbsolute, rectAsArgs, dec) {
+export function flatten(elem, toCubics, toAbsolute, rectAsArgs, dec, flattenMode) {
 	console.debug('running flatten');
 	if (!elem) return;
 	if (typeof rectAsArgs == 'undefined') rectAsArgs = false;
@@ -109,6 +111,7 @@ export function flatten(elem, toCubics, toAbsolute, rectAsArgs, dec) {
 	//var pathDOM = path_elem.node;
 	var pathDOM = path_elem;
 	var d = pathDOM.getAttribute('d').trim();
+	console.debug('pathDOM', pathDOM, 'd', d);
 
 	// If you want to retain current path commans, set toCubics to false
 	if (!toCubics) {
@@ -127,8 +130,32 @@ export function flatten(elem, toCubics, toAbsolute, rectAsArgs, dec) {
 
 	// Get the relation matrix that converts path coordinates
 	// to SVGroot's coordinate space
-	var matrix = pathDOM.getTransformToElement(svgDOM);
+	// var matrix = pathDOM.getTransformToElement(svgDOM);
 
+	// console.debug('svgDOM', svgDOM, 'matrix', matrix);
+
+	const transformString = pathDOM.getAttribute('transform');
+	console.debug('transform string', transformString);
+
+	const tx = parseTransformString(transformString);
+	console.debug('transformArray', tx);
+	const transformationMatrix = getTransformMatrix(tx);
+
+	const domMatrixInit = `translate(${tx.translateX || 0}px, ${tx.translateY || 0}px) rotate(${
+		tx.rotation || 0
+	}rad) skewX(${tx.skewX || 0}rad) scale(${tx.scaleX || 1}, ${tx.scaleY || 1})`;
+	const matrix = new DOMMatrix(domMatrixInit);
+	// const matrix = document.createElementNS("http://www.w3.org/2000/svg", "svg").createSVGMatrix();
+	// matrix.translateSelf(tx.translateX, tx.translateY)
+
+	// matrix.a = dm.a
+	// matrix.b = dm.b
+	// matrix.c = dm.c
+	// matrix.d = dm.d
+	// matrix.e = dm.e
+	// matrix.f = dm.f
+
+	// console.debug('transformMatrix', transformationMatrix, dm, matrix);
 	// The following code can bake transformations
 	// both normalized and non-normalized data
 	// Coordinates have to be Absolute in the following
@@ -189,7 +216,7 @@ export function flatten(elem, toCubics, toAbsolute, rectAsArgs, dec) {
 				}
 				pt.x = x;
 				pt.y = y;
-				point = pt.matrixTransform(matrix);
+				point = pt.matrixTransform(domMatrixInit);
 
 				if (letter == 'V' || letter == 'H') {
 					newcoords[i][0] = 'L';
@@ -283,8 +310,19 @@ export function flatten(elem, toCubics, toAbsolute, rectAsArgs, dec) {
 		}
 	}
 	if (toAbsolute) newcoords = pathToAbsolute(newcoords);
-	path_elem.setAttribute('d', convertToString(newcoords));
-	path_elem.removeAttribute('transform');
+
+	console.debug('Element #', path_elem.getAttribute('id'));
+	switch (flattenMode) {
+		case 'recombine':
+			return newcoords;
+		default:
+			console.debug('   old d', path_elem.getAttribute('d'));
+			path_elem.setAttribute('d', convertToString(newcoords));
+			path_elem.removeAttribute('transform');
+			path_elem.classList.remove('patterned-path-transformed');
+			path_elem.classList.add('patterned-path-flattened');
+			break;
+	}
 }
 
 // Converts all shapes to path retaining attributes.

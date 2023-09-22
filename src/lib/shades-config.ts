@@ -102,6 +102,7 @@ const defaultLevelConfig: LevelConfig = {
 
 export const initTabStyle = (style: TabStyle['style']): TabStyle => {
 	const defaultTabStyles: { [key: string]: TabStyle } = {
+		none: { style: 'none' },
 		full: { style: 'full', direction: 'lesser' },
 		trapezoid: { style: 'trapezoid', direction: 'lesser', width: { style: 'fixed', value: 5 } },
 		'multi-facet-full': {
@@ -125,7 +126,7 @@ const defaultBandConfig: BandConfig = {
 	type: 'BandConfig',
 	bandStyle: 'helical-right',
 	offsetBy: 0,
-	tabStyle: initTabStyle('multi-facet-full')
+	tabStyle: initTabStyle('none')
 };
 
 const defaultStrutConfig: StrutConfig = {
@@ -200,7 +201,7 @@ const defaultCutoutConfig: CutoutConfig[] = [
 ];
 
 export const defaultPatternConfig: PatternConfig = {
-	showPattern: { band: 'outlined', strut: 'none', level: 'none' },
+	showPattern: { band: 'patterned', strut: 'none', level: 'none' },
 	cutouts: defaultCutoutConfig[1],
 	axis: 'z',
 	origin: { type: 'PointConfig2', x: 0, y: 0 },
@@ -210,8 +211,8 @@ export const defaultPatternConfig: PatternConfig = {
 };
 
 export const defaultPatternViewConfig: PatternViewConfig = {
-	width: 400,
-	height: 400,
+	width: 800,
+	height: 600,
 	zoom: 0.2,
 	centerOffset: {
 		x: 0,

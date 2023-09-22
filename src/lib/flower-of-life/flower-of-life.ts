@@ -544,7 +544,7 @@ const deriveConfigFromBandTriangle = (
 		skewX: getTriangleSkewX(config.triangle, 'c', false),
 		mode: undefined
 	};
-	console.debug('derivedConfigFromBandTriangle config', config, "derived", derivedConfig);
+	console.debug('derivedConfigFromBandTriangle config', config, 'derived', derivedConfig);
 
 	return derivedConfig;
 };
@@ -677,7 +677,7 @@ export const svgArcTriangle = (
 
 export const svgUnitFlowerOfLife = (config?: FlowerOfLifeTriangle, size = 100, width = 10) => {
 	if (config) {
-		const t = structuredClone(config.triangle)
+		const t = structuredClone(config.triangle);
 		const { ab, bc, ac } = config;
 		const outerR = config.ab.edge.ellipse.r0;
 		const innerR = config.ab.inner.ellipse.r0;
@@ -700,12 +700,12 @@ export const svgUnitFlowerOfLife = (config?: FlowerOfLifeTriangle, size = 100, w
 			M ${ab.inner.p2.x} ${ab.inner.p2.y}
 			A ${innerR} ${innerR} 0 0 0 ${ab.inner.p1.x} ${ab.inner.p1.y}
 			A ${innerR} ${innerR} 0 0 0 ${bc.inner.p1.x} ${bc.inner.p1.y}
-			A ${innerR} ${innerR} 0 0 0 ${ac.inner.p1.x} ${ac.inner.p1.y}
-		`
-		console.debug("configured svgUnitFlowerOfLife", config, svg)
-		return svg
+			A ${innerR} ${innerR} 0 0 0 ${ac.inner.p1.x} ${ac.inner.p1.y} z
+		`;
+		console.debug('configured svgUnitFlowerOfLife', config, svg);
+		return svg;
 	}
-	console.debug("svgUnitFlowerOfLife")
+	console.debug('svgUnitFlowerOfLife');
 	const t = {
 		a: { x: 0, y: 0 },
 		b: { x: size, y: 0 },
@@ -716,19 +716,160 @@ export const svgUnitFlowerOfLife = (config?: FlowerOfLifeTriangle, size = 100, w
 	A ${size} ${size} 0 0 0 ${t.b.x} ${t.b.y}
 	A ${size} ${size} 0 0 0 ${t.c.x} ${t.c.y}
 	A ${size} ${size} 0 0 0 ${t.a.x} ${t.a.y}
-	`
+	`;
 };
 
-export const svgTransformFromMatchedTriangle = (config: MatchedFlowerOfLifeConfig, isPrimary: boolean): string => {
+export const svgTransformFromMatchedTriangle = (
+	config: MatchedFlowerOfLifeConfig,
+	isPrimary: boolean
+): string => {
 	const d = deriveConfigFromBandTriangle(config, isPrimary);
-	console.debug("derived", d);
-	if (d.type === "matched") {
-		return ""
+	console.debug('derived', d);
+	if (d.type === 'matched') {
+		return '';
 	}
 	return `
 		translate(${d.anchor?.x || 0} ${d.anchor?.y || 0}) 
 		rotate(${d.rotation ? radToDeg(d.rotation) : 0})
-		skewX(${d.skewX ? radToDeg(d.skewX) : 0})	
-		scale(${d.scaleX || 1} ${d.scaleY || 1})
-	`
-}
+		skewX(${d.skewX ? -radToDeg(d.skewX) : 0})	
+		scale(${d.scaleX || 1} -${d.scaleY || 1})
+	`;
+};
+
+type PathSegment =
+	| ['M', number, number]
+	| ['L', number, number]
+	| ['A', number, number, number, number, number, number, number]
+	| ['Z'];
+type PatternedBandConfig = {
+	range?: [number, number];
+};
+
+export const generateFlowerOfLifeOutlinedBand = (
+	facets: PathSegment[][],
+	config?: PatternedBandConfig
+): string => {
+	const pathSeq: PathSegment[] = [];
+	const cutoutSeq: PathSegment[] = [];
+	console.debug(facets);
+
+	const start =
+		config?.range && config.range[0] > 0 && config.range[0] < facets[0].length - 1
+			? config.range[0]
+			: 0;
+	const end =
+		config?.range && config.range[1] > start && config.range[1] < facets[0].length - 1
+			? config.range[1]
+			: facets.length - 1;
+
+	console.debug("generateFlowerOfLifeOutlinedBand", start, end, config)
+	// Start inner
+	cutoutSeq.push(
+		facets[start][11],
+		facets[start][12],
+		facets[start][13],
+		facets[start][14],
+		facets[start][15]
+	);
+	// Start facet
+	if (start % 2 === 0) {
+		//outline
+		const startSegment = ['M', facets[start][6][1], facets[start][6][2]] as PathSegment;
+		pathSeq.push(
+			startSegment,
+			facets[start][7],
+			facets[start][8],
+			facets[start][9],
+			facets[start][1],
+			facets[start][2],
+			facets[start][3]
+		);
+	} else {
+		// leading almond
+		cutoutSeq.push(
+			['M', facets[start][1][1], facets[start][1][2]] as PathSegment,
+			facets[start][2],
+			facets[start + 1][2],
+			['Z']
+		);
+		// outline
+		const startSegment = ['M', facets[start][3][1], facets[start][3][2]] as PathSegment;
+		pathSeq.push(
+			startSegment,
+			facets[start][4],
+			facets[start][5],
+			facets[start][6],
+			facets[start][7],
+			facets[start][8],
+			facets[start][9]
+		);
+	}
+	// Odd facets
+	for (let i = start + (start % 2) + 1; i < end; i += 2) {
+		// inner triangle
+		cutoutSeq.push(facets[i][11], facets[i][12], facets[i][13], facets[i][14], facets[i][15]);
+		// trailing almond
+		cutoutSeq.push(
+			['M', facets[i][4][1], facets[i][4][2]] as PathSegment,
+			facets[i][5],
+			facets[i - 1][5],
+			['Z']
+		);
+		// leading almond
+		cutoutSeq.push(
+			['M', facets[i][1][1], facets[i][1][2]] as PathSegment,
+			facets[i][2],
+			facets[i + 1][2],
+			['Z']
+		);
+		// outline
+		pathSeq.push(facets[i][7], facets[i][8], facets[i][9]);
+	}
+	// End facet
+	if (end % 2 === 0) {
+		// inner
+
+		// outline
+		pathSeq.push(
+			facets[end][4],
+			facets[end][5],
+			facets[end][6],
+			facets[end][7],
+			facets[end][8],
+			facets[end][9]
+		);
+	} else {
+		// inner triangle
+		cutoutSeq.push(facets[end][11], facets[end][12], facets[end][13], facets[end][14], facets[end][15]);
+		// trailing almond
+		cutoutSeq.push(
+			['M', facets[end][4][1], facets[end][4][2]] as PathSegment,
+			facets[end][5],
+			facets[end - 1][5],
+			['Z']
+		);
+		// outline
+		pathSeq.push(
+			facets[end][7],
+			facets[end][8],
+			facets[end][9],
+			facets[end][1],
+			facets[end][2],
+			facets[end][3]
+		);
+	}
+	// Even facets
+	for (let i = end - ((end + 1) % 2) - 1; i > start; i -= 2) {
+		// inner triangle
+		cutoutSeq.push(facets[i][11], facets[i][12], facets[i][13], facets[i][14], facets[i][15]);
+		// outline
+		pathSeq.push(facets[i][7], facets[i][8], facets[i][9]);
+	}
+	pathSeq.push(['Z'], ...cutoutSeq);
+
+	console.debug('pathSeq', pathSeq);
+
+	const svgPathString = pathSeq.map((segment) => segment.join(' ')).join('\n');
+	console.debug('svgPathString', svgPathString);
+	return svgPathString;
+};

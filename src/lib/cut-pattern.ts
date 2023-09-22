@@ -22,6 +22,14 @@ import {
 	isStrut
 } from './generate-shape';
 import { validateCutoutConfig } from './validators';
+import {
+	generateFlowerOfLifeTriangle,
+	svgTransformFromMatchedTriangle,
+	svgTriangle,
+	svgUnitFlowerOfLife
+} from './flower-of-life/flower-of-life';
+import type { Triangle as SimpleTriangle } from './flower-of-life/flower-of-life.types';
+import { simpleTriangle } from './flower-of-life/utils';
 
 export type PatternViewConfig = {
 	width: number;
@@ -32,7 +40,7 @@ export type PatternViewConfig = {
 		y: number;
 	};
 };
-type PatternStyle = 'faceted' | 'outlined' | 'none';
+type PatternStyle = 'faceted' | 'outlined' | 'patterned' | 'none';
 
 type PatternShowConfig = {
 	[key: string]: PatternStyle;
@@ -137,6 +145,13 @@ export type FacetPattern = {
 	tab?: TabPattern;
 };
 
+export type PatternedPattern = {
+	svgPath: string;
+	svgTransform?: string;
+	triangle: Triangle;
+	tab?: TabPattern;
+};
+
 type FullTabPattern = {
 	style: 'full';
 	svgPath: string;
@@ -190,10 +205,18 @@ export type LevelPattern = {
 	};
 };
 
-export type Pattern = FacetedBandPattern | OutlinedBandPattern | LevelSetPattern;
+export type Pattern =
+	| FacetedBandPattern
+	| OutlinedBandPattern
+	| LevelSetPattern
+	| PatternedBandPattern;
 
 export type FacetedBandPattern = { projectionType: 'faceted'; bands: { facets: FacetPattern[] }[] };
 export type OutlinedBandPattern = { projectionType: 'outlined'; bands: OutlinePattern[] };
+export type PatternedBandPattern = {
+	projectionType: 'patterned';
+	bands: { facets: PatternedPattern[] }[];
+};
 export type LevelSetPattern = { projectionType: 'outlined'; levels: LevelPattern[] };
 export type FacetedStrutPattern = {
 	projectionType: 'faceted';
@@ -342,7 +365,7 @@ export const generateBandPatterns = (
 	bandStyle: BandStyle,
 	tabStyle: TabStyle,
 	bands: Band[]
-): FacetedBandPattern | OutlinedBandPattern => {
+): FacetedBandPattern | OutlinedBandPattern | PatternedBandPattern => {
 	if (config.showPattern.band === 'none') throw new Error('Band patterns not configured');
 	const flattenedGeometry: Band[] = bands.map((band, i) =>
 		getFlatStrip(
@@ -380,7 +403,7 @@ export const generateBandPatterns = (
 			})
 		};
 		return facetedPattern;
-	} else {
+	} else if (config.showPattern.band === 'outlined') {
 		const validity = { cutouts: validateCutoutConfig(cutoutConfig) };
 		const outlinedPattern: OutlinedBandPattern = {
 			projectionType: 'outlined',
@@ -404,8 +427,48 @@ export const generateBandPatterns = (
 			})
 		};
 		return outlinedPattern;
+	} else {
+		const svgUnitFlowerOfLifePattern = svgUnitFlowerOfLife(
+			generateFlowerOfLifeTriangle(
+				{
+					type: 'specified',
+					width: 5
+				},
+				{ x: 0, y: 0 }
+			)
+		);
+
+		const patternedPattern: PatternedBandPattern = {
+			projectionType: 'patterned',
+			bands: flattenedGeometry.map((flatBand) => {
+				const bandPattern = {
+					...flatBand,
+					facets: flatBand.facets.map((facet, i) => {
+						const pattern: PatternedPattern = {
+							// svgPath: svgTriangle(simpleTriangle(facet.triangle)),
+							svgPath: svgUnitFlowerOfLifePattern,
+							svgTransform: svgTransformFromMatchedTriangle(
+								{ type: 'matched', triangle: simpleTriangle(facet.triangle), width: 5 },
+								i % 2 === 0
+							),
+							triangle: facet.triangle.clone()
+						};
+						const tab = generateFacetTabPattern(facet.tab);
+						if (tab) {
+							pattern.tab = tab;
+						}
+						return pattern;
+					})
+				};
+				return bandPattern;
+			})
+		};
+		console.debug('Patterned Pattern', patternedPattern);
+		return patternedPattern;
 	}
 };
+
+
 
 const arcCircle = (c: { x: number; y: number; r: number }): string => {
 	const { x, y, r } = c;

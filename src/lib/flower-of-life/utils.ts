@@ -1,4 +1,5 @@
 import type { Point, Triangle } from './flower-of-life.types';
+import type { Triangle as ThreeTriangle } from 'three';
 
 export const generateUnitTriangle = (sideLength: number): Triangle => {
 	const unit = {
@@ -58,14 +59,15 @@ export const getTriangleSkewX = (
 	const pApex = triangle[apex];
 	const pMid = getMidPoint(p0, p1);
 	if (!useNormalizedHeight) {
-		const skewAngle = - (Math.PI / 2 - getTriangleAngle({ a: p0, c: pApex, b: pMid }, 'b'));
-		console.debug("non normalized height skewAngle", skewAngle)
+		const skewAngle = -(Math.PI / 2 - getTriangleAngle({ a: p0, c: pApex, b: pMid }, 'b'));
+		console.debug('non normalized height skewAngle', skewAngle);
 		return skewAngle;
 	} else {
 		const triangleHeight = getTriangleHeight(triangle, apex);
-		console.debug("triangleHeight", triangleHeight)
+		console.debug('triangleHeight', triangleHeight);
 		const normalizedHeight = Math.sqrt((3 / 4) * getLength(p0, pMid) ** 2);
-		const baseRatio = Math.sqrt(getLength(p0, pApex) ** 2 - triangleHeight ** 2) / getLength(p0, p1);
+		const baseRatio =
+			Math.sqrt(getLength(p0, pApex) ** 2 - triangleHeight ** 2) / getLength(p0, p1);
 		const pBase: Point = {
 			x: p0.x + (p1.x - p0.x) * baseRatio,
 			y: p0.y + (p1.y - p0.y) * baseRatio
@@ -76,9 +78,9 @@ export const getTriangleSkewX = (
 			y: pBase.y + (pApex.y - pBase.y) * normalizationFactor
 		};
 		const baseAngle = getTriangleAngle({ a: p0, b: pMid, c: pApexNormalized }, 'b');
-		const skewAngle = (Math.PI / 2 - baseAngle / 2)
+		const skewAngle = Math.PI / 2 - baseAngle / 2;
 		console.debug(
-		'skewAngle',
+			'skewAngle',
 			skewAngle,
 			p0,
 			p1,
@@ -154,4 +156,12 @@ export const rotatePoint = (anchor: Point, point: Point, angle: number): Point =
 	};
 	// console.debug("  ", hypotenuse, "old", oldAngle * 180 / Math.PI, "new", newAngle * 180 / Math.PI, rotated)
 	return rotated;
+};
+
+export const simpleTriangle = (t: ThreeTriangle): Triangle => {
+	return {
+		a: { x: t.a.x, y: t.a.y },
+		b: { x: t.b.x, y: t.b.y },
+		c: { x: t.c.x, y: t.c.y }
+	};
 };

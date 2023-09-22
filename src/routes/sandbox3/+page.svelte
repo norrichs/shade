@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { flatten } from '$lib/flatten/flatten';
+	import { flatten } from '$lib/flatten/flatten copy2';
 	import { onMount } from 'svelte';
 	import CombinedNumberInput from '../../components/controls/CombinedNumberInput.svelte';
 	import { T } from '@threlte/core';
