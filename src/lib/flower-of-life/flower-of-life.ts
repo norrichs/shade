@@ -154,7 +154,6 @@ export const generateFlowerOfLifeTriangle = (
 		},
 		c: { x: t.c.x, y: unitTriangle.c.y - insetToOppositeEdge }
 	};
-	console.debug('GENERATE TRIANGLE');
 
 	// const triangle: Triangle = {
 	// 	a: { ...t.a },
@@ -163,8 +162,6 @@ export const generateFlowerOfLifeTriangle = (
 	// 	c: { ...t.c }
 	// };
 	const triangle = structuredClone(t);
-
-	console.debug('  scaled', scaleX, scaleY, triangle.a, triangle.b, triangle.c);
 	const offset: Point = { x: anchor.x - triangle.a.x, y: anchor.y - triangle.a.y };
 
 	const offsetPoint = (point: Point, offset: Point) => {
@@ -177,20 +174,16 @@ export const generateFlowerOfLifeTriangle = (
 	triangle.a = offsetPoint(triangle.a, offset);
 	triangle.b = offsetPoint(triangle.b, offset);
 	triangle.c = offsetPoint(triangle.c, offset);
-	console.debug('  offsets', offset, triangle.a, triangle.b, triangle.c);
 
 	triangle.c = skewXPoint(getMidPoint(triangle.a, triangle.b), triangle.c, skewX);
-	console.debug('  skewed', skewX, triangle.a, triangle.b, triangle.c);
 
 	triangle.b = scaleXY({ ...triangle.b }, triangle.a, scaleX, scaleY);
 	triangle.c = scaleXY({ ...triangle.c }, { ...triangle.a }, scaleX, scaleY);
-	console.debug('  scaled again? ', scaleX, scaleY, triangle.a, triangle.b, triangle.c);
 
 	// triangle.c = rotatePoint(triangle.a, triangle.c, rotation + (reflected ? (Math.PI * 2) / 3 : 0));
 	// triangle.b = rotatePoint(triangle.a, triangle.b, rotation + (reflected ? (Math.PI * 2) / 3 : 0));
 	triangle.c = rotatePoint(anchor, triangle.c, -rotation);
 	triangle.b = rotatePoint(anchor, triangle.b, -rotation);
-	console.debug('  rotated', rotation, triangle.a, triangle.b, triangle.c);
 
 	// if (reflected) {
 	// 	const swap = {...triangle.b}
@@ -345,17 +338,9 @@ export const generateUnitFlowerOfLifeTriangle = (
 		},
 		c: { x: t.c.x, y: unitTriangle.c.y - insetToOppositeEdge }
 	};
-	console.debug('GENERATE TRIANGLE');
 
-	// const triangle: Triangle = {
-	// 	a: { ...t.a },
-	// 	b: { ...t.b },
-	// 	// b: scaleXY({ ...t.b }, { ...t.a }, scaleX, scaleY),
-	// 	c: { ...t.c }
-	// };
 	const triangle = structuredClone(t);
 
-	console.debug('  scaled', scaleX, scaleY, triangle.a, triangle.b, triangle.c);
 	const offset: Point = { x: anchor.x - triangle.a.x, y: anchor.y - triangle.a.y };
 
 	const offsetPoint = (point: Point, offset: Point) => {
@@ -368,27 +353,17 @@ export const generateUnitFlowerOfLifeTriangle = (
 	triangle.a = offsetPoint(triangle.a, offset);
 	triangle.b = offsetPoint(triangle.b, offset);
 	triangle.c = offsetPoint(triangle.c, offset);
-	console.debug('  offsets', offset, triangle.a, triangle.b, triangle.c);
 
 	triangle.c = skewXPoint(getMidPoint(triangle.a, triangle.b), triangle.c, skewX);
-	console.debug('  skewed', skewX, triangle.a, triangle.b, triangle.c);
 
 	triangle.b = scaleXY({ ...triangle.b }, triangle.a, scaleX, scaleY);
 	triangle.c = scaleXY({ ...triangle.c }, { ...triangle.a }, scaleX, scaleY);
-	console.debug('  scaled again? ', scaleX, scaleY, triangle.a, triangle.b, triangle.c);
 
-	// triangle.c = rotatePoint(triangle.a, triangle.c, rotation + (reflected ? (Math.PI * 2) / 3 : 0));
-	// triangle.b = rotatePoint(triangle.a, triangle.b, rotation + (reflected ? (Math.PI * 2) / 3 : 0));
+
 	triangle.c = rotatePoint(anchor, triangle.c, -rotation);
 	triangle.b = rotatePoint(anchor, triangle.b, -rotation);
-	console.debug('  rotated', rotation, triangle.a, triangle.b, triangle.c);
 
-	// if (reflected) {
-	// 	const swap = {...triangle.b}
-	// 	triangle.b = { ...triangle.c }
-	// 	triangle.c = swap;
 
-	// }
 	Object.keys(edgeEllipseAnchors).forEach((key) => {
 		edgeEllipseAnchors[key] = rotatePoint(
 			triangle.a,
@@ -514,8 +489,6 @@ export const generateMatchedFlowerOfLifeTesselation = (
 		const f0 = generateMatchedFlowerOfLifeTriangle(row[0], config0Mode, true);
 		// const f1 = generateMatchedFlowerOfLifeTriangle(row[1], config1Mode, false);
 
-		// const fAlt = generateMatchedFlowerOfLifeTriangle(row[0], config0Mode, true, true);
-		console.debug('0', row[0], '0...', f0);
 
 		tesselation.push(
 			f0
@@ -523,7 +496,6 @@ export const generateMatchedFlowerOfLifeTesselation = (
 		);
 	}
 
-	console.debug('matched tesselation', tesselation);
 	return tesselation;
 };
 
@@ -544,7 +516,6 @@ const deriveConfigFromBandTriangle = (
 		skewX: getTriangleSkewX(config.triangle, 'c', false),
 		mode: undefined
 	};
-	console.debug('derivedConfigFromBandTriangle config', config, 'derived', derivedConfig);
 
 	return derivedConfig;
 };
@@ -570,13 +541,11 @@ const generateMatchedFlowerOfLifeTriangle = (
 		derivedConfig.skewX = -0.36;
 	}
 
-	console.debug('derivedConfig', derivedConfig, 'anchor', config.triangle.a);
 	const flowerOfLifeTriangle = generateFlowerOfLifeTriangle(
 		derivedConfig,
 		config.triangle.a,
 		false
 	);
-	console.debug('flowerOfLifeTriangle', flowerOfLifeTriangle);
 
 	return flowerOfLifeTriangle;
 };
@@ -590,7 +559,6 @@ export const generateFlowerOfLifeTesselation = (
 	let unitIndex = 0;
 	for (let row = 0; row < height; row++) {
 		for (let col = 0; col < width; col++) {
-			console.debug('row', row, 'col', col);
 			let anchor = flowerConfig.anchor || { x: 0, y: 0 };
 			if (col === 0 && row === 0) {
 				const unit = generateFlowerOfLifeTriangle(flowerConfig, anchor, unitIndex % 2 === 1);
@@ -600,7 +568,6 @@ export const generateFlowerOfLifeTesselation = (
 				}
 			} else {
 				unitIndex++;
-				console.debug('unitIndex', unitIndex, tesselation);
 				anchor =
 					col === 0
 						? {
@@ -616,7 +583,6 @@ export const generateFlowerOfLifeTesselation = (
 					const config: FlowerOfLifeConfig = { ...flowerConfig, scaleY: contextualScaleY };
 					const unit = generateFlowerOfLifeTriangle(config, anchor, unitIndex % 2 === 1);
 					if (unit) {
-						console.debug(unitIndex, 'unit', unit);
 						tesselation.push(unit);
 					}
 				} else if (flowerConfig.type === 'matched') {
@@ -702,10 +668,8 @@ export const svgUnitFlowerOfLife = (config?: FlowerOfLifeTriangle, size = 100, w
 			A ${innerR} ${innerR} 0 0 0 ${bc.inner.p1.x} ${bc.inner.p1.y}
 			A ${innerR} ${innerR} 0 0 0 ${ac.inner.p1.x} ${ac.inner.p1.y} z
 		`;
-		console.debug('configured svgUnitFlowerOfLife', config, svg);
 		return svg;
 	}
-	console.debug('svgUnitFlowerOfLife');
 	const t = {
 		a: { x: 0, y: 0 },
 		b: { x: size, y: 0 },
@@ -724,7 +688,6 @@ export const svgTransformFromMatchedTriangle = (
 	isPrimary: boolean
 ): string => {
 	const d = deriveConfigFromBandTriangle(config, isPrimary);
-	console.debug('derived', d);
 	if (d.type === 'matched') {
 		return '';
 	}
@@ -736,7 +699,7 @@ export const svgTransformFromMatchedTriangle = (
 	`;
 };
 
-type PathSegment =
+export type PathSegment =
 	| ['M', number, number]
 	| ['L', number, number]
 	| ['A', number, number, number, number, number, number, number]
@@ -762,7 +725,7 @@ export const generateFlowerOfLifeOutlinedBand = (
 			? config.range[1]
 			: facets.length - 1;
 
-	console.debug("generateFlowerOfLifeOutlinedBand", start, end, config)
+	console.debug('generateFlowerOfLifeOutlinedBand', start, end, config);
 	// Start inner
 	cutoutSeq.push(
 		facets[start][11],
@@ -840,7 +803,13 @@ export const generateFlowerOfLifeOutlinedBand = (
 		);
 	} else {
 		// inner triangle
-		cutoutSeq.push(facets[end][11], facets[end][12], facets[end][13], facets[end][14], facets[end][15]);
+		cutoutSeq.push(
+			facets[end][11],
+			facets[end][12],
+			facets[end][13],
+			facets[end][14],
+			facets[end][15]
+		);
 		// trailing almond
 		cutoutSeq.push(
 			['M', facets[end][4][1], facets[end][4][2]] as PathSegment,
@@ -867,9 +836,9 @@ export const generateFlowerOfLifeOutlinedBand = (
 	}
 	pathSeq.push(['Z'], ...cutoutSeq);
 
-	console.debug('pathSeq', pathSeq);
-
-	const svgPathString = pathSeq.map((segment) => segment.join(' ')).join('\n');
-	console.debug('svgPathString', svgPathString);
+	const svgPathString = svgPathStringFromSegments(pathSeq)
 	return svgPathString;
 };
+
+export const svgPathStringFromSegments = (segments: PathSegment[]) =>
+	segments.map((segment) => segment.join(' ')).join('\n');

@@ -1,8 +1,7 @@
 /* eslint-disable no-redeclare */
 /* eslint-disable no-control-regex */
-// @ts-nocheck
 
-// TODO - 
+// TODO -
 //  - convert to typescript
 //  - refactor arguments to accept a config object
 //  - new config options / overloads
@@ -59,16 +58,43 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
+import type { PathSegment } from '$lib/flower-of-life/flower-of-life';
 import { getTransformMatrix, parseTransformString } from './matrix';
+
+type SVGShapeElement =
+	| SVGCircleElement
+	| SVGRectElement
+	| SVGEllipseElement
+	| SVGLineElement
+	| SVGPolygonElement
+	| SVGPolylineElement
+	| SVGPathElement;
+
+const SVG_NAMESPACE_URI = 'http://www.w3.org/2000/svg';
 
 SVGElement.prototype.getTransformToElement =
 	SVGElement.prototype.getTransformToElement ||
-	function (toElement) {
+	function (toElement: Element) {
 		return toElement.getScreenCTM().inverse().multiply(this.getScreenCTM());
 	};
 let p2s = /,?([achlmqrstvxz]),?/gi;
 const convertToString = function (arr) {
 	return arr.join(',').replace(p2s, '$1');
+};
+
+export const flatten_convert = (
+	pathString: string,
+	transformString: string
+): PathSegment[] => {
+	const svgElement = document.createElementNS(SVG_NAMESPACE_URI, 'svg');
+	const pathElement = document.createElementNS(SVG_NAMESPACE_URI, 'path');
+	pathElement.setAttribute('d', pathString);
+	pathElement.setAttribute('transform', transformString);
+	svgElement.append(pathElement);
+	document.documentElement.append(svgElement);
+	const newCoords = flatten(pathElement, false, false, false, undefined, 'recombine');
+	svgElement.remove();
+	return newCoords;
 };
 
 // Flattens transformations of element or it's children and sub-children
@@ -77,18 +103,26 @@ const convertToString = function (arr) {
 // toAbsolute: converts all segments to Absolute
 // dec: number of digits after decimal separator
 // Returns: no return value
-export function flatten(elem, toCubics, toAbsolute, rectAsArgs, dec, flattenMode) {
-	console.debug('running flatten');
+export function flatten(
+	elem: Element,
+	toCubics?: boolean,
+	toAbsolute?: boolean,
+	rectAsArgs?: boolean,
+	decNum?: number,
+	flattenMode?: string
+) {
+	console.debug('running flatten on Path Element', elem);
+	let dec: false | number;
 	if (!elem) return;
 	if (typeof rectAsArgs == 'undefined') rectAsArgs = false;
 	if (typeof toCubics == 'undefined') toCubics = false;
 	if (typeof toAbsolute == 'undefined') toAbsolute = false;
-	if (typeof dec == 'undefined') dec = false;
+	if (typeof decNum == 'undefined') dec = false;
 
 	if (elem && elem.children && elem.children.length) {
-		for (const i = 0, ilen = elem.children.length; i < ilen; i++) {
+		for (let i = 0, ilen = elem.children.length; i < ilen; i++) {
 			//console.log(elem.children[i]);
-			flatten(elem.children[i], toCubics, toAbsolute, rectAsArgs, dec);
+			flatten(elem.children[i], toCubics, toAbsolute, rectAsArgs, decNum);
 		}
 		elem.removeAttribute('transform');
 		return;
@@ -106,16 +140,17 @@ export function flatten(elem, toCubics, toAbsolute, rectAsArgs, dec, flattenMode
 	)
 		return;
 
-	const path_elem = convertToPath(elem, rectAsArgs);
+	const path_elem = convertToPath(elem, true, rectAsArgs);
 	//console.log('path_elem', $(path_elem).wrap('<div />').parent().html() );
 	//$(path_elem).unwrap();
 
-	if (!path_elem || path_elem.getAttribute("d") == '') return 'M 0 0';
+	if (!path_elem || path_elem.getAttribute('d') == '') return 'M 0 0';
 
 	// Rounding coordinates to dec decimals
-	if (dec || dec === 0) {
-		if (dec > 15) dec = 15;
-		else if (dec < 0) dec = 0;
+	if (decNum || decNum === 0) {
+		if (decNum > 15) dec = 15;
+		else if (decNum < 0) dec = 0;
+		else dec = decNum;
 	} else dec = false;
 
 	function r(num) {
@@ -127,7 +162,7 @@ export function flatten(elem, toCubics, toAbsolute, rectAsArgs, dec, flattenMode
 	let arr_orig;
 	//var pathDOM = path_elem.node;
 	const pathDOM = path_elem;
-	const d = pathDOM.getAttribute('d').trim();
+	const d = pathDOM.getAttribute('d')?.trim();
 	console.debug('pathDOM', pathDOM, 'd', d);
 
 	// If you want to retain current path commans, set toCubics to false
@@ -147,9 +182,13 @@ export function flatten(elem, toCubics, toAbsolute, rectAsArgs, dec, flattenMode
 
 	// Get the relation matrix that converts path coordinates
 	// to SVGroot's coordinate space
+	if (!pathDOM.getTransformToElement) {
+		throw new Error('no getTransformToElement');
+	}
 	const matrix = pathDOM.getTransformToElement(svgDOM);
+	const matrixCTM = pathDOM.getScreenCTM();
 
-	// console.debug('svgDOM', svgDOM, 'matrix', matrix);
+	console.debug('svgDOM', svgDOM, 'matrix', matrix, 'matrixCTM', matrixCTM);
 
 	const transformString = pathDOM.getAttribute('transform');
 	console.debug('transform string', transformString);
@@ -187,7 +226,7 @@ export function flatten(elem, toCubics, toAbsolute, rectAsArgs, dec, flattenMode
 	const newcoords = [];
 	const newcoords_orig = [];
 	const pt = svgDOM.createSVGPoint();
-	const subpath_start = {};
+	const subpath_start: { x: null | number; y: null | number } = { x: null, y: null };
 	let prevX = 0;
 	let prevY = 0;
 	subpath_start.x = null;
@@ -250,8 +289,8 @@ export function flatten(elem, toCubics, toAbsolute, rectAsArgs, dec, flattenMode
 			subpath_start.y = y;
 		}
 		if (letter == 'Z') {
-			x = subpath_start.x;
-			y = subpath_start.y;
+			x = subpath_start.x || 0;
+			y = subpath_start.y || 0;
 		}
 	}
 	// Convert all that was relative back to relative
@@ -349,10 +388,18 @@ export function flatten(elem, toCubics, toAbsolute, rectAsArgs, dec, flattenMode
 // Return value: path element.
 // Source: https://github.com/duopixel/Method-Draw/blob/master/editor/src/svgcanvas.js
 // Modifications: Timo (https://github.com/timo22345)
-function convertToPath(oldElem, rectAsArgs) {
+function convertToPath(
+	oldElem: SVGShapeElement,
+	replaceOldElement = false,
+	rectAsArgs: boolean
+): SVGPathElement | void {
 	if (!oldElem) return;
 	// Create new path element
-	const path = document.createElementNS(oldElem.ownerSVGElement.namespaceURI, 'path');
+	console.debug('convertToPath oldElem', oldElem, oldElem.ownerSVGElement);
+	const path = document.createElementNS(
+		oldElem.ownerSVGElement?.namespaceURI || SVG_NAMESPACE_URI,
+		'path'
+	);
 
 	// All attributes that path element can have
 	const attrs = [
@@ -558,21 +605,23 @@ function convertToPath(oldElem, rectAsArgs) {
 	if (d) path.setAttribute('d', d);
 
 	// Replace the current element with the converted one
-	oldElem.parentNode.replaceChild(path, oldElem);
+	if (replaceOldElement) {
+		oldElem.parentNode?.replaceChild(path, oldElem);
+	}
+	console.debug('converted to path', path);
 	return path;
 }
 
 // This is needed to flatten transformations of elliptical arcs
 // Note! This is not needed if Raphael.path2curve is used
 function arc_transform(
-	a_rh,
-	a_rv,
-	a_offsetrot,
-	large_arc_flag,
-	sweep_flag,
-	endpoint,
-	matrix,
-	svgDOM
+	a_rh: number,
+	a_rv: number,
+	a_offsetrot: number,
+	large_arc_flag: 1 | 0,
+	sweep_flag: 1 | 0,
+	endpoint: { x: number; y: number },
+	matrix: SVGMatrix
 ) {
 	function NEARZERO(B) {
 		if (Math.abs(B) < 0.0000000000000001) return true;
@@ -591,8 +640,8 @@ function arc_transform(
 	a_offsetrot = a_offsetrot * (Math.PI / 180); // deg->rad
 	const rot = a_offsetrot;
 
-	const s = parseFloat(Math.sin(rot));
-	const c = parseFloat(Math.cos(rot));
+	const s = Math.sin(rot);
+	const c = Math.cos(rot);
 
 	// build ellipse representation matrix (unit circle transformation).
 	// the 2x2 matrix multiplication with the upper 2x2 of a_mat is inlined.

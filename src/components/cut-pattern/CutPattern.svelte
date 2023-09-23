@@ -18,11 +18,13 @@
 	import { config, config0 } from '$lib/stores';
 	import {
 		generateFlowerOfLifeOutlinedBand,
+		svgPathStringFromSegments,
 		svgTransformFromMatchedTriangle,
-		svgTriangle
+		svgTriangle,
+		type PathSegment
 	} from '$lib/flower-of-life/flower-of-life';
 	import { simpleTriangle } from '$lib/flower-of-life/utils';
-	import { flatten } from '$lib/flatten/flatten';
+	import { flatten, flatten_convert } from '$lib/flatten/flatten';
 
 	export let levels: Level[] = [];
 	export let bands: Band[] = [];
@@ -129,6 +131,19 @@
 
 	let flattenedPatternedSVG: { bands: string[] } = { bands: [] };
 
+	const handleFlattenFromData = () => {
+		if (patterns.band.projectionType === 'patterned' && patterns.band.bands.length > 0) {
+			patterns.band.bands = patterns.band.bands.map((band) => {
+				const transformedFacets: PathSegment[][] = [];
+				band.facets.forEach((facet) => {
+					transformedFacets.push(flatten_convert(facet.svgPath, facet.svgTransform || ''));
+				});
+				return { ...band, svgPath: generateFlowerOfLifeOutlinedBand(transformedFacets) };
+			});
+			console.debug('flattened pattern', patterns.band);
+		}
+	};
+
 	const handleFlatten = (
 		mode: FlattenMode,
 		range: 'all' | 'debug' | { band: [number, number]; facet: [number, number] }
@@ -162,6 +177,13 @@
 				if (Array.isArray(band)) {
 					for (let facet of band) {
 						console.debug('trigger flatten', facet?.getAttribute('id'));
+
+						// const newFlat = document.createElementNS("http://www.w3.org/2000/svg", 'path')
+						// console.debug(flatTestElem)
+						// newFlat.setAttribute("d",flatTestElem.map((seg: any) => seg.join(" ")).join(" "))
+						// newFlat.setAttribute("color", "green")
+						// document.getElementById('pattern-svg')?.append(testElem);
+
 						const newCoords = flatten(facet, false, false, false, true, 'recombine');
 						console.debug('new coordinates', newCoords);
 						facets.push(newCoords);
@@ -171,21 +193,36 @@
 					generateFlowerOfLifeOutlinedBand(facets, { range: [0, facets.length - 1] })
 				);
 			}
-			flattenedPatternedSVG = flattenedPatternedSVG
+			flattenedPatternedSVG = flattenedPatternedSVG;
 			console.debug('flattened pattern svg', flattenedPatternedSVG);
 		}
+	};
+
+	let experimentalSVGPath: string;
+
+	const handleExperimentalFlatten = () => {
+		const experimentStrings = [
+			`M 0 0
+		L -50 0
+		L -50 50
+		L 0 50
+		L 0 0
+		Z`,
+			'translate(-50, 0), rotate(50), skewX(20)'
+		];
+		console.debug('experiment ------------------------------');
+		const testSegments = flatten_convert(experimentStrings[0], experimentStrings[1]);
+		console.debug('   ', testSegments);
+		experimentalSVGPath = svgPathStringFromSegments(testSegments);
+		console.debug('experiment coordinates', testSegments, experimentalSVGPath);
 	};
 </script>
 
 <div class="container">
 	<header>
 		<button on:click={show_svg}>Download</button>
-		<button on:click={() => (experimental = { ...experimental, show: !experimental.show })}
-			>Experiment</button
-		>
-		<button on:click={() => handleFlatten('native-replace', 'debug')}>Flatten Replace Native</button
-		>
-		<button on:click={() => handleFlatten('recombine', 'debug')}>Flatten Recombine</button>
+		<button on:click={() => handleExperimentalFlatten()}>Simple Experimental Flatten</button>
+		<button on:click={() => handleFlattenFromData()}>Advanced Experimental Flatten</button>
 		<button on:click={() => handleFlatten('recombine', 'all')}>Flatten Recombine All</button>
 		<!-- <button on:click={() => zoomToPattern(patterns)}>Zoom To Pattern</button> -->
 		<label for="showBands"> Bands </label>
@@ -195,93 +232,75 @@
 		{/if}
 	</header>
 	<div>
+		<div id="experiment-container" />
 		<div class="container-svg" class:showBands>
-			{#if experimental.show}
-				<svg
-					id="pattern-svg"
-					height={$config.patternViewConfig.height}
-					width={$config.patternViewConfig.width}
-					viewBox={viewBoxValue}
-				>
-					<!-- <path d={experimental.outer + experimental.inner} stroke="black" stroke-width=0.5 fill="red" fill-rule="evenodd" /> -->
-					<path
-						d={experimental.outer +
-							arcCircle([experimental.circle[0], experimental.circle[1], experimental.circle[2]])}
-						stroke="black"
-						stroke-width="0.5"
-						fill="red"
-						fill-rule="evenodd"
-					/>
-					<circle
-						cx={experimental.circle[0]}
-						cy={experimental.circle[1]}
-						r={experimental.circle[2]}
-						stroke="black"
-						stroke-width="0.1"
-						fill="none"
-					/>
-				</svg>
-			{:else}
-				<svg
-					id="pattern-svg"
-					height={$config.patternViewConfig.height}
-					width={$config.patternViewConfig.width}
-					viewBox={viewBoxValue}
-					xmlns="http://www.w3.org/2000/svg"
-				>
-					{#if flattenedPatternedSVG.bands.length > 0}
-						{#each flattenedPatternedSVG.bands as band, b}
-							<path
-								d={band}
-								fill="red"
-								fill-rule="evenodd"
-								id={`flattened-patterned-band-${b}`}
-							/>
-						{/each}
-					{/if}
+			<svg
+				id="pattern-svg"
+				height={$config.patternViewConfig.height}
+				width={$config.patternViewConfig.width}
+				viewBox={viewBoxValue}
+				xmlns="http://www.w3.org/2000/svg"
+			>
+				<g id="experiment-group">
+					<path id="experimental" d={experimentalSVGPath} fill="yellow" />
+				</g>
 
-					{#if patterns.level.projectionType !== 'none'}
-						{#each patterns.level.levels as level, i}
-							<path d={level.outline.svgPath} fill="green" stroke="black" stroke-width="0.3" />
-						{/each}
-					{/if}
-					{#if patterns?.band.projectionType === 'none'}
-						<circle />
-					{:else if patterns.band.projectionType === 'outlined'}
-						{#each patterns.band.bands as band, i}
+				{#if flattenedPatternedSVG.bands.length > 0}
+					{#each flattenedPatternedSVG.bands as band, b}
+						<path d={band} fill="red" fill-rule="evenodd" id={`flattened-patterned-band-${b}`} />
+					{/each}
+				{/if}
+
+				{#if patterns.level.projectionType !== 'none'}
+					{#each patterns.level.levels as level, i}
+						<path d={level.outline.svgPath} fill="green" stroke="black" stroke-width="0.3" />
+					{/each}
+				{/if}
+				{#if patterns?.band.projectionType === 'none'}
+					<circle />
+				{:else if patterns.band.projectionType === 'outlined'}
+					{#each patterns.band.bands as band, i}
+						<path
+							d={[
+								band.outline.svgPath,
+								...(band.cutouts ? band.cutouts.map((cutout) => cutout.svgPath) : [])
+							].join('')}
+							fill="red"
+							stroke="black"
+							stroke-width="0.2"
+							fill-rule="evenodd"
+						/>
+						<text x={band.outline.points[0].x} y={band.outline.points[0].y}>{i}</text>
+					{/each}
+				{:else if patterns.band.projectionType === 'faceted'}
+					{#each patterns.band.bands as band}
+						{#each band.facets as facet, f}
 							<path
-								d={[
-									band.outline.svgPath,
-									...(band.cutouts ? band.cutouts.map((cutout) => cutout.svgPath) : [])
-								].join('')}
-								fill="red"
-								stroke="black"
+								d={facet.svgPath}
+								fill={`rgb(100, ${50 + (200 * f) / band.facets.length},100)`}
+								stroke="orangered"
 								stroke-width="0.2"
-								fill-rule="evenodd"
 							/>
-							<text x={band.outline.points[0].x} y={band.outline.points[0].y}>{i}</text>
-						{/each}
-					{:else if patterns.band.projectionType === 'faceted'}
-						{#each patterns.band.bands as band}
-							{#each band.facets as facet, f}
+							{#if showTabs && facet.tab}
 								<path
-									d={facet.svgPath}
-									fill={`rgb(100, ${50 + (200 * f) / band.facets.length},100)`}
+									d={facet.tab.svgPath}
+									fill={`rgb(0, ${50 + (200 * f) / band.facets.length},255)`}
 									stroke="orangered"
 									stroke-width="0.2"
 								/>
-								{#if showTabs && facet.tab}
-									<path
-										d={facet.tab.svgPath}
-										fill={`rgb(0, ${50 + (200 * f) / band.facets.length},255)`}
-										stroke="orangered"
-										stroke-width="0.2"
-									/>
-								{/if}
-							{/each}
+							{/if}
 						{/each}
-					{:else if patterns.band.projectionType === 'patterned'}
-						{#each patterns.band.bands as band, b}
+					{/each}
+				{:else if patterns.band.projectionType === 'patterned'}
+					{#each patterns.band.bands as band, b}
+						{#if band.svgPath}
+							<path 
+								id={`transformed-band-svg-${b}`}
+								d={band.svgPath}
+								fill="rebeccapurple"
+								fill-rule="evenodd"
+							/>
+						{:else}
 							{#each band.facets as facet, f}
 								<path
 									id={`facet-svg-${b}-${f}`}
@@ -306,27 +325,28 @@
 									/>
 								{/if}
 							{/each}
-						{/each}
-					{/if}
+						{/if}
+					{/each}
+				{/if}
 
-					{#if patterns.strut.projectionType === 'outlined'}
-						{#each patterns.strut.struts as strut, i}
-							<path d={strut.outline.svgPath} fill="deeppink" stroke="black" stroke-width="0.3" />
+				{#if patterns.strut.projectionType === 'outlined'}
+					{#each patterns.strut.struts as strut, i}
+						<path d={strut.outline.svgPath} fill="deeppink" stroke="black" stroke-width="0.3" />
+					{/each}
+				{:else if patterns.strut.projectionType === 'faceted'}
+					{#each patterns.strut.struts as strut}
+						{#each strut.facets as facet, f}
+							<path
+								d={facet.svgPath}
+								fill={`rgb(100, ${50 + (200 * f) / strut.facets.length},100)`}
+								stroke="orangered"
+								stroke-width="0.2"
+							/>
 						{/each}
-					{:else if patterns.strut.projectionType === 'faceted'}
-						{#each patterns.strut.struts as strut}
-							{#each strut.facets as facet, f}
-								<path
-									d={facet.svgPath}
-									fill={`rgb(100, ${50 + (200 * f) / strut.facets.length},100)`}
-									stroke="orangered"
-									stroke-width="0.2"
-								/>
-							{/each}
-						{/each}
-					{/if}
-				</svg>
-			{/if}
+					{/each}
+				{/if}
+			</svg>
+
 			<div class="view-control-box">
 				<label for="svg-width">width</label>
 				<input
@@ -372,8 +392,11 @@
 </div>
 
 <style>
+	#experiment-container {
+		background-color: blue;
+	}
 	#pattern-svg {
-		background-color: rgba(0,0,0,0.03);
+		background-color: rgba(0, 0, 0, 0.03);
 	}
 	.patterned-path-transformed {
 		fill: rgba(255, 20, 145, 0.288);

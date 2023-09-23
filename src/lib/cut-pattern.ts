@@ -215,7 +215,10 @@ export type FacetedBandPattern = { projectionType: 'faceted'; bands: { facets: F
 export type OutlinedBandPattern = { projectionType: 'outlined'; bands: OutlinePattern[] };
 export type PatternedBandPattern = {
 	projectionType: 'patterned';
-	bands: { facets: PatternedPattern[] }[];
+	bands: {
+		facets: PatternedPattern[];
+		svgPath: string;
+	}[];
 };
 export type LevelSetPattern = { projectionType: 'outlined'; levels: LevelPattern[] };
 export type FacetedStrutPattern = {
@@ -463,7 +466,6 @@ export const generateBandPatterns = (
 				return bandPattern;
 			})
 		};
-		console.debug('Patterned Pattern', patternedPattern);
 		return patternedPattern;
 	}
 };

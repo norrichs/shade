@@ -60,11 +60,9 @@ export const getTriangleSkewX = (
 	const pMid = getMidPoint(p0, p1);
 	if (!useNormalizedHeight) {
 		const skewAngle = -(Math.PI / 2 - getTriangleAngle({ a: p0, c: pApex, b: pMid }, 'b'));
-		console.debug('non normalized height skewAngle', skewAngle);
 		return skewAngle;
 	} else {
 		const triangleHeight = getTriangleHeight(triangle, apex);
-		console.debug('triangleHeight', triangleHeight);
 		const normalizedHeight = Math.sqrt((3 / 4) * getLength(p0, pMid) ** 2);
 		const baseRatio =
 			Math.sqrt(getLength(p0, pApex) ** 2 - triangleHeight ** 2) / getLength(p0, p1);
@@ -79,20 +77,7 @@ export const getTriangleSkewX = (
 		};
 		const baseAngle = getTriangleAngle({ a: p0, b: pMid, c: pApexNormalized }, 'b');
 		const skewAngle = Math.PI / 2 - baseAngle / 2;
-		console.debug(
-			'skewAngle',
-			skewAngle,
-			p0,
-			p1,
-			pApex,
-			'mid',
-			pMid,
-			'base',
-			baseRatio,
-			pBase,
-			'apexNorm',
-			pApexNormalized
-		);
+
 		return skewAngle;
 	}
 };
@@ -165,3 +150,4 @@ export const simpleTriangle = (t: ThreeTriangle): Triangle => {
 		c: { x: t.c.x, y: t.c.y }
 	};
 };
+
