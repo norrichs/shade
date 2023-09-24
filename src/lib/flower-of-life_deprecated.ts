@@ -182,6 +182,7 @@ const unitTriangle: TriangleVertices = {
 	c: new Vector2(5, 8.66025403784439)
 };
 const unitFlowerOfLifePattern = generateFlowerOfLifePattern(configDefaults, unitTriangle);
+console.debug("UNIT FLOWER OF LIFE PATTERN")
 
 
 

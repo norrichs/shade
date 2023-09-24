@@ -58,7 +58,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-import type { PathSegment } from '$lib/flower-of-life/flower-of-life';
+import type { PathSegment } from '$lib/patterns/flower-of-life';
 import { getTransformMatrix, parseTransformString } from './matrix';
 
 type SVGShapeElement =
@@ -82,10 +82,7 @@ const convertToString = function (arr) {
 	return arr.join(',').replace(p2s, '$1');
 };
 
-export const flatten_convert = (
-	pathString: string,
-	transformString: string
-): PathSegment[] => {
+export const flatten_convert = (pathString: string, transformString: string): PathSegment[] => {
 	const svgElement = document.createElementNS(SVG_NAMESPACE_URI, 'svg');
 	const pathElement = document.createElementNS(SVG_NAMESPACE_URI, 'path');
 	pathElement.setAttribute('d', pathString);

@@ -4,12 +4,12 @@
 		svgEllipse,
 		svgTriangle,
 		generateMatchedFlowerOfLifeTesselation
-	} from '$lib/flower-of-life/flower-of-life';
+	} from '$lib/patterns/flower-of-life';
 	import CombinedNumberInput from '../../components/controls/CombinedNumberInput.svelte';
 	import type {
 		BandTesselationConfig,
 		FlowerOfLifeTriangle
-	} from '$lib/flower-of-life/flower-of-life.types';
+	} from '$lib/patterns/flower-of-life.types';
 
 	const theme = {
 		lightGreen: 'rgba(100, 255, 100, 0.2)',

@@ -550,49 +550,50 @@ const generateMatchedFlowerOfLifeTriangle = (
 	return flowerOfLifeTriangle;
 };
 
-export const generateFlowerOfLifeTesselation = (
-	flowerConfig: FlowerOfLifeConfig,
-	width = 1,
-	height = 1
-): (FlowerOfLifeTriangle | undefined)[] => {
-	const tesselation: FlowerOfLifeTriangle[] = [];
-	let unitIndex = 0;
-	for (let row = 0; row < height; row++) {
-		for (let col = 0; col < width; col++) {
-			let anchor = flowerConfig.anchor || { x: 0, y: 0 };
-			if (col === 0 && row === 0) {
-				const unit = generateFlowerOfLifeTriangle(flowerConfig, anchor, unitIndex % 2 === 1);
-				if (unit) {
-					console.debug(unitIndex, 'unit', unit);
-					tesselation.push(unit);
-				}
-			} else {
-				unitIndex++;
-				anchor =
-					col === 0
-						? {
-								x: tesselation[tesselation.length - width].triangle.c.x,
-								y: tesselation[tesselation.length - width].triangle.c.y
-						  }
-						: {
-								x: tesselation[tesselation.length - 1].triangle.c.x,
-								y: tesselation[tesselation.length - 1].triangle.c.y
-						  };
-				if (flowerConfig.type === 'specified') {
-					const contextualScaleY = (flowerConfig.scaleY || 1) * (col % 2 === 0 ? 1 : -1);
-					const config: FlowerOfLifeConfig = { ...flowerConfig, scaleY: contextualScaleY };
-					const unit = generateFlowerOfLifeTriangle(config, anchor, unitIndex % 2 === 1);
-					if (unit) {
-						tesselation.push(unit);
-					}
-				} else if (flowerConfig.type === 'matched') {
-					console.debug('--- triangle row', row, 'col', col);
-				}
-			}
-		}
-	}
-	return tesselation;
-};
+// export const generateFlowerOfLifeTesselation = (
+// 	flowerConfig: FlowerOfLifeConfig,
+// 	width = 1,
+// 	height = 1
+// ): (FlowerOfLifeTriangle | undefined)[] => {
+// 	const tesselation: FlowerOfLifeTriangle[] = [];
+// 	let unitIndex = 0;
+// 	for (let row = 0; row < height; row++) {
+// 		for (let col = 0; col < width; col++) {
+// 			let anchor = flowerConfig.anchor || { x: 0, y: 0 };
+// 			if (col === 0 && row === 0) {
+// 				const unit = generateFlowerOfLifeTriangle(flowerConfig, anchor, unitIndex % 2 === 1);
+				
+// 				if (unit) {
+// 					console.debug(unitIndex, 'unit', unit);
+// 					tesselation.push(unit);
+// 				}
+// 			} else {
+// 				unitIndex++;
+// 				anchor =
+// 					col === 0
+// 						? {
+// 								x: tesselation[tesselation.length - width].triangle.c.x,
+// 								y: tesselation[tesselation.length - width].triangle.c.y
+// 						  }
+// 						: {
+// 								x: tesselation[tesselation.length - 1].triangle.c.x,
+// 								y: tesselation[tesselation.length - 1].triangle.c.y
+// 						  };
+// 				if (flowerConfig.type === 'specified') {
+// 					const contextualScaleY = (flowerConfig.scaleY || 1) * (col % 2 === 0 ? 1 : -1);
+// 					const config: FlowerOfLifeConfig = { ...flowerConfig, scaleY: contextualScaleY };
+// 					const unit = generateFlowerOfLifeTriangle(config, anchor, unitIndex % 2 === 1);
+// 					if (unit) {
+// 						tesselation.push(unit);
+// 					}
+// 				} else if (flowerConfig.type === 'matched') {
+// 					console.debug('--- triangle row', row, 'col', col);
+// 				}
+// 			}
+// 		}
+// 	}
+// 	return tesselation;
+// };
 
 // Output
 export const svgTriangle = (t: Triangle) =>
@@ -641,6 +642,8 @@ export const svgArcTriangle = (
 			`;
 };
 
+// export const generateUnitFlowerOfLife = (config)
+
 export const svgUnitFlowerOfLife = (config?: FlowerOfLifeTriangle, size = 100, width = 10) => {
 	if (config) {
 		const t = structuredClone(config.triangle);
@@ -668,6 +671,7 @@ export const svgUnitFlowerOfLife = (config?: FlowerOfLifeTriangle, size = 100, w
 			A ${innerR} ${innerR} 0 0 0 ${bc.inner.p1.x} ${bc.inner.p1.y}
 			A ${innerR} ${innerR} 0 0 0 ${ac.inner.p1.x} ${ac.inner.p1.y} z
 		`;
+		console.debug("Unit Flower", svg)
 		return svg;
 	}
 	const t = {
@@ -675,6 +679,8 @@ export const svgUnitFlowerOfLife = (config?: FlowerOfLifeTriangle, size = 100, w
 		b: { x: size, y: 0 },
 		c: { x: size / 2, y: Math.sqrt(size ** 2 - (size / 2) ** 2) }
 	};
+
+
 	return `
 	M ${t.a.x} ${t.a.y} L ${t.b.x} ${t.b.y} L ${t.c.x} ${t.c.y} L ${t.a.x} ${t.a.y}
 	A ${size} ${size} 0 0 0 ${t.b.x} ${t.b.y}
@@ -699,14 +705,7 @@ export const svgTransformFromMatchedTriangle = (
 	`;
 };
 
-export type PathSegment =
-	| ['M', number, number]
-	| ['L', number, number]
-	| ['A', number, number, number, number, number, number, number]
-	| ['Z'];
-type PatternedBandConfig = {
-	range?: [number, number];
-};
+
 
 export const generateFlowerOfLifeOutlinedBand = (
 	facets: PathSegment[][],

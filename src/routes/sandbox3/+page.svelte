@@ -8,12 +8,12 @@
 		svgTransformFromMatchedTriangle,
 		svgTriangle,
 		svgUnitFlowerOfLife
-	} from '$lib/flower-of-life/flower-of-life';
+	} from '$lib/patterns/flower-of-life';
 	import { identity } from 'svelte/internal';
 	import type {
 		BandTesselationConfig,
 		FlowerOfLifeConfig
-	} from '$lib/flower-of-life/flower-of-life.types';
+	} from '$lib/patterns/flower-of-life.types';
 
 	onMount(() => {
 		// flattenAll();

@@ -22,8 +22,8 @@
 		svgTransformFromMatchedTriangle,
 		svgTriangle,
 		type PathSegment
-	} from '$lib/flower-of-life/flower-of-life';
-	import { simpleTriangle } from '$lib/flower-of-life/utils';
+	} from '$lib/patterns/flower-of-life';
+	import { simpleTriangle } from '$lib/patterns/utils';
 	import { flatten, flatten_convert } from '$lib/flatten/flatten';
 
 	export let levels: Level[] = [];

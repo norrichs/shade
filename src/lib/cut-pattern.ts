@@ -27,9 +27,9 @@ import {
 	svgTransformFromMatchedTriangle,
 	svgTriangle,
 	svgUnitFlowerOfLife
-} from './flower-of-life/flower-of-life';
-import type { Triangle as SimpleTriangle } from './flower-of-life/flower-of-life.types';
-import { simpleTriangle } from './flower-of-life/utils';
+} from './patterns/flower-of-life';
+import type { Triangle as SimpleTriangle } from './patterns/flower-of-life.types';
+import { simpleTriangle } from './patterns/utils';
 
 export type PatternViewConfig = {
 	width: number;
@@ -131,6 +131,7 @@ export type PatternConfig = {
 	direction: PointConfig2;
 	offset: PointConfig2;
 	showTabs: boolean;
+	patternedConfig: PatternedPatternConfig;
 };
 
 type TabPattern =
@@ -211,6 +212,20 @@ export type Pattern =
 	| LevelSetPattern
 	| PatternedBandPattern;
 
+export type PathSegment =
+	| ['M', number, number]
+	| ['L', number, number]
+	| ['A', number, number, number, number, number, number, number]
+	| ['Z'];
+
+type PatternName = 'flower-of-life-1';
+type PatternedBandConfig = {
+	range?: [number, number];
+	pattern: {
+		name: PatternName;
+	};
+};
+
 export type FacetedBandPattern = { projectionType: 'faceted'; bands: { facets: FacetPattern[] }[] };
 export type OutlinedBandPattern = { projectionType: 'outlined'; bands: OutlinePattern[] };
 export type PatternedBandPattern = {
@@ -249,6 +264,14 @@ type FlatStripConfig = {
 	origin?: Vector3;
 	direction?: Vector3;
 };
+
+// type UnitPatternConfig
+// const unitPatterns = {
+// 	"flower-of-life-1": {
+// 		unitGenerator:
+
+// 	}
+// }
 
 const orderedPointsList = (points: { [key: string]: Vector3 }) => {
 	return Object.entries(points)
@@ -469,8 +492,6 @@ export const generateBandPatterns = (
 		return patternedPattern;
 	}
 };
-
-
 
 const arcCircle = (c: { x: number; y: number; r: number }): string => {
 	const { x, y, r } = c;

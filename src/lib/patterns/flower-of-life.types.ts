@@ -1,3 +1,5 @@
+import type { PathSegment } from "$lib/cut-pattern";
+
 export interface Circle {
 	x: number;
 	y: number;
@@ -73,24 +75,26 @@ export type BandTesselationConfig = {
 export interface FlowerOfLifeTriangle {
 	triangle: Triangle;
 	ab: {
-		mode: PatternMode;
-		layout: EllipseSegment;
+		mode?: PatternMode;
+		layout?: EllipseSegment;
 		edge: EllipseSegment;
 		inner: EllipseSegment;
 	};
 	bc: {
-		mode: PatternMode;
-		layout: EllipseSegment;
+		mode?: PatternMode;
+		layout?: EllipseSegment;
 		edge: EllipseSegment;
 		inner: EllipseSegment;
 	};
 	ac: {
-		mode: PatternMode;
-		layout: EllipseSegment;
+		mode?: PatternMode;
+		layout?: EllipseSegment;
 		edge: EllipseSegment;
 		inner: EllipseSegment;
 	};
 	containedSVG?: string;
 	layoutSVG?: string;
 	reflected?: boolean;
+	svgPath?: string;
+	segments?: PathSegment[]
 }
