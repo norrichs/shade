@@ -1,3 +1,4 @@
+import type { PathSegment } from '$lib/cut-pattern/cut-pattern.types';
 import type { Point, Triangle } from './flower-of-life.types';
 import type { Triangle as ThreeTriangle } from 'three';
 
@@ -7,7 +8,6 @@ export const generateUnitTriangle = (sideLength: number): Triangle => {
 		b: { x: sideLength, y: 0 },
 		c: { x: sideLength / 2, y: Math.sqrt(sideLength ** 2 - (sideLength / 2) ** 2) }
 	};
-	// console.debug('unit', unit);
 	return unit;
 };
 
@@ -106,12 +106,10 @@ export const getPointsInsetFromPoints = (
 };
 
 export const scaleXY = (point: Point, anchor: Point, scaleX: number, scaleY: number): Point => {
-	// console.debug('scaleXY', point, anchor, scaleX, scaleY);
 	const scaled = {
 		x: anchor.x + (point.x - anchor.x) * scaleX,
 		y: anchor.y + (point.y - anchor.y) * scaleY
 	};
-	// console.debug(scaled)
 	return scaled;
 };
 
@@ -127,9 +125,7 @@ export const skewXPoint = (anchor: Point, point: Point, skewAngle: number): Poin
 };
 
 export const rotatePoint = (anchor: Point, point: Point, angle: number): Point => {
-	// console.debug("rotatePoint", anchor, point, angle * 180 / Math.PI)
 	if (!angle && angle !== 0) {
-		// console.debug("!angle")
 		return { ...point };
 	}
 	const hypotenuse = getLength(anchor, point);
@@ -139,7 +135,6 @@ export const rotatePoint = (anchor: Point, point: Point, angle: number): Point =
 		x: anchor.x + hypotenuse * Math.cos(newAngle),
 		y: anchor.y + hypotenuse * Math.sin(newAngle)
 	};
-	// console.debug("  ", hypotenuse, "old", oldAngle * 180 / Math.PI, "new", newAngle * 180 / Math.PI, rotated)
 	return rotated;
 };
 
@@ -151,3 +146,31 @@ export const simpleTriangle = (t: ThreeTriangle): Triangle => {
 	};
 };
 
+export const arcCircle = (c: [number, number, number]): string => {
+	const [x, y, r] = c;
+	return `M ${x + r} ${y}
+					A ${r} ${r} 0 0 0 ${x - r} ${y}
+					A ${r} ${r} 0 0 0 ${x + r} ${y}
+					z 
+	`;
+};
+
+export const roundPathSegments = (seg: PathSegment, decimalPlaces = 3) => {
+	if (seg[0] === 'Z') {
+		return seg;
+	}
+	return seg.map((s, i) => {
+		if (typeof s === 'string') {
+			return s;
+		} else {
+			const f = 10 ** decimalPlaces;
+			return Math.round(s * f) / f;
+		}
+	});
+};
+
+export const closestPoint = (p0: Point, points: Point[]): Point => {
+	const distances = points.map((p) => Math.sqrt((p.x - p0.x) ** 2 + (p.y - p0.y) ** 2));
+	const minDistance = Math.min(...distances)
+	return points[distances.indexOf(minDistance)]
+};

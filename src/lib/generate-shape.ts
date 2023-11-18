@@ -6,8 +6,9 @@ import type {
 	CutoutConfig,
 	PatternConfig,
 	PatternViewConfig
-} from './cut-pattern';
-import { generateEdgeConfig } from './cut-pattern';
+} from './cut-pattern/cut-pattern.types';
+import { generateEdgeConfig } from './cut-pattern/cut-pattern';
+import type { TiledPatternConfig } from './shades-config';
 // import { rad } from "$lib/util"
 
 // Rotated Shape Levels are 2d.  How can I enforce that?
@@ -219,17 +220,17 @@ export type ShapeConfig = {
 
 // const validateShapeConfig = (config: ShapeConfig): Validation => {
 // 	const validation: Validation = { isValid: true, msg: [] };
-	// if "asymmetric" or "lateral" symmetryNumber === 1
+// if "asymmetric" or "lateral" symmetryNumber === 1
 
-	// if "radial", angle = Math.PI * 2 / symmetryNumber
-	// else if "radial-lateral", angle = Math.PI / symmetryNumber
+// if "radial", angle = Math.PI * 2 / symmetryNumber
+// else if "radial-lateral", angle = Math.PI / symmetryNumber
 
-	// if asymmetric, start === end
-	// for a radial shape, start and end points have the following requirements:
-	//  start is colinear with Vector2(1, 0)
-	//  if "lateral" end is colinear with Vector2(1, 0)
-	//  if "radial" end === start.applyAngle(angle)
-	//  if "radial-lateral", end is colinear with Vector2(1, 0).applyAngle(angle)
+// if asymmetric, start === end
+// for a radial shape, start and end points have the following requirements:
+//  start is colinear with Vector2(1, 0)
+//  if "lateral" end is colinear with Vector2(1, 0)
+//  if "radial" end === start.applyAngle(angle)
+//  if "radial-lateral", end is colinear with Vector2(1, 0).applyAngle(angle)
 
 // 	return validation;
 // };
@@ -1031,7 +1032,7 @@ type StripSide = 'greater' | 'lesser';
 type TabDirection = StripSide | 'both';
 // TODO - add a direction setting which will result in tabs on both sides
 export type TabStyle =
-	| { style: "none"; }
+	| { style: 'none' }
 	| { style: 'full'; direction: TabDirection; scored?: TabScore } // for circumference bands, left and right are relative to rotation direction
 	| {
 			style: 'trapezoid';
@@ -1151,6 +1152,7 @@ export type ShadesConfig = {
 		| CutoutConfig
 		| PatternConfig
 		| PatternViewConfig
+		| TiledPatternConfig
 		| string
 		| undefined;
 	shapeConfig: ShapeConfig;
@@ -1163,6 +1165,7 @@ export type ShadesConfig = {
 	cutoutConfig: CutoutConfig;
 	patternConfig: PatternConfig;
 	patternViewConfig: PatternViewConfig;
+	tiledPatternConfig: TiledPatternConfig;
 
 	id?: string;
 	name?: string;
@@ -1186,7 +1189,7 @@ export const generateRotatedShapeGeometry = (
 	const bands = !config.bandConfig?.tabStyle
 		? unTabbedBands
 		: generateTabs(unTabbedBands, config.bandConfig, struts);
-	console.log('generateRotatedShapeGeometry - levels', levels, 'bands', bands, 'struts', struts);
+	// console.log('generateRotatedShapeGeometry - levels', levels, 'bands', bands, 'struts', struts);
 	return { levels, bands, struts };
 };
 

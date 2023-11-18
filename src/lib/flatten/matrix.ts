@@ -94,7 +94,7 @@ export const parseTransformString = (str: string): TransformConfig => {
 	const rotate = transforms.find((arr) => arr[0] === 'rotate');
 	const scale = transforms.find((arr) => arr[0] === 'scale');
 	const skewX = transforms.find((arr) => arr[0] === 'skewX');
-	console.debug('transforms', transforms);
+
 	if (translate) {
         if (typeof translate[1] === 'number') {
 			config.translateX = translate[1];

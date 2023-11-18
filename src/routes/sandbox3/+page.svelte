@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { flatten } from '$lib/flatten/flatten copy2';
 	import { onMount } from 'svelte';
-	import CombinedNumberInput from '../../components/controls/CombinedNumberInput.svelte';
+	import CombinedNumberInput from '../../components/controls/CheckboxInput.svelte';
 	import { T } from '@threlte/core';
 	import {
 		generateUnitFlowerOfLifeTriangle,
-		svgTransformFromMatchedTriangle,
+		getTransformStringFromTriangle,
 		svgTriangle,
 		svgUnitFlowerOfLife
 	} from '$lib/patterns/flower-of-life';
@@ -30,7 +30,6 @@
 	const tHeight = unitTriangle.c.y;
 	const tWidth = unitTriangle.b.x;
 
-	
 	const showUnitGrid = false;
 	const showMatched = true;
 	const showBandTriangles = false;
@@ -114,7 +113,7 @@
 				{#each row as t, i}
 					<path
 						d={svgUnitFlowerOfLife(unitFlowerOfLifeTriangle)}
-						transform={svgTransformFromMatchedTriangle(t, i % 2 === 0)}
+						transform={getTransformStringFromTriangle(t, i % 2 === 0)}
 						fill-rule="evenodd"
 					/>
 				{/each}

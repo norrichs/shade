@@ -1,4 +1,10 @@
-import type { PathSegment } from "$lib/cut-pattern";
+import type { PathSegment } from '$lib/cut-pattern/cut-pattern';
+import type {
+	ArcPathSegment,
+	LinePathSegment,
+	MovePathSegment,
+	ReturnPathSegment
+} from '$lib/cut-pattern/cut-pattern.types';
 
 export interface Circle {
 	x: number;
@@ -15,12 +21,12 @@ export interface Triangle {
 	b: Point;
 	c: Point;
 }
-export interface Ellipse {
+export type Ellipse = {
 	r0: number;
 	r1: number;
 	center?: Point;
 	rotation: number;
-}
+};
 
 export interface EllipseSegment {
 	ellipse: Ellipse;
@@ -96,5 +102,46 @@ export interface FlowerOfLifeTriangle {
 	layoutSVG?: string;
 	reflected?: boolean;
 	svgPath?: string;
-	segments?: PathSegment[]
+	segments?: PathSegment[];
 }
+
+export type FlowerOfLifePathSegments = [
+	MovePathSegment,
+
+	LinePathSegment,
+	ArcPathSegment,
+	LinePathSegment,
+
+	LinePathSegment,
+	ArcPathSegment,
+	LinePathSegment,
+
+	LinePathSegment,
+	ArcPathSegment,
+	LinePathSegment,
+	
+	ReturnPathSegment,
+
+	MovePathSegment,
+	ArcPathSegment,
+	ArcPathSegment,
+	ArcPathSegment,
+	ReturnPathSegment
+];
+
+export const isFlowerOfLifePathSegments = (
+	segments: FlowerOfLifePathSegments | PathSegment[]
+): segments is FlowerOfLifePathSegments => {
+	const res =
+		Array.isArray(segments) &&
+		Array.isArray(segments) &&
+		segments.map((s) => s[0]).join('') === 'MLALLALLALZMAAAZ';
+	if (!res) {
+		console.error(
+			Array.isArray(segments),
+			Array.isArray(segments),
+			segments.map((s) => s[0]).join('') === 'MLALLALLALZMAAAZ'
+		);
+	}
+	return res;
+};

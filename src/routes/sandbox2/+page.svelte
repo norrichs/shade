@@ -5,7 +5,7 @@
 		svgTriangle,
 		generateMatchedFlowerOfLifeTesselation
 	} from '$lib/patterns/flower-of-life';
-	import CombinedNumberInput from '../../components/controls/CombinedNumberInput.svelte';
+	import CombinedNumberInput from '../../components/controls/CheckboxInput.svelte';
 	import type {
 		BandTesselationConfig,
 		FlowerOfLifeTriangle
@@ -120,7 +120,6 @@
 	let flowerTesselation: (FlowerOfLifeTriangle | undefined)[] = [];
 	$: {
 		flowerTesselation = generateMatchedFlowerOfLifeTesselation(flowerConfig);
-		console.debug('generated tesselation', flowerTesselation);
 	}
 	// $: {
 	// 	flowerTesselation = generateFlowerOfLifeTesselation(
@@ -128,7 +127,6 @@
 	// 		tesselationWidth,
 	// 		tesselationHeight
 	// 	);
-	// 	console.debug('flowerTesselation', flowerTesselation);
 	// }
 </script>
 

@@ -284,12 +284,10 @@ export function flatten(elem, toCubics, toAbsolute, rectAsArgs, dec, flattenMode
 	}
 	if (toAbsolute) newcoords = pathToAbsolute(newcoords);
 
-	console.debug('Element #', path_elem.getAttribute('id'));
 	switch (flattenMode) {
 		case 'recombine':
 			return newcoords;
 			default:
-			console.debug('   old d', path_elem.getAttribute('d'));
 			path_elem.setAttribute('d', convertToString(newcoords));
 			path_elem.removeAttribute('transform');
 			path_elem.classList.remove('patterned-path-transformed');

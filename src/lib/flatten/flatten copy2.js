@@ -62,7 +62,6 @@ var convertToString = function (arr) {
 // dec: number of digits after decimal separator
 // Returns: no return value
 export function flatten(elem, toCubics, toAbsolute, rectAsArgs, dec, flattenMode) {
-	console.debug('running flatten');
 	if (!elem) return;
 	if (typeof rectAsArgs == 'undefined') rectAsArgs = false;
 	if (typeof toCubics == 'undefined') toCubics = false;
@@ -111,7 +110,6 @@ export function flatten(elem, toCubics, toAbsolute, rectAsArgs, dec, flattenMode
 	//var pathDOM = path_elem.node;
 	var pathDOM = path_elem;
 	var d = pathDOM.getAttribute('d').trim();
-	console.debug('pathDOM', pathDOM, 'd', d);
 
 	// If you want to retain current path commans, set toCubics to false
 	if (!toCubics) {

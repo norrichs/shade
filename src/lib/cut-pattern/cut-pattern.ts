@@ -1,4 +1,5 @@
 import { Vector2, Vector3, Triangle } from 'three';
+import { getLength as getLengthSimple } from '../patterns/utils';
 import type {
 	Band,
 	BandStyle,
@@ -7,10 +8,8 @@ import type {
 	TabStyle,
 	Level,
 	Strut,
-	Strip,
-	PointConfig2,
-	BezierConfig
-} from './generate-shape';
+	Strip
+} from '../generate-shape';
 import {
 	generateMultiFacetFullTab,
 	generateFullTab,
@@ -20,250 +19,56 @@ import {
 	isMultiFacetFullTab,
 	isMultiFacetTrapTab,
 	isStrut
-} from './generate-shape';
-import { validateCutoutConfig } from './validators';
+} from '../generate-shape';
+import { validateCutoutConfig } from '../validators';
 import {
-	generateFlowerOfLifeTriangle,
-	svgTransformFromMatchedTriangle,
-	svgTriangle,
-	svgUnitFlowerOfLife
-} from './patterns/flower-of-life';
-import type { Triangle as SimpleTriangle } from './patterns/flower-of-life.types';
-import { simpleTriangle } from './patterns/utils';
-
-export type PatternViewConfig = {
-	width: number;
-	height: number;
-	zoom: number;
-	centerOffset: {
-		x: number;
-		y: number;
-	};
-};
-type PatternStyle = 'faceted' | 'outlined' | 'patterned' | 'none';
-
-type PatternShowConfig = {
-	[key: string]: PatternStyle;
-	band: PatternStyle;
-	strut: PatternStyle;
-	level: PatternStyle;
-};
-
-type TilePattern =
-	| { type: 'each-facet' }
-	| { type: 'each-rectangle' }
-	| {
-			type: 'alternating-facet';
-			nthBand: number;
-			startBand: number;
-			nthFacet: number;
-			startFacet: number;
-	  }
-	| { type: 'mapped' }
-	| {
-			type: 'alternating-band';
-			nthBand: number;
-	  };
-
-type CircleConfig = {
-	[key: string]: 'CircleConfig' | PointConfig2 | number;
-	type: 'CircleConfig';
-	center: PointConfig2;
-	radius: number;
-};
-
-type PathConfig = {
-	[key: string]: 'PathConfig' | BezierConfig[];
-	type: 'PathConfig';
-	curves: BezierConfig[];
-};
-
-type HoleGeometryConfig = CircleConfig | PathConfig;
-
-type HoleConfigTriangle = {
-	type: 'HoleConfigTriangle';
-	corners: [PointConfig2, PointConfig2, PointConfig2];
-	geometry: HoleGeometryConfig[];
-};
-
-type HoleConfigSquare = {
-	type: 'HoleConfigSquare';
-	corners: [PointConfig2, PointConfig2, PointConfig2, PointConfig2];
-	geometry: HoleGeometryConfig[];
-};
-
-type HoleConfigBand = {
-	type: 'HoleConfigBand';
-	locate: {
-		[key: string]:
-			| 0
-			| 1
-			| 2
-			| 3
-			| 4
-			| 5
-			| 6
-			| 7
-			| 8
-			| 9
-			| number
-			| 'relative-width'
-			| 'absolute'
-			| 'relative-length';
-		skipEnds: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
-		everyNth: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
-		centered: number;
-		scale: 'relative-width' | 'absolute' | 'relative-length';
-	};
-	geometry: HoleGeometryConfig[];
-};
-
-export type CutoutConfig = {
-	tilePattern: TilePattern;
-	holeConfigs: HoleConfigTriangle[][] | HoleConfigSquare[][] | HoleConfigBand[][];
-};
-
-export type PatternConfig = {
-	[key: string]: PatternShowConfig | CutoutConfig | Axis | PointConfig2 | boolean | undefined;
-	showPattern: PatternShowConfig;
-	axis: Axis;
-	origin: PointConfig2;
-	direction: PointConfig2;
-	offset: PointConfig2;
-	showTabs: boolean;
-	patternedConfig: PatternedPatternConfig;
-};
-
-type TabPattern =
-	| FullTabPattern
-	| TrapTabPattern
-	| MultiFacetFullTabPattern
-	| MultiFacetTrapTabPattern;
-
-export type FacetPattern = {
-	svgPath: string;
-	triangle: Triangle;
-	tab?: TabPattern;
-};
-
-export type PatternedPattern = {
-	svgPath: string;
-	svgTransform?: string;
-	triangle: Triangle;
-	tab?: TabPattern;
-};
-
-type FullTabPattern = {
-	style: 'full';
-	svgPath: string;
-	triangle: Triangle;
-};
-
-type TrapTabPattern = {
-	style: 'trapezoid';
-	svgPath: string;
-	triangle: Triangle;
-};
-
-type MultiFacetTrapTabPattern = {
-	style: 'multi-facet-trapezoid';
-	svgPath: string;
-	triangle1: Triangle;
-	triangle2: Triangle;
-};
-type MultiFacetFullTabPattern = {
-	style: 'multi-facet-full';
-	svgPath: string;
-	triangle1: Triangle;
-	triangle2: Triangle;
-};
-
-export type OutlinePattern = {
-	tab?: {
-		style: TabStyle['style'];
-	};
-	outline: {
-		svgPath: string;
-		points: Vector3[];
-	};
-	scoring?: (
-		| {
-				svgPath: string;
-				points: Vector3[];
-		  }
-		| undefined
-	)[];
-	cutouts?: {
-		svgPath: string;
-		points?: Vector3[];
-	}[];
-};
-
-export type LevelPattern = {
-	outline: {
-		svgPath: string;
-		points: Vector2[];
-	};
-};
-
-export type Pattern =
-	| FacetedBandPattern
-	| OutlinedBandPattern
-	| LevelSetPattern
-	| PatternedBandPattern;
-
-export type PathSegment =
-	| ['M', number, number]
-	| ['L', number, number]
-	| ['A', number, number, number, number, number, number, number]
-	| ['Z'];
-
-type PatternName = 'flower-of-life-1';
-type PatternedBandConfig = {
-	range?: [number, number];
-	pattern: {
-		name: PatternName;
-	};
-};
-
-export type FacetedBandPattern = { projectionType: 'faceted'; bands: { facets: FacetPattern[] }[] };
-export type OutlinedBandPattern = { projectionType: 'outlined'; bands: OutlinePattern[] };
-export type PatternedBandPattern = {
-	projectionType: 'patterned';
-	bands: {
-		facets: PatternedPattern[];
-		svgPath: string;
-	}[];
-};
-export type LevelSetPattern = { projectionType: 'outlined'; levels: LevelPattern[] };
-export type FacetedStrutPattern = {
-	projectionType: 'faceted';
-	struts: { facets: FacetPattern[] }[];
-};
-export type OutlinedStrutPattern = { projectionType: 'outlined'; struts: OutlinePattern[] };
-
-type Axis = 'z' | 'x' | 'y';
-
-export type TrianglePoint = 'a' | 'b' | 'c';
-export type TriangleSide = 'ab' | 'ac' | 'bc';
-
-type AlignTrianglesConfig = {
-	isEven: boolean;
-	isTabOnGreaterSide: boolean;
-	lead: {
-		vec: Vector3;
-		p: TrianglePoint;
-	}; // front point of prevTriangle to be aligned against
-	follow: {
-		vec: Vector3;
-		p: TrianglePoint;
-	}; // back point of prevTriangle to be aligned against
-};
-type FlatStripConfig = {
-	bandStyle: BandStyle;
-	origin?: Vector3;
-	direction?: Vector3;
-};
+	generateFlowerOfLife1BandPattern,
+	getTransformStringFromTriangle,
+	processFlowerOfLife1PatternTransforms,
+	svgPathStringFromSegments
+} from '../patterns/flower-of-life';
+import { arcCircle, roundPathSegments, simpleTriangle } from '../patterns/utils';
+import type {
+	AlignTrianglesConfig,
+	CutoutConfig,
+	EdgeConfig,
+	FacetPattern,
+	FacetedBandPattern,
+	FacetedStrutPattern,
+	FlatStripConfig,
+	FullTabPattern,
+	LevelPattern,
+	LevelSetPattern,
+	MultiFacetFullTabPattern,
+	MultiFacetTrapTabPattern,
+	OutlinePattern,
+	OutlinedBandPattern,
+	OutlinedStrutPattern,
+	PathSegment,
+	PatternConfig,
+	PatternedBandPattern,
+	PatternedPattern,
+	TrapTabPattern,
+	TrianglePoint
+} from './cut-pattern.types';
+import { generateUnitFlowerOfLifeTriangle } from '$lib/patterns/unit-pattern/unit-flower-of-life';
+import { parsePathString } from '$lib/flatten/flatten';
+import type { TiledPatternConfig } from '$lib/shades-config';
+import {
+	extractShapesFromMappedHexPatterns,
+	generateHexPattern,
+	getInsetPolygon,
+	getOutline,
+	getQuadrilateralTransformMatrix,
+	getQuadrilaterals,
+	pointFrom,
+	svgLines,
+	svgPathStringFromInsettablePolygon,
+	svgQuad,
+	traceCombinedOutline,
+	transformPatternByQuad
+} from '$lib/patterns/quadrilateral';
+import { logger } from '../../components/svg-logger/logger';
 
 // type UnitPatternConfig
 // const unitPatterns = {
@@ -385,6 +190,88 @@ export const generateStrutPatterns = (
 	return outlinedPattern;
 };
 
+export const generateTiledBandPattern = ({
+	bands,
+	tabStyle,
+	tiledPatternConfig
+}: {
+	bands: Band[];
+	tabStyle: TabStyle;
+	tiledPatternConfig: TiledPatternConfig;
+}): PatternedBandPattern => {
+	if (tiledPatternConfig.type !== 'tiledHexPattern-0') {
+		throw new Error("TiledPatternConfig is not of type 'tiledHexPattern-0'");
+	}
+	console.debug(
+		'***************************\ngenerateTiledBandPattern',
+		bands,
+		tabStyle,
+		tiledPatternConfig
+	);
+	const pattern: PatternedBandPattern = { projectionType: 'patterned', bands: [] };
+
+	const unitPattern = generateHexPattern(1);
+	const width =
+		(tiledPatternConfig.config.find((cfg) => cfg.type === 'width')?.value as number) || 0;
+	const appendTab =
+		(tiledPatternConfig.config.find((cfg) => cfg.type === 'appendTab')?.value as boolean) || false;
+	const insetWidth =
+		(tiledPatternConfig.config.find((cfg) => cfg.type === 'insetWidth')?.value as number) || 0;
+
+	pattern.bands = bands.map((band, index) => {
+		const flatBand = getFlatStrip(band, { bandStyle: 'helical-right' });
+		const quadBand = getQuadrilaterals(flatBand);
+		logger.update((prev) => {
+			prev.debug.push(
+				...quadBand.map((quad) => {
+					return [
+						{
+							directionalLine: {
+								points: [quad.p1, quad.p2],
+								labels: [],
+								label: `${Math.round(1000 * getLengthSimple(quad.p1, quad.p2)) / 1000}`,
+								for: `patterned-band-pattern-${index}`
+							}
+						},
+						{
+							directionalLine: {
+								points: [quad.p3, quad.p0],
+								labels: [],
+								label: `${Math.round(1000 * getLengthSimple(quad.p3, quad.p0)) / 1000}`,
+								for: `patterned-band-pattern-${index}`
+							}
+						}
+					];
+				}).flat()
+			);
+			return prev;
+		});
+		const mappedPatternBand = quadBand.map((quad) => transformPatternByQuad(unitPattern, quad));
+		const polygons = extractShapesFromMappedHexPatterns(mappedPatternBand, quadBand);
+		const holes = polygons.holes.map((polygon) => getInsetPolygon(polygon, width));
+
+		const reTraced = traceCombinedOutline(
+			holes,
+			{
+				appendTab,
+				insetWidth,
+				direction: 'left',
+				width
+			},
+			index
+		);
+		const finalHoles = reTraced.holes.map((hole) => svgPathStringFromInsettablePolygon(hole));
+		const finalPattern = svgPathStringFromSegments(reTraced.outline).concat(finalHoles.join(' '));
+
+		return { svgPath: finalPattern, facets: [], id: `patterned-band-pattern-${index}` };
+	});
+
+
+	
+	console.debug('pattern', pattern);
+	return pattern;
+};
+
 export const generateBandPatterns = (
 	config: PatternConfig,
 	cutoutConfig: CutoutConfig,
@@ -454,48 +341,62 @@ export const generateBandPatterns = (
 		};
 		return outlinedPattern;
 	} else {
-		const svgUnitFlowerOfLifePattern = svgUnitFlowerOfLife(
-			generateFlowerOfLifeTriangle(
-				{
-					type: 'specified',
-					width: 5
-				},
-				{ x: 0, y: 0 }
-			)
-		);
+		// TODO -
+		// 	Make this section generic to the pattern type
+		//		based on the pattern type, retrieve a specfic unitPattern generating function
+		//		also retrieve a facet dividing function
+		const patternName = 'flowerOfLife1';
+		const width = 4;
 
+		const { generatePatternUnit, deriveTransforms, processPatternTransforms, generateBandPattern } =
+			generatePattern[patternName];
+		const patternUnit = generatePatternUnit();
+
+		console.debug();
 		const patternedPattern: PatternedBandPattern = {
 			projectionType: 'patterned',
-			bands: flattenedGeometry.map((flatBand) => {
+			bands: flattenedGeometry.map((flatBand, i) => {
+				console.debug(`**********************************
+** Patterned Pattern - band: ${i}  **
+**********************************`);
 				const bandPattern = {
-					...flatBand,
+					svgPath: '',
 					facets: flatBand.facets.map((facet, i) => {
 						const pattern: PatternedPattern = {
-							// svgPath: svgTriangle(simpleTriangle(facet.triangle)),
-							svgPath: svgUnitFlowerOfLifePattern,
-							svgTransform: svgTransformFromMatchedTriangle(
-								{ type: 'matched', triangle: simpleTriangle(facet.triangle), width: 5 },
-								i % 2 === 0
-							),
+							svgPath: patternUnit?.svgPath || '',
+							svgTransform: deriveTransforms(facet.triangle, i),
 							triangle: facet.triangle.clone()
 						};
-						const tab = generateFacetTabPattern(facet.tab);
-						if (tab) {
-							pattern.tab = tab;
-						}
+
 						return pattern;
 					})
 				};
+				// console.debug(
+				// 	'  prototype:',
+				// 	parsePathString(bandPattern.facets[0].svgPath).map((seg: PathSegment) => roundPathSegments(seg))
+				// );
+				// Convert prototype facets deformed by transforms into new svg paths
+				const transformedFacets: PathSegment[][] = [];
+				bandPattern.facets.forEach((facet) => {
+					console.debug('', width);
+					transformedFacets.push(
+						processPatternTransforms({
+							svgPath: facet.svgPath,
+							svgTransform: facet.svgTransform || '',
+							width
+						})
+					);
+				});
+
+				// console.debug('  transformed:', transformedFacets[0].map((seg: PathSegment) => roundPathSegments(seg)));
+				bandPattern.svgPath = generateBandPattern(transformedFacets);
+				// console.debug('  bandPattern:', parsePathString(bandPattern.svgPath).map((seg: PathSegment) => roundPathSegments(seg)));
+
 				return bandPattern;
 			})
 		};
 		return patternedPattern;
 	}
-};
-
-const arcCircle = (c: { x: number; y: number; r: number }): string => {
-	const { x, y, r } = c;
-	return `M ${x + r} ${y} A ${r} ${r} 0 0 0 ${x - r} ${y} A ${r} ${r} 0 0 0 ${x + r} ${y} z`;
 };
 
 const getSVGCutouts = (
@@ -528,7 +429,7 @@ const getSVGCutouts = (
 						vectorACenter.addScaledVector(new Vector3(geometry.center.x, geometry.center.y, 0), 1);
 						const { x, y } = vectorACenter;
 						const r = geometry.radius;
-						return { svgPath: arcCircle({ x, y, r }) };
+						return { svgPath: arcCircle([x, y, r]) };
 					}
 					return { svgPath: '' };
 				});
@@ -567,25 +468,6 @@ const getSVGCutouts = (
 	const blankResult = [{ svgPath: '' }];
 	return blankResult;
 };
-
-// {
-// 	tilePattern: { type: 'each-facet' },
-// 	holeConfigs: [
-// 		[
-// 			{
-// 				type: 'HoleConfigTriangle',
-// 				corners: [
-// 					{ type: 'PointConfig2', x: 0, y: 0 },
-// 					{ type: 'PointConfig2', x: 10, y: 0 },
-// 					{ type: 'PointConfig2', x: 5, y: 8.66 }
-// 				],
-// 				geometry: [
-// 					{ type: 'CircleConfig', center: { type: 'PointConfig2', x: 5, y: 2.89 }, radius: 2 }
-// 				]
-// 			}
-// 		]
-// 	]
-// }
 
 const generateFacetTabPattern = (facetTab: FacetTab | FacetTab[] | undefined) => {
 	if (isFullTab(facetTab)) {
@@ -829,8 +711,6 @@ const getFlatStrip = <T extends Strut | Band>(
 //    when the edge is conjoined with another strip triangle, the "single" vertex on the strip edge
 //    when the edge is conjoined with a tab, the rearmost of the pair of vertices
 
-export type EdgeConfig = { lead: TrianglePoint; follow: TrianglePoint };
-
 export const generateEdgeConfig = (
 	bandStyle: BandStyle,
 	isEven: boolean,
@@ -884,3 +764,17 @@ export const printTriangle = (tri: Triangle) =>
     a (${round(tri.a.x)}, ${round(tri.a.y)}, ${round(tri.a.z)})
     b (${round(tri.b.x)}, ${round(tri.b.y)}, ${round(tri.b.z)})
     c (${round(tri.c.x)}, ${round(tri.c.y)}, ${round(tri.c.z)})`;
+
+const generatePattern = {
+	flowerOfLife1: {
+		generatePatternUnit: () => generateUnitFlowerOfLifeTriangle({ width: 0, unitSize: 100 }),
+		deriveTransforms: (shape: Triangle, index: number) =>
+			getTransformStringFromTriangle(
+				{ type: 'matched', triangle: simpleTriangle(shape), width: 115 },
+				index % 2 === 0
+			),
+		processPatternTransforms: processFlowerOfLife1PatternTransforms,
+		generateBandPattern: (transformedFacets: PathSegment[][]) =>
+			generateFlowerOfLife1BandPattern(transformedFacets)
+	}
+};

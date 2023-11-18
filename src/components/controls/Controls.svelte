@@ -1,7 +1,9 @@
 <script lang="ts">
 	import { config0 } from '$lib/stores';
-	import {initTabStyle} from "$lib/shades-config"
+	import { initTabStyle } from '$lib/shades-config';
 	import type { TabStyle } from '$lib/generate-shape';
+	import CombinedNumberInput from './CombinedNumberInput.svelte';
+	import CheckboxInput from './CheckboxInput.svelte';
 
 	export let showControl: string;
 
@@ -27,7 +29,6 @@
 </script>
 
 {#if showControl === 'Struts'}
-
 	<section class="control-group">
 		<div>Struts</div>
 		<div />
@@ -56,9 +57,7 @@
 			<option>hybrid</option>
 		</select>
 	</section>
-
 {:else if showControl === '3D'}
-
 	<section>
 		{#if $config0.renderConfig.ranges?.rangeStyle === 'slice'}
 			<section class="control-group">
@@ -88,7 +87,11 @@
 				<option>helical-left</option>
 			</select>
 			<label for="tab-style">Tab Style</label>
-			<select id="tab-style" bind:value={tabStyle.style} on:change={() => $config0.renderConfig.show.tabs = true}>
+			<select
+				id="tab-style"
+				bind:value={tabStyle.style}
+				on:change={() => ($config0.renderConfig.show.tabs = true)}
+			>
 				<option>none</option>
 				<option>full</option>
 				<option>trapezoid</option>
@@ -96,18 +99,27 @@
 				<option disabled>multi-facet-trap</option>
 			</select>
 			<label for="tab-direction">Tab Direction</label>
-			<select id="tab-direction" bind:value={tabStyle.direction} on:change={() => $config0.renderConfig.show.tabs = true}>
+			<select
+				id="tab-direction"
+				bind:value={tabStyle.direction}
+				on:change={() => ($config0.renderConfig.show.tabs = true)}
+			>
 				<option>greater</option>
 				<option>lesser</option>
 				<option>both</option>
 			</select>
 			{#if tabStyle?.style === 'trapezoid' && tabStyle?.width?.value !== undefined}
 				<label for="tab-width">Tab Width</label>
-				<input id="tab-width" type="number" min="1" bind:value={tabStyle.width.value} on:change={() => $config0.renderConfig.show.tabs = true}/>
+				<input
+					id="tab-width"
+					type="number"
+					min="1"
+					bind:value={tabStyle.width.value}
+					on:change={() => ($config0.renderConfig.show.tabs = true)}
+				/>
 			{/if}
 		</section>
 	</section>
-
 {:else if showControl === 'Levels'}
 	<section class="control-group">
 		{#if $config0.levelConfig}
@@ -158,7 +170,6 @@
 			<input id="rotz_offset" type="number" min={-360} max={360} step={0.05} bind:value={rotZ} />
 		{/if}
 	</section>
-
 {:else if showControl === 'Cut'}
 	<section>
 		<h4>Cut Pattern</h4>
@@ -177,20 +188,26 @@
 		<div class="readout">
 			{#if $config0.cutoutConfig}
 				<span>{$config0.cutoutConfig.tilePattern.type}</span>
-				{#if $config0.cutoutConfig.tilePattern.type === "alternating-band"}
-				<span> - nthBand: {$config0.cutoutConfig.tilePattern.nthBand}</span>
+				{#if $config0.cutoutConfig.tilePattern.type === 'alternating-band'}
+					<span> - nthBand: {$config0.cutoutConfig.tilePattern.nthBand}</span>
 				{/if}
 
 				<div>{$config0.cutoutConfig.holeConfigs[0][0].type}</div>
-				{#if $config0.cutoutConfig.holeConfigs[0][0].type === "HoleConfigBand"}
+				{#if $config0.cutoutConfig.holeConfigs[0][0].type === 'HoleConfigBand'}
 					<div>Locate</div>
 					{#each Object.keys($config0.cutoutConfig.holeConfigs[0][0].locate) as key}
 						<div style="padding-left: 0.5em;">
 							<label for={`locate-${key}`}>{key}: </label>
-							{#if typeof $config0.cutoutConfig.holeConfigs[0][0].locate[key] === "number"}
-								<input id={`locate-${key}`} type="number" bind:value={$config0.cutoutConfig.holeConfigs[0][0].locate[key]}/>
+							{#if typeof $config0.cutoutConfig.holeConfigs[0][0].locate[key] === 'number'}
+								<input
+									id={`locate-${key}`}
+									type="number"
+									bind:value={$config0.cutoutConfig.holeConfigs[0][0].locate[key]}
+								/>
 							{:else}
-								<span id={`locate-${key}`}>{$config0.cutoutConfig.holeConfigs[0][0].locate[key]}</span>
+								<span id={`locate-${key}`}
+									>{$config0.cutoutConfig.holeConfigs[0][0].locate[key]}</span
+								>
 							{/if}
 						</div>
 					{/each}
@@ -198,8 +215,12 @@
 					{#each Object.keys($config0.cutoutConfig.holeConfigs[0][0].geometry[0]) as key}
 						<div style="padding-left: 0.5em;">
 							<label for={`geometry-${key}`}>{key}: </label>
-							{#if typeof $config0.cutoutConfig.holeConfigs[0][0].geometry[0][key] === "number"}
-								<input id={`geometry-${key}`} type="number" bind:value={$config0.cutoutConfig.holeConfigs[0][0].geometry[0][key]}/>
+							{#if typeof $config0.cutoutConfig.holeConfigs[0][0].geometry[0][key] === 'number'}
+								<input
+									id={`geometry-${key}`}
+									type="number"
+									bind:value={$config0.cutoutConfig.holeConfigs[0][0].geometry[0][key]}
+								/>
 							{:else}
 								<span>{$config0.cutoutConfig.holeConfigs[0][0].geometry[0][key]}</span>
 							{/if}
@@ -209,10 +230,32 @@
 			{/if}
 		</div>
 		<div class="control-group">
-			<label for="checkbox-apply-cutout">
-				Apply Cutout?
-			</label>
+			<label for="checkbox-apply-cutout"> Apply Cutout? </label>
 			<input type="checkbox" id="checkbox-apply-cutout" />
+		</div>
+	</section>
+{:else if showControl === 'Pattern'}
+	<section>
+		<h4>Tiling</h4>
+		<div class="control-group">
+			<div><span>Type: </span><span>{$config0.tiledPatternConfig.type}</span></div>
+			<div>
+				{#if $config0.tiledPatternConfig.type === 'tiledHexPattern-0' && Array.isArray($config0.tiledPatternConfig.config)}
+					{#each $config0.tiledPatternConfig.config as cfg, i}
+						{#if cfg.valueType === 'number'}
+							<CombinedNumberInput
+								label={cfg.type}
+								bind:value={cfg.value}
+								min={cfg.min}
+								max={cfg.max}
+								step={cfg.step}
+							/>
+						{:else if cfg.valueType === 'boolean'}
+							<CheckboxInput label={cfg.type} bind:value={cfg.value} />
+						{/if}
+					{/each}
+				{/if}
+			</div>
 		</div>
 	</section>
 {/if}
@@ -239,7 +282,7 @@
 		border: 1px solid black;
 		border-radius: 8px;
 		background-color: aliceblue;
-		font-family:'Courier New', Courier, monospace;
+		font-family: 'Courier New', Courier, monospace;
 		font-size: 0.75em;
 	}
 </style>

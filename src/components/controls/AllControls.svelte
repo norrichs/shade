@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { ShadesConfig, LevelConfig, StrutConfig } from '$lib/generate-shape';
-	import type { CutoutConfig, PatternConfig } from '$lib/cut-pattern';
+	import type { CutoutConfig, PatternConfig } from '$lib/cut-pattern/cut-pattern';
 	import type { Persistable } from '$lib/persistable';
 
 	export let settingStore;

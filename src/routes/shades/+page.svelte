@@ -31,7 +31,6 @@
 	};
 
 	$: {
-		console.log('page reactive - generate');
 		data = generateRotatedShapeGeometry($config);
 		levels = data.levels;
 		if ($config.renderConfig.ranges?.rangeStyle === 'slice') {
@@ -72,6 +71,7 @@
 					{ name: 'Levels' },
 					{ name: 'Struts' },
 					{ name: 'Cut' },
+					{ name: 'Pattern'},
 					{ name: 'Save' }
 				]}
 			/>

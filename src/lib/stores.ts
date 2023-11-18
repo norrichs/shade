@@ -1,4 +1,4 @@
-import { derived } from 'svelte/store';
+import { derived, writable } from 'svelte/store';
 import {
 	persistable,
 	bootStrapUsePersisted,
@@ -42,7 +42,9 @@ export const config = derived(config0, ($config0) => {
 				$config0.zCurveConfig.curves.length
 			)
 		}
-  };
-  console.log("set derived config", derivedConfig)
+	};
+	// console.log("set derived config", derivedConfig)
 	return derivedConfig;
 });
+
+

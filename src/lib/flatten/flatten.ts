@@ -108,7 +108,6 @@ export function flatten(
 	decNum?: number,
 	flattenMode?: string
 ) {
-	console.debug('running flatten on Path Element', elem);
 	let dec: false | number;
 	if (!elem) return;
 	if (typeof rectAsArgs == 'undefined') rectAsArgs = false;
@@ -160,7 +159,6 @@ export function flatten(
 	//var pathDOM = path_elem.node;
 	const pathDOM = path_elem;
 	const d = pathDOM.getAttribute('d')?.trim();
-	console.debug('pathDOM', pathDOM, 'd', d);
 
 	// If you want to retain current path commans, set toCubics to false
 	if (!toCubics) {
@@ -185,13 +183,9 @@ export function flatten(
 	const matrix = pathDOM.getTransformToElement(svgDOM);
 	const matrixCTM = pathDOM.getScreenCTM();
 
-	console.debug('svgDOM', svgDOM, 'matrix', matrix, 'matrixCTM', matrixCTM);
-
 	const transformString = pathDOM.getAttribute('transform');
-	console.debug('transform string', transformString);
 
 	const tx = parseTransformString(transformString);
-	console.debug('transformArray', tx);
 	const transformationMatrix = getTransformMatrix(tx);
 
 	const domMatrixInit = `translate(${tx.translateX || 0}px, ${tx.translateY || 0}px) rotate(${
@@ -364,12 +358,10 @@ export function flatten(
 	}
 	if (toAbsolute) newcoords = pathToAbsolute(newcoords);
 
-	console.debug('Element #', path_elem.getAttribute('id'));
 	switch (flattenMode) {
 		case 'recombine':
 			return newcoords;
 		default:
-			console.debug('   old d', path_elem.getAttribute('d'));
 			path_elem.setAttribute('d', convertToString(newcoords));
 			path_elem.removeAttribute('transform');
 			path_elem.classList.remove('patterned-path-transformed');
@@ -392,7 +384,6 @@ function convertToPath(
 ): SVGPathElement | void {
 	if (!oldElem) return;
 	// Create new path element
-	console.debug('convertToPath oldElem', oldElem, oldElem.ownerSVGElement);
 	const path = document.createElementNS(
 		oldElem.ownerSVGElement?.namespaceURI || SVG_NAMESPACE_URI,
 		'path'
@@ -605,7 +596,6 @@ function convertToPath(
 	if (replaceOldElement) {
 		oldElem.parentNode?.replaceChild(path, oldElem);
 	}
-	console.debug('converted to path', path);
 	return path;
 }
 
@@ -875,7 +865,7 @@ function catmullRom2bezier(crp, z) {
 	}
 	return d;
 }
-const parsePathString = function (pathString) {
+export const parsePathString = function (pathString) {
 	if (!pathString) return null;
 	const pth = paths(pathString);
 	if (pth.arr) return pathClone(pth.arr);

@@ -1,4 +1,8 @@
-import type { CutoutConfig, PatternConfig, PatternViewConfig } from './cut-pattern';
+import type {
+	CutoutConfig,
+	PatternConfig,
+	PatternViewConfig
+} from './cut-pattern/cut-pattern.types';
 import { AUTO_PERSIST_KEY } from './persistable';
 import type {
 	BandConfig,
@@ -142,9 +146,9 @@ const defaultRenderConfig: RenderConfig = {
 	ranges: {
 		rangeStyle: 'slice',
 		bandStart: 0,
-		bandCount: undefined,
+		bandCount: 0,
 		facetStart: 0,
-		facetCount: undefined,
+		facetCount: 0,
 		levelStart: 0,
 		levelCount: 1,
 		strutStart: 0,
@@ -158,6 +162,38 @@ const defaultRenderConfig: RenderConfig = {
 		patterns: true,
 		struts: true
 	}
+};
+
+export type TiledPatternSubConfig =
+	| { type: 'width'; valueType: 'number'; value: number; min: number; max: number; step: number }
+	| {
+			type: 'insetWidth';
+			valueType: 'number';
+			value: number;
+			min: number;
+			max: number;
+			step: number;
+	  }
+	| { type: 'appendTab'; valueType: 'boolean'; value: boolean };
+
+export type TiledPatternConfig =
+	| {
+			type: 'tiledHexPattern-0';
+			tiling: 'quadrilateral';
+			unitPattern: 'tiledHexPattern-0';
+			config: TiledPatternSubConfig[];
+	  }
+	| { type: 'none' };
+
+const defaultTiledPatternConfig: TiledPatternConfig = {
+	type: 'tiledHexPattern-0',
+	tiling: 'quadrilateral',
+	unitPattern: 'tiledHexPattern-0',
+	config: [
+		{ type: 'width', valueType: 'number', value: 10, min: 0, max: 10, step: 0.1 },
+		{ type: 'insetWidth', valueType: 'number', value: 10, min: 0, max: 50, step: 0.1 },
+		{ type: 'appendTab', valueType: 'boolean', value: true }
+	]
 };
 
 const defaultCutoutConfig: CutoutConfig[] = [
@@ -243,7 +279,8 @@ export const generateDefaultConfig = (): ShadesConfig => {
 		renderConfig: defaultRenderConfig,
 		cutoutConfig: defaultCutoutConfig[1],
 		patternConfig: defaultPatternConfig,
-		patternViewConfig: defaultPatternViewConfig
+		patternViewConfig: defaultPatternViewConfig,
+		tiledPatternConfig: defaultTiledPatternConfig
 	};
 	return config;
 };
