@@ -4,6 +4,7 @@
 	import type { TabStyle } from '$lib/generate-shape';
 	import CombinedNumberInput from './CombinedNumberInput.svelte';
 	import CheckboxInput from './CheckboxInput.svelte';
+	import SelectInput from './SelectInput.svelte';
 
 	export let showControl: string;
 
@@ -252,6 +253,8 @@
 							/>
 						{:else if cfg.valueType === 'boolean'}
 							<CheckboxInput label={cfg.type} bind:value={cfg.value} />
+						{:else if cfg.valueType === 'named'}
+							<SelectInput label={cfg.type} bind:value={cfg.value} options={cfg.options} />
 						{/if}
 					{/each}
 				{/if}

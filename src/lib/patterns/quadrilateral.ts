@@ -10,6 +10,7 @@ import { closestPoint, getLength } from './utils';
 import { logger, type SVGLoggerDirectionalLine } from '../../components/svg-logger/logger';
 import type { Band, Facet } from '$lib/generate-shape';
 import type { Vector3 } from 'three';
+import type { TiledPatternSubConfig } from '$lib/shades-config';
 
 export type Quadrilateral = {
 	p0: Point;
@@ -130,8 +131,11 @@ export const transformPatternByQuad = (pattern: HexPattern, quad: Quadrilateral)
 
 export const extractShapesFromMappedHexPatterns = (
 	mappedPatterns: HexPattern[],
-	containingQuads: Quadrilateral[]
+	containingQuads: Quadrilateral[],
+	config: TiledPatternSubConfig[]
 ) => {
+	console.debug('config', config);
+	const fillEnd = config.find((cfg) => cfg.type === 'filledEndSize')?.value as number;
 	const shapes: { outline: PathSegment[]; holes: InsettablePolygon[] } = { outline: [], holes: [] };
 	shapes.outline = getOutline(containingQuads);
 
@@ -586,7 +590,12 @@ const getMatchingSegmentIndices = (
 
 export const traceCombinedOutline = (
 	holes: InsettablePolygon[],
-	tabs?: { appendTab: boolean; direction: 'left' | 'right'; width: number; insetWidth: number },
+	tabs?: {
+		appendTab: 'left' | 'right' | 'both' | false;
+		width: number;
+		insetWidth: number;
+		tabVariant: 'extend' | 'inset' | false;
+	},
 	bandIndex?: number
 ) => {
 	// Filter holes to only perimeter holes
@@ -667,98 +676,67 @@ export const traceCombinedOutline = (
 	const outlineBandPoints = outlineIndices.map((index) => traced[index]);
 
 	const retraced: Point[] = [];
-	if (tabs?.appendTab) {
-		const doLeftTab = true;
-		const doRightTab = true
-		const leftIndices = outlineIndices.slice(5, outlineBandPoints.length / 2 + 1);
-		const leftPoints = outlineBandPoints.slice(5, outlineBandPoints.length / 2 + 1);
-		const leftSegments: {
-			index: number;
-			segment: InsettableSegment;
-			partner: InsettableSegment;
-		}[] = [];
-		for (let i = 0; i < leftPoints.length / 2; i++) {
-			leftSegments.push({
-				index: leftIndices[i * 2],
-				segment: { insettable: true, p0: leftPoints[i * 2], p1: leftPoints[i * 2 + 1] },
-				partner: {
-					insettable: false,
-					p0: traced[leftIndices[i * 2]],
-					p1: traced[leftIndices[i * 2] - 1]
-				}
-			});
-		}
+	if (tabs) {
+		const doLeftTab = tabs.appendTab === 'both' || tabs.appendTab === 'left';
+		const doRightTab = tabs.appendTab === 'both' || tabs.appendTab === 'right';
 
-		const leftOffsetSegments = leftSegments.map((seg) =>
-			getInsetLine(getOffsetLine(seg.segment, seg.partner, -1 * tabs.width), [tabs.insetWidth])
-		);
+		const left = getTabStuff(outlineIndices, outlineBandPoints, traced, 'left', tabs);
 
-
-		const rightIndices = outlineIndices
-			.slice(outlineBandPoints.length / 2 + 5)
-			.concat(outlineIndices[0]);
-		const rightPoints = outlineBandPoints
-			.slice(outlineBandPoints.length / 2 + 5)
-			.concat(outlineBandPoints[0]);
-		const rightSegments: {
-			index: number;
-			segment: InsettableSegment;
-			partner: InsettableSegment;
-		}[] = [];
-		for (let i = 0; i < rightPoints.length / 2; i++) {
-			rightSegments.push({
-				index: rightIndices[i * 2],
-				segment: { insettable: true, p0: rightPoints[i * 2], p1: rightPoints[i * 2 + 1] },
-				partner: {
-					insettable: false,
-					p0: traced[rightIndices[i * 2]],
-					p1: traced[rightIndices[i * 2] - 1]
-				}
-			});
-		}
-		const rightOffsetSegments = rightSegments.map((seg) =>
-			getInsetLine(getOffsetLine(seg.segment, seg.partner, -1 * tabs.width), [tabs.insetWidth])
-		);
-
+		const right = getTabStuff(outlineIndices, outlineBandPoints, traced, 'right', tabs);
 
 		let leftIndexCounter = 0;
 		let rightIndexCounter = 0;
 		traced.forEach((point, i) => {
 			retraced.push(point);
-			if (doLeftTab && i === leftIndices[leftIndexCounter * 2] && leftIndexCounter < leftOffsetSegments.length) {
-				retraced.push(leftOffsetSegments[leftIndexCounter].p0, leftOffsetSegments[leftIndexCounter].p1);
+			if (
+				doLeftTab &&
+				i === left.indices[leftIndexCounter * 2] &&
+				leftIndexCounter < left.offsetSegments.length
+			) {
+				retraced.push(
+					left.offsetSegments[leftIndexCounter].p0,
+					left.offsetSegments[leftIndexCounter].p1
+				);
 				leftIndexCounter += 1;
 			}
-			if (doRightTab && i === rightIndices[rightIndexCounter * 2] && rightIndexCounter < rightOffsetSegments.length) {
-				retraced.push(rightOffsetSegments[rightIndexCounter].p0, rightOffsetSegments[rightIndexCounter].p1);
+			if (
+				doRightTab &&
+				i === right.indices[rightIndexCounter * 2] &&
+				rightIndexCounter < right.offsetSegments.length
+			) {
+				retraced.push(
+					right.offsetSegments[rightIndexCounter].p0,
+					right.offsetSegments[rightIndexCounter].p1
+				);
 				rightIndexCounter += 1;
 			}
 		});
 
 		logger.update((prev) => {
-			prev.debug.push(
-				...leftSegments.map((seg) => {
-					const dl: SVGLoggerDirectionalLine = {
-						directionalLine: {
-							points: [seg.segment.p0, seg.segment.p1],
-							labels: [],
-							label: `${Math.round(1000 * getLength(seg.segment.p0, seg.segment.p1)) / 1000}`,
-							for: `patterned-band-pattern-${bandIndex}`
-						}
-					};
-					return dl;
-				}),
-				...rightSegments.map((seg) => {
-					const dl: SVGLoggerDirectionalLine = {
-						directionalLine: {
-							points: [seg.segment.p0, seg.segment.p1],
-							labels: [],
-							label: `${Math.round(1000 * getLength(seg.segment.p0, seg.segment.p1)) / 1000}`,
-							for: `patterned-band-pattern-${bandIndex}`
-						}
-					};
-					return dl;
-				}),
+			prev.debug
+				.push
+				// ...leftSegments.map((seg) => {
+				// 	const dl: SVGLoggerDirectionalLine = {
+				// 		directionalLine: {
+				// 			points: [seg.segment.p0, seg.segment.p1],
+				// 			labels: [],
+				// 			label: `${Math.round(1000 * getLength(seg.segment.p0, seg.segment.p1)) / 1000}`,
+				// 			for: `patterned-band-pattern-${bandIndex}`
+				// 		}
+				// 	};
+				// 	return dl;
+				// }),
+				// ...rightSegments.map((seg) => {
+				// 	const dl: SVGLoggerDirectionalLine = {
+				// 		directionalLine: {
+				// 			points: [seg.segment.p0, seg.segment.p1],
+				// 			labels: [],
+				// 			label: `${Math.round(1000 * getLength(seg.segment.p0, seg.segment.p1)) / 1000}`,
+				// 			for: `patterned-band-pattern-${bandIndex}`
+				// 		}
+				// 	};
+				// 	return dl;
+				// })
 				// ...leftOffsetSegments.map((seg) => {
 				// 	return {
 				// 		directionalLine: {
@@ -769,13 +747,11 @@ export const traceCombinedOutline = (
 				// 		}
 				// 	};
 				// })
-			);
+				();
 			return prev;
 		});
 	}
 
-
-	
 	const innerHoles = holes.filter((hole) => !hole.perimeter.isPerimeter);
 	const tracedOutline: PathSegment[] = tabs?.appendTab
 		? retraced.map((p, i) => {
@@ -787,4 +763,66 @@ export const traceCombinedOutline = (
 	tracedOutline.push(['Z']);
 
 	return { holes: innerHoles, outline: tracedOutline };
+};
+
+const getTabStuff = (
+	outlineIndices: number[],
+	outlinePoints: Point[],
+	traced: Point[],
+	direction: 'left' | 'right',
+	tabs: any
+) => {
+	const { width, insetWidth, tabVariant } = tabs;
+
+	const indices =
+		direction === 'left'
+			? outlineIndices.slice(5, outlinePoints.length / 2 + 1)
+			: outlineIndices.slice(outlinePoints.length / 2 + 5).concat(outlineIndices[0]);
+	const points =
+		direction === 'left'
+			? outlinePoints.slice(5, outlinePoints.length / 2 + 1)
+			: outlinePoints.slice(outlinePoints.length / 2 + 5).concat(outlinePoints[0]);
+	const segments: {
+		index: number;
+		segment: InsettableSegment;
+		partner0: InsettableSegment;
+		partner1: InsettableSegment;
+	}[] = [];
+
+	for (let i = 0; i < points.length / 2; i++) {
+		segments.push({
+			index: indices[i * 2],
+			segment: { insettable: true, p0: points[i * 2], p1: points[i * 2 + 1] },
+			partner0: {
+				insettable: false,
+				p0: traced[indices[i * 2]],
+				p1: traced[indices[i * 2] - 1]
+			},
+			partner1: {
+				insettable: false,
+				p0: traced[(indices[i * 2] + 1) % traced.length],
+				p1: traced[(indices[i * 2] + 2) % traced.length]
+			}
+		});
+	}
+
+	const offsetSegments = segments.map((seg) => {
+		const offsetSegment = getOffsetLine(seg.segment, seg.partner0, -1 * width);
+		if (tabVariant === 'inset') {
+			return getInsetLine(offsetSegment, [insetWidth]);
+		}
+		return {
+			...offsetSegment,
+			p0: getIntersectionOfLines(
+				{ p0: offsetSegment.p0, p1: offsetSegment.p1 },
+				{ p0: seg.partner0.p0, p1: seg.partner0.p1 }
+			),
+			p1: getIntersectionOfLines(
+				{ p0: offsetSegment.p0, p1: offsetSegment.p1 },
+				{ p0: seg.partner1.p0, p1: seg.partner1.p1 }
+			)
+		};
+	});
+
+	return { indices, offsetSegments };
 };

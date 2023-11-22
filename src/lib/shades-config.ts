@@ -174,7 +174,27 @@ export type TiledPatternSubConfig =
 			max: number;
 			step: number;
 	  }
-	| { type: 'appendTab'; valueType: 'boolean'; value: boolean };
+	| {
+			type: 'appendTab';
+			valueType: 'named';
+			value: string;
+			options: [{ none: false }, 'left', 'right', 'both'];
+	  }
+	| { type: 'adjustBandBoundary'; valueType: 'boolean'; value: boolean }
+	| {
+			type: 'tabVariant';
+			valueType: 'named';
+			value: string;
+			options: [{ none: false }, 'extend', 'inset'];
+	  }
+	| {
+			type: 'filledEndSize';
+			valueType: 'number';
+			value: number;
+			min: number;
+			max: number;
+			step: number;
+	  };
 
 export type TiledPatternConfig =
 	| {
@@ -192,7 +212,20 @@ const defaultTiledPatternConfig: TiledPatternConfig = {
 	config: [
 		{ type: 'width', valueType: 'number', value: 10, min: 0, max: 10, step: 0.1 },
 		{ type: 'insetWidth', valueType: 'number', value: 10, min: 0, max: 50, step: 0.1 },
-		{ type: 'appendTab', valueType: 'boolean', value: true }
+		{
+			type: 'appendTab',
+			valueType: 'named',
+			value: 'both',
+			options: [{ none: false }, 'left', 'right', 'both']
+		},
+		{
+			type: 'tabVariant',
+			valueType: 'named',
+			value: 'extend',
+			options: [{ none: false }, 'extend', 'inset']
+		},
+		{ type: 'adjustBandBoundary', valueType: 'boolean', value: true },
+		{ type: 'filledEndSize', valueType: 'number', value: 0, min: 0, max: 5, step: 1 }
 	]
 };
 

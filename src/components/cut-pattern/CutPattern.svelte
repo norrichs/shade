@@ -82,7 +82,6 @@
 		} else if ($config.patternConfig.showPattern.band === 'patterned') {
 			patterns.band = generateTiledBandPattern({
 				bands: displayedBandFacets as Band[],
-				tabStyle: $config.bandConfig.tabStyle,
 				tiledPatternConfig: $config.tiledPatternConfig
 			});
 		} else {

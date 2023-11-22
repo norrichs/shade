@@ -68,7 +68,7 @@ import {
 	traceCombinedOutline,
 	transformPatternByQuad
 } from '$lib/patterns/quadrilateral';
-import { logger } from '../../components/svg-logger/logger';
+import { logger, type SVGLoggerDirectionalLine } from '../../components/svg-logger/logger';
 
 // type UnitPatternConfig
 // const unitPatterns = {
@@ -192,85 +192,69 @@ export const generateStrutPatterns = (
 
 export const generateTiledBandPattern = ({
 	bands,
-	tabStyle,
 	tiledPatternConfig
 }: {
 	bands: Band[];
-	tabStyle: TabStyle;
 	tiledPatternConfig: TiledPatternConfig;
 }): PatternedBandPattern => {
 	if (tiledPatternConfig.type !== 'tiledHexPattern-0') {
 		throw new Error("TiledPatternConfig is not of type 'tiledHexPattern-0'");
 	}
-	console.debug(
-		'***************************\ngenerateTiledBandPattern',
-		bands,
-		tabStyle,
-		tiledPatternConfig
-	);
+	console.debug('***************************\ngenerateTiledBandPattern');
 	const pattern: PatternedBandPattern = { projectionType: 'patterned', bands: [] };
 
 	const unitPattern = generateHexPattern(1);
 	const width =
 		(tiledPatternConfig.config.find((cfg) => cfg.type === 'width')?.value as number) || 0;
 	const appendTab =
-		(tiledPatternConfig.config.find((cfg) => cfg.type === 'appendTab')?.value as boolean) || false;
+		(tiledPatternConfig.config.find((cfg) => cfg.type === 'appendTab')?.value as
+			| 'left'
+			| 'right'
+			| false) || false;
 	const insetWidth =
 		(tiledPatternConfig.config.find((cfg) => cfg.type === 'insetWidth')?.value as number) || 0;
+	const tabVariant =
+		(tiledPatternConfig.config.find((cfg) => cfg.type === 'tabVariant')?.value as "extend" | "inset" | false) ||
+		false;
+	const doTabs = !!appendTab && !!tabVariant;
 
-	pattern.bands = bands.map((band, index) => {
-		const flatBand = getFlatStrip(band, { bandStyle: 'helical-right' });
-		const quadBand = getQuadrilaterals(flatBand);
-		logger.update((prev) => {
-			prev.debug.push(
-				...quadBand.map((quad) => {
-					return [
-						{
-							directionalLine: {
-								points: [quad.p1, quad.p2],
-								labels: [],
-								label: `${Math.round(1000 * getLengthSimple(quad.p1, quad.p2)) / 1000}`,
-								for: `patterned-band-pattern-${index}`
-							}
-						},
-						{
-							directionalLine: {
-								points: [quad.p3, quad.p0],
-								labels: [],
-								label: `${Math.round(1000 * getLengthSimple(quad.p3, quad.p0)) / 1000}`,
-								for: `patterned-band-pattern-${index}`
-							}
-						}
-					];
-				}).flat()
-			);
-			return prev;
-		});
-		const mappedPatternBand = quadBand.map((quad) => transformPatternByQuad(unitPattern, quad));
-		const polygons = extractShapesFromMappedHexPatterns(mappedPatternBand, quadBand);
-		const holes = polygons.holes.map((polygon) => getInsetPolygon(polygon, width));
+	const layoutPattern = {
+		bands: bands.map((band, index) => {
+			const flatBand = getFlatStrip(band, { bandStyle: 'helical-right' });
+			const quadBand = getQuadrilaterals(flatBand);
+			const mappedPatternBand = quadBand.map((quad) => transformPatternByQuad(unitPattern, quad));
+			const outlinedHoles = extractShapesFromMappedHexPatterns(mappedPatternBand, quadBand, tiledPatternConfig.config);
+			logger.update((prev) => {
+				const newDebug = outlinedHoles.holes.map(hole => hole.segments.map(segment => {
+					const newLine: SVGLoggerDirectionalLine = { directionalLine: { points: [segment.p0, segment.p1], label: "", labels: [], for: `patterned-band-pattern-${index}` } }
+					return newLine
+				})).flat(1)
+				prev.debug.push(...newDebug)
+				return prev
+			})
+			return outlinedHoles;
+		})
+	};
 
-		const reTraced = traceCombinedOutline(
-			holes,
-			{
-				appendTab,
-				insetWidth,
-				direction: 'left',
-				width
-			},
-			index
-		);
+	const insetHoles = {
+		bands: layoutPattern.bands.map((band) =>
+			band.holes.map((polygon) => getInsetPolygon(polygon, width))
+		)
+	};
+
+	const cuttablePattern = insetHoles.bands.map((holes, index) => {
+		const tabs = doTabs ? { appendTab, insetWidth, tabVariant, width } : undefined;
+		const reTraced = traceCombinedOutline(holes, tabs, index);
 		const finalHoles = reTraced.holes.map((hole) => svgPathStringFromInsettablePolygon(hole));
 		const finalPattern = svgPathStringFromSegments(reTraced.outline).concat(finalHoles.join(' '));
 
 		return { svgPath: finalPattern, facets: [], id: `patterned-band-pattern-${index}` };
 	});
-
-
-	
-	console.debug('pattern', pattern);
+	pattern.bands = cuttablePattern;
 	return pattern;
 };
+
+
 
 export const generateBandPatterns = (
 	config: PatternConfig,
