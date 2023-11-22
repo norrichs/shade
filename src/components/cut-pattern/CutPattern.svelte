@@ -291,6 +291,7 @@
 					type="number"
 					bind:value={$config0.patternViewConfig.centerOffset.x}
 					class="view-control"
+					step={10}
 				/>
 				<label for="svg-offset-y">offset y</label>
 				<input
@@ -298,6 +299,7 @@
 					type="number"
 					bind:value={$config0.patternViewConfig.centerOffset.y}
 					class="view-control"
+					step={10}
 				/>
 			</div>
 		</div>

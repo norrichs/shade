@@ -145,54 +145,54 @@ export const extractShapesFromMappedHexPatterns = (
 			shapes.holes.push({
 				perimeter: { isPerimeter: true, index: 0 },
 				segments: [
-					{ insettable: true, p0: pointFrom(mp[0]), p1: pointFrom(mp[1]) },
-					{ insettable: false, p0: pointFrom(mp[1]), p1: { ...q.p0 } },
-					{ insettable: false, p0: { ...q.p0 }, p1: pointFrom(mp[0]) }
+					{ variant: "insettable", p0: pointFrom(mp[0]), p1: pointFrom(mp[1]) },
+					{ variant: "permeable", p0: pointFrom(mp[1]), p1: { ...q.p0 } },
+					{ variant: "permeable", p0: { ...q.p0 }, p1: pointFrom(mp[0]) }
 				]
 			});
 			shapes.holes.push({
 				perimeter: { isPerimeter: true, index: 1 },
 				segments: [
-					{ insettable: true, p0: pointFrom(mp[1]), p1: pointFrom(mp[2]) },
-					{ insettable: true, p0: pointFrom(mp[2]), p1: pointFrom(mp[3]) },
-					{ insettable: false, p0: pointFrom(mp[3]), p1: pointFrom(mp[1]) }
+					{ variant: "insettable", p0: pointFrom(mp[1]), p1: pointFrom(mp[2]) },
+					{ variant: "insettable", p0: pointFrom(mp[2]), p1: pointFrom(mp[3]) },
+					{ variant: "permeable", p0: pointFrom(mp[3]), p1: pointFrom(mp[1]) }
 				]
 			});
 			shapes.holes.push({
 				perimeter: { isPerimeter: true, index: 2 },
 				segments: [
-					{ insettable: true, p0: pointFrom(mp[3]), p1: pointFrom(mp[4]) },
-					{ insettable: false, p0: pointFrom(mp[4]), p1: { ...q.p1 } },
-					{ insettable: false, p0: { ...q.p1 }, p1: pointFrom(mp[3]) }
+					{ variant: "insettable", p0: pointFrom(mp[3]), p1: pointFrom(mp[4]) },
+					{ variant: "permeable", p0: pointFrom(mp[4]), p1: { ...q.p1 } },
+					{ variant: "permeable", p0: { ...q.p1 }, p1: pointFrom(mp[3]) }
 				]
 			});
 		} else if (i === mappedPatterns.length - 1) {
 			shapes.holes.push({
 				perimeter: { isPerimeter: true, index: 5 + i },
 				segments: [
-					{ insettable: false, p0: pointFrom(mp[17]), p1: { ...q.p3 } },
-					{ insettable: false, p0: { ...q.p3 }, p1: pointFrom(mp[11]) },
-					{ insettable: true, p0: pointFrom(mp[11]), p1: pointFrom(mp[12]) },
-					{ insettable: true, p0: pointFrom(mp[12]), p1: pointFrom(mp[17]) }
+					{ variant: "permeable", p0: pointFrom(mp[17]), p1: { ...q.p3 } },
+					{ variant: "permeable", p0: { ...q.p3 }, p1: pointFrom(mp[11]) },
+					{ variant: "insettable", p0: pointFrom(mp[11]), p1: pointFrom(mp[12]) },
+					{ variant: "insettable", p0: pointFrom(mp[12]), p1: pointFrom(mp[17]) }
 				]
 			});
 			shapes.holes.push({
 				perimeter: { isPerimeter: true, index: 4 + i },
 				segments: [
-					{ insettable: true, p0: pointFrom(mp[17]), p1: pointFrom(mp[12]) },
-					{ insettable: true, p0: pointFrom(mp[12]), p1: pointFrom(mp[13]) },
-					{ insettable: true, p0: pointFrom(mp[13]), p1: pointFrom(mp[14]) },
-					{ insettable: true, p0: pointFrom(mp[14]), p1: pointFrom(mp[19]) },
-					{ insettable: false, p0: pointFrom(mp[19]), p1: pointFrom(mp[17]) }
+					{ variant: "insettable", p0: pointFrom(mp[17]), p1: pointFrom(mp[12]) },
+					{ variant: "insettable", p0: pointFrom(mp[12]), p1: pointFrom(mp[13]) },
+					{ variant: "insettable", p0: pointFrom(mp[13]), p1: pointFrom(mp[14]) },
+					{ variant: "insettable", p0: pointFrom(mp[14]), p1: pointFrom(mp[19]) },
+					{ variant: "permeable", p0: pointFrom(mp[19]), p1: pointFrom(mp[17]) }
 				]
 			});
 			shapes.holes.push({
 				perimeter: { isPerimeter: true, index: 3 + i },
 				segments: [
-					{ insettable: true, p0: pointFrom(mp[14]), p1: pointFrom(mp[15]) },
-					{ insettable: true, p0: pointFrom(mp[19]), p1: pointFrom(mp[14]) },
-					{ insettable: false, p0: { ...q.p2 }, p1: pointFrom(mp[19]) },
-					{ insettable: false, p0: pointFrom(mp[15]), p1: { ...q.p2 } }
+					{ variant: "insettable", p0: pointFrom(mp[14]), p1: pointFrom(mp[15]) },
+					{ variant: "insettable", p0: pointFrom(mp[19]), p1: pointFrom(mp[14]) },
+					{ variant: "permeable", p0: { ...q.p2 }, p1: pointFrom(mp[19]) },
+					{ variant: "permeable", p0: pointFrom(mp[15]), p1: { ...q.p2 } }
 				]
 			});
 		}
@@ -200,56 +200,56 @@ export const extractShapesFromMappedHexPatterns = (
 			shapes.holes.push({
 				perimeter: { isPerimeter: true, index: mappedPatterns.length * 2 + 3 - i },
 				segments: [
-					{ insettable: true, p0: pointFrom(mp[11]), p1: pointFrom(mp[12]) },
-					{ insettable: true, p0: pointFrom(mp[12]), p1: pointFrom(mp[17]) },
-					{ insettable: true, p0: pointFrom(mp[17]), p1: pointFrom(mappedPatterns[i + 1][0]) },
-					{ insettable: false, p0: pointFrom(mappedPatterns[i + 1][0]), p1: { ...q.p3 } },
-					{ insettable: false, p0: { ...q.p3 }, p1: pointFrom(mp[11]) }
+					{ variant: "insettable", p0: pointFrom(mp[11]), p1: pointFrom(mp[12]) },
+					{ variant: "insettable", p0: pointFrom(mp[12]), p1: pointFrom(mp[17]) },
+					{ variant: "insettable", p0: pointFrom(mp[17]), p1: pointFrom(mappedPatterns[i + 1][0]) },
+					{ variant: "permeable", p0: pointFrom(mappedPatterns[i + 1][0]), p1: { ...q.p3 } },
+					{ variant: "permeable", p0: { ...q.p3 }, p1: pointFrom(mp[11]) }
 				]
 			});
 			shapes.holes.push({
 				perimeter: { isPerimeter: false, index: -1 },
 				segments: [
-					{ insettable: true, p0: pointFrom(mp[12]), p1: pointFrom(mp[13]) },
-					{ insettable: true, p0: pointFrom(mp[13]), p1: pointFrom(mp[14]) },
-					{ insettable: true, p0: pointFrom(mp[14]), p1: pointFrom(mp[19]) },
-					{ insettable: true, p0: pointFrom(mp[19]), p1: pointFrom(mappedPatterns[i + 1][2]) },
-					{ insettable: true, p0: pointFrom(mappedPatterns[i + 1][2]), p1: pointFrom(mp[17]) },
-					{ insettable: true, p0: pointFrom(mp[17]), p1: pointFrom(mp[12]) }
+					{ variant: "insettable", p0: pointFrom(mp[12]), p1: pointFrom(mp[13]) },
+					{ variant: "insettable", p0: pointFrom(mp[13]), p1: pointFrom(mp[14]) },
+					{ variant: "insettable", p0: pointFrom(mp[14]), p1: pointFrom(mp[19]) },
+					{ variant: "insettable", p0: pointFrom(mp[19]), p1: pointFrom(mappedPatterns[i + 1][2]) },
+					{ variant: "insettable", p0: pointFrom(mappedPatterns[i + 1][2]), p1: pointFrom(mp[17]) },
+					{ variant: "insettable", p0: pointFrom(mp[17]), p1: pointFrom(mp[12]) }
 				]
 			});
 
 			shapes.holes.push({
 				perimeter: { isPerimeter: true, index: 3 + i },
 				segments: [
-					{ insettable: true, p0: pointFrom(mp[14]), p1: pointFrom(mp[15]) },
-					{ insettable: false, p0: pointFrom(mp[15]), p1: { ...q.p2 } },
-					{ insettable: false, p0: { ...q.p2 }, p1: pointFrom(mappedPatterns[i + 1][4]) },
-					{ insettable: true, p0: pointFrom(mappedPatterns[i + 1][4]), p1: pointFrom(mp[19]) },
-					{ insettable: true, p0: pointFrom(mp[19]), p1: pointFrom(mp[14]) }
+					{ variant: "insettable", p0: pointFrom(mp[14]), p1: pointFrom(mp[15]) },
+					{ variant: "permeable", p0: pointFrom(mp[15]), p1: { ...q.p2 } },
+					{ variant: "permeable", p0: { ...q.p2 }, p1: pointFrom(mappedPatterns[i + 1][4]) },
+					{ variant: "insettable", p0: pointFrom(mappedPatterns[i + 1][4]), p1: pointFrom(mp[19]) },
+					{ variant: "insettable", p0: pointFrom(mp[19]), p1: pointFrom(mp[14]) }
 				]
 			});
 		}
 		shapes.holes.push({
 			perimeter: { isPerimeter: false, index: -1 },
 			segments: [
-				{ insettable: true, p0: pointFrom(mp[0]), p1: pointFrom(mp[1]) },
-				{ insettable: true, p0: pointFrom(mp[1]), p1: pointFrom(mp[2]) },
-				{ insettable: true, p0: pointFrom(mp[2]), p1: pointFrom(mp[13]) },
-				{ insettable: true, p0: pointFrom(mp[13]), p1: pointFrom(mp[12]) },
-				{ insettable: true, p0: pointFrom(mp[12]), p1: pointFrom(mp[11]) },
-				{ insettable: true, p0: pointFrom(mp[11]), p1: pointFrom(mp[0]) }
+				{ variant: "insettable", p0: pointFrom(mp[0]), p1: pointFrom(mp[1]) },
+				{ variant: "insettable", p0: pointFrom(mp[1]), p1: pointFrom(mp[2]) },
+				{ variant: "insettable", p0: pointFrom(mp[2]), p1: pointFrom(mp[13]) },
+				{ variant: "insettable", p0: pointFrom(mp[13]), p1: pointFrom(mp[12]) },
+				{ variant: "insettable", p0: pointFrom(mp[12]), p1: pointFrom(mp[11]) },
+				{ variant: "insettable", p0: pointFrom(mp[11]), p1: pointFrom(mp[0]) }
 			]
 		});
 		shapes.holes.push({
 			perimeter: { isPerimeter: false, index: -1 },
 			segments: [
-				{ insettable: true, p0: pointFrom(mp[2]), p1: pointFrom(mp[3]) },
-				{ insettable: true, p0: pointFrom(mp[3]), p1: pointFrom(mp[4]) },
-				{ insettable: true, p0: pointFrom(mp[4]), p1: pointFrom(mp[15]) },
-				{ insettable: true, p0: pointFrom(mp[15]), p1: pointFrom(mp[14]) },
-				{ insettable: true, p0: pointFrom(mp[14]), p1: pointFrom(mp[13]) },
-				{ insettable: true, p0: pointFrom(mp[13]), p1: pointFrom(mp[2]) }
+				{ variant: "insettable", p0: pointFrom(mp[2]), p1: pointFrom(mp[3]) },
+				{ variant: "insettable", p0: pointFrom(mp[3]), p1: pointFrom(mp[4]) },
+				{ variant: "insettable", p0: pointFrom(mp[4]), p1: pointFrom(mp[15]) },
+				{ variant: "insettable", p0: pointFrom(mp[15]), p1: pointFrom(mp[14]) },
+				{ variant: "insettable", p0: pointFrom(mp[14]), p1: pointFrom(mp[13]) },
+				{ variant: "insettable", p0: pointFrom(mp[13]), p1: pointFrom(mp[2]) }
 			]
 		});
 	});
@@ -315,12 +315,12 @@ export const generateHexPattern = (size: number): HexPattern => {
 	];
 	return segments;
 };
-
+type SegmentVariant = "insettable" | "permeable" | "static"
 type InsettableSegment = {
-	[key: string]: Point | boolean;
+	[key: string]: Point | SegmentVariant;
 	p0: Point;
 	p1: Point;
-	insettable: boolean;
+	variant: SegmentVariant;
 };
 type Perimeter = { isPerimeter: boolean; index: number };
 
@@ -400,7 +400,7 @@ const getOffsetLine = (
 	insetWidth: number
 ): InsettableSegment => {
 	const { p0, p1 } = segment;
-	if (!segment.insettable) {
+	if (segment.variant === "permeable") {
 		return { ...segment, p0: { ...p0 }, p1: { ...p1 } };
 	}
 	const extraLinearPoint: Point = isSamePoint(p0, partner.p0)
@@ -543,20 +543,20 @@ const getMatchingSegmentIndices = (
 	polygon: InsettablePolygon,
 	matchPoint?: Point
 ): { segmentIndex: number; pointKey: 'p0' | 'p1' } => {
-	if (!matchPoint && !polygon.segments.some((seg) => !seg.insettable)) {
+	if (!matchPoint && !polygon.segments.some((seg) => seg.variant === "permeable")) {
 		throw new Error('getMatchingSegmentIndices');
 	}
 
 	let pointKey: 'p0' | 'p1' = 'p0';
 	const segmentIndex = polygon.segments.findIndex((segment, i, segments) => {
 		// looking for a point on insettable segment
-		if (!segment.insettable) {
+		if (segment.variant === "permeable") {
 			return false;
 		}
 		// that matches with one of the other segment points that are not insettable, if not matching a known point
 		if (!matchPoint) {
 			for (let j = 0; j < segments.length; j++) {
-				if (i !== j && !segments[j].insettable) {
+				if (i !== j && segments[j].variant === "permeable") {
 					if (
 						isSamePoint(segment.p0, segments[j].p0, 0.0000000001) ||
 						isSamePoint(segment.p0, segments[j].p1, 0.0000000001)
@@ -623,7 +623,7 @@ export const traceCombinedOutline = (
 		while (
 			segmentIndex >= 0 &&
 			polygon.segments.length > 0 &&
-			polygon.segments[segmentIndex].insettable &&
+			polygon.segments[segmentIndex].variant === "insettable" &&
 			counter < 10
 		) {
 			points.push(polygon.segments[segmentIndex][pointKey === 'p0' ? 'p1' : 'p0']);
@@ -711,45 +711,6 @@ export const traceCombinedOutline = (
 				rightIndexCounter += 1;
 			}
 		});
-
-		logger.update((prev) => {
-			prev.debug
-				.push
-				// ...leftSegments.map((seg) => {
-				// 	const dl: SVGLoggerDirectionalLine = {
-				// 		directionalLine: {
-				// 			points: [seg.segment.p0, seg.segment.p1],
-				// 			labels: [],
-				// 			label: `${Math.round(1000 * getLength(seg.segment.p0, seg.segment.p1)) / 1000}`,
-				// 			for: `patterned-band-pattern-${bandIndex}`
-				// 		}
-				// 	};
-				// 	return dl;
-				// }),
-				// ...rightSegments.map((seg) => {
-				// 	const dl: SVGLoggerDirectionalLine = {
-				// 		directionalLine: {
-				// 			points: [seg.segment.p0, seg.segment.p1],
-				// 			labels: [],
-				// 			label: `${Math.round(1000 * getLength(seg.segment.p0, seg.segment.p1)) / 1000}`,
-				// 			for: `patterned-band-pattern-${bandIndex}`
-				// 		}
-				// 	};
-				// 	return dl;
-				// })
-				// ...leftOffsetSegments.map((seg) => {
-				// 	return {
-				// 		directionalLine: {
-				// 			points: [seg.p0, seg.p1],
-				// 			labels: [],
-				// 			label: '',
-				// 			for: `patterned-band-pattern-${bandIndex}`
-				// 		}
-				// 	};
-				// })
-				();
-			return prev;
-		});
 	}
 
 	const innerHoles = holes.filter((hole) => !hole.perimeter.isPerimeter);
@@ -792,14 +753,14 @@ const getTabStuff = (
 	for (let i = 0; i < points.length / 2; i++) {
 		segments.push({
 			index: indices[i * 2],
-			segment: { insettable: true, p0: points[i * 2], p1: points[i * 2 + 1] },
+			segment: { variant: "insettable", p0: points[i * 2], p1: points[i * 2 + 1] },
 			partner0: {
-				insettable: false,
+				variant: "permeable",
 				p0: traced[indices[i * 2]],
 				p1: traced[indices[i * 2] - 1]
 			},
 			partner1: {
-				insettable: false,
+				variant: "permeable",
 				p0: traced[(indices[i * 2] + 1) % traced.length],
 				p1: traced[(indices[i * 2] + 2) % traced.length]
 			}
