@@ -214,8 +214,10 @@ export const generateTiledBandPattern = ({
 	const insetWidth =
 		(tiledPatternConfig.config.find((cfg) => cfg.type === 'insetWidth')?.value as number) || 0;
 	const tabVariant =
-		(tiledPatternConfig.config.find((cfg) => cfg.type === 'tabVariant')?.value as "extend" | "inset" | false) ||
-		false;
+		(tiledPatternConfig.config.find((cfg) => cfg.type === 'tabVariant')?.value as
+			| 'extend'
+			| 'inset'
+			| false) || false;
 	const doTabs = !!appendTab && !!tabVariant;
 
 	const layoutPattern = {
@@ -223,22 +225,41 @@ export const generateTiledBandPattern = ({
 			const flatBand = getFlatStrip(band, { bandStyle: 'helical-right' });
 			const quadBand = getQuadrilaterals(flatBand);
 			const mappedPatternBand = quadBand.map((quad) => transformPatternByQuad(unitPattern, quad));
-			const outlinedHoles = extractShapesFromMappedHexPatterns(mappedPatternBand, quadBand, tiledPatternConfig.config);
-			logger.update((prev) => {
-				const newDebug = outlinedHoles.holes.map(hole => hole.segments.map(segment => {
-					const newLine: SVGLoggerDirectionalLine = { directionalLine: { points: [segment.p0, segment.p1], label: "", labels: [], for: `patterned-band-pattern-${index}` } }
-					return newLine
-				})).flat(1)
-				prev.debug.push(...newDebug)
-				return prev
-			})
+			const outlinedHoles = extractShapesFromMappedHexPatterns(
+				mappedPatternBand,
+				quadBand,
+				tiledPatternConfig.config
+			);
+			// logger.update((prev) => {
+			// 	const newDebug = outlinedHoles.holes
+			// 		.map((hole) =>
+			// 			hole.segments.map((segment) => {
+			// 				const newLine: SVGLoggerDirectionalLine = {
+			// 					directionalLine: {
+			// 						points: [segment.p0, segment.p1],
+			// 						label: '',
+			// 						labels: [],
+			// 						for: `patterned-band-pattern-${index}`
+			// 					}
+			// 				};
+			// 				return newLine;
+			// 			})
+			// 		)
+			// 		.flat(1);
+			// 	prev.debug.push(...newDebug);
+			// 	return prev;
+			// });
 			return outlinedHoles;
 		})
 	};
 
 	const insetHoles = {
 		bands: layoutPattern.bands.map((band) =>
-			band.holes.map((polygon) => getInsetPolygon(polygon, width))
+			band.holes.map((polygon) => {
+				return polygon.segments.some((segment) => segment.variant === 'insettable')
+					? getInsetPolygon(polygon, width)
+					: polygon;
+			})
 		)
 	};
 
@@ -253,8 +274,6 @@ export const generateTiledBandPattern = ({
 	pattern.bands = cuttablePattern;
 	return pattern;
 };
-
-
 
 export const generateBandPatterns = (
 	config: PatternConfig,
