@@ -1,9 +1,9 @@
 import type {
 	ArcPathSegment,
+	BezierPathSegment,
 	LinePathSegment,
 	MovePathSegment,
-	PathSegment,
-	ReturnPathSegment
+	PathSegment
 } from '$lib/cut-pattern/cut-pattern.types';
 import type { Point } from '$lib/patterns/flower-of-life.types';
 import { closestPoint, getLength } from './utils';
@@ -100,10 +100,13 @@ export const svgTX = (tx: QuadrilateralTransformMatrix, anchor: Point) => {
 	L ${end.x} ${end.y}
 	`;
 };
-export const transformPatternByQuad = (pattern: HexPattern, quad: Quadrilateral): HexPattern => {
+export const transformPatternByQuad = <T extends HexPattern | CarnationPattern>(
+	pattern: T,
+	quad: Quadrilateral
+): T => {
 	const tx = getQuadrilateralTransformMatrix(quad);
 	const p0 = { x: pattern[0][1] || 0, y: pattern[0][2] || 0 };
-	const transformedSegments: HexPattern = pattern.map((segment) => {
+	const transformedSegments: T = pattern.map((segment) => {
 		if (segment[0] === 'L' || segment[0] === 'M') {
 			const newCoord = transformPointByQuadrilateralTransform(
 				{ x: segment[1], y: segment[2] },
@@ -111,6 +114,24 @@ export const transformPatternByQuad = (pattern: HexPattern, quad: Quadrilateral)
 				quad.p0
 			);
 			const mapped: MovePathSegment | LinePathSegment = [segment[0], newCoord.x, newCoord.y];
+			return mapped;
+		} else if (segment[0] === 'C') {
+			const newP0 = transformPointByQuadrilateralTransform(
+				{ x: segment[1] - p0.x, y: segment[2] - p0.y },
+				tx,
+				quad.p0
+			);
+			const newP1 = transformPointByQuadrilateralTransform(
+				{ x: segment[3] - p0.x, y: segment[4] - p0.y },
+				tx,
+				quad.p0
+			);
+			const newP2 = transformPointByQuadrilateralTransform(
+				{ x: segment[5] - p0.x, y: segment[6] - p0.y },
+				tx,
+				quad.p0
+			);
+			const mapped: BezierPathSegment = ['C', newP0.x, newP0.y, newP1.x, newP1.y, newP2.x, newP2.y];
 			return mapped;
 		} else if (segment[0] === 'A') {
 			const newCoord = transformPointByQuadrilateralTransform(
@@ -125,7 +146,7 @@ export const transformPatternByQuad = (pattern: HexPattern, quad: Quadrilateral)
 		} else {
 			return segment;
 		}
-	}) as HexPattern;
+	}) as T;
 	return transformedSegments;
 };
 
@@ -316,6 +337,40 @@ export const generateHexPattern = (size: number): HexPattern => {
 	];
 	return segments;
 };
+
+export type CarnationPattern = [
+	MovePathSegment,
+	BezierPathSegment,
+	BezierPathSegment,
+	BezierPathSegment,
+	BezierPathSegment,
+	MovePathSegment,
+	BezierPathSegment,
+	BezierPathSegment,
+	BezierPathSegment,
+	BezierPathSegment
+];
+
+export const generateCarnationPattern = (size?: number, strength?: number): CarnationPattern => {
+	const w = (size || 1) / 4;
+	const h = (size || 1) / 2;
+	const s = !!strength && strength > 0 && strength < 1 ? strength : 0.5;
+
+	return [
+		['M', 0, 0],
+		['C', 0, h * s, w - w * s, h, w, h],
+		['C', w + w * s, h, 2 * w, h * s, 2 * w, 0],
+		['C', 2 * w, h * s, 3 * w - w * s, h, 3 * w, h],
+		['C', 3 * w + w * s, h, 4 * w, h * s, 4 * w, 0],
+		['M', 0, 2 * h],
+		['C', w * s, h + h, w, h + h * s, w, h],
+		['C', w, h + h * s, 2 * w - w * s, h + h, 2 * w, 2 * h],
+		['C', 2 * w + w * s, 2 * h, 3 * w, h + h * s, 3 * w, h],
+		['C', 3 * w, h + h * s, 4 * w - w * s, 2 * h, 4 * w, 2 * h]
+
+	];
+};
+
 type SegmentVariant = 'insettable' | 'permeable' | 'edge' | 'interior';
 type InsettableSegment = {
 	[key: string]: Point | SegmentVariant;

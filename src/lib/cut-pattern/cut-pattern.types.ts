@@ -187,11 +187,12 @@ export type Pattern =
 
 export type Flag = 0 | 1;
 
-export type PathSegment = MovePathSegment | LinePathSegment | ArcPathSegment | ReturnPathSegment;
+export type PathSegment = MovePathSegment | LinePathSegment | ArcPathSegment | ReturnPathSegment | BezierPathSegment;
 
 export type MovePathSegment = ['M', number, number];
 export type LinePathSegment = ['L', number, number];
 export type ArcPathSegment = ['A', number, number, number, Flag, Flag, number, number];
+export type BezierPathSegment = ['C', number, number, number, number, number, number];
 export type ReturnPathSegment = ['Z'];
 
 export type PatternName = 'flower-of-life-1';
