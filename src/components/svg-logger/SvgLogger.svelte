@@ -9,14 +9,13 @@
 	const loggerColor = (index: number) =>
 		$logger.config.colors[index % $logger.config.colors.length];
 
-
 	const getTransformFor = (db: SVGDebug) => {
 		if (isSVGLoggerDirectionalLine(db) && db.directionalLine.for) {
-			const elem = document.querySelector(`#${db.directionalLine.for}`)
-			const transform = elem?.getAttribute("transform")
-			return transform
+			const elem = document.querySelector(`#${db.directionalLine.for}`);
+			const transform = elem?.getAttribute('transform');
+			return transform;
 		}
-	}
+	};
 </script>
 
 {#each $logger.debug as db, i}
@@ -47,7 +46,10 @@
 		{#if typeof db === 'string'}
 			<path d={db} stroke={loggerColor(i)} />
 		{:else if isSVGLoggerCircle(db)}
-			<circle cx={db.circle.x} cy={db.circle.y} r="5" fill={loggerColor(i)} />
+			<circle cx={db.circle.x} cy={db.circle.y} r="10" fill={loggerColor(i)} opacity="0.3" />
+			{#if db.label}
+				<text x={db.circle.x} y={db.circle.y} fill="black" font-size="16">{`${db.label}`}</text>
+			{/if}
 		{:else if isSVGLoggerDirectionalLine(db)}
 			<path
 				d={svgLines(db.directionalLine.points)}
@@ -63,7 +65,7 @@
 					x={db.directionalLine.points[i].x}
 					y={db.directionalLine.points[i].y}
 					fill="black"
-					font-size="3">{label}</text
+					font-size="16">{label}</text
 				>
 			{/each}
 		{/if}
@@ -72,7 +74,7 @@
 				x={db.directionalLine.points[0].x}
 				y={db.directionalLine.points[0].y}
 				fill="black"
-				font-size="4">{`${db.directionalLine.label}`}</text
+				font-size="16">{`${db.directionalLine.label}`}</text
 			>
 		{/if}
 	</g>

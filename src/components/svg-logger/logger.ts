@@ -11,7 +11,7 @@ export type SVGLoggerDirectionalLine = {
 	};
 };
 
-export type SVGLoggerCircle = { circle: Point };
+export type SVGLoggerCircle = { circle: Point, label?: string };
 
 export type SVGDebug = SVGLoggerDirectionalLine | string | SVGLoggerCircle;
 
@@ -41,8 +41,8 @@ export type Logger = {
 const defaultInit: Logger = {
 	config: {
 		show: true,
-		opacity: 0.5,
-		strokeWidth: 0.2,
+		opacity: 1,
+		strokeWidth: 2,
 		colors: [
 			'orangered',
 			'aqua',
