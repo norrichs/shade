@@ -16,58 +16,88 @@
 		svgPathStringFromInsettablePolygon,
 		getInsetPolygon,
 		generateCarnationPattern,
-		type CarnationPattern
+		type CarnationPattern,
+		extractShapesFromMappedCarnationPatterns
 	} from '../../lib/patterns/quadrilateral';
 
 	import { logger } from '../../components/svg-logger/logger';
 	import { LineSegment, Point, Shape } from '$lib/patterns/shapes';
 	import SvgLogger from '../../components/svg-logger/SvgLogger.svelte';
+	import { CubicBezierSegment } from '$lib/patterns/shapes/CubicBezierSegment';
+	import CombinedNumberInput from '../../components/controls/CombinedNumberInput.svelte';
 
-	const quad: Quadrilateral = {
-		p0: { x: 0, y: 0 },
-		p1: { x: 300, y: -20 },
-		p2: { x: 340, y: 200 },
-		p3: { x: -20, y: 175 }
+	let showLogger = true;
+	const quads: Quadrilateral[] = [
+		{
+			p0: { x: 0, y: 0 },
+			p1: { x: 300, y: -20 },
+			p2: { x: 340, y: 200 },
+			p3: { x: -20, y: 175 }
+		},
+		{
+			p0: { x: -20, y: 175 },
+			p1: { x: 340, y: 200 },
+			p2: { x: 222, y: 500 },
+			p3: { x: -10, y: 555 }
+		},
+		{
+			p0: { x: -10, y: 555 },
+			p1: { x: 222, y: 500 },
+			p2: { x: 340, y: 725 },
+			p3: { x: 10, y: 700 }
+		}
+	];
+
+	let carnationStrength = 0.5;
+	let carnationWidth = 20;
+
+	const transformedCarnations = quads.map((quad) => {
+		const transformedCarnation = transformPatternByQuad<CarnationPattern>(
+			generateCarnationPattern(1, carnationStrength),
+			quad
+		);
+		return transformedCarnation;
+	});
+
+	let shapes = extractShapesFromMappedCarnationPatterns(transformedCarnations, quads);
+	$: {
+		updateShapes(carnationWidth);
+	}
+	const updateShapes = (width: number) => {
+		console.debug('updateShapes', width);
+		shapes.forEach((shape) => shape.offsetShape(-width));
+		shapes = shapes;
 	};
 
-	const quadTransform = getQuadrilateralTransformMatrix(quad);
-	const transformedCarnation = transformPatternByQuad<CarnationPattern>(
-		generateCarnationPattern(1),
-		quad
-	);
-
-	const line0 = new LineSegment({ p0: new Point(0, 0), p1: new Point(100, 0) });
-	const line1 = new LineSegment({ prev: line0, p1: new Point(100, 300) });
-	const line2 = new LineSegment({ prev: line1, p1: new Point(0, 300) });
-	const line3 = new LineSegment({ prev: line2, p1: new Point(0, 0) });
-	const shape0 = new Shape({ segments: [line0, line1, line2, line3], isPermeable: true });
-	const shape1 = new Shape({
-		segments: [
-			[0, 0],
-			[400, 0],
-			[359, 400],
-			[200, 350],
-			[300, 250],
-			[0, 300]
-		]
-	});
-	const offsetShape1 = shape1.clone();
-	offsetShape1.offsetShape(-10)
-
-
+	console.debug('transformedCarnation', transformedCarnations);
 </script>
 
 <main>
+	<header>
+		<div>
+			<span>show logger</span><input type="checkbox" bind:checked={showLogger} />
+			<CombinedNumberInput bind:value={carnationWidth} label="Width" step={0.1} min={0} max={20} />
+		</div>
+	</header>
 	<section>
-		<svg viewBox="-100 -100 600 2000" width="600" height="2000">
-
-			<g>
-				<path d={shape1.svgPath} fill="red" />
-				{#each offsetShape1.segments as seg, i}
-					<path d={svgLines([seg.p0, seg.p1])} stroke="green" stroke-width="1" />
-				{/each}
+		<div>{carnationWidth}</div>
+		<svg viewBox="-100 -100 2000 2000" width="4000" height="4000">
+			<g transform="translate(0, 0)">
+				<g fill="none" stroke-width={0.5} stroke="black">
+					{#each quads as quad, i}
+						<path d={svgQuad(quad)} />
+						<path d={svgPathStringFromSegments(transformedCarnations[i])} />
+					{/each}
+				</g>
+				<g fill="red" stroke-width={2} stroke="black">
+					{#each shapes as shape, i}
+						<path d={shape.svgPath} />
+					{/each}
+				</g>
 			</g>
-			<!-- <SvgLogger /> -->
+			{#if showLogger}
+				<SvgLogger />
+			{/if}
 		</svg>
 	</section>
 </main>

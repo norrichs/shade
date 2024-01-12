@@ -11,6 +11,8 @@ import { logger, type SVGLoggerDirectionalLine } from '../../components/svg-logg
 import type { Band, Facet } from '$lib/generate-shape';
 import type { Vector3 } from 'three';
 import type { TiledPatternSubConfig } from '$lib/shades-config';
+import { Shape, LineSegment, Point as PointShape } from './shapes';
+import { CubicBezierSegment } from './shapes/CubicBezierSegment';
 
 export type Quadrilateral = {
 	p0: Point;
@@ -50,7 +52,22 @@ export const svgLines = (points: Point[], isClosed = false) => {
 	}, '')} ${isClosed ? 'Z' : ''}`;
 	return path;
 };
-
+export const svgBeziers = (points: Point[], isClosed = false) => {
+	const path = `${points.reduce((acc, point, i) => {
+		if (i > 0 && i < points.length - 2) {
+			return acc.concat(
+				`C ${point.x} ${point.y} ${points[i + 1].x} ${points[i + 1].y} ${points[i + 2].x} ${
+					points[i + 2].y
+				}`
+			);
+		} else if (i === 0) {
+			return `M ${point.x} ${point.y}`;
+		} else {
+			return acc.concat();
+		}
+	}, '')} ${isClosed ? 'Z' : ''}`;
+	return path;
+};
 // Utils
 export const addScaled = (p0: Point, p1: Point, scale: number) => {
 	return { x: p0.x + scale * p1.x, y: p0.y + scale * p1.y };
@@ -150,135 +167,334 @@ export const transformPatternByQuad = <T extends HexPattern | CarnationPattern>(
 	return transformedSegments;
 };
 
+// export const extractShapesFromMappedCarnationPatterns = (
+// 	mappedPatterns: CarnationPattern[],
+// 	containingQuads: Quadrilateral[],
+// 	config: TiledPatternSubConfig[]
+// ) => {
+// 	const fillEnd = config.find((cfg) => cfg.type === 'filledEndSize')?.value as number;
+// 	const shapes: { outline: PathSegment[]; holes: InsettablePolygon[] } = { outline: [], holes: [] };
+// 	shapes.outline = getOutline(containingQuads);
+
+// 	mappedPatterns.forEach((mp, i) => {
+// 		const getInner = () => (i < fillEnd ? 'interior' : 'insettable');
+// 		const getOuter = () => (i < fillEnd ? 'edge' : 'permeable');
+// 		const q = containingQuads[i];
+// 		if (i === 0) {
+// 			shapes.holes.push({
+// 				perimeter: { isPerimeter: true, index: 0 },
+// 				segments: [
+// 					{ variant: getInner(), p0: pointFrom(mp[0]), p1: pointFrom(mp[1]) },
+// 					{ variant: getOuter(), p0: pointFrom(mp[1]), p1: { ...q.p0 } },
+// 					{ variant: getOuter(), p0: { ...q.p0 }, p1: pointFrom(mp[0]) }
+// 				]
+// 			});
+// 			shapes.holes.push({
+// 				perimeter: { isPerimeter: true, index: 1 },
+// 				segments: [
+// 					{ variant: getInner(), p0: pointFrom(mp[1]), p1: pointFrom(mp[2]) },
+// 					{ variant: getInner(), p0: pointFrom(mp[2]), p1: pointFrom(mp[3]) },
+// 					{ variant: getOuter(), p0: pointFrom(mp[3]), p1: pointFrom(mp[1]) }
+// 				]
+// 			});
+// 			shapes.holes.push({
+// 				perimeter: { isPerimeter: true, index: 2 },
+// 				segments: [
+// 					{ variant: getInner(), p0: pointFrom(mp[3]), p1: pointFrom(mp[4]) },
+// 					{ variant: getOuter(), p0: pointFrom(mp[4]), p1: { ...q.p1 } },
+// 					{ variant: getOuter(), p0: { ...q.p1 }, p1: pointFrom(mp[3]) }
+// 				]
+// 			});
+// 		} else if (i === mappedPatterns.length - 1) {
+// 			shapes.holes.push({
+// 				perimeter: { isPerimeter: true, index: 5 + i },
+// 				segments: [
+// 					{ variant: getOuter(), p0: pointFrom(mp[17]), p1: { ...q.p3 } },
+// 					{ variant: getOuter(), p0: { ...q.p3 }, p1: pointFrom(mp[11]) },
+// 					{ variant: getInner(), p0: pointFrom(mp[11]), p1: pointFrom(mp[12]) },
+// 					{ variant: getInner(), p0: pointFrom(mp[12]), p1: pointFrom(mp[17]) }
+// 				]
+// 			});
+// 			shapes.holes.push({
+// 				perimeter: { isPerimeter: true, index: 4 + i },
+// 				segments: [
+// 					{ variant: getInner(), p0: pointFrom(mp[17]), p1: pointFrom(mp[12]) },
+// 					{ variant: getInner(), p0: pointFrom(mp[12]), p1: pointFrom(mp[13]) },
+// 					{ variant: getInner(), p0: pointFrom(mp[13]), p1: pointFrom(mp[14]) },
+// 					{ variant: getInner(), p0: pointFrom(mp[14]), p1: pointFrom(mp[19]) },
+// 					{ variant: getOuter(), p0: pointFrom(mp[19]), p1: pointFrom(mp[17]) }
+// 				]
+// 			});
+// 			shapes.holes.push({
+// 				perimeter: { isPerimeter: true, index: 3 + i },
+// 				segments: [
+// 					{ variant: getInner(), p0: pointFrom(mp[14]), p1: pointFrom(mp[15]) },
+// 					{ variant: getInner(), p0: pointFrom(mp[19]), p1: pointFrom(mp[14]) },
+// 					{ variant: getOuter(), p0: { ...q.p2 }, p1: pointFrom(mp[19]) },
+// 					{ variant: getOuter(), p0: pointFrom(mp[15]), p1: { ...q.p2 } }
+// 				]
+// 			});
+// 		}
+// 		if (i < mappedPatterns.length - 1) {
+// 			shapes.holes.push({
+// 				perimeter: { isPerimeter: true, index: mappedPatterns.length * 2 + 3 - i },
+// 				segments: [
+// 					{ variant: getInner(), p0: pointFrom(mp[11]), p1: pointFrom(mp[12]) },
+// 					{ variant: getInner(), p0: pointFrom(mp[12]), p1: pointFrom(mp[17]) },
+// 					{ variant: getInner(), p0: pointFrom(mp[17]), p1: pointFrom(mappedPatterns[i + 1][0]) },
+// 					{ variant: getOuter(), p0: pointFrom(mappedPatterns[i + 1][0]), p1: { ...q.p3 } },
+// 					{ variant: getOuter(), p0: { ...q.p3 }, p1: pointFrom(mp[11]) }
+// 				]
+// 			});
+// 			shapes.holes.push({
+// 				perimeter: { isPerimeter: false, index: -1 },
+// 				segments: [
+// 					{ variant: getInner(), p0: pointFrom(mp[12]), p1: pointFrom(mp[13]) },
+// 					{ variant: getInner(), p0: pointFrom(mp[13]), p1: pointFrom(mp[14]) },
+// 					{ variant: getInner(), p0: pointFrom(mp[14]), p1: pointFrom(mp[19]) },
+// 					{ variant: getInner(), p0: pointFrom(mp[19]), p1: pointFrom(mappedPatterns[i + 1][2]) },
+// 					{ variant: getInner(), p0: pointFrom(mappedPatterns[i + 1][2]), p1: pointFrom(mp[17]) },
+// 					{ variant: getInner(), p0: pointFrom(mp[17]), p1: pointFrom(mp[12]) }
+// 				]
+// 			});
+
+// 			shapes.holes.push({
+// 				perimeter: { isPerimeter: true, index: 3 + i },
+// 				segments: [
+// 					{ variant: getInner(), p0: pointFrom(mp[14]), p1: pointFrom(mp[15]) },
+// 					{ variant: getOuter(), p0: pointFrom(mp[15]), p1: { ...q.p2 } },
+// 					{ variant: getOuter(), p0: { ...q.p2 }, p1: pointFrom(mappedPatterns[i + 1][4]) },
+// 					{ variant: getInner(), p0: pointFrom(mappedPatterns[i + 1][4]), p1: pointFrom(mp[19]) },
+// 					{ variant: getInner(), p0: pointFrom(mp[19]), p1: pointFrom(mp[14]) }
+// 				]
+// 			});
+// 		}
+// 		shapes.holes.push({
+// 			perimeter: { isPerimeter: false, index: -1 },
+// 			segments: [
+// 				{ variant: getInner(), p0: pointFrom(mp[0]), p1: pointFrom(mp[1]) },
+// 				{ variant: getInner(), p0: pointFrom(mp[1]), p1: pointFrom(mp[2]) },
+// 				{ variant: getInner(), p0: pointFrom(mp[2]), p1: pointFrom(mp[13]) },
+// 				{ variant: getInner(), p0: pointFrom(mp[13]), p1: pointFrom(mp[12]) },
+// 				{ variant: getInner(), p0: pointFrom(mp[12]), p1: pointFrom(mp[11]) },
+// 				{ variant: getInner(), p0: pointFrom(mp[11]), p1: pointFrom(mp[0]) }
+// 			]
+// 		});
+// 		shapes.holes.push({
+// 			perimeter: { isPerimeter: false, index: -1 },
+// 			segments: [
+// 				{ variant: getInner(), p0: pointFrom(mp[2]), p1: pointFrom(mp[3]) },
+// 				{ variant: getInner(), p0: pointFrom(mp[3]), p1: pointFrom(mp[4]) },
+// 				{ variant: getInner(), p0: pointFrom(mp[4]), p1: pointFrom(mp[15]) },
+// 				{ variant: getInner(), p0: pointFrom(mp[15]), p1: pointFrom(mp[14]) },
+// 				{ variant: getInner(), p0: pointFrom(mp[14]), p1: pointFrom(mp[13]) },
+// 				{ variant: getInner(), p0: pointFrom(mp[13]), p1: pointFrom(mp[2]) }
+// 			]
+// 		});
+// 	});
+// 	return shapes;
+// };
 
 export const extractShapesFromMappedCarnationPatterns = (
 	mappedPatterns: CarnationPattern[],
 	containingQuads: Quadrilateral[],
-	config: TiledPatternSubConfig[]
+	config?: TiledPatternSubConfig[]
 ) => {
-	const fillEnd = config.find((cfg) => cfg.type === 'filledEndSize')?.value as number;
-	const shapes: { outline: PathSegment[]; holes: InsettablePolygon[] } = { outline: [], holes: [] };
-	shapes.outline = getOutline(containingQuads);
+	const shapes: Shape[] = [];
 
-	mappedPatterns.forEach((mp, i) => {
-		const getInner = () => (i < fillEnd ? 'interior' : 'insettable');
-		const getOuter = () => (i < fillEnd ? 'edge' : 'permeable');
-		const q = containingQuads[i];
+	mappedPatterns.forEach((q, i) => {
 		if (i === 0) {
-			shapes.holes.push({
-				perimeter: { isPerimeter: true, index: 0 },
-				segments: [
-					{ variant: getInner(), p0: pointFrom(mp[0]), p1: pointFrom(mp[1]) },
-					{ variant: getOuter(), p0: pointFrom(mp[1]), p1: { ...q.p0 } },
-					{ variant: getOuter(), p0: { ...q.p0 }, p1: pointFrom(mp[0]) }
-				]
-			});
-			shapes.holes.push({
-				perimeter: { isPerimeter: true, index: 1 },
-				segments: [
-					{ variant: getInner(), p0: pointFrom(mp[1]), p1: pointFrom(mp[2]) },
-					{ variant: getInner(), p0: pointFrom(mp[2]), p1: pointFrom(mp[3]) },
-					{ variant: getOuter(), p0: pointFrom(mp[3]), p1: pointFrom(mp[1]) }
-				]
-			});
-			shapes.holes.push({
-				perimeter: { isPerimeter: true, index: 2 },
-				segments: [
-					{ variant: getInner(), p0: pointFrom(mp[3]), p1: pointFrom(mp[4]) },
-					{ variant: getOuter(), p0: pointFrom(mp[4]), p1: { ...q.p1 } },
-					{ variant: getOuter(), p0: { ...q.p1 }, p1: pointFrom(mp[3]) }
-				]
-			});
+			shapes.push(
+				new Shape({
+					isPermeable: false,
+					segments: [
+						new LineSegment([q[0][1], q[0][2], q[2][5], q[2][6]], false, true),
+						new CubicBezierSegment(
+							[q[2][5], q[2][6], q[2][3], q[2][4], q[2][1], q[2][2], q[1][5], q[1][6]],
+							false,
+							false
+						),
+						new CubicBezierSegment(
+							[q[1][5], q[1][6], q[1][3], q[1][4], q[1][1], q[1][2], q[0][1], q[0][2]],
+							false,
+							false
+						)
+					]
+				}),
+				new Shape({
+					isPermeable: false,
+					segments: [
+						new LineSegment([q[2][5], q[2][6], q[4][5], q[4][6]], false, true),
+						new CubicBezierSegment(
+							[q[4][5], q[4][6], q[4][3], q[4][4], q[4][1], q[4][2], q[3][5], q[3][6]],
+							false,
+							false
+						),
+						new CubicBezierSegment(
+							[q[3][5], q[3][6], q[3][3], q[3][4], q[3][1], q[3][2], q[2][5], q[2][6]],
+							false,
+							false
+						)
+					]
+				})
+			);
 		} else if (i === mappedPatterns.length - 1) {
-			shapes.holes.push({
-				perimeter: { isPerimeter: true, index: 5 + i },
-				segments: [
-					{ variant: getOuter(), p0: pointFrom(mp[17]), p1: { ...q.p3 } },
-					{ variant: getOuter(), p0: { ...q.p3 }, p1: pointFrom(mp[11]) },
-					{ variant: getInner(), p0: pointFrom(mp[11]), p1: pointFrom(mp[12]) },
-					{ variant: getInner(), p0: pointFrom(mp[12]), p1: pointFrom(mp[17]) }
-				]
-			});
-			shapes.holes.push({
-				perimeter: { isPerimeter: true, index: 4 + i },
-				segments: [
-					{ variant: getInner(), p0: pointFrom(mp[17]), p1: pointFrom(mp[12]) },
-					{ variant: getInner(), p0: pointFrom(mp[12]), p1: pointFrom(mp[13]) },
-					{ variant: getInner(), p0: pointFrom(mp[13]), p1: pointFrom(mp[14]) },
-					{ variant: getInner(), p0: pointFrom(mp[14]), p1: pointFrom(mp[19]) },
-					{ variant: getOuter(), p0: pointFrom(mp[19]), p1: pointFrom(mp[17]) }
-				]
-			});
-			shapes.holes.push({
-				perimeter: { isPerimeter: true, index: 3 + i },
-				segments: [
-					{ variant: getInner(), p0: pointFrom(mp[14]), p1: pointFrom(mp[15]) },
-					{ variant: getInner(), p0: pointFrom(mp[19]), p1: pointFrom(mp[14]) },
-					{ variant: getOuter(), p0: { ...q.p2 }, p1: pointFrom(mp[19]) },
-					{ variant: getOuter(), p0: pointFrom(mp[15]), p1: { ...q.p2 } }
-				]
-			});
+			shapes.push(
+				new Shape({
+					isPermeable: true,
+					segments: [
+						new CubicBezierSegment(
+							[q[6][5], q[6][6], q[7][1], q[7][2], q[7][3], q[7][4], q[7][5], q[7][6]],
+							false,
+							false
+						),
+						new LineSegment([q[7][5], q[7][6], q[5][1], q[5][2]], true, true),
+						new CubicBezierSegment(
+							[q[5][1], q[5][2], q[6][1], q[6][2], q[6][3], q[6][4], q[6][5], q[6][6]],
+							false,
+							false
+						)
+					]
+				}),
+				new Shape({
+					isPermeable: true,
+					segments: [
+						new CubicBezierSegment(
+							[q[8][5], q[8][6], q[9][1], q[9][2], q[9][3], q[9][4], q[9][5], q[9][6]],
+							false,
+							false
+						),
+						new LineSegment([q[9][5], q[9][6], q[7][5], q[7][6]], true, true),
+						new CubicBezierSegment(
+							[q[7][5], q[7][6], q[8][1], q[8][2], q[8][3], q[8][4], q[8][5], q[8][6]],
+							false,
+							false
+						)
+					]
+				})
+			);
 		}
-		if (i < mappedPatterns.length - 1) {
-			shapes.holes.push({
-				perimeter: { isPerimeter: true, index: mappedPatterns.length * 2 + 3 - i },
+		if (i > 0) {
+			const pQ = mappedPatterns[i - 1];
+			shapes.push(
+				new Shape({
+					isPermeable: false,
+					segments: [
+						new CubicBezierSegment(
+							[pQ[5][1], pQ[5][2], pQ[6][1], pQ[6][2], pQ[6][3], pQ[6][4], pQ[6][5], pQ[6][6]],
+							false,
+							false
+						),
+						new CubicBezierSegment(
+							[pQ[6][5], pQ[6][6], pQ[7][1], pQ[7][2], pQ[7][3], pQ[7][4], pQ[7][5], pQ[7][6]],
+							false,
+							false
+						),
+						new CubicBezierSegment(
+							[q[2][5], q[2][6], q[2][3], q[2][4], q[2][1], q[2][2], q[1][5], q[1][6]],
+							false,
+							false
+						),
+						new CubicBezierSegment(
+							[q[1][5], q[1][6], q[1][3], q[1][4], q[1][1], q[1][2], q[0][1], q[0][2]],
+							false,
+							false
+						)
+					]
+				}),
+				new Shape({
+					isPermeable: false,
+					segments: [
+						new CubicBezierSegment(
+							[pQ[7][5], pQ[7][6], pQ[8][1], pQ[8][2], pQ[8][3], pQ[8][4], pQ[8][5], pQ[8][6]],
+							false,
+							false
+						),
+						new CubicBezierSegment(
+							[pQ[8][5], pQ[8][6], pQ[9][1], pQ[9][2], pQ[9][3], pQ[9][4], pQ[9][5], pQ[9][6]],
+							false,
+							false
+						),
+						new CubicBezierSegment(
+							[q[4][5], q[4][6], q[4][3], q[4][4], q[4][1], q[4][2], q[3][5], q[3][6]],
+							false,
+							false
+						),
+						new CubicBezierSegment(
+							[q[3][5], q[3][6], q[3][3], q[3][4], q[3][1], q[3][2], q[2][5], q[2][6]],
+							false,
+							false
+						)
+					]
+				})
+			);
+		}
+		shapes.push(
+			new Shape({
+				isPermeable: false,
 				segments: [
-					{ variant: getInner(), p0: pointFrom(mp[11]), p1: pointFrom(mp[12]) },
-					{ variant: getInner(), p0: pointFrom(mp[12]), p1: pointFrom(mp[17]) },
-					{ variant: getInner(), p0: pointFrom(mp[17]), p1: pointFrom(mappedPatterns[i + 1][0]) },
-					{ variant: getOuter(), p0: pointFrom(mappedPatterns[i + 1][0]), p1: { ...q.p3 } },
-					{ variant: getOuter(), p0: { ...q.p3 }, p1: pointFrom(mp[11]) }
+					new CubicBezierSegment(
+						[q[1][5], q[1][6], q[2][1], q[2][2], q[2][3], q[2][4], q[2][5], q[2][6]],
+						false,
+						false
+					),
+					new CubicBezierSegment(
+						[q[2][5], q[2][6], q[3][1], q[3][2], q[3][3], q[3][4], q[3][5], q[3][6]],
+						false,
+						false
+					),
+					new CubicBezierSegment(
+						[q[8][5], q[8][6], q[8][3], q[8][4], q[8][1], q[8][2], q[7][5], q[7][6]],
+						false,
+						false
+					),
+					new CubicBezierSegment(
+						[q[7][5], q[7][6], q[7][3], q[7][4], q[7][1], q[7][2], q[6][5], q[6][6]],
+						false,
+						false
+					)
 				]
-			});
-			shapes.holes.push({
-				perimeter: { isPerimeter: false, index: -1 },
-				segments: [
-					{ variant: getInner(), p0: pointFrom(mp[12]), p1: pointFrom(mp[13]) },
-					{ variant: getInner(), p0: pointFrom(mp[13]), p1: pointFrom(mp[14]) },
-					{ variant: getInner(), p0: pointFrom(mp[14]), p1: pointFrom(mp[19]) },
-					{ variant: getInner(), p0: pointFrom(mp[19]), p1: pointFrom(mappedPatterns[i + 1][2]) },
-					{ variant: getInner(), p0: pointFrom(mappedPatterns[i + 1][2]), p1: pointFrom(mp[17]) },
-					{ variant: getInner(), p0: pointFrom(mp[17]), p1: pointFrom(mp[12]) }
-				]
-			});
+			}),
 
-			shapes.holes.push({
-				perimeter: { isPerimeter: true, index: 3 + i },
+			new Shape({
+				isPermeable: true,
 				segments: [
-					{ variant: getInner(), p0: pointFrom(mp[14]), p1: pointFrom(mp[15]) },
-					{ variant: getOuter(), p0: pointFrom(mp[15]), p1: { ...q.p2 } },
-					{ variant: getOuter(), p0: { ...q.p2 }, p1: pointFrom(mappedPatterns[i + 1][4]) },
-					{ variant: getInner(), p0: pointFrom(mappedPatterns[i + 1][4]), p1: pointFrom(mp[19]) },
-					{ variant: getInner(), p0: pointFrom(mp[19]), p1: pointFrom(mp[14]) }
+					new CubicBezierSegment(
+						[q[0][1], q[0][2], q[1][1], q[1][2], q[1][3], q[1][4], q[1][5], q[1][6]],
+						false,
+						false
+					),
+					new CubicBezierSegment(
+						[q[6][5], q[6][6], q[6][3], q[6][4], q[6][1], q[6][2], q[5][1], q[5][2]],
+						false,
+						false
+					),
+					new LineSegment([q[5][1], q[5][2], q[0][1], q[0][2]], false, true)
 				]
-			});
-		}
-		shapes.holes.push({
-			perimeter: { isPerimeter: false, index: -1 },
-			segments: [
-				{ variant: getInner(), p0: pointFrom(mp[0]), p1: pointFrom(mp[1]) },
-				{ variant: getInner(), p0: pointFrom(mp[1]), p1: pointFrom(mp[2]) },
-				{ variant: getInner(), p0: pointFrom(mp[2]), p1: pointFrom(mp[13]) },
-				{ variant: getInner(), p0: pointFrom(mp[13]), p1: pointFrom(mp[12]) },
-				{ variant: getInner(), p0: pointFrom(mp[12]), p1: pointFrom(mp[11]) },
-				{ variant: getInner(), p0: pointFrom(mp[11]), p1: pointFrom(mp[0]) }
-			]
-		});
-		shapes.holes.push({
-			perimeter: { isPerimeter: false, index: -1 },
-			segments: [
-				{ variant: getInner(), p0: pointFrom(mp[2]), p1: pointFrom(mp[3]) },
-				{ variant: getInner(), p0: pointFrom(mp[3]), p1: pointFrom(mp[4]) },
-				{ variant: getInner(), p0: pointFrom(mp[4]), p1: pointFrom(mp[15]) },
-				{ variant: getInner(), p0: pointFrom(mp[15]), p1: pointFrom(mp[14]) },
-				{ variant: getInner(), p0: pointFrom(mp[14]), p1: pointFrom(mp[13]) },
-				{ variant: getInner(), p0: pointFrom(mp[13]), p1: pointFrom(mp[2]) }
-			]
-		});
+			}),
+			new Shape({
+				isPermeable: true,
+				segments: [
+					new CubicBezierSegment(
+						[q[3][5], q[3][6], q[4][1], q[4][2], q[4][3], q[4][4], q[4][5], q[4][6]],
+						false,
+						false
+					),
+					new LineSegment([q[4][5], q[4][6], q[9][5], q[9][6]], false, true),
+					new CubicBezierSegment(
+						[q[9][5], q[9][6], q[9][3], q[9][4], q[9][1], q[9][2], q[3][5], q[3][6]],
+						false,
+						false
+					)
+				]
+			})
+		);
 	});
+
+	console.debug('shapes', shapes);
+	// shapes.map((shape) => shape.offsetShape(-10));
 	return shapes;
 };
-
 
 export const extractShapesFromMappedHexPatterns = (
 	mappedPatterns: HexPattern[],
@@ -497,7 +713,6 @@ export const generateCarnationPattern = (size?: number, strength?: number): Carn
 		['C', w, h + h * s, 2 * w - w * s, h + h, 2 * w, 2 * h],
 		['C', 2 * w + w * s, 2 * h, 3 * w, h + h * s, 3 * w, h],
 		['C', 3 * w, h + h * s, 4 * w - w * s, 2 * h, 4 * w, 2 * h]
-
 	];
 };
 

@@ -197,11 +197,13 @@ export const generateTiledBandPattern = ({
 	bands: Band[];
 	tiledPatternConfig: TiledPatternConfig;
 }): PatternedBandPattern => {
-	if (tiledPatternConfig.type !== 'tiledHexPattern-0') {
+	if (tiledPatternConfig.type === "none" || !['tiledHexPattern-0', 'tiledArchesPattern-0'].includes(tiledPatternConfig.type )) {
 		throw new Error("TiledPatternConfig is not of type 'tiledHexPattern-0'");
 	}
-	console.debug('***************************\ngenerateTiledBandPattern');
+	console.debug('***************************\ngenerateTiledBandPattern', tiledPatternConfig.type);
 	const pattern: PatternedBandPattern = { projectionType: 'patterned', bands: [] };
+
+
 
 	const unitPattern = generateHexPattern(1);
 	const width =
@@ -220,6 +222,18 @@ export const generateTiledBandPattern = ({
 			| false) || false;
 	const doTabs = !!appendTab && !!tabVariant;
 
+	if (tiledPatternConfig.type === "tiledArchesPattern-0") {
+		const layoutPattern = {
+			bands: bands.map((band) => {
+				const flatBand = getFlatStrip(band, { bandStyle: 'helical-right' });
+				const quadBand = getQuadrilaterals(flatBand);
+				console.debug("quadBand", quadBand)
+				
+			})
+		}
+		console.debug("arches layoutPattern", layoutPattern)
+	}
+
 	const layoutPattern = {
 		bands: bands.map((band, index) => {
 			const flatBand = getFlatStrip(band, { bandStyle: 'helical-right' });
@@ -230,25 +244,6 @@ export const generateTiledBandPattern = ({
 				quadBand,
 				tiledPatternConfig.config
 			);
-			// logger.update((prev) => {
-			// 	const newDebug = outlinedHoles.holes
-			// 		.map((hole) =>
-			// 			hole.segments.map((segment) => {
-			// 				const newLine: SVGLoggerDirectionalLine = {
-			// 					directionalLine: {
-			// 						points: [segment.p0, segment.p1],
-			// 						label: '',
-			// 						labels: [],
-			// 						for: `patterned-band-pattern-${index}`
-			// 					}
-			// 				};
-			// 				return newLine;
-			// 			})
-			// 		)
-			// 		.flat(1);
-			// 	prev.debug.push(...newDebug);
-			// 	return prev;
-			// });
 			return outlinedHoles;
 		})
 	};
@@ -267,8 +262,18 @@ export const generateTiledBandPattern = ({
 		const tabs = doTabs ? { appendTab, insetWidth, tabVariant, width } : undefined;
 		const reTraced = traceCombinedOutline(holes, tabs, index);
 		const finalHoles = reTraced.holes.map((hole) => svgPathStringFromInsettablePolygon(hole));
-		const finalPattern = svgPathStringFromSegments(reTraced.outline).concat(finalHoles.join(' '));
-
+		let finalPattern
+		const layoutPattern = tiledPatternConfig.config.find(subconfig => subconfig.type === "layoutStyle")?.value || "holes"
+		switch (layoutPattern) {
+			case "tiles":
+				finalPattern = finalHoles.join(' ')
+				break;
+			case "outline":
+				finalPattern = svgPathStringFromSegments(reTraced.outline)
+				break;
+			default:
+				finalPattern = svgPathStringFromSegments(reTraced.outline).concat(finalHoles.join(' '))	
+		}
 		return { svgPath: finalPattern, facets: [], id: `patterned-band-pattern-${index}` };
 	});
 	pattern.bands = cuttablePattern;

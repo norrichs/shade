@@ -258,6 +258,23 @@
 						{/if}
 					{/each}
 				{/if}
+				{#if $config0.tiledPatternConfig.type === 'tiledArchesPattern-0' && Array.isArray($config0.tiledPatternConfig.config)}
+					{#each $config0.tiledPatternConfig.config as cfg, i}
+						{#if cfg.valueType === 'number'}
+							<CombinedNumberInput
+								label={cfg.type}
+								bind:value={cfg.value}
+								min={cfg.min}
+								max={cfg.max}
+								step={cfg.step}
+							/>
+						{:else if cfg.valueType === 'boolean'}
+							<CheckboxInput label={cfg.type} bind:value={cfg.value} />
+						{:else if cfg.valueType === 'named'}
+							<SelectInput label={cfg.type} bind:value={cfg.value} options={cfg.options} />
+						{/if}
+					{/each}
+				{/if}
 			</div>
 		</div>
 	</section>

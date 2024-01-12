@@ -165,6 +165,7 @@ const defaultRenderConfig: RenderConfig = {
 };
 
 export type TiledPatternSubConfig =
+	| { type: 'layoutStyle'; valueType: "named"; value: string;  options: ["holes", "tiles", "outline"]}
 	| { type: 'width'; valueType: 'number'; value: number; min: number; max: number; step: number }
 	| {
 			type: 'insetWidth';
@@ -203,31 +204,62 @@ export type TiledPatternConfig =
 			unitPattern: 'tiledHexPattern-0';
 			config: TiledPatternSubConfig[];
 	  }
+	| {
+			type: 'tiledArchesPattern-0';
+			tiling: 'quadrilateral';
+			unitPattern: 'tiledArchesPattern-0';
+			config: TiledPatternSubConfig[];
+	  }
 	| { type: 'none' };
 
-const defaultTiledPatternConfig: TiledPatternConfig = {
-	type: 'tiledHexPattern-0',
-	tiling: 'quadrilateral',
-	unitPattern: 'tiledHexPattern-0',
-	config: [
-		{ type: 'width', valueType: 'number', value: 10, min: 0, max: 10, step: 0.1 },
-		{ type: 'insetWidth', valueType: 'number', value: 10, min: 0, max: 50, step: 0.1 },
-		{
-			type: 'appendTab',
-			valueType: 'named',
-			value: 'both',
-			options: [{ none: false }, 'left', 'right', 'both']
-		},
-		{
-			type: 'tabVariant',
-			valueType: 'named',
-			value: 'extend',
-			options: [{ none: false }, 'extend', 'inset']
-		},
-		{ type: 'adjustBandBoundary', valueType: 'boolean', value: true },
-		{ type: 'filledEndSize', valueType: 'number', value: 0, min: 0, max: 5, step: 1 }
-	]
-};
+const defaultTiledPatternConfig: TiledPatternConfig[] = [
+	{
+		type: 'tiledHexPattern-0',
+		tiling: 'quadrilateral',
+		unitPattern: 'tiledHexPattern-0',
+		config: [
+			{ type: "layoutStyle", valueType: 'named', value: 'holes', options: ['holes', 'tiles', 'outline']},
+			{ type: 'width', valueType: 'number', value: 10, min: 0, max: 10, step: 0.1 },
+			{ type: 'insetWidth', valueType: 'number', value: 10, min: 0, max: 50, step: 0.1 },
+			{
+				type: 'appendTab',
+				valueType: 'named',
+				value: 'both',
+				options: [{ none: false }, 'left', 'right', 'both']
+			},
+			{
+				type: 'tabVariant',
+				valueType: 'named',
+				value: 'extend',
+				options: [{ none: false }, 'extend', 'inset']
+			},
+			{ type: 'adjustBandBoundary', valueType: 'boolean', value: true },
+			{ type: 'filledEndSize', valueType: 'number', value: 0, min: 0, max: 5, step: 1 }
+		]
+	},
+	{
+		type: 'tiledArchesPattern-0',
+		tiling: 'quadrilateral',
+		unitPattern: 'tiledArchesPattern-0',
+		config: [
+			{ type: 'width', valueType: 'number', value: 10, min: 0, max: 10, step: 0.1 },
+			{
+				type: 'appendTab',
+				valueType: 'named',
+				value: 'both',
+				options: [{ none: false }, 'left', 'right', 'both']
+			},
+			{
+				type: 'tabVariant',
+				valueType: 'named',
+				value: 'extend',
+				options: [{ none: false }, 'extend', 'inset']
+			},
+			{ type: 'adjustBandBoundary', valueType: 'boolean', value: true },
+			{ type: 'filledEndSize', valueType: 'number', value: 0, min: 0, max: 5, step: 1 }
+		]
+	}
+];
 
 const defaultCutoutConfig: CutoutConfig[] = [
 	{
@@ -313,7 +345,7 @@ export const generateDefaultConfig = (): ShadesConfig => {
 		cutoutConfig: defaultCutoutConfig[1],
 		patternConfig: defaultPatternConfig,
 		patternViewConfig: defaultPatternViewConfig,
-		tiledPatternConfig: defaultTiledPatternConfig
+		tiledPatternConfig: defaultTiledPatternConfig[1]
 	};
 	return config;
 };
