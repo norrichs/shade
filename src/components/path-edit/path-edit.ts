@@ -67,7 +67,7 @@ export const onPathPointMove = (
 
 		return curves;
 	} else if (isEnd && isHandle) {
-		console.error('pathEdit stub');
+		console.error('pathEdit stub - isEnd && isHandle');
 	} else if (isPoint && isJoined && partner) {
 		// coordinate associated points of joined point - handle, partner point, partner handle
 		const [partnerHandle, partnerPoint] =

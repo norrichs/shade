@@ -47,7 +47,7 @@
 	}
 	type ShowControlCurveValue = 'ShapeConfig' | 'DepthCurveConfig' | 'ZCurveConfig';
 	const isShowControlCurveValue = (value: unknown): value is ShowControlCurveValue => {
-		return ['ShapeConfig', 'DepthCurveConfig', 'ZCurveConfig'].includes(value as string);
+		return ['ShapeConfig', 'DepthCurveConfig', 'ZCurveConfig', 'SpineCurveConfig'].includes(value as string);
 	};
 </script>
 
@@ -66,6 +66,7 @@
 					{ name: 'None' },
 					{ name: 'Zcurve', value: 'ZCurveConfig' },
 					{ name: 'DepthCurve', value: 'DepthCurveConfig' },
+					{ name: 'Spine', value: 'SpineCurveConfig'},
 					{ name: 'Shape', value: 'ShapeConfig' },
 					{ name: '3D' },
 					{ name: 'Levels' },
@@ -78,7 +79,7 @@
 		</header>
 		<div class="group">
 			<div>
-				{#if ['Zcurve', 'Shape', 'DepthCurve'].includes(showControl?.name)}
+				{#if ['Zcurve', 'Shape', 'DepthCurve', "Spine"].includes(showControl?.name)}
 					<PathEdit
 						curveStoreType={isShowControlCurveValue(showControl.value)
 							? showControl.value

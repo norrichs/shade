@@ -2,6 +2,7 @@ import type { PathSegment } from '$lib/cut-pattern/cut-pattern.types';
 import type { Point, Triangle } from './flower-of-life.types';
 import type { Triangle as ThreeTriangle } from 'three';
 
+
 export const generateUnitTriangle = (sideLength: number): Triangle => {
 	const unit = {
 		a: { x: 0, y: 0 },
@@ -24,6 +25,40 @@ export const getMidPoint = (p1: Point, p2: Point): Point => {
 		y: p1.y + (p2.y - p1.y) / 2
 	};
 	return mid;
+};
+
+export const getIntersectionOfLines = (
+	l1: { p0: Point; p1: Point },
+	l2: { p0: Point; p1: Point }
+): Point | false => {
+	let b1, b2, x, y: number;
+
+	const m1 = getSlope(l1.p0, l1.p1);
+	const m2 = getSlope(l2.p0, l2.p1);
+	if (m1 === m2) {
+		return false;
+	} else if (!Number.isFinite(m1)) {
+		x = l1.p1.x;
+		b2 = l2.p1.y - m2 * l2.p1.x;
+		y = m2 * x + b2;
+	} else if (!Number.isFinite(m2)) {
+		x = l2.p1.x;
+		b1 = l1.p1.y - m1 * l1.p1.x;
+		y = m1 * x + b1;
+	} else {
+		b1 = l1.p1.y - m1 * l1.p1.x;
+		b2 = l2.p1.y - m2 * l2.p1.x;
+		x = (b2 - b1) / (m1 - m2);
+		y = m1 * x + b1;
+	}
+	if (!Number.isFinite(x) || !Number.isFinite(y)) {
+		console.error('--------- Infinite', x, y, m1, m2, b1, b2);
+	}
+	return { x, y };
+};
+
+export const getSlope = (p0: Point, p1: Point) => {
+	return (p1.y - p0.y) / (p1.x - p0.x);
 };
 
 export const getAngle = (anchor: Point, point: Point) =>

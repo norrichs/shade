@@ -458,11 +458,11 @@ const isSamePoint = (p0: Point, p1: Point, precision?: number) => {
 	}
 	return Math.abs(p0.x - p1.x) <= precision && Math.abs(p0.y - p1.y) <= precision;
 };
-const getSlope = (p0: Point, p1: Point) => {
+export const getSlope = (p0: Point, p1: Point) => {
 	return (p1.y - p0.y) / (p1.x - p0.x);
 };
 
-const getIntersectionOfLines = (
+export const getIntersectionOfLines = (
 	l1: { p0: Point; p1: Point },
 	l2: { p0: Point; p1: Point }
 ): Point => {

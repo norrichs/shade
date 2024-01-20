@@ -8,13 +8,15 @@ import type {
 	BandConfig,
 	CurveSampleMethod,
 	DepthCurveConfig,
+	SpineCurveConfig,
 	LevelConfig,
 	ShapeConfig,
 	RenderConfig,
 	ShadesConfig,
 	StrutConfig,
 	TabStyle,
-	ZCurveConfig
+	ZCurveConfig,
+	CurveConfig
 } from './generate-shape';
 import { rad } from './util';
 
@@ -44,6 +46,21 @@ const defaultDepthCurveConfig: DepthCurveConfig = {
 				{ type: 'PointConfig2', x: 10, y: -75 },
 				{ type: 'PointConfig2', x: 10, y: 75 },
 				{ type: 'PointConfig2', x: 10, y: 100 }
+			]
+		}
+	]
+};
+
+const defaultSpineCurveConfig: SpineCurveConfig = {
+	type: 'SpineCurveConfig',
+	curves: [
+		{
+			type: 'BezierConfig',
+			points: [
+				{ type: 'PointConfig2', x: 0, y: -100 },
+				{ type: 'PointConfig2', x: 0, y: -75 },
+				{ type: 'PointConfig2', x: 0, y: 75 },
+				{ type: 'PointConfig2', x: 0, y: 100 }
 			]
 		}
 	]
@@ -307,6 +324,7 @@ export const generateDefaultConfig = (): ShadesConfig => {
 		},
 		zCurveConfig: defaultZCurveConfig,
 		depthCurveConfig: defaultDepthCurveConfig,
+		spineCurveConfig: defaultSpineCurveConfig,
 		bandConfig: defaultBandConfig,
 		strutConfig: defaultStrutConfig,
 		renderConfig: defaultRenderConfig,

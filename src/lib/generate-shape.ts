@@ -143,6 +143,8 @@ export type LineConfig = {
 	points: [PointConfig2, PointConfig2];
 };
 
+export type CurveConfig = ZCurveConfig | ShapeConfig | DepthCurveConfig | SpineCurveConfig;
+
 export type ZCurveConfig = {
 	type: 'ZCurveConfig';
 	curves: BezierConfig[];
@@ -151,6 +153,11 @@ export type ZCurveConfig = {
 export type DepthCurveConfig = {
 	type: 'DepthCurveConfig';
 	depthCurveBaseline: number;
+	curves: BezierConfig[];
+};
+
+export type SpineCurveConfig = {
+	type: 'SpineCurveConfig';
 	curves: BezierConfig[];
 };
 
@@ -389,6 +396,41 @@ export type Validation = {
 const isLevelOffset = (levelOffset: LevelOffset | LevelOffset[]): levelOffset is LevelOffset =>
 	!Array.isArray(levelOffset);
 
+export const getCurvePoints = (
+	curveConfig: ZCurveConfig,
+	{ divisions, method }: CurveSampleMethod,
+	getTangents = false
+) => {
+	const curve = generateZCurve(curveConfig);
+	// const pointCount = method === 'divideCurve' ? curveConfig.curves.length * divisions : divisions;
+	const result: {points: Vector2[], tangents: Vector2[]} = {
+		points: curve.getSpacedPoints(divisions),
+		tangents: []
+	};
+	if (getTangents) {
+		result.tangents = result.points.map((point, i) => curve.getTangentAt(i * 1 / divisions))
+	}
+
+	console.debug('getCurvepoints',result);
+	return result;
+};
+
+export const getLevelLines = ({ points, tangents }: { points: Vector2[], tangents: Vector2[] }, { levelConfig, shapeConfig }: ShadesConfig) => {
+	console.debug("GET LEVEL LINES --------------")
+	const levelPrototype = generateLevelPrototype(shapeConfig, levelConfig)
+
+	if (!Array.isArray(levelPrototype)) {
+		console.debug("Level prototype for getLevelLines", levelPrototype)
+		let intersection0, intersection1
+		for (let i = 0; i < levelPrototype.vertices.length; i++) {
+			const v0 = levelPrototype.vertices[i]
+			const v1 = levelPrototype.vertices[(i + 1) % levelPrototype.vertices.length]
+			
+		}
+	}
+}
+
+
 const generateLevelSet = (
 	levelConfig: LevelConfig,
 	zCurveConfig: ZCurveConfig,
@@ -404,6 +446,7 @@ const generateLevelSet = (
 
 	// scale z-curve to height and baseRadius
 	const zCurve = generateZCurve(zCurveConfig);
+	console.debug('-------- zCurve\n  config: ', zCurveConfig, '\n  zCurve', zCurve);
 	const levelCount =
 		levelConfig.zCurveSampleMethod.method === 'divideCurve'
 			? zCurveConfig.curves.length * levelConfig.zCurveSampleMethod.divisions
@@ -417,6 +460,7 @@ const generateLevelSet = (
 	} else {
 		zCurveRawPoints = zCurve.getPoints(levelConfig.zCurveSampleMethod.divisions);
 	}
+	console.debug('zCurveRawPoints', zCurveRawPoints);
 	const configLevelOffset: LevelOffset = isLevelOffset(levelConfig.levelOffset)
 		? levelConfig.levelOffset
 		: levelConfig.levelOffset[0];
@@ -472,8 +516,6 @@ const generateLevel = (
 
 	const vertices = depthedVertices.map((pV) => {
 		const scaledVertex: Vector3 = new Vector3(pV.x, pV.y, 0);
-		// check this
-
 		scaledVertex.setLength(
 			Math.sqrt(Math.pow(offset.scaleX * pV.x, 2) + Math.pow(offset.scaleY * pV.y, 2))
 		);
@@ -1146,6 +1188,7 @@ export type ShadesConfig = {
 		| LevelConfig
 		| ZCurveConfig
 		| DepthCurveConfig
+		| SpineCurveConfig
 		| BandConfig
 		| StrutConfig
 		| RenderConfig
@@ -1159,6 +1202,7 @@ export type ShadesConfig = {
 	levelConfig: LevelConfig;
 	zCurveConfig: ZCurveConfig;
 	depthCurveConfig: DepthCurveConfig;
+	spineCurveConfig: SpineCurveConfig;
 	bandConfig: BandConfig;
 	strutConfig: StrutConfig;
 	renderConfig: RenderConfig;
