@@ -9,6 +9,7 @@ import type {
 } from './cut-pattern/cut-pattern.types';
 import { generateEdgeConfig } from './cut-pattern/cut-pattern';
 import type { TiledPatternConfig } from './shades-config';
+import { getIntersectionOfLines } from './patterns/quadrilateral';
 // import { rad } from "$lib/util"
 
 // Rotated Shape Levels are 2d.  How can I enforce that?
@@ -398,38 +399,40 @@ const isLevelOffset = (levelOffset: LevelOffset | LevelOffset[]): levelOffset is
 
 export const getCurvePoints = (
 	curveConfig: ZCurveConfig,
-	{ divisions, method }: CurveSampleMethod,
-	getTangents = false
+	{ divisions, method }: CurveSampleMethod
 ) => {
 	const curve = generateZCurve(curveConfig);
 	// const pointCount = method === 'divideCurve' ? curveConfig.curves.length * divisions : divisions;
-	const result: {points: Vector2[], tangents: Vector2[]} = {
+	const result: { points: Vector2[]; tangents: Vector2[]; normals: Vector2[] } = {
 		points: curve.getSpacedPoints(divisions),
-		tangents: []
+		tangents: [],
+		normals: []
 	};
-	if (getTangents) {
-		result.tangents = result.points.map((point, i) => curve.getTangentAt(i * 1 / divisions))
-	}
 
-	console.debug('getCurvepoints',result);
+	result.tangents = result.points.map((point, i) => curve.getTangentAt((i * 1) / divisions));
+	result.normals = result.tangents.map((tangent) => new Vector2(tangent.y, -tangent.x))
+
+	console.debug('getCurvepoints', result);
 	return result;
 };
 
-export const getLevelLines = ({ points, tangents }: { points: Vector2[], tangents: Vector2[] }, { levelConfig, shapeConfig }: ShadesConfig) => {
-	console.debug("GET LEVEL LINES --------------")
-	const levelPrototype = generateLevelPrototype(shapeConfig, levelConfig)
+export const getLevelLines = (
+	{ points, normals }: { points: Vector2[]; normals: Vector2[] },
+	{ levelConfig, shapeConfig }: ShadesConfig
+) => {
+	console.debug('GET LEVEL LINES --------------');
+	const levelPrototype = generateLevelPrototype(shapeConfig, levelConfig);
 
 	if (!Array.isArray(levelPrototype)) {
-		console.debug("Level prototype for getLevelLines", levelPrototype)
-		let intersection0, intersection1
+		console.debug('Level prototype for getLevelLines', levelPrototype);
+		let intersection0, intersection1;
 		for (let i = 0; i < levelPrototype.vertices.length; i++) {
-			const v0 = levelPrototype.vertices[i]
-			const v1 = levelPrototype.vertices[(i + 1) % levelPrototype.vertices.length]
-			
+			const v0 = levelPrototype.vertices[i];
+			const v1 = levelPrototype.vertices[(i + 1) % levelPrototype.vertices.length];
+			getIntersectionOfLines
 		}
 	}
-}
-
+};
 
 const generateLevelSet = (
 	levelConfig: LevelConfig,
