@@ -19,6 +19,7 @@
 		ZCurveConfig,
 		DepthCurveConfig
 	} from '$lib/generate-shape';
+	import CombinedNumberInput from '../controls/CombinedNumberInput.svelte';
 
 	type CurveConfig = ZCurveConfig | ShapeConfig | DepthCurveConfig;
 	type ShowControlCurveValue = 'ShapeConfig' | 'DepthCurveConfig' | 'ZCurveConfig';
@@ -218,7 +219,7 @@
 </script>
 
 <div class="container">
-	{#if curveStore.type === 'DepthCurveConfig'}
+	<!-- {#if curveStore.type === 'DepthCurveConfig'}
 		<div class="data-grid">
 			{#each curveStore.curves as curve, i}
 				<input
@@ -247,7 +248,7 @@
 				/>
 			{/each}
 		</div>
-	{/if}
+	{/if} -->
 	<svg
 		viewBox={`${canv.minX} ${canv.minY} ${canv.maxX - canv.minX} ${canv.maxY - canv.minY}`}
 		style="overflow:visible"

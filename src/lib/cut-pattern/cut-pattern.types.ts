@@ -96,14 +96,20 @@ export type CutoutConfig = {
 
 export type EdgeConfig = { lead: TrianglePoint; follow: TrianglePoint };
 
+export type Scale = {
+	value: number;
+	unit: "cm" | "inch"
+}
+
 export type PatternConfig = {
-	[key: string]: PatternShowConfig | CutoutConfig | Axis | PointConfig2 | boolean | undefined;
+	[key: string]: PatternShowConfig | CutoutConfig | Axis | Scale | PointConfig2 | boolean | undefined;
 	showPattern: PatternShowConfig;
 	axis: Axis;
 	origin: PointConfig2;
 	direction: PointConfig2;
 	offset: PointConfig2;
 	showTabs: boolean;
+	scale: Scale;
 	// patternedConfig: PatternedPatternConfig;
 };
 

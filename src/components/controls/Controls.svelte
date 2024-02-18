@@ -237,8 +237,16 @@
 	</section>
 {:else if showControl === 'Pattern'}
 	<section>
-		<h4>Tiling</h4>
 		<div class="control-group">
+			<h4>Scale</h4>
+			<div>
+				<CombinedNumberInput bind:value={$config0.patternConfig.scale.value} label="" min={0.1} max={1000} step={0.1} />
+				<SelectInput bind:value={$config0.patternConfig.scale.unit} label="Units" options={["mm", "inch"]} />
+			</div>
+		</div>
+		<div class="control-group">
+			<h4>Tiling</h4>
+			<div/>
 			<div><span>Type: </span><span>{$config0.tiledPatternConfig.type}</span></div>
 			<div>
 				{#if $config0.tiledPatternConfig.type === 'tiledHexPattern-0' && Array.isArray($config0.tiledPatternConfig.config)}

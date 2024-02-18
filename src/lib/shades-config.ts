@@ -273,6 +273,7 @@ export const defaultPatternConfig: PatternConfig = {
 	showPattern: { band: 'patterned', strut: 'none', level: 'none' },
 	cutouts: defaultCutoutConfig[1],
 	axis: 'z',
+	scale: {value: 1, unit: "cm"},
 	origin: { type: 'PointConfig2', x: 0, y: 0 },
 	direction: { type: 'PointConfig2', x: 0, y: 1 },
 	offset: { type: 'PointConfig2', x: 0, y: 0 },
