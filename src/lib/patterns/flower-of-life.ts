@@ -611,7 +611,19 @@ export const generateFlowerOfLife1BandPattern = (
 };
 
 export const svgPathStringFromSegments = (segments: PathSegment[]) =>
-	segments.map((segment) => segment.join(' ')).join('\n');
+	segments
+		.map((segment) =>
+			segment
+				.map((elem) => {
+					if (typeof elem === 'string') {
+						return elem;
+					} else {
+						return `${elem}`;
+					}
+				})
+				.join(' ')
+		)
+		.join('\n');
 
 export const processFlowerOfLife1PatternTransforms = ({
 	svgPath,

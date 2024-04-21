@@ -1,6 +1,6 @@
 <script lang="ts">
 	export let show = true;
-	export let value: string;
+	export let value: unknown;
 	export let label: string;
 	export let options: (string | OptionObject)[];
 
@@ -10,7 +10,7 @@
 {#if show}
 	<div class="row">
 		<span>{label}</span>
-		<select bind:value>
+		<select bind:value on:change={(data) => console.debug(value)}>
 			{#each options as option}
 				{#if typeof option === 'string'}
 					<option>{option}</option>

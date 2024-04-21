@@ -1,21 +1,15 @@
 <script lang="ts">
 	import ThreeRenderer from '../../components/three-renderer/ThreeRenderer.svelte';
 	import CutPattern from '../../components/cut-pattern/CutPattern.svelte';
-	import type { Writable } from 'svelte/store';
-	import { generateRotatedShapeGeometry, type DepthCurveConfig } from '$lib/generate-shape';
-	import type {
-		ShadesConfig,
-		ZCurveConfig,
-		LevelConfig,
-		ShapeConfig,
-		BandConfig,
-		StrutConfig,
-		Level,
-		Strut
-	} from '$lib/generate-shape';
+	import { generateRotatedShapeGeometry } from '$lib/generate-shape';
+	import type { Level, Strut } from '$lib/generate-shape';
+	import TilingControl from '../../components/controls/TilingControl.svelte';
+	import CutControl from '../../components/controls/CutControl.svelte';
+	import ShowControl from '../../components/controls/ShowControl.svelte';
+	import StrutControl from '../../components/controls/StrutControl.svelte';
+	import LevelControl from '../../components/controls/LevelControl.svelte';
 	import PathEdit from '../../components/path-edit/PathEdit.svelte';
-	import { config0, config } from '$lib/stores';
-	import Controls from '../../components/controls/Controls.svelte';
+	import { config } from '$lib/stores';
 	import SelectBar from '../../components/select-bar/SelectBar.svelte';
 	import SaveControl from '../../components/save-control/SaveControl.svelte';
 
@@ -24,7 +18,7 @@
 	let displayLevels: Level[];
 	let struts: Strut[];
 	let bands = data.bands;
-	let showControl: { name: string; value: unknown };
+	let showControl: { name: string; value?: unknown } = { name: 'None' };
 
 	const updateGeometry = () => {
 		data = generateRotatedShapeGeometry($config);
@@ -45,9 +39,11 @@
 		bands = data.bands;
 		struts = data.struts;
 	}
-	type ShowControlCurveValue = 'ShapeConfig' | 'DepthCurveConfig' | 'ZCurveConfig';
+	type ShowControlCurveValue = 'ShapeConfig' | 'DepthCurveConfig' | 'SilhouetteConfig';
 	const isShowControlCurveValue = (value: unknown): value is ShowControlCurveValue => {
-		return ['ShapeConfig', 'DepthCurveConfig', 'ZCurveConfig', 'SpineCurveConfig'].includes(value as string);
+		return ['ShapeConfig', 'DepthCurveConfig', 'SilhouetteConfig', 'SpineCurveConfig'].includes(
+			value as string
+		);
 	};
 </script>
 
@@ -64,31 +60,39 @@
 				bind:value={showControl}
 				options={[
 					{ name: 'None' },
-					{ name: 'Zcurve', value: 'ZCurveConfig' },
+					{ name: 'Zcurve', value: 'SilhouetteConfig' },
 					{ name: 'DepthCurve', value: 'DepthCurveConfig' },
-					{ name: 'Spine', value: 'SpineCurveConfig'},
+					{ name: 'Spine', value: 'SpineCurveConfig' },
 					{ name: 'Shape', value: 'ShapeConfig' },
 					{ name: '3D' },
 					{ name: 'Levels' },
 					{ name: 'Struts' },
 					{ name: 'Cut' },
-					{ name: 'Pattern'},
+					{ name: 'Pattern' },
 					{ name: 'Save' }
 				]}
 			/>
 		</header>
 		<div class="group">
-			<div>
-				{#if ['Zcurve', 'Shape', 'DepthCurve', "Spine"].includes(showControl?.name)}
-					<PathEdit
-						curveStoreType={isShowControlCurveValue(showControl.value)
-							? showControl.value
-							: 'ZCurveConfig'}
-					/>
-				{/if}
-			</div>
-			<Controls showControl={showControl?.name} />
-			<SaveControl show={showControl?.name === 'Save'} config={$config} update={updateGeometry} />
+			{#if ['Zcurve', 'Shape', 'DepthCurve', 'Spine'].includes(showControl?.name)}
+				<PathEdit
+					curveStoreType={isShowControlCurveValue(showControl.value)
+						? showControl.value
+						: 'SilhouetteConfig'}
+				/>
+			{:else if showControl?.name === 'Struts'}
+				<StrutControl />
+			{:else if showControl?.name === '3D'}
+				<ShowControl />
+			{:else if showControl?.name === 'Levels'}
+				<LevelControl />
+			{:else if showControl?.name === 'Cut'}
+				<CutControl />
+			{:else if showControl?.name === 'Pattern'}
+				<TilingControl />
+			{:else if showControl?.name === 'Save'}
+				<SaveControl show={showControl?.name === 'Save'} config={$config} update={updateGeometry} />
+			{/if}
 		</div>
 	</section>
 </main>

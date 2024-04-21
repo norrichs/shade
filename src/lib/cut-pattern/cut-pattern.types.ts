@@ -1,4 +1,5 @@
 import type { BandStyle, BezierConfig, PointConfig2, TabStyle } from '$lib/generate-shape';
+import type { Quadrilateral } from '$lib/patterns/quadrilateral';
 import type { Triangle } from 'three';
 import type { Vector2, Vector3 } from 'three';
 
@@ -11,7 +12,7 @@ export type PatternViewConfig = {
 		y: number;
 	};
 };
-type PatternStyle = 'faceted' | 'outlined' | 'patterned' | 'none';
+type PatternStyle = 'faceted' | 'outlined' | 'patterned' | 'none' | 'layered';
 
 type PatternShowConfig = {
 	[key: string]: PatternStyle;
@@ -120,9 +121,11 @@ export type FacetPattern = {
 };
 
 export type PatternedPattern = {
-	svgPath: string;
+	svgPath?: string;
+	strokeWidth?: number;
 	svgTransform?: string;
-	triangle: Triangle;
+	triangle?: Triangle;
+	quad?: Quadrilateral;
 	tab?: TabPattern;
 };
 
@@ -208,7 +211,7 @@ export type PatternedBandPattern = {
 	projectionType: 'patterned';
 	bands: {
 		facets: PatternedPattern[];
-		svgPath: string;
+		svgPath?: string;
 		id?: string;
 	}[];
 };
@@ -241,3 +244,71 @@ export type FlatStripConfig = {
 	origin?: Vector3;
 	direction?: Vector3;
 };
+
+export type TiledPatternSubConfig =
+	| { type: 'width'; valueType: 'number'; value: number; min: number; max: number; step: number }
+	| {
+			type: 'insetWidth';
+			valueType: 'number';
+			value: number;
+			min: number;
+			max: number;
+			step: number;
+	  }
+	| {
+			type: 'appendTab';
+			valueType: 'named';
+			value: string;
+			options: [{ none: false }, 'left', 'right', 'both'];
+	  }
+	| { type: 'adjustBandBoundary'; valueType: 'boolean'; value: boolean }
+	| {
+			type: 'tabVariant';
+			valueType: 'named';
+			value: string;
+			options: [{ none: false }, 'extend', 'inset'];
+	  }
+	| {
+			type: 'filledEndSize';
+			valueType: 'number';
+			value: number;
+			min: number;
+			max: number;
+			step: number;
+	  }
+	| {
+			type: 'rowCount';
+			valueType: 'number';
+			value: number;
+			min: number;
+			max: number;
+			step: number;
+	  }
+	| {
+			type: 'columnCount';
+			valueType: 'number';
+			value: number;
+			min: number;
+			max: number;
+			step: number;
+	  };
+
+export type TiledPatternConfig =
+	| {
+			type: 'tiledHexPattern-0';
+			tiling: 'quadrilateral';
+			unitPattern: 'tiledHexPattern-0';
+			config: TiledPatternSubConfig[];
+	  }
+	| {
+			type: 'tiledHexPattern-1';
+			tiling: 'quadrilateral';
+			unitPattern: 'tiledHexPattern-1';
+			config: TiledPatternSubConfig[];
+	  }
+	| {
+			type: 'tiledBoxPattern-0';
+			tiling: 'quadrilateral';
+			unitPattern: 'tiledBoxPattern-0';
+			config: TiledPatternSubConfig[];
+	  };

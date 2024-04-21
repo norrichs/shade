@@ -17,7 +17,7 @@
 		BezierConfig,
 		PointConfig2,
 		ShapeConfig,
-		ZCurveConfig,
+		SilhouetteConfig,
 		DepthCurveConfig,
 		SpineCurveConfig
 	} from '$lib/generate-shape';
@@ -25,17 +25,20 @@
 	import PathEditInput from '../path-edit/PathEditInput.svelte';
 	import { getCurvePoints, getLevelLines } from '$lib/generate-shape';
 	import type { Vector2 } from 'three';
+	import CheckboxInput from '../controls/CheckboxInput.svelte';
+	import { not_equal } from 'svelte/internal';
+	import { Column } from '@bryntum/gantt';
 
 	type ShowControlCurveValue =
 		| 'ShapeConfig'
 		| 'DepthCurveConfig'
-		| 'ZCurveConfig'
+		| 'SilhouetteConfig'
 		| 'SpineCurveConfig';
 
 	const isCurveConfig = (subConfig: any): subConfig is CurveConfig => {
 		return (
 			typeof subConfig === 'object' &&
-			['ZCurveConfig', 'ShapeConfig', 'DepthCurveConfig', 'SpineCurveConfig'].includes(
+			['SilhouetteConfig', 'ShapeConfig', 'DepthCurveConfig', 'SpineCurveConfig'].includes(
 				(subConfig as CurveConfig).type
 			)
 		);
@@ -43,7 +46,7 @@
 
 	export let curveStoreType: ShowControlCurveValue;
 	const curveConfigByType = {
-		ZCurveConfig: 'zCurveConfig',
+		SilhouetteConfig: 'silhouetteConfig',
 		DepthCurveConfig: 'depthCurveConfig',
 		ShapeConfig: 'shapeConfig',
 		SpineCurveConfig: 'spineCurveConfig'
@@ -53,25 +56,27 @@
 
 	const reverseUpdate = () => {
 		thisConfig = $config0[curveConfigByType[curveStoreType]];
-		curveStore = isCurveConfig(thisConfig) ? thisConfig : $config0.zCurveConfig;
+		curveStore = isCurveConfig(thisConfig) ? thisConfig : $config0.silhouetteConfig;
 	};
 
 	$: {
 		thisConfig = $config0[curveConfigByType[curveStoreType]];
 		console.debug('PathEdit', $config0, thisConfig);
-		curveStore = isCurveConfig(thisConfig) ? thisConfig : $config0.zCurveConfig;
+		curveStore = isCurveConfig(thisConfig) ? thisConfig : $config0.silhouetteConfig;
 	}
 
 	let symmetry = 1;
 	let reflect = true;
 	let fill = true;
 	let showPointInputs = false;
+	let showPointInputsInline = false;
 	let curvePoints = getCurvePoints(
 		$config0[curveConfigByType[curveStoreType]],
-		$config0.levelConfig.zCurveSampleMethod,
+		$config0.levelConfig.silhouetteSampleMethod,
 		curveStoreType === 'SpineCurveConfig'
 	);
-	let levelLines = curveStoreType === 'SpineCurveConfig' ? getLevelLines(curvePoints, $config0) : undefined;
+	let levelLines =
+		curveStoreType === 'SpineCurveConfig' ? getLevelLines(curvePoints, $config0) : undefined;
 
 	const canv = {
 		minX: -200,
@@ -182,9 +187,9 @@
 
 	const radializeCurves = (
 		curves: BezierConfig[],
-		config: ShapeConfig | ZCurveConfig
+		config: ShapeConfig | SilhouetteConfig
 	): BezierConfig[] => {
-		if (config.type === 'ZCurveConfig') {
+		if (config.type === 'SilhouetteConfig') {
 			return curves;
 		}
 		const localCurves: BezierConfig[] = window.structuredClone(curves);
@@ -208,7 +213,7 @@
 	};
 
 	const getLimitAngle = (
-		config: ShapeConfig | ZCurveConfig | DepthCurveConfig | SpineCurveConfig
+		config: ShapeConfig | SilhouetteConfig | DepthCurveConfig | SpineCurveConfig
 	): number | null => {
 		if (
 			config.type === 'ShapeConfig' &&
@@ -263,12 +268,12 @@
 		);
 		curvePoints = getCurvePoints(
 			$config0[curveConfigByType[curveStoreType]],
-			$config0.levelConfig.zCurveSampleMethod,
+			$config0.levelConfig.silhouetteSampleMethod,
 			curveStoreType === 'SpineCurveConfig'
 		);
 		if (curveStoreType === 'SpineCurveConfig') {
 			console.debug('--------------------------------- for Spine', $config0);
-			levelLines = getLevelLines(curvePoints, $config0)
+			levelLines = getLevelLines(curvePoints, $config0);
 		}
 
 		if (shouldUpdateStores) {
@@ -313,7 +318,7 @@
 		style="overflow:visible"
 	>
 		<circle cx="0" cy="0" r="4" fill="none" stroke="black" stroke-width="0.5" />
-		{#if curveStore.type === 'ZCurveConfig'}
+		{#if curveStore.type === 'SilhouetteConfig'}
 			<path
 				d={getFillFromCurves(curves)}
 				stroke="none"
@@ -384,25 +389,29 @@
 		{/each}
 	{/each}
 	<div>
-		<div class="control-overlay">
+		<div class="control-overlay row">
 			<CheckBoxInput show={true} bind:value={showPointInputs} label="show point inputs" />
+			<CheckboxInput show={showPointInputs} bind:value={showPointInputsInline} label="inline?" />
 		</div>
 		{#if showPointInputs}
-			{#each curves as curve, curveIndex}
-				{#each curve.points as point, p}
-					{#if (curveIndex === 0 && p === 0) || p === 3}
+			<div class={`point-input-container ${showPointInputsInline ? 'overlay' : 'outrigger'}`}>
+				{#each curves as curve, curveIndex}
+					{#each curve.points as point, p}
+						<!-- {#if (curveIndex === 0 && p === 0) || p === 3} -->
 						<PathEditInput
 							{canv}
 							bind:point
+							showPointInputsInline
 							offsetDirection={{ type: 'lateral', value: 20 }}
 							onUpdate={(x, y, dx, dy) => {
 								console.debug('onUpdate', x, y, point.x, point.y);
 								updateCurves(x, y, dx, dy, curveIndex, p, true);
 							}}
 						/>
-					{/if}
+						<!-- {/if} -->
+					{/each}
 				{/each}
-			{/each}
+			</div>
 		{/if}
 	</div>
 
@@ -555,5 +564,27 @@
 		position: absolute;
 		left: 0;
 		top: 0;
+	}
+	.control-overlay.row {
+		display: flex;
+		flex-direction: row;
+	}
+	.point-input-container.overlay {
+		position: absolute;
+		top: 0;
+		left: 0;
+		bottom: 0;
+		right: 0;
+		pointer-events: none;
+	}
+	.point-input-container.outrigger {
+		position: absolute;
+		right: -210px;
+		top: 0;
+		background-color: magenta;
+		width: 200px;
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
 	}
 </style>

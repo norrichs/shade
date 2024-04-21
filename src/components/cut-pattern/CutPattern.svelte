@@ -84,6 +84,7 @@
 				bands: displayedBandFacets as Band[],
 				tiledPatternConfig: $config.tiledPatternConfig
 			});
+			console.debug('CutPattern patterns', patterns);
 		} else {
 			patterns.band = generateBandPatterns(
 				$config.patternConfig,
@@ -134,7 +135,6 @@
 			<div>FLATTENED PATTERNED</div>
 		{/if}
 		<LoggerControls />
-
 	</header>
 
 	<div>test</div>
@@ -159,7 +159,6 @@
 						<path d={level.outline.svgPath} fill="green" stroke="black" stroke-width="0.3" />
 					{/each}
 				{/if}
-
 				{#if patterns.band.projectionType === 'outlined'}
 					{#each patterns.band.bands as band, i}
 						<path
@@ -175,66 +174,49 @@
 						<text x={band.outline.points[0].x} y={band.outline.points[0].y}>{i}</text>
 					{/each}
 				{:else if patterns.band.projectionType === 'faceted'}
-					{#each patterns.band.bands as band}
-						{#each band.facets as facet, f}
-							<path
-								d={facet.svgPath}
-								fill={`rgb(100, ${50 + (200 * f) / band.facets.length},100)`}
-								stroke="orangered"
-								stroke-width="0.2"
-							/>
-							{#if showTabs && facet.tab}
-								<path
-									d={facet.tab.svgPath}
-									fill={`rgb(0, ${50 + (200 * f) / band.facets.length},255)`}
-									stroke="orangered"
-									stroke-width="0.2"
-								/>
-							{/if}
-						{/each}
-					{/each}
-				{:else if patterns.band.projectionType === 'patterned'}
-					{#each patterns.band.bands as band, b}
-						{#if band.facets.length > 0}
-							{#each band.facets as facet}
-								<!-- <path d={svgPathStringFromSegments(facet)} fill="blue" /> -->
-							{/each}
-						{/if}
-						{#if band.svgPath}
-							<path
-								id={band.id || `transformed-band-svg-${b}`}
-								d={band.svgPath}
-								fill="orange"
-								fill-rule="evenodd"
-								stroke="black"
-								stroke-width={0.05}
-								transform={`translate(${-50 * b} 0)`}
-							/>
-						{:else}
+					{#each patterns.band.bands as band, bandIndex}
+						<g id={`facets-band-${bandIndex}`} transform={`translate(${-50 * bandIndex} 0)`}>
 							{#each band.facets as facet, f}
 								<path
-									id={`facet-svg-${b}-${f}`}
-									class={`patterned-path-transformed band-svg-${b} facet-svg-${f}`}
 									d={facet.svgPath}
-									stroke="deeppink"
-									stroke-width="0.2"
-									transform={facet.svgTransform}
-									fill-rule="evenodd"
-								/>
-								<path
-									d={svgTriangle(simpleTriangle(facet.triangle))}
-									class="cutpattern-outline"
+									fill={`rgb(100, ${50 + (200 * f) / band.facets.length},100)`}
+									stroke="orangered"
 									stroke-width="0.2"
 								/>
 								{#if showTabs && facet.tab}
 									<path
 										d={facet.tab.svgPath}
 										fill={`rgb(0, ${50 + (200 * f) / band.facets.length},255)`}
-										stroke="deeppink"
+										stroke="orangered"
 										stroke-width="0.2"
 									/>
 								{/if}
 							{/each}
+						</g>
+					{/each}
+				{:else if patterns.band.projectionType === 'patterned'}
+					{#each patterns.band.bands as band, b}
+						{#if band.svgPath}
+							<!-- <path
+								id={band.id || `transformed-band-svg-${b}`}
+								d={band.svgPath}
+								fill="orange"
+								fill-rule="evenodd"
+								stroke="black"
+								stroke-width={0.05}
+								transform={`translate(${-50 * b} 0) scale(-1,-1)`}
+							/> -->
+						{:else}
+							<g transform={`translate(${-50 * b} 0) scale(-1,-1)`}>
+								{#each band.facets as facet, f}
+									<path
+										d={facet.svgPath}
+										fill="rgba(255,0,0,0.1)"
+										stroke-width={facet.strokeWidth || 1}
+										stroke="black"
+									/>
+								{/each}
+							</g>
 						{/if}
 					{/each}
 				{/if}
@@ -255,9 +237,8 @@
 						{/each}
 					{/each}
 				{/if}
-				
-				<SvgLogger/>
-				
+
+				<SvgLogger />
 			</svg>
 
 			<div class="view-control-box">

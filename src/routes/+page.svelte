@@ -8,6 +8,7 @@
 <p><a href="/sandbox5">Sandbox5</a></p>
 <p><a href="/sandbox6">Sandbox6</a></p>
 <p><a href="/sandbox7">Sandbox7</a></p>
+<p><a href="/sandbox8">Sandbox8</a></p>
 <div>
 	<label for="use-persisted-checkbox">persist settings?</label>
 	<input type="checkbox" bind:checked={$usePersisted} />

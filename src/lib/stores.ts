@@ -38,13 +38,11 @@ export const config = derived(config0, ($config0) => {
 		levelConfig: {
 			...$config0.levelConfig,
 			levels: getLevels(
-				$config0.levelConfig.zCurveSampleMethod,
-				$config0.zCurveConfig.curves.length
+				$config0.levelConfig.silhouetteSampleMethod,
+				$config0.silhouetteConfig.curves.length
 			)
 		}
 	};
 	// console.log("set derived config", derivedConfig)
 	return derivedConfig;
 });
-
-

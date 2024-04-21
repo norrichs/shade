@@ -7,10 +7,9 @@ import type {
 } from '$lib/cut-pattern/cut-pattern.types';
 import type { Point } from '$lib/patterns/flower-of-life.types';
 import { closestPoint, getLength } from './utils';
-import { logger, type SVGLoggerDirectionalLine } from '../../components/svg-logger/logger';
 import type { Band, Facet } from '$lib/generate-shape';
 import type { Vector3 } from 'three';
-import type { TiledPatternSubConfig } from '$lib/shades-config';
+import type { TiledPatternSubConfig } from '$lib/cut-pattern/cut-pattern.types';
 
 export type Quadrilateral = {
 	p0: Point;
@@ -101,8 +100,9 @@ export const svgTX = (tx: QuadrilateralTransformMatrix, anchor: Point) => {
 	`;
 };
 export const transformPatternByQuad = (pattern: HexPattern, quad: Quadrilateral): HexPattern => {
+	console.debug('transformPatternByQuad - pattern', pattern);
 	const tx = getQuadrilateralTransformMatrix(quad);
-	const p0 = { x: pattern[0][1] || 0, y: pattern[0][2] || 0 };
+	// const p0 = { x: pattern[0][1] || 0, y: pattern[0][2] || 0 };
 	const transformedSegments: HexPattern = pattern.map((segment) => {
 		if (segment[0] === 'L' || segment[0] === 'M') {
 			const newCoord = transformPointByQuadrilateralTransform(
@@ -112,16 +112,16 @@ export const transformPatternByQuad = (pattern: HexPattern, quad: Quadrilateral)
 			);
 			const mapped: MovePathSegment | LinePathSegment = [segment[0], newCoord.x, newCoord.y];
 			return mapped;
-		} else if (segment[0] === 'A') {
-			const newCoord = transformPointByQuadrilateralTransform(
-				{ x: segment[6] - p0.x, y: segment[7] - p0.y },
-				tx,
-				quad.p0
-			);
-			const mapped: ArcPathSegment = [...segment];
-			mapped[6] = newCoord.x;
-			mapped[7] = newCoord.y;
-			return mapped;
+			// } else if (segment[0] === 'A') {
+			// 	const newCoord = transformPointByQuadrilateralTransform(
+			// 		{ x: segment[6] - p0.x, y: segment[7] - p0.y },
+			// 		tx,
+			// 		quad.p0
+			// 	);
+			// 	const mapped: ArcPathSegment = [...segment];
+			// 	mapped[6] = newCoord.x;
+			// 	mapped[7] = newCoord.y;
+			// 	return mapped;
 		} else {
 			return segment;
 		}
@@ -257,65 +257,61 @@ export const extractShapesFromMappedHexPatterns = (
 	return shapes;
 };
 
-export type HexPattern = [
-	MovePathSegment,
-	LinePathSegment,
-	LinePathSegment,
-	LinePathSegment,
-	LinePathSegment,
+export type HexPattern =
+	| [
+			MovePathSegment,
+			LinePathSegment,
+			LinePathSegment,
+			LinePathSegment,
+			LinePathSegment,
 
-	MovePathSegment,
-	LinePathSegment,
-	MovePathSegment,
-	LinePathSegment,
-	MovePathSegment,
-	LinePathSegment,
+			MovePathSegment,
+			LinePathSegment,
+			MovePathSegment,
+			LinePathSegment,
+			MovePathSegment,
+			LinePathSegment,
 
-	MovePathSegment,
-	LinePathSegment,
-	LinePathSegment,
-	LinePathSegment,
-	LinePathSegment,
+			MovePathSegment,
+			LinePathSegment,
+			LinePathSegment,
+			LinePathSegment,
+			LinePathSegment,
 
-	MovePathSegment,
-	LinePathSegment,
-	MovePathSegment,
-	LinePathSegment
-];
+			MovePathSegment,
+			LinePathSegment,
+			MovePathSegment,
+			LinePathSegment
+	  ]
+	| [
+			MovePathSegment,
+			LinePathSegment,
+			LinePathSegment,
+			LinePathSegment,
+			LinePathSegment,
 
-export const generateHexPattern = (size: number): HexPattern => {
-	const unit = size / 3;
-	const h = size / 4;
-	const segments: HexPattern = [
-		['M', 0, unit / 2],
-		['L', h, 0],
-		['L', 2 * h, unit / 2],
-		['L', 3 * h, 0],
-		['L', 4 * h, unit / 2],
+			LinePathSegment,
+			LinePathSegment,
+			LinePathSegment,
+			LinePathSegment,
+			LinePathSegment,
+			LinePathSegment,
+			ReturnPathSegment,
 
-		['M', 0, unit / 2],
-		['L', 0, (3 * unit) / 2],
+			MovePathSegment,
+			LinePathSegment,
 
-		['M', 2 * h, unit / 2],
-		['L', 2 * h, (3 * unit) / 2],
+			MovePathSegment,
+			LinePathSegment,
+			MovePathSegment,
+			LinePathSegment,
 
-		['M', 4 * h, unit / 2],
-		['L', 4 * h, (3 * unit) / 2],
+			MovePathSegment,
+			LinePathSegment,
+			MovePathSegment,
+			LinePathSegment
+	  ];
 
-		['M', 0, (3 * unit) / 2],
-		['L', h, 2 * unit],
-		['L', 2 * h, (3 * unit) / 2],
-		['L', 3 * h, 2 * unit],
-		['L', 4 * h, (3 * unit) / 2],
-
-		['M', h, 2 * unit],
-		['L', h, 3 * unit],
-
-		['M', 3 * h, 2 * unit],
-		['L', 3 * h, 3 * unit]
-	];
-	return segments;
-};
 type SegmentVariant = 'insettable' | 'permeable' | 'edge' | 'interior';
 type InsettableSegment = {
 	[key: string]: Point | SegmentVariant;
