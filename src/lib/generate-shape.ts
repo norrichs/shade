@@ -8,10 +8,8 @@ import type {
 	PatternViewConfig
 } from './cut-pattern/cut-pattern.types';
 import { generateEdgeConfig } from './cut-pattern/cut-pattern';
-import type { TiledPatternConfig } from './shades-config';
-import { getIntersectionOfLines, type Quadrilateral } from './patterns/quadrilateral';
-import { end_hydrating } from 'svelte/internal';
-// import { rad } from "$lib/util"
+import type { TiledPatternConfig } from './cut-pattern/cut-pattern.types';
+import { generateLevelSet2 } from './generate-level';
 
 // Rotated Shape Levels are 2d.  How can I enforce that?
 
@@ -21,12 +19,12 @@ export type Level = {
 	vertices: Vector3[];
 };
 
-type LevelPrototype = {
+export type LevelPrototype = {
 	center: Vector2;
 	vertices: Vector2[];
 };
 
-type LevelOffset = {
+export type LevelOffset = {
 	x: number;
 	y: number;
 	z: number;
@@ -180,7 +178,7 @@ export const generateSilhouette = (config: SilhouetteConfig): CurvePath<Vector2>
 	return silhouette;
 };
 
-const getDepthCurve = (config: DepthCurveConfig): CurvePath<Vector2> => {
+export const generateDepthCurve = (config: DepthCurveConfig): CurvePath<Vector2> => {
 	const dCurve = new CurvePath<Vector2>();
 	for (const curve of config.curves) {
 		if (curve.type === 'BezierConfig') {
@@ -195,36 +193,6 @@ const getDepthCurve = (config: DepthCurveConfig): CurvePath<Vector2> => {
 		}
 	}
 	return dCurve;
-};
-const getDepthValues = (config: DepthCurveConfig, levelCount: number): number[] => {
-	const dCurve = getDepthCurve(config);
-	const points = dCurve.getSpacedPoints(levelCount - 1);
-	// dCurve.getPoints(levelCount - 1);
-	const values = points.map((point) => point.x / config.depthCurveBaseline);
-	return values;
-};
-const getDepthValues2 = (
-	config: DepthCurveConfig,
-	levelCenters: Vector3[],
-	levelCount: number
-): number[] => {
-	const dCurve = new CurvePath<Vector2>();
-	for (const curve of config.curves) {
-		if (curve.type === 'BezierConfig') {
-			dCurve.add(
-				new CubicBezierCurve(
-					new Vector2(curve.points[0].x, curve.points[0].y),
-					new Vector2(curve.points[1].x, curve.points[1].y),
-					new Vector2(curve.points[2].x, curve.points[2].y),
-					new Vector2(curve.points[3].x, curve.points[3].y)
-				)
-			);
-		}
-	}
-	const points = dCurve.getSpacedPoints(levelCount - 1);
-	// dCurve.getPoints(levelCount - 1);
-	const values = points.map((point) => point.x / config.depthCurveBaseline);
-	return values;
 };
 
 // utility function to generate a regular polygon of type LevelPrototype
@@ -364,7 +332,7 @@ const normalizeConfigPoints = (
 	return normalizedShapeConfig;
 };
 
-const generateLevelPrototype = (
+export const generateLevelPrototype = (
 	config: ShapeConfig,
 	levelConfig: LevelConfig
 ): LevelPrototype | LevelPrototype[] => {
@@ -418,413 +386,6 @@ const generateRadialShapeLevelPrototype = (
 export type Validation = {
 	isValid: boolean;
 	msg: string[];
-};
-
-// const validateLevelConfig = (config: LevelConfig): Validation => {
-// 	const validation: Validation = { isValid: true, msg: [] };
-// 	if (config.silhouetteSampleMethod === 'levelInterval') {
-// 		if (Array.isArray(config.levelOffset) || config.levelOffset.z !== 0) {
-// 			validation.isValid = validation.isValid && false;
-// 			validation.msg.push(
-// 				'sampling silhouette by arc divisions, level z offsets should not be directly configured'
-// 			);
-// 		}
-// 	}
-// 	return validation;
-// };
-
-const isLevelOffset = (levelOffset: LevelOffset | LevelOffset[]): levelOffset is LevelOffset =>
-	!Array.isArray(levelOffset);
-
-export const getCurvePoints = (
-	curveConfig: SilhouetteConfig,
-	{ divisions, method }: CurveSampleMethod
-) => {
-	const curve = generateSilhouette(curveConfig);
-	// const pointCount = method === 'divideCurve' ? curveConfig.curves.length * divisions : divisions;
-	const result: { points: Vector2[]; tangents: Vector2[]; normals: Vector2[] } = {
-		points: curve.getSpacedPoints(divisions),
-		tangents: [],
-		normals: []
-	};
-
-	result.tangents = result.points.map((point, i) => curve.getTangentAt((i * 1) / divisions));
-	result.normals = result.tangents.map((tangent) => new Vector2(tangent.y, -tangent.x));
-
-	console.debug('getCurvepoints', result);
-	return result;
-};
-
-export const getLevelLines = (
-	{ points, normals }: { points: Vector2[]; normals: Vector2[] },
-	{ levelConfig, shapeConfig }: ShadesConfig
-) => {
-	console.debug('GET LEVEL LINES --------------');
-	const levelPrototype = generateLevelPrototype(shapeConfig, levelConfig);
-
-	if (!Array.isArray(levelPrototype)) {
-		console.debug('Level prototype for getLevelLines', levelPrototype);
-		let intersection0, intersection1;
-		for (let i = 0; i < levelPrototype.vertices.length; i++) {
-			const v0 = levelPrototype.vertices[i];
-			const v1 = levelPrototype.vertices[(i + 1) % levelPrototype.vertices.length];
-			getIntersectionOfLines;
-		}
-	}
-};
-
-// TODO -
-// 	extract z-curve points into function
-// 	add an additional method to z-curve point generation options
-//  - constant aspect ratio
-//    - config: {targetRatio: number, shapeAnchor: "min" | "max" | "mean" | number}
-//    - algorithm:
-//					divisions = divideCurveByRatio({targetRatio, etc})
-//					redistribute = (1 - divisions[last].t) / (divisions.length - 1)
-//					divisions = divisions.map(d => ({t: d.t + redistribute, aspectRatio: getActualRatio(getQuad(t, silhouette, shape))}))
-//
-//
-//			divideCurveByRatio = (config): {t: number, aspectRatio: number}[] =>
-//				while (sections<limit)
-//					n = section number
-//      		get base width (n)
-//					h = base * targetRatio
-
-//					get quad0
-//					if (quad0.error) break
-//					get actual ratio (quad)
-//					h = targetRatio / actualRatio
-//					get quad1
-//					if (quad1.error) break
-//					n ++
-//					sections ++
-//        end
-//
-/*	- algorithm
-  			divide the z curve into a set number of divisions, not equally spaced, for each vertex of the level shape
-				each z curve will have the same number of divisions, but the spacing will be determined by assessing the aspect ratio of the quadrilateral formed by
-				
-				v0_0 = scalarMultiplication(shape.vectors[0], silhouette.point[n].x)
-				v0_1 = scalarMultiplication(shape.vectors[0], silhouette.point[n+1].x)
-				v1_1 = scalarMultiplication(shape.vectors[1], silhouette.point[n+1].x)
-				v1_0 = scalarMultiplication(shape.vectors[1], silhouette.point[n].x)
-
-				w = getLength( midPoint(v0_0, v0_1), midPoint(v1_0, v1_1) )
-				h = getLength( midPoint(v0_0, v1_0), midPoint(v0_1, v1_1) )
-				aspectRatio = h / w
-
-				So we're solving u values where: aspectRatio(u0, vCurve) === aspectRatio(u1, vCurve) === aspectRatio(u2, vCurve)
-				Use an iterative approach
-					first, step through evenly spaced divisions, getting aspect ratios, and the Average aspect ratio
-					second, step through divisions and find the u value that yields the avg aspect ratio
-
-				divisions
-				avgU = curveLength / divisions
-				
-				for each division
-
-
-		- algorithm
-			- for each pair of vectors (v0, v1) of the level shape
-			  - find the midpoint betwen the two (m)
-			- for each midpoint
-			  - find a u value along silhouette giving point (p)
-				- p.y * v0 = p0
-				- p.y * v1 = p1
-	**		- the aspect ratio of the quadrilateral formed by l0_p0, l0_p1, l1_p0, l1_p1 shall be equal for every u value along silhouette 
-					- do it iteratitively -
-						- start with evenly spaced u values
-						- loop
-						  - calculate avg aspect ratio
-							- recalculate u values, w each yielding avg aspect ratio.  calculate u_remainder.  evenly distribute remainder on all u_values
-			- for level shape vector
-				- assign a u value calculated as u = (u_next_mid + u_prev_mid) / 2
-			- yield shape points, to be further transformed
-			
-			calculate an array of points along silhouette, 
-			which yield an array of scalars that can multiply the shape vectors to give Shape points
-
-			each silhouette point is calculated such that
-
-
-
-*/
-
-const getSilhouetteAspectRatio = ({
-	silhouette,
-	v0,
-	vPrev,
-	vNext
-}: {
-	silhouette: CurvePath<Vector2>;
-	v0: [Vector2, Vector2];
-	vPrev: [Vector2, Vector2];
-	vNext: [Vector2, Vector2];
-}) => {};
-
-const generateRawLevels = ({
-	silhouette,
-	depthCurve,
-	levelPrototypes,
-	sampleMethod
-}: {
-	silhouette: CurvePath<Vector2>;
-	depthCurve: CurvePath<Vector2>;
-	levelPrototypes: LevelPrototype[];
-	sampleMethod: CurveSampleMethod;
-}): Level[] => {
-	// For simple silhouette division schemes, we're unaffected by the depth and level prototype curves
-	// For 'preserveaspectratio', use depth and prototype curves
-	// Either way, we should be returning "raw levels"
-
-	if (sampleMethod.method === 'divideCurvePath') {
-		const rawCurvePoints = silhouette.getSpacedPoints(sampleMethod.divisions);
-		const rawLevels = rawCurvePoints.map((point) => {
-			const offset: LevelOffset = {
-				x: 0,
-				y: 0,
-				z: point.y,
-				rotX: 0,
-				rotY: 0,
-				rotZ: 0,
-				scaleX: point.x * 2,
-				scaleY: point.x * 2
-			};
-			generateLevel();
-		});
-	} else if (sampleMethod.method === 'divideCurve') {
-		const rawCurvePoints = silhouette.getPoints(sampleMethod.divisions);
-	}
-};
-
-const getLevelPrototypeArray = (
-	levelCount: number,
-	levelPrototype: LevelPrototype | LevelPrototype[]
-): LevelPrototype[] => {
-	let levelPrototypeArray: LevelPrototype[] = new Array(levelCount);
-	if (Array.isArray(levelPrototype)) {
-		levelPrototypeArray.fill(levelPrototype[0]);
-		levelPrototypeArray = levelPrototypeArray.map((lp, i): LevelPrototype => {
-			return {
-				center: levelPrototype[i % levelPrototype.length].center.clone(),
-				vertices: levelPrototype[i % levelPrototype.length].vertices.map((v) => v.clone())
-			};
-		});
-	} else {
-		levelPrototypeArray.fill(levelPrototype);
-		levelPrototypeArray = levelPrototypeArray.map((lp) => ({
-			center: lp.center.clone(),
-			vertices: lp.vertices.map((v) => v.clone())
-		}));
-	}
-	return levelPrototypeArray;
-};
-
-const countLevels = (levelConfig: LevelConfig, silhouetteConfig: SilhouetteConfig) => {
-	return levelConfig.silhouetteSampleMethod.method === 'divideCurve'
-		? silhouetteConfig.curves.length * levelConfig.silhouetteSampleMethod.divisions
-		: levelConfig.silhouetteSampleMethod.divisions;
-};
-
-const getLevelOffsets = (levelConfig: LevelConfig, levelCount: number) => {
-	const configLevelOffset: LevelOffset = isLevelOffset(levelConfig.levelOffset)
-		? levelConfig.levelOffset
-		: levelConfig.levelOffset[0];
-	const levelOffsets: LevelOffset[] = new Array(levelCount);
-	if (isLevelOffset(levelConfig.levelOffset)) {
-		levelOffsets.map((silhouetteLevel, l) => {
-			levelOffsets[l] = { ...configLevelOffset };
-			const { x, y, rotX, rotY, rotZ, scaleX, scaleY } = configLevelOffset;
-			levelOffsets[l].x = x * l;
-			levelOffsets[l].y = y * l;
-			levelOffsets[l].z = 1;
-			levelOffsets[l].rotX = rotX * l;
-			levelOffsets[l].rotY = rotY * l;
-			levelOffsets[l].rotZ = rotZ * l;
-			levelOffsets[l].scaleX = scaleX; //* silhouetteScale.x
-			levelOffsets[l].scaleY = scaleY; //* silhouetteScale.x
-			levelOffsets[l].depth = 1;
-		});
-	}
-	return levelOffsets;
-};
-
-// TODO - bring the call to generateLevelPrototype into this function
-const generateLevelSet2 = (
-	levelConfig: LevelConfig,
-	silhouetteConfig: SilhouetteConfig,
-	depthCurveConfig: DepthCurveConfig,
-	levelPrototype: LevelPrototype | LevelPrototype[]
-): Level[] => {
-	const levelCount = countLevels(levelConfig, silhouetteConfig);
-	const levelPrototypes: LevelPrototype[] = getLevelPrototypeArray(levelCount, levelPrototype);
-	const depthCurve: CurvePath<Vector2> = getDepthCurve(depthCurveConfig);
-	// refactor depth values to align to z-axis values, as average of z-axis values of levels
-	// const depthedLevelPrototypes =
-	const silhouette: CurvePath<Vector2> = generateSilhouette(silhouetteConfig);
-	// get levels without offsets by applying silhouette points to depthed level prototype vertices
-	const rawLevels: Level[] = generateRawLevels({
-		silhouette,
-		depthCurve,
-		levelPrototypes,
-		sampleMethod: levelConfig.silhouetteSampleMethod
-	});
-	const levelOffsets = getLevelOffsets(levelConfig, levelCount);
-
-	const levels = levelPrototype.map((prototype, i) =>
-		generateLevel2({
-			prototype,
-			depth: depthValues[i],
-			silhouettePoint: silhouettePoints[i],
-			offset: levelOffsets[i]
-		})
-	);
-	return levels;
-};
-
-const generateLevelSet = (
-	levelConfig: LevelConfig,
-	silhouetteConfig: SilhouetteConfig,
-	depthCurveConfig: DepthCurveConfig,
-	levelPrototype: LevelPrototype | LevelPrototype[]
-): Level[] => {
-	// const validation = validateLevelConfig(levelConfig);
-	// if (!validation.isValid) {
-	// 	throw new Error(validation.msg.join('\n'));
-	// }
-	const levelCount =
-		levelConfig.silhouetteSampleMethod.method === 'divideCurve'
-			? silhouetteConfig.curves.length * levelConfig.silhouetteSampleMethod.divisions
-			: levelConfig.silhouetteSampleMethod.divisions;
-	const levelOffsets: LevelOffset[] = new Array(levelCount);
-	let levelPrototypeArray: LevelPrototype[];
-	if (Array.isArray(levelPrototype)) {
-		levelPrototypeArray = [...levelPrototype];
-	} else {
-		levelPrototypeArray = new Array(levelCount);
-		levelPrototypeArray.fill(levelPrototype);
-	}
-	const depths = getDepthValues(depthCurveConfig, levelConfig.silhouetteSampleMethod.divisions + 1);
-
-	// scale z-curve to height and baseRadius
-	const silhouette = generateSilhouette(silhouetteConfig);
-	console.debug('-------- silhouette\n  config: ', silhouetteConfig, '\n  silhouette', silhouette);
-
-	// generate offsets from config
-	const silhouetteRawPoints: Vector2[] = getSilhouetteRawPoints(
-		silhouette,
-		levelConfig.silhouetteSampleMethod
-	);
-	console.debug('--------------- silhouetteRawPoints', silhouetteRawPoints);
-	const configLevelOffset: LevelOffset = isLevelOffset(levelConfig.levelOffset)
-		? levelConfig.levelOffset
-		: levelConfig.levelOffset[0];
-	if (isLevelOffset(levelConfig.levelOffset)) {
-		silhouetteRawPoints.forEach((silhouetteLevel, l) => {
-			levelOffsets[l] = { ...configLevelOffset };
-			const { x, y, rotX, rotY, rotZ, scaleX, scaleY } = configLevelOffset;
-			levelOffsets[l].x = x * l;
-			levelOffsets[l].y = y * l;
-			levelOffsets[l].z = silhouetteLevel.y;
-			levelOffsets[l].rotX = rotX * l;
-			levelOffsets[l].rotY = rotY * l;
-			levelOffsets[l].rotZ = rotZ * l;
-			levelOffsets[l].scaleX = scaleX * silhouetteLevel.x * 2; //* silhouetteScale.x
-			levelOffsets[l].scaleY = scaleY * silhouetteLevel.x * 2; //* silhouetteScale.x
-			levelOffsets[l].depth = depths[l];
-		});
-	}
-	const levels: Level[] = new Array(levelCount);
-	levelOffsets.forEach((levelOffset, l) => {
-		let thisLevelPrototype: LevelPrototype;
-		if (Array.isArray(levelPrototype)) {
-			thisLevelPrototype = levelPrototype[l % levelPrototype.length];
-		} else {
-			thisLevelPrototype = levelPrototype;
-		}
-
-		levels[l] = generateLevel(levelOffset, thisLevelPrototype, l);
-	});
-
-	return levels;
-};
-
-const generateLevel2 = (
-	offset: LevelOffset,
-	prototype: LevelPrototype,
-	levelNumber: number
-): Level => {
-	// apply offsets to prototype
-	// axes for rotation
-	const zAxis = new Vector3(0, 0, 1);
-	const xAxis = new Vector3(1, 0, 0);
-	const yAxis = new Vector3(0, 1, 0);
-	// center for coordinate offset
-	const center = new Vector3(offset.x, offset.y, offset.z);
-
-	// const radialVertices = prototype.vertices.map((p) => getPolar(p.x, p.y));
-	const minLength = Math.min(...prototype.vertices.map((v) => v.length()));
-	const depthedVertices = prototype.vertices.map((v) => {
-		const length = v.length();
-		return v.clone().setLength(minLength + (length - minLength) * offset.depth);
-	});
-
-	const vertices = depthedVertices.map((pV) => {
-		const scaledVertex: Vector3 = new Vector3(pV.x, pV.y, 0);
-		scaledVertex.setLength(
-			Math.sqrt(Math.pow(offset.scaleX * pV.x, 2) + Math.pow(offset.scaleY * pV.y, 2))
-		);
-		scaledVertex.applyAxisAngle(zAxis, offset.rotZ); // z axis rotation must be first
-		scaledVertex.applyAxisAngle(xAxis, offset.rotX);
-		scaledVertex.applyAxisAngle(yAxis, offset.rotY);
-		scaledVertex.addScaledVector(center, 1);
-		return scaledVertex;
-	});
-	const level: Level = {
-		center,
-		level: levelNumber,
-		vertices
-	};
-	return level;
-};
-
-const generateLevel = (
-	offset: LevelOffset,
-	prototype: LevelPrototype,
-	levelNumber: number
-): Level => {
-	// apply offsets to prototype
-	// axes for rotation
-	const zAxis = new Vector3(0, 0, 1);
-	const xAxis = new Vector3(1, 0, 0);
-	const yAxis = new Vector3(0, 1, 0);
-	// center for coordinate offset
-	const center = new Vector3(offset.x, offset.y, offset.z);
-
-	// const radialVertices = prototype.vertices.map((p) => getPolar(p.x, p.y));
-	const minLength = Math.min(...prototype.vertices.map((v) => v.length()));
-	const depthedVertices = prototype.vertices.map((v) => {
-		const length = v.length();
-		return v.clone().setLength(minLength + (length - minLength) * offset.depth);
-	});
-
-	const vertices = depthedVertices.map((pV) => {
-		const scaledVertex: Vector3 = new Vector3(pV.x, pV.y, 0);
-		scaledVertex.setLength(
-			Math.sqrt(Math.pow(offset.scaleX * pV.x, 2) + Math.pow(offset.scaleY * pV.y, 2))
-		);
-		scaledVertex.applyAxisAngle(zAxis, offset.rotZ); // z axis rotation must be first
-		scaledVertex.applyAxisAngle(xAxis, offset.rotX);
-		scaledVertex.applyAxisAngle(yAxis, offset.rotY);
-		scaledVertex.addScaledVector(center, 1);
-		return scaledVertex;
-	});
-	const level: Level = {
-		center,
-		level: levelNumber,
-		vertices
-	};
-	return level;
 };
 
 const validateBandConfig = (config: BandConfig, levels: Level[]): Validation => {
@@ -1125,7 +686,6 @@ const shouldAddTabToSide = (side: StripSide, f: number, direction: TabDirection)
 
 const generateTabs = (bands: Band[], config: BandConfig, struts?: Strut[]) => {
 	const { direction } = config.tabStyle;
-
 	if (config.tabStyle) {
 		const tabbedBands: Band[] = bands.map((band, b) => {
 			return {
@@ -1368,7 +928,6 @@ type StripSide = 'greater' | 'lesser';
 type TabDirection = StripSide | 'both';
 // TODO - add a direction setting which will result in tabs on both sides
 export type TabStyle =
-	| { style: 'none' }
 	| { style: 'full'; direction: TabDirection; scored?: TabScore } // for circumference bands, left and right are relative to rotation direction
 	| {
 			style: 'trapezoid';
@@ -1516,7 +1075,7 @@ export const generateRotatedShapeGeometry = (
 		config.shapeConfig,
 		config.levelConfig
 	);
-	const levels = generateLevelSet(
+	const levels = generateLevelSet2(
 		config.levelConfig,
 		config.silhouetteConfig,
 		config.depthCurveConfig,

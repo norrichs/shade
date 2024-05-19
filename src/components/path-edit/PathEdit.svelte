@@ -23,11 +23,8 @@
 	} from '$lib/generate-shape';
 	import CheckBoxInput from '../controls/CheckboxInput.svelte';
 	import PathEditInput from '../path-edit/PathEditInput.svelte';
-	import { getCurvePoints, getLevelLines } from '$lib/generate-shape';
-	import type { Vector2 } from 'three';
+	import { getCurvePoints, getLevelLines } from '$lib/generate-level';
 	import CheckboxInput from '../controls/CheckboxInput.svelte';
-	import { not_equal } from 'svelte/internal';
-	import { Column } from '@bryntum/gantt';
 
 	type ShowControlCurveValue =
 		| 'ShapeConfig'
@@ -71,12 +68,12 @@
 	let showPointInputs = false;
 	let showPointInputsInline = false;
 	let curvePoints = getCurvePoints(
-		$config0[curveConfigByType[curveStoreType]],
-		$config0.levelConfig.silhouetteSampleMethod,
-		curveStoreType === 'SpineCurveConfig'
+		$config0[curveConfigByType[curveStoreType]]! as SilhouetteConfig,
+		$config0.levelConfig.silhouetteSampleMethod
+		// curveStoreType === 'SpineCurveConfig'
 	);
-	let levelLines =
-		curveStoreType === 'SpineCurveConfig' ? getLevelLines(curvePoints, $config0) : undefined;
+	// let levelLines =
+	// 	curveStoreType === 'SpineCurveConfig' ? getLevelLines(curvePoints, $config0) : undefined;
 
 	const canv = {
 		minX: -200,
@@ -267,13 +264,13 @@
 			curveStore.type === 'ShapeConfig'
 		);
 		curvePoints = getCurvePoints(
-			$config0[curveConfigByType[curveStoreType]],
-			$config0.levelConfig.silhouetteSampleMethod,
-			curveStoreType === 'SpineCurveConfig'
+			$config0[curveConfigByType[curveStoreType]]! as SilhouetteConfig,
+			$config0.levelConfig.silhouetteSampleMethod
+			// curveStoreType === 'SpineCurveConfig'
 		);
 		if (curveStoreType === 'SpineCurveConfig') {
 			console.debug('--------------------------------- for Spine', $config0);
-			levelLines = getLevelLines(curvePoints, $config0);
+			// levelLines = getLevelLines(curvePoints, $config0);
 		}
 
 		if (shouldUpdateStores) {
