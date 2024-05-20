@@ -213,7 +213,6 @@ export const generateTiledBandPattern = ({
 				const flatBand = getFlatStrip(band, { bandStyle: 'helical-right' });
 				const quadBand = getQuadrilaterals(flatBand);
 				const mappedPatternBand = quadBand.map((quad) => transformPatternByQuad(unitPattern, quad));
-				console.debug('mapped pattern band', mappedPatternBand);
 
 				const outlinedHoles = extractShapesFromMappedHexPatterns(
 					mappedPatternBand,

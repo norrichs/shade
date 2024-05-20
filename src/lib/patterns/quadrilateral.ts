@@ -100,7 +100,6 @@ export const svgTX = (tx: QuadrilateralTransformMatrix, anchor: Point) => {
 	`;
 };
 export const transformPatternByQuad = (pattern: HexPattern, quad: Quadrilateral): HexPattern => {
-	console.debug('transformPatternByQuad - pattern', pattern);
 	const tx = getQuadrilateralTransformMatrix(quad);
 	// const p0 = { x: pattern[0][1] || 0, y: pattern[0][2] || 0 };
 	const transformedSegments: HexPattern = pattern.map((segment) => {

@@ -1,4 +1,4 @@
-import { Vector3, type CurvePath, Vector2 } from 'three';
+import { Vector3, CurvePath, Vector2 } from 'three';
 import {
 	type LevelConfig,
 	type SilhouetteConfig,
@@ -131,14 +131,35 @@ const generateRawLevels = ({
 	// For 'preserveaspectratio', use depth and prototype curves
 	// Either way, we should be returning "raw levels"
 	console.debug('generateRawLevels', silhouette, depthCurve, levelPrototypes, sampleMethod);
+	const fractionalDivisions: number[] = [];
+	const spacing = 1 / sampleMethod.divisions;
+	for (let i = 0; i < sampleMethod.divisions + 1; i++) {
+		if (i === sampleMethod.divisions) {
+			fractionalDivisions.push(1);
+		} else {
+			fractionalDivisions.push(i * spacing);
+		}
+	}
+	console.debug('fractional divisions', fractionalDivisions);
+
 	let rawCurvePoints;
 	if (sampleMethod.method === 'divideCurvePath') {
-		rawCurvePoints = silhouette.getSpacedPoints(sampleMethod.divisions);
+		// rawCurvePoints = silhouette.getSpacedPoints(sampleMethod.divisions);
+		rawCurvePoints = fractionalDivisions.map((div) => {
+			return silhouette.getPointAt(div);
+		});
 	} else {
 		// if (sampleMethod.method === 'divideCurve') {
-		rawCurvePoints = silhouette.getPoints(sampleMethod.divisions);
+		rawCurvePoints = fractionalDivisions.map((div) => {
+			return silhouette.getPoint(div);
+		});
 	}
 	const rawLevels = rawCurvePoints.map((point, i) => {
+		const depth =
+			sampleMethod.method === 'divideCurvePath'
+				? depthCurve.getPointAt(fractionalDivisions[i]).x / 10
+				: depthCurve.getPoint(fractionalDivisions[i]).x / 10;
+
 		const offset: LevelOffset = {
 			x: 0,
 			y: 0,
@@ -148,9 +169,9 @@ const generateRawLevels = ({
 			rotZ: 0,
 			scaleX: point.x * 2,
 			scaleY: point.x * 2,
-			depth: 1
+			depth
 		};
-		return generateLevel2(offset, levelPrototypes[i % levelPrototypes.length], i);
+		return generateLevel(offset, levelPrototypes[i % levelPrototypes.length], i);
 	});
 	console.debug('rawLevels', rawLevels);
 	return rawLevels;
@@ -194,7 +215,6 @@ const getLevelOffsets = (levelConfig: LevelConfig, levelCount: number) => {
 
 	if (isLevelOffset(levelConfig.levelOffset)) {
 		for (let l = 0; l < levelOffsets.length; l++) {
-			console.debug(l);
 			levelOffsets[l] = { ...configLevelOffset };
 			const { x, y, rotX, rotY, rotZ, scaleX, scaleY } = configLevelOffset;
 			levelOffsets[l].x = x * l;
@@ -212,7 +232,7 @@ const getLevelOffsets = (levelConfig: LevelConfig, levelCount: number) => {
 	return levelOffsets;
 };
 
-const generateLevel2 = (
+const generateLevel = (
 	offset: LevelOffset,
 	prototype: LevelPrototype,
 	levelNumber: number
