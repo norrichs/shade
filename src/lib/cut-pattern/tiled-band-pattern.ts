@@ -1,3 +1,16 @@
+import type { Band } from '$lib/generate-shape';
+import { svgPathStringFromSegments } from '$lib/patterns/flower-of-life';
+import { generateHexPattern } from '$lib/patterns/hexPatterns';
+import {
+	getQuadrilaterals,
+	transformPatternByQuad,
+	extractShapesFromMappedHexPatterns,
+	getInsetPolygon,
+	traceCombinedOutline,
+	svgPathStringFromInsettablePolygon
+} from '$lib/patterns/quadrilateral';
+import type { PatternedBandPattern, TiledPatternConfig } from './cut-pattern.types';
+
 export const generateTiledBandPattern = ({
 	bands,
 	tiledPatternConfig

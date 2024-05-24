@@ -16,8 +16,7 @@ import type {
 	ShadesConfig,
 	StrutConfig,
 	TabStyle,
-	SilhouetteConfig,
-	CurveConfig
+	SilhouetteConfig
 } from './generate-shape';
 import { rad } from './util';
 
@@ -38,15 +37,15 @@ const defaultSilhouetteConfig: SilhouetteConfig = {
 
 const defaultDepthCurveConfig: DepthCurveConfig = {
 	type: 'DepthCurveConfig',
-	depthCurveBaseline: 10,
+	depthCurveBaseline: 100,
 	curves: [
 		{
 			type: 'BezierConfig',
 			points: [
-				{ type: 'PointConfig2', x: 10, y: -100 },
-				{ type: 'PointConfig2', x: 10, y: -75 },
-				{ type: 'PointConfig2', x: 10, y: 75 },
-				{ type: 'PointConfig2', x: 10, y: 100 }
+				{ type: 'PointConfig2', x: 100, y: -100 },
+				{ type: 'PointConfig2', x: 100, y: -75 },
+				{ type: 'PointConfig2', x: 100, y: 75 },
+				{ type: 'PointConfig2', x: 100, y: 100 }
 			]
 		}
 	]
@@ -105,7 +104,7 @@ export const generateDefaultShapeConfig = (
 
 const defaultLevelConfig: LevelConfig = {
 	type: 'LevelConfig',
-	silhouetteSampleMethod: { method: 'divideCurvePath', divisions: 10 },
+	silhouetteSampleMethod: { method: 'preserveAspectRatio', divisions: 10 },
 	// move below into shapeConfig
 	levelPrototypeSampleMethod: { byDivisions: 'whole', dividePer: 'curve' },
 	// levels: 30,
@@ -124,7 +123,6 @@ const defaultLevelConfig: LevelConfig = {
 
 export const initTabStyle = (style: TabStyle['style']): TabStyle => {
 	const defaultTabStyles: { [key: string]: TabStyle } = {
-		none: { style: 'none' },
 		full: { style: 'full', direction: 'lesser' },
 		trapezoid: { style: 'trapezoid', direction: 'lesser', width: { style: 'fixed', value: 5 } },
 		'multi-facet-full': {
@@ -148,7 +146,7 @@ const defaultBandConfig: BandConfig = {
 	type: 'BandConfig',
 	bandStyle: 'helical-right',
 	offsetBy: 0,
-	tabStyle: initTabStyle('none')
+	tabStyle: initTabStyle('trapezoid')
 };
 
 const defaultStrutConfig: StrutConfig = {
@@ -299,7 +297,7 @@ export const generateDefaultConfig = (): ShadesConfig => {
 	const config: ShadesConfig = {
 		id: AUTO_PERSIST_KEY,
 		name: '',
-		shapeConfig: generateDefaultShapeConfig(6, { method: 'divideCurvePath', divisions: 5 }),
+		shapeConfig: generateDefaultShapeConfig(4, { method: 'divideCurve', divisions: 2 }),
 		levelConfig: {
 			...defaultLevelConfig,
 			levels: getLevels(
