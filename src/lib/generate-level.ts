@@ -116,23 +116,35 @@ const generateRawLevelsConstantAspect = ({
 	sampleMethod: CurveSampleMethod;
 }): Level[] => {
 	const meridians = new Array<Vector3[]>(levelPrototypes[0].vertices.length);
+	const iterations = 10;
 	const spacing = 1 / sampleMethod.divisions;
 	const levelCount = sampleMethod.divisions + 1;
+	let divisions = new Array(levelCount)
+		.fill(0)
+		.map((v, i) => (i === levelCount - 1 ? 1 : spacing * i));
 
-	for (let vertexNumber = 0; vertexNumber < levelPrototypes[0].vertices.length; vertexNumber++) {
-		const silhouettePoints: Vector2[] = [];
-		meridians[vertexNumber] = [];
-		for (let levelNumber = 0; levelNumber < levelCount; levelNumber++) {
-			const division = levelNumber === sampleMethod.divisions ? 1 : levelNumber * spacing;
-			const depthedLevelPrototype = getDepthedLevelPrototype(
-				levelPrototypes[vertexNumber % levelPrototypes.length],
-				depthCurve.getPointAt(division).x / 100
-			);
-			silhouettePoints.push(silhouette.getPointAt(division));
-			meridians[vertexNumber].push(
-				getMeridianPoint(division, silhouette, depthedLevelPrototype.vertices[vertexNumber])
-			);
+	for (let iteration = 0; iteration < iterations; iteration++) {
+		// console.debug(iteration, 'divisions', divisions);
+		for (let vertexNumber = 0; vertexNumber < levelPrototypes[0].vertices.length; vertexNumber++) {
+			const silhouettePoints: Vector2[] = [];
+			meridians[vertexNumber] = [];
+			for (let levelNumber = 0; levelNumber < levelCount; levelNumber++) {
+				const division = divisions[levelNumber];
+				const depthedLevelPrototype = getDepthedLevelPrototype(
+					levelPrototypes[vertexNumber % levelPrototypes.length],
+					depthCurve.getPointAt(division).x / 100
+				);
+				silhouettePoints.push(silhouette.getPointAt(division));
+				meridians[vertexNumber].push(
+					getMeridianPoint(division, silhouette, depthedLevelPrototype.vertices[vertexNumber])
+				);
+			}
 		}
+		const aspectRatios: number[][] = getAspectRatiosFromMeridians(meridians);
+		// console.debug(iteration, 'aspectRatios', aspectRatios[0]);
+		const divergence = getDivergence(aspectRatios[0]);
+		console.debug('divergence', divergence);
+		divisions = adjustDivisions(divisions, aspectRatios[0]);
 	}
 
 	const levels: Level[] = [];
@@ -142,8 +154,37 @@ const generateRawLevelsConstantAspect = ({
 		levels.push({ level: levelNumber, center, vertices });
 	}
 	const aspectRatios: number[][] = getAspectRatiosFromLevels(levels);
-	console.debug('***       aspect Ratios\n', aspectRatios);
+	console.debug('***       aspect Ratios\n', aspectRatios[0]);
 	return levels;
+};
+
+const getDivergence = (values: number[]) => {
+	const avg = values.reduce((sum, val) => sum + val, 0) / values.length;
+	return values.map((val) => Math.abs(avg - val) / avg).reduce((sum, val) => sum + val, 0);
+};
+
+const adjustDivisions = (divisions: number[], aspectRatios: number[]) => {
+	const avgAspectRatio = aspectRatios.reduce((sum, val) => sum + val, 0) / aspectRatios.length;
+	const newDivisionsUnscaled = divisions.map((div, i) => {
+		if (i === 0) {
+			return 0;
+		}
+		const height = div - divisions[i - 1];
+		return (avgAspectRatio * height) / aspectRatios[i - 1];
+	});
+	const totalNewDivisionsUnscaled = newDivisionsUnscaled.reduce((sum, val) => sum + val, 0);
+	// console.debug('total', totalNewDivisionsUnscaled, 'unscaled', newDivisionsUnscaled);
+	const newDivisions: number[] = [];
+	newDivisionsUnscaled.forEach((div, i) => {
+		if (i === divisions.length - 1) {
+			newDivisions.push(1);
+		} else if (i === 0) {
+			newDivisions.push(0);
+		} else {
+			newDivisions.push(newDivisions[i - 1] + div / totalNewDivisionsUnscaled);
+		}
+	});
+	return newDivisions;
 };
 
 // apply silhoette scaling to depthed vertex, givinga 3d point
@@ -230,6 +271,26 @@ const getAspectRatiosFromLevels = (levels: Level[]): number[][] => {
 			bands[j].push(quadFacet);
 		}
 	}
+	return bands.map((band) => band.map((quad) => getAspectRatioOfQuad(quad)));
+};
+
+const getAspectRatiosFromMeridians = (meridians: Vector3[][]): number[][] => {
+	const bandCount = meridians.length;
+	const pointCount = meridians[0].length;
+	let bands: { v0: Vector3; v1: Vector3; v2: Vector3; v3: Vector3 }[][] = new Array(bandCount);
+	bands = bands.fill([]).map(() => []);
+
+	for (let b = 0; b < bandCount; b++) {
+		for (let p = 0; p < pointCount - 1; p++) {
+			bands[b].push({
+				v0: meridians[b][p],
+				v1: meridians[b][p + 1],
+				v2: meridians[(b + 1) % bandCount][p + 1],
+				v3: meridians[(b + 1) % bandCount][p]
+			});
+		}
+	}
+
 	return bands.map((band) => band.map((quad) => getAspectRatioOfQuad(quad)));
 };
 
