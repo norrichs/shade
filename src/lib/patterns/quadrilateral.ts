@@ -1,29 +1,19 @@
 import type {
-	ArcPathSegment,
+	Point,
 	LinePathSegment,
 	MovePathSegment,
 	PathSegment,
-	ReturnPathSegment
-} from '$lib/cut-pattern/cut-pattern.types';
-import type { Point } from '$lib/patterns/flower-of-life.types';
+	Band,
+	Facet,
+	TiledPatternSubConfig,
+	Quadrilateral,
+	QuadrilateralTransformMatrix,
+	HexPattern,
+	InsettablePolygon,
+	InsettableSegment
+} from '$lib/types';
 import { closestPoint, getLength } from './utils';
-import { logger, type SVGLoggerDirectionalLine } from '../../components/svg-logger/logger';
-import type { Band, Facet } from '$lib/generate-shape';
 import type { Vector3 } from 'three';
-import type { TiledPatternSubConfig } from '$lib/shades-config';
-
-export type Quadrilateral = {
-	p0: Point;
-	p1: Point;
-	p2: Point;
-	p3: Point;
-};
-
-export type QuadrilateralTransformMatrix = {
-	u: Point;
-	v: Point;
-	w: Point;
-};
 
 export const getQuadrilateralTransformMatrix = (
 	quad: Quadrilateral
@@ -100,9 +90,9 @@ export const svgTX = (tx: QuadrilateralTransformMatrix, anchor: Point) => {
 	L ${end.x} ${end.y}
 	`;
 };
-export const transformPatternByQuad = (pattern: HexPattern, quad: Quadrilateral): HexPattern => {
+export const transformPatternByQuad = (pattern: PathSegment[], quad: Quadrilateral): HexPattern => {
 	const tx = getQuadrilateralTransformMatrix(quad);
-	const p0 = { x: pattern[0][1] || 0, y: pattern[0][2] || 0 };
+	// const p0 = { x: pattern[0][1] || 0, y: pattern[0][2] || 0 };
 	const transformedSegments: HexPattern = pattern.map((segment) => {
 		if (segment[0] === 'L' || segment[0] === 'M') {
 			const newCoord = transformPointByQuadrilateralTransform(
@@ -112,16 +102,16 @@ export const transformPatternByQuad = (pattern: HexPattern, quad: Quadrilateral)
 			);
 			const mapped: MovePathSegment | LinePathSegment = [segment[0], newCoord.x, newCoord.y];
 			return mapped;
-		} else if (segment[0] === 'A') {
-			const newCoord = transformPointByQuadrilateralTransform(
-				{ x: segment[6] - p0.x, y: segment[7] - p0.y },
-				tx,
-				quad.p0
-			);
-			const mapped: ArcPathSegment = [...segment];
-			mapped[6] = newCoord.x;
-			mapped[7] = newCoord.y;
-			return mapped;
+			// } else if (segment[0] === 'A') {
+			// 	const newCoord = transformPointByQuadrilateralTransform(
+			// 		{ x: segment[6] - p0.x, y: segment[7] - p0.y },
+			// 		tx,
+			// 		quad.p0
+			// 	);
+			// 	const mapped: ArcPathSegment = [...segment];
+			// 	mapped[6] = newCoord.x;
+			// 	mapped[7] = newCoord.y;
+			// 	return mapped;
 		} else {
 			return segment;
 		}
@@ -257,79 +247,6 @@ export const extractShapesFromMappedHexPatterns = (
 	return shapes;
 };
 
-export type HexPattern = [
-	MovePathSegment,
-	LinePathSegment,
-	LinePathSegment,
-	LinePathSegment,
-	LinePathSegment,
-
-	MovePathSegment,
-	LinePathSegment,
-	MovePathSegment,
-	LinePathSegment,
-	MovePathSegment,
-	LinePathSegment,
-
-	MovePathSegment,
-	LinePathSegment,
-	LinePathSegment,
-	LinePathSegment,
-	LinePathSegment,
-
-	MovePathSegment,
-	LinePathSegment,
-	MovePathSegment,
-	LinePathSegment
-];
-
-export const generateHexPattern = (size: number): HexPattern => {
-	const unit = size / 3;
-	const h = size / 4;
-	const segments: HexPattern = [
-		['M', 0, unit / 2],
-		['L', h, 0],
-		['L', 2 * h, unit / 2],
-		['L', 3 * h, 0],
-		['L', 4 * h, unit / 2],
-
-		['M', 0, unit / 2],
-		['L', 0, (3 * unit) / 2],
-
-		['M', 2 * h, unit / 2],
-		['L', 2 * h, (3 * unit) / 2],
-
-		['M', 4 * h, unit / 2],
-		['L', 4 * h, (3 * unit) / 2],
-
-		['M', 0, (3 * unit) / 2],
-		['L', h, 2 * unit],
-		['L', 2 * h, (3 * unit) / 2],
-		['L', 3 * h, 2 * unit],
-		['L', 4 * h, (3 * unit) / 2],
-
-		['M', h, 2 * unit],
-		['L', h, 3 * unit],
-
-		['M', 3 * h, 2 * unit],
-		['L', 3 * h, 3 * unit]
-	];
-	return segments;
-};
-type SegmentVariant = 'insettable' | 'permeable' | 'edge' | 'interior';
-type InsettableSegment = {
-	[key: string]: Point | SegmentVariant;
-	p0: Point;
-	p1: Point;
-	variant: SegmentVariant;
-};
-type Perimeter = { isPerimeter: boolean; index: number };
-
-type InsettablePolygon = {
-	perimeter: Perimeter;
-	segments: InsettableSegment[];
-};
-
 export const pointFrom = (seg: PathSegment): Point => {
 	if (seg[0] === 'M' || seg[0] === 'L') {
 		return { x: seg[1], y: seg[2] };
@@ -439,30 +356,31 @@ const getOffsetLine = (
 	return result;
 };
 
-const getSamePoint = (
-	point: Point,
-	poly: InsettablePolygon
-): { segmentIndex: number; pointKey: string } | false => {
-	let matching: { segmentIndex: number; pointKey: string } | false = false;
-	poly.segments.forEach((seg, i) => {
-		const match = isSamePoint(point, seg.p0) ? 'p0' : isSamePoint(point, seg.p1) ? 'p1' : '';
-		if (match) {
-			matching = { segmentIndex: i, pointKey: match };
-		}
-	});
-	return matching;
-};
+// const getSamePoint = (
+// 	point: Point,
+// 	poly: InsettablePolygon
+// ): { segmentIndex: number; pointKey: string } | false => {
+// 	let matching: { segmentIndex: number; pointKey: string } | false = false;
+// 	poly.segments.forEach((seg, i) => {
+// 		const match = isSamePoint(point, seg.p0) ? 'p0' : isSamePoint(point, seg.p1) ? 'p1' : '';
+// 		if (match) {
+// 			matching = { segmentIndex: i, pointKey: match };
+// 		}
+// 	});
+// 	return matching;
+// };
+
 const isSamePoint = (p0: Point, p1: Point, precision?: number) => {
 	if (!precision) {
 		return p0.x === p1.x && p0.y === p1.y;
 	}
 	return Math.abs(p0.x - p1.x) <= precision && Math.abs(p0.y - p1.y) <= precision;
 };
-const getSlope = (p0: Point, p1: Point) => {
+export const getSlope = (p0: Point, p1: Point) => {
 	return (p1.y - p0.y) / (p1.x - p0.x);
 };
 
-const getIntersectionOfLines = (
+export const getIntersectionOfLines = (
 	l1: { p0: Point; p1: Point },
 	l2: { p0: Point; p1: Point }
 ): Point => {
@@ -500,8 +418,8 @@ export const getQuadrilaterals = (band: Band): Quadrilateral[] => {
 			quads.push({
 				p0: pointFromVector3(facets[i - 1].triangle.a),
 				p1: pointFromVector3(facets[i - 1].triangle.b),
-				p3: pointFromVector3(facets[i - 1].triangle.c),
-				p2: pointFromVector3(facet.triangle.a)
+				p2: pointFromVector3(facet.triangle.a),
+				p3: pointFromVector3(facets[i - 1].triangle.c)
 			});
 		}
 	});
@@ -602,8 +520,7 @@ export const traceCombinedOutline = (
 		width: number;
 		insetWidth: number;
 		tabVariant: 'extend' | 'inset' | false;
-	},
-	bandIndex?: number
+	}
 ) => {
 	// Filter holes to only perimeter holes
 	// Sort holes by index
@@ -738,7 +655,7 @@ const getTabStuff = (
 	outlinePoints: Point[],
 	traced: Point[],
 	direction: 'left' | 'right',
-	tabs: any
+	tabs: { width: number; insetWidth: number; tabVariant: 'extend' | 'inset' | false }
 ) => {
 	const { width, insetWidth, tabVariant } = tabs;
 

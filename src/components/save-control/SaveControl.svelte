@@ -1,5 +1,4 @@
 <script lang="ts">
-	import type { ShadesConfig } from '$lib/generate-shape';
 	import { AUTO_PERSIST_KEY } from '$lib/persistable';
 	import {
 		saveLocalConfig,
@@ -9,6 +8,7 @@
 		deleteLocal
 	} from '$lib/storage';
 	import { config0, usePersisted } from '$lib/stores';
+	import type { ShadesConfig } from '$lib/types';
 
 	export let show = false;
 	export let config: ShadesConfig;

@@ -1,6 +1,6 @@
 import type { PathSegment } from '$lib/cut-pattern/cut-pattern.types';
 import type { Point, Triangle } from './flower-of-life.types';
-import type { Triangle as ThreeTriangle } from 'three';
+import { Vector2, Vector3, type Triangle as ThreeTriangle } from 'three';
 
 export const generateUnitTriangle = (sideLength: number): Triangle => {
 	const unit = {
@@ -15,15 +15,126 @@ export const radToDeg = (n: number) => (n * 180) / Math.PI;
 
 export const degToRad = (n: number) => (n * Math.PI) / 180;
 
-export const getLength = (p1: Point, p2: Point): number =>
-	Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
-
+export const getLength = <T extends Point | Vector2 | Vector3>(p0: T, p1: T): number => {
+	if (p1 instanceof Vector3 && p0 instanceof Vector3) {
+		return p0.clone().addScaledVector(p1, -1).length();
+	}
+	if (p1 instanceof Vector2 && p0 instanceof Vector2) {
+		return p0.clone().addScaledVector(p1, -1).length();
+	}
+	return Math.sqrt(Math.pow(p1.x - p0.x, 2) + Math.pow(p1.y - p0.y, 2));
+};
 export const getMidPoint = (p1: Point, p2: Point): Point => {
 	const mid = {
 		x: p1.x + (p2.x - p1.x) / 2,
 		y: p1.y + (p2.y - p1.y) / 2
 	};
 	return mid;
+};
+
+interface LineLimit {
+	l0P0: boolean;
+	l1P0: boolean;
+	l0P1: boolean;
+	l1P1: boolean;
+}
+interface Line {
+	p0: Point;
+	p1: Point;
+}
+
+export const getIntersectionOfLimitedLines = (
+	l0: Line,
+	l1: Line,
+	limits: LineLimit = { l0P0: true, l1P0: true, l0P1: true, l1P1: true }
+): Point | false => {
+	let b1, b2, x, y: number;
+
+	const m1 = getSlope(l0.p0, l0.p1);
+	const m2 = getSlope(l1.p0, l1.p1);
+	if (m1 === m2) {
+		return false;
+	} else if (!Number.isFinite(m1)) {
+		x = l0.p1.x;
+		b2 = l1.p1.y - m2 * l1.p1.x;
+		y = m2 * x + b2;
+	} else if (!Number.isFinite(m2)) {
+		x = l1.p1.x;
+		b1 = l0.p1.y - m1 * l0.p1.x;
+		y = m1 * x + b1;
+	} else {
+		b1 = l0.p1.y - m1 * l0.p1.x;
+		b2 = l1.p1.y - m2 * l1.p1.x;
+		x = (b2 - b1) / (m1 - m2);
+		y = m1 * x + b1;
+	}
+	if (!Number.isFinite(x) || !Number.isFinite(y)) {
+		console.error('--------- Infinite', x, y, m1, m2, b1, b2);
+	}
+	console.debug(`candidate ${x} ${y}`);
+
+	const isForwardL0 = { x: l0.p1.x > l0.p0.x, y: l0.p1.y > l0.p0.y };
+	const isForwardL1 = { x: l1.p1.x > l1.p0.x, y: l1.p1.y > l1.p0.y };
+
+	const isInLimit = (
+		isLimited: boolean,
+		isStart: boolean,
+		isForward: { x: boolean; y: boolean },
+		intersection: Point,
+		point: Point
+	) => {
+		console.debug(
+			`  isInLimit - isLimited ${isLimited}, isStart ${isStart} isForward ${isForward.x} ${isForward.y}`,
+			'\n  point',
+			point,
+			'\n  intersection',
+			intersection
+		);
+		if (isLimited) {
+			if (isStart && isForward.x && intersection.x < point.x) {
+				console.debug('  limited by int x < point x');
+				return false;
+			}
+			if (isStart && isForward.y && intersection.y < point.y) {
+				console.debug('  limited by int y < point y');
+				return false;
+			}
+			if (!isStart && isForward.x && intersection.x > point.x) {
+				console.debug('  limited by int x > point x');
+				return false;
+			}
+			if (!isStart && isForward.y && intersection.y > point.y) {
+				console.debug('  limited by int x > point x');
+				return false;
+			}
+			return true;
+		}
+		return true;
+	};
+
+	console.debug('check limit l0 p0');
+	if (!isInLimit(limits.l0P0, true, isForwardL0, { x, y }, l0.p0)) {
+		return false;
+	}
+	console.debug('check limit l0 p1');
+	if (!isInLimit(limits.l0P1, false, isForwardL0, { x, y }, l0.p1)) {
+		return false;
+	}
+	console.debug('check limit l1 p0');
+	if (!isInLimit(limits.l1P0, true, isForwardL1, { x, y }, l1.p0)) {
+		return false;
+	}
+	console.debug('check limit l1 p1');
+	if (!isInLimit(limits.l1P1, false, isForwardL1, { x, y }, l0.p1)) {
+		return false;
+	}
+
+	console.debug(`return ${x} ${y}`);
+	return { x, y };
+};
+
+export const getSlope = (p0: Point, p1: Point) => {
+	return (p1.y - p0.y) / (p1.x - p0.x);
 };
 
 export const getAngle = (anchor: Point, point: Point) =>
@@ -159,7 +270,7 @@ export const roundPathSegments = (seg: PathSegment, decimalPlaces = 3) => {
 	if (seg[0] === 'Z') {
 		return seg;
 	}
-	return seg.map((s, i) => {
+	return seg.map((s) => {
 		if (typeof s === 'string') {
 			return s;
 		} else {
@@ -171,6 +282,6 @@ export const roundPathSegments = (seg: PathSegment, decimalPlaces = 3) => {
 
 export const closestPoint = (p0: Point, points: Point[]): Point => {
 	const distances = points.map((p) => Math.sqrt((p.x - p0.x) ** 2 + (p.y - p0.y) ** 2));
-	const minDistance = Math.min(...distances)
-	return points[distances.indexOf(minDistance)]
+	const minDistance = Math.min(...distances);
+	return points[distances.indexOf(minDistance)];
 };

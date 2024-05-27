@@ -1,17 +1,13 @@
 <script lang="ts">
 	import { T } from '@threlte/core';
-	import { Edges } from '@threlte/extras';
 	import {
 		DoubleSide,
-		CurvePath,
 		BufferGeometry,
-		MeshNormalMaterial,
 		EdgesGeometry,
 		LineBasicMaterial,
-		MeshToonMaterial,
 		MeshPhysicalMaterial
 	} from 'three';
-	import type { Strut } from '$lib/generate-shape';
+	import type { Strut } from '$lib/types';
 
 	export let strut: Strut;
 	export let showTabs: boolean = false;

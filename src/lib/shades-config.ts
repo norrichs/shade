@@ -1,25 +1,25 @@
+import { AUTO_PERSIST_KEY } from './persistable';
 import type {
 	CutoutConfig,
 	PatternConfig,
-	PatternViewConfig
-} from './cut-pattern/cut-pattern.types';
-import { AUTO_PERSIST_KEY } from './persistable';
-import type {
+	PatternViewConfig,
+	TiledPatternConfig,
 	BandConfig,
 	CurveSampleMethod,
 	DepthCurveConfig,
 	LevelConfig,
-	ShapeConfig,
 	RenderConfig,
 	ShadesConfig,
+	ShapeConfig,
+	SilhouetteConfig,
+	SpineCurveConfig,
 	StrutConfig,
-	TabStyle,
-	ZCurveConfig
-} from './generate-shape';
+	TabStyle
+} from '$lib/types';
 import { rad } from './util';
 
-const defaultZCurveConfig: ZCurveConfig = {
-	type: 'ZCurveConfig',
+const defaultSilhouetteConfig: SilhouetteConfig = {
+	type: 'SilhouetteConfig',
 	curves: [
 		{
 			type: 'BezierConfig',
@@ -35,15 +35,30 @@ const defaultZCurveConfig: ZCurveConfig = {
 
 const defaultDepthCurveConfig: DepthCurveConfig = {
 	type: 'DepthCurveConfig',
-	depthCurveBaseline: 10,
+	depthCurveBaseline: 100,
 	curves: [
 		{
 			type: 'BezierConfig',
 			points: [
-				{ type: 'PointConfig2', x: 10, y: -100 },
-				{ type: 'PointConfig2', x: 10, y: -75 },
-				{ type: 'PointConfig2', x: 10, y: 75 },
-				{ type: 'PointConfig2', x: 10, y: 100 }
+				{ type: 'PointConfig2', x: 100, y: -100 },
+				{ type: 'PointConfig2', x: 100, y: -75 },
+				{ type: 'PointConfig2', x: 100, y: 75 },
+				{ type: 'PointConfig2', x: 100, y: 100 }
+			]
+		}
+	]
+};
+
+const defaultSpineCurveConfig: SpineCurveConfig = {
+	type: 'SpineCurveConfig',
+	curves: [
+		{
+			type: 'BezierConfig',
+			points: [
+				{ type: 'PointConfig2', x: 0, y: -100 },
+				{ type: 'PointConfig2', x: 0, y: -75 },
+				{ type: 'PointConfig2', x: 0, y: 75 },
+				{ type: 'PointConfig2', x: 0, y: 100 }
 			]
 		}
 	]
@@ -87,7 +102,7 @@ export const generateDefaultShapeConfig = (
 
 const defaultLevelConfig: LevelConfig = {
 	type: 'LevelConfig',
-	zCurveSampleMethod: { method: 'divideCurvePath', divisions: 10 },
+	silhouetteSampleMethod: { method: 'preserveAspectRatio', divisions: 10 },
 	// move below into shapeConfig
 	levelPrototypeSampleMethod: { byDivisions: 'whole', dividePer: 'curve' },
 	// levels: 30,
@@ -106,7 +121,6 @@ const defaultLevelConfig: LevelConfig = {
 
 export const initTabStyle = (style: TabStyle['style']): TabStyle => {
 	const defaultTabStyles: { [key: string]: TabStyle } = {
-		none: { style: 'none' },
 		full: { style: 'full', direction: 'lesser' },
 		trapezoid: { style: 'trapezoid', direction: 'lesser', width: { style: 'fixed', value: 5 } },
 		'multi-facet-full': {
@@ -130,7 +144,7 @@ const defaultBandConfig: BandConfig = {
 	type: 'BandConfig',
 	bandStyle: 'helical-right',
 	offsetBy: 0,
-	tabStyle: initTabStyle('none')
+	tabStyle: initTabStyle('trapezoid')
 };
 
 const defaultStrutConfig: StrutConfig = {
@@ -164,70 +178,51 @@ const defaultRenderConfig: RenderConfig = {
 	}
 };
 
-export type TiledPatternSubConfig =
-	| { type: 'width'; valueType: 'number'; value: number; min: number; max: number; step: number }
-	| {
-			type: 'insetWidth';
-			valueType: 'number';
-			value: number;
-			min: number;
-			max: number;
-			step: number;
-	  }
-	| {
-			type: 'appendTab';
-			valueType: 'named';
-			value: string;
-			options: [{ none: false }, 'left', 'right', 'both'];
-	  }
-	| { type: 'adjustBandBoundary'; valueType: 'boolean'; value: boolean }
-	| {
-			type: 'tabVariant';
-			valueType: 'named';
-			value: string;
-			options: [{ none: false }, 'extend', 'inset'];
-	  }
-	| {
-			type: 'filledEndSize';
-			valueType: 'number';
-			value: number;
-			min: number;
-			max: number;
-			step: number;
-	  };
-
-export type TiledPatternConfig =
-	| {
-			type: 'tiledHexPattern-0';
-			tiling: 'quadrilateral';
-			unitPattern: 'tiledHexPattern-0';
-			config: TiledPatternSubConfig[];
-	  }
-	| { type: 'none' };
-
-const defaultTiledPatternConfig: TiledPatternConfig = {
-	type: 'tiledHexPattern-0',
-	tiling: 'quadrilateral',
-	unitPattern: 'tiledHexPattern-0',
-	config: [
-		{ type: 'width', valueType: 'number', value: 10, min: 0, max: 10, step: 0.1 },
-		{ type: 'insetWidth', valueType: 'number', value: 10, min: 0, max: 50, step: 0.1 },
-		{
-			type: 'appendTab',
-			valueType: 'named',
-			value: 'both',
-			options: [{ none: false }, 'left', 'right', 'both']
-		},
-		{
-			type: 'tabVariant',
-			valueType: 'named',
-			value: 'extend',
-			options: [{ none: false }, 'extend', 'inset']
-		},
-		{ type: 'adjustBandBoundary', valueType: 'boolean', value: true },
-		{ type: 'filledEndSize', valueType: 'number', value: 0, min: 0, max: 5, step: 1 }
-	]
+export const tiledPatternConfigs: { [key: string]: TiledPatternConfig } = {
+	'tiledHexPattern-0': {
+		type: 'tiledHexPattern-0',
+		tiling: 'quadrilateral',
+		unitPattern: 'tiledHexPattern-0',
+		config: [
+			{ type: 'width', valueType: 'number', value: 2, min: 0, max: 10, step: 0.1 },
+			{ type: 'insetWidth', valueType: 'number', value: 10, min: 0, max: 50, step: 0.1 },
+			{
+				type: 'appendTab',
+				valueType: 'named',
+				value: 'both',
+				options: [{ none: false }, 'left', 'right', 'both']
+			},
+			{
+				type: 'tabVariant',
+				valueType: 'named',
+				value: 'extend',
+				options: [{ none: false }, 'extend', 'inset']
+			},
+			{ type: 'adjustBandBoundary', valueType: 'boolean', value: true },
+			{ type: 'filledEndSize', valueType: 'number', value: 0, min: 0, max: 5, step: 1 }
+		]
+	},
+	'tiledHexPattern-1': {
+		type: 'tiledHexPattern-1',
+		tiling: 'quadrilateral',
+		unitPattern: 'tiledHexPattern-1',
+		config: [
+			{ type: 'adjustBandBoundary', valueType: 'boolean', value: true },
+			{ type: 'filledEndSize', valueType: 'number', value: 0, min: 0, max: 5, step: 1 }
+		]
+	},
+	'tiledBoxPattern-0': {
+		type: 'tiledBoxPattern-0',
+		tiling: 'quadrilateral',
+		unitPattern: 'tiledBoxPattern-0',
+		config: [
+			{ type: 'rowCount', valueType: 'number', value: 1, min: 1, max: 5, step: 1 },
+			{ type: 'columnCount', valueType: 'number', value: 3, min: 1, max: 6, step: 1 }
+		]
+	}
 };
+
+const defaultTiledPatternConfig: TiledPatternConfig = tiledPatternConfigs['tiledHexPattern-0'];
 
 const defaultCutoutConfig: CutoutConfig[] = [
 	{
@@ -301,13 +296,17 @@ export const generateDefaultConfig = (): ShadesConfig => {
 	const config: ShadesConfig = {
 		id: AUTO_PERSIST_KEY,
 		name: '',
-		shapeConfig: generateDefaultShapeConfig(6, { method: 'divideCurvePath', divisions: 5 }),
+		shapeConfig: generateDefaultShapeConfig(4, { method: 'divideCurve', divisions: 2 }),
 		levelConfig: {
 			...defaultLevelConfig,
-			levels: getLevels(defaultLevelConfig.zCurveSampleMethod, defaultZCurveConfig.curves.length)
+			levels: getLevels(
+				defaultLevelConfig.silhouetteSampleMethod,
+				defaultSilhouetteConfig.curves.length
+			)
 		},
-		zCurveConfig: defaultZCurveConfig,
+		silhouetteConfig: defaultSilhouetteConfig,
 		depthCurveConfig: defaultDepthCurveConfig,
+		spineCurveConfig: defaultSpineCurveConfig,
 		bandConfig: defaultBandConfig,
 		strutConfig: defaultStrutConfig,
 		renderConfig: defaultRenderConfig,

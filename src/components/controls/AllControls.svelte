@@ -1,8 +1,4 @@
 <script lang="ts">
-	import type { ShadesConfig, LevelConfig, StrutConfig } from '$lib/generate-shape';
-	import type { CutoutConfig, PatternConfig } from '$lib/cut-pattern/cut-pattern';
-	import type { Persistable } from '$lib/persistable';
-
 	export let settingStore;
 	let selectedSettings = $settingStore;
 	let path: (string | number)[] = [];
@@ -21,7 +17,7 @@
 				key: string;
 				value: any;
 				depth: number;
-				options: string[];
+				options?: string[];
 		  };
 
 	type SettingType = 'number' | 'string' | 'enum' | 'boolean' | 'hash' | 'array';
@@ -46,7 +42,7 @@
 	const isRow = (type: SettingType) => ['number', 'enum', 'boolean'].includes(type);
 
 	const optionsFor = (key: string): string[] | undefined => {
-		const options = {
+		const options: { [key: string]: string[] } = {
 			radiate: ['level', 'orthogonal', 'hybrid']
 		};
 
@@ -61,7 +57,7 @@
 
 		Object.entries(cfg).forEach((entry) => {
 			const type = inferType(entry);
-			const setting =
+			const setting: Setting =
 				type === 'enum'
 					? {
 							key: entry[0],
@@ -84,16 +80,15 @@
 		console.debug('select Settings', key);
 		if (typeof index === 'number') {
 			path = [...path, key, index];
-      selectedSettings = selectedSettings[key][index];
+			selectedSettings = selectedSettings[key][index];
 		} else {
 			path = [...path, key];
-      selectedSettings = selectedSettings[key];
+			selectedSettings = selectedSettings[key];
 		}
-
 	};
 
 	const updateStore = () => {
-		console.debug('updateStore',path.length, path, $settingStore, selectedSettings);
+		console.debug('updateStore', path.length, path, $settingStore, selectedSettings);
 		if (path.length === 0) {
 			$settingStore = selectedSettings;
 		} else if (path.length === 1) {
@@ -105,13 +100,15 @@
 		} else if (path.length === 4) {
 			$settingStore[path[0]][path[1]][path[2]][path[3]] = selectedSettings;
 		} else if (path.length === 5) {
-			$settingStore[path[0]][path[1]][path[2]][path[3]][path[4]]= selectedSettings;
+			$settingStore[path[0]][path[1]][path[2]][path[3]][path[4]] = selectedSettings;
 		} else if (path.length === 6) {
 			$settingStore[path[0]][path[1]][path[2]][path[3]][path[4]][path[5]] = selectedSettings;
 		} else if (path.length === 7) {
-			$settingStore[path[0]][path[1]][path[2]][path[3]][path[4]][path[5]][path[6]] = selectedSettings;
+			$settingStore[path[0]][path[1]][path[2]][path[3]][path[4]][path[5]][path[6]] =
+				selectedSettings;
 		} else if (path.length === 8) {
-			$settingStore[path[0]][path[1]][path[2]][path[3]][path[4]][path[5]][path[6]][path[7]] = selectedSettings;
+			$settingStore[path[0]][path[1]][path[2]][path[3]][path[4]][path[5]][path[6]][path[7]] =
+				selectedSettings;
 		}
 	};
 
@@ -137,7 +134,7 @@
 <div class="control-object">
 	<nav class="breadcrumb">
 		{#each ['config', ...path] as p, index}
-			<button on:click={() => gotoBreadcrumb(p, index)}>{p}</button>
+			<button on:click={() => gotoBreadcrumb(`${p}`, index)}>{p}</button>
 		{/each}
 	</nav>
 	{#each allSettings as s}

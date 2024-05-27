@@ -3,112 +3,58 @@ import type {
 	TrianglePoint,
 	TriangleSide,
 	EdgeConfig,
-	CutoutConfig,
-	PatternConfig,
-	PatternViewConfig
-} from './cut-pattern/cut-pattern.types';
+	Band,
+	BandConfig,
+	BandStyle,
+	BezierConfig,
+	DepthCurveConfig,
+	Facet,
+	FacetTab,
+	FullTab,
+	Level,
+	LevelConfig,
+	LevelPrototype,
+	LineConfig,
+	MultiFacetFullTab,
+	MultiFacetTrapTab,
+	PointConfig2,
+	RenderConfig,
+	ShadesConfig,
+	ShapeConfig,
+	SilhouetteConfig,
+	Strip,
+	Strut,
+	StrutConfig,
+	TabConfig,
+	TabStyle,
+	TrapTab,
+	Validation,
+	TabWidth,
+	TabFootprint,
+	BandOrientation,
+	RadiateOrientation,
+	StripSide,
+	StrutOrientation,
+	TabDirection,
+	TabFootprintInvert
+} from '$lib/types';
 import { generateEdgeConfig } from './cut-pattern/cut-pattern';
-import type { TiledPatternConfig } from './shades-config';
-// import { rad } from "$lib/util"
+import { generateLevelSet2 } from './generate-level';
 
 // Rotated Shape Levels are 2d.  How can I enforce that?
 
-export type Level = {
-	center: Vector3;
-	level: number;
-	vertices: Vector3[];
-};
-
-type LevelPrototype = {
-	center: Vector2;
-	vertices: Vector2[];
-};
-
-type LevelOffset = {
-	x: number;
-	y: number;
-	z: number;
-	rotX: number;
-	rotY: number;
-	rotZ: number;
-	scaleX: number;
-	scaleY: number;
-	depth: number;
-};
-
-export type LevelConfig = {
-	// zCurveConfig: ZCurveConfig,
-	type: 'LevelConfig';
-	zCurveSampleMethod: CurveSampleMethod;
-	levelPrototypeSampleMethod: { byDivisions: 'whole' | 'offsetHalf'; dividePer: 'shape' | 'curve' };
-	levels?: number;
-	baseRadius?: number;
-	levelOffset: LevelOffset;
-	height?: number;
-};
-
-export type FacetTab = FullTab | TrapTab | MultiFacetFullTab | MultiFacetTrapTab;
-
-type TabFootprint = { triangle: Triangle; free: 'a' | 'b' | 'c' };
-type TabFootprintInvert = { triangle: Triangle; free: 'ab' | 'ac' | 'bc' };
-
-export type FullTab = {
-	style: 'full';
-	footprint: TabFootprint;
-	direction: TabDirection;
-	outer: { a: Vector3; b: Vector3; c: Vector3 };
-	scored?: { a: Vector3; b: Vector3 };
-};
-export type TrapTab = {
-	style: 'trapezoid';
-	footprint: TabFootprint;
-	direction: TabDirection;
-	outer: { a: Vector3; b: Vector3; c: Vector3; d: Vector3 };
-	scored?: { a: Vector3; b: Vector3 };
-};
-
-export type MultiFacetFullTab = {
-	style: 'multi-facet-full';
-	footprint: [TabFootprint, TabFootprintInvert];
-	direction: TabDirection;
-	outer: { a: Vector3; b: Vector3; c: Vector3; d: Vector3 };
-	scored?: { a: Vector3; b: Vector3 };
-};
-
-export type MultiFacetTrapTab = {
-	style: 'multi-facet-trapezoid';
-	footprint: [TabFootprint, TabFootprintInvert];
-	direction: TabDirection;
-	outer: { a: Vector3; b: Vector3; c: Vector3; d: Vector3 };
-	scored?: { a: Vector3; b: Vector3 };
-	width: number;
-	inset?: number;
-};
-
 export const isFullTab = (tab: FacetTab | FacetTab[] | undefined): tab is FullTab =>
 	!Array.isArray(tab) && tab?.style === 'full';
+
 export const isTrapTab = (tab: FacetTab | FacetTab[] | undefined): tab is TrapTab =>
 	!Array.isArray(tab) && tab?.style === 'trapezoid';
+
 export const isMultiFacetFullTab = (
 	tab: FacetTab | FacetTab[] | undefined
 ): tab is MultiFacetFullTab => !Array.isArray(tab) && tab?.style === 'multi-facet-full';
 export const isMultiFacetTrapTab = (
 	tab: FacetTab | FacetTab[] | undefined
 ): tab is MultiFacetTrapTab => !Array.isArray(tab) && tab?.style === 'multi-facet-trapezoid';
-
-// TODO - remove all FacetTab[] = a facet can only have a single attached tab
-export type Facet = {
-	triangle: Triangle;
-	tab?: FacetTab; // | FacetTab[];
-};
-
-type BandOrientation = -1 | 0 | 1;
-
-export type Band = {
-	facets: Facet[];
-	orientation: BandOrientation;
-	endTab?: FacetTab;
-};
 
 export const isBezierCurveConfig = (curve: BezierConfig | PointConfig2): curve is BezierConfig =>
 	Object.hasOwn(curve, 'p0') &&
@@ -117,48 +63,11 @@ export const isBezierCurveConfig = (curve: BezierConfig | PointConfig2): curve i
 	Object.hasOwn(curve, 'p3') &&
 	curve.type === 'BezierConfig';
 
-export type BezierConfig = {
-	[key: string]: PointConfig2[] | string;
-	type: 'BezierConfig';
-	points: [PointConfig2, PointConfig2, PointConfig2, PointConfig2];
-};
-
-export type PointConfig2 = {
-	type: 'PointConfig2';
-	x: number;
-	y: number;
-	pointType?: 'smooth' | 'angled';
-};
-
-export type PointConfig3 = {
-	type: 'PointConfig2';
-	x: number;
-	y: number;
-	z: number;
-	pointType?: 'smooth' | 'angled';
-};
-
-export type LineConfig = {
-	type: 'LineConfig';
-	points: [PointConfig2, PointConfig2];
-};
-
-export type ZCurveConfig = {
-	type: 'ZCurveConfig';
-	curves: BezierConfig[];
-};
-
-export type DepthCurveConfig = {
-	type: 'DepthCurveConfig';
-	depthCurveBaseline: number;
-	curves: BezierConfig[];
-};
-
-export const generateZCurve = (config: ZCurveConfig): CurvePath<Vector2> => {
-	const zCurve = new CurvePath<Vector2>();
+export const generateSilhouette = (config: SilhouetteConfig): CurvePath<Vector2> => {
+	const silhouette = new CurvePath<Vector2>();
 	for (const curve of config.curves) {
 		if (curve.type === 'BezierConfig') {
-			zCurve.add(
+			silhouette.add(
 				new CubicBezierCurve(
 					new Vector2(curve.points[0].x, curve.points[0].y),
 					new Vector2(curve.points[1].x, curve.points[1].y),
@@ -168,10 +77,10 @@ export const generateZCurve = (config: ZCurveConfig): CurvePath<Vector2> => {
 			);
 		}
 	}
-	return zCurve;
+	return silhouette;
 };
 
-const getDepthValues = (config: DepthCurveConfig, levelCount: number): number[] => {
+export const generateDepthCurve = (config: DepthCurveConfig): CurvePath<Vector2> => {
 	const dCurve = new CurvePath<Vector2>();
 	for (const curve of config.curves) {
 		if (curve.type === 'BezierConfig') {
@@ -185,10 +94,7 @@ const getDepthValues = (config: DepthCurveConfig, levelCount: number): number[] 
 			);
 		}
 	}
-	const points = dCurve.getSpacedPoints(levelCount - 1);
-	// dCurve.getPoints(levelCount - 1);
-	const values = points.map((point) => point.x / config.depthCurveBaseline);
-	return values;
+	return dCurve;
 };
 
 // utility function to generate a regular polygon of type LevelPrototype
@@ -203,19 +109,6 @@ export const generateRegularPolygonLevel = (sides: number, radius: number): Leve
 		output.vertices.push(new Vector2(radius * Math.cos(a * i), radius * Math.sin(a * i)));
 	}
 	return output;
-};
-
-export type CurveSampleMethod =
-	| { method: 'divideCurvePath'; divisions: number }
-	| { method: 'divideCurve'; divisions: number };
-
-export type ShapeConfig = {
-	type: 'ShapeConfig';
-	// divisions: number;
-	sampleMethod: CurveSampleMethod;
-	symmetry: 'asymmetric' | 'radial' | 'lateral' | 'radial-lateral';
-	symmetryNumber: number;
-	curves: BezierConfig[];
 };
 
 // const validateShapeConfig = (config: ShapeConfig): Validation => {
@@ -292,16 +185,26 @@ const generateRadialShape = (config: ShapeConfig): CurvePath<Vector2> => {
 	return shape;
 };
 
-const normalizeConfigPoints = (shapeConfig: ShapeConfig, maxLength = 1): ShapeConfig => {
+const normalizeConfigPoints = (
+	shapeConfig: ShapeConfig,
+	config:
+		| { maxLength: number; normalizationRatio?: number }
+		| { maxLength?: number; normalizationRatio: number }
+): ShapeConfig => {
 	const lengths: number[] = [];
 	const normalizedShapeConfig: ShapeConfig = window.structuredClone(shapeConfig);
-	normalizedShapeConfig.curves.forEach((curve) =>
-		curve.points.forEach((point) => {
-			const length = Math.sqrt(Math.pow(point.x, 2) + Math.pow(point.y, 2));
-			lengths.push(length);
-		})
-	);
-	const ratio = maxLength / Math.max(...lengths);
+	let ratio: number;
+	if (typeof config.maxLength === 'number') {
+		normalizedShapeConfig.curves.forEach((curve) =>
+			curve.points.forEach((point) => {
+				const length = Math.sqrt(Math.pow(point.x, 2) + Math.pow(point.y, 2));
+				lengths.push(length);
+			})
+		);
+		ratio = config.maxLength / Math.max(...lengths);
+	} else if (config.normalizationRatio) {
+		ratio = config.normalizationRatio;
+	}
 
 	normalizedShapeConfig.curves = normalizedShapeConfig.curves.map((curve: BezierConfig) => {
 		const points: [PointConfig2, PointConfig2, PointConfig2, PointConfig2] = curve.points.map(
@@ -317,7 +220,7 @@ const normalizeConfigPoints = (shapeConfig: ShapeConfig, maxLength = 1): ShapeCo
 	return normalizedShapeConfig;
 };
 
-const generateLevelPrototype = (
+export const generateLevelPrototype = (
 	config: ShapeConfig,
 	levelConfig: LevelConfig
 ): LevelPrototype | LevelPrototype[] => {
@@ -335,7 +238,7 @@ const generateRadialShapeLevelPrototype = (
 	levelConfig: LevelConfig,
 	levelNumber: number
 ): LevelPrototype => {
-	const shape = generateRadialShape(normalizeConfigPoints(config, 1));
+	const shape = generateRadialShape(normalizeConfigPoints(config, { normalizationRatio: 1 / 200 }));
 	const points: Vector2[] = [];
 
 	const { byDivisions } = levelConfig.levelPrototypeSampleMethod;
@@ -344,7 +247,7 @@ const generateRadialShapeLevelPrototype = (
 		// const {divisions} = sampleMethod
 		if (byDivisions === 'whole') {
 			shape.curves.forEach((curve) => {
-				points.push(...curve.getPoints(sampleMethod.divisions).slice(1)); // removes first point from each curve to avoid dupes
+				points.push(...curve.getSpacedPoints(sampleMethod.divisions).slice(1)); // removes first point from each curve to avoid dupes
 			});
 		} else if (byDivisions === 'offsetHalf') {
 			shape.curves.forEach((curve) => {
@@ -366,129 +269,6 @@ const generateRadialShapeLevelPrototype = (
 		center: new Vector2(0, 0),
 		vertices: points
 	};
-};
-
-export type Validation = {
-	isValid: boolean;
-	msg: string[];
-};
-
-// const validateLevelConfig = (config: LevelConfig): Validation => {
-// 	const validation: Validation = { isValid: true, msg: [] };
-// 	if (config.zCurveSampleMethod === 'levelInterval') {
-// 		if (Array.isArray(config.levelOffset) || config.levelOffset.z !== 0) {
-// 			validation.isValid = validation.isValid && false;
-// 			validation.msg.push(
-// 				'sampling zCurve by arc divisions, level z offsets should not be directly configured'
-// 			);
-// 		}
-// 	}
-// 	return validation;
-// };
-
-const isLevelOffset = (levelOffset: LevelOffset | LevelOffset[]): levelOffset is LevelOffset =>
-	!Array.isArray(levelOffset);
-
-const generateLevelSet = (
-	levelConfig: LevelConfig,
-	zCurveConfig: ZCurveConfig,
-	depthCurveConfig: DepthCurveConfig,
-	levelPrototype: LevelPrototype | LevelPrototype[]
-): Level[] => {
-	// const validation = validateLevelConfig(levelConfig);
-	// if (!validation.isValid) {
-	// 	throw new Error(validation.msg.join('\n'));
-	// }
-
-	const depths = getDepthValues(depthCurveConfig, levelConfig.zCurveSampleMethod.divisions + 1);
-
-	// scale z-curve to height and baseRadius
-	const zCurve = generateZCurve(zCurveConfig);
-	const levelCount =
-		levelConfig.zCurveSampleMethod.method === 'divideCurve'
-			? zCurveConfig.curves.length * levelConfig.zCurveSampleMethod.divisions
-			: levelConfig.zCurveSampleMethod.divisions;
-	const levelOffsets: LevelOffset[] = new Array(levelCount);
-
-	// generate offsets from config
-	let zCurveRawPoints: Vector2[];
-	if (levelConfig.zCurveSampleMethod.method === 'divideCurvePath') {
-		zCurveRawPoints = zCurve.getSpacedPoints(levelConfig.zCurveSampleMethod.divisions);
-	} else {
-		zCurveRawPoints = zCurve.getPoints(levelConfig.zCurveSampleMethod.divisions);
-	}
-	const configLevelOffset: LevelOffset = isLevelOffset(levelConfig.levelOffset)
-		? levelConfig.levelOffset
-		: levelConfig.levelOffset[0];
-	if (isLevelOffset(levelConfig.levelOffset)) {
-		zCurveRawPoints.forEach((zCurveLevel, l) => {
-			levelOffsets[l] = { ...configLevelOffset };
-			const { x, y, rotX, rotY, rotZ, scaleX, scaleY } = configLevelOffset;
-			levelOffsets[l].x = x * l;
-			levelOffsets[l].y = y * l;
-			levelOffsets[l].z = zCurveLevel.y;
-			levelOffsets[l].rotX = rotX * l;
-			levelOffsets[l].rotY = rotY * l;
-			levelOffsets[l].rotZ = rotZ * l;
-			levelOffsets[l].scaleX = scaleX * zCurveLevel.x * 2; //* zCurveScale.x
-			levelOffsets[l].scaleY = scaleY * zCurveLevel.x * 2; //* zCurveScale.x
-			levelOffsets[l].depth = depths[l];
-		});
-	}
-	const levels: Level[] = new Array(levelCount);
-	levelOffsets.forEach((levelOffset, l) => {
-		let thisLevelPrototype: LevelPrototype;
-		if (Array.isArray(levelPrototype)) {
-			thisLevelPrototype = levelPrototype[l % levelPrototype.length];
-		} else {
-			thisLevelPrototype = levelPrototype;
-		}
-
-		levels[l] = generateLevel(levelOffset, thisLevelPrototype, l);
-	});
-
-	return levels;
-};
-
-const generateLevel = (
-	offset: LevelOffset,
-	prototype: LevelPrototype,
-	levelNumber: number
-): Level => {
-	// apply offsets to prototype
-	// axes for rotation
-	const zAxis = new Vector3(0, 0, 1);
-	const xAxis = new Vector3(1, 0, 0);
-	const yAxis = new Vector3(0, 1, 0);
-	// center for coordinate offset
-	const center = new Vector3(offset.x, offset.y, offset.z);
-
-	// const radialVertices = prototype.vertices.map((p) => getPolar(p.x, p.y));
-	const minLength = Math.min(...prototype.vertices.map((v) => v.length()));
-	const depthedVertices = prototype.vertices.map((v) => {
-		const length = v.length();
-		return v.clone().setLength(minLength + (length - minLength) * offset.depth);
-	});
-
-	const vertices = depthedVertices.map((pV) => {
-		const scaledVertex: Vector3 = new Vector3(pV.x, pV.y, 0);
-		// check this
-
-		scaledVertex.setLength(
-			Math.sqrt(Math.pow(offset.scaleX * pV.x, 2) + Math.pow(offset.scaleY * pV.y, 2))
-		);
-		scaledVertex.applyAxisAngle(zAxis, offset.rotZ); // z axis rotation must be first
-		scaledVertex.applyAxisAngle(xAxis, offset.rotX);
-		scaledVertex.applyAxisAngle(yAxis, offset.rotY);
-		scaledVertex.addScaledVector(center, 1);
-		return scaledVertex;
-	});
-	const level: Level = {
-		center,
-		level: levelNumber,
-		vertices
-	};
-	return level;
 };
 
 const validateBandConfig = (config: BandConfig, levels: Level[]): Validation => {
@@ -600,25 +380,6 @@ const generateCircumferenceBands = (config: ShadesConfig, levels: Level[]): Band
 /////////////////////////////////////////
 // Struts
 /////////////////////////////////////////
-
-export type Strut = {
-	tiling: Tiling;
-	orientation: StrutOrientation;
-	radiate: RadiateOrientation;
-	facets: Facet[];
-};
-
-export type StrutConfig = {
-	type: 'StrutConfig';
-	tiling: Tiling;
-	orientation: StrutOrientation;
-	radiate: RadiateOrientation;
-	width: number;
-};
-
-type Tiling = BandStyle;
-type StrutOrientation = 'inside' | 'outside' | 'half';
-type RadiateOrientation = 'level' | 'orthogonal' | 'hybrid';
 
 const generateStruts = (levels: Level[], config: StrutConfig): Strut[] => {
 	const struts: Strut[] = levels[0].vertices.map((vertex, i) =>
@@ -789,7 +550,6 @@ const shouldAddTabToSide = (side: StripSide, f: number, direction: TabDirection)
 
 const generateTabs = (bands: Band[], config: BandConfig, struts?: Strut[]) => {
 	const { direction } = config.tabStyle;
-
 	if (config.tabStyle) {
 		const tabbedBands: Band[] = bands.map((band, b) => {
 			return {
@@ -938,11 +698,6 @@ export const generateMultiFacetFullTab = (
 	};
 };
 
-export type TabConfig = {
-	lead: TrianglePoint;
-	follow: TrianglePoint;
-};
-
 const getFreeVertex = (constrained1: TrianglePoint, constrained2: TrianglePoint): TrianglePoint => {
 	const points: [TrianglePoint, TrianglePoint, TrianglePoint] = ['a', 'b', 'c'];
 	if (constrained1 === constrained2)
@@ -955,8 +710,6 @@ const getFreeVertex = (constrained1: TrianglePoint, constrained2: TrianglePoint)
 const getFreeSide = (constrained: TrianglePoint): TriangleSide => {
 	return ['ab', 'ac', 'bc'].find((str) => !str.includes(constrained)) as TriangleSide;
 };
-
-type TabWidth = { style: 'fixed'; value: number } | { style: 'fraction'; value: number };
 
 const getTriangleSegment = (
 	triangle: Triangle,
@@ -1026,75 +779,6 @@ export const generateTrapTab = (
 	return tab;
 };
 
-export type BandStyle = 'circumference' | 'helical-left' | 'helical-right';
-type TabScore = 0.5 | 0.75 | 0.9;
-type StripSide = 'greater' | 'lesser';
-type TabDirection = StripSide | 'both';
-// TODO - add a direction setting which will result in tabs on both sides
-export type TabStyle =
-	| { style: 'none' }
-	| { style: 'full'; direction: TabDirection; scored?: TabScore } // for circumference bands, left and right are relative to rotation direction
-	| {
-			style: 'trapezoid';
-			direction: TabDirection;
-			width: TabWidth;
-			inset?: number;
-			scored?: TabScore;
-	  }
-	| {
-			style: 'multi-facet-full';
-			direction: TabDirection;
-			directionMulti: -1 | 1;
-			footprint: 'strut' | 'band';
-			scored?: TabScore;
-	  }
-	| {
-			style: 'multi-facet-trapezoid';
-			direction: TabDirection;
-			directionMulti: -1 | 1;
-			footprint: 'strut' | 'band';
-			width: TabWidth;
-			inset?: number;
-			scored?: TabScore;
-	  };
-
-export type BandConfig = {
-	type: 'BandConfig';
-	bandStyle: BandStyle;
-	offsetBy: -2 | -1 | 0 | 1 | 2;
-	tabStyle: TabStyle;
-};
-
-export type RenderRange =
-	| { rangeStyle: 'filter'; filterFunction: (args: unknown) => boolean }
-	| {
-			[key: string]: number | string | undefined;
-			rangeStyle: 'slice';
-			bandStart: number;
-			bandCount?: number;
-			facetStart: number;
-			facetCount?: number;
-			levelStart: number;
-			levelCount?: number;
-			strutStart: number;
-			strutCount?: number;
-	  };
-
-export type RenderConfig = {
-	type: 'RenderConfig';
-	ranges: RenderRange;
-	show: {
-		[key: string]: boolean;
-		tabs: boolean;
-		levels: boolean;
-		bands: boolean;
-		patterns: boolean;
-		edges: boolean;
-	};
-};
-
-export type Strip = Band | Strut;
-
 export const isStrut = (strip: Strip): strip is Strut => (strip as Strut).tiling !== undefined;
 export const isBand = (strip: Strip): strip is Strut =>
 	(strip as Band).facets !== undefined && (strip as Strut).tiling === undefined;
@@ -1140,37 +824,6 @@ export const getRenderable = (
 	return shapes;
 };
 
-export type ShadesConfig = {
-	[key: string]:
-		| ShapeConfig
-		| LevelConfig
-		| ZCurveConfig
-		| DepthCurveConfig
-		| BandConfig
-		| StrutConfig
-		| RenderConfig
-		| CutoutConfig
-		| PatternConfig
-		| PatternViewConfig
-		| TiledPatternConfig
-		| string
-		| undefined;
-	shapeConfig: ShapeConfig;
-	levelConfig: LevelConfig;
-	zCurveConfig: ZCurveConfig;
-	depthCurveConfig: DepthCurveConfig;
-	bandConfig: BandConfig;
-	strutConfig: StrutConfig;
-	renderConfig: RenderConfig;
-	cutoutConfig: CutoutConfig;
-	patternConfig: PatternConfig;
-	patternViewConfig: PatternViewConfig;
-	tiledPatternConfig: TiledPatternConfig;
-
-	id?: string;
-	name?: string;
-};
-
 export const generateRotatedShapeGeometry = (
 	config: ShadesConfig
 ): { levels: Level[]; bands: Band[]; struts: Strut[] } => {
@@ -1178,9 +831,9 @@ export const generateRotatedShapeGeometry = (
 		config.shapeConfig,
 		config.levelConfig
 	);
-	const levels = generateLevelSet(
+	const levels = generateLevelSet2(
 		config.levelConfig,
-		config.zCurveConfig,
+		config.silhouetteConfig,
 		config.depthCurveConfig,
 		rotatedShapePrototype
 	);

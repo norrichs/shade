@@ -1,17 +1,13 @@
 <script lang="ts">
+	import type { Band } from '$lib/types';
 	import { T } from '@threlte/core';
-	import { Edges } from '@threlte/extras';
 	import {
 		DoubleSide,
-		CurvePath,
 		BufferGeometry,
-		MeshNormalMaterial,
 		EdgesGeometry,
 		LineBasicMaterial,
-		MeshToonMaterial,
 		MeshPhysicalMaterial
 	} from 'three';
-	import type { Band, TabStyle } from '$lib/generate-shape';
 
 	export let band: Band;
 	export let showTabs: boolean = true;

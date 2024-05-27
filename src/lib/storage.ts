@@ -4,9 +4,9 @@
 // write a store that does autosave using the storage functions
 // write a button component that allows saving a named config
 
-import type { ShadesConfig } from './generate-shape';
 import { generateUUID } from 'three/src/math/MathUtils';
-import { AUTO_PERSIST_KEY } from './persistable';
+import { AUTO_PERSIST_KEY } from '$lib/persistable';
+import type { ShadesConfig } from '$lib/types';
 
 export const resetLocal = (key: string) => {
 	if (confirm('really?')) {

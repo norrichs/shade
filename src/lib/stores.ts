@@ -1,18 +1,18 @@
-import { derived, writable } from 'svelte/store';
+import { derived } from 'svelte/store';
 import {
 	persistable,
 	bootStrapUsePersisted,
 	USE_PERSISTED_KEY,
 	AUTO_PERSIST_KEY
-} from './persistable';
-import type { ShadesConfig } from './generate-shape';
-import { getPersistedConfig } from './storage';
+} from '$lib/persistable';
+import { getPersistedConfig } from '$lib/storage';
 import {
 	// defaultPatternConfig,
 	// defaultPatternViewConfig,
 	generateDefaultConfig,
 	getLevels
 } from './shades-config';
+import type { ShadesConfig } from '$lib/types';
 
 export const usePersisted = persistable(false, USE_PERSISTED_KEY, USE_PERSISTED_KEY, true);
 
@@ -38,13 +38,11 @@ export const config = derived(config0, ($config0) => {
 		levelConfig: {
 			...$config0.levelConfig,
 			levels: getLevels(
-				$config0.levelConfig.zCurveSampleMethod,
-				$config0.zCurveConfig.curves.length
+				$config0.levelConfig.silhouetteSampleMethod,
+				$config0.silhouetteConfig.curves.length
 			)
 		}
 	};
 	// console.log("set derived config", derivedConfig)
 	return derivedConfig;
 });
-
-
