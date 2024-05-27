@@ -1,6 +1,6 @@
 import type { PathSegment } from '$lib/cut-pattern/cut-pattern.types';
 import type { Point, Triangle } from './flower-of-life.types';
-import type { Triangle as ThreeTriangle } from 'three';
+import { Vector2, Vector3, type Triangle as ThreeTriangle } from 'three';
 
 export const generateUnitTriangle = (sideLength: number): Triangle => {
 	const unit = {
@@ -15,9 +15,15 @@ export const radToDeg = (n: number) => (n * 180) / Math.PI;
 
 export const degToRad = (n: number) => (n * Math.PI) / 180;
 
-export const getLength = (p1: Point, p2: Point): number =>
-	Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
-
+export const getLength = <T extends Point | Vector2 | Vector3>(p0: T, p1: T): number => {
+	if (p1 instanceof Vector3 && p0 instanceof Vector3) {
+		return p0.clone().addScaledVector(p1, -1).length();
+	}
+	if (p1 instanceof Vector2 && p0 instanceof Vector2) {
+		return p0.clone().addScaledVector(p1, -1).length();
+	}
+	return Math.sqrt(Math.pow(p1.x - p0.x, 2) + Math.pow(p1.y - p0.y, 2));
+};
 export const getMidPoint = (p1: Point, p2: Point): Point => {
 	const mid = {
 		x: p1.x + (p2.x - p1.x) / 2,
@@ -86,19 +92,19 @@ export const getIntersectionOfLimitedLines = (
 		);
 		if (isLimited) {
 			if (isStart && isForward.x && intersection.x < point.x) {
-				console.debug("  limited by int x < point x")
+				console.debug('  limited by int x < point x');
 				return false;
 			}
 			if (isStart && isForward.y && intersection.y < point.y) {
-				console.debug("  limited by int y < point y")
+				console.debug('  limited by int y < point y');
 				return false;
 			}
 			if (!isStart && isForward.x && intersection.x > point.x) {
-				console.debug("  limited by int x > point x")
+				console.debug('  limited by int x > point x');
 				return false;
 			}
 			if (!isStart && isForward.y && intersection.y > point.y) {
-				console.debug("  limited by int x > point x")
+				console.debug('  limited by int x > point x');
 				return false;
 			}
 			return true;
@@ -106,20 +112,19 @@ export const getIntersectionOfLimitedLines = (
 		return true;
 	};
 
-
-	console.debug("check limit l0 p0")
-	if (!isInLimit(limits.l0P0, true,isForwardL0, { x, y }, l0.p0)) {
+	console.debug('check limit l0 p0');
+	if (!isInLimit(limits.l0P0, true, isForwardL0, { x, y }, l0.p0)) {
 		return false;
 	}
-	console.debug("check limit l0 p1")
+	console.debug('check limit l0 p1');
 	if (!isInLimit(limits.l0P1, false, isForwardL0, { x, y }, l0.p1)) {
 		return false;
 	}
-	console.debug("check limit l1 p0")
+	console.debug('check limit l1 p0');
 	if (!isInLimit(limits.l1P0, true, isForwardL1, { x, y }, l1.p0)) {
 		return false;
 	}
-	console.debug("check limit l1 p1")
+	console.debug('check limit l1 p1');
 	if (!isInLimit(limits.l1P1, false, isForwardL1, { x, y }, l0.p1)) {
 		return false;
 	}
@@ -265,7 +270,7 @@ export const roundPathSegments = (seg: PathSegment, decimalPlaces = 3) => {
 	if (seg[0] === 'Z') {
 		return seg;
 	}
-	return seg.map((s, i) => {
+	return seg.map((s) => {
 		if (typeof s === 'string') {
 			return s;
 		} else {

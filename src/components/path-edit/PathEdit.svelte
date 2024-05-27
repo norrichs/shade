@@ -20,7 +20,7 @@
 		SilhouetteConfig,
 		DepthCurveConfig,
 		SpineCurveConfig
-	} from '$lib/generate-shape';
+	} from '$lib/types';
 	import CheckBoxInput from '../controls/CheckboxInput.svelte';
 	import PathEditInput from '../path-edit/PathEditInput.svelte';
 	import { getCurvePoints, getLevelLines } from '$lib/generate-level';

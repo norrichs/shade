@@ -1,7 +1,10 @@
-import type { PathSegment } from '$lib/cut-pattern/cut-pattern.types';
-import type { HexPattern } from './quadrilateral';
+import type { PathSegment, PatternedPattern, HexPattern } from '$lib/types';
 
-const generateHexPattern = ({ variant, size }: { variant: 0 | 1; size: number }): HexPattern => {
+const generateHexPattern = (
+	rows: 1,
+	columns: 2,
+	{ variant, size }: { variant: 0 | 1; size: number }
+): HexPattern => {
 	const unit = size / 3;
 	const h = size / 4;
 	const segments: { [key: number]: HexPattern } = {
@@ -147,14 +150,14 @@ const straightenEndSegments = (
 
 export const patterns = {
 	'tiledHexPattern-0': {
-		getUnitPattern: () => generateHexPattern({ variant: 0, size: 1 }),
-		adjustAfterTiling: (input: any) => {
+		getUnitPattern: () => generateHexPattern(1, 2, { variant: 0, size: 1 }),
+		adjustAfterTiling: (input: string) => {
 			console.debug('adjust stub');
 			return input;
 		}
 	},
 	'tiledHexPattern-1': {
-		getUnitPattern: () => generateHexPattern({ variant: 1, size: 1 }),
+		getUnitPattern: () => generateHexPattern(1, 2, { variant: 1, size: 1 }),
 		adjustAfterTiling: (facets: [HexPattern, HexPattern]) =>
 			straightenEndSegments(
 				facets[0],
@@ -172,6 +175,6 @@ export const patterns = {
 	'tiledBoxPattern-0': {
 		getUnitPattern: (rows: 1 | 2 | 3, columns: 1 | 2 | 3 | 4 | 5) =>
 			generateBoxPattern({ size: 1, height: rows, width: columns }),
-		adjustAfterTiling: (facets) => facets
+		adjustAfterTiling: (facets: PatternedPattern) => facets
 	}
 };

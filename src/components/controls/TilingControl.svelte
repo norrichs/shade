@@ -5,7 +5,7 @@
 	import { config0 } from '$lib/stores';
 	import ControlGroup from './ControlGroup.svelte';
 	import { tiledPatternConfigs } from '$lib/shades-config';
-	import type { TiledPatternConfig } from '$lib/cut-pattern/cut-pattern.types';
+	import type { TiledPatternConfig } from '$lib/types';
 
 	const getTilingOptions = (configs: { [key: string]: TiledPatternConfig }) => {
 		console.debug('getTilingOptions', Object.values(configs));

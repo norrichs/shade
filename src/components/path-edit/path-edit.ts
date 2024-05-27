@@ -1,4 +1,4 @@
-import type { BezierConfig, PointConfig2 } from '$lib/generate-shape';
+import type { BezierConfig, PointConfig2 } from '$lib/types';
 
 export const onPathPointMove = (
 	x: number,

@@ -1,4 +1,4 @@
-import type { Point } from '$lib/patterns/flower-of-life.types';
+import type { Point } from '$lib/types';
 import { writable } from 'svelte/store';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 

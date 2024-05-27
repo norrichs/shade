@@ -1,14 +1,4 @@
 import { Vector2, Vector3, Triangle } from 'three';
-import type {
-	Band,
-	BandStyle,
-	Facet,
-	FacetTab,
-	TabStyle,
-	Level,
-	Strut,
-	Strip
-} from '../generate-shape';
 import {
 	generateMultiFacetFullTab,
 	generateFullTab,
@@ -26,16 +16,21 @@ import {
 	processFlowerOfLife1PatternTransforms,
 	svgPathStringFromSegments
 } from '../patterns/flower-of-life';
-import { arcCircle, simpleTriangle } from '../patterns/utils';
+import { arcCircle, getLength, getMidPoint, simpleTriangle } from '../patterns/utils';
 import type {
 	AlignTrianglesConfig,
+	Band,
+	BandStyle,
 	CutoutConfig,
 	EdgeConfig,
+	Facet,
 	FacetPattern,
+	FacetTab,
 	FacetedBandPattern,
 	FacetedStrutPattern,
 	FlatStripConfig,
 	FullTabPattern,
+	Level,
 	LevelPattern,
 	LevelSetPattern,
 	MultiFacetFullTabPattern,
@@ -47,11 +42,15 @@ import type {
 	PatternConfig,
 	PatternedBandPattern,
 	PatternedPattern,
+	Quadrilateral,
+	Strip,
+	Strut,
+	TabStyle,
 	TrapTabPattern,
 	TrianglePoint
-} from './cut-pattern.types';
+} from '$lib/types';
 import { generateUnitFlowerOfLifeTriangle } from '$lib/patterns/unit-pattern/unit-flower-of-life';
-import type { TiledPatternConfig } from './cut-pattern.types';
+import type { TiledPatternConfig } from '$lib/types';
 import {
 	extractShapesFromMappedHexPatterns,
 	getInsetPolygon,
@@ -60,7 +59,6 @@ import {
 	traceCombinedOutline,
 	transformPatternByQuad
 } from '$lib/patterns/quadrilateral';
-import { generateHexPattern } from '$lib/patterns/hexPatterns';
 import { patterns } from '$lib/patterns/patterns';
 
 const orderedPointsList = (points: { [key: string]: Vector3 }) => {
@@ -185,10 +183,10 @@ export const generateTiledBandPattern = ({
 	if (tiledPatternConfig.type !== 'tiledHexPattern-0') {
 		console.error("TiledPatternConfig is not of type 'tiledHexPattern-0'", tiledPatternConfig);
 	}
-	console.debug('***************************\ngenerateTiledBandPattern');
+	// console.debug('***************************\ngenerateTiledBandPattern');
 	const pattern: PatternedBandPattern = { projectionType: 'patterned', bands: [] };
 
-	const { getUnitPattern, adjustAfterTiling } = patterns[tiledPatternConfig.type];
+	const { getUnitPattern } = patterns[tiledPatternConfig.type];
 	const width =
 		(tiledPatternConfig.config.find((cfg) => cfg.type === 'width')?.value as number) || 0;
 	const appendTab =
@@ -207,9 +205,9 @@ export const generateTiledBandPattern = ({
 
 	if (tiledPatternConfig.type === 'tiledHexPattern-0') {
 		// Creates a pattern with an outline and holes based on the offset width specified
-		const unitPattern = getUnitPattern();
+		const unitPattern = getUnitPattern(1, 2);
 		const layoutPattern = {
-			bands: bands.map((band, index) => {
+			bands: bands.map((band) => {
 				const flatBand = getFlatStrip(band, { bandStyle: 'helical-right' });
 				const quadBand = getQuadrilaterals(flatBand);
 				const mappedPatternBand = quadBand.map((quad) => transformPatternByQuad(unitPattern, quad));
@@ -235,7 +233,7 @@ export const generateTiledBandPattern = ({
 
 		const cuttablePattern = insetHoles.bands.map((holes, index) => {
 			const tabs = doTabs ? { appendTab, insetWidth, tabVariant, width } : undefined;
-			const reTraced = traceCombinedOutline(holes, tabs, index);
+			const reTraced = traceCombinedOutline(holes, tabs);
 			const finalHoles = reTraced.holes.map((hole) => svgPathStringFromInsettablePolygon(hole));
 			const finalPattern = svgPathStringFromSegments(reTraced.outline).concat(finalHoles.join(' '));
 
@@ -244,20 +242,29 @@ export const generateTiledBandPattern = ({
 		pattern.bands = cuttablePattern;
 	} else {
 		// Creates a line pattern without inner and outer elements, appropriate for post processing in Affinity
+		// TODO - see if it's possible to convert the output of this to "expanded path" (e.g. convert stroke widths to paths instead of doing so in Affinity)
 		const unitPattern =
-			tiledPatternConfig.type === 'tiledHexPattern-1' ? getUnitPattern() : getUnitPattern(1, 3);
+			tiledPatternConfig.type === 'tiledHexPattern-1' ? getUnitPattern(1, 2) : getUnitPattern(1, 3);
 		const tiling: { facets: PatternedPattern[]; svgPath: string | undefined; id: string }[] =
 			bands.map((band, i) => {
 				const flatBand = getFlatStrip(band, { bandStyle: 'helical-right' });
 				const quadBand = getQuadrilaterals(flatBand);
 				const mappedPatternBand = quadBand.map((quad) => transformPatternByQuad(unitPattern, quad));
-				const adjustedPatternBand = mappedPatternBand.map((facet, i, facets) => {
+				const adjustedPatternBand = mappedPatternBand.map((facet) => {
 					return facet;
+					// Fix junctions and ends here
 					// return i === 0 ? facet : adjustAfterTiling([facet, facets[i - 1]]);
 				});
-				const cuttablePattern: PatternedPattern[] = adjustedPatternBand.map((facet) => {
-					const cuttable = { svgPath: svgPathStringFromSegments(facet), triangle: undefined };
-					console.debug('create cuttable pattern', facet, cuttable);
+				const cuttablePattern: PatternedPattern[] = adjustedPatternBand.map((facet, i) => {
+					const quad: Quadrilateral = quadBand[i];
+					const quadWidth = getLength(getMidPoint(quad.p0, quad.p3), getMidPoint(quad.p1, quad.p2));
+					const cuttable: PatternedPattern = {
+						svgPath: svgPathStringFromSegments(facet),
+						triangle: undefined,
+						quad,
+						quadWidth
+					};
+					// console.debug('create cuttable pattern', facet, cuttable);
 					return cuttable;
 				});
 				return {
@@ -266,9 +273,10 @@ export const generateTiledBandPattern = ({
 					id: `${tiledPatternConfig.type}-band-${i}`
 				};
 			});
+		console.debug('generateTiledBandPattern - tiling output', tiling);
 		pattern.bands = tiling;
 	}
-	console.debug('pattern', pattern);
+	// console.debug('pattern', pattern);
 	return pattern as PatternedBandPattern;
 };
 
@@ -352,13 +360,12 @@ export const generateBandPatterns = (
 			generatePattern[patternName];
 		const patternUnit = generatePatternUnit();
 
-		console.debug();
 		const patternedPattern: PatternedBandPattern = {
 			projectionType: 'patterned',
-			bands: flattenedGeometry.map((flatBand, i) => {
-				console.debug(`**********************************
-** Patterned Pattern - band: ${i}  **
-**********************************`);
+			bands: flattenedGeometry.map((flatBand) => {
+				// 				console.debug(`**********************************
+				// ** Patterned Pattern - band: ${i}  **
+				// **********************************`);
 				const bandPattern = {
 					svgPath: '',
 					facets: flatBand.facets.map((facet, i) => {
@@ -378,10 +385,10 @@ export const generateBandPatterns = (
 				// Convert prototype facets deformed by transforms into new svg paths
 				const transformedFacets: PathSegment[][] = [];
 				bandPattern.facets.forEach((facet) => {
-					console.debug('', width);
+					// console.debug('', width);
 					transformedFacets.push(
 						processPatternTransforms({
-							svgPath: facet.svgPath,
+							svgPath: facet.svgPath || '',
 							svgTransform: facet.svgTransform || '',
 							width
 						})
@@ -475,14 +482,14 @@ const generateFacetTabPattern = (facetTab: FacetTab | FacetTab[] | undefined) =>
 			style: 'full',
 			svgPath: getPathFromPoints(orderedPointsList(facetTab.outer)),
 			triangle: facetTab.footprint.triangle.clone()
-		} as FullTabPattern;
+		} as unknown as FullTabPattern;
 	}
 	if (isTrapTab(facetTab)) {
 		return {
 			style: 'trapezoid',
 			svgPath: getPathFromPoints(orderedPointsList(facetTab.outer)),
 			triangle: facetTab.footprint.triangle.clone()
-		} as TrapTabPattern;
+		} as unknown as TrapTabPattern;
 	}
 	if (isMultiFacetFullTab(facetTab)) {
 		return {
@@ -490,7 +497,7 @@ const generateFacetTabPattern = (facetTab: FacetTab | FacetTab[] | undefined) =>
 			svgPath: getPathFromPoints(orderedPointsList(facetTab.outer)),
 			triangle1: facetTab.footprint[0].triangle.clone(),
 			triangle2: facetTab.footprint[1].triangle.clone()
-		} as MultiFacetFullTabPattern;
+		} as unknown as MultiFacetFullTabPattern;
 	}
 	if (isMultiFacetTrapTab(facetTab)) {
 		return {
@@ -498,7 +505,7 @@ const generateFacetTabPattern = (facetTab: FacetTab | FacetTab[] | undefined) =>
 			svgPath: getPathFromPoints(orderedPointsList(facetTab.outer)),
 			triangle1: facetTab.footprint[0].triangle.clone(),
 			triangle2: facetTab.footprint[1].triangle.clone()
-		} as MultiFacetTrapTabPattern;
+		} as unknown as MultiFacetTrapTabPattern;
 	}
 };
 
@@ -529,10 +536,6 @@ export const generateLevelSetPatterns = (
 		return levelPattern;
 	});
 	return pattern;
-};
-
-const getLength = (p0: Vector3, p1: Vector3): number => {
-	return p0.clone().addScaledVector(p1, -1).length();
 };
 
 const alignTriangle = (triangle: Triangle, config: AlignTrianglesConfig): Triangle => {
@@ -576,7 +579,7 @@ const getFirstTriangleParity = (bandStyle: BandStyle): boolean => {
 	return true;
 };
 
-const getFlatStrip = <T extends Strut | Band>(
+export const getFlatStrip = <T extends Strut | Band>(
 	strip: T,
 	flatStripConfig: FlatStripConfig,
 	tabStyle?: TabStyle
@@ -777,4 +780,47 @@ const generatePattern = {
 		generateBandPattern: (transformedFacets: PathSegment[][]) =>
 			generateFlowerOfLife1BandPattern(transformedFacets)
 	}
+};
+
+type PatternedPatternStrokeWidthConfig = {
+	dynamic: 'quadWidth';
+	relativeTo: 'max' | 'bandMax' | number;
+	minWidth: number;
+	maxWidth: number;
+	easing: 'linear';
+};
+
+export const applyStrokeWidth = (
+	patternBands: PatternedBandPattern,
+	{ dynamic, relativeTo, minWidth, maxWidth }: PatternedPatternStrokeWidthConfig
+): PatternedBandPattern => {
+	let maxValue: number;
+	let minValue: number;
+	if (dynamic === 'quadWidth' && relativeTo === 'max') {
+		const values: number[] = [];
+		patternBands.bands.forEach((band) =>
+			band.facets.forEach((facet) => {
+				if (facet.quadWidth) {
+					values.push(facet.quadWidth);
+				}
+			})
+		);
+		maxValue = Math.max(...values);
+		minValue = Math.min(...values);
+		console.debug('MIN MAX', minValue, maxValue);
+
+		patternBands.bands = patternBands.bands.map((band, b) => ({
+			...band,
+			facets: band.facets.map((facet: PatternedPattern, f) => {
+				const ratio = facet.quadWidth ? (facet.quadWidth - minValue) / (maxValue - minValue) : 1;
+				const strokeWidth = ratio * (maxWidth - minWidth) + minWidth;
+				console.debug(b, f, 'quadWidth', facet.quadWidth, 'ratio', ratio, 'stroke', strokeWidth);
+				return {
+					...facet,
+					strokeWidth
+				};
+			})
+		}));
+	}
+	return patternBands;
 };

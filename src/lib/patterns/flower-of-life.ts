@@ -1,37 +1,18 @@
 import { logger } from '../../components/svg-logger/logger';
-import type {
-	ArcPathSegment,
-	MovePathSegment,
-	PathSegment,
-	PatternedBandConfig
-} from '$lib/cut-pattern/cut-pattern.types';
+
 import { flatten_convert } from '$lib/flatten/flatten';
 import {
 	getArcParams,
 	getCenteringTransform,
 	type ArcParams,
 	parseArcSegments,
-	svgFullEllipseArcFromParams,
 	isArcPathSegments,
 	svgArcFromParams,
 	getIntersectionsOfLineAndEllipse,
 	type ArcPathSegments,
 	svgArcWedgeFromParams
 } from './ellipse';
-import {
-	type Triangle,
-	type Circle,
-	type Ellipse,
-	type Point,
-	type FlowerOfLifeConfig,
-	type FlowerOfLifeTriangle,
-	type PatternMode,
-	type BandTesselationConfig,
-	type TrianglePatternMode,
-	type MatchedFlowerOfLifeConfig,
-	isFlowerOfLifePathSegments,
-	type FlowerOfLifePathSegments
-} from './flower-of-life.types';
+
 import {
 	closestPoint,
 	generateUnitTriangle,
@@ -49,6 +30,23 @@ import {
 	scaleXY,
 	skewXPoint
 } from './utils';
+import type {
+	Circle,
+	Ellipse,
+	FlowerOfLifeConfig,
+	FlowerOfLifeTriangle,
+	PatternMode,
+	BandTesselationConfig,
+	TrianglePatternMode,
+	MatchedFlowerOfLifeConfig,
+	PathSegment,
+	PatternedBandConfig,
+	MovePathSegment,
+	ArcPathSegment,
+	FlowerOfLifePathSegments,
+	Triangle
+} from '$lib/types';
+import type { Point } from 'bezier-js';
 
 const UNIT_SIZE = 100;
 
@@ -130,7 +128,8 @@ export const generateFlowerOfLifeTriangle = (
 	let scaleY = 0;
 	let rotation = 0;
 	let skewX = 0;
-	const mode: PatternMode = flowerConfig.mode || 'contained';
+	const mode: PatternMode | { ab?: PatternMode; bc?: PatternMode; ac?: PatternMode } =
+		flowerConfig.mode || 'contained';
 	if (flowerConfig.type === 'matched') {
 		console.error('Matched flower of life triangle stub');
 		// Generate config values based on the given triangle, then run the generate functions
@@ -362,11 +361,11 @@ const generateMatchedFlowerOfLifeTriangle = (
 		throw new Error("Tesselation config is not 'matched'");
 	}
 
-	const ellipse: Ellipse = {
-		r0: 100,
-		r1: 100,
-		rotation: 0
-	};
+	// const ellipse: Ellipse = {
+	// 	r0: 100,
+	// 	r1: 100,
+	// 	rotation: 0
+	// };
 	const derivedConfig = deriveConfigFromBandTriangle(config, isPrimary);
 	const flowerOfLifeTriangle = generateFlowerOfLifeTriangle(
 		derivedConfig,
@@ -936,4 +935,21 @@ const getTransformedPoints = (points: [Point, Point], transform: string) => {
 		{ x: l[0][1] || 0, y: l[0][2] || 0 },
 		{ x: l[1][1] || 0, y: l[1][2] || 0 }
 	];
+};
+
+export const isFlowerOfLifePathSegments = (
+	segments: FlowerOfLifePathSegments | PathSegment[]
+): segments is FlowerOfLifePathSegments => {
+	const res =
+		Array.isArray(segments) &&
+		Array.isArray(segments) &&
+		segments.map((s) => s[0]).join('') === 'MLALLALLALZMAAAZ';
+	if (!res) {
+		console.error(
+			Array.isArray(segments),
+			Array.isArray(segments),
+			segments.map((s) => s[0]).join('') === 'MLALLALLALZMAAAZ'
+		);
+	}
+	return res;
 };

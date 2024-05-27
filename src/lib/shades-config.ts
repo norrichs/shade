@@ -1,23 +1,21 @@
+import { AUTO_PERSIST_KEY } from './persistable';
 import type {
 	CutoutConfig,
 	PatternConfig,
 	PatternViewConfig,
-	TiledPatternConfig
-} from './cut-pattern/cut-pattern.types';
-import { AUTO_PERSIST_KEY } from './persistable';
-import type {
+	TiledPatternConfig,
 	BandConfig,
 	CurveSampleMethod,
 	DepthCurveConfig,
-	SpineCurveConfig,
 	LevelConfig,
-	ShapeConfig,
 	RenderConfig,
 	ShadesConfig,
+	ShapeConfig,
+	SilhouetteConfig,
+	SpineCurveConfig,
 	StrutConfig,
-	TabStyle,
-	SilhouetteConfig
-} from './generate-shape';
+	TabStyle
+} from '$lib/types';
 import { rad } from './util';
 
 const defaultSilhouetteConfig: SilhouetteConfig = {

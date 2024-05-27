@@ -1,6 +1,5 @@
-import type { PathSegment } from '$lib/cut-pattern/cut-pattern.types';
+import type { PathSegment, Point, FlowerOfLifeTriangle } from '$lib/types';
 import { unitCircle } from '../flower-of-life';
-import type { Point, FlowerOfLifeTriangle } from '../flower-of-life.types';
 import {
 	getInsetAlongEdgeFromVertex,
 	getInsetToOppositEdgeFromVertex,

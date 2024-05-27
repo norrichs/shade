@@ -1,7 +1,7 @@
 <script lang="ts">
-	import type { TabStyle } from '$lib/generate-shape';
 	import { initTabStyle } from '$lib/shades-config';
 	import { config0 } from '$lib/stores';
+	import type { TabStyle } from '$lib/types';
 	import ControlGroup from './ControlGroup.svelte';
 
 	let tabStyle: TabStyle = window.structuredClone($config0.bandConfig.tabStyle);

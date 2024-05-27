@@ -44,7 +44,8 @@ export const generateLevelSet2 = (
 			silhouette,
 			depthCurve,
 			levelPrototypes,
-			sampleMethod: levelConfig.silhouetteSampleMethod
+			sampleMethod: levelConfig.silhouetteSampleMethod,
+			divisionBasis: 0
 		});
 	} else {
 		rawLevels = generateRawLevels({
@@ -108,28 +109,47 @@ const generateRawLevelsConstantAspect = ({
 	silhouette,
 	depthCurve,
 	levelPrototypes,
-	sampleMethod
+	sampleMethod,
+	divisionBasis
 }: {
 	silhouette: CurvePath<Vector2>;
 	depthCurve: CurvePath<Vector2>;
 	levelPrototypes: LevelPrototype[];
 	sampleMethod: CurveSampleMethod;
+	divisionBasis?: number;
 }): Level[] => {
-	const meridians = new Array<Vector3[]>(levelPrototypes[0].vertices.length);
-	const iterations = 10;
-	const spacing = 1 / sampleMethod.divisions;
 	const levelCount = sampleMethod.divisions + 1;
-	let divisions = new Array(levelCount)
-		.fill(0)
-		.map((v, i) => (i === levelCount - 1 ? 1 : spacing * i));
+	const bandCount = levelPrototypes[0].vertices.length;
+	const spacing = 1 / sampleMethod.divisions;
+	const meridians = new Array<Vector3[]>(bandCount);
+	const iterations = 50;
+	const divergenceLimit = 0.1;
+
+	let divisions = new Array(bandCount).fill([]).map(() => {
+		return new Array(levelCount).fill(0).map((v, i) => (i === levelCount - 1 ? 1 : spacing * i));
+	});
+
+	const divergenceTest = (
+		divergences: number[],
+		divergenceLimit: number,
+		divisionBasis?: number
+	) => {
+		if (divisionBasis === undefined) {
+			return !divergences.some((d) => d > divergenceLimit);
+		} else {
+			console.debug('divergence', divergences[divisionBasis], 'limit', divergenceLimit);
+			return divergences[divisionBasis] <= divergenceLimit;
+		}
+	};
 
 	for (let iteration = 0; iteration < iterations; iteration++) {
 		// console.debug(iteration, 'divisions', divisions);
-		for (let vertexNumber = 0; vertexNumber < levelPrototypes[0].vertices.length; vertexNumber++) {
+		console.debug(iteration);
+		for (let vertexNumber = 0; vertexNumber < bandCount; vertexNumber++) {
 			const silhouettePoints: Vector2[] = [];
 			meridians[vertexNumber] = [];
 			for (let levelNumber = 0; levelNumber < levelCount; levelNumber++) {
-				const division = divisions[levelNumber];
+				const division = divisions[vertexNumber][levelNumber];
 				const depthedLevelPrototype = getDepthedLevelPrototype(
 					levelPrototypes[vertexNumber % levelPrototypes.length],
 					depthCurve.getPointAt(division).x / 100
@@ -142,9 +162,24 @@ const generateRawLevelsConstantAspect = ({
 		}
 		const aspectRatios: number[][] = getAspectRatiosFromMeridians(meridians);
 		// console.debug(iteration, 'aspectRatios', aspectRatios[0]);
-		const divergence = getDivergence(aspectRatios[0]);
-		console.debug('divergence', divergence);
-		divisions = adjustDivisions(divisions, aspectRatios[0]);
+		const divergences = aspectRatios.map((ar) => getDivergence(ar));
+		if (divergenceTest(divergences, divergenceLimit, divisionBasis)) {
+			break;
+		}
+
+		console.debug(
+			'divergences',
+			divergences.map((d, i) => `${i}: ${Math.round(d * 1000) / 1000}`).join(', ')
+		);
+
+		divisions = divisions.map((band, i) =>
+			adjustDivisions(band, aspectRatios[divisionBasis === undefined ? i : divisionBasis])
+		);
+		divisions = divisions.map((band, i, bands) => {
+			return band.map((divisionValue, j) => {
+				return (divisionValue + bands[(bands.length + i - 1) % bands.length][j]) / 2;
+			});
+		});
 	}
 
 	const levels: Level[] = [];

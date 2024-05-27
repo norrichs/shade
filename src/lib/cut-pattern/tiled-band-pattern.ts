@@ -1,4 +1,4 @@
-import type { Band } from '$lib/generate-shape';
+import type { Band } from '$lib/types';
 import { svgPathStringFromSegments } from '$lib/patterns/flower-of-life';
 import { generateHexPattern } from '$lib/patterns/hexPatterns';
 import {
@@ -9,7 +9,8 @@ import {
 	traceCombinedOutline,
 	svgPathStringFromInsettablePolygon
 } from '$lib/patterns/quadrilateral';
-import type { PatternedBandPattern, TiledPatternConfig } from './cut-pattern.types';
+import type { PatternedBandPattern, TiledPatternConfig } from '$lib/types';
+import { getFlatStrip } from './cut-pattern';
 
 export const generateTiledBandPattern = ({
 	bands,
@@ -24,7 +25,7 @@ export const generateTiledBandPattern = ({
 	console.debug('***************************\ngenerateTiledBandPattern');
 	const pattern: PatternedBandPattern = { projectionType: 'patterned', bands: [] };
 
-	const unitPattern = generateHexPattern(1);
+	const unitPattern = generateHexPattern({ variant: 1, size: 1 });
 	console.debug('unitPattern', unitPattern);
 	const width =
 		(tiledPatternConfig.config.find((cfg) => cfg.type === 'width')?.value as number) || 0;
@@ -43,7 +44,7 @@ export const generateTiledBandPattern = ({
 	const doTabs = !!appendTab && !!tabVariant;
 
 	const layoutPattern = {
-		bands: bands.map((band, index) => {
+		bands: bands.map((band) => {
 			const flatBand = getFlatStrip(band, { bandStyle: 'helical-right' });
 			const quadBand = getQuadrilaterals(flatBand);
 			const mappedPatternBand = quadBand.map((quad) => transformPatternByQuad(unitPattern, quad));
@@ -68,7 +69,7 @@ export const generateTiledBandPattern = ({
 
 	const cuttablePattern = insetHoles.bands.map((holes, index) => {
 		const tabs = doTabs ? { appendTab, insetWidth, tabVariant, width } : undefined;
-		const reTraced = traceCombinedOutline(holes, tabs, index);
+		const reTraced = traceCombinedOutline(holes, tabs);
 		const finalHoles = reTraced.holes.map((hole) => svgPathStringFromInsettablePolygon(hole));
 		const finalPattern = svgPathStringFromSegments(reTraced.outline).concat(finalHoles.join(' '));
 

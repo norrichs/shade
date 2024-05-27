@@ -4,12 +4,11 @@
 
 <h1>Welcome</h1>
 <p><a href="/shades">Shade Designer</a></p>
-<p><a href="/sandbox4">Sandbox4</a></p>
-<p><a href="/sandbox5">Sandbox5</a></p>
-<p><a href="/sandbox6">Sandbox6</a></p>
-<p><a href="/sandbox7">Sandbox7</a></p>
-<p><a href="/sandbox8">Sandbox8</a></p>
-<p><a href="/sandbox9">Sandbox9</a></p>
+<p><a href="/sandbox-ellipse-intersections">Sandbox - Ellipse Intersections</a></p>
+<p><a href="/sandbox-line-intersections">Sandbox - Line Intersections</a></p>
+<p><a href="/sandbox-box-pattern">Sandbox - Box Pattern</a></p>
+<p><a href="/sandbox-bezier-intersections">Sandbox - Bezier Intersections</a></p>
+
 <div>
 	<label for="use-persisted-checkbox">persist settings?</label>
 	<input type="checkbox" bind:checked={$usePersisted} />

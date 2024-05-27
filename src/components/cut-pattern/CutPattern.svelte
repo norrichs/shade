@@ -1,27 +1,27 @@
 <script lang="ts">
 	import SvgLogger from '../svg-logger/SvgLogger.svelte';
 	import LoggerControls from '../svg-logger/LoggerControls.svelte';
-	import type { Level, Band, Strut } from '$lib/generate-shape';
 	import {
+		applyStrokeWidth,
 		generateBandPatterns,
 		generateLevelSetPatterns,
 		generateStrutPatterns
 	} from '$lib/cut-pattern/cut-pattern';
 	import { generateTiledBandPattern } from '$lib/cut-pattern/cut-pattern';
-	import type {
-		OutlinedBandPattern,
-		FacetedBandPattern,
-		FacetedStrutPattern,
-		OutlinedStrutPattern,
-		LevelSetPattern,
-		PatternViewConfig,
-		PatternedBandPattern,
-		PathSegment
-	} from '$lib/cut-pattern/cut-pattern.types';
 	import { getRenderable } from '$lib/generate-shape';
 	import { config, config0 } from '$lib/stores';
-	import { svgTriangle } from '$lib/patterns/flower-of-life';
-	import { simpleTriangle } from '$lib/patterns/utils';
+	import type {
+		Level,
+		Band,
+		Strut,
+		PatternViewConfig,
+		OutlinedBandPattern,
+		FacetedBandPattern,
+		PatternedBandPattern,
+		OutlinedStrutPattern,
+		FacetedStrutPattern,
+		LevelSetPattern
+	} from '$lib/types';
 
 	export let levels: Level[] = [];
 	export let bands: Band[] = [];
@@ -84,6 +84,13 @@
 				bands: displayedBandFacets as Band[],
 				tiledPatternConfig: $config.tiledPatternConfig
 			});
+			patterns.band = applyStrokeWidth(patterns.band, {
+				dynamic: 'quadWidth',
+				relativeTo: 'max',
+				minWidth: 1.5,
+				maxWidth: 2,
+				easing: 'linear'
+			});
 			console.debug('CutPattern patterns', patterns);
 		} else {
 			patterns.band = generateBandPatterns(
@@ -114,13 +121,6 @@
 			patterns.strut = generateStrutPatterns($config.patternConfig, displayedStrutFacets);
 		}
 	}
-
-	let experimental = {
-		show: false,
-		outer: `M 0 0 L 100 0 L 50 86.6z`,
-		inner: `M 10 5 L 90 5 L 50 75z`,
-		circle: [50, 28.9, 10]
-	};
 
 	let flattenedPatternedSVG: { bands: string[] } = { bands: [] };
 </script>
@@ -213,6 +213,8 @@
 										d={facet.svgPath}
 										fill="rgba(255,0,0,0.1)"
 										stroke-width={facet.strokeWidth || 1}
+										stroke-linecap="round"
+										stroke-linejoin="round"
 										stroke="black"
 									/>
 								{/each}

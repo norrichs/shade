@@ -1,6 +1,7 @@
 import { Vector2, type CubicBezierCurve } from 'three';
 import { Bezier, type Line } from 'bezier-js';
-import type { Point } from './patterns/flower-of-life.types';
+import type { Point } from '$lib/types';
+import type { Intersector } from '$lib/types';
 
 export const rad = (deg: number): number => (Math.PI / 180) * deg;
 export const deg = (rad: number): number => (180 / Math.PI) * rad;
@@ -20,7 +21,6 @@ export const getPolar = (x: number, y: number, cx = 0, cy = 0): { r: number; the
 	return { r, theta };
 };
 
-export type Intersector = { dimension: 'x'; value: number } | { dimension: 'y'; value: number };
 // | { type: 'line'; line: [Vector2, Vector2] };
 
 // Given a bezier curve and a value along a dimension,

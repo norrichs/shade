@@ -1,4 +1,4 @@
-import type { HexPattern } from './quadrilateral';
+import type { HexPattern } from '$lib/types';
 
 export const generateHexPattern = ({
 	variant,
@@ -51,6 +51,7 @@ export const generateHexPattern = ({
 			['L', h, (5 * unit) / 2],
 			['L', 0, 2 * unit],
 			['L', 0, unit],
+			['Z'],
 
 			// Center segment
 			['M', 2 * h, unit],

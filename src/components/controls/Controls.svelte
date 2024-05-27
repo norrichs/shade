@@ -1,4 +1,10 @@
 <script lang="ts">
+	import CutControl from './CutControl.svelte';
+	import LevelControl from './LevelControl.svelte';
+	import StrutControl from './StrutControl.svelte';
+	import TilingControl from './TilingControl.svelte';
+	import ShowControl from './ShowControl.svelte';
+
 	export let showControl: string;
 </script>
 

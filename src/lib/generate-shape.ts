@@ -3,92 +3,52 @@ import type {
 	TrianglePoint,
 	TriangleSide,
 	EdgeConfig,
-	CutoutConfig,
-	PatternConfig,
-	PatternViewConfig
-} from './cut-pattern/cut-pattern.types';
+	Band,
+	BandConfig,
+	BandStyle,
+	BezierConfig,
+	DepthCurveConfig,
+	Facet,
+	FacetTab,
+	FullTab,
+	Level,
+	LevelConfig,
+	LevelPrototype,
+	LineConfig,
+	MultiFacetFullTab,
+	MultiFacetTrapTab,
+	PointConfig2,
+	RenderConfig,
+	ShadesConfig,
+	ShapeConfig,
+	SilhouetteConfig,
+	Strip,
+	Strut,
+	StrutConfig,
+	TabConfig,
+	TabStyle,
+	TrapTab,
+	Validation,
+	TabWidth,
+	TabFootprint,
+	BandOrientation,
+	RadiateOrientation,
+	StripSide,
+	StrutOrientation,
+	TabDirection,
+	TabFootprintInvert
+} from '$lib/types';
 import { generateEdgeConfig } from './cut-pattern/cut-pattern';
-import type { TiledPatternConfig } from './cut-pattern/cut-pattern.types';
 import { generateLevelSet2 } from './generate-level';
 
 // Rotated Shape Levels are 2d.  How can I enforce that?
 
-export type Level = {
-	center: Vector3;
-	level: number;
-	vertices: Vector3[];
-};
-
-export type LevelPrototype = {
-	center: Vector2;
-	vertices: Vector2[];
-};
-
-export type LevelOffset = {
-	x: number;
-	y: number;
-	z: number;
-	rotX: number;
-	rotY: number;
-	rotZ: number;
-	scaleX: number;
-	scaleY: number;
-	depth: number;
-};
-
-export type LevelConfig = {
-	// silhouetteConfig: SilhouetteConfig,
-	type: 'LevelConfig';
-	silhouetteSampleMethod: CurveSampleMethod;
-	levelPrototypeSampleMethod: { byDivisions: 'whole' | 'offsetHalf'; dividePer: 'shape' | 'curve' };
-	levels?: number;
-	baseRadius?: number;
-	levelOffset: LevelOffset;
-	height?: number;
-};
-
-export type FacetTab = FullTab | TrapTab | MultiFacetFullTab | MultiFacetTrapTab;
-
-type TabFootprint = { triangle: Triangle; free: 'a' | 'b' | 'c' };
-type TabFootprintInvert = { triangle: Triangle; free: 'ab' | 'ac' | 'bc' };
-
-export type FullTab = {
-	style: 'full';
-	footprint: TabFootprint;
-	direction: TabDirection;
-	outer: { a: Vector3; b: Vector3; c: Vector3 };
-	scored?: { a: Vector3; b: Vector3 };
-};
-export type TrapTab = {
-	style: 'trapezoid';
-	footprint: TabFootprint;
-	direction: TabDirection;
-	outer: { a: Vector3; b: Vector3; c: Vector3; d: Vector3 };
-	scored?: { a: Vector3; b: Vector3 };
-};
-
-export type MultiFacetFullTab = {
-	style: 'multi-facet-full';
-	footprint: [TabFootprint, TabFootprintInvert];
-	direction: TabDirection;
-	outer: { a: Vector3; b: Vector3; c: Vector3; d: Vector3 };
-	scored?: { a: Vector3; b: Vector3 };
-};
-
-export type MultiFacetTrapTab = {
-	style: 'multi-facet-trapezoid';
-	footprint: [TabFootprint, TabFootprintInvert];
-	direction: TabDirection;
-	outer: { a: Vector3; b: Vector3; c: Vector3; d: Vector3 };
-	scored?: { a: Vector3; b: Vector3 };
-	width: number;
-	inset?: number;
-};
-
 export const isFullTab = (tab: FacetTab | FacetTab[] | undefined): tab is FullTab =>
 	!Array.isArray(tab) && tab?.style === 'full';
+
 export const isTrapTab = (tab: FacetTab | FacetTab[] | undefined): tab is TrapTab =>
 	!Array.isArray(tab) && tab?.style === 'trapezoid';
+
 export const isMultiFacetFullTab = (
 	tab: FacetTab | FacetTab[] | undefined
 ): tab is MultiFacetFullTab => !Array.isArray(tab) && tab?.style === 'multi-facet-full';
@@ -96,70 +56,12 @@ export const isMultiFacetTrapTab = (
 	tab: FacetTab | FacetTab[] | undefined
 ): tab is MultiFacetTrapTab => !Array.isArray(tab) && tab?.style === 'multi-facet-trapezoid';
 
-// TODO - remove all FacetTab[] = a facet can only have a single attached tab
-export type Facet = {
-	triangle: Triangle;
-	tab?: FacetTab; // | FacetTab[];
-};
-
-type BandOrientation = -1 | 0 | 1;
-
-export type Band = {
-	facets: Facet[];
-	orientation: BandOrientation;
-	endTab?: FacetTab;
-};
-
 export const isBezierCurveConfig = (curve: BezierConfig | PointConfig2): curve is BezierConfig =>
 	Object.hasOwn(curve, 'p0') &&
 	Object.hasOwn(curve, 'p1') &&
 	Object.hasOwn(curve, 'p2') &&
 	Object.hasOwn(curve, 'p3') &&
 	curve.type === 'BezierConfig';
-
-export type BezierConfig = {
-	[key: string]: PointConfig2[] | string;
-	type: 'BezierConfig';
-	points: [PointConfig2, PointConfig2, PointConfig2, PointConfig2];
-};
-
-export type PointConfig2 = {
-	type: 'PointConfig2';
-	x: number;
-	y: number;
-	pointType?: 'smooth' | 'angled';
-};
-
-export type PointConfig3 = {
-	type: 'PointConfig2';
-	x: number;
-	y: number;
-	z: number;
-	pointType?: 'smooth' | 'angled';
-};
-
-export type LineConfig = {
-	type: 'LineConfig';
-	points: [PointConfig2, PointConfig2];
-};
-
-export type CurveConfig = SilhouetteConfig | ShapeConfig | DepthCurveConfig | SpineCurveConfig;
-
-export type SilhouetteConfig = {
-	type: 'SilhouetteConfig';
-	curves: BezierConfig[];
-};
-
-export type DepthCurveConfig = {
-	type: 'DepthCurveConfig';
-	depthCurveBaseline: number;
-	curves: BezierConfig[];
-};
-
-export type SpineCurveConfig = {
-	type: 'SpineCurveConfig';
-	curves: BezierConfig[];
-};
 
 export const generateSilhouette = (config: SilhouetteConfig): CurvePath<Vector2> => {
 	const silhouette = new CurvePath<Vector2>();
@@ -207,20 +109,6 @@ export const generateRegularPolygonLevel = (sides: number, radius: number): Leve
 		output.vertices.push(new Vector2(radius * Math.cos(a * i), radius * Math.sin(a * i)));
 	}
 	return output;
-};
-
-export type CurveSampleMethod =
-	| { method: 'divideCurvePath'; divisions: number }
-	| { method: 'divideCurve'; divisions: number }
-	| { method: 'preserveAspectRatio'; divisions: number };
-
-export type ShapeConfig = {
-	type: 'ShapeConfig';
-	// divisions: number;
-	sampleMethod: CurveSampleMethod;
-	symmetry: 'asymmetric' | 'radial' | 'lateral' | 'radial-lateral';
-	symmetryNumber: number;
-	curves: BezierConfig[];
 };
 
 // const validateShapeConfig = (config: ShapeConfig): Validation => {
@@ -359,7 +247,7 @@ const generateRadialShapeLevelPrototype = (
 		// const {divisions} = sampleMethod
 		if (byDivisions === 'whole') {
 			shape.curves.forEach((curve) => {
-				points.push(...curve.getPoints(sampleMethod.divisions).slice(1)); // removes first point from each curve to avoid dupes
+				points.push(...curve.getSpacedPoints(sampleMethod.divisions).slice(1)); // removes first point from each curve to avoid dupes
 			});
 		} else if (byDivisions === 'offsetHalf') {
 			shape.curves.forEach((curve) => {
@@ -381,11 +269,6 @@ const generateRadialShapeLevelPrototype = (
 		center: new Vector2(0, 0),
 		vertices: points
 	};
-};
-
-export type Validation = {
-	isValid: boolean;
-	msg: string[];
 };
 
 const validateBandConfig = (config: BandConfig, levels: Level[]): Validation => {
@@ -497,25 +380,6 @@ const generateCircumferenceBands = (config: ShadesConfig, levels: Level[]): Band
 /////////////////////////////////////////
 // Struts
 /////////////////////////////////////////
-
-export type Strut = {
-	tiling: Tiling;
-	orientation: StrutOrientation;
-	radiate: RadiateOrientation;
-	facets: Facet[];
-};
-
-export type StrutConfig = {
-	type: 'StrutConfig';
-	tiling: Tiling;
-	orientation: StrutOrientation;
-	radiate: RadiateOrientation;
-	width: number;
-};
-
-type Tiling = BandStyle;
-type StrutOrientation = 'inside' | 'outside' | 'half';
-type RadiateOrientation = 'level' | 'orthogonal' | 'hybrid';
 
 const generateStruts = (levels: Level[], config: StrutConfig): Strut[] => {
 	const struts: Strut[] = levels[0].vertices.map((vertex, i) =>
@@ -834,11 +698,6 @@ export const generateMultiFacetFullTab = (
 	};
 };
 
-export type TabConfig = {
-	lead: TrianglePoint;
-	follow: TrianglePoint;
-};
-
 const getFreeVertex = (constrained1: TrianglePoint, constrained2: TrianglePoint): TrianglePoint => {
 	const points: [TrianglePoint, TrianglePoint, TrianglePoint] = ['a', 'b', 'c'];
 	if (constrained1 === constrained2)
@@ -851,8 +710,6 @@ const getFreeVertex = (constrained1: TrianglePoint, constrained2: TrianglePoint)
 const getFreeSide = (constrained: TrianglePoint): TriangleSide => {
 	return ['ab', 'ac', 'bc'].find((str) => !str.includes(constrained)) as TriangleSide;
 };
-
-type TabWidth = { style: 'fixed'; value: number } | { style: 'fraction'; value: number };
 
 const getTriangleSegment = (
 	triangle: Triangle,
@@ -922,74 +779,6 @@ export const generateTrapTab = (
 	return tab;
 };
 
-export type BandStyle = 'circumference' | 'helical-left' | 'helical-right';
-type TabScore = 0.5 | 0.75 | 0.9;
-type StripSide = 'greater' | 'lesser';
-type TabDirection = StripSide | 'both';
-// TODO - add a direction setting which will result in tabs on both sides
-export type TabStyle =
-	| { style: 'full'; direction: TabDirection; scored?: TabScore } // for circumference bands, left and right are relative to rotation direction
-	| {
-			style: 'trapezoid';
-			direction: TabDirection;
-			width: TabWidth;
-			inset?: number;
-			scored?: TabScore;
-	  }
-	| {
-			style: 'multi-facet-full';
-			direction: TabDirection;
-			directionMulti: -1 | 1;
-			footprint: 'strut' | 'band';
-			scored?: TabScore;
-	  }
-	| {
-			style: 'multi-facet-trapezoid';
-			direction: TabDirection;
-			directionMulti: -1 | 1;
-			footprint: 'strut' | 'band';
-			width: TabWidth;
-			inset?: number;
-			scored?: TabScore;
-	  };
-
-export type BandConfig = {
-	type: 'BandConfig';
-	bandStyle: BandStyle;
-	offsetBy: -2 | -1 | 0 | 1 | 2;
-	tabStyle: TabStyle;
-};
-
-export type RenderRange =
-	| { rangeStyle: 'filter'; filterFunction: (args: unknown) => boolean }
-	| {
-			[key: string]: number | string | undefined;
-			rangeStyle: 'slice';
-			bandStart: number;
-			bandCount?: number;
-			facetStart: number;
-			facetCount?: number;
-			levelStart: number;
-			levelCount?: number;
-			strutStart: number;
-			strutCount?: number;
-	  };
-
-export type RenderConfig = {
-	type: 'RenderConfig';
-	ranges: RenderRange;
-	show: {
-		[key: string]: boolean;
-		tabs: boolean;
-		levels: boolean;
-		bands: boolean;
-		patterns: boolean;
-		edges: boolean;
-	};
-};
-
-export type Strip = Band | Strut;
-
 export const isStrut = (strip: Strip): strip is Strut => (strip as Strut).tiling !== undefined;
 export const isBand = (strip: Strip): strip is Strut =>
 	(strip as Band).facets !== undefined && (strip as Strut).tiling === undefined;
@@ -1033,39 +822,6 @@ export const getRenderable = (
 		}
 	}
 	return shapes;
-};
-
-export type ShadesConfig = {
-	[key: string]:
-		| ShapeConfig
-		| LevelConfig
-		| SilhouetteConfig
-		| DepthCurveConfig
-		| SpineCurveConfig
-		| BandConfig
-		| StrutConfig
-		| RenderConfig
-		| CutoutConfig
-		| PatternConfig
-		| PatternViewConfig
-		| TiledPatternConfig
-		| string
-		| undefined;
-	shapeConfig: ShapeConfig;
-	levelConfig: LevelConfig;
-	silhouetteConfig: SilhouetteConfig;
-	depthCurveConfig: DepthCurveConfig;
-	spineCurveConfig: SpineCurveConfig;
-	bandConfig: BandConfig;
-	strutConfig: StrutConfig;
-	renderConfig: RenderConfig;
-	cutoutConfig: CutoutConfig;
-	patternConfig: PatternConfig;
-	patternViewConfig: PatternViewConfig;
-	tiledPatternConfig: TiledPatternConfig;
-
-	id?: string;
-	name?: string;
 };
 
 export const generateRotatedShapeGeometry = (
