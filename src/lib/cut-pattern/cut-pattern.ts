@@ -7,7 +7,8 @@ import {
 	isTrapTab,
 	isMultiFacetFullTab,
 	isMultiFacetTrapTab,
-	isStrut
+	isStrut,
+	getRenderable
 } from '../generate-shape';
 import { validateCutoutConfig } from '../validators';
 import {
@@ -20,8 +21,10 @@ import { arcCircle, getLength, getMidPoint, simpleTriangle } from '../patterns/u
 import type {
 	AlignTrianglesConfig,
 	Band,
+	BandPattern,
 	BandStyle,
 	CutoutConfig,
+	DynamicStrokeConfig,
 	EdgeConfig,
 	Facet,
 	FacetPattern,
@@ -35,6 +38,7 @@ import type {
 	LevelSetPattern,
 	MultiFacetFullTabPattern,
 	MultiFacetTrapTabPattern,
+	NullBandPattern,
 	OutlinePattern,
 	OutlinedBandPattern,
 	OutlinedStrutPattern,
@@ -42,7 +46,9 @@ import type {
 	PatternConfig,
 	PatternedBandPattern,
 	PatternedPattern,
+	Point,
 	Quadrilateral,
+	RenderConfig,
 	Strip,
 	Strut,
 	TabStyle,
@@ -60,6 +66,23 @@ import {
 	transformPatternByQuad
 } from '$lib/patterns/quadrilateral';
 import { patterns } from '$lib/patterns/patterns';
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-expect-error
+import outline from 'svg-path-outline';
+
+export const expandStroke = (rawPathString?: string, strokeWidth?: number) => {
+	if (!rawPathString) {
+		return rawPathString;
+	}
+	const pathString = outline(rawPathString, strokeWidth || 1, {
+		joints: 0,
+		bezierAccuracy: 3,
+		inside: true,
+		outside: true,
+		tagName: 'path'
+	});
+	return pathString;
+};
 
 const orderedPointsList = (points: { [key: string]: Vector3 }) => {
 	return Object.entries(points)
@@ -180,24 +203,25 @@ export const generateTiledBandPattern = ({
 	bands: Band[];
 	tiledPatternConfig: TiledPatternConfig;
 }): PatternedBandPattern => {
-	if (tiledPatternConfig.type !== 'tiledHexPattern-0') {
-		console.error("TiledPatternConfig is not of type 'tiledHexPattern-0'", tiledPatternConfig);
-	}
-	// console.debug('***************************\ngenerateTiledBandPattern');
+	// if (tiledPatternConfig.type !== 'tiledHexPattern-0') {
+	// 	console.error("TiledPatternConfig is not of type 'tiledHexPattern-0'", tiledPatternConfig);
+	// }
 	const pattern: PatternedBandPattern = { projectionType: 'patterned', bands: [] };
-
+	console.debug('tiledPatternConfig', tiledPatternConfig);
 	const { getUnitPattern } = patterns[tiledPatternConfig.type];
 	const width =
-		(tiledPatternConfig.config.find((cfg) => cfg.type === 'width')?.value as number) || 0;
+		(Object.values(tiledPatternConfig.config).find((cfg) => cfg.type === 'width')
+			?.value as number) || 0;
 	const appendTab =
-		(tiledPatternConfig.config.find((cfg) => cfg.type === 'appendTab')?.value as
+		(Object.values(tiledPatternConfig.config).find((cfg) => cfg.type === 'appendTab')?.value as
 			| 'left'
 			| 'right'
 			| false) || false;
 	const insetWidth =
-		(tiledPatternConfig.config.find((cfg) => cfg.type === 'insetWidth')?.value as number) || 0;
+		(Object.values(tiledPatternConfig.config).find((cfg) => cfg.type === 'insetWidth')
+			?.value as number) || 0;
 	const tabVariant =
-		(tiledPatternConfig.config.find((cfg) => cfg.type === 'tabVariant')?.value as
+		(Object.values(tiledPatternConfig.config).find((cfg) => cfg.type === 'tabVariant')?.value as
 			| 'extend'
 			| 'inset'
 			| false) || false;
@@ -243,8 +267,13 @@ export const generateTiledBandPattern = ({
 	} else {
 		// Creates a line pattern without inner and outer elements, appropriate for post processing in Affinity
 		// TODO - see if it's possible to convert the output of this to "expanded path" (e.g. convert stroke widths to paths instead of doing so in Affinity)
-		const unitPattern =
-			tiledPatternConfig.type === 'tiledHexPattern-1' ? getUnitPattern(1, 2) : getUnitPattern(1, 3);
+
+		const { rowCount, columnCount } =
+			tiledPatternConfig.type === 'tiledHexPattern-1'
+				? { rowCount: 1, columnCount: 2 }
+				: tiledPatternConfig.config;
+		const unitPattern = getUnitPattern(rowCount, columnCount);
+		console.debug('unitPattern', unitPattern);
 		const tiling: { facets: PatternedPattern[]; svgPath: string | undefined; id: string }[] =
 			bands.map((band, i) => {
 				const flatBand = getFlatStrip(band, { bandStyle: 'helical-right' });
@@ -259,12 +288,11 @@ export const generateTiledBandPattern = ({
 					const quad: Quadrilateral = quadBand[i];
 					const quadWidth = getLength(getMidPoint(quad.p0, quad.p3), getMidPoint(quad.p1, quad.p2));
 					const cuttable: PatternedPattern = {
-						svgPath: svgPathStringFromSegments(facet),
+						svgPath: svgPathStringFromSegments(facet, { scaleFactor: 1, unit: 'mm' }),
 						triangle: undefined,
 						quad,
 						quadWidth
 					};
-					// console.debug('create cuttable pattern', facet, cuttable);
 					return cuttable;
 				});
 				return {
@@ -273,10 +301,8 @@ export const generateTiledBandPattern = ({
 					id: `${tiledPatternConfig.type}-band-${i}`
 				};
 			});
-		console.debug('generateTiledBandPattern - tiling output', tiling);
 		pattern.bands = tiling;
 	}
-	// console.debug('pattern', pattern);
 	return pattern as PatternedBandPattern;
 };
 
@@ -782,21 +808,21 @@ const generatePattern = {
 	}
 };
 
-type PatternedPatternStrokeWidthConfig = {
-	dynamic: 'quadWidth';
-	relativeTo: 'max' | 'bandMax' | number;
-	minWidth: number;
-	maxWidth: number;
-	easing: 'linear';
-};
-
 export const applyStrokeWidth = (
 	patternBands: PatternedBandPattern,
-	{ dynamic, relativeTo, minWidth, maxWidth }: PatternedPatternStrokeWidthConfig
+	{ dynamicStroke, dynamicStrokeMax, dynamicStrokeMin }: object & DynamicStrokeConfig
 ): PatternedBandPattern => {
+	console.debug(
+		'dynamicStroke',
+		dynamicStroke.value,
+		'max',
+		dynamicStrokeMax.value,
+		'min',
+		dynamicStrokeMin.value
+	);
 	let maxValue: number;
 	let minValue: number;
-	if (dynamic === 'quadWidth' && relativeTo === 'max') {
+	if (dynamicStroke.value === 'quadWidth') {
 		const values: number[] = [];
 		patternBands.bands.forEach((band) =>
 			band.facets.forEach((facet) => {
@@ -807,14 +833,21 @@ export const applyStrokeWidth = (
 		);
 		maxValue = Math.max(...values);
 		minValue = Math.min(...values);
-		console.debug('MIN MAX', minValue, maxValue);
-
-		patternBands.bands = patternBands.bands.map((band, b) => ({
+		console.debug('maxValue', maxValue, 'minValue', minValue);
+		patternBands.bands = patternBands.bands.map((band) => ({
 			...band,
-			facets: band.facets.map((facet: PatternedPattern, f) => {
+			facets: band.facets.map((facet: PatternedPattern) => {
 				const ratio = facet.quadWidth ? (facet.quadWidth - minValue) / (maxValue - minValue) : 1;
-				const strokeWidth = ratio * (maxWidth - minWidth) + minWidth;
-				console.debug(b, f, 'quadWidth', facet.quadWidth, 'ratio', ratio, 'stroke', strokeWidth);
+				const strokeWidth =
+					ratio * ((dynamicStrokeMax.value as number) - (dynamicStrokeMin.value as number)) +
+					(dynamicStrokeMin.value as number);
+				console.debug(
+					'strokeWidth',
+					ratio,
+					strokeWidth,
+					dynamicStrokeMax.value,
+					dynamicStrokeMin.value
+				);
 				return {
 					...facet,
 					strokeWidth
@@ -823,4 +856,65 @@ export const applyStrokeWidth = (
 		}));
 	}
 	return patternBands;
+};
+
+export const getModelHeight = (bands: Band[]): number => {
+	const zValues: number[] = [];
+	bands.forEach((band) =>
+		band.facets.forEach((facet) => {
+			zValues.push(facet.triangle.a.z, facet.triangle.b.z, facet.triangle.c.z);
+		})
+	);
+	const minZ = Math.min(...zValues);
+	const maxZ = Math.max(...zValues);
+	const height = maxZ - minZ;
+	console.debug('getModelHeight', zValues.length, bands, minZ, maxZ, height);
+	return height;
+};
+
+export const getPatternLength = (
+	bands: BandPattern,
+	symmetry?: number
+): { minLength: number; maxLength: number } => {
+	if (bands.projectionType === 'none') {
+		return { minLength: 0, maxLength: 15 };
+	}
+
+	const points = (bands as PatternedBandPattern).bands.map((band) =>
+		band.facets.map((facet) => Object.values(facet.quad || {})).flat(2)
+	);
+	console.debug('getPatternLength', bands, points);
+	const distances = points.map((band) => {
+		const { distance } = getMostDistantPoints(band);
+		return distance;
+	});
+	console.debug('   distances', distances);
+	return { minLength: Math.min(...distances), maxLength: Math.max(...distances) };
+};
+
+export const getRenderableOnGeometry = <T extends Band[] | Level[] | Strut[]>(
+	renderConfig: RenderConfig,
+	geometry: T
+) => {
+	return getRenderable(renderConfig, geometry) as T;
+};
+
+const getMostDistantPoints = (points: Point[]) => {
+	let p0 = points[Math.round(points.length / 2)];
+	let p1 = points[0];
+	let distance = 0;
+
+	for (let i = 0; i < 5; i++) {
+		for (let j = 0; j < points.length; j++) {
+			const p = i % 2 === 0 ? points[j] : points[points.length - 1 - j];
+			const length = getLength(p0, p);
+
+			if (length > distance) {
+				p1 = p0;
+				p0 = points[j];
+				distance = length;
+			}
+		}
+	}
+	return { distance, p0, p1 };
 };

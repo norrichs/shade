@@ -179,50 +179,122 @@ const defaultRenderConfig: RenderConfig = {
 };
 
 export const tiledPatternConfigs: { [key: string]: TiledPatternConfig } = {
-	'tiledHexPattern-0': {
-		type: 'tiledHexPattern-0',
-		tiling: 'quadrilateral',
-		unitPattern: 'tiledHexPattern-0',
-		config: [
-			{ type: 'width', valueType: 'number', value: 2, min: 0, max: 10, step: 0.1 },
-			{ type: 'insetWidth', valueType: 'number', value: 10, min: 0, max: 50, step: 0.1 },
-			{
-				type: 'appendTab',
-				valueType: 'named',
-				value: 'both',
-				options: [{ none: false }, 'left', 'right', 'both']
-			},
-			{
-				type: 'tabVariant',
-				valueType: 'named',
-				value: 'extend',
-				options: [{ none: false }, 'extend', 'inset']
-			},
-			{ type: 'adjustBandBoundary', valueType: 'boolean', value: true },
-			{ type: 'filledEndSize', valueType: 'number', value: 0, min: 0, max: 5, step: 1 }
-		]
-	},
+	// 'tiledHexPattern-0': {
+	// 	type: 'tiledHexPattern-0',
+	// 	tiling: 'quadrilateral',
+	// 	unitPattern: 'tiledHexPattern-0',
+	// 	config: [
+	// 		{ type: 'width', valueType: 'number', value: 2, min: 0, max: 10, step: 0.1 },
+	// 		{ type: 'insetWidth', valueType: 'number', value: 10, min: 0, max: 50, step: 0.1 },
+	// 		{
+	// 			type: 'appendTab',
+	// 			valueType: 'named',
+	// 			value: 'both',
+	// 			options: [{ none: false }, 'left', 'right', 'both']
+	// 		},
+	// 		{
+	// 			type: 'tabVariant',
+	// 			valueType: 'named',
+	// 			value: 'extend',
+	// 			options: [{ none: false }, 'extend', 'inset']
+	// 		},
+	// 		{ type: 'adjustBandBoundary', valueType: 'boolean', value: true },
+	// 		{ type: 'filledEndSize', valueType: 'number', value: 0, min: 0, max: 5, step: 1 }
+	// 	]
+	// },
 	'tiledHexPattern-1': {
 		type: 'tiledHexPattern-1',
 		tiling: 'quadrilateral',
 		unitPattern: 'tiledHexPattern-1',
-		config: [
-			{ type: 'adjustBandBoundary', valueType: 'boolean', value: true },
-			{ type: 'filledEndSize', valueType: 'number', value: 0, min: 0, max: 5, step: 1 }
-		]
+		config: {
+			adjustBandBoundary: { type: 'adjustBandBoundary', valueType: 'boolean', value: true },
+			filledEndSize: {
+				type: 'filledEndSize',
+				valueType: 'number',
+				value: 0,
+				min: 0,
+				max: 5,
+				step: 1
+			},
+			dynamicStroke: {
+				type: 'dynamicStroke',
+				valueType: 'named',
+				value: 'quadWidth',
+				options: ['quadWidth', 'quadHeight']
+			},
+			dynamicStrokeEasing: {
+				type: 'dynamicStrokeEasing',
+				valueType: 'named',
+				value: 'linear',
+				options: ['linear', 'bezier']
+			},
+			dynamicStrokeMin: {
+				type: 'dynamicStrokeMin',
+				valueType: 'number',
+				value: 1,
+				min: 0,
+				max: 20,
+				step: 0.1
+			},
+			dynamicStrokeMax: {
+				type: 'dynamicStrokeMax',
+				valueType: 'number',
+				value: 3,
+				min: 0,
+				max: 20,
+				step: 0.1
+			}
+		}
 	},
 	'tiledBoxPattern-0': {
 		type: 'tiledBoxPattern-0',
 		tiling: 'quadrilateral',
 		unitPattern: 'tiledBoxPattern-0',
-		config: [
-			{ type: 'rowCount', valueType: 'number', value: 1, min: 1, max: 5, step: 1 },
-			{ type: 'columnCount', valueType: 'number', value: 3, min: 1, max: 6, step: 1 }
-		]
+		config: {
+			rowCount: { type: 'rowCount', valueType: 'number', value: 1, min: 1, max: 5, step: 1 },
+			columnCount: { type: 'columnCount', valueType: 'number', value: 3, min: 1, max: 6, step: 1 }
+		}
+	},
+	'tiledBowtiePattern-0': {
+		type: 'tiledBowtiePattern-0',
+		tiling: 'quadrilateral',
+		unitPattern: 'tiledBowtiePattern-0',
+		config: {
+			rowCount: { type: 'rowCount', valueType: 'number', value: 3, min: 1, max: 5, step: 1 },
+			columnCount: { type: 'columnCount', valueType: 'number', value: 3, min: 1, max: 6, step: 1 },
+			dynamicStroke: {
+				type: 'dynamicStroke',
+				valueType: 'named',
+				value: 'quadWidth',
+				options: ['quadWidth', 'quadHeight']
+			},
+			dynamicStrokeEasing: {
+				type: 'dynamicStrokeEasing',
+				valueType: 'named',
+				value: 'linear',
+				options: ['linear', 'bezier']
+			},
+			dynamicStrokeMin: {
+				type: 'dynamicStrokeMin',
+				valueType: 'number',
+				value: 1,
+				min: 0,
+				max: 20,
+				step: 0.1
+			},
+			dynamicStrokeMax: {
+				type: 'dynamicStrokeMax',
+				valueType: 'number',
+				value: 3,
+				min: 0,
+				max: 20,
+				step: 0.1
+			}
+		}
 	}
 };
 
-const defaultTiledPatternConfig: TiledPatternConfig = tiledPatternConfigs['tiledHexPattern-0'];
+const defaultTiledPatternConfig: TiledPatternConfig = tiledPatternConfigs['tiledBowtiePattern-0'];
 
 const defaultCutoutConfig: CutoutConfig[] = [
 	{
@@ -268,7 +340,7 @@ export const defaultPatternConfig: PatternConfig = {
 	showPattern: { band: 'patterned', strut: 'none', level: 'none' },
 	cutouts: defaultCutoutConfig[1],
 	axis: 'z',
-	scale: {value: 1, unit: "cm"},
+	pixelScale: { value: 1, unit: 'cm' },
 	origin: { type: 'PointConfig2', x: 0, y: 0 },
 	direction: { type: 'PointConfig2', x: 0, y: 1 },
 	offset: { type: 'PointConfig2', x: 0, y: 0 },

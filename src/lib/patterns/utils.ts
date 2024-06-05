@@ -1,5 +1,4 @@
-import type { PathSegment } from '$lib/cut-pattern/cut-pattern.types';
-import type { Point, Triangle } from './flower-of-life.types';
+import type { PathSegment, Triangle, Point } from '$lib/types';
 import { Vector2, Vector3, type Triangle as ThreeTriangle } from 'three';
 
 export const generateUnitTriangle = (sideLength: number): Triangle => {

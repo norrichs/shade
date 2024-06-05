@@ -12,7 +12,7 @@
 
 	export let show = false;
 	export let config: ShadesConfig;
-	export let update: () => void;
+	// export let update: () => void;
 
 	let test: string | null;
 
@@ -40,7 +40,7 @@
 					resetLocal(AUTO_PERSIST_KEY);
 					config0.reset();
 					refreshList();
-					update();
+					// update();
 				}}>Reset</button
 			>
 			<button

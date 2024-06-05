@@ -94,14 +94,24 @@ export type CutoutConfig = {
 
 export type EdgeConfig = { lead: TrianglePoint; follow: TrianglePoint };
 
+export type PixelScale = { value: number; unit: 'cm' | 'inch' };
+
 export type PatternConfig = {
-	[key: string]: PatternShowConfig | CutoutConfig | Axis | PointConfig2 | boolean | undefined;
+	[key: string]:
+		| PatternShowConfig
+		| CutoutConfig
+		| Axis
+		| PointConfig2
+		| boolean
+		| undefined
+		| PixelScale;
 	showPattern: PatternShowConfig;
 	axis: Axis;
 	origin: PointConfig2;
 	direction: PointConfig2;
 	offset: PointConfig2;
 	showTabs: boolean;
+	pixelScale: PixelScale;
 	// patternedConfig: PatternedPatternConfig;
 };
 
@@ -188,12 +198,33 @@ export type Pattern =
 
 export type Flag = 0 | 1;
 
-export type PathSegment = MovePathSegment | LinePathSegment | ArcPathSegment | ReturnPathSegment;
+export type PathSegment =
+	| MovePathSegment
+	| LinePathSegment
+	| ArcPathSegment
+	| ReturnPathSegment
+	| CubicBezierPathSegment
+	| QuadraticBezierPathSegment;
 
 export type MovePathSegment = ['M', number, number];
 export type LinePathSegment = ['L', number, number];
 export type ArcPathSegment = ['A', number, number, number, Flag, Flag, number, number];
 export type ReturnPathSegment = ['Z'];
+export type CubicBezierPathSegment = ['C', number, number, number, number, number, number];
+export type QuadraticBezierPathSegment = ['Q', number, number, number, number];
+
+export const isMovePathSegment = (seg: PathSegment): seg is MovePathSegment =>
+	seg[0] === 'M' && seg.length === 3;
+export const isLinePathSegment = (seg: PathSegment): seg is LinePathSegment =>
+	seg[0] === 'L' && seg.length === 3;
+export const isArcPathSegment = (seg: PathSegment): seg is ArcPathSegment =>
+	seg[0] === 'A' && seg.length === 8;
+export const isCubicBezierPathSegment = (seg: PathSegment): seg is CubicBezierPathSegment =>
+	seg[0] === 'C' && seg.length === 7;
+export const isQuadraticBezierPathSegment = (seg: PathSegment): seg is QuadraticBezierPathSegment =>
+	seg[0] === 'Q' && seg.length === 5;
+export const isReturnPathSegment = (seg: PathSegment): seg is ReturnPathSegment =>
+	seg[0] === 'Z' && seg.length === 1;
 
 export type PatternName = 'flower-of-life-1';
 export type PatternedBandConfig = {
@@ -203,6 +234,20 @@ export type PatternedBandConfig = {
 	};
 };
 
+export type Patterns = {
+	band: BandPattern;
+	strut: OutlinedStrutPattern | FacetedStrutPattern | NullBandPattern;
+	level: LevelSetPattern | NullBandPattern;
+};
+
+export type BandPattern = (
+	| OutlinedBandPattern
+	| FacetedBandPattern
+	| PatternedBandPattern
+	| NullBandPattern
+) & { meta?: { minLength?: number; maxLength?: number } };
+
+export type NullBandPattern = { projectionType: 'none' };
 export type FacetedBandPattern = { projectionType: 'faceted'; bands: { facets: FacetPattern[] }[] };
 export type OutlinedBandPattern = { projectionType: 'outlined'; bands: OutlinePattern[] };
 export type PatternedBandPattern = {
@@ -289,26 +334,76 @@ export type TiledPatternSubConfig =
 			min: number;
 			max: number;
 			step: number;
+	  }
+	| {
+			type: 'dynamicStroke';
+			valueType: 'named';
+			value: string;
+			options: ['quadWidth', 'quadHeight'];
+	  }
+	| {
+			type: 'dynamicStrokeEasing';
+			valueType: 'named';
+			value: string;
+			options: ['linear', 'bezier'];
+	  }
+	| {
+			type: 'dynamicStrokeMin';
+			valueType: 'number';
+			value: number;
+			min: number;
+			max: number;
+			step: number;
+	  }
+	| {
+			type: 'dynamicStrokeMax';
+			valueType: 'number';
+			value: number;
+			min: number;
+			max: number;
+			step: number;
 	  };
 
+export type DynamicStrokeConfig = {
+	dynamicStroke: TiledPatternSubConfig;
+	dynamicStrokeEasing: TiledPatternSubConfig;
+	dynamicStrokeMin: TiledPatternSubConfig;
+	dynamicStrokeMax: TiledPatternSubConfig;
+};
+
 export type TiledPatternConfig =
-	| {
-			type: 'tiledHexPattern-0';
-			tiling: 'quadrilateral';
-			unitPattern: 'tiledHexPattern-0';
-			config: TiledPatternSubConfig[];
-	  }
+	// | {
+	// 		type: 'tiledHexPattern-0';
+	// 		tiling: 'quadrilateral';
+	// 		unitPattern: 'tiledHexPattern-0';
+	// 		config: TiledPatternSubConfig[];
+	//   }
 	| {
 			type: 'tiledHexPattern-1';
 			tiling: 'quadrilateral';
 			unitPattern: 'tiledHexPattern-1';
-			config: TiledPatternSubConfig[];
+			config: {
+				adjustBandBoundary: TiledPatternSubConfig;
+				filledEndSize: TiledPatternSubConfig;
+			} & DynamicStrokeConfig;
 	  }
 	| {
 			type: 'tiledBoxPattern-0';
 			tiling: 'quadrilateral';
 			unitPattern: 'tiledBoxPattern-0';
-			config: TiledPatternSubConfig[];
+			config: {
+				rowCount: TiledPatternSubConfig;
+				columnCount: TiledPatternSubConfig;
+			} & DynamicStrokeConfig;
+	  }
+	| {
+			type: 'tiledBowtiePattern-0';
+			tiling: 'quadrilateral';
+			unitPattern: 'tiledBowtiePattern-0';
+			config: {
+				rowCount: TiledPatternSubConfig;
+				columnCount: TiledPatternSubConfig;
+			} & DynamicStrokeConfig;
 	  };
 
 export type Level = {

@@ -1,5 +1,43 @@
 import type { PathSegment, PatternedPattern, HexPattern } from '$lib/types';
 
+export const generateAuxetic = ({
+	size,
+	rows,
+	columns
+}: {
+	size: number;
+	rows: number;
+	columns: number;
+}): PathSegment[] => {
+	const unit = size;
+	const w = unit / 2 / columns;
+	const h = unit / 4 / rows;
+	const colW = unit / columns;
+	const rowH = unit / rows;
+
+	const units: PathSegment[] = [];
+
+	for (let row = 0; row < rows; row++) {
+		for (let col = 0; col < columns; col++) {
+			units.push(
+				['M', col * colW, row * rowH + 0.5 * h],
+				['L', col * colW + w, row * rowH + 1.5 * h],
+				['L', col * colW + 2 * w, row * rowH + 0.5 * h],
+				['L', col * colW + 2 * w, row * rowH + 3.5 * h],
+				['L', col * colW + w, row * rowH + 2.5 * h],
+				['L', col * colW + 0, row * rowH + 3.5 * h],
+				['L', col * colW + 0, row * rowH + 0.5 * h],
+
+				['M', col * colW + w, row * rowH],
+				['L', col * colW + w, row * rowH + 1.5 * h],
+				['M', col * colW + w, row * rowH + 2.5 * h],
+				['L', col * colW + w, row * rowH + 4 * h]
+			);
+		}
+	}
+	return units;
+};
+
 const generateHexPattern = (
 	rows: 1,
 	columns: 2,
@@ -176,5 +214,9 @@ export const patterns = {
 		getUnitPattern: (rows: 1 | 2 | 3, columns: 1 | 2 | 3 | 4 | 5) =>
 			generateBoxPattern({ size: 1, height: rows, width: columns }),
 		adjustAfterTiling: (facets: PatternedPattern) => facets
+	},
+	'tiledBowtiePattern-0': {
+		getUnitPattern: (rows: 1 | 2 | 3, columns: 1 | 2 | 3 | 4 | 5) =>
+			generateAuxetic({ size: 1, rows, columns })
 	}
 };

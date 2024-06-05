@@ -2,30 +2,17 @@
 	import SvgLogger from '../svg-logger/SvgLogger.svelte';
 	import LoggerControls from '../svg-logger/LoggerControls.svelte';
 	import {
-		applyStrokeWidth,
-		generateBandPatterns,
+		expandStroke,
 		generateLevelSetPatterns,
-		generateStrutPatterns
+		generateStrutPatterns,
+		getRenderableOnGeometry
 	} from '$lib/cut-pattern/cut-pattern';
-	import { generateTiledBandPattern } from '$lib/cut-pattern/cut-pattern';
-	import { getRenderable } from '$lib/generate-shape';
-	import { config, config0 } from '$lib/stores';
-	import type {
-		Level,
-		Band,
-		Strut,
-		PatternViewConfig,
-		OutlinedBandPattern,
-		FacetedBandPattern,
-		PatternedBandPattern,
-		OutlinedStrutPattern,
-		FacetedStrutPattern,
-		LevelSetPattern
-	} from '$lib/types';
+	import { bandPattern, config, config0, shapeData } from '$lib/stores';
+	import type { PatternViewConfig, Patterns } from '$lib/types';
+	import { show_svg } from '$lib/util';
+	import PatternLabel from './PatternLabel.svelte';
 
-	export let levels: Level[] = [];
-	export let bands: Band[] = [];
-	export let struts: Strut[] = [];
+	let { levels, bands, struts } = $shapeData;
 
 	let showBands = true;
 
@@ -39,73 +26,22 @@
 	};
 
 	let showTabs = true;
+	let useExpandStroke = false;
+	let useLabels = false;
+	let pageOutline: { width: number; height: number } | undefined = { width: 300, height: 300 };
 
-	$: renderConfig = $config.renderConfig;
+	$: displayedLevels = getRenderableOnGeometry($config.renderConfig, levels);
+	$: displayedStrutFacets = getRenderableOnGeometry($config.renderConfig, struts);
 
-	$: displayedBandFacets = getRenderableOnGeometry(bands);
-	$: displayedLevels = getRenderableOnGeometry(levels);
-	$: displayedStrutFacets = getRenderableOnGeometry(struts);
-
-	type Patterns = {
-		band:
-			| OutlinedBandPattern
-			| FacetedBandPattern
-			| PatternedBandPattern
-			| { projectionType: 'none' };
-		strut: OutlinedStrutPattern | FacetedStrutPattern | { projectionType: 'none' };
-		level: LevelSetPattern | { projectionType: 'none' };
-	};
-	type FlattenMode = 'native-replace' | 'recombine';
+	type FlattenMode = 'native-replace' | 'recombine'; // WTF is this. Still relevant?
 
 	let patterns: Patterns = {
-		band: { projectionType: 'none' },
+		band: $bandPattern,
 		strut: { projectionType: 'none' },
 		level: { projectionType: 'none' }
 	};
 
-	const getRenderableOnGeometry = <T extends Band[] | Level[] | Strut[]>(geometry: T) => {
-		return getRenderable($config.renderConfig, geometry) as T;
-	};
-
-	const show_svg = () => {
-		const svg = document.getElementById('pattern-svg');
-		if (!svg) return;
-		const serializer = new XMLSerializer();
-		const svg_blob = new Blob([serializer.serializeToString(svg)], { type: 'image/svg+xml' });
-		const url = URL.createObjectURL(svg_blob);
-		const svg_win = window.open(url, 'svg_win');
-	};
-
-	const updateBandPatterns = (facets: Band[]) => {
-		if ($config.patternConfig.showPattern.band === 'none') {
-			patterns.band = { projectionType: 'none' };
-		} else if ($config.patternConfig.showPattern.band === 'patterned') {
-			patterns.band = generateTiledBandPattern({
-				bands: displayedBandFacets as Band[],
-				tiledPatternConfig: $config.tiledPatternConfig
-			});
-			patterns.band = applyStrokeWidth(patterns.band, {
-				dynamic: 'quadWidth',
-				relativeTo: 'max',
-				minWidth: 1.5,
-				maxWidth: 2,
-				easing: 'linear'
-			});
-			console.debug('CutPattern patterns', patterns);
-		} else {
-			patterns.band = generateBandPatterns(
-				$config.patternConfig,
-				$config.cutoutConfig,
-				$config.bandConfig.bandStyle,
-				$config.bandConfig.tabStyle,
-				displayedBandFacets
-			);
-		}
-	};
-
 	$: viewBoxValue = getViewBox($config.patternViewConfig);
-
-	$: updateBandPatterns(displayedBandFacets);
 
 	$: {
 		if ($config.patternConfig.showPattern.level === 'none') {
@@ -127,7 +63,11 @@
 
 <div class="container">
 	<header>
-		<button on:click={show_svg}>Download</button>
+		<button on:click={() => show_svg('pattern-svg')}>Download</button>
+		<button on:click={() => (useExpandStroke = !useExpandStroke)}
+			>{useExpandStroke ? "Don't Expand Stroke" : 'Expand Stroke'}</button
+		>
+		<button on:click={() => (useLabels = !useLabels)}>{useLabels ? "Don't Label" : 'Label'}</button>
 		<!-- <button on:click={() => zoomToPattern(patterns)}>Zoom To Pattern</button> -->
 		<label for="showBands"> Bands </label>
 		<input type="checkbox" name="showBands" bind:checked={showBands} />
@@ -143,11 +83,16 @@
 		<div class="container-svg" class:showBands>
 			<svg
 				id="pattern-svg"
-				height={$config.patternViewConfig.height}
-				width={$config.patternViewConfig.width}
-				viewBox={viewBoxValue}
+				height="300mm"
+				width="300mm"
+				viewBox="-300 -300 300 300"
 				xmlns="http://www.w3.org/2000/svg"
 			>
+				{#if pageOutline}
+					<g stroke="black" fill="none" stroke-width="1">
+						<rect x="-300" y="-300" width={pageOutline.width} height={pageOutline.height} />
+					</g>
+				{/if}
 				{#if flattenedPatternedSVG.bands.length > 0}
 					{#each flattenedPatternedSVG.bands as band, b}
 						<path d={band} fill="red" fill-rule="evenodd" id={`flattened-patterned-band-${b}`} />
@@ -159,8 +104,8 @@
 						<path d={level.outline.svgPath} fill="green" stroke="black" stroke-width="0.3" />
 					{/each}
 				{/if}
-				{#if patterns.band.projectionType === 'outlined'}
-					{#each patterns.band.bands as band, i}
+				{#if $bandPattern.projectionType === 'outlined'}
+					{#each $bandPattern.bands as band, i}
 						<path
 							d={[
 								band.outline.svgPath,
@@ -173,8 +118,8 @@
 						/>
 						<text x={band.outline.points[0].x} y={band.outline.points[0].y}>{i}</text>
 					{/each}
-				{:else if patterns.band.projectionType === 'faceted'}
-					{#each patterns.band.bands as band, bandIndex}
+				{:else if $bandPattern.projectionType === 'faceted'}
+					{#each $bandPattern.bands as band, bandIndex}
 						<g id={`facets-band-${bandIndex}`} transform={`translate(${-50 * bandIndex} 0)`}>
 							{#each band.facets as facet, f}
 								<path
@@ -194,8 +139,8 @@
 							{/each}
 						</g>
 					{/each}
-				{:else if patterns.band.projectionType === 'patterned'}
-					{#each patterns.band.bands as band, b}
+				{:else if $bandPattern.projectionType === 'patterned'}
+					{#each $bandPattern.bands as band, b}
 						{#if band.svgPath}
 							<!-- <path
 								id={band.id || `transformed-band-svg-${b}`}
@@ -207,17 +152,32 @@
 								transform={`translate(${-50 * b} 0) scale(-1,-1)`}
 							/> -->
 						{:else}
-							<g transform={`translate(${-50 * b} 0) scale(-1,-1)`}>
+							<g transform={`translate(${-250 + 50 * b} -50) scale(-1,-1)`}>
 								{#each band.facets as facet, f}
-									<path
-										d={facet.svgPath}
-										fill="rgba(255,0,0,0.1)"
-										stroke-width={facet.strokeWidth || 1}
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke="black"
-									/>
+									{#if useExpandStroke}
+										<path
+											d={expandStroke(facet.svgPath, (facet.strokeWidth || 1) / 2)}
+											fill="rgba(255,150,0,0.2)"
+											stroke-width="0.1"
+											stroke="black"
+											fill-rule="evenodd"
+										/>
+									{:else}
+										<path
+											d={facet.svgPath}
+											fill="rgba(255,0,0,0.1)"
+											stroke-width={`${facet.strokeWidth || 1}`}
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke="black"
+										/>
+									{/if}
 								{/each}
+								{#if useLabels}
+									<g transform={`translate(0, ${-20}), scale(${-0.1})`}>
+										<PatternLabel value={b} />
+									</g>
+								{/if}
 							</g>
 						{/if}
 					{/each}

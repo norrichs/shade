@@ -842,12 +842,5 @@ export const generateRotatedShapeGeometry = (
 	const bands = !config.bandConfig?.tabStyle
 		? unTabbedBands
 		: generateTabs(unTabbedBands, config.bandConfig, struts);
-	// console.log('generateRotatedShapeGeometry - levels', levels, 'bands', bands, 'struts', struts);
 	return { levels, bands, struts };
 };
-
-// Refactor the data pipeline:
-// 	1) levels
-//	2) 3d bands, 3d struts, 3d tabs
-//	3) flattened bands, flattened struts, flattened tabs
-//	4) flattened geometry -> cut patterns

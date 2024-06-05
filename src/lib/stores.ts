@@ -12,7 +12,17 @@ import {
 	generateDefaultConfig,
 	getLevels
 } from './shades-config';
-import type { ShadesConfig } from '$lib/types';
+import type { Band, BandPattern, NullBandPattern, ShadesConfig } from '$lib/types';
+import { generateRotatedShapeGeometry } from '$lib/generate-shape';
+import {
+	applyStrokeWidth,
+	generateBandPatterns,
+	generateTiledBandPattern,
+	getModelHeight,
+	getPatternLength,
+	getRenderableOnGeometry
+} from './cut-pattern/cut-pattern';
+import { patterns } from './patterns/patterns';
 
 export const usePersisted = persistable(false, USE_PERSISTED_KEY, USE_PERSISTED_KEY, true);
 
@@ -45,4 +55,41 @@ export const config = derived(config0, ($config0) => {
 	};
 	// console.log("set derived config", derivedConfig)
 	return derivedConfig;
+});
+
+export const shapeData = derived(config, ($config) => {
+	const data = generateRotatedShapeGeometry($config);
+	return { ...data, height: getModelHeight(data.bands) };
+});
+
+export const bandPattern = derived([config, shapeData], ([$config, $shapeData]) => {
+	const { bands } = $shapeData;
+	const displayedBandFacets = getRenderableOnGeometry($config.renderConfig, bands);
+	let pattern: BandPattern;
+	if ($config.patternConfig.showPattern.band === 'none') {
+		pattern = { projectionType: 'none' } as NullBandPattern;
+	} else if ($config.patternConfig.showPattern.band === 'patterned') {
+		pattern = generateTiledBandPattern({
+			bands: displayedBandFacets as Band[],
+			tiledPatternConfig: $config.tiledPatternConfig
+		});
+		// if ($config.tiledPatternConfig.type === 'tiledHexPattern-1') {
+		console.debug('tiledHexPattern-1 pattern', pattern);
+		pattern = applyStrokeWidth(pattern, $config.tiledPatternConfig.config);
+		console.debug('tiledHexPattern-1 pattern', pattern);
+		// } else {
+		// 	console.debug('not tiledHexPattern-1');
+		// }
+		console.debug('CutPattern patterns', patterns);
+	} else {
+		pattern = generateBandPatterns(
+			$config.patternConfig,
+			$config.cutoutConfig,
+			$config.bandConfig.bandStyle,
+			$config.bandConfig.tabStyle,
+			displayedBandFacets
+		);
+	}
+	pattern.meta = { ...pattern.meta, ...getPatternLength(pattern) };
+	return pattern;
 });

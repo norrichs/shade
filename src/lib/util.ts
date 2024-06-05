@@ -78,3 +78,12 @@ export const getCubicBezierIntersection = (
 	// 	if (points[i-1][intersector.dimension] )
 	// })
 };
+
+export const show_svg = (id: string) => {
+	const svg = document.getElementById(id);
+	if (!svg) return;
+	const serializer = new XMLSerializer();
+	const svg_blob = new Blob([serializer.serializeToString(svg)], { type: 'image/svg+xml' });
+	const url = URL.createObjectURL(svg_blob);
+	const svg_win = window.open(url, 'svg_win');
+};

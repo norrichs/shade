@@ -8,6 +8,8 @@
 <p><a href="/sandbox-line-intersections">Sandbox - Line Intersections</a></p>
 <p><a href="/sandbox-box-pattern">Sandbox - Box Pattern</a></p>
 <p><a href="/sandbox-bezier-intersections">Sandbox - Bezier Intersections</a></p>
+<p><a href="/sandbox-scaled-svg">Sandbox - Scaled SVG</a></p>
+<p><a href="/sandbox-patterns">Sandbox - Patterns</a></p>
 
 <div>
 	<label for="use-persisted-checkbox">persist settings?</label>

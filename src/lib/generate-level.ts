@@ -1,27 +1,15 @@
 import { Vector3, CurvePath, Vector2 } from 'three';
-import {
-	type LevelConfig,
-	type SilhouetteConfig,
-	type DepthCurveConfig,
-	type Level,
-	generateSilhouette,
-	type LevelPrototype,
-	generateDepthCurve,
-	type CurveSampleMethod,
-	type LevelOffset,
-	type ShadesConfig,
-	generateLevelPrototype
-} from './generate-shape';
-
-/* 
-	What's the approach here?
-
-  1) genererate a level prototype for each level
-  2) apply depth and silhouette curves to each level
-
-
-
-*/
+import { generateDepthCurve, generateSilhouette, generateLevelPrototype } from './generate-shape';
+import type {
+	LevelConfig,
+	SilhouetteConfig,
+	DepthCurveConfig,
+	LevelPrototype,
+	Level,
+	LevelOffset,
+	CurveSampleMethod,
+	ShadesConfig
+} from './types';
 
 // TODO - bring the call to generateLevelPrototype into this function
 
@@ -137,14 +125,11 @@ const generateRawLevelsConstantAspect = ({
 		if (divisionBasis === undefined) {
 			return !divergences.some((d) => d > divergenceLimit);
 		} else {
-			console.debug('divergence', divergences[divisionBasis], 'limit', divergenceLimit);
 			return divergences[divisionBasis] <= divergenceLimit;
 		}
 	};
 
 	for (let iteration = 0; iteration < iterations; iteration++) {
-		// console.debug(iteration, 'divisions', divisions);
-		console.debug(iteration);
 		for (let vertexNumber = 0; vertexNumber < bandCount; vertexNumber++) {
 			const silhouettePoints: Vector2[] = [];
 			meridians[vertexNumber] = [];
@@ -161,16 +146,10 @@ const generateRawLevelsConstantAspect = ({
 			}
 		}
 		const aspectRatios: number[][] = getAspectRatiosFromMeridians(meridians);
-		// console.debug(iteration, 'aspectRatios', aspectRatios[0]);
 		const divergences = aspectRatios.map((ar) => getDivergence(ar));
 		if (divergenceTest(divergences, divergenceLimit, divisionBasis)) {
 			break;
 		}
-
-		console.debug(
-			'divergences',
-			divergences.map((d, i) => `${i}: ${Math.round(d * 1000) / 1000}`).join(', ')
-		);
 
 		divisions = divisions.map((band, i) =>
 			adjustDivisions(band, aspectRatios[divisionBasis === undefined ? i : divisionBasis])
@@ -188,8 +167,6 @@ const generateRawLevelsConstantAspect = ({
 		const center = new Vector3(0, 0, vertices.reduce((sum, v) => sum + v.z, 0) / vertices.length);
 		levels.push({ level: levelNumber, center, vertices });
 	}
-	const aspectRatios: number[][] = getAspectRatiosFromLevels(levels);
-	console.debug('***       aspect Ratios\n', aspectRatios[0]);
 	return levels;
 };
 
@@ -208,7 +185,6 @@ const adjustDivisions = (divisions: number[], aspectRatios: number[]) => {
 		return (avgAspectRatio * height) / aspectRatios[i - 1];
 	});
 	const totalNewDivisionsUnscaled = newDivisionsUnscaled.reduce((sum, val) => sum + val, 0);
-	// console.debug('total', totalNewDivisionsUnscaled, 'unscaled', newDivisionsUnscaled);
 	const newDivisions: number[] = [];
 	newDivisionsUnscaled.forEach((div, i) => {
 		if (i === divisions.length - 1) {
@@ -285,28 +261,6 @@ const generateRawLevels = ({
 	});
 
 	return rawLevels;
-};
-
-const getAspectRatiosFromLevels = (levels: Level[]): number[][] => {
-	const bandCount = levels[0].vertices.length;
-	let bands: { v0: Vector3; v1: Vector3; v2: Vector3; v3: Vector3 }[][] = new Array(bandCount);
-	bands.fill([]);
-	bands = bands.map(() => []);
-
-	for (let i = 0; i < levels.length - 1; i++) {
-		const level = levels[i];
-		const nextLevel = levels[i + 1];
-		for (let j = 0; j < bandCount; j++) {
-			const quadFacet = {
-				v0: level.vertices[j],
-				v1: nextLevel.vertices[j],
-				v2: nextLevel.vertices[(j + 1) % bandCount],
-				v3: level.vertices[(j + 1) % bandCount]
-			};
-			bands[j].push(quadFacet);
-		}
-	}
-	return bands.map((band) => band.map((quad) => getAspectRatioOfQuad(quad)));
 };
 
 const getAspectRatiosFromMeridians = (meridians: Vector3[][]): number[][] => {

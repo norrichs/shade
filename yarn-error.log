@@ -1,5 +1,5 @@
 Arguments: 
-  /Users/ben.norrichs/.nvm/versions/node/v19.4.0/bin/node /Users/ben.norrichs/.yarn/bin/yarn.js add bezier-js
+  /Users/ben.norrichs/.nvm/versions/node/v19.4.0/bin/node /Users/ben.norrichs/.yarn/bin/yarn.js add --dev @types/svg-path-outline
 
 PATH: 
   /Users/ben.norrichs/.pyenv/shims:/Users/ben.norrichs/.yarn/bin:/Users/ben.norrichs/.config/yarn/global/node_modules/.bin:/Users/ben.norrichs/.nvm/versions/node/v19.4.0/bin:/Users/ben.norrichs/.pyenv/shims:/usr/local/opt/openssl@1.1/bin:/Users/ben.norrichs/.rbenv/shims:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/Library/Apple/usr/bin:/Applications/Postgres.app/Contents/Versions/latest/bin:/Users/ben.norrichs/.cargo/bin:/Users/ben.norrichs/.gem/ruby/2.6.0/bin
@@ -14,8 +14,17 @@ Platform:
   darwin arm64
 
 Trace: 
-  Error: getaddrinfo ENOTFOUND registry.yarnpkg.com
-      at GetAddrInfoReqWrap.onlookup [as oncomplete] (node:dns:107:26)
+  Error: https://registry.yarnpkg.com/@types%2fsvg-path-outline: Not found
+      at params.callback [as _callback] (/Users/ben.norrichs/.yarn/lib/cli.js:66145:18)
+      at self.callback (/Users/ben.norrichs/.yarn/lib/cli.js:140890:22)
+      at Request.emit (node:events:513:28)
+      at Request.<anonymous> (/Users/ben.norrichs/.yarn/lib/cli.js:141862:10)
+      at Request.emit (node:events:513:28)
+      at IncomingMessage.<anonymous> (/Users/ben.norrichs/.yarn/lib/cli.js:141784:12)
+      at Object.onceWrapper (node:events:627:28)
+      at IncomingMessage.emit (node:events:525:35)
+      at endReadableNT (node:internal/streams/readable:1359:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:82:21)
 
 npm manifest: 
   {
@@ -39,6 +48,7 @@ npm manifest:
   		"@threlte/core": "^5.0.8",
   		"@threlte/extras": "^4.9.3",
   		"@threlte/preprocess": "^0.0.2",
+  		"@types/bezier-js": "^4.1.3",
   		"@types/three": "^0.148.1",
   		"@typescript-eslint/eslint-plugin": "^5.45.0",
   		"@typescript-eslint/parser": "^5.45.0",
@@ -60,9 +70,11 @@ npm manifest:
   	"dependencies": {
   		"@sveltejs/adapter-static": "^2.0.1",
   		"@sveltejs/adapter-vercel": "^3.0.0",
+  		"bezier-js": "^6.1.4",
   		"global": "^4.4.0",
   		"svelte-drag-and-drop-actions": "^1.0.0",
   		"svelte-drag-drop-touch": "^0.1.9",
+  		"svg-path-outline": "^1.0.1",
   		"vercel": "^30.1.2"
   	}
   }
@@ -1727,6 +1739,16 @@ Lockfile:
     dependencies:
       "@types/estree" "*"
   
+  "@types/bezier-js@^0.0.6":
+    version "0.0.6"
+    resolved "https://registry.yarnpkg.com/@types/bezier-js/-/bezier-js-0.0.6.tgz#0d976d68163c4955332ef798a21a0b3d6381d12b"
+    integrity sha512-kXsAlt8e8N6zt9R6LcMYWB1HkBw3q2g+M9BdI/UE+s4agIONuIscQaRCoInH22+Jas3rw8yLUehL2InaZjyNSA==
+  
+  "@types/bezier-js@^4.1.3":
+    version "4.1.3"
+    resolved "https://registry.yarnpkg.com/@types/bezier-js/-/bezier-js-4.1.3.tgz#237d4fe7e9aae7edd0c27a71f9f236f4ddc1c562"
+    integrity sha512-FNVVCu5mx/rJCWBxLTcL7oOajmGtWtBTDjq6DSUWUI12GeePivrZZXz+UgE0D6VYsLEjvExRO03z4hVtu3pTEQ==
+  
   "@types/cacheable-request@^6.0.1":
     version "6.0.3"
     resolved "https://registry.yarnpkg.com/@types/cacheable-request/-/cacheable-request-6.0.3.tgz#a430b3260466ca7b5ca5bfd735693b36e7a9d183"
@@ -1844,6 +1866,23 @@ Lockfile:
     version "14.18.33"
     resolved "https://registry.yarnpkg.com/@types/node/-/node-14.18.33.tgz#8c29a0036771569662e4635790ffa9e057db379b"
     integrity sha512-qelS/Ra6sacc4loe/3MSjXNL1dNQ/GjxNHVzuChwMfmk7HuycRLVQN2qNY3XahK+fZc5E2szqQSKUyAF0E+2bg==
+  
+  "@types/node@^7.0.5":
+    version "7.10.14"
+    resolved "https://registry.yarnpkg.com/@types/node/-/node-7.10.14.tgz#06fa7319b8131b969a8da4a14c487e6f28abacf7"
+    integrity sha512-29GS75BE8asnTno3yB6ubOJOO0FboExEqNJy4bpz0GSmW/8wPTNL4h9h63c6s1uTrOopCmJYe/4yJLh5r92ZUA==
+  
+  "@types/opentype.js@^0.0.0":
+    version "0.0.0"
+    resolved "https://registry.yarnpkg.com/@types/opentype.js/-/opentype.js-0.0.0.tgz#02f643d7c63c3ebf4f646fc605ae4683f849af1b"
+    integrity sha512-TivKn8w37v7i/UURRL7Q/3s3b5Fojzpa4dlNytI3VSXXjFwepueOzq83SLSTnSHr+eHZy06gtzzaRA0a+udIwg==
+  
+  "@types/pdfkit@^0.7.34":
+    version "0.7.36"
+    resolved "https://registry.yarnpkg.com/@types/pdfkit/-/pdfkit-0.7.36.tgz#d7241454e2ae94ee0bed684e712fbfdc2b3e0e6f"
+    integrity sha512-9eRA6MuW+n78yU3HhoIrDxjyAX2++B5MpLDYqHOnaRTquCw+5sYXT+QN8E1eSaxvNUwlRfU3tOm4UzTeGWmBqg==
+    dependencies:
+      "@types/node" "*"
   
   "@types/pug@^2.0.6":
     version "2.0.6"
@@ -2507,6 +2546,16 @@ Lockfile:
     integrity sha512-qeFIXtP4MSoi6NLqO12WfqARWWuCKi2Rn/9hJLEmtB5yTNr9DqFWkJRCf2qShWzPeAMRnOgCrq0sg/KLv5ES9w==
     dependencies:
       tweetnacl "^0.14.3"
+  
+  bezier-js@^2.1.0:
+    version "2.6.1"
+    resolved "https://registry.yarnpkg.com/bezier-js/-/bezier-js-2.6.1.tgz#ed9c6ebfcb3214794ff213cf90ee8aac644ecf7f"
+    integrity sha512-jelZM33eNzcZ9snJ/5HqJLw3IzXvA8RFcBjkdOB8SDYyOvW8Y2tTosojAiBTnD1MhbHoWUYNbxUXxBl61TxbRg==
+  
+  bezier-js@^6.1.4:
+    version "6.1.4"
+    resolved "https://registry.yarnpkg.com/bezier-js/-/bezier-js-6.1.4.tgz#c7828f6c8900562b69d5040afb881bcbdad82001"
+    integrity sha512-PA0FW9ZpcHbojUCMu28z9Vg/fNkwTj5YhusSAjHHDfHDGLxJ6YUKrAN2vk1fP2MMOxVw4Oko16FMlRGVBGqLKg==
   
   bidi-js@^1.0.2:
     version "1.0.2"
@@ -4363,6 +4412,11 @@ Lockfile:
     resolved "https://registry.yarnpkg.com/graceful-fs/-/graceful-fs-4.1.15.tgz#ffb703e1066e8a0eeaa4c8b80ba9253eeefbfb00"
     integrity sha512-6uHUhOPEBgQ24HM+r6b/QwWfZq+yiFcipKFrOFiBEnWdy5sdzYoi+pJeQaPI5qOLRFqWmAXUPQNsielzdLoecA==
   
+  graham_scan@^1.0.4:
+    version "1.0.5"
+    resolved "https://registry.yarnpkg.com/graham_scan/-/graham_scan-1.0.5.tgz#0c7f6864aaf9034e80f29c40529aefaa7e2c2416"
+    integrity sha512-471KIBS1jOrAHpEStAbOjYI5U7MGBSyqy+wIEnvRYaFDNmpUUhbDZWLRsCSh/OnlY0dCg0NaDyN/2XLoypgIfA==
+  
   grapheme-splitter@^1.0.4:
     version "1.0.4"
     resolved "https://registry.yarnpkg.com/grapheme-splitter/-/grapheme-splitter-1.0.4.tgz#9cf3a665c6247479896834af35cf1dbb4400767e"
@@ -5200,6 +5254,19 @@ Lockfile:
     version "1.3.6"
     resolved "https://registry.yarnpkg.com/make-error/-/make-error-1.3.6.tgz#2eb2e37ea9b67c4891f684a1394799af484cf7a2"
     integrity sha512-s8UhlNe7vPKomQhC1qFelMokr/Sc3AgNbso3n74mVPA5LTZwkB9NlXf4XPamLxJE8h0gh73rM94xvwRT2CVInw==
+  
+  makerjs@^0.9.39:
+    version "0.9.93"
+    resolved "https://registry.yarnpkg.com/makerjs/-/makerjs-0.9.93.tgz#085d937a613f53f60ef7f4b02a51e46263364f01"
+    integrity sha512-XztS2tJEpL01dsZ5P11kGO2MitrD6MsSvkNDS3uUDVN9SVDJn33Q2j9DFruJsiRtqNVRseLK52vkkbWKtLB/tA==
+    dependencies:
+      "@types/bezier-js" "^0.0.6"
+      "@types/node" "^7.0.5"
+      "@types/opentype.js" "^0.0.0"
+      "@types/pdfkit" "^0.7.34"
+      bezier-js "^2.1.0"
+      clone "^1.0.2"
+      graham_scan "^1.0.4"
   
   markdown-extensions@^1.0.0:
     version "1.1.1"
@@ -7715,6 +7782,13 @@ Lockfile:
     version "3.59.1"
     resolved "https://registry.yarnpkg.com/svelte/-/svelte-3.59.1.tgz#3de3d56b9165748f32f3131589b8d183cabe7449"
     integrity sha512-pKj8fEBmqf6mq3/NfrB9SLtcJcUvjYSWyePlfCqN9gujLB25RitWK8PvFzlwim6hD/We35KbPlRteuA6rnPGcQ==
+  
+  svg-path-outline@^1.0.1:
+    version "1.0.1"
+    resolved "https://registry.yarnpkg.com/svg-path-outline/-/svg-path-outline-1.0.1.tgz#c39664f76d887465b8be85c44778c883426899ab"
+    integrity sha512-GCXt/gsCbDtzvx2P0Z3z5582i7sBvYCnXlPbO2lAecNxLcdqCvXacgvlviROiqGu4q2ntimurGpTh7vSlaS7Jw==
+    dependencies:
+      makerjs "^0.9.39"
   
   tar-fs@^2.1.1:
     version "2.1.1"

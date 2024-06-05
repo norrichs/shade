@@ -1,4 +1,8 @@
-<div class="control-group"><slot /></div>
+<script lang="ts">
+	export let show = true;
+</script>
+
+<div class="control-group" style={`display: ${show ? 'grid' : 'none'};`}><slot /></div>
 
 <style>
 	.control-group {

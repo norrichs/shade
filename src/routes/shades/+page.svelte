@@ -1,32 +1,23 @@
 <script lang="ts">
 	import ThreeRenderer from '../../components/three-renderer/ThreeRenderer.svelte';
 	import CutPattern from '../../components/cut-pattern/CutPattern.svelte';
-	import { generateRotatedShapeGeometry } from '$lib/generate-shape';
-	import type { Level, Strut } from '$lib/generate-shape';
+	import type { Level } from '$lib/types';
 	import TilingControl from '../../components/controls/TilingControl.svelte';
 	import CutControl from '../../components/controls/CutControl.svelte';
 	import ShowControl from '../../components/controls/ShowControl.svelte';
 	import StrutControl from '../../components/controls/StrutControl.svelte';
 	import LevelControl from '../../components/controls/LevelControl.svelte';
 	import PathEdit from '../../components/path-edit/PathEdit.svelte';
-	import { config } from '$lib/stores';
+	import { config, shapeData } from '$lib/stores';
 	import SelectBar from '../../components/select-bar/SelectBar.svelte';
 	import SaveControl from '../../components/save-control/SaveControl.svelte';
 
-	let data = generateRotatedShapeGeometry($config);
-	let levels = data.levels;
+	let { levels, bands, struts } = $shapeData;
 	let displayLevels: Level[];
-	let struts: Strut[];
-	let bands = data.bands;
 	let showControl: { name: string; value?: unknown } = { name: 'None' };
 
-	const updateGeometry = () => {
-		data = generateRotatedShapeGeometry($config);
-	};
-
 	$: {
-		data = generateRotatedShapeGeometry($config);
-		levels = data.levels;
+		({ levels, bands, struts } = $shapeData);
 		if ($config.renderConfig.ranges?.rangeStyle === 'slice') {
 			const { levelStart, levelCount } = $config.renderConfig.ranges;
 			displayLevels = levels.slice(
@@ -36,8 +27,6 @@
 		} else {
 			displayLevels = levels;
 		}
-		bands = data.bands;
-		struts = data.struts;
 	}
 	type ShowControlCurveValue = 'ShapeConfig' | 'DepthCurveConfig' | 'SilhouetteConfig';
 	const isShowControlCurveValue = (value: unknown): value is ShowControlCurveValue => {
@@ -52,7 +41,7 @@
 		<ThreeRenderer {levels} {bands} {struts} />
 	</section>
 	<section class="container svg">
-		<CutPattern levels={displayLevels} {bands} {struts} />
+		<CutPattern />
 	</section>
 	<section class="container controls">
 		<header>
@@ -91,7 +80,7 @@
 			{:else if showControl?.name === 'Pattern'}
 				<TilingControl />
 			{:else if showControl?.name === 'Save'}
-				<SaveControl show={showControl?.name === 'Save'} config={$config} update={updateGeometry} />
+				<SaveControl show={showControl?.name === 'Save'} config={$config} />
 			{/if}
 		</div>
 	</section>
