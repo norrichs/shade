@@ -1,16 +1,20 @@
-import type {
-	Point,
-	LinePathSegment,
-	MovePathSegment,
-	PathSegment,
-	Band,
-	Facet,
-	TiledPatternSubConfig,
-	Quadrilateral,
-	QuadrilateralTransformMatrix,
-	HexPattern,
-	InsettablePolygon,
-	InsettableSegment
+import {
+	type Point,
+	type LinePathSegment,
+	type MovePathSegment,
+	type PathSegment,
+	type Band,
+	type Facet,
+	type TiledPatternSubConfig,
+	type Quadrilateral,
+	type QuadrilateralTransformMatrix,
+	type HexPattern,
+	type InsettablePolygon,
+	type InsettableSegment,
+	isMovePathSegment,
+	isLinePathSegment,
+	isQuadraticBezierPathSegment,
+	isCubicBezierPathSegment
 } from '$lib/types';
 import { closestPoint, getLength } from './utils';
 import type { Vector3 } from 'three';
@@ -90,11 +94,14 @@ export const svgTX = (tx: QuadrilateralTransformMatrix, anchor: Point) => {
 	L ${end.x} ${end.y}
 	`;
 };
-export const transformPatternByQuad = (pattern: PathSegment[], quad: Quadrilateral): HexPattern => {
+export const transformPatternByQuad = (
+	pattern: PathSegment[],
+	quad: Quadrilateral
+): PathSegment[] => {
 	const tx = getQuadrilateralTransformMatrix(quad);
 	// const p0 = { x: pattern[0][1] || 0, y: pattern[0][2] || 0 };
-	const transformedSegments: HexPattern = pattern.map((segment) => {
-		if (segment[0] === 'L' || segment[0] === 'M') {
+	const transformedSegments: PathSegment[] = pattern.map((segment) => {
+		if (isMovePathSegment(segment) || isLinePathSegment(segment)) {
 			const newCoord = transformPointByQuadrilateralTransform(
 				{ x: segment[1], y: segment[2] },
 				tx,
@@ -102,20 +109,39 @@ export const transformPatternByQuad = (pattern: PathSegment[], quad: Quadrilater
 			);
 			const mapped: MovePathSegment | LinePathSegment = [segment[0], newCoord.x, newCoord.y];
 			return mapped;
-			// } else if (segment[0] === 'A') {
-			// 	const newCoord = transformPointByQuadrilateralTransform(
-			// 		{ x: segment[6] - p0.x, y: segment[7] - p0.y },
-			// 		tx,
-			// 		quad.p0
-			// 	);
-			// 	const mapped: ArcPathSegment = [...segment];
-			// 	mapped[6] = newCoord.x;
-			// 	mapped[7] = newCoord.y;
-			// 	return mapped;
+		} else if (isQuadraticBezierPathSegment(segment)) {
+			const { x: x0, y: y0 } = transformPointByQuadrilateralTransform(
+				{ x: segment[1], y: segment[2] },
+				tx,
+				quad.p0
+			);
+			const { x: x1, y: y1 } = transformPointByQuadrilateralTransform(
+				{ x: segment[3], y: segment[4] },
+				tx,
+				quad.p0
+			);
+			return ['Q', x0, y0, x1, y1];
+		} else if (isCubicBezierPathSegment(segment)) {
+			const { x: x0, y: y0 } = transformPointByQuadrilateralTransform(
+				{ x: segment[1], y: segment[2] },
+				tx,
+				quad.p0
+			);
+			const { x: x1, y: y1 } = transformPointByQuadrilateralTransform(
+				{ x: segment[3], y: segment[4] },
+				tx,
+				quad.p0
+			);
+			const { x: x2, y: y2 } = transformPointByQuadrilateralTransform(
+				{ x: segment[5], y: segment[6] },
+				tx,
+				quad.p0
+			);
+			return ['C', x0, y0, x1, y1, x2, y2];
 		} else {
 			return segment;
 		}
-	}) as HexPattern;
+	});
 	return transformedSegments;
 };
 

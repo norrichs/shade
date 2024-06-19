@@ -15,7 +15,7 @@
 	"devDependencies": {
 		"@playwright/test": "^1.28.1",
 		"@sveltejs/adapter-auto": "^1.0.0",
-		"@sveltejs/kit": "^1.0.0",
+		"@sveltejs/kit": "^2.5.17",
 		"@threlte/core": "^5.0.8",
 		"@threlte/extras": "^4.9.3",
 		"@threlte/preprocess": "^0.0.2",
@@ -29,12 +29,12 @@
 		"latest": "^0.2.0",
 		"prettier": "^2.8.0",
 		"prettier-plugin-svelte": "^2.8.1",
-		"svelte": "^3.54.0",
+		"svelte": "^4.2.18",
 		"svelte-check": "^3.0.1",
 		"svelte-sequential-preprocessor": "^0.0.7",
 		"three": "^0.148.0",
 		"tslib": "^2.4.1",
-		"typescript": "^4.9.3",
+		"typescript": "^5.0.3",
 		"vite": "^4.0.0"
 	},
 	"type": "module",

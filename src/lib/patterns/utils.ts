@@ -1,5 +1,16 @@
-import type { PathSegment, Triangle, Point } from '$lib/types';
+import {
+	type PathSegment,
+	type Triangle,
+	type Point,
+	isMovePathSegment,
+	isLinePathSegment,
+	isArcPathSegment,
+	isCubicBezierPathSegment,
+	isQuadraticBezierPathSegment
+} from '$lib/types';
 import { Vector2, Vector3, type Triangle as ThreeTriangle } from 'three';
+import { numberPathSegments } from '../../components/cut-pattern/number-path-segments';
+import { svgPathStringFromSegments } from './flower-of-life';
 
 export const generateUnitTriangle = (sideLength: number): Triangle => {
 	const unit = {
@@ -70,7 +81,6 @@ export const getIntersectionOfLimitedLines = (
 	if (!Number.isFinite(x) || !Number.isFinite(y)) {
 		console.error('--------- Infinite', x, y, m1, m2, b1, b2);
 	}
-	console.debug(`candidate ${x} ${y}`);
 
 	const isForwardL0 = { x: l0.p1.x > l0.p0.x, y: l0.p1.y > l0.p0.y };
 	const isForwardL1 = { x: l1.p1.x > l1.p0.x, y: l1.p1.y > l1.p0.y };
@@ -136,8 +146,14 @@ export const getSlope = (p0: Point, p1: Point) => {
 	return (p1.y - p0.y) / (p1.x - p0.x);
 };
 
-export const getAngle = (anchor: Point, point: Point) =>
-	Math.atan((point.y - anchor.y) / (point.x - anchor.x));
+export const getAngle = (anchor: Point, point: Point) => {
+	const dx = point.x - anchor.x;
+	const dy = point.y - anchor.y;
+	const baseAngle = Math.atan(dy / dx);
+	if (dx >= 0 && dy >= 0) return baseAngle;
+	else if (dx >= 0 && dy < 0) return Math.PI * 2 + baseAngle;
+	else return Math.PI + baseAngle;
+};
 
 const otherVertices = (vertex: keyof Triangle) => ['a', 'b', 'c'].filter((v) => v !== vertex);
 
@@ -235,16 +251,19 @@ export const skewXPoint = (anchor: Point, point: Point, skewAngle: number): Poin
 };
 
 export const rotatePoint = (anchor: Point, point: Point, angle: number): Point => {
-	if (!angle && angle !== 0) {
+	if ((!angle && angle !== 0) || (anchor.x === point.x && anchor.y === point.y)) {
 		return { ...point };
 	}
+
 	const hypotenuse = getLength(anchor, point);
-	const oldAngle = Math.asin((point.y - anchor.y) / hypotenuse);
-	const newAngle = oldAngle - angle;
+	const oldAngle = getAngle(anchor, point);
+
+	const newAngle = oldAngle + angle;
 	const rotated = {
 		x: anchor.x + hypotenuse * Math.cos(newAngle),
 		y: anchor.y + hypotenuse * Math.sin(newAngle)
 	};
+
 	return rotated;
 };
 
@@ -283,4 +302,216 @@ export const closestPoint = (p0: Point, points: Point[]): Point => {
 	const distances = points.map((p) => Math.sqrt((p.x - p0.x) ** 2 + (p.y - p0.y) ** 2));
 	const minDistance = Math.min(...distances);
 	return points[distances.indexOf(minDistance)];
+};
+
+export const translatePS = (segments: PathSegment[], x = 0, y = 0) => {
+	const translated = segments.map((segment) => {
+		const seg = [...segment] as PathSegment;
+		if (isMovePathSegment(seg) || isLinePathSegment(seg)) {
+			seg[1] += x;
+			seg[2] += y;
+		} else if (isArcPathSegment(seg)) {
+			seg[6] += x;
+			seg[7] += y;
+		} else if (isCubicBezierPathSegment(seg)) {
+			seg[1] += x;
+			seg[2] += y;
+			seg[3] += x;
+			seg[4] += y;
+			seg[5] += x;
+			seg[6] += y;
+		} else if (isQuadraticBezierPathSegment(seg)) {
+			seg[1] += x;
+			seg[2] += y;
+			seg[3] += x;
+			seg[4] += y;
+		}
+		return seg;
+	});
+	return translated;
+};
+
+export const scalePS = (segments: PathSegment[], scale = 1, origin = { x: 0, y: 0 }) => {
+	const scaled = segments.map((segment) => {
+		const seg = [...segment] as PathSegment;
+		if (isMovePathSegment(seg) || isLinePathSegment(seg)) {
+			const dx = (seg[1] - origin.x) * scale;
+			const dy = (seg[2] - origin.y) * scale;
+			seg[1] = origin.x + dx;
+			seg[2] = origin.y + dy;
+		} else if (isArcPathSegment(seg)) {
+			const dx = (seg[6] - origin.x) * scale;
+			const dy = (seg[7] - origin.y) * scale;
+			seg[1] *= scale;
+			seg[2] *= scale;
+			seg[6] = origin.x + dx;
+			seg[7] = origin.y + dy;
+		} else if (isCubicBezierPathSegment(seg)) {
+			const dx0 = (seg[1] - origin.x) * scale;
+			const dy0 = (seg[2] - origin.y) * scale;
+			const dx1 = (seg[3] - origin.x) * scale;
+			const dy1 = (seg[4] - origin.y) * scale;
+			const dx2 = (seg[5] - origin.x) * scale;
+			const dy2 = (seg[6] - origin.y) * scale;
+			seg[1] = origin.x + dx0;
+			seg[2] = origin.y + dy0;
+			seg[3] = origin.x + dx1;
+			seg[4] = origin.y + dy1;
+			seg[5] = origin.x + dx2;
+			seg[6] = origin.y + dy2;
+		} else if (isQuadraticBezierPathSegment(seg)) {
+			const dx0 = (seg[1] - origin.x) * scale;
+			const dy0 = (seg[2] - origin.y) * scale;
+			const dx1 = (seg[3] - origin.x) * scale;
+			const dy1 = (seg[4] - origin.y) * scale;
+			seg[1] = origin.x + dx0;
+			seg[2] = origin.y + dy0;
+			seg[3] = origin.x + dx1;
+			seg[4] = origin.y + dy1;
+		}
+		return seg;
+	});
+	return scaled;
+};
+
+export const rotatePS = (segments: PathSegment[], a = 0, origin = { x: 0, y: 0 }) => {
+	const scaled = segments.map((segment) => {
+		const seg = [...segment] as PathSegment;
+		if (isMovePathSegment(seg) || isLinePathSegment(seg)) {
+			// const dx = (seg[1] - origin.x);
+			// const dy = (seg[2] - origin.y);
+			// const angle =
+			const { x, y } = rotatePoint(origin, { x: seg[1], y: seg[2] }, a);
+			seg[1] = x;
+			seg[2] = y;
+		} else if (isArcPathSegment(seg)) {
+			const { x, y } = rotatePoint(origin, { x: seg[6], y: seg[7] }, a);
+			seg[6] = x;
+			seg[7] = y;
+		} else if (isCubicBezierPathSegment(seg)) {
+			const { x: x0, y: y0 } = rotatePoint(origin, { x: seg[1], y: seg[2] }, a);
+			const { x: x1, y: y1 } = rotatePoint(origin, { x: seg[3], y: seg[4] }, a);
+			const { x: x2, y: y2 } = rotatePoint(origin, { x: seg[5], y: seg[6] }, a);
+			seg[1] = x0;
+			seg[2] = y0;
+			seg[3] = x1;
+			seg[4] = y1;
+			seg[5] = x2;
+			seg[6] = y2;
+		} else if (isQuadraticBezierPathSegment(seg)) {
+			const { x: x0, y: y0 } = rotatePoint(origin, { x: seg[1], y: seg[2] }, a);
+			const { x: x1, y: y1 } = rotatePoint(origin, { x: seg[3], y: seg[4] }, a);
+			seg[1] = x0;
+			seg[2] = y0;
+			seg[3] = x1;
+			seg[4] = y1;
+		}
+		return seg;
+	});
+	return scaled;
+};
+
+export const transformPS = (
+	path: PathSegment[],
+	config: {
+		origin?: Point;
+		scale?: number;
+		angle?: number;
+		translateX?: number;
+		translateY?: number;
+	}
+) => {
+	const { origin = { x: 0, y: 0 }, scale = 1, angle = 0, translateX = 0, translateY = 0 } = config;
+	let transformed = path.map((seg) => [...seg] as PathSegment);
+	if (scale !== 1) {
+		transformed = scalePS(transformed, scale, origin);
+	}
+	if (angle !== 0) {
+		transformed = rotatePS(transformed, angle, origin);
+	}
+	if (translateX !== 0 || translateY !== 0) {
+		transformed = translatePS(transformed, translateX, translateY);
+	}
+	return transformed;
+};
+
+export const getPointsFromPathSegment = (segment: PathSegment): Point | null => {
+	if (isLinePathSegment(segment)) {
+		return { x: segment[1], y: segment[2] };
+	}
+	if (isMovePathSegment(segment)) {
+		return { x: segment[1], y: segment[2] };
+	}
+	if (isArcPathSegment(segment)) {
+		return { x: segment[6], y: segment[7] };
+	}
+	if (isCubicBezierPathSegment(segment)) {
+		return { x: segment[5], y: segment[6] };
+	}
+	if (isQuadraticBezierPathSegment(segment)) {
+		return { x: segment[3], y: segment[4] };
+	}
+	return null;
+};
+
+export const getPathSize = (path: PathSegment[]) => {
+	const points: Point[] = path
+		.map((segment) => getPointsFromPathSegment(segment))
+		.filter((point) => point !== null) as Point[];
+
+	const xValues = points.map((point) => point.x);
+	const yValues = points.map((point) => point.y);
+
+	const minX = Math.min(...xValues);
+	const maxX = Math.max(...xValues);
+	const minY = Math.min(...yValues);
+	const maxY = Math.max(...yValues);
+	const width = maxX - minX;
+	const height = maxY - minY;
+
+	return { minX, maxX, minY, maxY, width, height };
+};
+
+export const generateLabelPath = (
+	value: number,
+	config: { r?: number; origin?: Point; scale?: number; angle: number }
+) => {
+	const { r = 0, origin = { x: 0, y: 0 }, scale = 1, angle = 0 } = config;
+
+	const labelTextPathSegments = `${value}`
+		.split('')
+		.map((digit, i) => {
+			return translatePS(numberPathSegments[Number.parseInt(digit, 10)], 60 * i, 0);
+		})
+		.flat(1);
+	const stemWidth = 20;
+	const stemLength = 50;
+
+	const { width, height } = getPathSize(labelTextPathSegments);
+	const padding = 20;
+	const labelOutlinePathSegments: PathSegment[] = [
+		['M', (width + padding * 2) / 2 + stemWidth / 2, 0],
+		['L', width + padding * 2 - r, 0],
+		['Q', width + padding * 2, 0, width + padding * 2, r],
+		['L', width + padding * 2, 100 - r],
+		['Q', width + padding * 2, 100, width + padding * 2 - r, 100],
+		['L', r, 100],
+		['Q', 0, 100, 0, 100 - r],
+		['L', 0, r],
+		['Q', 0, 0, r, 0],
+		['L', (width + padding * 2) / 2 - stemWidth / 2, 0],
+		['L', (width + padding * 2) / 2 - stemWidth / 2, -stemLength],
+		['L', (width + padding * 2) / 2 + stemWidth / 2, -stemLength],
+		['L', (width + padding * 2) / 2 + stemWidth / 2, 0],
+		['Z']
+	];
+
+	const labelOrigin = { x: origin.x - (width + padding * 2) / 2, y: origin.y + stemLength };
+	let combinedPaths = [...labelOutlinePathSegments, ...translatePS(labelTextPathSegments, 20, 15)];
+
+	combinedPaths = translatePS(combinedPaths, labelOrigin.x, labelOrigin.y);
+	combinedPaths = scalePS(combinedPaths, scale, origin);
+	combinedPaths = rotatePS(combinedPaths, angle, origin);
+	return combinedPaths;
+	// return svgPathStringFromSegments(combinedPaths);
 };

@@ -128,6 +128,7 @@ export type FacetPattern = {
 };
 
 export type PatternedPattern = {
+	path: PathSegment[];
 	svgPath?: string;
 	strokeWidth?: number;
 	quadWidth?: number;
@@ -135,6 +136,7 @@ export type PatternedPattern = {
 	triangle?: ThreeTriangle;
 	quad?: Quadrilateral;
 	tab?: TabPattern;
+	addenda?: Omit<PatternedPattern, 'addenda'>[];
 };
 
 export type FullTabPattern = {
@@ -256,6 +258,7 @@ export type PatternedBandPattern = {
 		facets: PatternedPattern[];
 		svgPath?: string;
 		id?: string;
+		tagAnchorPoint?: Point;
 	}[];
 };
 export type LevelSetPattern = { projectionType: 'outlined'; levels: LevelPattern[] };
@@ -287,6 +290,8 @@ export type FlatStripConfig = {
 	origin?: Vector3;
 	direction?: Vector3;
 };
+
+type TiledPatternSubconfigType = 'rowCount' | 'columnCount';
 
 export type TiledPatternSubConfig =
 	| { type: 'width'; valueType: 'number'; value: number; min: number; max: number; step: number }
@@ -320,7 +325,7 @@ export type TiledPatternSubConfig =
 			step: number;
 	  }
 	| {
-			type: 'rowCount';
+			type: TiledPatternSubconfigType;
 			valueType: 'number';
 			value: number;
 			min: number;
@@ -328,7 +333,7 @@ export type TiledPatternSubConfig =
 			step: number;
 	  }
 	| {
-			type: 'columnCount';
+			type: TiledPatternSubconfigType;
 			valueType: 'number';
 			value: number;
 			min: number;
@@ -362,7 +367,8 @@ export type TiledPatternSubConfig =
 			min: number;
 			max: number;
 			step: number;
-	  };
+	  }
+	| { type: 'doAddenda'; valueType: 'boolean'; value: boolean };
 
 export type DynamicStrokeConfig = {
 	dynamicStroke: TiledPatternSubConfig;
@@ -372,18 +378,14 @@ export type DynamicStrokeConfig = {
 };
 
 export type TiledPatternConfig =
-	// | {
-	// 		type: 'tiledHexPattern-0';
-	// 		tiling: 'quadrilateral';
-	// 		unitPattern: 'tiledHexPattern-0';
-	// 		config: TiledPatternSubConfig[];
-	//   }
 	| {
 			type: 'tiledHexPattern-1';
 			tiling: 'quadrilateral';
 			unitPattern: 'tiledHexPattern-1';
 			config: {
 				adjustBandBoundary: TiledPatternSubConfig;
+				rowCount: TiledPatternSubConfig;
+				columnCount: TiledPatternSubConfig;
 				filledEndSize: TiledPatternSubConfig;
 			} & DynamicStrokeConfig;
 	  }
@@ -403,6 +405,25 @@ export type TiledPatternConfig =
 			config: {
 				rowCount: TiledPatternSubConfig;
 				columnCount: TiledPatternSubConfig;
+			} & DynamicStrokeConfig;
+	  }
+	| {
+			type: 'tiledCarnationPattern-0';
+			tiling: 'quadrilateral';
+			unitPattern: 'tiledCarnationPattern-0';
+			config: {
+				rowCount: TiledPatternSubConfig;
+				columnCount: TiledPatternSubConfig;
+			} & DynamicStrokeConfig;
+	  }
+	| {
+			type: 'tiledCarnationPattern-1';
+			tiling: 'quadrilateral';
+			unitPattern: 'tiledCarnationPattern-1';
+			config: {
+				rowCount: TiledPatternSubConfig;
+				columnCount: TiledPatternSubConfig;
+				doAddenda: TiledPatternSubConfig;
 			} & DynamicStrokeConfig;
 	  };
 

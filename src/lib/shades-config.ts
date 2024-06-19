@@ -208,6 +208,8 @@ export const tiledPatternConfigs: { [key: string]: TiledPatternConfig } = {
 		unitPattern: 'tiledHexPattern-1',
 		config: {
 			adjustBandBoundary: { type: 'adjustBandBoundary', valueType: 'boolean', value: true },
+			rowCount: { type: 'rowCount', valueType: 'number', value: 1, min: 1, max: 5, step: 1 },
+			columnCount: { type: 'columnCount', valueType: 'number', value: 3, min: 1, max: 6, step: 1 },
 			filledEndSize: {
 				type: 'filledEndSize',
 				valueType: 'number',
@@ -252,7 +254,35 @@ export const tiledPatternConfigs: { [key: string]: TiledPatternConfig } = {
 		unitPattern: 'tiledBoxPattern-0',
 		config: {
 			rowCount: { type: 'rowCount', valueType: 'number', value: 1, min: 1, max: 5, step: 1 },
-			columnCount: { type: 'columnCount', valueType: 'number', value: 3, min: 1, max: 6, step: 1 }
+			columnCount: { type: 'columnCount', valueType: 'number', value: 3, min: 1, max: 6, step: 1 },
+			dynamicStroke: {
+				type: 'dynamicStroke',
+				valueType: 'named',
+				value: 'quadWidth',
+				options: ['quadWidth', 'quadHeight']
+			},
+			dynamicStrokeEasing: {
+				type: 'dynamicStrokeEasing',
+				valueType: 'named',
+				value: 'linear',
+				options: ['linear', 'bezier']
+			},
+			dynamicStrokeMin: {
+				type: 'dynamicStrokeMin',
+				valueType: 'number',
+				value: 1,
+				min: 0,
+				max: 20,
+				step: 0.1
+			},
+			dynamicStrokeMax: {
+				type: 'dynamicStrokeMax',
+				valueType: 'number',
+				value: 3,
+				min: 0,
+				max: 20,
+				step: 0.1
+			}
 		}
 	},
 	'tiledBowtiePattern-0': {
@@ -291,10 +321,85 @@ export const tiledPatternConfigs: { [key: string]: TiledPatternConfig } = {
 				step: 0.1
 			}
 		}
+	},
+	'tiledCarnationPattern-0': {
+		type: 'tiledCarnationPattern-0',
+		tiling: 'quadrilateral',
+		unitPattern: 'tiledCarnationPattern-0',
+		config: {
+			rowCount: { type: 'rowCount', valueType: 'number', value: 1, min: 1, max: 5, step: 1 },
+			columnCount: { type: 'columnCount', valueType: 'number', value: 3, min: 1, max: 6, step: 1 },
+			dynamicStroke: {
+				type: 'dynamicStroke',
+				valueType: 'named',
+				value: 'quadWidth',
+				options: ['quadWidth', 'quadHeight']
+			},
+			dynamicStrokeEasing: {
+				type: 'dynamicStrokeEasing',
+				valueType: 'named',
+				value: 'linear',
+				options: ['linear', 'bezier']
+			},
+			dynamicStrokeMin: {
+				type: 'dynamicStrokeMin',
+				valueType: 'number',
+				value: 1,
+				min: 0,
+				max: 20,
+				step: 0.1
+			},
+			dynamicStrokeMax: {
+				type: 'dynamicStrokeMax',
+				valueType: 'number',
+				value: 3,
+				min: 0,
+				max: 20,
+				step: 0.1
+			}
+		}
+	},
+	'tiledCarnationPattern-1': {
+		type: 'tiledCarnationPattern-1',
+		tiling: 'quadrilateral',
+		unitPattern: 'tiledCarnationPattern-1',
+		config: {
+			rowCount: { type: 'rowCount', valueType: 'number', value: 1, min: 1, max: 5, step: 1 },
+			columnCount: { type: 'columnCount', valueType: 'number', value: 3, min: 1, max: 6, step: 1 },
+			doAddenda: { type: 'doAddenda', valueType: 'boolean', value: true },
+			dynamicStroke: {
+				type: 'dynamicStroke',
+				valueType: 'named',
+				value: 'quadWidth',
+				options: ['quadWidth', 'quadHeight']
+			},
+			dynamicStrokeEasing: {
+				type: 'dynamicStrokeEasing',
+				valueType: 'named',
+				value: 'linear',
+				options: ['linear', 'bezier']
+			},
+			dynamicStrokeMin: {
+				type: 'dynamicStrokeMin',
+				valueType: 'number',
+				value: 1,
+				min: 0,
+				max: 20,
+				step: 0.1
+			},
+			dynamicStrokeMax: {
+				type: 'dynamicStrokeMax',
+				valueType: 'number',
+				value: 3,
+				min: 0,
+				max: 20,
+				step: 0.1
+			}
+		}
 	}
 };
 
-const defaultTiledPatternConfig: TiledPatternConfig = tiledPatternConfigs['tiledBowtiePattern-0'];
+const defaultTiledPatternConfig: TiledPatternConfig = tiledPatternConfigs['tiledBoxPattern-0'];
 
 const defaultCutoutConfig: CutoutConfig[] = [
 	{

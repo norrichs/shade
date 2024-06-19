@@ -7,7 +7,6 @@
 <style>
 	.control-group {
 		margin: 4px;
-		background-color: #ebe1e1;
 		border-radius: 5px;
 		padding: 10px;
 		width: 400px;

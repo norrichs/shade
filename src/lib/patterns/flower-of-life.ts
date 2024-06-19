@@ -609,8 +609,8 @@ export const generateFlowerOfLife1BandPattern = (
 	return svgPathString;
 };
 
-export const svgPathStringFromSegments = (segments: PathSegment[]) =>
-	segments
+export const svgPathStringFromSegments = (segments: PathSegment[]) => {
+	return segments
 		.map((segment) =>
 			segment
 				.map((elem) => {
@@ -623,6 +623,7 @@ export const svgPathStringFromSegments = (segments: PathSegment[]) =>
 				.join(' ')
 		)
 		.join('\n');
+};
 
 export const processFlowerOfLife1PatternTransforms = ({
 	svgPath,
