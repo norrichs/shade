@@ -224,12 +224,6 @@ export const generateLevelPrototype = (
 	config: ShapeConfig,
 	levelConfig: LevelConfig
 ): LevelPrototype | LevelPrototype[] => {
-	if (levelConfig.levelPrototypeSampleMethod.byDivisions === 'offsetHalf') {
-		return [
-			generateRadialShapeLevelPrototype(config, levelConfig, 0),
-			generateRadialShapeLevelPrototype(config, levelConfig, 1)
-		];
-	}
 	return generateRadialShapeLevelPrototype(config, levelConfig, 0);
 };
 
@@ -241,22 +235,12 @@ const generateRadialShapeLevelPrototype = (
 	const shape = generateRadialShape(normalizeConfigPoints(config, { normalizationRatio: 1 / 200 }));
 	const points: Vector2[] = [];
 
-	const { byDivisions } = levelConfig.levelPrototypeSampleMethod;
 	const { sampleMethod } = config;
 	if (sampleMethod.method === 'divideCurve') {
 		// const {divisions} = sampleMethod
-		if (byDivisions === 'whole') {
-			shape.curves.forEach((curve) => {
-				points.push(...curve.getSpacedPoints(sampleMethod.divisions).slice(1)); // removes first point from each curve to avoid dupes
-			});
-		} else if (byDivisions === 'offsetHalf') {
-			shape.curves.forEach((curve) => {
-				const curvePoints = curve.getPoints(sampleMethod.divisions * 2 - 1);
-				const halfPoints = curvePoints.filter((point, i) => i % 2 === levelNumber % 2);
-				const recombined = halfPoints;
-				points.push(...recombined);
-			});
-		}
+		shape.curves.forEach((curve) => {
+			points.push(...curve.getSpacedPoints(sampleMethod.divisions).slice(1)); // removes first point from each curve to avoid dupes
+		});
 	} else if (sampleMethod.method === 'divideCurvePath') {
 		const totalLength = shape.getLength();
 		shape.curves.forEach((curve) => {
@@ -343,35 +327,20 @@ const generateCircumferenceBands = (config: ShadesConfig, levels: Level[]): Band
 			orientation: getBandOrientation(config.bandConfig.bandStyle),
 			facets: []
 		};
-		if (config.levelConfig.levelPrototypeSampleMethod.byDivisions === 'whole') {
-			levels[i].vertices.forEach((vertex, v, vertices) => {
-				const triangle1 = new Triangle(
-					vertex.clone(),
-					vertices[(v + 1) % vertices.length].clone(),
-					levels[i + 1].vertices[v].clone()
-				);
-				const triangle2 = new Triangle(
-					levels[i + 1].vertices[(v + 1) % vertices.length].clone(),
-					triangle1.c.clone(),
-					triangle1.b.clone()
-				);
-				band.facets.push({ triangle: triangle1 }, { triangle: triangle2 });
-			});
-		} else if (config.levelConfig.levelPrototypeSampleMethod.byDivisions === 'offsetHalf') {
-			levels[i].vertices.forEach((vertex, v, vertices) => {
-				const triangle1 = new Triangle(
-					vertices[(v + Math.floor(i / 2)) % vertices.length].clone(),
-					vertices[(v + 1 + Math.floor(i / 2)) % vertices.length].clone(),
-					levels[i + 1].vertices[(v + i - Math.floor(i / 2)) % vertices.length].clone()
-				);
-				const triangle2 = new Triangle(
-					levels[i + 1].vertices[(v + 1 + Math.ceil(i / 2)) % vertices.length].clone(),
-					triangle1.c.clone(),
-					triangle1.b.clone()
-				);
-				band.facets.push({ triangle: triangle1 }, { triangle: triangle2 });
-			});
-		}
+		levels[i].vertices.forEach((vertex, v, vertices) => {
+			const triangle1 = new Triangle(
+				vertex.clone(),
+				vertices[(v + 1) % vertices.length].clone(),
+				levels[i + 1].vertices[v].clone()
+			);
+			const triangle2 = new Triangle(
+				levels[i + 1].vertices[(v + 1) % vertices.length].clone(),
+				triangle1.c.clone(),
+				triangle1.b.clone()
+			);
+			band.facets.push({ triangle: triangle1 }, { triangle: triangle2 });
+		});
+
 		bands.push(band);
 	}
 	return bands;

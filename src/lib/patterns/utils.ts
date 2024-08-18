@@ -6,11 +6,18 @@ import {
 	isLinePathSegment,
 	isArcPathSegment,
 	isCubicBezierPathSegment,
-	isQuadraticBezierPathSegment
+	isQuadraticBezierPathSegment,
+	type Quadrilateral,
+	type Facet,
+	type FacetTab,
+	type PointConfig3,
+	type Point3,
+	type Band
 } from '$lib/types';
 import { Vector2, Vector3, type Triangle as ThreeTriangle } from 'three';
 import { numberPathSegments } from '../../components/cut-pattern/number-path-segments';
 import { svgPathStringFromSegments } from './flower-of-life';
+import type { GlobuleData } from '../../components/globule/seed';
 
 export const generateUnitTriangle = (sideLength: number): Triangle => {
 	const unit = {
@@ -40,6 +47,18 @@ export const getMidPoint = (p1: Point, p2: Point): Point => {
 		y: p1.y + (p2.y - p1.y) / 2
 	};
 	return mid;
+};
+export const getDirection = (p0: Point, p1: Point): 0 | 1 | 2 | 3 => {
+	const diff = { x: p1.x - p0.x, y: p1.y - p0.y };
+	if (diff.x >= 0 && diff.y >= 0) {
+		return 0;
+	} else if (diff.x >= 0 && diff.y < 0) {
+		return 1;
+	} else if (diff.x < 0 && diff.y >= 0) {
+		return 2;
+	} else {
+		return 3;
+	}
 };
 
 interface LineLimit {
@@ -514,4 +533,39 @@ export const generateLabelPath = (
 	combinedPaths = rotatePS(combinedPaths, angle, origin);
 	return combinedPaths;
 	// return svgPathStringFromSegments(combinedPaths);
+};
+export const getQuadWidth = (quad: Quadrilateral) => {
+	return getLength(getMidPoint(quad.p0, quad.p3), getMidPoint(quad.p1, quad.p2));
+};
+export const getQuadHeight = (quad: Quadrilateral) => {
+	return getLength(getMidPoint(quad.p0, quad.p1), getMidPoint(quad.p3, quad.p2));
+};
+
+export type SerializedFacet = { triangle: Triangle };
+export type SerializedBand = { facets: SerializedFacet[] };
+
+const serializeVector3 = (v: Vector3): Point3 => {
+	const { x, y, z } = v;
+	return { x, y, z };
+};
+
+const serializeThreeTriangle = (t: ThreeTriangle): Triangle => {
+	return {
+		a: serializeVector3(t.a),
+		b: serializeVector3(t.b),
+		c: serializeVector3(t.c)
+	};
+};
+
+export const serializeFacet = (f: Facet): SerializedFacet => {
+	const triangle = serializeThreeTriangle(f.triangle);
+	return { triangle };
+};
+
+export const serializeBand = (b: Band): { facets: SerializedFacet[] } => {
+	return { facets: b.facets.map((facet) => serializeFacet(facet)) };
+};
+
+export const serializeGlobuleData = (gD: GlobuleData) => {
+	return { bands: gD.bands.map((band) => serializeBand(band)) };
 };

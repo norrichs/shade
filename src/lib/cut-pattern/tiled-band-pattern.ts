@@ -19,14 +19,10 @@ export const generateTiledBandPattern = ({
 	bands: Band[];
 	tiledPatternConfig: TiledPatternConfig;
 }): PatternedBandPattern => {
-	if (tiledPatternConfig.type !== 'tiledHexPattern-0') {
-		console.error("TiledPatternConfig is not of type 'tiledHexPattern-0'", tiledPatternConfig);
-	}
 	console.debug('***************************\ngenerateTiledBandPattern');
 	const pattern: PatternedBandPattern = { projectionType: 'patterned', bands: [] };
 
 	const unitPattern = generateHexPattern({ variant: 1, size: 1 });
-	console.debug('unitPattern', unitPattern);
 	const width =
 		(tiledPatternConfig.config.find((cfg) => cfg.type === 'width')?.value as number) || 0;
 	const appendTab =

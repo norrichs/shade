@@ -54,11 +54,11 @@
 	// let tabGeometry2: BufferGeometry;
 	let edges: EdgesGeometry; // = new EdgesGeometry()
 	const bandMaterial = new MeshPhysicalMaterial({
-		color: 'aqua',
+		color: 'green',
 		transparent: true,
-		opacity: 0.8,
-		clearcoat: 1,
-		clearcoatRoughness: 0,
+		opacity: 1,
+		clearcoat: 0.2,
+		clearcoatRoughness: 1,
 		side: DoubleSide
 	});
 	const tabMaterial = new MeshPhysicalMaterial({

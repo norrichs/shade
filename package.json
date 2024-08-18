@@ -10,7 +10,10 @@
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"lint": "prettier --plugin-search-dir . --check . && eslint .",
-		"format": "prettier --plugin-search-dir . --write ."
+		"format": "prettier --plugin-search-dir . --write .",
+		"drizzle:generate": "drizzle-kit generate - out ./drizzle/migrations - breakpoints - schema=./src/lib/server/*",
+		"drizzle:migrate": "tsx drizzle/migrate",
+		"drizzle:studio": "drizzle-kit studio"
 	},
 	"devDependencies": {
 		"@playwright/test": "^1.28.1",
@@ -24,6 +27,8 @@
 		"@types/three": "^0.148.1",
 		"@typescript-eslint/eslint-plugin": "^5.45.0",
 		"@typescript-eslint/parser": "^5.45.0",
+		"dotenv": "^16.4.5",
+		"drizzle-kit": "^0.23.0",
 		"eslint": "^8.28.0",
 		"eslint-config-prettier": "^8.5.0",
 		"eslint-plugin-svelte3": "^4.0.0",
@@ -40,13 +45,16 @@
 	},
 	"type": "module",
 	"dependencies": {
+		"@libsql/client": "^0.7.0",
 		"@sveltejs/adapter-static": "^3.0.0",
 		"@sveltejs/adapter-vercel": "^4.0.0",
 		"bezier-js": "^6.1.4",
+		"drizzle-orm": "^0.32.0",
 		"global": "^4.4.0",
 		"svelte-drag-and-drop-actions": "^1.0.0",
 		"svelte-drag-drop-touch": "^0.1.9",
 		"svg-path-outline": "^1.0.1",
+		"tsx": "^4.16.2",
 		"vercel": "^30.1.2"
 	}
 }

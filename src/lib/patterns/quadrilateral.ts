@@ -14,7 +14,8 @@ import {
 	isMovePathSegment,
 	isLinePathSegment,
 	isQuadraticBezierPathSegment,
-	isCubicBezierPathSegment
+	isCubicBezierPathSegment,
+	type PixelScale
 } from '$lib/types';
 import { closestPoint, getLength } from './utils';
 import type { Vector3 } from 'three';
@@ -436,19 +437,37 @@ export const getIntersectionOfLines = (
 	return { x, y };
 };
 
-export const getQuadrilaterals = (band: Band): Quadrilateral[] => {
+export const getQuadrilaterals = (band: Band, scale?: number): Quadrilateral[] => {
 	const facets: Facet[] = band.facets;
 	const quads: Quadrilateral[] = [];
-	facets.forEach((facet, i) => {
-		if (i % 2 === 1 && i < facets.length) {
-			quads.push({
-				p0: pointFromVector3(facets[i - 1].triangle.a),
-				p1: pointFromVector3(facets[i - 1].triangle.b),
-				p2: pointFromVector3(facet.triangle.a),
-				p3: pointFromVector3(facets[i - 1].triangle.c)
-			});
-		}
-	});
+	if (scale && scale !== 1) {
+		facets.forEach((facet, i) => {
+			if (i % 2 === 1 && i < facets.length) {
+				const quad = {
+					p0: pointFromVector3(facets[i - 1].triangle.a),
+					p1: pointFromVector3(facets[i - 1].triangle.b),
+					p2: pointFromVector3(facet.triangle.a),
+					p3: pointFromVector3(facets[i - 1].triangle.c)
+				};
+				quad.p0 = { x: quad.p0.x * scale, y: quad.p0.y * scale };
+				quad.p1 = { x: quad.p1.x * scale, y: quad.p1.y * scale };
+				quad.p2 = { x: quad.p2.x * scale, y: quad.p2.y * scale };
+				quad.p3 = { x: quad.p3.x * scale, y: quad.p3.y * scale };
+				quads.push(quad);
+			}
+		});
+	} else {
+		facets.forEach((facet, i) => {
+			if (i % 2 === 1 && i < facets.length) {
+				quads.push({
+					p0: pointFromVector3(facets[i - 1].triangle.a),
+					p1: pointFromVector3(facets[i - 1].triangle.b),
+					p2: pointFromVector3(facet.triangle.a),
+					p3: pointFromVector3(facets[i - 1].triangle.c)
+				});
+			}
+		});
+	}
 	return quads;
 };
 

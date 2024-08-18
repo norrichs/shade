@@ -16,25 +16,18 @@
 	<ControlGroup>
 		{#if $config0.levelConfig}
 			<label for="by-divisions">Divisions</label>
-			<select
-				id="by-divisions"
-				bind:value={$config0.levelConfig.levelPrototypeSampleMethod.byDivisions}
-			>
-				<option>whole</option>
-				<option>offsetHalf</option>
-			</select>
 			<label for="divide-per">Per</label>
-			<select
-				id="divide-per"
-				bind:value={$config0.levelConfig.levelPrototypeSampleMethod.dividePer}
-			>
+			<select id="divide-per" bind:value={$config0.levelConfig.levelPrototypeSampleMethod}>
 				<option>shape</option>
 				<option>curve</option>
 				<!-- <option></option> -->
 			</select>
 
 			<label for="silhouette-sample-method">Z Curve Sample</label>
-			<select id="silhouette-sample-method" bind:value={$config0.levelConfig.silhouetteSampleMethod}>
+			<select
+				id="silhouette-sample-method"
+				bind:value={$config0.levelConfig.silhouetteSampleMethod}
+			>
 				<!-- <option value="levelInterval">By Level</option> -->
 				<option value={{ method: 'divideCurvePath', divisions: 10 }}>By Whole Curve</option>
 				<option value={{ method: 'divideCurve', divisions: 3 }}>By Sub-curve</option>

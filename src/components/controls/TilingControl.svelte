@@ -1,68 +1,119 @@
 <script lang="ts">
 	import CombinedNumberInput from './CombinedNumberInput.svelte';
-	import CheckboxInput from './CheckboxInput.svelte';
 	import SelectInput from './SelectInput.svelte';
-	import { config0 } from '$lib/stores';
+	import { bandPattern, config0, shapeData } from '$lib/stores';
 	import ControlGroup from './ControlGroup.svelte';
 	import { tiledPatternConfigs } from '$lib/shades-config';
-	import type { TiledPatternConfig } from '$lib/types';
-	import PatternTile from '../pattern/PatternTile.svelte';
-	import { patterns } from '$lib/patterns/patterns';
-	import PatterTileButton from '../pattern/PatterTileButton.svelte';
+	import PatternTileButton from '../pattern/PatternTileButton.svelte';
+	import CheckboxInput from './CheckboxInput.svelte';
+	import type { PatternedPattern } from '$lib/types';
+	import { generateTiledBandPattern } from '$lib/cut-pattern/cut-pattern';
+	import { ContextBridge } from '@threlte/core';
 
-	const getTilingOptions = (configs: { [key: string]: TiledPatternConfig }) => {
-		console.debug('getTilingOptions', Object.values(configs));
-		return Object.values(configs).map((cfg) => {
-			return Object.fromEntries([[cfg.type, cfg]]);
-		});
+	let fitToPage = false;
+
+	const fitPatternToPage = (fitToPage: boolean) => {
+		if (!fitToPage && $config0.patternConfig.pixelScale.value !== 1) {
+			$config0.patternConfig.pixelScale.value = 1;
+			return;
+		}
+		if ($bandPattern.meta?.maxLength && $bandPattern.projectionType === 'patterned') {
+			const { maxLength } = $bandPattern.meta;
+			const { page, pixelScale } = $config0.patternConfig;
+			const marginByPageHeight = 0.05;
+			const scaleFactor = (page.height - page.height * marginByPageHeight) / maxLength;
+			console.debug(
+				'fitPatternToPage',
+				maxLength,
+				pixelScale.value,
+				pixelScale.unit,
+				page.height,
+				page.width,
+				page.unit,
+				scaleFactor
+			);
+
+			$config0.patternConfig.pixelScale = {
+				...pixelScale,
+				value: pixelScale.value * scaleFactor
+			};
+		}
 	};
 
-	let activeConfig = $config0.tiledPatternConfig;
+	$: {
+		fitPatternToPage(fitToPage);
+	}
 </script>
 
 <section>
 	<h4>Tiling</h4>
 	<ControlGroup>
 		<div class="option-tile-group">
-			{#each Object.keys(tiledPatternConfigs) as patternType}
-				<PatterTileButton {patternType} />
+			{#each Object.values(tiledPatternConfigs).filter((config) => config.tiling === 'quadrilateral') as config}
+				<PatternTileButton patternType={config.type} tilingBasis="quadrilateral" />
+			{/each}
+		</div>
+		<div class="option-tile-group">
+			{#each Object.values(tiledPatternConfigs).filter((config) => config.tiling === 'band') as config}
+				<PatternTileButton patternType={config.type} tilingBasis="band" />
 			{/each}
 		</div>
 	</ControlGroup>
 	<ControlGroup>
-		<CombinedNumberInput
-			label="Rows"
-			bind:value={$config0.tiledPatternConfig.config.rowCount.value}
-			min={$config0.tiledPatternConfig.config.rowCount.min}
-			max={$config0.tiledPatternConfig.config.rowCount.max}
-			step={$config0.tiledPatternConfig.config.rowCount.step}
-		/>
-		<CombinedNumberInput
-			label="Columns"
-			bind:value={$config0.tiledPatternConfig.config.columnCount.value}
-			min={$config0.tiledPatternConfig.config.columnCount.min}
-			max={$config0.tiledPatternConfig.config.columnCount.max}
-			step={$config0.tiledPatternConfig.config.columnCount.step}
-		/>
-		<SelectInput
-			label="Dynamic Stroke"
-			bind:value={$config0.tiledPatternConfig.config.dynamicStroke.value}
-			options={$config0.tiledPatternConfig.config.dynamicStroke.options}
-		/>
-		<CombinedNumberInput
-			label="Stroke minimun"
-			bind:value={$config0.tiledPatternConfig.config.dynamicStrokeMin.value}
-			min={$config0.tiledPatternConfig.config.dynamicStrokeMin.min}
-			max={$config0.tiledPatternConfig.config.dynamicStrokeMin.max}
-			step={$config0.tiledPatternConfig.config.dynamicStrokeMin.step}
-		/>
-		<CombinedNumberInput
-			label="Stroke maximum"
-			bind:value={$config0.tiledPatternConfig.config.dynamicStrokeMax.value}
-			min={$config0.tiledPatternConfig.config.dynamicStrokeMax.min}
-			max={$config0.tiledPatternConfig.config.dynamicStrokeMax.max}
-			step={$config0.tiledPatternConfig.config.dynamicStrokeMax.step}
-		/>
+		<div>
+			{#if $config0.tiledPatternConfig.config.rowCount && $config0.tiledPatternConfig.config.columnCount}
+				<CombinedNumberInput
+					label="Rows"
+					bind:value={$config0.tiledPatternConfig.config.rowCount}
+					min={1}
+					max={5}
+					step={1}
+				/>
+				<CombinedNumberInput
+					label="Columns"
+					bind:value={$config0.tiledPatternConfig.config.columnCount}
+					min={1}
+					max={5}
+					step={1}
+				/>
+			{/if}
+			<SelectInput
+				label="Dynamic Stroke"
+				bind:value={$config0.tiledPatternConfig.config.dynamicStroke}
+				options={['quadWidth', 'quadHeight']}
+			/>
+			<CombinedNumberInput
+				label="Stroke minimum"
+				bind:value={$config0.tiledPatternConfig.config.dynamicStrokeMin}
+				min={0.1}
+				max={Math.min($config0.tiledPatternConfig.config.dynamicStrokeMax, 20)}
+				step={0.1}
+			/>
+			<CombinedNumberInput
+				label="Stroke maximum"
+				bind:value={$config0.tiledPatternConfig.config.dynamicStrokeMax}
+				min={Math.max($config0.tiledPatternConfig.config.dynamicStrokeMin, 0.1)}
+				max={20}
+				step={0.1}
+			/>
+			<div>
+				<div>
+					<span>Model Height:</span>
+					<span>{Math.round($shapeData.height * 10) / 10}</span>
+				</div>
+				<div>
+					<span>Pattern Length:</span>
+					<span>{$bandPattern.meta?.maxLength ? Math.round($bandPattern.meta?.maxLength) : 0}</span>
+				</div>
+				<div>
+					<span>Page:</span>
+					<span
+						>{`${$config0.patternConfig.page.height} x ${$config0.patternConfig.page.width} ${$config0.patternConfig.page.unit}`}</span
+					>
+				</div>
+			</div>
+			<CheckboxInput label="Fit to page" bind:value={fitToPage} />
+		</div>
 	</ControlGroup>
 </section>
 

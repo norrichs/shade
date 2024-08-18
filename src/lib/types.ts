@@ -94,7 +94,8 @@ export type CutoutConfig = {
 
 export type EdgeConfig = { lead: TrianglePoint; follow: TrianglePoint };
 
-export type PixelScale = { value: number; unit: 'cm' | 'inch' };
+export type PixelScale = { value: number; unit: 'cm' | 'inch' | 'mm' };
+export type PageSize = { height: number; width: number; unit: 'cm' | 'inch' | 'mm' };
 
 export type PatternConfig = {
 	[key: string]:
@@ -104,7 +105,8 @@ export type PatternConfig = {
 		| PointConfig2
 		| boolean
 		| undefined
-		| PixelScale;
+		| PixelScale
+		| PageSize;
 	showPattern: PatternShowConfig;
 	axis: Axis;
 	origin: PointConfig2;
@@ -112,6 +114,7 @@ export type PatternConfig = {
 	offset: PointConfig2;
 	showTabs: boolean;
 	pixelScale: PixelScale;
+	page: PageSize;
 	// patternedConfig: PatternedPatternConfig;
 };
 
@@ -249,17 +252,19 @@ export type BandPattern = (
 	| NullBandPattern
 ) & { meta?: { minLength?: number; maxLength?: number } };
 
+export type PatternedBand = {
+	facets: PatternedPattern[];
+	svgPath?: string;
+	id?: string;
+	tagAnchorPoint?: Point;
+};
+
 export type NullBandPattern = { projectionType: 'none' };
 export type FacetedBandPattern = { projectionType: 'faceted'; bands: { facets: FacetPattern[] }[] };
 export type OutlinedBandPattern = { projectionType: 'outlined'; bands: OutlinePattern[] };
 export type PatternedBandPattern = {
 	projectionType: 'patterned';
-	bands: {
-		facets: PatternedPattern[];
-		svgPath?: string;
-		id?: string;
-		tagAnchorPoint?: Point;
-	}[];
+	bands: PatternedBand[];
 };
 export type LevelSetPattern = { projectionType: 'outlined'; levels: LevelPattern[] };
 export type FacetedStrutPattern = {
@@ -289,143 +294,111 @@ export type FlatStripConfig = {
 	bandStyle: BandStyle;
 	origin?: Vector3;
 	direction?: Vector3;
+	pixelScale?: PixelScale;
 };
 
-type TiledPatternSubconfigType = 'rowCount' | 'columnCount';
+// type TiledPatternSubconfigType = 'rowCount' | 'columnCount';
 
-export type TiledPatternSubConfig =
-	| { type: 'width'; valueType: 'number'; value: number; min: number; max: number; step: number }
-	| {
-			type: 'insetWidth';
-			valueType: 'number';
-			value: number;
-			min: number;
-			max: number;
-			step: number;
-	  }
-	| {
-			type: 'appendTab';
-			valueType: 'named';
-			value: string;
-			options: [{ none: false }, 'left', 'right', 'both'];
-	  }
-	| { type: 'adjustBandBoundary'; valueType: 'boolean'; value: boolean }
-	| {
-			type: 'tabVariant';
-			valueType: 'named';
-			value: string;
-			options: [{ none: false }, 'extend', 'inset'];
-	  }
-	| {
-			type: 'filledEndSize';
-			valueType: 'number';
-			value: number;
-			min: number;
-			max: number;
-			step: number;
-	  }
-	| {
-			type: TiledPatternSubconfigType;
-			valueType: 'number';
-			value: number;
-			min: number;
-			max: number;
-			step: number;
-	  }
-	| {
-			type: TiledPatternSubconfigType;
-			valueType: 'number';
-			value: number;
-			min: number;
-			max: number;
-			step: number;
-	  }
-	| {
-			type: 'dynamicStroke';
-			valueType: 'named';
-			value: string;
-			options: ['quadWidth', 'quadHeight'];
-	  }
-	| {
-			type: 'dynamicStrokeEasing';
-			valueType: 'named';
-			value: string;
-			options: ['linear', 'bezier'];
-	  }
-	| {
-			type: 'dynamicStrokeMin';
-			valueType: 'number';
-			value: number;
-			min: number;
-			max: number;
-			step: number;
-	  }
-	| {
-			type: 'dynamicStrokeMax';
-			valueType: 'number';
-			value: number;
-			min: number;
-			max: number;
-			step: number;
-	  }
-	| { type: 'doAddenda'; valueType: 'boolean'; value: boolean };
+// export type TiledPatternSubConfig =
+// 	| { type: 'width'; valueType: 'number'; value: number; min: number; max: number; step: number }
+// 	| {
+// 			type: 'insetWidth';
+// 			valueType: 'number';
+// 			value: number;
+// 			min: number;
+// 			max: number;
+// 			step: number;
+// 	  }
+// 	| {
+// 			type: 'appendTab';
+// 			valueType: 'named';
+// 			value: string;
+// 			options: [{ none: false }, 'left', 'right', 'both'];
+// 	  }
+// 	| { type: 'adjustBandBoundary'; valueType: 'boolean'; value: boolean }
+// 	| {
+// 			type: 'tabVariant';
+// 			valueType: 'named';
+// 			value: string;
+// 			options: [{ none: false }, 'extend', 'inset'];
+// 	  }
+// 	| {
+// 			type: 'filledEndSize';
+// 			valueType: 'number';
+// 			value: number;
+// 			min: number;
+// 			max: number;
+// 			step: number;
+// 	  }
+// 	| {
+// 			type: TiledPatternSubconfigType;
+// 			valueType: 'number';
+// 			value: number;
+// 			min: number;
+// 			max: number;
+// 			step: number;
+// 	  }
+// 	| {
+// 			type: TiledPatternSubconfigType;
+// 			valueType: 'number';
+// 			value: number;
+// 			min: number;
+// 			max: number;
+// 			step: number;
+// 	  }
+// 	| {
+// 			type: 'dynamicStroke';
+// 			valueType: 'named';
+// 			value: string;
+// 			options: ['quadWidth', 'quadHeight'];
+// 	  }
+// 	| {
+// 			type: 'dynamicStrokeEasing';
+// 			valueType: 'named';
+// 			value: string;
+// 			options: ['linear', 'bezier'];
+// 	  }
+// 	| {
+// 			type: 'dynamicStrokeMin';
+// 			valueType: 'number';
+// 			value: number;
+// 			min: number;
+// 			max: number;
+// 			step: number;
+// 	  }
+// 	| {
+// 			type: 'dynamicStrokeMax';
+// 			valueType: 'number';
+// 			value: number;
+// 			min: number;
+// 			max: number;
+// 			step: number;
+// 	  }
+// 	| { type: 'doAddenda'; valueType: 'boolean'; value: boolean };
 
-export type DynamicStrokeConfig = {
-	dynamicStroke: TiledPatternSubConfig;
-	dynamicStrokeEasing: TiledPatternSubConfig;
-	dynamicStrokeMin: TiledPatternSubConfig;
-	dynamicStrokeMax: TiledPatternSubConfig;
+export type TiledPattern =
+	| 'tiledHexPattern-1'
+	| 'tiledBoxPattern-0'
+	| 'tiledBowtiePattern-0'
+	| 'tiledCarnationPattern-0'
+	| 'tiledCarnationPattern-1'
+	| 'bandedBranchedPattern-0';
+
+export type TilingBasis = 'quadrilateral' | 'band';
+export type DynamicStrokeBasis = 'quadWidth' | 'quadHeight' | 'ranked';
+
+export type TiledPatternConfig = {
+	type: TiledPattern;
+	tiling: TilingBasis;
+	config: {
+		rowCount?: number;
+		columnCount?: number;
+		dynamicStroke: DynamicStrokeBasis;
+		dynamicStrokeEasing: 'linear';
+		dynamicStrokeMin: number;
+		dynamicStrokeMax: number;
+	};
 };
-
-export type TiledPatternConfig =
-	| {
-			type: 'tiledHexPattern-1';
-			tiling: 'quadrilateral';
-			unitPattern: 'tiledHexPattern-1';
-			config: {
-				adjustBandBoundary: TiledPatternSubConfig;
-				rowCount: TiledPatternSubConfig;
-				columnCount: TiledPatternSubConfig;
-				filledEndSize: TiledPatternSubConfig;
-			} & DynamicStrokeConfig;
-	  }
-	| {
-			type: 'tiledBoxPattern-0';
-			tiling: 'quadrilateral';
-			unitPattern: 'tiledBoxPattern-0';
-			config: {
-				rowCount: TiledPatternSubConfig;
-				columnCount: TiledPatternSubConfig;
-			} & DynamicStrokeConfig;
-	  }
-	| {
-			type: 'tiledBowtiePattern-0';
-			tiling: 'quadrilateral';
-			unitPattern: 'tiledBowtiePattern-0';
-			config: {
-				rowCount: TiledPatternSubConfig;
-				columnCount: TiledPatternSubConfig;
-			} & DynamicStrokeConfig;
-	  }
-	| {
-			type: 'tiledCarnationPattern-0';
-			tiling: 'quadrilateral';
-			unitPattern: 'tiledCarnationPattern-0';
-			config: {
-				rowCount: TiledPatternSubConfig;
-				columnCount: TiledPatternSubConfig;
-			} & DynamicStrokeConfig;
-	  }
-	| {
-			type: 'tiledCarnationPattern-1';
-			tiling: 'quadrilateral';
-			unitPattern: 'tiledCarnationPattern-1';
-			config: {
-				rowCount: TiledPatternSubConfig;
-				columnCount: TiledPatternSubConfig;
-				doAddenda: TiledPatternSubConfig;
-			} & DynamicStrokeConfig;
-	  };
 
 export type Level = {
 	center: Vector3;
@@ -454,7 +427,7 @@ export type LevelConfig = {
 	// silhouetteConfig: SilhouetteConfig,
 	type: 'LevelConfig';
 	silhouetteSampleMethod: CurveSampleMethod;
-	levelPrototypeSampleMethod: { byDivisions: 'whole' | 'offsetHalf'; dividePer: 'shape' | 'curve' };
+	levelPrototypeSampleMethod: 'shape' | 'curve';
 	levels?: number;
 	baseRadius?: number;
 	levelOffset: LevelOffset;
@@ -708,16 +681,22 @@ export interface Circle {
 	y: number;
 	r: number;
 }
-export interface Point {
+export type Point = {
 	x: number;
 	y: number;
-}
-export interface Triangle {
+};
+
+export type Point3 = {
+	x: number;
+	y: number;
+	z: number;
+};
+export type Triangle = {
 	[key: string]: Point;
 	a: Point;
 	b: Point;
 	c: Point;
-}
+};
 export type Ellipse = {
 	r0: number;
 	r1: number;

@@ -22,7 +22,6 @@ import {
 	getPatternLength,
 	getRenderableOnGeometry
 } from './cut-pattern/cut-pattern';
-import { patterns } from './patterns/patterns';
 
 export const usePersisted = persistable(false, USE_PERSISTED_KEY, USE_PERSISTED_KEY, true);
 
@@ -43,6 +42,8 @@ export const config0 = persistable<ShadesConfig>(
 );
 
 export const config = derived(config0, ($config0) => {
+	console.debug('CONFIG0');
+	console.dir($config0, { depth: 4 });
 	const derivedConfig: ShadesConfig = {
 		...$config0,
 		levelConfig: {
@@ -53,16 +54,17 @@ export const config = derived(config0, ($config0) => {
 			)
 		}
 	};
-	// console.log("set derived config", derivedConfig)
 	return derivedConfig;
 });
 
 export const shapeData = derived(config, ($config) => {
 	const data = generateRotatedShapeGeometry($config);
+	console.debug('SHAPE DATA', data);
 	return { ...data, height: getModelHeight(data.bands) };
 });
 
 export const bandPattern = derived([config, shapeData], ([$config, $shapeData]) => {
+	console.debug('DERIVE bandPattern');
 	const { bands } = $shapeData;
 	const displayedBandFacets = getRenderableOnGeometry($config.renderConfig, bands);
 	let pattern: BandPattern;
@@ -71,16 +73,11 @@ export const bandPattern = derived([config, shapeData], ([$config, $shapeData]) 
 	} else if ($config.patternConfig.showPattern.band === 'patterned') {
 		pattern = generateTiledBandPattern({
 			bands: displayedBandFacets as Band[],
-			tiledPatternConfig: $config.tiledPatternConfig
+			tiledPatternConfig: $config.tiledPatternConfig,
+			pixelScale: $config.patternConfig.pixelScale
 		});
-		// if ($config.tiledPatternConfig.type === 'tiledHexPattern-1') {
-		console.debug('tiledHexPattern-1 pattern', pattern);
+
 		pattern = applyStrokeWidth(pattern, $config.tiledPatternConfig.config);
-		console.debug('tiledHexPattern-1 pattern', pattern);
-		// } else {
-		// 	console.debug('not tiledHexPattern-1');
-		// }
-		console.debug('CutPattern patterns', patterns);
 	} else {
 		pattern = generateBandPatterns(
 			$config.patternConfig,

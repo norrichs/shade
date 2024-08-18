@@ -1,13 +1,22 @@
 <script lang="ts">
 	import { config0 } from '$lib/stores';
 	import PatternTile from './PatternTile.svelte';
-	import type { patterns } from '$lib/patterns/patterns';
 	import { tiledPatternConfigs } from '$lib/shades-config';
+	import { patterns } from '$lib/patterns/patterns';
+	import type { TilingBasis } from '$lib/types';
 
 	export let patternType: string;
+	export let tilingBasis: TilingBasis;
 </script>
 
-<button on:click={() => ($config0.tiledPatternConfig = tiledPatternConfigs[patternType])}>
+<button
+	on:click={() => {
+		console.debug('click', patternType);
+		if (patterns[patternType]) {
+			$config0.tiledPatternConfig = tiledPatternConfigs[patternType];
+		}
+	}}
+>
 	<PatternTile
 		{patternType}
 		rows={2}
@@ -15,6 +24,7 @@
 		width={50}
 		height={50}
 		active={patternType === $config0.tiledPatternConfig.type}
+		{tilingBasis}
 	/>
 </button>
 

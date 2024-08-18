@@ -11,23 +11,20 @@
 	import { bandPattern, config, config0, shapeData } from '$lib/stores';
 	import type { PatternViewConfig, Patterns } from '$lib/types';
 	import { show_svg } from '$lib/util';
-	import PatternLabel from './PatternLabel.svelte';
 	import { generateLabelPath } from '$lib/patterns/utils';
 	import { svgPathStringFromSegments } from '$lib/patterns/flower-of-life';
 	import { svgQuad } from '$lib/patterns/quadrilateral';
+	import DynamicBand from '../pattern-svg/DynamicBand.svelte';
+	import CutPatternControl from './CutPatternControl.svelte';
+	import QuadPattern from '../pattern-svg/QuadPattern.svelte';
 
-	let { levels, bands, struts } = $shapeData;
+	let { levels, struts } = $shapeData;
 
 	let showBands = true;
-
+	let showQuadPattern = false;
 	let showTabs = true;
 	let useExpandStroke = false;
 	let useLabels = true;
-	let page: { width: number; height: number; unit: 'mm' | 'cm' | 'in' } | undefined = {
-		width: 300,
-		height: 300,
-		unit: 'mm'
-	};
 
 	const colorCycle = (index: number) => {
 		const colors = ['red', 'orange', 'yellow', 'green', 'blue', 'purple'];
@@ -79,7 +76,9 @@
 		const minX = 0;
 		const minY = 0;
 		const logZoom = 1 / Math.pow(10, zoom);
-		const viewBox = `${minX} ${minY} ${page.width * logZoom} ${page.height * logZoom}`;
+		const viewBox = `${minX} ${minY} ${$config.patternConfig.page.width * logZoom} ${
+			$config.patternConfig.page.height * logZoom
+		}`;
 		return viewBox;
 	};
 
@@ -93,6 +92,9 @@
 			>{useExpandStroke ? "Don't Expand Stroke" : 'Expand Stroke'}</button
 		>
 		<button on:click={() => (useLabels = !useLabels)}>{useLabels ? "Don't Label" : 'Label'}</button>
+		<button on:click={() => (showQuadPattern = !showQuadPattern)}
+			>{showQuadPattern ? "Don't show quads" : 'Show quads'}</button
+		>
 		<!-- <button on:click={() => zoomToPattern(patterns)}>Zoom To Pattern</button> -->
 		<label for="showBands"> Bands </label>
 		<input type="checkbox" name="showBands" bind:checked={showBands} />
@@ -109,19 +111,21 @@
 			<svg id="outer-svg" width="100%" height="100%" viewBox={viewBoxValue}>
 				<svg
 					id="pattern-svg"
-					height={`${2000}${page.unit}`}
-					width={`${2000}${page.unit}`}
-					viewBox={`${-page.width} ${
-						$config.patternViewConfig.centerOffset.y - page.height
+					height={`${2000}${$config.patternConfig.page.unit}`}
+					width={`${2000}${$config.patternConfig.page.unit}`}
+					viewBox={`${
+						$config.patternViewConfig.centerOffset.x - $config.patternConfig.page.width
+					} ${
+						$config.patternViewConfig.centerOffset.y - $config.patternConfig.page.height
 					} ${2000} ${2000}`}
 				>
-					{#if page}
+					{#if $config.patternConfig.page}
 						<g stroke="red" fill="none" stroke-width="1">
 							<rect
-								x={`${-page.width}`}
-								y={`${-page.height}`}
-								width={page.width}
-								height={page.height}
+								x={`${-$config.patternConfig.page.width}`}
+								y={`${-$config.patternConfig.page.height}`}
+								width={$config.patternConfig.page.width}
+								height={$config.patternConfig.page.height}
 							/>
 						</g>
 					{/if}
@@ -172,9 +176,26 @@
 							</g>
 						{/each}
 					{:else if $bandPattern.projectionType === 'patterned'}
-						{#each $bandPattern.bands as band, b}
-							<g transform={`translate(${-250 + 50 * b} -50) scale(-1,-1)`}>
-								<!-- {#if useExpandStroke}
+						{#if $config.tiledPatternConfig.tiling === 'band'}
+							{#each $bandPattern.bands as band, b}
+								<g transform={`translate(${-250 + 50 * b} -50) scale(-1,-1)`}>
+									<DynamicBand
+										{band}
+										bandIndex={b}
+										minWidth={$config0.tiledPatternConfig.config.dynamicStrokeMin}
+										maxWidth={$config0.tiledPatternConfig.config.dynamicStrokeMax}
+										variant={0}
+										outlined={false}
+									/>
+								</g>
+							{/each}
+						{:else}
+							{#each $bandPattern.bands as band, b}
+								<g transform={`translate(${-250 + 50 * b} -50) scale(-1,-1)`}>
+									{#if showQuadPattern}
+										<QuadPattern {band} />
+									{/if}
+									<!-- {#if useExpandStroke}
 									<path
 										d={expandAndCombine(band).svgPath}
 										fill="rgba(0,150,0,0.2)"
@@ -182,7 +203,7 @@
 										stroke="black"
 										fill-rule="evenodd"
 									/> -->
-								<!-- <path
+									<!-- <path
 									id={band.id || `transformed-band-svg-${b}`}
 									d={band.svgPath}
 									fill="orange"
@@ -191,71 +212,62 @@
 									stroke-width={0.05}
 									transform={`translate(${-50 * b} 0) scale(-1,-1)`}
 								/> -->
-								<!-- {:else} -->
-								{#each band.facets as facet, f}
-									<!-- <g>
+									<!-- {:else} -->
+
+									{#each band.facets.filter((facet) => !!facet.quad) as facet, f}
+										<!-- <g>
+											<path
+												d={svgQuad(facet.addenda[0].quad)}
+												fill="green"
+												opacity="0.2"
+												stroke="black"
+												stroke-width="0.5"
+											/>
+										</g> -->
+										{#if useExpandStroke}
+											<path
+												d={expandStroke(facet.svgPath, (facet.strokeWidth || 1) / 2)}
+												fill="rgba(255,150,0,0.2)"
+												stroke-width="0.1"
+												stroke="black"
+												fill-rule="evenodd"
+											/>
+										{:else}
+											<g fill="none" stroke-width={`${facet.strokeWidth || 1}`} stroke="black">
+												<path d={facet.svgPath} stroke-linecap="round" stroke-linejoin="round" />
+												<path
+													d={facet.svgPath}
+													stroke="red"
+													stroke-linecap="round"
+													stroke-linejoin="round"
+													clip-path=""
+												/>
+											</g>
+										{/if}
+									{/each}
+									{#if useLabels}
 										<path
-											d={svgQuad(facet.quad)}
-											fill="black"
-											opacity="0.2"
-											stroke="black"
-											stroke-width="0.5"
-										/>
-										<circle cx={facet.quad.p0.x} cy={facet.quad.p0.y} r="2" fill="red" />
-										<circle cx={facet.quad.p1.x} cy={facet.quad.p1.y} r="2" fill="green" />
-										<circle cx={facet.quad.p2.x} cy={facet.quad.p2.y} r="2" fill="blue" />
-										<circle cx={facet.quad.p3.x} cy={facet.quad.p3.y} r="2" fill="purple" />
-									</g> -->
-									<!-- <g>
-										<path
-											d={svgQuad(facet.addenda[0].quad)}
-											fill="green"
-											opacity="0.2"
-											stroke="black"
-											stroke-width="0.5"
-										/>
-									</g> -->
-									{#if useExpandStroke}
-										<path
-											d={expandStroke(facet.svgPath, (facet.strokeWidth || 1) / 2)}
-											fill="rgba(255,150,0,0.2)"
-											stroke-width="0.1"
-											stroke="black"
+											d={svgPathStringFromSegments(
+												generateLabelPath(b, {
+													scale: 0.15,
+													r: 20,
+													origin: {
+														x: band.tagAnchorPoint?.x || -20,
+														y: band.tagAnchorPoint?.y || -30
+													},
+													angle: (Math.PI / 180) * 210
+												})
+											)}
 											fill-rule="evenodd"
-										/>
-									{:else}
-										<path
-											d={facet.svgPath}
-											fill="none"
-											stroke-width={`${facet.strokeWidth || 1}`}
-											stroke-linecap="round"
-											stroke-linejoin="round"
+											fill="rgba(0,0,0,0.1)"
 											stroke="black"
+											stroke-width="0.5"
 										/>
 									{/if}
-								{/each}
-								{#if useLabels}
-									<path
-										d={svgPathStringFromSegments(
-											generateLabelPath(b, {
-												scale: 0.15,
-												r: 20,
-												origin: {
-													x: band.tagAnchorPoint?.x || -20,
-													y: band.tagAnchorPoint?.y || -30
-												},
-												angle: (Math.PI / 180) * 210
-											})
-										)}
-										fill-rule="evenodd"
-										fill="rgba(0,0,0,0.1)"
-										stroke="black"
-										stroke-width="0.5"
-									/>
-								{/if}
-								<!-- {/if} -->
-							</g>
-						{/each}
+									<!-- {/if} -->
+								</g>
+							{/each}
+						{/if}
 					{/if}
 
 					{#if patterns.strut.projectionType === 'outlined'}
@@ -278,71 +290,7 @@
 					<SvgLogger />
 				</svg>
 			</svg>
-
-			<div class="view-control-box">
-				<label for="svg-width">width</label>
-				<input
-					id="svg-width"
-					type="number"
-					bind:value={$config0.patternViewConfig.width}
-					class="view-control"
-				/>
-				<label for="svg-height">height</label>
-				<input
-					id="svg-height"
-					type="number"
-					bind:value={$config0.patternViewConfig.height}
-					class="view-control"
-				/>
-				<label for="svg-zoom">zoom</label>
-				<input
-					id="svg-zoom"
-					type="number"
-					min={-2}
-					max={2}
-					step={0.1}
-					bind:value={$config0.patternViewConfig.zoom}
-					class="view-control"
-				/>
-				<label for="svg-offset-x">offset x</label>
-				<input
-					id="svg-offset-x"
-					type="number"
-					bind:value={$config0.patternViewConfig.centerOffset.x}
-					class="view-control"
-					step={10}
-				/>
-				<label for="svg-offset-y">offset y</label>
-				<input
-					id="svg-offset-y"
-					type="number"
-					bind:value={$config0.patternViewConfig.centerOffset.y}
-					class="view-control"
-					step={10}
-				/>
-				<label for="svg-page-width">page width</label>
-				<input
-					id="svg-page-width"
-					type="number"
-					bind:value={page.width}
-					class="view-control"
-					step={10}
-				/>
-				<label for="svg-page-width">page height</label>
-				<input
-					id="svg-page-height"
-					type="number"
-					bind:value={page.height}
-					class="view-control"
-					step={10}
-				/>
-				<label for="svg-page-unit">page unit</label>
-				<select id="svg-page-unit" bind:value={page.unit} class="view-control">
-					<option>mm</option>
-					<option>cm</option>
-					<option>in</option>
-				</select>
-			</div>
+			<CutPatternControl />
 		</div>
 	</div>
 </div>
@@ -380,13 +328,5 @@
 	}
 	.showBands {
 		display: flex;
-	}
-	.view-control-box {
-		position: absolute;
-		top: 20px;
-		left: 20px;
-	}
-	.view-control {
-		width: 50px;
 	}
 </style>
