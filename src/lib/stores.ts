@@ -48,7 +48,7 @@ export const config = derived(config0, ($config0) => {
 		...$config0,
 		levelConfig: {
 			...$config0.levelConfig,
-			levels: getLevels(
+			levelCount: getLevels(
 				$config0.levelConfig.silhouetteSampleMethod,
 				$config0.silhouetteConfig.curves.length
 			)
@@ -58,6 +58,7 @@ export const config = derived(config0, ($config0) => {
 });
 
 export const shapeData = derived(config, ($config) => {
+	console.debug("shapeData derived store")
 	const data = generateRotatedShapeGeometry($config);
 	console.debug('SHAPE DATA', data);
 	return { ...data, height: getModelHeight(data.bands) };

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Canvas, OrbitControls, T } from '@threlte/core';
 	import { degToRad } from 'three/src/math/MathUtils';
-	import StrutMesh from '../../components/strut/StrutMesh.svelte';
+	import StrutMesh from '../strut/StrutMesh.svelte';
 	import type { Level, Band, Strut } from '$lib/types';
 	import { getRenderable } from '$lib/generate-shape';
 	import LevelMesh from '../level/LevelMesh.svelte';

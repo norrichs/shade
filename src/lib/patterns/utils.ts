@@ -17,7 +17,7 @@ import {
 import { Vector2, Vector3, type Triangle as ThreeTriangle } from 'three';
 import { numberPathSegments } from '../../components/cut-pattern/number-path-segments';
 import { svgPathStringFromSegments } from './flower-of-life';
-import type { GlobuleData } from '../../components/globule/seed';
+import type { GlobuleData } from '../../components/globule-tile/seed';
 
 export const generateUnitTriangle = (sideLength: number): Triangle => {
 	const unit = {

@@ -2,13 +2,13 @@
 	import ControlGroup from './ControlGroup.svelte';
 	import { config0 } from '$lib/stores';
 
-	let rotZ: number = ($config0.levelConfig.levelOffset.rotZ * 180) / Math.PI;
-	let rotX: number = ($config0.levelConfig.levelOffset.rotX * 180) / Math.PI;
-	let rotY: number = ($config0.levelConfig.levelOffset.rotY * 180) / Math.PI;
+	let rotZ: number = ($config0.levelConfig.levelOffsets[0].rotZ * 180) / Math.PI;
+	let rotX: number = ($config0.levelConfig.levelOffsets[0].rotX * 180) / Math.PI;
+	let rotY: number = ($config0.levelConfig.levelOffsets[0].rotY * 180) / Math.PI;
 	$: {
-		$config0.levelConfig.levelOffset.rotZ = (rotZ * Math.PI) / 180;
-		$config0.levelConfig.levelOffset.rotX = (rotX * Math.PI) / 180;
-		$config0.levelConfig.levelOffset.rotY = (rotY * Math.PI) / 180;
+		$config0.levelConfig.levelOffsets[0].rotZ = (rotZ * Math.PI) / 180;
+		$config0.levelConfig.levelOffsets[0].rotX = (rotX * Math.PI) / 180;
+		$config0.levelConfig.levelOffsets[0].rotY = (rotY * Math.PI) / 180;
 	}
 </script>
 
@@ -46,11 +46,11 @@
 			{/if}
 
 			<label for="x_offset">X</label>
-			<input id="x_offset" type="number" bind:value={$config0.levelConfig.levelOffset.x} />
+			<input id="x_offset" type="number" bind:value={$config0.levelConfig.levelOffsets[0].x} />
 			<label for="y_offset">Y</label>
-			<input id="y_offset" type="number" bind:value={$config0.levelConfig.levelOffset.y} />
+			<input id="y_offset" type="number" bind:value={$config0.levelConfig.levelOffsets[0].y} />
 			<label for="z_offset">Z</label>
-			<input id="z_offset" type="number" bind:value={$config0.levelConfig.levelOffset.z} />
+			<input id="z_offset" type="number" bind:value={$config0.levelConfig.levelOffsets[0].z} />
 			<label for="rotx_offset">rotion X</label>
 			<input id="rotx_offset" type="number" min={-360} max={360} bind:value={rotX} />
 			<label for="roty_offset">rotation Y</label>

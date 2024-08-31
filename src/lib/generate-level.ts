@@ -28,6 +28,12 @@ export const generateLevelSet2 = (
 
 	let rawLevels: Level[] = [];
 	if (levelConfig.silhouetteSampleMethod.method === 'preserveAspectRatio') {
+		console.debug('*** generateLevelSet2', {
+			levelConfig,
+			silhouetteConfig,
+			depthCurveConfig,
+			levelPrototype
+		});
 		rawLevels = generateRawLevelsConstantAspect({
 			silhouette,
 			depthCurve,
@@ -106,12 +112,20 @@ const generateRawLevelsConstantAspect = ({
 	sampleMethod: CurveSampleMethod;
 	divisionBasis?: number;
 }): Level[] => {
+	console.debug(' ** generateRawLevelsConstantAspect', {
+		silhouette,
+		depthCurve,
+		levelPrototypes,
+		sampleMethod,
+		divisionBasis
+	});
 	const levelCount = sampleMethod.divisions + 1;
 	const bandCount = levelPrototypes[0].vertices.length;
 	const spacing = 1 / sampleMethod.divisions;
 	const meridians = new Array<Vector3[]>(bandCount);
 	const iterations = 50;
 	const divergenceLimit = 0.1;
+
 
 	let divisions = new Array(bandCount).fill([]).map(() => {
 		return new Array(levelCount).fill(0).map((v, i) => (i === levelCount - 1 ? 1 : spacing * i));
@@ -145,7 +159,11 @@ const generateRawLevelsConstantAspect = ({
 				);
 			}
 		}
+		if (meridians.length === 0) {
+			console.debug('------------ no meridians', {});
+		}
 		const aspectRatios: number[][] = getAspectRatiosFromMeridians(meridians);
+		// console.debug('aspectRatios', { aspectRatios });
 		const divergences = aspectRatios.map((ar) => getDivergence(ar));
 		if (divergenceTest(divergences, divergenceLimit, divisionBasis)) {
 			break;
@@ -264,6 +282,7 @@ const generateRawLevels = ({
 };
 
 const getAspectRatiosFromMeridians = (meridians: Vector3[][]): number[][] => {
+	// console.debug('  * getAspectRatiosFromMeridians', meridians);
 	const bandCount = meridians.length;
 	const pointCount = meridians[0].length;
 	let bands: { v0: Vector3; v1: Vector3; v2: Vector3; v3: Vector3 }[][] = new Array(bandCount);
@@ -307,6 +326,7 @@ const getLevelPrototypeArray = (
 	levelCount: number,
 	levelPrototype: LevelPrototype | LevelPrototype[]
 ): LevelPrototype[] => {
+	console.debug("getLevelPrototypeArray", {levelCount, levelPrototype})
 	let levelPrototypeArray: LevelPrototype[] = new Array(levelCount);
 	if (Array.isArray(levelPrototype)) {
 		levelPrototypeArray.fill(levelPrototype[0]);
@@ -333,25 +353,22 @@ const countLevels = (levelConfig: LevelConfig, silhouetteConfig: SilhouetteConfi
 };
 
 const getLevelOffsets = (levelConfig: LevelConfig, levelCount: number) => {
-	const configLevelOffset: LevelOffset = isLevelOffset(levelConfig.levelOffset)
-		? levelConfig.levelOffset
-		: levelConfig.levelOffset[0];
+	console.debug('getLevelOffsets', isLevelOffset(levelConfig.levelOffsets));
 	const levelOffsets: LevelOffset[] = new Array(levelCount);
 
-	if (isLevelOffset(levelConfig.levelOffset)) {
-		for (let l = 0; l < levelOffsets.length; l++) {
-			levelOffsets[l] = { ...configLevelOffset };
-			const { x, y, rotX, rotY, rotZ, scaleX, scaleY } = configLevelOffset;
-			levelOffsets[l].x = x * l;
-			levelOffsets[l].y = y * l;
-			levelOffsets[l].z = 1;
-			levelOffsets[l].rotX = rotX * l;
-			levelOffsets[l].rotY = rotY * l;
-			levelOffsets[l].rotZ = rotZ * l;
-			levelOffsets[l].scaleX = scaleX; //* silhouetteScale.x
-			levelOffsets[l].scaleY = scaleY; //* silhouetteScale.x
-			levelOffsets[l].depth = 1;
-		}
+	for (let l = 0; l < levelOffsets.length; l++) {
+		levelOffsets[l] = levelConfig.levelOffsets[l % levelConfig.levelOffsets.length];
+		// console.debug('levelConfig', levelConfig);
+		const { x, y, rotX, rotY, rotZ, scaleX, scaleY } = levelOffsets[l];
+		levelOffsets[l].x = x * l;
+		levelOffsets[l].y = y * l;
+		levelOffsets[l].z = 1;
+		levelOffsets[l].rotX = rotX * l;
+		levelOffsets[l].rotY = rotY * l;
+		levelOffsets[l].rotZ = rotZ * l;
+		levelOffsets[l].scaleX = scaleX; //* silhouetteScale.x
+		levelOffsets[l].scaleY = scaleY; //* silhouetteScale.x
+		levelOffsets[l].depth = 1;
 	}
 	return levelOffsets;
 };

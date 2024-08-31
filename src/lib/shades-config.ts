@@ -104,18 +104,20 @@ const defaultLevelConfig: LevelConfig = {
 	type: 'LevelConfig',
 	silhouetteSampleMethod: { method: 'preserveAspectRatio', divisions: 10 },
 	levelPrototypeSampleMethod: 'curve',
-	levels: 30,
-	levelOffset: {
-		x: 0,
-		y: 0,
-		z: 0,
-		rotX: rad(0),
-		rotY: rad(0),
-		rotZ: rad(0),
-		scaleX: 1,
-		scaleY: 1,
-		depth: 1
-	}
+	levelCount: 30,
+	levelOffsets: [
+		{
+			x: 0,
+			y: 0,
+			z: 0,
+			rotX: rad(0),
+			rotY: rad(0),
+			rotZ: rad(0),
+			scaleX: 1,
+			scaleY: 1,
+			depth: 1
+		}
+	]
 };
 
 export const initTabStyle = (style: TabStyle['style']): TabStyle => {
@@ -329,7 +331,7 @@ export const generateDefaultConfig = (): ShadesConfig => {
 		shapeConfig: generateDefaultShapeConfig(4, { method: 'divideCurve', divisions: 2 }),
 		levelConfig: {
 			...defaultLevelConfig,
-			levels: getLevels(
+			levelCount: getLevels(
 				defaultLevelConfig.silhouetteSampleMethod,
 				defaultSilhouetteConfig.curves.length
 			)

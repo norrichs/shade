@@ -428,9 +428,9 @@ export type LevelConfig = {
 	type: 'LevelConfig';
 	silhouetteSampleMethod: CurveSampleMethod;
 	levelPrototypeSampleMethod: 'shape' | 'curve';
-	levels?: number;
+	levelCount?: number;
 	baseRadius?: number;
-	levelOffset: LevelOffset;
+	levelOffsets: LevelOffset[];
 	height?: number;
 };
 

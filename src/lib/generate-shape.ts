@@ -232,10 +232,11 @@ const generateRadialShapeLevelPrototype = (
 	levelConfig: LevelConfig,
 	levelNumber: number
 ): LevelPrototype => {
+	console.debug('generateRadialShapeLevelPrototype', { config, levelConfig, levelNumber });
 	const shape = generateRadialShape(normalizeConfigPoints(config, { normalizationRatio: 1 / 200 }));
 	const points: Vector2[] = [];
-
 	const { sampleMethod } = config;
+	console.debug({ sampleMethod });
 	if (sampleMethod.method === 'divideCurve') {
 		// const {divisions} = sampleMethod
 		shape.curves.forEach((curve) => {
@@ -800,6 +801,7 @@ export const generateRotatedShapeGeometry = (
 		config.shapeConfig,
 		config.levelConfig
 	);
+	console.debug('generateRotatedShapeGeometry', { config, rotatedShapePrototype });
 	const levels = generateLevelSet2(
 		config.levelConfig,
 		config.silhouetteConfig,

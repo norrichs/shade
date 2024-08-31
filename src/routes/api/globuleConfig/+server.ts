@@ -48,7 +48,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		.insert(globuleConfigs)
 		.values({ name })
 		.returning({ id: globuleConfigs.id });
-	
+
 	await db
 		.insert(silhouetteConfigs)
 		.values({ curves: JSON.stringify(silhouetteConfig.curves), globuleConfigId: globuleConfigId });
@@ -83,7 +83,7 @@ export const POST: RequestHandler = async ({ request }) => {
 			divisions: silhouetteSampleMethodDivisions
 		},
 		levelPrototypeSampleMethod,
-		levelOffset
+		levelOffsets: levelOffsetsData
 	} = levelConfig;
 
 	const [{ id: levelConfigId }] = await db
@@ -96,10 +96,15 @@ export const POST: RequestHandler = async ({ request }) => {
 		})
 		.returning({ id: levelConfigs.id });
 
-	await db.insert(levelOffsets).values({
-		...levelOffset,
+	console.debug('POST levelOffsetsData', levelOffsetsData);
+	const levelOffsetValues = {
+		...levelOffsetsData[0],
 		levelConfigId
-	});
+	};
+	console.debug('POST levelOffsetValues', levelOffsetValues);
+
+	// TODO - remove hack so that this deals with array of offsets correctly
+	await db.insert(levelOffsets).values(levelOffsetValues);
 
 	await db.insert(renderConfigs).values({
 		...renderConfig.ranges,
@@ -154,11 +159,12 @@ export const GET: RequestHandler = async () => {
 	// console.dir(response, { depth: 4 });
 	const result = response.map((globuleConfig) => {
 		console.debug('globuleConfig');
-		console.dir(globuleConfig, { depth: 4 });
+		console.dir(globuleConfig.levelConfig, { depth: 4 });
+
 		const {
 			silhouetteConfig: [silhouetteConfig],
 			depthCurveConfig: [depthCurveConfig],
-			shapeConfig: [shapeConfig],
+			shapeConfig: [{ sampleMethod, sampleMethodDivisions, curves: shapeConfigCurves, ...sc }],
 			levelConfig: [{ silhouetteSampleMethodDivisions, silhouetteSampleMethod, ...lc }],
 			renderConfig: [
 				{
@@ -184,15 +190,19 @@ export const GET: RequestHandler = async () => {
 			strutConfig: [strutConfig]
 		} = globuleConfig;
 
-		console.debug('BANDCONFIG');
-		console.dir(bandConfig, { depth: 4 });
-
 		silhouetteConfig.curves = JSON.parse(silhouetteConfig.curves as string);
 		depthCurveConfig.curves = JSON.parse(depthCurveConfig.curves as string);
-		shapeConfig.curves = JSON.parse(shapeConfig.curves as string);
+
+		const shapeConfig = {
+			...sc,
+			sampleMethod: { method: sampleMethod, divisions: sampleMethodDivisions },
+			curves: JSON.parse(shapeConfigCurves as string)
+		};
 		spineCurveConfig.curves = JSON.parse(spineCurveConfig.curves as string);
 
 		bandConfig.tabStyle = JSON.parse(bandConfig.tabStyle as string);
+
+		console.debug('LEVELCONFIG lc', lc);
 
 		const levelConfig = {
 			...lc,
@@ -201,7 +211,6 @@ export const GET: RequestHandler = async () => {
 				divisions: silhouetteSampleMethodDivisions
 			}
 		};
-
 		const renderConfig = {
 			ranges: {
 				rangeStyle,
