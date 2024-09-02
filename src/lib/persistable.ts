@@ -35,16 +35,23 @@ export const persistable = <T>(
 	return {
 		subscribe,
 		update: function (value: T) {
+			console.debug('PERSISTABLE UPDATE', { value });
 			update((value) => value);
 			const persistObj = getLocal(key);
 			persistObj[name] = value;
 			setLocal(key, persistObj);
 		},
 		set: (value: T) => {
+			console.debug('PERSISTABLE SET', { value });
 			const persistObj = getLocal(key) || {};
+			// value.isModified = true;
 			persistObj[name] = value;
 			setLocal(key, persistObj);
-			// console.log('set persistable', name, value, "\n  current local", getLocal(AUTO_PERSIST_KEY))
+			console.log('***  set persistable', {
+				name,
+				value,
+				currentLocal: getLocal(AUTO_PERSIST_KEY)
+			});
 			set(value);
 		},
 		reset: () => {

@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { config } from '$lib/stores';
-	import type { ShadesConfig } from '$lib/types';
+	import type { GlobuleConfig } from '$lib/types';
 
-	let globuleConfigData: ShadesConfig[];
+	let globuleConfigData: GlobuleConfig[];
 
 	const handleCreate = async () => {
 		const response = await fetch('/api/globuleConfig', {
@@ -11,7 +11,6 @@
 			headers: { 'content-type': 'application/json' }
 		});
 		const result = await response.json();
-		console.debug('POST result', result);
 	};
 
 	const handleRead = async () => {

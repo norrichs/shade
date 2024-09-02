@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { getCubicBezierIntersection } from '$lib/util';
-	import type { Intersector } from '$lib/util';
+	import type { Intersector } from '$lib/types';
 	import { CubicBezierCurve, Vector2 } from 'three';
 
 	const w = 500;
@@ -11,7 +11,6 @@
       M ${cb.v0.x} ${cb.v0.y}
       C ${cb.v1.x} ${cb.v1.y} ${cb.v2.x} ${cb.v2.y} ${cb.v3.x} ${cb.v3.y}
     `;
-		console.debug('pathString', pathString);
 		return pathString;
 	};
 

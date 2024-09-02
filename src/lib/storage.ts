@@ -6,7 +6,7 @@
 
 import { generateUUID } from 'three/src/math/MathUtils';
 import { AUTO_PERSIST_KEY } from '$lib/persistable';
-import type { ShadesConfig } from '$lib/types';
+import type { GlobuleConfig } from '$lib/types';
 
 export const resetLocal = (key: string) => {
 	if (confirm('really?')) {
@@ -25,25 +25,25 @@ export const listLocalConfigs = () => {
 	return storedConfigMeta;
 };
 
-export const saveLocalConfig = (config: ShadesConfig, asNew = false) => {
+export const saveLocalConfig = (config: GlobuleConfig, asNew = false) => {
 	if (asNew || !config.id || !config.id.startsWith('stored-config')) {
 		config.id = `stored-config-${generateUUID()}`;
 	}
 	setLocal(config.id, config);
 };
 
-export const setLocal = (key: string, config: ShadesConfig) => {
+export const setLocal = (key: string, config: GlobuleConfig) => {
 	const str = JSON.stringify(config);
 
 	localStorage.setItem(key, str);
 };
 
-export const persistConfig = (config: ShadesConfig, onSave: () => void) => {
+export const persistConfig = (config: GlobuleConfig, onSave: () => void) => {
 	setLocal(AUTO_PERSIST_KEY, config);
 	onSave();
 };
 
-export const getPersistedConfig = (key: string, name: keyof ShadesConfig | 'ShadesConfig') => {
+export const getPersistedConfig = (key: string, name: keyof GlobuleConfig | 'GlobuleConfig') => {
 	const persistedConfig = getLocal(key);
 	return persistedConfig && persistedConfig[name] !== undefined && persistedConfig[name] !== null
 		? persistedConfig[name]

@@ -223,9 +223,7 @@ export const generateTiledBandPattern = ({
 		if (tiledPatternConfig.tiling === 'quadrilateral') {
 			const unitPattern = getPattern(rowCount as 3 | 1 | 2, columnCount as 1 | 2 | 3 | 4 | 5);
 			mappedPatternBand = quadBand.map((quad) => transformPatternByQuad(unitPattern, quad));
-			console.debug('quad mapping of pattern - unitPattern', unitPattern);
 		} else {
-			console.debug('band mapping of pattern, tiledPatternConfig', tiledPatternConfig);
 			mappedPatternBand = [getPattern(1, 1, quadBand)];
 		}
 		const adjustedPatternBand = mappedPatternBand.map((facet) => {

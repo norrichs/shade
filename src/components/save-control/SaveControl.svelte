@@ -8,10 +8,10 @@
 		deleteLocal
 	} from '$lib/storage';
 	import { config0, usePersisted } from '$lib/stores';
-	import type { ShadesConfig } from '$lib/types';
+	import type { GlobuleConfig } from '$lib/types';
 
 	export let show = false;
-	export let config: ShadesConfig;
+	export let config: GlobuleConfig;
 	// export let update: () => void;
 
 	let test: string | null;

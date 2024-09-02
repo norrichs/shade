@@ -9,7 +9,7 @@ import type {
 	DepthCurveConfig,
 	LevelConfig,
 	RenderConfig,
-	ShadesConfig,
+	GlobuleConfig,
 	ShapeConfig,
 	SilhouetteConfig,
 	SpineCurveConfig,
@@ -324,8 +324,8 @@ export const getLevels = (sampleMethod: CurveSampleMethod, curveCount: number) =
 	return sampleMethod.divisions + 1;
 };
 
-export const generateDefaultConfig = (): ShadesConfig => {
-	const config: ShadesConfig = {
+export const generateDefaultConfig = (): GlobuleConfig => {
+	const config: GlobuleConfig = {
 		id: AUTO_PERSIST_KEY,
 		name: '',
 		shapeConfig: generateDefaultShapeConfig(4, { method: 'divideCurve', divisions: 2 }),

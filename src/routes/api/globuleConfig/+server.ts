@@ -13,7 +13,7 @@ import {
 import { tursoClient } from '$lib/server/turso';
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import type { ShadesConfig } from '$lib/types';
+import type { GlobuleConfig } from '$lib/types';
 
 export const POST: RequestHandler = async ({ request }) => {
 	const db = tursoClient();
@@ -27,8 +27,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		bandConfig,
 		strutConfig,
 		name
-	} = (await request.json()) as ShadesConfig;
-	console.debug('/api/test request');
+	} = (await request.json()) as GlobuleConfig;
 	console.dir(
 		{
 			silhouetteConfig,
@@ -96,12 +95,10 @@ export const POST: RequestHandler = async ({ request }) => {
 		})
 		.returning({ id: levelConfigs.id });
 
-	console.debug('POST levelOffsetsData', levelOffsetsData);
 	const levelOffsetValues = {
 		...levelOffsetsData[0],
 		levelConfigId
 	};
-	console.debug('POST levelOffsetValues', levelOffsetValues);
 
 	// TODO - remove hack so that this deals with array of offsets correctly
 	await db.insert(levelOffsets).values(levelOffsetValues);
@@ -130,7 +127,6 @@ export const POST: RequestHandler = async ({ request }) => {
 		...restStrutConfig,
 		globuleConfigId
 	});
-	// console.debug('db insert res', res);
 	return json(globuleConfigId);
 };
 
@@ -155,10 +151,8 @@ export const GET: RequestHandler = async () => {
 		}
 	});
 
-	console.debug('FETCHED GLOBULE CONFIG');
 	// console.dir(response, { depth: 4 });
 	const result = response.map((globuleConfig) => {
-		console.debug('globuleConfig');
 		console.dir(globuleConfig.levelConfig, { depth: 4 });
 
 		const {
@@ -202,7 +196,6 @@ export const GET: RequestHandler = async () => {
 
 		bandConfig.tabStyle = JSON.parse(bandConfig.tabStyle as string);
 
-		console.debug('LEVELCONFIG lc', lc);
 
 		const levelConfig = {
 			...lc,

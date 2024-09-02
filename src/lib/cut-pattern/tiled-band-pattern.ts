@@ -19,7 +19,6 @@ export const generateTiledBandPattern = ({
 	bands: Band[];
 	tiledPatternConfig: TiledPatternConfig;
 }): PatternedBandPattern => {
-	console.debug('***************************\ngenerateTiledBandPattern');
 	const pattern: PatternedBandPattern = { projectionType: 'patterned', bands: [] };
 
 	const unitPattern = generateHexPattern({ variant: 1, size: 1 });

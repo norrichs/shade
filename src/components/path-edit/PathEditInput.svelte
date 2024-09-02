@@ -27,7 +27,6 @@
 
 	const updatePoint = (event: Event, pointName: 'x' | 'y') => {
 		const currentTarget = event.currentTarget as HTMLInputElement;
-		console.debug('event', currentTarget, currentTarget.value, point.x);
 		let dx = 0;
 		let dy = 0;
 		if (pointName === 'x') {
@@ -45,7 +44,6 @@
 		updateOffset(point.x, point.y, offsetDirection.type, offsetDirection.value);
 	}
 
-	console.debug('showPointInputsInline', showPointInputsInline);
 </script>
 
 <div

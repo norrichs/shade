@@ -104,8 +104,6 @@ export const onPathPointMove = (
 		// partner handle co linear wtih point->handle, but the length is constant
 		partnerHandle.x = partnerPoint.x + Math.cos(partnerAngle) * partnerHandleLength;
 		partnerHandle.y = partnerPoint.y + Math.sin(partnerAngle) * partnerHandleLength;
-	} else {
-		console.debug('is angled joined handle', isAngled, isJoined, isHandle);
 	}
 
 	// move the point being directly manipulated

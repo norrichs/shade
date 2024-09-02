@@ -58,7 +58,6 @@
 
 	$: {
 		thisConfig = $config0[curveConfigByType[curveStoreType]];
-		console.debug('PathEdit', $config0, thisConfig);
 		curveStore = isCurveConfig(thisConfig) ? thisConfig : $config0.silhouetteConfig;
 	}
 
@@ -401,7 +400,6 @@
 							showPointInputsInline
 							offsetDirection={{ type: 'lateral', value: 20 }}
 							onUpdate={(x, y, dx, dy) => {
-								console.debug('onUpdate', x, y, point.x, point.y);
 								updateCurves(x, y, dx, dy, curveIndex, p, true);
 							}}
 						/>

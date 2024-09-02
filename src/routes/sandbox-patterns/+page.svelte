@@ -54,7 +54,6 @@
 		minWidth: 1,
 		maxWidth: 10
 	});
-	console.debug('BRANCHED PATHS', branchedPaths);
 </script>
 
 <main>

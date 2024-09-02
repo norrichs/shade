@@ -111,28 +111,17 @@ export const getIntersectionOfLimitedLines = (
 		intersection: Point,
 		point: Point
 	) => {
-		console.debug(
-			`  isInLimit - isLimited ${isLimited}, isStart ${isStart} isForward ${isForward.x} ${isForward.y}`,
-			'\n  point',
-			point,
-			'\n  intersection',
-			intersection
-		);
 		if (isLimited) {
 			if (isStart && isForward.x && intersection.x < point.x) {
-				console.debug('  limited by int x < point x');
 				return false;
 			}
 			if (isStart && isForward.y && intersection.y < point.y) {
-				console.debug('  limited by int y < point y');
 				return false;
 			}
 			if (!isStart && isForward.x && intersection.x > point.x) {
-				console.debug('  limited by int x > point x');
 				return false;
 			}
 			if (!isStart && isForward.y && intersection.y > point.y) {
-				console.debug('  limited by int x > point x');
 				return false;
 			}
 			return true;
@@ -140,24 +129,19 @@ export const getIntersectionOfLimitedLines = (
 		return true;
 	};
 
-	console.debug('check limit l0 p0');
 	if (!isInLimit(limits.l0P0, true, isForwardL0, { x, y }, l0.p0)) {
 		return false;
 	}
-	console.debug('check limit l0 p1');
 	if (!isInLimit(limits.l0P1, false, isForwardL0, { x, y }, l0.p1)) {
 		return false;
 	}
-	console.debug('check limit l1 p0');
 	if (!isInLimit(limits.l1P0, true, isForwardL1, { x, y }, l1.p0)) {
 		return false;
 	}
-	console.debug('check limit l1 p1');
 	if (!isInLimit(limits.l1P1, false, isForwardL1, { x, y }, l0.p1)) {
 		return false;
 	}
 
-	console.debug(`return ${x} ${y}`);
 	return { x, y };
 };
 

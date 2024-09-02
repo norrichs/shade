@@ -59,18 +59,6 @@
 		}
 	}
 
-	// const getViewBox = () => {
-	// 	const { width, height, zoom, centerOffset } = $config.patternViewConfig;
-	// 	const minX = -centerOffset.x - width / 2;
-	// 	const minY = -centerOffset.y - height / 2;
-	// 	const logZoom = 1 / Math.pow(10, zoom);
-
-	// 	const viewBox = `${minX * logZoom} ${minY * logZoom} ${width * logZoom} ${height * logZoom}`;
-	// 	console.debug('VIEWBOX', viewBox);
-
-	// 	return '0 0 300 300';
-	// };
-
 	const getViewBox = (config: PatternViewConfig) => {
 		const { width, height, zoom, centerOffset } = config;
 		const minX = 0;

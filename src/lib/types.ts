@@ -567,7 +567,7 @@ export type Tiling = BandStyle;
 export type StrutOrientation = 'inside' | 'outside' | 'half';
 export type RadiateOrientation = 'level' | 'orthogonal' | 'hybrid';
 
-export type ShadesConfig = {
+export type GlobuleConfig = {
 	[key: string]:
 		| ShapeConfig
 		| LevelConfig
@@ -582,6 +582,7 @@ export type ShadesConfig = {
 		| PatternViewConfig
 		| TiledPatternConfig
 		| string
+		| boolean
 		| undefined;
 	shapeConfig: ShapeConfig;
 	levelConfig: LevelConfig;
@@ -598,6 +599,7 @@ export type ShadesConfig = {
 
 	id?: string;
 	name?: string;
+	isModified?: boolean;
 };
 
 export type TabConfig = {

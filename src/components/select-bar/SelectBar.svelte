@@ -2,7 +2,6 @@
 	export let options: SelectBarOption[];
 	let selected: string;
 	export let value: unknown;
-	console.debug('select bar value', value);
 
 	type SelectBarOption = { name: string; value?: unknown };
 

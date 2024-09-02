@@ -19,7 +19,7 @@ import type {
 	MultiFacetTrapTab,
 	PointConfig2,
 	RenderConfig,
-	ShadesConfig,
+	GlobuleConfig,
 	ShapeConfig,
 	SilhouetteConfig,
 	Strip,
@@ -232,11 +232,9 @@ const generateRadialShapeLevelPrototype = (
 	levelConfig: LevelConfig,
 	levelNumber: number
 ): LevelPrototype => {
-	console.debug('generateRadialShapeLevelPrototype', { config, levelConfig, levelNumber });
 	const shape = generateRadialShape(normalizeConfigPoints(config, { normalizationRatio: 1 / 200 }));
 	const points: Vector2[] = [];
 	const { sampleMethod } = config;
-	console.debug({ sampleMethod });
 	if (sampleMethod.method === 'divideCurve') {
 		// const {divisions} = sampleMethod
 		shape.curves.forEach((curve) => {
@@ -270,7 +268,7 @@ const validateBandConfig = (config: BandConfig, levels: Level[]): Validation => 
 	return validation;
 };
 
-const generateBandSet = (config: ShadesConfig, levels: Level[]): Band[] => {
+const generateBandSet = (config: GlobuleConfig, levels: Level[]): Band[] => {
 	const circumferenceBands = generateCircumferenceBands(config, levels);
 	if (config.bandConfig.bandStyle.startsWith('helical')) {
 		return generateHelicalBands(circumferenceBands);
@@ -316,7 +314,7 @@ const getBandStyle = (bandOrientation: BandOrientation): BandStyle => {
 	return 'circumference';
 };
 
-const generateCircumferenceBands = (config: ShadesConfig, levels: Level[]): Band[] => {
+const generateCircumferenceBands = (config: GlobuleConfig, levels: Level[]): Band[] => {
 	const validation = validateBandConfig(config.bandConfig, levels);
 	if (!validation.isValid) {
 		throw new Error(validation.msg.join('\n'));
@@ -795,13 +793,12 @@ export const getRenderable = (
 };
 
 export const generateRotatedShapeGeometry = (
-	config: ShadesConfig
+	config: GlobuleConfig
 ): { levels: Level[]; bands: Band[]; struts: Strut[] } => {
 	const rotatedShapePrototype: LevelPrototype | LevelPrototype[] = generateLevelPrototype(
 		config.shapeConfig,
 		config.levelConfig
 	);
-	console.debug('generateRotatedShapeGeometry', { config, rotatedShapePrototype });
 	const levels = generateLevelSet2(
 		config.levelConfig,
 		config.silhouetteConfig,

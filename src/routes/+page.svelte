@@ -1,8 +1,10 @@
 <script lang="ts">
 	import { usePersisted } from '$lib/stores';
+	import NavHeader from '../components/nav-header/NavHeader.svelte';
 </script>
 
-<h1>Welcome</h1>
+
+
 <p><a href="/shades">Shade Designer</a></p>
 <p><a href="/gallery">Gallery</a></p>
 <p><a href="/sandbox-ellipse-intersections">Sandbox - Ellipse Intersections</a></p>

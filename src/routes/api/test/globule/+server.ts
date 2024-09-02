@@ -7,11 +7,9 @@ import type { SerializedBand, SerializedFacet } from '$lib/patterns/utils';
 
 export const POST: RequestHandler = async ({ request }) => {
 	const db = tursoClient();
-	console.debug('request', request);
 	const intermediate = await request.json();
 	const req = await JSON.parse(intermediate);
 
-	console.debug('/api/test/globule request', req.name);
 	console.dir(req, { depth: 4 });
 	const globuleRecords = await db.insert(globules).values({ name: req.name }).returning();
 	const bandRecords = await db
@@ -31,6 +29,5 @@ export const POST: RequestHandler = async ({ request }) => {
 		});
 	});
 	const facetRecords = await db.insert(facets).values(facetValues);
-	console.debug('db insert res', globuleRecords, bandRecords, facetRecords);
 	return json(globuleRecords);
 };

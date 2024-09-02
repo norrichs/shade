@@ -136,7 +136,6 @@ export const generateCarnation = ({
 };
 
 const adjustCarnation = (tiledBands: { facets: PatternedPattern[] }[]) => {
-	console.debug('-------- adjustCarnation');
 	const patternPrototype = generateCarnation({ variant: 1, size: 1, rows: 1, columns: 1 });
 	const addendaPrototype = [
 		['M', patternPrototype[3][5], patternPrototype[3][6]] as MovePathSegment,
@@ -147,12 +146,6 @@ const adjustCarnation = (tiledBands: { facets: PatternedPattern[] }[]) => {
 	const adjusted = tiledBands.map((band, bandIndex, bands) => ({
 		...band,
 		facets: band.facets.map((facet, facetIndex) => {
-			console.debug(
-				'    original facet path',
-				bandIndex,
-				facetIndex,
-				window.structuredClone(facet.path)
-			);
 			const addendaFacet0 = window.structuredClone(
 				bands[(bandIndex + bands.length - 1) % bands.length].facets[facetIndex]
 			);
@@ -205,7 +198,6 @@ const adjustCarnation = (tiledBands: { facets: PatternedPattern[] }[]) => {
 			return { ...facet, addenda: [addenda0] };
 		})
 	}));
-	console.debug('-------- adjustCarnation adjusted', adjusted);
 	return adjusted;
 };
 
@@ -394,7 +386,6 @@ const straightenEndSegments = (
 	thisSegmentsIndices: number[][],
 	prevSegmentsIndices: number[][]
 ) => {
-	console.debug('adjust stub 1', thisFacet, prevFacet, thisSegmentsIndices, prevSegmentsIndices);
 	if (
 		thisSegmentsIndices.length !== prevSegmentsIndices.length ||
 		thisSegmentsIndices.length === 0
@@ -472,7 +463,6 @@ export const patterns: { [key: string]: PatternGenerator } = {
 			generateCarnation({ size: 1, rows, columns, variant: 1 }),
 		tagAnchor: { facetIndex: 0, segmentIndex: 5 },
 		adjustAfterTiling: (tiledBands: { facets: PatternedPattern[] }[]) => {
-			console.debug('adjust after tiling - carnation 1');
 			return adjustCarnation(tiledBands);
 		}
 	},
@@ -481,7 +471,6 @@ export const patterns: { [key: string]: PatternGenerator } = {
 			if (!quadBand) {
 				throw new Error('quadBand Required for bandedBranchPattern-0');
 			}
-			console.debug('patterns.ts - return generateBranched');
 			return generateBranched(quadBand, { rows, columns, variant: 0 });
 		},
 		tagAnchor: { facetIndex: 0, segmentIndex: 5 },

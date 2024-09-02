@@ -12,7 +12,7 @@ import {
 	generateDefaultConfig,
 	getLevels
 } from './shades-config';
-import type { Band, BandPattern, NullBandPattern, ShadesConfig } from '$lib/types';
+import type { Band, BandPattern, NullBandPattern, GlobuleConfig } from '$lib/types';
 import { generateRotatedShapeGeometry } from '$lib/generate-shape';
 import {
 	applyStrokeWidth,
@@ -26,7 +26,7 @@ import {
 export const usePersisted = persistable(false, USE_PERSISTED_KEY, USE_PERSISTED_KEY, true);
 
 const loadAutoPersisted = (usePersisted: boolean) => {
-	const autoPersisted = getPersistedConfig(AUTO_PERSIST_KEY, 'ShadesConfig');
+	const autoPersisted = getPersistedConfig(AUTO_PERSIST_KEY, 'GlobuleConfig');
 	if (autoPersisted && usePersisted) {
 		return autoPersisted;
 	} else {
@@ -34,18 +34,19 @@ const loadAutoPersisted = (usePersisted: boolean) => {
 	}
 };
 
-export const config0 = persistable<ShadesConfig>(
+export const config0 = persistable<GlobuleConfig>(
 	loadAutoPersisted(bootStrapUsePersisted()),
-	'ShadesConfig',
+	'GlobuleConfig',
 	AUTO_PERSIST_KEY,
 	bootStrapUsePersisted()
 );
 
 export const config = derived(config0, ($config0) => {
-	console.debug('CONFIG0');
-	console.dir($config0, { depth: 4 });
-	const derivedConfig: ShadesConfig = {
+	console.debug('CONFIG - derived', { $config0 });
+	// console.dir($config0, { depth: 4 });
+	const derivedConfig: GlobuleConfig = {
 		...$config0,
+		isModified: true,
 		levelConfig: {
 			...$config0.levelConfig,
 			levelCount: getLevels(
@@ -54,18 +55,18 @@ export const config = derived(config0, ($config0) => {
 			)
 		}
 	};
+	console.debug('         ', { derivedConfig });
 	return derivedConfig;
 });
 
 export const shapeData = derived(config, ($config) => {
-	console.debug("shapeData derived store")
 	const data = generateRotatedShapeGeometry($config);
-	console.debug('SHAPE DATA', data);
+	// console.debug('SHAPE DATA - derived', data);
 	return { ...data, height: getModelHeight(data.bands) };
 });
 
 export const bandPattern = derived([config, shapeData], ([$config, $shapeData]) => {
-	console.debug('DERIVE bandPattern');
+	// console.debug('DERIVE bandPattern');
 	const { bands } = $shapeData;
 	const displayedBandFacets = getRenderableOnGeometry($config.renderConfig, bands);
 	let pattern: BandPattern;

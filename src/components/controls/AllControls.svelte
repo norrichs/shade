@@ -77,7 +77,6 @@
 		return arr;
 	};
 	const selectSettings = (key: string, index?: number) => {
-		console.debug('select Settings', key);
 		if (typeof index === 'number') {
 			path = [...path, key, index];
 			selectedSettings = selectedSettings[key][index];
@@ -88,7 +87,6 @@
 	};
 
 	const updateStore = () => {
-		console.debug('updateStore', path.length, path, $settingStore, selectedSettings);
 		if (path.length === 0) {
 			$settingStore = selectedSettings;
 		} else if (path.length === 1) {
@@ -114,7 +112,6 @@
 
 	const gotoBreadcrumb = (crumb: string, index: number) => {
 		path = path.slice(0, index);
-		console.debug(index, crumb, path);
 		if (path.length === 0) {
 			selectedSettings = $settingStore;
 		} else if (path.length === 1) {

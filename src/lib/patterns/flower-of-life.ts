@@ -634,17 +634,12 @@ export const processFlowerOfLife1PatternTransforms = ({
 	svgTransform: string;
 	width: number;
 }): PathSegment[] => {
-	console.debug('*** processing...');
 	// Transform unit geometry to path segments
 	const txSegments = flatten_convert(svgPath, svgTransform);
 	if (!isFlowerOfLifePathSegments(txSegments)) {
 		throw new Error(svgPath + ' is not a flower of life pattern path');
 	}
 
-	console.debug(
-		'  transformed prototype',
-		txSegments.map((seg) => roundPathSegments(seg))
-	);
 
 	// Gather Arcs and Lines for this facet.
 	// At this point, arcs have not diverged to inner and outer versions

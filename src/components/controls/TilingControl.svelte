@@ -22,16 +22,6 @@
 			const { page, pixelScale } = $config0.patternConfig;
 			const marginByPageHeight = 0.05;
 			const scaleFactor = (page.height - page.height * marginByPageHeight) / maxLength;
-			console.debug(
-				'fitPatternToPage',
-				maxLength,
-				pixelScale.value,
-				pixelScale.unit,
-				page.height,
-				page.width,
-				page.unit,
-				scaleFactor
-			);
 
 			$config0.patternConfig.pixelScale = {
 				...pixelScale,

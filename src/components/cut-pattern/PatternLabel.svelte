@@ -58,7 +58,6 @@
 
 		const center = { x: (minX + maxX) / 2, y: (minY + maxY) / 2 };
 
-		console.debug('min max', minX, maxX, minY, maxY);
 
 		const offsetX = point.x - (maxX - minX) / 2;
 		const offsetY = point.y - (maxY - minY) / 2;

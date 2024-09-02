@@ -48,14 +48,6 @@ export const getCubicBezierIntersection = (
 			y: dim === 'x' ? 1000 : val
 		}
 	};
-	console.debug(
-		'getCubicBezierIntersection',
-		threeBezier,
-		'intersector',
-		intersector,
-		'intersectorLine',
-		intersectorLine
-	);
 	const ints = bezier.intersects(intersectorLine);
 	const intPoints = ints
 		.map((t) => {
@@ -66,8 +58,6 @@ export const getCubicBezierIntersection = (
 			return new Vector2(0, 0);
 		})
 		.filter((point) => point !== undefined);
-	console.debug('ints', ints, 'bezier', bezier, 'intersectorLine', intersectorLine);
-	console.debug('intPoints', intPoints);
 	return intPoints;
 	// const points = bezier.getSpacedPoints(100);
 	// const ints: Vector2[] = []

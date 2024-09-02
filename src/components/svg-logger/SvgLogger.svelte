@@ -3,7 +3,6 @@
 	import { isSVGLoggerCircle, isSVGLoggerDirectionalLine, logger, type SVGDebug } from './logger';
 
 	const doTest = (index: number, content: any) => {
-		console.debug('logger ->', index, ': ', content);
 		return 10;
 	};
 	const loggerColor = (index: number) =>

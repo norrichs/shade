@@ -54,7 +54,6 @@
 		if (arc[1][0] !== 'A' || arc.length !== 2) {
 			throw new Error('argument is not an Arc PathSegment');
 		}
-		console.debug('arc', arc);
 		return `M ${arc[0][1]} ${arc[0][2]}
 		A ${arc[1][1]} ${arc[1][2]} ${arc[1][3]} ${arc[1][4]} ${arc[1][5]} ${arc[1][6]} ${arc[1][7]}
 		A ${arc[1][1]} ${arc[1][2]} ${arc[1][3]} ${arc[1][4] ? 0 : 1} ${arc[1][5]} ${arc[0][1]} ${
@@ -81,7 +80,6 @@
 		A ${arc.r0} ${arc.r1} ${(arc.rotationRadians * 180) / Math.PI} ${arc.fa ? 0 : 1} ${arc.fs} ${
 			arc.p0.x
 		} ${arc.p0.y}`;
-		console.debug('Ellips from params', path);
 		return path;
 	};
 
@@ -173,7 +171,6 @@
 	const update = (transform: any, width: number) => {
 		// Transform
 		const tx = svgTransform(transform);
-		console.debug('---------update---------');
 		txLinePoints = getPointsFromSegments(flatten_convert(svgLine(p0, p1), tx));
 		txEllipse = parseArcSegments(
 			flatten_convert(svgArc(ell, p0, p1), tx) as [PathSegment, PathSegment]
