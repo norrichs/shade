@@ -1,5 +1,6 @@
 <script lang="ts">
 	import NavHeader from '../components/nav-header/NavHeader.svelte';
+	import './theme.css';
 </script>
 
 <NavHeader />

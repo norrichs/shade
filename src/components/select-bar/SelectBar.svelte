@@ -28,8 +28,8 @@
 	.multi-button button {
 		border: 0;
 		padding: 5px;
-		background-color: dimgrey;
-		color: lightskyblue;
+		background-color: var(--color-dark);
+		color: var(--color-link);
 		transition: 200ms;
 	}
 	.multi-button button:first-of-type {
@@ -39,7 +39,7 @@
 		border-radius: 0 4px 4px 0;
 	}
 	.multi-button .selected {
-		background-color: lightskyblue;
+		background-color: var(--color-highlight);
 		color: black;
 		transition: 200ms;
 	}

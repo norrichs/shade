@@ -11,6 +11,7 @@
 	import { config, shapeData } from '$lib/stores';
 	import SelectBar from '../../components/select-bar/SelectBar.svelte';
 	import SaveControl from '../../components/save-control/SaveControl.svelte';
+	import DataControl from '../../components/save-control/DataControl.svelte';
 
 	let { levels, bands, struts } = $shapeData;
 	let displayLevels: Level[];
@@ -58,7 +59,8 @@
 					{ name: 'Struts' },
 					{ name: 'Cut' },
 					{ name: 'Pattern' },
-					{ name: 'Save' }
+					{ name: 'Save' },
+					{ name: 'Data' }
 				]}
 			/>
 		</header>
@@ -81,6 +83,8 @@
 				<TilingControl />
 			{:else if showControl?.name === 'Save'}
 				<SaveControl show={showControl?.name === 'Save'} config={$config} />
+			{:else if showControl?.name === 'Data'}
+				<DataControl />
 			{/if}
 		</div>
 	</section>

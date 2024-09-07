@@ -9,10 +9,14 @@
 	import { config } from '$lib/stores';
 	import type { GlobuleData } from './seed';
 	import GlobuleTileContainer from './GlobuleTileContainer.svelte';
+	import { goto } from '$app/navigation';
 
+	export let size: number = 200;
 	export let data: GlobuleData;
 	export let name: string;
 	export let globuleConfigId: string;
+	export let onDelete: (id: number) => Promise<Response>;
+	export let onLoad: (id: number) => void;
 
 	let { levels, bands, struts } = data;
 
@@ -35,8 +39,14 @@
 	}
 </script>
 
-<GlobuleTileContainer name={name || ''} id={globuleConfigId || ''}>
-	<Canvas>
+<GlobuleTileContainer name={name || ''} id={globuleConfigId || ''} {size}>
+	<button
+		on:click={() => {
+			onLoad(Number.parseInt(globuleConfigId)), goto('/designer');
+		}}>Load into Designer</button
+	>
+	<button on:click={() => onDelete(Number.parseInt(globuleConfigId))}>Delete</button>
+	<Canvas slot="globule-tile-3d">
 		<T.PerspectiveCamera makeDefault position={[0, 400, -5]} fov={50}>
 			<OrbitControls maxPolarAngle={degToRad(160)} enableZoom={false} target={{ y: 0.5 }} />
 		</T.PerspectiveCamera>

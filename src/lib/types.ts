@@ -412,6 +412,7 @@ export type LevelPrototype = {
 };
 
 export type LevelOffset = {
+	id?: number;
 	x: number;
 	y: number;
 	z: number;
@@ -426,6 +427,7 @@ export type LevelOffset = {
 export type LevelConfig = {
 	// silhouetteConfig: SilhouetteConfig,
 	type: 'LevelConfig';
+	id?: number;
 	silhouetteSampleMethod: CurveSampleMethod;
 	levelPrototypeSampleMethod: 'shape' | 'curve';
 	levelCount?: number;
@@ -515,17 +517,20 @@ export type CurveConfig = SilhouetteConfig | ShapeConfig | DepthCurveConfig | Sp
 
 export type SilhouetteConfig = {
 	type: 'SilhouetteConfig';
+	id?: number;
 	curves: BezierConfig[];
 };
 
 export type DepthCurveConfig = {
 	type: 'DepthCurveConfig';
+	id?: number;
 	depthCurveBaseline: number;
 	curves: BezierConfig[];
 };
 
 export type SpineCurveConfig = {
 	type: 'SpineCurveConfig';
+	id?: number;
 	curves: BezierConfig[];
 };
 
@@ -536,6 +541,7 @@ export type CurveSampleMethod =
 
 export type ShapeConfig = {
 	type: 'ShapeConfig';
+	id?: number;
 	// divisions: number;
 	sampleMethod: CurveSampleMethod;
 	symmetry: 'asymmetric' | 'radial' | 'lateral' | 'radial-lateral';
@@ -557,6 +563,7 @@ export type Strut = {
 
 export type StrutConfig = {
 	type: 'StrutConfig';
+	id?: number;
 	tiling: Tiling;
 	orientation: StrutOrientation;
 	radiate: RadiateOrientation;
@@ -640,28 +647,28 @@ export type TabStyle =
 
 export type BandConfig = {
 	type: 'BandConfig';
+	id?: number;
 	bandStyle: BandStyle;
 	offsetBy: -2 | -1 | 0 | 1 | 2;
 	tabStyle: TabStyle;
 };
 
-export type RenderRange =
-	| { rangeStyle: 'filter'; filterFunction: (args: unknown) => boolean }
-	| {
-			[key: string]: number | string | undefined;
-			rangeStyle: 'slice';
-			bandStart: number;
-			bandCount?: number;
-			facetStart: number;
-			facetCount?: number;
-			levelStart: number;
-			levelCount?: number;
-			strutStart: number;
-			strutCount?: number;
-	  };
+export type RenderRange = {
+	[key: string]: number | string | undefined;
+	rangeStyle: 'slice';
+	bandStart: number;
+	bandCount?: number;
+	facetStart: number;
+	facetCount?: number;
+	levelStart: number;
+	levelCount?: number;
+	strutStart: number;
+	strutCount?: number;
+};
 
 export type RenderConfig = {
 	type: 'RenderConfig';
+	id?: number;
 	ranges: RenderRange;
 	show: {
 		[key: string]: boolean;

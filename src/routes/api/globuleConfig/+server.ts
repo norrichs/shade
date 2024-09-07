@@ -14,6 +14,25 @@ import { tursoClient } from '$lib/server/turso';
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import type { GlobuleConfig } from '$lib/types';
+import {
+	deserializeSilhouetteConfig,
+	deserializeDepthCurveConfig,
+	deserializeShapeConfig,
+	deserializeLevelConfig,
+	deserializeRenderConfig,
+	deserializeSpineCurveConfig,
+	deserializeBandConfig,
+	deserializeStrutConfig,
+	getSilhouetteConfigValues,
+	getDepthCurveConfigValues,
+	getShapeConfigValues,
+	getLevelConfigValues,
+	getLevelOffsetsValues,
+	getRenderConfigValues,
+	getSpineCurveConfigValues,
+	getBandConfigValues,
+	getStrutConfigValues
+} from './utils';
 
 export const POST: RequestHandler = async ({ request }) => {
 	const db = tursoClient();
@@ -28,21 +47,6 @@ export const POST: RequestHandler = async ({ request }) => {
 		strutConfig,
 		name
 	} = (await request.json()) as GlobuleConfig;
-	console.dir(
-		{
-			silhouetteConfig,
-			depthCurveConfig,
-			shapeConfig,
-			levelConfig,
-			renderConfig,
-			spineCurveConfig,
-			bandConfig,
-			strutConfig,
-			name
-		},
-		{ depth: 5 }
-	);
-
 	const [{ id: globuleConfigId }] = await db
 		.insert(globuleConfigs)
 		.values({ name })
@@ -50,83 +54,32 @@ export const POST: RequestHandler = async ({ request }) => {
 
 	await db
 		.insert(silhouetteConfigs)
-		.values({ curves: JSON.stringify(silhouetteConfig.curves), globuleConfigId: globuleConfigId });
+		.values(getSilhouetteConfigValues(silhouetteConfig, globuleConfigId));
 
-	const { depthCurveBaseline, curves: dcCurves } = depthCurveConfig;
+	await db
+		.insert(depthCurveConfigs)
+		.values(getDepthCurveConfigValues(depthCurveConfig, globuleConfigId));
 
-	await db.insert(depthCurveConfigs).values({
-		depthCurveBaseline,
-		curves: JSON.stringify(dcCurves),
-		globuleConfigId
-	});
-
-	const {
-		symmetry,
-		symmetryNumber,
-		sampleMethod: { method: sampleMethod, divisions: sampleMethodDivisions },
-		curves: scCurves
-	} = shapeConfig;
-
-	await db.insert(shapeConfigs).values({
-		symmetry,
-		symmetryNumber,
-		sampleMethod,
-		sampleMethodDivisions,
-		curves: JSON.stringify(scCurves),
-		globuleConfigId
-	});
-
-	const {
-		silhouetteSampleMethod: {
-			method: silhouetteSampleMethod,
-			divisions: silhouetteSampleMethodDivisions
-		},
-		levelPrototypeSampleMethod,
-		levelOffsets: levelOffsetsData
-	} = levelConfig;
+	await db.insert(shapeConfigs).values(getShapeConfigValues(shapeConfig, globuleConfigId));
 
 	const [{ id: levelConfigId }] = await db
 		.insert(levelConfigs)
-		.values({
-			silhouetteSampleMethod,
-			silhouetteSampleMethodDivisions,
-			levelPrototypeSampleMethod,
-			globuleConfigId
-		})
+		.values(getLevelConfigValues(levelConfig, globuleConfigId))
 		.returning({ id: levelConfigs.id });
 
-	const levelOffsetValues = {
-		...levelOffsetsData[0],
-		levelConfigId
-	};
+	await db
+		.insert(levelOffsets)
+		.values(getLevelOffsetsValues(levelConfig.levelOffsets, levelConfigId));
 
-	// TODO - remove hack so that this deals with array of offsets correctly
-	await db.insert(levelOffsets).values(levelOffsetValues);
+	await db.insert(renderConfigs).values(getRenderConfigValues(renderConfig, globuleConfigId));
 
-	await db.insert(renderConfigs).values({
-		...renderConfig.ranges,
-		...renderConfig.show,
-		globuleConfigId
-	});
+	await db
+		.insert(spineCurveConfigs)
+		.values(getSpineCurveConfigValues(spineCurveConfig, globuleConfigId));
+	
+	await db.insert(bandConfigs).values(getBandConfigValues(bandConfig, globuleConfigId));
 
-	await db.insert(spineCurveConfigs).values({
-		curves: JSON.stringify(spineCurveConfig.curves),
-		globuleConfigId
-	});
-	const { bandStyle, offsetBy, tabStyle } = bandConfig;
-	await db.insert(bandConfigs).values({
-		bandStyle,
-		offsetBy,
-		tabStyle: JSON.stringify(tabStyle),
-		globuleConfigId
-	});
-
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	const { type, ...restStrutConfig } = strutConfig;
-	await db.insert(strutConfigs).values({
-		...restStrutConfig,
-		globuleConfigId
-	});
+	await db.insert(strutConfigs).values(getStrutConfigValues(strutConfig, globuleConfigId));
 	return json(globuleConfigId);
 };
 
@@ -151,84 +104,28 @@ export const GET: RequestHandler = async () => {
 		}
 	});
 
-	// console.dir(response, { depth: 4 });
 	const result = response.map((globuleConfig) => {
-		console.dir(globuleConfig.levelConfig, { depth: 4 });
-
 		const {
 			silhouetteConfig: [silhouetteConfig],
 			depthCurveConfig: [depthCurveConfig],
-			shapeConfig: [{ sampleMethod, sampleMethodDivisions, curves: shapeConfigCurves, ...sc }],
-			levelConfig: [{ silhouetteSampleMethodDivisions, silhouetteSampleMethod, ...lc }],
-			renderConfig: [
-				{
-					rangeStyle,
-					bandStart,
-					bandCount,
-					facetStart,
-					facetCount,
-					levelStart,
-					levelCount,
-					strutStart,
-					strutCount,
-					tabs,
-					levels,
-					bands,
-					edges,
-					patterns,
-					struts
-				}
-			],
+			shapeConfig: [shapeConfig],
+			levelConfig: [levelConfig],
+			renderConfig: [renderConfig],
 			spineCurveConfig: [spineCurveConfig],
 			bandConfig: [bandConfig],
 			strutConfig: [strutConfig]
 		} = globuleConfig;
 
-		silhouetteConfig.curves = JSON.parse(silhouetteConfig.curves as string);
-		depthCurveConfig.curves = JSON.parse(depthCurveConfig.curves as string);
-
-		const shapeConfig = {
-			...sc,
-			sampleMethod: { method: sampleMethod, divisions: sampleMethodDivisions },
-			curves: JSON.parse(shapeConfigCurves as string)
-		};
-		spineCurveConfig.curves = JSON.parse(spineCurveConfig.curves as string);
-
-		bandConfig.tabStyle = JSON.parse(bandConfig.tabStyle as string);
-
-
-		const levelConfig = {
-			...lc,
-			silhouetteSampleMethod: {
-				method: silhouetteSampleMethod,
-				divisions: silhouetteSampleMethodDivisions
-			}
-		};
-		const renderConfig = {
-			ranges: {
-				rangeStyle,
-				bandStart,
-				bandCount,
-				facetStart,
-				facetCount,
-				levelStart,
-				levelCount,
-				strutStart,
-				strutCount
-			},
-			show: { tabs, levels, bands, edges, patterns, struts }
-		};
-
 		return {
 			...globuleConfig,
-			silhouetteConfig,
-			depthCurveConfig,
-			shapeConfig,
-			levelConfig,
-			renderConfig,
-			spineCurveConfig,
-			bandConfig,
-			strutConfig
+			silhouetteConfig: deserializeSilhouetteConfig(silhouetteConfig),
+			depthCurveConfig: deserializeDepthCurveConfig(depthCurveConfig),
+			shapeConfig: deserializeShapeConfig(shapeConfig),
+			levelConfig: deserializeLevelConfig(levelConfig),
+			renderConfig: deserializeRenderConfig(renderConfig),
+			spineCurveConfig: deserializeSpineCurveConfig(spineCurveConfig),
+			bandConfig: deserializeBandConfig(bandConfig),
+			strutConfig: deserializeStrutConfig(strutConfig)
 		};
 	});
 	return json(result);

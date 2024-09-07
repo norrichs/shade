@@ -29,13 +29,11 @@
 			>
 				<option value="">Experiments</option>
 				{#each sandBoxOptions as option}
-					<option value={option.value}>{option.label}</option>
+					<option value={option.value}>{option.label}</option> 
 				{/each}
 			</select>
 		</div>
 		<div>
-			<div>config0 {$config0.isModified ? 'Mod' : 'unMod'}</div>
-			<div>config {$config.isModified ? 'Mod' : 'unMod'}</div>
 			<SaveConfigButton />
 			<button> Settings </button>
 			<label for="use-persisted-checkbox">persist settings?</label>
@@ -47,6 +45,12 @@
 </header>
 
 <style>
+	
+	a {
+		/* --link-color: green; */
+		color: var(--color-link);
+
+	}
 	header > nav {
 		font-family: 'Open Sans', sans-serif;
 		font-optical-sizing: auto;
