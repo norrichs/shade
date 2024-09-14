@@ -794,6 +794,7 @@ export const getRenderable = (
 };
 
 export const generateGlobuleData = (config: GlobuleConfig): GlobuleData => {
+	console.debug('generateGlobuleData', { globuleConfig: config });
 	const rotatedShapePrototype: LevelPrototype | LevelPrototype[] = generateLevelPrototype(
 		config.shapeConfig,
 		config.levelConfig
@@ -804,10 +805,14 @@ export const generateGlobuleData = (config: GlobuleConfig): GlobuleData => {
 		config.depthCurveConfig,
 		rotatedShapePrototype
 	);
+
 	const struts = generateStruts(levels, config.strutConfig);
 	const unTabbedBands = generateBandSet(config, levels);
 	const bands = !config.bandConfig?.tabStyle
 		? unTabbedBands
 		: generateTabs(unTabbedBands, config.bandConfig, struts);
-	return { levels, bands, struts };
+
+	const filteredBands = getRenderable(config.renderConfig, bands) as Band[];
+
+	return { levels, bands: filteredBands, struts };
 };

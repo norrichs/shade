@@ -22,9 +22,7 @@ export const superConfigStore = persistable<SuperGlobuleConfig>(
 );
 
 export const superGlobuleStore = derived(superConfigStore, ($superConfigStore) => {
-	console.debug('SUPER GLOBULE STORE');
 	const superGlobule = generateSuperGlobule($superConfigStore);
-	console.debug({ $superConfigStore, superGlobule });
 	return superGlobule;
 });
 
@@ -48,3 +46,23 @@ export const selectedGlobule = writable<{
 	subGlobuleGeometryIndex: undefined,
 	globuleId: undefined
 });
+
+export const selectedSubGlobuleIndex = derived(
+	[superConfigStore, selectedGlobule],
+	([$superConfigStore, $selectedGlobule]) => {
+		const index = $selectedGlobule.globuleId
+			? $superConfigStore.subGlobuleConfigs.findIndex(
+					(subGlobuleConfig) => subGlobuleConfig.globuleConfig.id === $selectedGlobule.globuleId
+			  )
+			: 0;
+
+		return index;
+	}
+);
+
+export const selectedGlobuleConfig = derived(
+	[superConfigStore, selectedSubGlobuleIndex],
+	([$superConfigStore, $selectedSubGlobuleIndex]) => {
+		return $superConfigStore.subGlobuleConfigs[$selectedSubGlobuleIndex].globuleConfig;
+	}
+);

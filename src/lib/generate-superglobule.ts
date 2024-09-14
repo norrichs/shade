@@ -15,10 +15,8 @@ import type {
 } from './types';
 
 export const generateSuperGlobule = (superConfig: SuperGlobuleConfig): SuperGlobule => {
-	console.debug('generateSuperGlobule', { superConfig });
 	const subGlobules = superConfig.subGlobuleConfigs.map((sgc) => generateSubGlobule(sgc)).flat();
 
-	console.debug({ subGlobules });
 	return {
 		type: 'SuperGlobule',
 		superGlobuleConfigId: superConfig.id,
@@ -39,7 +37,6 @@ const generateSubGlobule = (
 	subGlobuleConfig: SubGlobuleConfig,
 	recurrenceIndex?: number
 ): SubGlobule => {
-	console.debug('generateSubGlobule');
 	const { transform, id, name } = subGlobuleConfig;
 
 	const globules: Globule[] = [];
@@ -105,7 +102,6 @@ const transformGlobuleData = (
 	transform: GlobuleTransform,
 	iteration: number
 ): GlobuleData => {
-	console.debug('    transformGlobule', { globule, transform, iteration });
 	let transformedGlobule: GlobuleData = cloneGlobuleData(globule);
 	if (transform.translate) {
 		transformedGlobule = translateMutableGlobule(
@@ -115,7 +111,6 @@ const transformGlobuleData = (
 		);
 	}
 
-	console.debug({ transformedGlobule });
 	return transformedGlobule;
 };
 

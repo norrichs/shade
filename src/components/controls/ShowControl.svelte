@@ -1,40 +1,50 @@
 <script lang="ts">
 	import { initTabStyle } from '$lib/shades-config';
-	import { configStore0 } from '$lib/stores/stores';
+	import { superConfigStore, selectedSubGlobuleIndex } from '$lib/stores';
 	import type { TabStyle } from '$lib/types';
 	import ControlGroup from './ControlGroup.svelte';
 
-	let tabStyle: TabStyle = window.structuredClone($configStore0.bandConfig.tabStyle);
+	let tabStyle: TabStyle = window.structuredClone(
+		$superConfigStore.subGlobuleConfigs[$selectedSubGlobuleIndex].globuleConfig.bandConfig.tabStyle
+	);
 
 	$: {
-		$configStore0.bandConfig.tabStyle =
-			$configStore0.bandConfig.tabStyle.style !== tabStyle.style
+		$superConfigStore.subGlobuleConfigs[
+			$selectedSubGlobuleIndex
+		].globuleConfig.bandConfig.tabStyle =
+			$superConfigStore.subGlobuleConfigs[$selectedSubGlobuleIndex].globuleConfig.bandConfig
+				.tabStyle.style !== tabStyle.style
 				? initTabStyle(tabStyle.style)
 				: window.structuredClone(tabStyle);
-		tabStyle = window.structuredClone($configStore0.bandConfig.tabStyle);
+		tabStyle = window.structuredClone(
+			$superConfigStore.subGlobuleConfigs[$selectedSubGlobuleIndex].globuleConfig.bandConfig
+				.tabStyle
+		);
 	}
 </script>
 
 <section>
-	{#if $configStore0.renderConfig.ranges?.rangeStyle === 'slice'}
+	{#if $superConfigStore.subGlobuleConfigs[$selectedSubGlobuleIndex].globuleConfig.renderConfig.ranges?.rangeStyle === 'slice'}
 		<ControlGroup>
-			{#each Object.keys($configStore0.renderConfig.ranges).filter((key) => key !== 'rangeStyle') as rangeKey}
+			{#each Object.keys($superConfigStore.subGlobuleConfigs[$selectedSubGlobuleIndex].globuleConfig.renderConfig.ranges).filter((key) => key !== 'rangeStyle') as rangeKey}
 				<label for={rangeKey}>{rangeKey}</label>
 				<input
 					id={rangeKey}
 					type="number"
-					bind:value={$configStore0.renderConfig.ranges[rangeKey]}
+					bind:value={$superConfigStore.subGlobuleConfigs[$selectedSubGlobuleIndex].globuleConfig
+						.renderConfig.ranges[rangeKey]}
 				/>
 			{/each}
 
-			{#if $configStore0.renderConfig.show}
+			{#if $superConfigStore.subGlobuleConfigs[$selectedSubGlobuleIndex].globuleConfig.renderConfig.show}
 				<div style="grid-column: 1 / 3; font-size: 20px;">Show</div>
-				{#each Object.keys($configStore0.renderConfig.show) as key}
+				{#each Object.keys($superConfigStore.subGlobuleConfigs[$selectedSubGlobuleIndex].globuleConfig.renderConfig.show) as key}
 					<label for={`show-${key}`}>{key}</label>
 					<input
 						id={`show-${key}`}
 						type="checkbox"
-						bind:checked={$configStore0.renderConfig.show[key]}
+						bind:checked={$superConfigStore.subGlobuleConfigs[$selectedSubGlobuleIndex]
+							.globuleConfig.renderConfig.show[key]}
 					/>
 				{/each}
 			{/if}
@@ -42,7 +52,11 @@
 	{/if}
 	<ControlGroup>
 		<label for="band-style">Band Style</label>
-		<select id="band-style" bind:value={$configStore0.bandConfig.bandStyle}>
+		<select
+			id="band-style"
+			bind:value={$superConfigStore.subGlobuleConfigs[$selectedSubGlobuleIndex].globuleConfig
+				.bandConfig.bandStyle}
+		>
 			<option>circumference</option>
 			<option>helical-right</option>
 			<option>helical-left</option>
@@ -51,7 +65,10 @@
 		<select
 			id="tab-style"
 			bind:value={tabStyle.style}
-			on:change={() => ($configStore0.renderConfig.show.tabs = true)}
+			on:change={() =>
+				($superConfigStore.subGlobuleConfigs[
+					$selectedSubGlobuleIndex
+				].globuleConfig.renderConfig.show.tabs = true)}
 		>
 			<option>none</option>
 			<option>full</option>
@@ -63,7 +80,10 @@
 		<select
 			id="tab-direction"
 			bind:value={tabStyle.direction}
-			on:change={() => ($configStore0.renderConfig.show.tabs = true)}
+			on:change={() =>
+				($superConfigStore.subGlobuleConfigs[
+					$selectedSubGlobuleIndex
+				].globuleConfig.renderConfig.show.tabs = true)}
 		>
 			<option>greater</option>
 			<option>lesser</option>
@@ -76,7 +96,10 @@
 				type="number"
 				min="1"
 				bind:value={tabStyle.width.value}
-				on:change={() => ($configStore0.renderConfig.show.tabs = true)}
+				on:change={() =>
+					($superConfigStore.subGlobuleConfigs[
+						$selectedSubGlobuleIndex
+					].globuleConfig.renderConfig.show.tabs = true)}
 			/>
 		{/if}
 	</ControlGroup>
