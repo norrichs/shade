@@ -8,7 +8,7 @@
 		generateStrutPatterns,
 		getRenderableOnGeometry
 	} from '$lib/cut-pattern/cut-pattern';
-	import { bandPattern, config, config0, shapeData } from '$lib/stores';
+	import { bandPattern, configStore, configStore0, globuleStore } from '$lib/stores/stores';
 	import type { PatternViewConfig, Patterns } from '$lib/types';
 	import { show_svg } from '$lib/util';
 	import { generateLabelPath } from '$lib/patterns/utils';
@@ -18,7 +18,7 @@
 	import CutPatternControl from './CutPatternControl.svelte';
 	import QuadPattern from '../pattern-svg/QuadPattern.svelte';
 
-	let { levels, struts } = $shapeData;
+	let { levels, struts } = $globuleStore;
 
 	let showBands = true;
 	let showQuadPattern = false;
@@ -31,8 +31,8 @@
 		return colors[index % 6];
 	};
 
-	$: displayedLevels = getRenderableOnGeometry($config.renderConfig, levels);
-	$: displayedStrutFacets = getRenderableOnGeometry($config.renderConfig, struts);
+	$: displayedLevels = getRenderableOnGeometry($configStore.renderConfig, levels || []);
+	$: displayedStrutFacets = getRenderableOnGeometry($configStore.renderConfig, struts || []);
 
 	type FlattenMode = 'native-replace' | 'recombine'; // WTF is this. Still relevant?
 
@@ -42,20 +42,20 @@
 		level: { projectionType: 'none' }
 	};
 
-	$: viewBoxValue = getViewBox($config.patternViewConfig);
+	$: viewBoxValue = getViewBox($configStore.patternViewConfig);
 
 	$: {
-		if ($config.patternConfig.showPattern.level === 'none') {
+		if ($configStore.patternConfig.showPattern.level === 'none') {
 			patterns.level = { projectionType: 'none' };
 		} else {
-			patterns.level = generateLevelSetPatterns(displayedLevels, $config.patternConfig);
+			patterns.level = generateLevelSetPatterns(displayedLevels, $configStore.patternConfig);
 		}
 	}
 	$: {
-		if ($config.patternConfig.showPattern.strut === 'none') {
+		if ($configStore.patternConfig.showPattern.strut === 'none') {
 			patterns.strut = { projectionType: 'none' };
 		} else {
-			patterns.strut = generateStrutPatterns($config.patternConfig, displayedStrutFacets);
+			patterns.strut = generateStrutPatterns($configStore.patternConfig, displayedStrutFacets);
 		}
 	}
 
@@ -64,8 +64,8 @@
 		const minX = 0;
 		const minY = 0;
 		const logZoom = 1 / Math.pow(10, zoom);
-		const viewBox = `${minX} ${minY} ${$config.patternConfig.page.width * logZoom} ${
-			$config.patternConfig.page.height * logZoom
+		const viewBox = `${minX} ${minY} ${$configStore.patternConfig.page.width * logZoom} ${
+			$configStore.patternConfig.page.height * logZoom
 		}`;
 		return viewBox;
 	};
@@ -99,21 +99,21 @@
 			<svg id="outer-svg" width="100%" height="100%" viewBox={viewBoxValue}>
 				<svg
 					id="pattern-svg"
-					height={`${2000}${$config.patternConfig.page.unit}`}
-					width={`${2000}${$config.patternConfig.page.unit}`}
+					height={`${2000}${$configStore.patternConfig.page.unit}`}
+					width={`${2000}${$configStore.patternConfig.page.unit}`}
 					viewBox={`${
-						$config.patternViewConfig.centerOffset.x - $config.patternConfig.page.width
+						$configStore.patternViewConfig.centerOffset.x - $configStore.patternConfig.page.width
 					} ${
-						$config.patternViewConfig.centerOffset.y - $config.patternConfig.page.height
+						$configStore.patternViewConfig.centerOffset.y - $configStore.patternConfig.page.height
 					} ${2000} ${2000}`}
 				>
-					{#if $config.patternConfig.page}
+					{#if $configStore.patternConfig.page}
 						<g stroke="red" fill="none" stroke-width="1">
 							<rect
-								x={`${-$config.patternConfig.page.width}`}
-								y={`${-$config.patternConfig.page.height}`}
-								width={$config.patternConfig.page.width}
-								height={$config.patternConfig.page.height}
+								x={`${-$configStore.patternConfig.page.width}`}
+								y={`${-$configStore.patternConfig.page.height}`}
+								width={$configStore.patternConfig.page.width}
+								height={$configStore.patternConfig.page.height}
 							/>
 						</g>
 					{/if}
@@ -164,14 +164,14 @@
 							</g>
 						{/each}
 					{:else if $bandPattern.projectionType === 'patterned'}
-						{#if $config.tiledPatternConfig.tiling === 'band'}
+						{#if $configStore.tiledPatternConfig.tiling === 'band'}
 							{#each $bandPattern.bands as band, b}
 								<g transform={`translate(${-250 + 50 * b} -50) scale(-1,-1)`}>
 									<DynamicBand
 										{band}
 										bandIndex={b}
-										minWidth={$config0.tiledPatternConfig.config.dynamicStrokeMin}
-										maxWidth={$config0.tiledPatternConfig.config.dynamicStrokeMax}
+										minWidth={$configStore0.tiledPatternConfig.config.dynamicStrokeMin}
+										maxWidth={$configStore0.tiledPatternConfig.config.dynamicStrokeMax}
 										variant={0}
 										outlined={false}
 									/>

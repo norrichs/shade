@@ -1,9 +1,7 @@
 <script lang="ts">
-	import { usePersisted } from '$lib/stores';
+	import { shouldUsePersisted } from '$lib/stores/stores';
 	import NavHeader from '../components/nav-header/NavHeader.svelte';
 </script>
-
-
 
 <p><a href="/shades">Shade Designer</a></p>
 <p><a href="/gallery">Gallery</a></p>
@@ -18,5 +16,5 @@
 
 <div>
 	<label for="use-persisted-checkbox">persist settings?</label>
-	<input type="checkbox" bind:checked={$usePersisted} />
+	<input type="checkbox" bind:checked={$shouldUsePersisted} />
 </div>

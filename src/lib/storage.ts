@@ -4,7 +4,7 @@
 // write a store that does autosave using the storage functions
 // write a button component that allows saving a named config
 
-import { generateUUID } from 'three/src/math/MathUtils';
+import { v4 as uuidv4 } from 'uuid';
 import { AUTO_PERSIST_KEY } from '$lib/persistable';
 import type { GlobuleConfig } from '$lib/types';
 
@@ -26,10 +26,10 @@ export const listLocalConfigs = () => {
 };
 
 export const saveLocalConfig = (config: GlobuleConfig, asNew = false) => {
-	if (asNew || !config.id || !config.id.startsWith('stored-config')) {
-		config.id = `stored-config-${generateUUID()}`;
+	if (asNew || !config.id || !`${config.id}`.startsWith('stored-config')) {
+		config.id = `stored-config-${uuidv4()}`;
 	}
-	setLocal(config.id, config);
+	setLocal(`${config.id}`, config);
 };
 
 export const setLocal = (key: string, config: GlobuleConfig) => {

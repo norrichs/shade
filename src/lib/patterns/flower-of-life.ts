@@ -311,7 +311,7 @@ export const generateMatchedFlowerOfLifeTesselation = (
 	for (let i = 0; i < config.tiles.length; i++) {
 		const row = config.tiles[i];
 
-		const config0Mode: TrianglePatternMode = {
+		const configStore0Mode: TrianglePatternMode = {
 			ab: i === 0 ? 'contained' : 'contributing',
 			ac: 'contained',
 			bc: 'contributing'
@@ -322,7 +322,7 @@ export const generateMatchedFlowerOfLifeTesselation = (
 			ac: 'contained',
 			bc: 'contributing'
 		};
-		const f0 = generateMatchedFlowerOfLifeTriangle(row[0], config0Mode, true);
+		const f0 = generateMatchedFlowerOfLifeTriangle(row[0], configStore0Mode, true);
 
 		tesselation.push(f0);
 	}
@@ -639,7 +639,6 @@ export const processFlowerOfLife1PatternTransforms = ({
 	if (!isFlowerOfLifePathSegments(txSegments)) {
 		throw new Error(svgPath + ' is not a flower of life pattern path');
 	}
-
 
 	// Gather Arcs and Lines for this facet.
 	// At this point, arcs have not diverged to inner and outer versions

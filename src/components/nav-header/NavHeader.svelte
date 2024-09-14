@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 
-	import { usePersisted, config0, config } from '$lib/stores';
+	import { shouldUsePersisted } from '$lib/stores/stores';
 	import SaveConfigButton from './SaveConfigButton.svelte';
 	const sandBoxOptions = [
 		{ value: '/sandbox-ellipse-intersections', label: 'Ellipse Intersections' },
@@ -19,7 +19,8 @@
 	<nav>
 		<div>
 			<a href="/gallery">Gallery</a>
-			<a href="/designer">Designer</a>
+			<!-- <a href="/designer">Designer</a> -->
+			<a href="/designer2">Designer</a>
 			<select
 				on:change={(ev) => {
 					if (ev?.currentTarget?.value) {
@@ -29,7 +30,7 @@
 			>
 				<option value="">Experiments</option>
 				{#each sandBoxOptions as option}
-					<option value={option.value}>{option.label}</option> 
+					<option value={option.value}>{option.label}</option>
 				{/each}
 			</select>
 		</div>
@@ -37,7 +38,7 @@
 			<SaveConfigButton />
 			<button> Settings </button>
 			<label for="use-persisted-checkbox">persist settings?</label>
-			<input type="checkbox" bind:checked={$usePersisted} />
+			<input type="checkbox" bind:checked={$shouldUsePersisted} />
 
 			<button> User </button>
 		</div>
@@ -45,11 +46,9 @@
 </header>
 
 <style>
-	
 	a {
 		/* --link-color: green; */
 		color: var(--color-link);
-
 	}
 	header > nav {
 		font-family: 'Open Sans', sans-serif;

@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { config } from '$lib/stores';
+	import { configStore } from '$lib/stores/stores';
 </script>
 
-{#if $config.isModified}
-	<button disabled={!$config.isModified}>Save</button>
+{#if $configStore.isModified}
+	<button disabled={!$configStore.isModified}>Save</button>
 {/if}

@@ -7,7 +7,7 @@
 		listLocalConfigs,
 		deleteLocal
 	} from '$lib/storage';
-	import { config0, usePersisted } from '$lib/stores';
+	import { configStore0, shouldUsePersisted } from '$lib/stores/stores';
 	import type { GlobuleConfig } from '$lib/types';
 
 	export let show = false;
@@ -34,11 +34,11 @@
 	<div class="column">
 		<div class="row">
 			<label for="persistent">Persist</label>
-			<input type="checkbox" bind:checked={$usePersisted} />
+			<input type="checkbox" bind:checked={$shouldUsePersisted} />
 			<button
 				on:click={() => {
 					resetLocal(AUTO_PERSIST_KEY);
-					config0.reset();
+					configStore0.reset();
 					refreshList();
 					// update();
 				}}>Reset</button
@@ -49,7 +49,7 @@
 					refreshList();
 				}}>New Save</button
 			>
-			<button on:click={() => ($config0 = getLocal(storageKey))}>Retrieve</button>
+			<button on:click={() => ($configStore0 = getLocal(storageKey))}>Retrieve</button>
 			<!-- <button on:click={()=>test = resetToDefault(test)}>Reset</button> -->
 		</div>
 		{#if localConfigs?.length > 0}
@@ -67,11 +67,11 @@
 						}}
 						placeholder="name..."
 					/>
-					<button on:click={() => ($config0 = getLocal(localConfig.id))}>Load</button>
+					<button on:click={() => ($configStore0 = getLocal(localConfig.id))}>Load</button>
 					<button
 						on:click={() => {
 							deleteLocal(localConfig.id);
-							config0.reset();
+							configStore0.reset();
 							refreshList();
 						}}>Delete</button
 					>

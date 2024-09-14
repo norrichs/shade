@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { config0 } from '$lib/stores';
+	import { configStore0 } from '$lib/stores/stores';
 	import PanControl from './PanControl.svelte';
 </script>
 
@@ -8,14 +8,14 @@
 	<input
 		id="svg-width"
 		type="number"
-		bind:value={$config0.patternViewConfig.width}
+		bind:value={$configStore0.patternViewConfig.width}
 		class="view-control"
 	/>
 	<label for="svg-height">height</label>
 	<input
 		id="svg-height"
 		type="number"
-		bind:value={$config0.patternViewConfig.height}
+		bind:value={$configStore0.patternViewConfig.height}
 		class="view-control"
 	/>
 	<label for="svg-zoom">zoom</label>
@@ -25,7 +25,7 @@
 		min={-2}
 		max={2}
 		step={0.1}
-		bind:value={$config0.patternViewConfig.zoom}
+		bind:value={$configStore0.patternViewConfig.zoom}
 		class="view-control"
 	/>
 	<PanControl />
@@ -34,7 +34,7 @@
 	<input
 		id="svg-page-width"
 		type="number"
-		bind:value={$config0.patternConfig.page.width}
+		bind:value={$configStore0.patternConfig.page.width}
 		class="view-control"
 		step={10}
 	/>
@@ -42,12 +42,16 @@
 	<input
 		id="svg-page-height"
 		type="number"
-		bind:value={$config0.patternConfig.page.height}
+		bind:value={$configStore0.patternConfig.page.height}
 		class="view-control"
 		step={10}
 	/>
 	<label for="svg-page-unit">page unit</label>
-	<select id="svg-page-unit" bind:value={$config0.patternConfig.page.unit} class="view-control">
+	<select
+		id="svg-page-unit"
+		bind:value={$configStore0.patternConfig.page.unit}
+		class="view-control"
+	>
 		<option>mm</option>
 		<option>cm</option>
 		<option>in</option>

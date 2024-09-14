@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { config } from '$lib/stores';
+	import { config } from '$lib/stores/stores';
 	import type { GlobuleConfig } from '$lib/types';
 
 	let globuleConfigData: GlobuleConfig[];
@@ -7,7 +7,7 @@
 	const handleCreate = async () => {
 		const response = await fetch('/api/globuleConfig', {
 			method: 'POST',
-			body: JSON.stringify({ ...$config, name }),
+			body: JSON.stringify({ ...$configStore, name }),
 			headers: { 'content-type': 'application/json' }
 		});
 		const result = await response.json();

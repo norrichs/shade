@@ -1,17 +1,16 @@
 <script lang="ts">
 	import { Icon } from 'svelte-icons-pack';
 	import { FiChevronDown, FiChevronUp } from 'svelte-icons-pack/fi';
-	import { config0 } from '$lib/stores';
-
+	import type { Id } from '$lib/types';
 	export let name: string;
-	export let id: string;
-	export let size: number = 200;
+	export let id: Id;
+	export let size;
 
 	let showOverlay = false;
 </script>
 
 <!-- svelte-ignore a11y-no-static-element-interactions -->
-<div class="globule-container">
+<div class="globule-container" style={`--size: ${size}px`}>
 	<div class="overlay" on:mouseleave={() => (showOverlay = false)}>
 		<div>
 			<header
@@ -34,8 +33,8 @@
 
 <style>
 	.globule-container {
-		width: var(--size-tile-medium);
-		height: var(--size-tile-medium);
+		width: var(--size, --size-tile-medium);
+		height: var(--size, --size-tile-medium);
 		border-radius: 4px;
 		border: 1px solid var(--color-light);
 		box-shadow: 2px 2px 10px 2px rgba(0, 0, 0, 0.2);
@@ -49,7 +48,7 @@
 		top: 0;
 		background-color: transparent;
 		overflow-y: hidden;
-		bottom: calc(var(--size-tile-medium) - 27px);
+		bottom: calc(var(--size, --size-tile-medium) - 27px);
 		transition: 200ms;
 	}
 	.overlay header {

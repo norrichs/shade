@@ -4,7 +4,7 @@
 
 <script lang="ts">
 	import { generateDefaultShapeConfig } from '$lib/shades-config';
-	import { configStore0 } from '$lib/stores/stores';
+	import { superConfigStore, selectedGlobule } from '$lib/stores';
 	import {
 		onPathPointMove,
 		togglePointType,
@@ -19,12 +19,14 @@
 		ShapeConfig,
 		SilhouetteConfig,
 		DepthCurveConfig,
-		SpineCurveConfig
+		SpineCurveConfig,
+		Id
 	} from '$lib/types';
 	import CheckBoxInput from '../controls/CheckboxInput.svelte';
-	import PathEditInput from '../path-edit/PathEditInput.svelte';
+	import PathEditInput from './PathEditInput.svelte';
 	import { getCurvePoints, getLevelLines } from '$lib/generate-level';
 	import CheckboxInput from '../controls/CheckboxInput.svelte';
+	import { string } from 'three/webgpu';
 
 	type ShowControlCurveValue =
 		| 'ShapeConfig'
@@ -42,25 +44,34 @@
 	};
 
 	export let curveStoreType: ShowControlCurveValue;
-	
-	const curveConfigByType = {
+
+	const curveConfigByType: { [key: string]: string } = {
 		SilhouetteConfig: 'silhouetteConfig',
 		DepthCurveConfig: 'depthCurveConfig',
 		ShapeConfig: 'shapeConfig',
 		SpineCurveConfig: 'spineCurveConfig'
 	};
-	
-	let curveStore: CurveConfig;
-	let thisConfig;
 
-	const reverseUpdate = () => {
-		thisConfig = $configStore0[curveConfigByType[curveStoreType]];
-		curveStore = isCurveConfig(thisConfig) ? thisConfig : $configStore0.silhouetteConfig;
+	let curveStore: CurveConfig;
+	let thisConfig: CurveConfig;
+
+	const reverseUpdate = (subGlobuleConfigId?: Id, cst: ShowControlCurveValue) => {
+		console.debug('reverseUpdate', { thisConfig });
+		const subGlobuleConfig =
+			$superConfigStore.subGlobuleConfigs[$selectedGlobule.subGlobuleConfigIndex];
+		if (subGlobuleConfig) {
+			thisConfig = subGlobuleConfig.globuleConfig[curveConfigByType[cst]] as CurveConfig;
+			console.debug('reverseUpdate updated', { thisConfig });
+			curveStore = isCurveConfig(thisConfig)
+				? thisConfig
+				: subGlobuleConfig.globuleConfig.silhouetteConfig;
+		} else {
+			console.error('undefined subGlobuleConfigId');
+		}
 	};
 
 	$: {
-		thisConfig = $configStore0[curveConfigByType[curveStoreType]];
-		curveStore = isCurveConfig(thisConfig) ? thisConfig : $configStore0.silhouetteConfig;
+		reverseUpdate($selectedGlobule.subGlobuleConfigId, curveStoreType);
 	}
 
 	let symmetry = 1;
@@ -69,12 +80,15 @@
 	let showPointInputs = false;
 	let showPointInputsInline = false;
 	let curvePoints = getCurvePoints(
-		$configStore0[curveConfigByType[curveStoreType]]! as SilhouetteConfig,
-		$configStore0.levelConfig.silhouetteSampleMethod
+		$superConfigStore.subGlobuleConfigs[$selectedGlobule?.subGlobuleConfigIndex || 0].globuleConfig[
+			curveConfigByType[curveStoreType]
+		]! as SilhouetteConfig,
+		$superConfigStore.subGlobuleConfigs[$selectedGlobule?.subGlobuleConfigIndex || 0].globuleConfig
+			.levelConfig.silhouetteSampleMethod
 		// curveStoreType === 'SpineCurveConfig'
 	);
 	// let levelLines =
-	// 	curveStoreType === 'SpineCurveConfig' ? getLevelLines(curvePoints, $configStore0) : undefined;
+	// 	curveStoreType === 'SpineCurveConfig' ? getLevelLines(curvePoints, $superConfigStore.subGlobuleConfigs[subGlobuleConfigIndex].globuleConfig) : undefined;
 
 	const canv = {
 		minX: -200,
@@ -83,7 +97,7 @@
 		maxY: 200
 	};
 
-	$: curves = curveStore.curves;
+	$: curves = curveStore?.curves;
 	$: limitAngle = getLimitAngle(curveStore);
 
 	$: {
@@ -214,7 +228,7 @@
 		config: ShapeConfig | SilhouetteConfig | DepthCurveConfig | SpineCurveConfig
 	): number | null => {
 		if (
-			config.type === 'ShapeConfig' &&
+			config?.type === 'ShapeConfig' &&
 			(config.symmetry === 'radial' || config.symmetry === 'radial-lateral')
 		) {
 			return (Math.PI * 2) / config.symmetryNumber;
@@ -229,7 +243,9 @@
 
 	const handleSymmetryChange = (event: any) => {
 		const symmetry = event?.target?.valueAsNumber || 5;
-		$configStore0.shapeConfig = generateDefaultShapeConfig(symmetry, {
+		$superConfigStore.subGlobuleConfigs[
+			$selectedGlobule.subGlobuleConfigIndex
+		].globuleConfig.shapeConfig = generateDefaultShapeConfig(symmetry, {
 			method: 'divideCurve',
 			divisions: 4
 		});
@@ -237,8 +253,19 @@
 	};
 
 	const updateStores = () => {
-		($configStore0[curveConfigByType[curveStoreType]] as CurveConfig).curves = curves;
-		curves = ($configStore0[curveConfigByType[curveStoreType]] as CurveConfig).curves;
+		console.debug("update stores");
+
+		(
+			$superConfigStore.subGlobuleConfigs[$selectedGlobule.subGlobuleConfigIndex].globuleConfig[
+				curveConfigByType[curveStoreType]
+			] as CurveConfig
+		).curves = curves;
+
+		curves = (
+			$superConfigStore.subGlobuleConfigs[$selectedGlobule.subGlobuleConfigIndex].globuleConfig[
+				curveConfigByType[curveStoreType]
+			] as CurveConfig
+		).curves;
 	};
 
 	const updateCurves = (
@@ -264,14 +291,21 @@
 				: Math.PI * 2,
 			curveStore.type === 'ShapeConfig'
 		);
+
 		curvePoints = getCurvePoints(
-			$configStore0[curveConfigByType[curveStoreType]]! as SilhouetteConfig,
-			$configStore0.levelConfig.silhouetteSampleMethod
+			$superConfigStore.subGlobuleConfigs[$selectedGlobule.subGlobuleConfigIndex].globuleConfig[
+				curveConfigByType[curveStoreType]
+			]! as SilhouetteConfig,
+			$superConfigStore.subGlobuleConfigs[$selectedGlobule.subGlobuleConfigIndex].globuleConfig
+				.levelConfig.silhouetteSampleMethod
 			// curveStoreType === 'SpineCurveConfig'
 		);
 		if (curveStoreType === 'SpineCurveConfig') {
-			console.debug('--------------------------------- for Spine', $configStore0);
-			// levelLines = getLevelLines(curvePoints, $configStore0);
+			console.debug(
+				'--------------------------------- for Spine',
+				$superConfigStore.subGlobuleConfigs[$selectedGlobule.subGlobuleConfigIndex].globuleConfig
+			);
+			// levelLines = getLevelLines(curvePoints, $superConfigStore.subGlobuleConfigs[subGlobuleConfigIndex].globuleConfig);
 		}
 
 		if (shouldUpdateStores) {
@@ -280,193 +314,168 @@
 	};
 </script>
 
-<div class="container">
-	<!-- {#if curveStore.type === 'DepthCurveConfig'}
-		<div class="data-grid">
-			{#each curveStore.curves as curve, i}
-				<input
-					class="data-grid-number"
-					type="number"
-					bind:value={curveStore.curves[i].points[0].x}
-					on:input={updateStores}
+<section class="container">
+	{#if $selectedGlobule === undefined}
+		<div>A globule must be selected</div>
+	{:else}
+		<svg
+			viewBox={`${canv.minX} ${canv.minY} ${canv.maxX - canv.minX} ${canv.maxY - canv.minY}`}
+			style="overflow:visible"
+		>
+			<circle cx="0" cy="0" r="4" fill="none" stroke="black" stroke-width="0.5" />
+			{#if curveStore.type === 'SilhouetteConfig'}
+				<path
+					d={getFillFromCurves(curves)}
+					stroke="none"
+					fill={fill ? 'rgba(255,0,0,0.5)' : 'transparent'}
 				/>
-				<input
-					class="data-grid-number"
-					type="number"
-					bind:value={curveStore.curves[i].points[0].y}
-					on:input={updateStores}
+				<path
+					d={getFillFromCurves(transform(curves, { reflect, radialSymmetry: symmetry }))}
+					stroke="none"
+					fill="rgba(255,0,0,0.5)"
 				/>
-				<input
-					class="data-grid-number"
-					type="number"
-					bind:value={curveStore.curves[i].points[3].x}
-					on:input={updateStores}
+			{/if}
+			{#if curveStore.type === 'ShapeConfig'}
+				<path
+					d={getShapeFillFromCurves(radializeCurves(curves, curveStore))}
+					stroke="black"
+					fill="rgba(255,90,0,0.6)"
 				/>
-				<input
-					class="data-grid-number"
-					type="number"
-					bind:value={curveStore.curves[i].points[3].y}
-					on:input={updateStores}
+			{/if}
+			<path
+				d={getPathFromCurves(curves)}
+				stroke="rgba(0,0,255,0.5)"
+				stroke-width="5"
+				fill="transparent"
+			/>
+			{#each curves as c}
+				<line
+					x1={c.points[0].x}
+					y1={-c.points[0].y}
+					x2={c.points[1].x}
+					y2={-c.points[1].y}
+					stroke="gray"
+					stroke-width=".5"
+				/>
+				<line
+					x1={c.points[2].x}
+					y1={-c.points[2].y}
+					x2={c.points[3].x}
+					y2={-c.points[3].y}
+					stroke="gray"
+					stroke-width="1"
 				/>
 			{/each}
-		</div>
-	{/if} -->
-	<svg
-		viewBox={`${canv.minX} ${canv.minY} ${canv.maxX - canv.minX} ${canv.maxY - canv.minY}`}
-		style="overflow:visible"
-	>
-		<circle cx="0" cy="0" r="4" fill="none" stroke="black" stroke-width="0.5" />
-		{#if curveStore.type === 'SilhouetteConfig'}
-			<path
-				d={getFillFromCurves(curves)}
-				stroke="none"
-				fill={fill ? 'rgba(255,0,0,0.5)' : 'transparent'}
-			/>
-			<path
-				d={getFillFromCurves(transform(curves, { reflect, radialSymmetry: symmetry }))}
-				stroke="none"
-				fill="rgba(255,0,0,0.5)"
-			/>
-		{/if}
-		{#if curveStore.type === 'ShapeConfig'}
-			<path
-				d={getShapeFillFromCurves(radializeCurves(curves, curveStore))}
-				stroke="black"
-				fill="rgba(255,90,0,0.6)"
-			/>
-		{/if}
-		<path
-			d={getPathFromCurves(curves)}
-			stroke="rgba(0,0,255,0.5)"
-			stroke-width="5"
-			fill="transparent"
-		/>
-		{#each curves as c}
-			<line
-				x1={c.points[0].x}
-				y1={-c.points[0].y}
-				x2={c.points[1].x}
-				y2={-c.points[1].y}
-				stroke="gray"
-				stroke-width=".5"
-			/>
-			<line
-				x1={c.points[2].x}
-				y1={-c.points[2].y}
-				x2={c.points[3].x}
-				y2={-c.points[3].y}
-				stroke="gray"
-				stroke-width="1"
-			/>
-		{/each}
-		<g id="path-edit-curve-points" fill="rgba(0,0,0,0.5)">
-			{#each curvePoints.points as point}
-				<circle cx={point.x} cy={-point.y} r={2} />
-			{/each}
-		</g>
-	</svg>
-
-	{#each curves as curve, curveIndex}
-		{#each curve.points as point, p}
-			<div
-				class={`${p === 1 || p === 2 ? 'Handle' : 'Point'} ${
-					point.pointType === 'angled' ? 'angled' : 'smooth'
-				}`}
-				style="left:{point.x - canv.minX}px; top:{-point.y - canv.minY}px"
-				on:dragend={() => updateStores()}
-				on:dblclick={() => togglePointType(p, curveIndex, curves, updateStores)}
-				use:asDraggable={{
-					onDragStart: { x: point.x, y: -point.y },
-					onDragMove: (x, y, dx, dy) => updateCurves(x, y, dx, dy, curveIndex, p),
-					minX: canv.minX,
-					minY: canv.minY,
-					maxX: canv.maxX,
-					maxY: canv.maxY
-				}}
-			/>
-		{/each}
-	{/each}
-	<div>
-		<div class="control-overlay row">
-			<CheckBoxInput show={true} bind:value={showPointInputs} label="show point inputs" />
-			<CheckboxInput show={showPointInputs} bind:value={showPointInputsInline} label="inline?" />
-		</div>
-		{#if showPointInputs}
-			<div class={`point-input-container ${showPointInputsInline ? 'overlay' : 'outrigger'}`}>
-				{#each curves as curve, curveIndex}
-					{#each curve.points as point, p}
-						<!-- {#if (curveIndex === 0 && p === 0) || p === 3} -->
-						<PathEditInput
-							{canv}
-							bind:point
-							showPointInputsInline
-							offsetDirection={{ type: 'lateral', value: 20 }}
-							onUpdate={(x, y, dx, dy) => {
-								updateCurves(x, y, dx, dy, curveIndex, p, true);
-							}}
-						/>
-						<!-- {/if} -->
-					{/each}
+			<g id="path-edit-curve-points" fill="rgba(0,0,0,0.5)">
+				{#each curvePoints.points as point}
+					<circle cx={point.x} cy={-point.y} r={2} />
 				{/each}
+			</g>
+		</svg>
+
+		{#each curves as curve, curveIndex}
+			{#each curve.points as point, p}
+				<!-- svelte-ignore a11y-no-static-element-interactions -->
+				<div
+					class={`${p === 1 || p === 2 ? 'Handle' : 'Point'} ${
+						point.pointType === 'angled' ? 'angled' : 'smooth'
+					}`}
+					style="left:{point.x - canv.minX}px; top:{-point.y - canv.minY}px"
+					on:dragend={() => updateStores()}
+					on:dblclick={() => togglePointType(p, curveIndex, curves, updateStores)}
+					use:asDraggable={{
+						onDragStart: { x: point.x, y: -point.y },
+						onDragMove: (x, y, dx, dy) => updateCurves(x, y, dx, dy, curveIndex, p),
+						minX: canv.minX,
+						minY: canv.minY,
+						maxX: canv.maxX,
+						maxY: canv.maxY
+					}}
+				/>
+			{/each}
+		{/each}
+		<div>
+			<div class="control-overlay row">
+				<CheckBoxInput show={true} bind:value={showPointInputs} label="show point inputs" />
+				<CheckboxInput show={showPointInputs} bind:value={showPointInputsInline} label="inline?" />
 			</div>
-		{/if}
-	</div>
+			{#if showPointInputs}
+				<div class={`point-input-container ${showPointInputsInline ? 'overlay' : 'outrigger'}`}>
+					{#each curves as curve, curveIndex}
+						{#each curve.points as point, p}
+							<!-- {#if (curveIndex === 0 && p === 0) || p === 3} -->
+							<PathEditInput
+								{canv}
+								bind:point
+								showPointInputsInline
+								offsetDirection={{ type: 'lateral', value: 20 }}
+								onUpdate={(x, y, dx, dy) => {
+									updateCurves(x, y, dx, dy, curveIndex, p, true);
+								}}
+							/>
+							<!-- {/if} -->
+						{/each}
+					{/each}
+				</div>
+			{/if}
+		</div>
 
-	<div class="controls">
-		<button
-			on:click={() => {
-				curves = addCurve(curves);
-				updateStores();
-			}}>+</button
-		>
-		<button
-			on:click={() => {
-				curves = splitCurves(curves);
-				updateStores();
-			}}>sp</button
-		>
-		<button
-			on:click={() => {
-				curves = removeCurve(curves);
-				updateStores();
-			}}>-</button
-		>
-
-		{#if curveStore.type === 'ShapeConfig'}
-			<label for="input-symmetry-number">Symmetry</label>
-			<input
-				id="input-symmetry-number"
-				type="number"
-				min="1"
-				max="99"
-				bind:value={curveStore.symmetryNumber}
-				on:change={handleSymmetryChange}
-			/>
-			<label for="select-sample-method">Sample Method</label>
-			<select bind:value={curveStore.sampleMethod.method} on:change={updateStores}>
-				<option value="divideCurvePath">Whole</option>
-				<option value="divideCurve">Curve</option>
-			</select>
-			<label for="input-divisions">div</label>
-			<input
-				id="input-divisions"
-				type="number"
-				min="0"
-				max="99"
-				bind:value={curveStore.sampleMethod.divisions}
-				on:input={() => {
+		<div class="controls">
+			<button
+				on:click={() => {
+					curves = addCurve(curves);
 					updateStores();
-				}}
-			/>
-			<select id="select-symmetry" bind:value={curveStore.symmetry} placeholder="mode">
-				<option>asymmetric</option>
-				<option>radial</option>
-				<option>lateral</option>
-				<option>radial-lateral</option>
-			</select>
-		{/if}
-	</div>
-</div>
+				}}>+</button
+			>
+			<button
+				on:click={() => {
+					curves = splitCurves(curves);
+					updateStores();
+				}}>sp</button
+			>
+			<button
+				on:click={() => {
+					curves = removeCurve(curves);
+					updateStores();
+				}}>-</button
+			>
+
+			{#if curveStore.type === 'ShapeConfig'}
+				<label for="input-symmetry-number">Symmetry</label>
+				<input
+					id="input-symmetry-number"
+					type="number"
+					min="1"
+					max="99"
+					bind:value={curveStore.symmetryNumber}
+					on:change={handleSymmetryChange}
+				/>
+				<label for="select-sample-method">Sample Method</label>
+				<select bind:value={curveStore.sampleMethod.method} on:change={updateStores}>
+					<option value="divideCurvePath">Whole</option>
+					<option value="divideCurve">Curve</option>
+				</select>
+				<label for="input-divisions">div</label>
+				<input
+					id="input-divisions"
+					type="number"
+					min="0"
+					max="99"
+					bind:value={curveStore.sampleMethod.divisions}
+					on:input={() => {
+						updateStores();
+					}}
+				/>
+				<select id="select-symmetry" bind:value={curveStore.symmetry} placeholder="mode">
+					<option>asymmetric</option>
+					<option>radial</option>
+					<option>lateral</option>
+					<option>radial-lateral</option>
+				</select>
+			{/if}
+		</div>
+	{/if}
+</section>
 
 <style>
 	:global([draggable]) {

@@ -36,7 +36,8 @@ import type {
 	StripSide,
 	StrutOrientation,
 	TabDirection,
-	TabFootprintInvert
+	TabFootprintInvert,
+	GlobuleData
 } from '$lib/types';
 import { generateEdgeConfig } from './cut-pattern/cut-pattern';
 import { generateLevelSet2 } from './generate-level';
@@ -792,9 +793,7 @@ export const getRenderable = (
 	return shapes;
 };
 
-export const generateRotatedShapeGeometry = (
-	config: GlobuleConfig
-): { levels: Level[]; bands: Band[]; struts: Strut[] } => {
+export const generateGlobuleData = (config: GlobuleConfig): GlobuleData => {
 	const rotatedShapePrototype: LevelPrototype | LevelPrototype[] = generateLevelPrototype(
 		config.shapeConfig,
 		config.levelConfig

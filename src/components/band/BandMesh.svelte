@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Band } from '$lib/types';
+	import type { Band, Facet } from '$lib/types';
 	import { T } from '@threlte/core';
 	import {
 		DoubleSide,
@@ -11,6 +11,7 @@
 
 	export let band: Band;
 	export let showTabs: boolean = true;
+	export let material: MeshPhysicalMaterial;
 
 	$: bandPoints = band.facets
 		.map((facet) => [facet.triangle.a, facet.triangle.b, facet.triangle.c])
@@ -49,16 +50,15 @@
 	// 			.flat(1);
 
 	let edgeColor = 'magenta';
-	let bandGeometry: BufferGeometry; // = new BufferGeometry()
+	let bandGeometry: BufferGeometry;
 	let tabGeometry: BufferGeometry;
-	// let tabGeometry2: BufferGeometry;
-	let edges: EdgesGeometry; // = new EdgesGeometry()
+	let edges: EdgesGeometry;
 	const bandMaterial = new MeshPhysicalMaterial({
-		color: 'green',
+		color: 'orange',
 		transparent: true,
-		opacity: 1,
-		clearcoat: 0.2,
-		clearcoatRoughness: 1,
+		opacity: 0.95,
+		clearcoat: 1,
+		clearcoatRoughness: 0,
 		side: DoubleSide
 	});
 	const tabMaterial = new MeshPhysicalMaterial({
@@ -69,16 +69,8 @@
 		clearcoatRoughness: 0,
 		side: DoubleSide
 	});
-	const tabMaterial2 = new MeshPhysicalMaterial({
-		color: 'red',
-		transparent: true,
-		opacity: 0.8,
-		clearcoat: 1,
-		clearcoatRoughness: 0,
-		side: DoubleSide
-	});
 
-	const lineMaterial = new LineBasicMaterial({ color: 'black' });
+	const lineMaterial = new LineBasicMaterial({ color: 'lightgrey' });
 
 	$: {
 		edgeColor = 'black';
@@ -89,22 +81,14 @@
 
 	$: {
 		tabGeometry = new BufferGeometry().setFromPoints(tabPoints);
-		// tabGeometry2 = new BufferGeometry().setFromPoints(tabPoints2);
 		tabGeometry.computeVertexNormals();
-		// tabGeometry2.computeVertexNormals();
 	}
 </script>
 
 <T.Group>
-	<T.LineSegments geometry={edges} material={lineMaterial} />
-	<!-- <T.EdgesGeometry color="black" args={[geometry, 0.01]} /> -->
-	<T.Mesh geometry={bandGeometry} material={bandMaterial} />
+	<!-- <T.LineSegments geometry={edges} material={lineMaterial} /> -->
+	<T.Mesh geometry={bandGeometry} {material} />
 	{#if showTabs}
 		<T.Mesh geometry={tabGeometry} material={tabMaterial} />
-		<!-- <T.Mesh geometry={tabGeometry2} material={tabMaterial2} /> -->
 	{/if}
 </T.Group>
-<!-- <T.BufferGeometry args={[points]} /> -->
-<!-- <Edges color={edgeColor}/> -->
-<!-- </T.Mesh> -->
-<!-- <T.EdgesGeometry args={[geometry]} /> -->

@@ -9,15 +9,12 @@ import {
 	isQuadraticBezierPathSegment,
 	type Quadrilateral,
 	type Facet,
-	type FacetTab,
-	type PointConfig3,
 	type Point3,
-	type Band
+	type Band,
+	type GlobuleData
 } from '$lib/types';
 import { Vector2, Vector3, type Triangle as ThreeTriangle } from 'three';
 import { numberPathSegments } from '../../components/cut-pattern/number-path-segments';
-import { svgPathStringFromSegments } from './flower-of-life';
-import type { GlobuleData } from '../../components/globule-tile/seed';
 
 export const generateUnitTriangle = (sideLength: number): Triangle => {
 	const unit = {

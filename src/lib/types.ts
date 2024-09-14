@@ -482,6 +482,12 @@ export type Facet = {
 
 export type BandOrientation = -1 | 0 | 1;
 
+export type GlobulePoints = {
+	type: 'GlobulePoints';
+	globuleConfigId: number;
+	points: Vector3[];
+};
+
 export type Band = {
 	facets: Facet[];
 	orientation: BandOrientation;
@@ -574,6 +580,98 @@ export type Tiling = BandStyle;
 export type StrutOrientation = 'inside' | 'outside' | 'half';
 export type RadiateOrientation = 'level' | 'orthogonal' | 'hybrid';
 
+export type GeometryConfig =
+	| ShapeConfig
+	| LevelConfig
+	| SilhouetteConfig
+	| DepthCurveConfig
+	| SpineCurveConfig
+	| BandConfig
+	| StrutConfig
+	| RenderConfig;
+
+export type Id = TempId | number;
+// SUPER
+export type SuperGlobuleConfig = {
+	type: 'SuperGlobuleConfig';
+	id: Id;
+	name?: string;
+	subGlobuleConfigs: SubGlobuleConfig[];
+};
+
+export type SuperGlobule = {
+	type: 'SuperGlobule';
+	superGlobuleConfigId: Id;
+	name?: string;
+	subGlobules: SubGlobule[];
+};
+
+export type SuperGlobuleGeometry = {
+	type: 'SuperGlobuleGeometry';
+	superGlobuleConfigId: Id;
+	name?: string;
+	subGlobules: GlobuleGeometry[];
+};
+
+// SUB
+export type SubGlobuleConfig = {
+	type: 'SubGlobuleConfig';
+	id: Id;
+	name?: string;
+	globuleConfig: GlobuleConfig; // | SubGlobuleConfig;
+	transform: GlobuleTransform;
+};
+
+export type SubGlobule = {
+	type: 'SubGlobule';
+	subGlobuleConfigId: Id;
+	name?: string;
+	recurrence: number;
+	data: Globule[];
+};
+
+export type SubGlobuleGeometry = {
+	type: 'SubGlobuleGeometry';
+	subGlobuleConfigId: Id;
+	name?: string;
+	recurrence: number;
+	globuleGeometry: GlobuleGeometry;
+};
+
+// GLOBULE
+export type Globule = {
+	type: 'Globule';
+	subGlobuleConfigId: Id;
+	globuleConfigId: Id;
+	name?: string;
+	recurrence?: number;
+	data: GlobuleData;
+};
+
+export type GlobuleData = { levels?: Level[]; bands: Band[]; struts?: Strut[] };
+
+export type GlobuleGeometry = {
+	type: 'GlobuleGeometry';
+	globuleConfigId: Id;
+	subGlobuleConfigId?: Id;
+	subGlobuleRecurrence?: number;
+	name?: string;
+	points: Vector3[];
+};
+
+// number array allows for arbitrary, and repeating application of transforms
+export type Recurrence = number | (number)[];
+
+export type Plane = [Point3, Point3];
+
+export type GlobuleTransform = {
+	recurs: Recurrence;
+	translate?: Point3;
+	reflect?: { anchor: Point3; plane: Plane };
+	scale?: { anchor: Point3; value: number };
+	rotate?: { angle: number; anchor: Point3; axis: Point3 };
+};
+
 export type GlobuleConfig = {
 	[key: string]:
 		| ShapeConfig
@@ -589,8 +687,16 @@ export type GlobuleConfig = {
 		| PatternViewConfig
 		| TiledPatternConfig
 		| string
+		| number
 		| boolean
 		| undefined;
+
+	type: 'GlobuleConfig';
+	id: Id;
+	tempId?: TempId;
+	name?: string;
+	isModified?: boolean;
+
 	shapeConfig: ShapeConfig;
 	levelConfig: LevelConfig;
 	silhouetteConfig: SilhouetteConfig;
@@ -603,10 +709,6 @@ export type GlobuleConfig = {
 	patternConfig: PatternConfig;
 	patternViewConfig: PatternViewConfig;
 	tiledPatternConfig: TiledPatternConfig;
-
-	id?: string;
-	name?: string;
-	isModified?: boolean;
 };
 
 export type TabConfig = {
@@ -901,3 +1003,6 @@ export type InsettablePolygon = {
 export type FlowerOfLifePattern = {
 	triangle: Triangle;
 };
+
+export type TempIdPrefix = 'sup' | 'sub' | 'glb';
+export type TempId = string;

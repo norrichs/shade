@@ -1,18 +1,27 @@
 <script lang="ts">
-	import { generateRotatedShapeGeometry } from '$lib/generate-shape';
-	import type { GlobuleConfig } from '$lib/types';
-	import type { Globule } from '../../components/globule-tile/seed';
-	import GlobuleTile from '../../components/globule-tile/GlobuleTile.svelte';
-	import { config0 } from '$lib/stores';
-	import { generateDefaultConfig } from '$lib/shades-config';
+	import { generateGlobuleData } from '$lib/generate-shape';
+	import type { GlobuleConfig, Globule, GlobuleGeometry, Id, SuperGlobuleConfig } from '$lib/types';
+	import GlobuleTile2 from '../../components/globule-tile/GlobuleTile2.svelte';
+	import { configStore0 } from '$lib/stores/stores';
+	import { superConfigStore } from '$lib/stores';
+	import {
+		generateDefaultGlobuleConfig,
+		generateDefaultSuperGlobuleConfig,
+		generateSubGlobuleConfigWrapper,
+		generateSuperGlobuleConfigWrapper
+	} from '$lib/shades-config';
 	import type { PageData } from '../$types';
 	import { invalidateAll } from '$app/navigation';
+	import { generateGlobuleGeometry } from '$lib/generate-globulegeometry';
+	import { generateTempId } from '$lib/id-handler';
 
-	let globules: Globule[];
+	// let globules: Globule[];
+	let globuleGeometries: GlobuleGeometry[];
+
 	export let data: PageData & { globuleConfigs: GlobuleConfig[] };
 
 	const refreshGlobules = (globuleConfigs: GlobuleConfig[]) => {
-		const defaultConfig = generateDefaultConfig();
+		const defaultConfig = generateDefaultGlobuleConfig();
 
 		const mergedGlobuleConfigs = globuleConfigs.map((gc) => {
 			return {
@@ -21,12 +30,18 @@
 			};
 		});
 
-		globules = [...mergedGlobuleConfigs].map((config) => {
-			return {
-				name: config.name || '',
-				globuleConfigId: config.id || '',
-				data: generateRotatedShapeGeometry(config)
-			};
+		globuleGeometries = [...mergedGlobuleConfigs].map((config, i) => {
+			const data = generateGlobuleData(config);
+			const geometry = generateGlobuleGeometry({
+				type: 'Globule',
+				subGlobuleConfigId: generateTempId('sub'),
+				globuleConfigId: config.id,
+				name: config.name,
+				recurrence: 1,
+				data
+			});
+			console.debug(i, 'refreshGlobules', { geometry });
+			return geometry;
 		});
 	};
 
@@ -39,40 +54,28 @@
 		return response;
 	};
 
-	const handleLoad = (id: number) => {
+	const handleLoad = (id: Id, addToExisting: boolean) => {
 		console.debug('LOAD', id, data.globuleConfigs);
 		const globuleConfig = data.globuleConfigs.find((cfg) => id === cfg.id);
-		if (globuleConfig) {
-			console.debug('existing', $config0);
-			console.debug('to set', globuleConfig);
-			config0.set({
-				...$config0,
-				...globuleConfig
-			});
+
+		if (globuleConfig && addToExisting) {
+			$superConfigStore.subGlobuleConfigs.push(generateSubGlobuleConfigWrapper(globuleConfig));
 		}
-		console.debug('config0', $config0);
+		if (globuleConfig && !addToExisting) {
+			superConfigStore.set(generateSuperGlobuleConfigWrapper(globuleConfig));
+		}
 	};
 
 	$: refreshGlobules(data.globuleConfigs);
 </script>
 
 <main>
-	<header>
-		<h1>Gallery</h1>
-	</header>
-	<!-- <button on:click={handleRead}>Read</button> -->
 	<section>
-		{#if globules}
+		{#if globuleGeometries}
+			<h1>Globules</h1>
 			<div class="globule-gallery">
-				{#each globules as globule}
-					<GlobuleTile
-						data={globule.data}
-						name={globule.name}
-						globuleConfigId={globule.globuleConfigId}
-						size={275}
-						onDelete={handleDelete}
-						onLoad={handleLoad}
-					/>
+				{#each globuleGeometries as globuleGeometry}
+					<GlobuleTile2 {globuleGeometry} size={300} onDelete={handleDelete} onLoad={handleLoad} />
 				{/each}
 			</div>
 		{/if}

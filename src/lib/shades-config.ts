@@ -14,9 +14,12 @@ import type {
 	SilhouetteConfig,
 	SpineCurveConfig,
 	StrutConfig,
-	TabStyle
+	TabStyle,
+	SuperGlobuleConfig,
+	SubGlobuleConfig
 } from '$lib/types';
 import { rad } from './util';
+import { generateTempId, GLOBULE_CONFIG, SUPER_GLOBULE_CONFIG } from './id-handler';
 
 const defaultSilhouetteConfig: SilhouetteConfig = {
 	type: 'SilhouetteConfig',
@@ -28,6 +31,21 @@ const defaultSilhouetteConfig: SilhouetteConfig = {
 				{ type: 'PointConfig2', x: 150, y: -20 },
 				{ type: 'PointConfig2', x: 150, y: 50 },
 				{ type: 'PointConfig2', x: 150, y: 100 }
+			]
+		}
+	]
+};
+
+const defaultSilhouetteConfigV2: SilhouetteConfig = {
+	type: 'SilhouetteConfig',
+	curves: [
+		{
+			type: 'BezierConfig',
+			points: [
+				{ type: 'PointConfig2', x: 50, y: -20 },
+				{ type: 'PointConfig2', x: 150, y: -20 },
+				{ type: 'PointConfig2', x: 150, y: 50 },
+				{ type: 'PointConfig2', x: 50, y: 50 }
 			]
 		}
 	]
@@ -324,8 +342,9 @@ export const getLevels = (sampleMethod: CurveSampleMethod, curveCount: number) =
 	return sampleMethod.divisions + 1;
 };
 
-export const generateDefaultConfig = (): GlobuleConfig => {
+export const generateDefaultGlobuleConfig = (): GlobuleConfig => {
 	const config: GlobuleConfig = {
+		type: 'GlobuleConfig',
 		id: AUTO_PERSIST_KEY,
 		name: '',
 		shapeConfig: generateDefaultShapeConfig(4, { method: 'divideCurve', divisions: 2 }),
@@ -348,4 +367,97 @@ export const generateDefaultConfig = (): GlobuleConfig => {
 		tiledPatternConfig: defaultTiledPatternConfig
 	};
 	return config;
+};
+
+const defaultSubGlobuleConfig = (
+	globuleConfig: GlobuleConfig,
+	cfg?: Partial<SubGlobuleConfig>
+): SubGlobuleConfig => {
+	return {
+		type: 'SubGlobuleConfig',
+		id: generateTempId('sub'),
+		name: 'Default Sub Globule',
+		globuleConfig,
+		transform: {
+			recurs: cfg?.transform?.recurs || 1,
+			translate: { x: 0, y: 0, z: 100 }
+		}
+	};
+};
+
+export const generateSubGlobuleConfigWrapper = (globule: GlobuleConfig) => {
+	return defaultSubGlobuleConfig(globule, { transform: { recurs: 1 } })
+}
+
+export const generateSuperGlobuleConfigWrapper = (globule: GlobuleConfig) => {
+	const superGlobuleConfig: SuperGlobuleConfig = {
+		type: 'SuperGlobuleConfig',
+		id: generateTempId(SUPER_GLOBULE_CONFIG),
+		name: 'Default Super Globule',
+		subGlobuleConfigs: [generateSubGlobuleConfigWrapper(globule)]
+	};
+	console.debug('generatedDefaultSuperGlobuleConfigWrapper', { superGlobuleConfig });
+	return superGlobuleConfig;
+}
+
+export const generateDefaultSuperGlobuleConfig = (): SuperGlobuleConfig => {
+	const globuleConfig: GlobuleConfig = {
+		type: 'GlobuleConfig',
+		id: generateTempId(GLOBULE_CONFIG),
+		name: '',
+		shapeConfig: generateDefaultShapeConfig(4, { method: 'divideCurve', divisions: 2 }),
+		levelConfig: {
+			...defaultLevelConfig,
+			levelCount: getLevels(
+				defaultLevelConfig.silhouetteSampleMethod,
+				defaultSilhouetteConfig.curves.length
+			)
+		},
+		silhouetteConfig: defaultSilhouetteConfig,
+		depthCurveConfig: defaultDepthCurveConfig,
+		spineCurveConfig: defaultSpineCurveConfig,
+		bandConfig: defaultBandConfig,
+		strutConfig: defaultStrutConfig,
+		renderConfig: defaultRenderConfig,
+		cutoutConfig: defaultCutoutConfig[1],
+		patternConfig: defaultPatternConfig,
+		patternViewConfig: defaultPatternViewConfig,
+		tiledPatternConfig: defaultTiledPatternConfig
+	};
+
+	const globuleConfigV2: GlobuleConfig = {
+		type: 'GlobuleConfig',
+		id: generateTempId(GLOBULE_CONFIG),
+		name: '',
+		shapeConfig: generateDefaultShapeConfig(4, { method: 'divideCurve', divisions: 2 }),
+		levelConfig: {
+			...defaultLevelConfig,
+			levelCount: getLevels(
+				defaultLevelConfig.silhouetteSampleMethod,
+				defaultSilhouetteConfig.curves.length
+			)
+		},
+		silhouetteConfig: defaultSilhouetteConfigV2,
+		depthCurveConfig: defaultDepthCurveConfig,
+		spineCurveConfig: defaultSpineCurveConfig,
+		bandConfig: defaultBandConfig,
+		strutConfig: defaultStrutConfig,
+		renderConfig: defaultRenderConfig,
+		cutoutConfig: defaultCutoutConfig[1],
+		patternConfig: defaultPatternConfig,
+		patternViewConfig: defaultPatternViewConfig,
+		tiledPatternConfig: defaultTiledPatternConfig
+	};
+
+	const superGlobuleConfig: SuperGlobuleConfig = {
+		type: 'SuperGlobuleConfig',
+		id: generateTempId(SUPER_GLOBULE_CONFIG),
+		name: 'Default Super Globule',
+		subGlobuleConfigs: [
+			defaultSubGlobuleConfig(globuleConfig, { transform: { recurs: 3 } }),
+			defaultSubGlobuleConfig(globuleConfigV2, { transform: { recurs: [4, 5] } })
+		]
+	};
+	console.debug('generatedDefaultSuperGlobuleConfig', { superGlobuleConfig });
+	return superGlobuleConfig;
 };

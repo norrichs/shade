@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { config0 } from '$lib/stores';
+	import { configStore0 } from '$lib/stores/stores';
 
 	let panInterval: number;
 	let panDelay: number;
@@ -18,20 +18,20 @@
 
 		switch (direction) {
 			case 'up':
-				$config0.patternViewConfig.centerOffset.y += step;
-				callBack = () => ($config0.patternViewConfig.centerOffset.y += step);
+				$configStore0.patternViewConfig.centerOffset.y += step;
+				callBack = () => ($configStore0.patternViewConfig.centerOffset.y += step);
 				break;
 			case 'down':
-				$config0.patternViewConfig.centerOffset.y -= step;
-				callBack = () => ($config0.patternViewConfig.centerOffset.y -= step);
+				$configStore0.patternViewConfig.centerOffset.y -= step;
+				callBack = () => ($configStore0.patternViewConfig.centerOffset.y -= step);
 				break;
 			case 'left':
-				$config0.patternViewConfig.centerOffset.x += step;
-				callBack = () => ($config0.patternViewConfig.centerOffset.x += step);
+				$configStore0.patternViewConfig.centerOffset.x += step;
+				callBack = () => ($configStore0.patternViewConfig.centerOffset.x += step);
 				break;
 			case 'right':
-				$config0.patternViewConfig.centerOffset.x -= step;
-				callBack = () => ($config0.patternViewConfig.centerOffset.x -= step);
+				$configStore0.patternViewConfig.centerOffset.x -= step;
+				callBack = () => ($configStore0.patternViewConfig.centerOffset.x -= step);
 				break;
 		}
 		clear();

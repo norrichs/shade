@@ -1,5 +1,5 @@
 <script lang="ts">
-	import ThreeRenderer from '../../components/three-renderer/ThreeRenderer.svelte';
+	import ThreeRenderer from '../../components/three-renderer-v2/ThreeRenderer.svelte';
 	import CutPattern from '../../components/cut-pattern/CutPattern.svelte';
 	import type { Level } from '$lib/types';
 	import TilingControl from '../../components/controls/TilingControl.svelte';
@@ -8,27 +8,17 @@
 	import StrutControl from '../../components/controls/StrutControl.svelte';
 	import LevelControl from '../../components/controls/LevelControl.svelte';
 	import PathEdit from '../../components/path-edit/PathEdit.svelte';
-	import { configStore, globuleStore } from '$lib/stores/stores';
+	import { superGlobuleStore, superGlobuleGeometryStore } from '$lib/stores/index';
 	import SelectBar from '../../components/select-bar/SelectBar.svelte';
 	import SaveControl from '../../components/save-control/SaveControl.svelte';
 	import DataControl from '../../components/save-control/DataControl.svelte';
+	import Scene from '../../components/three-renderer-v2/Scene.svelte';
+	import { configStore0, superConfigStore } from '$lib/stores';
+	import SuperPathEdit from '../../components/path-edit/SuperPathEdit.svelte';
 
-	let { levels, bands, struts } = $globuleStore;
 	let displayLevels: Level[];
 	let showControl: { name: string; value?: unknown } = { name: 'None' };
 
-	$: {
-		({ levels, bands, struts } = $globuleStore);
-		if ($configStore.renderConfig.ranges?.rangeStyle === 'slice') {
-			const { levelStart, levelCount } = $configStore.renderConfig.ranges;
-			displayLevels = (levels || []).slice(
-				levelStart || 0,
-				levelCount ? (levelStart || 0) + levelCount : undefined
-			);
-		} else {
-			displayLevels = levels || [];
-		}
-	}
 	type ShowControlCurveValue = 'ShapeConfig' | 'DepthCurveConfig' | 'SilhouetteConfig';
 	const isShowControlCurveValue = (value: unknown): value is ShowControlCurveValue => {
 		return ['ShapeConfig', 'DepthCurveConfig', 'SilhouetteConfig', 'SpineCurveConfig'].includes(
@@ -39,18 +29,20 @@
 
 <main>
 	<section class="container three">
-		<ThreeRenderer {levels} {bands} {struts} />
+		<ThreeRenderer>
+			<Scene />
+		</ThreeRenderer>
 	</section>
-	<section class="container svg">
+	<!-- <section class="container svg">
 		<CutPattern />
-	</section>
+	</section> -->
 	<section class="container controls">
 		<header>
 			<SelectBar
 				bind:value={showControl}
 				options={[
 					{ name: 'None' },
-					{ name: 'Zcurve', value: 'SilhouetteConfig' },
+					{ name: 'Silhouette', value: 'SilhouetteConfig' },
 					{ name: 'DepthCurve', value: 'DepthCurveConfig' },
 					{ name: 'Spine', value: 'SpineCurveConfig' },
 					{ name: 'Shape', value: 'ShapeConfig' },
@@ -59,14 +51,14 @@
 					{ name: 'Struts' },
 					{ name: 'Cut' },
 					{ name: 'Pattern' },
-					{ name: 'Save' },
+					// { name: 'Save' },
 					{ name: 'Data' }
 				]}
 			/>
 		</header>
 		<div class="group">
-			{#if ['Zcurve', 'Shape', 'DepthCurve', 'Spine'].includes(showControl?.name)}
-				<PathEdit
+			{#if ['Silhouette', 'Shape', 'DepthCurve', 'Spine'].includes(showControl?.name)}
+				<SuperPathEdit
 					curveStoreType={isShowControlCurveValue(showControl.value)
 						? showControl.value
 						: 'SilhouetteConfig'}
@@ -81,8 +73,8 @@
 				<CutControl />
 			{:else if showControl?.name === 'Pattern'}
 				<TilingControl />
-			{:else if showControl?.name === 'Save'}
-				<SaveControl show={showControl?.name === 'Save'} config={$configStore} />
+				<!-- {:else if showControl?.name === 'Save'}
+				<SaveControl show={showControl?.name === 'Save'} config={$superConfigStore} /> -->
 			{:else if showControl?.name === 'Data'}
 				<DataControl />
 			{/if}

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { config0 } from '$lib/stores';
+	import { configStore0 } from '$lib/stores/stores';
 	import PatternTile from './PatternTile.svelte';
 	import { tiledPatternConfigs } from '$lib/shades-config';
 	import { patterns } from '$lib/patterns/patterns';
@@ -13,7 +13,7 @@
 	on:click={() => {
 		console.debug('click', patternType);
 		if (patterns[patternType]) {
-			$config0.tiledPatternConfig = tiledPatternConfigs[patternType];
+			$configStore0.tiledPatternConfig = tiledPatternConfigs[patternType];
 		}
 	}}
 >
@@ -23,7 +23,7 @@
 		columns={2}
 		width={50}
 		height={50}
-		active={patternType === $config0.tiledPatternConfig.type}
+		active={patternType === $configStore0.tiledPatternConfig.type}
 		{tilingBasis}
 	/>
 </button>
