@@ -19,9 +19,9 @@ import type {
 	SubGlobuleConfig
 } from '$lib/types';
 import { rad } from './util';
-import { generateTempId, GLOBULE_CONFIG, SUPER_GLOBULE_CONFIG } from './id-handler';
+import { GENERAL_CONFIG, generateTempId, GLOBULE_CONFIG, SUPER_GLOBULE_CONFIG } from './id-handler';
 
-const defaultSilhouetteConfig: SilhouetteConfig = {
+const defaultSilhouetteConfig = (): SilhouetteConfig => ({
 	type: 'SilhouetteConfig',
 	curves: [
 		{
@@ -34,7 +34,7 @@ const defaultSilhouetteConfig: SilhouetteConfig = {
 			]
 		}
 	]
-};
+});
 
 const defaultSilhouetteConfigV2: SilhouetteConfig = {
 	type: 'SilhouetteConfig',
@@ -51,7 +51,7 @@ const defaultSilhouetteConfigV2: SilhouetteConfig = {
 	]
 };
 
-const defaultDepthCurveConfig: DepthCurveConfig = {
+const defaultDepthCurveConfig = (): DepthCurveConfig => ({
 	type: 'DepthCurveConfig',
 	depthCurveBaseline: 100,
 	curves: [
@@ -65,9 +65,9 @@ const defaultDepthCurveConfig: DepthCurveConfig = {
 			]
 		}
 	]
-};
+});
 
-const defaultSpineCurveConfig: SpineCurveConfig = {
+const defaultSpineCurveConfig = (): SpineCurveConfig => ({
 	type: 'SpineCurveConfig',
 	curves: [
 		{
@@ -80,7 +80,7 @@ const defaultSpineCurveConfig: SpineCurveConfig = {
 			]
 		}
 	]
-};
+});
 
 export const generateDefaultShapeConfig = (
 	symmetryNumber: number,
@@ -118,8 +118,9 @@ export const generateDefaultShapeConfig = (
 	};
 };
 
-const defaultLevelConfig: LevelConfig = {
+const defaultLevelConfig = (): LevelConfig => ({
 	type: 'LevelConfig',
+	id: generateTempId(GENERAL_CONFIG),
 	silhouetteSampleMethod: { method: 'preserveAspectRatio', divisions: 10 },
 	levelPrototypeSampleMethod: 'curve',
 	levelCount: 30,
@@ -136,7 +137,7 @@ const defaultLevelConfig: LevelConfig = {
 			depth: 1
 		}
 	]
-};
+});
 
 export const initTabStyle = (style: TabStyle['style']): TabStyle => {
 	const defaultTabStyles: { [key: string]: TabStyle } = {
@@ -159,22 +160,22 @@ export const initTabStyle = (style: TabStyle['style']): TabStyle => {
 	return defaultTabStyles[style];
 };
 
-const defaultBandConfig: BandConfig = {
+const defaultBandConfig = (): BandConfig => ({
 	type: 'BandConfig',
 	bandStyle: 'helical-right',
 	offsetBy: 0,
 	tabStyle: initTabStyle('trapezoid')
-};
+});
 
-const defaultStrutConfig: StrutConfig = {
+const defaultStrutConfig = (): StrutConfig => ({
 	type: 'StrutConfig',
 	tiling: 'helical-right',
 	orientation: 'inside',
 	radiate: 'hybrid',
 	width: 5
-};
+});
 
-const defaultRenderConfig: RenderConfig = {
+const defaultRenderConfig = (): RenderConfig => ({
 	type: 'RenderConfig',
 	ranges: {
 		rangeStyle: 'slice',
@@ -195,9 +196,9 @@ const defaultRenderConfig: RenderConfig = {
 		patterns: true,
 		struts: true
 	}
-};
+});
 
-export const tiledPatternConfigs: { [key: string]: TiledPatternConfig } = {
+export const tiledPatternConfigs = (): { [key: string]: TiledPatternConfig } => ({
 	'tiledHexPattern-1': {
 		type: 'tiledHexPattern-1',
 		tiling: 'quadrilateral',
@@ -268,12 +269,12 @@ export const tiledPatternConfigs: { [key: string]: TiledPatternConfig } = {
 			dynamicStrokeMax: 5
 		}
 	}
-};
-0;
+});
 
-const defaultTiledPatternConfig: TiledPatternConfig = tiledPatternConfigs['tiledBoxPattern-0'];
+const defaultTiledPatternConfig = (): TiledPatternConfig =>
+	tiledPatternConfigs()['tiledBoxPattern-0'];
 
-const defaultCutoutConfig: CutoutConfig[] = [
+const defaultCutoutConfig = (): CutoutConfig[] => [
 	{
 		tilePattern: { type: 'each-facet' },
 		holeConfigs: [
@@ -313,9 +314,9 @@ const defaultCutoutConfig: CutoutConfig[] = [
 	}
 ];
 
-export const defaultPatternConfig: PatternConfig = {
+export const defaultPatternConfig = (): PatternConfig => ({
 	showPattern: { band: 'patterned', strut: 'none', level: 'none' },
-	cutouts: defaultCutoutConfig[1],
+	cutouts: defaultCutoutConfig()[1],
 	axis: 'z',
 	pixelScale: { value: 1, unit: 'mm' },
 	page: { height: 300, width: 300, unit: 'mm' },
@@ -323,9 +324,9 @@ export const defaultPatternConfig: PatternConfig = {
 	direction: { type: 'PointConfig2', x: 0, y: 1 },
 	offset: { type: 'PointConfig2', x: 0, y: 0 },
 	showTabs: true
-};
+});
 
-export const defaultPatternViewConfig: PatternViewConfig = {
+export const defaultPatternViewConfig = (): PatternViewConfig => ({
 	width: 800,
 	height: 600,
 	zoom: -1,
@@ -333,7 +334,7 @@ export const defaultPatternViewConfig: PatternViewConfig = {
 		x: 0,
 		y: 0
 	}
-};
+});
 
 export const getLevels = (sampleMethod: CurveSampleMethod, curveCount: number) => {
 	if (sampleMethod.method === 'divideCurve') {
@@ -345,27 +346,25 @@ export const getLevels = (sampleMethod: CurveSampleMethod, curveCount: number) =
 export const generateDefaultGlobuleConfig = (): GlobuleConfig => {
 	const config: GlobuleConfig = {
 		type: 'GlobuleConfig',
-		id: AUTO_PERSIST_KEY,
-		name: '',
+		id: generateTempId(GLOBULE_CONFIG),
+		name: 'New Globule',
 		shapeConfig: generateDefaultShapeConfig(4, { method: 'divideCurve', divisions: 2 }),
-		levelConfig: {
-			...defaultLevelConfig,
-			levelCount: getLevels(
-				defaultLevelConfig.silhouetteSampleMethod,
-				defaultSilhouetteConfig.curves.length
-			)
-		},
-		silhouetteConfig: defaultSilhouetteConfig,
-		depthCurveConfig: defaultDepthCurveConfig,
-		spineCurveConfig: defaultSpineCurveConfig,
-		bandConfig: defaultBandConfig,
-		strutConfig: defaultStrutConfig,
-		renderConfig: defaultRenderConfig,
-		cutoutConfig: defaultCutoutConfig[1],
-		patternConfig: defaultPatternConfig,
-		patternViewConfig: defaultPatternViewConfig,
-		tiledPatternConfig: defaultTiledPatternConfig
+		levelConfig: defaultLevelConfig(),
+		silhouetteConfig: defaultSilhouetteConfig(),
+		depthCurveConfig: defaultDepthCurveConfig(),
+		spineCurveConfig: defaultSpineCurveConfig(),
+		bandConfig: defaultBandConfig(),
+		strutConfig: defaultStrutConfig(),
+		renderConfig: defaultRenderConfig(),
+		cutoutConfig: defaultCutoutConfig()[1],
+		patternConfig: defaultPatternConfig(),
+		patternViewConfig: defaultPatternViewConfig(),
+		tiledPatternConfig: defaultTiledPatternConfig()
 	};
+	config.levelConfig.levelCount = getLevels(
+		config.levelConfig.silhouetteSampleMethod,
+		config.silhouetteConfig.curves.length
+	);
 	return config;
 };
 
@@ -386,8 +385,8 @@ const defaultSubGlobuleConfig = (
 };
 
 export const generateSubGlobuleConfigWrapper = (globule: GlobuleConfig) => {
-	return defaultSubGlobuleConfig(globule, { transform: { recurs: 1 } })
-}
+	return defaultSubGlobuleConfig(globule, { transform: { recurs: 1 } });
+};
 
 export const generateSuperGlobuleConfigWrapper = (globule: GlobuleConfig) => {
 	const superGlobuleConfig: SuperGlobuleConfig = {
@@ -398,64 +397,16 @@ export const generateSuperGlobuleConfigWrapper = (globule: GlobuleConfig) => {
 	};
 	console.debug('generatedDefaultSuperGlobuleConfigWrapper', { superGlobuleConfig });
 	return superGlobuleConfig;
-}
+};
 
 export const generateDefaultSuperGlobuleConfig = (): SuperGlobuleConfig => {
-	const globuleConfig: GlobuleConfig = {
-		type: 'GlobuleConfig',
-		id: generateTempId(GLOBULE_CONFIG),
-		name: '',
-		shapeConfig: generateDefaultShapeConfig(4, { method: 'divideCurve', divisions: 2 }),
-		levelConfig: {
-			...defaultLevelConfig,
-			levelCount: getLevels(
-				defaultLevelConfig.silhouetteSampleMethod,
-				defaultSilhouetteConfig.curves.length
-			)
-		},
-		silhouetteConfig: defaultSilhouetteConfig,
-		depthCurveConfig: defaultDepthCurveConfig,
-		spineCurveConfig: defaultSpineCurveConfig,
-		bandConfig: defaultBandConfig,
-		strutConfig: defaultStrutConfig,
-		renderConfig: defaultRenderConfig,
-		cutoutConfig: defaultCutoutConfig[1],
-		patternConfig: defaultPatternConfig,
-		patternViewConfig: defaultPatternViewConfig,
-		tiledPatternConfig: defaultTiledPatternConfig
-	};
-
-	const globuleConfigV2: GlobuleConfig = {
-		type: 'GlobuleConfig',
-		id: generateTempId(GLOBULE_CONFIG),
-		name: '',
-		shapeConfig: generateDefaultShapeConfig(4, { method: 'divideCurve', divisions: 2 }),
-		levelConfig: {
-			...defaultLevelConfig,
-			levelCount: getLevels(
-				defaultLevelConfig.silhouetteSampleMethod,
-				defaultSilhouetteConfig.curves.length
-			)
-		},
-		silhouetteConfig: defaultSilhouetteConfigV2,
-		depthCurveConfig: defaultDepthCurveConfig,
-		spineCurveConfig: defaultSpineCurveConfig,
-		bandConfig: defaultBandConfig,
-		strutConfig: defaultStrutConfig,
-		renderConfig: defaultRenderConfig,
-		cutoutConfig: defaultCutoutConfig[1],
-		patternConfig: defaultPatternConfig,
-		patternViewConfig: defaultPatternViewConfig,
-		tiledPatternConfig: defaultTiledPatternConfig
-	};
-
 	const superGlobuleConfig: SuperGlobuleConfig = {
 		type: 'SuperGlobuleConfig',
 		id: generateTempId(SUPER_GLOBULE_CONFIG),
 		name: 'Default Super Globule',
 		subGlobuleConfigs: [
-			defaultSubGlobuleConfig(globuleConfig, { transform: { recurs: 3 } }),
-			defaultSubGlobuleConfig(globuleConfigV2, { transform: { recurs: [4, 5] } })
+			defaultSubGlobuleConfig(generateDefaultGlobuleConfig(), { transform: { recurs: 2 } }),
+			defaultSubGlobuleConfig(generateDefaultGlobuleConfig(), { transform: { recurs: [4] } })
 		]
 	};
 	console.debug('generatedDefaultSuperGlobuleConfig', { superGlobuleConfig });

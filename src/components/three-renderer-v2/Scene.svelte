@@ -9,6 +9,8 @@
 
 	interactivity();
 
+	const CLICK_DELTA_THRESHOLD = 10;
+
 	const selectGlobule = ({
 		globuleConfigId,
 		subGlobuleConfigId,
@@ -33,8 +35,11 @@
 	};
 
 	const handleClick = (event: any, globuleGeometry: GlobuleGeometry) => {
+		console.debug("handleClick event", event)
 		event.stopPropagation();
-		selectGlobule(globuleGeometry);
+		if (event.delta < CLICK_DELTA_THRESHOLD) {
+			selectGlobule(globuleGeometry);
+		}
 	};
 </script>
 

@@ -427,7 +427,7 @@ export type LevelOffset = {
 export type LevelConfig = {
 	// silhouetteConfig: SilhouetteConfig,
 	type: 'LevelConfig';
-	id?: number;
+	id: Id;
 	silhouetteSampleMethod: CurveSampleMethod;
 	levelPrototypeSampleMethod: 'shape' | 'curve';
 	levelCount?: number;
@@ -1004,5 +1004,5 @@ export type FlowerOfLifePattern = {
 	triangle: Triangle;
 };
 
-export type TempIdPrefix = 'sup' | 'sub' | 'glb';
+export type TempIdPrefix = 'sup' | 'sub' | 'glb' | 'cfg';
 export type TempId = string;
