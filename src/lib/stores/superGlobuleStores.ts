@@ -5,6 +5,8 @@ import { derived, writable } from 'svelte/store';
 import { loadPersistedOrDefault } from './stores';
 import { generateSuperGlobule } from '$lib/generate-superglobule';
 import { generateSuperGlobuleGeometry } from '$lib/generate-globulegeometry';
+import { generateSuperGlobulePattern } from '$lib/cut-pattern/generate-pattern';
+import { patternConfigStore } from './globulePatternStores';
 
 // SUPER CONFIGS
 export const superConfigStore = persistable<SuperGlobuleConfig>(
@@ -32,6 +34,20 @@ export const superGlobuleGeometryStore = derived(superGlobuleStore, ($superGlobu
 	console.debug({ $superGlobuleStore, superGlobuleGeometry });
 	return superGlobuleGeometry;
 });
+
+export const superGlobulePatternStore = derived(
+	[superGlobuleStore, superConfigStore, patternConfigStore],
+	([$superGlobuleStore, $superConfigStore, $patternConfigStore]) => {
+		console.debug('SUPER GLOBULE PATTERN STORE');
+		const superGlobulePattern = generateSuperGlobulePattern(
+			$superGlobuleStore,
+			$superConfigStore,
+			$patternConfigStore
+		);
+		console.debug({ $superGlobuleStore, $patternConfigStore, superGlobulePattern });
+		return superGlobulePattern;
+	}
+);
 
 export const selectedGlobule = writable<{
 	subGlobuleConfigIndex: number;

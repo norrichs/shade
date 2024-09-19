@@ -8,13 +8,18 @@
 	import StrutControl from '../../components/controls/StrutControl.svelte';
 	import LevelControl from '../../components/controls/LevelControl.svelte';
 	import PathEdit from '../../components/path-edit/PathEdit.svelte';
-	import { superGlobuleStore, superGlobuleGeometryStore } from '$lib/stores/index';
 	import SelectBar from '../../components/select-bar/SelectBar.svelte';
 	import SaveControl from '../../components/save-control/SaveControl.svelte';
 	import DataControl from '../../components/save-control/DataControl.svelte';
 	import Scene from '../../components/three-renderer-v2/Scene.svelte';
-	import { configStore0, superConfigStore } from '$lib/stores';
+	// import {
+	// 	configStore0,
+	// 	superConfigStore,
+	// 	superGlobuleStore,
+	// 	superGlobuleGeometryStore
+	// } from '$lib/stores';
 	import SuperPathEdit from '../../components/path-edit/SuperPathEdit.svelte';
+	import SuperControl from '../../components/controls/SuperControl.svelte';
 
 	let displayLevels: Level[];
 	let showControl: { name: string; value?: unknown } = { name: 'None' };
@@ -33,9 +38,9 @@
 			<Scene />
 		</ThreeRenderer>
 	</section>
-	<!-- <section class="container svg">
+	<section class="container svg">
 		<CutPattern />
-	</section> -->
+	</section>
 	<section class="container controls">
 		<header>
 			<SelectBar
@@ -51,6 +56,7 @@
 					{ name: 'Struts' },
 					{ name: 'Cut' },
 					{ name: 'Pattern' },
+					{ name: 'Super'},
 					// { name: 'Save' },
 					{ name: 'Data' }
 				]}
@@ -69,14 +75,16 @@
 				<ShowControl />
 			{:else if showControl?.name === 'Levels'}
 				<LevelControl />
-			{:else if showControl?.name === 'Cut'}
-				<CutControl />
+				<!-- {:else if showControl?.name === 'Cut'}
+				<CutControl /> -->
 			{:else if showControl?.name === 'Pattern'}
 				<TilingControl />
+			{:else if showControl?.name === 'Super'}
+				<SuperControl />
 				<!-- {:else if showControl?.name === 'Save'}
 				<SaveControl show={showControl?.name === 'Save'} config={$superConfigStore} /> -->
-			{:else if showControl?.name === 'Data'}
-				<DataControl />
+				<!-- {:else if showControl?.name === 'Data'}
+				<DataControl /> -->
 			{/if}
 		</div>
 	</section>

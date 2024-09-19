@@ -16,10 +16,12 @@ import type {
 	StrutConfig,
 	TabStyle,
 	SuperGlobuleConfig,
-	SubGlobuleConfig
+	SubGlobuleConfig,
+	GlobulePatternConfig
 } from '$lib/types';
 import { rad } from './util';
 import { GENERAL_CONFIG, generateTempId, GLOBULE_CONFIG, SUPER_GLOBULE_CONFIG } from './id-handler';
+import { degToRad } from './patterns/utils';
 
 const defaultSilhouetteConfig = (): SilhouetteConfig => ({
 	type: 'SilhouetteConfig',
@@ -355,11 +357,7 @@ export const generateDefaultGlobuleConfig = (): GlobuleConfig => {
 		spineCurveConfig: defaultSpineCurveConfig(),
 		bandConfig: defaultBandConfig(),
 		strutConfig: defaultStrutConfig(),
-		renderConfig: defaultRenderConfig(),
-		cutoutConfig: defaultCutoutConfig()[1],
-		patternConfig: defaultPatternConfig(),
-		patternViewConfig: defaultPatternViewConfig(),
-		tiledPatternConfig: defaultTiledPatternConfig()
+		renderConfig: defaultRenderConfig()
 	};
 	config.levelConfig.levelCount = getLevels(
 		config.levelConfig.silhouetteSampleMethod,
@@ -379,7 +377,8 @@ const defaultSubGlobuleConfig = (
 		globuleConfig,
 		transform: {
 			recurs: cfg?.transform?.recurs || 1,
-			translate: { x: 0, y: 0, z: 100 }
+			translate: { x: 0, y: 0, z: 100 },
+			rotate: { anchor: { x: 200, y: 0, z: 0 }, axis: { x: 0, y: 0, z: 1 }, angle: degToRad(90) }
 		}
 	};
 };
@@ -411,4 +410,17 @@ export const generateDefaultSuperGlobuleConfig = (): SuperGlobuleConfig => {
 	};
 	console.debug('generatedDefaultSuperGlobuleConfig', { superGlobuleConfig });
 	return superGlobuleConfig;
+};
+
+export const generateDefaultGlobulePatternConfig = (): GlobulePatternConfig => {
+	const globulePatternConfig: GlobulePatternConfig = {
+		type: 'GlobulePatternConfig',
+		id: generateTempId('cfg'),
+		name: 'Default Globule Pattern Config',
+		cutoutConfig: defaultCutoutConfig()[1],
+		patternConfig: defaultPatternConfig(),
+		patternViewConfig: defaultPatternViewConfig(),
+		tiledPatternConfig: defaultTiledPatternConfig()
+	};
+	return globulePatternConfig;
 };

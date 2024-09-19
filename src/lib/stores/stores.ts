@@ -17,7 +17,8 @@ import type {
 	BandPattern,
 	NullBandPattern,
 	GlobuleConfig,
-	SuperGlobuleConfig
+	SuperGlobuleConfig,
+	GlobulePatternConfig
 } from '$lib/types';
 import { generateGlobuleData } from '$lib/generate-shape';
 import {
@@ -33,7 +34,7 @@ export const shouldUsePersisted = persistable(false, USE_PERSISTED_KEY, USE_PERS
 
 export const loadPersistedOrDefault = (
 	shouldUsePersisted: boolean,
-	getDefault: () => GlobuleConfig | SuperGlobuleConfig
+	getDefault: () => GlobuleConfig | SuperGlobuleConfig | GlobulePatternConfig
 ) => {
 	const autoPersisted = getPersistedConfig(AUTO_PERSIST_KEY, 'GlobuleConfig');
 	if (autoPersisted && shouldUsePersisted) {
@@ -68,36 +69,36 @@ export const configStore = derived(configStore0, ($configStore0) => {
 	return derivedConfig;
 });
 
-export const globuleStore = derived(configStore, ($configStore) => {
-	const data = generateGlobuleData($configStore);
-	// console.debug('SHAPE DATA - derived', data);
-	return { ...data, height: getModelHeight(data.bands) };
-});
+// export const globuleStore = derived(configStore, ($configStore) => {
+// 	const data = generateGlobuleData($configStore);
+// 	// console.debug('SHAPE DATA - derived', data);
+// 	return { ...data, height: getModelHeight(data.bands) };
+// });
 
-export const bandPattern = derived([configStore, globuleStore], ([$configStore, $globuleStore]) => {
-	// console.debug('DERIVE bandPattern');
-	const { bands } = $globuleStore;
-	const displayedBandFacets = getRenderableOnGeometry($configStore.renderConfig, bands);
-	let pattern: BandPattern;
-	if ($configStore.patternConfig.showPattern.band === 'none') {
-		pattern = { projectionType: 'none' } as NullBandPattern;
-	} else if ($configStore.patternConfig.showPattern.band === 'patterned') {
-		pattern = generateTiledBandPattern({
-			bands: displayedBandFacets as Band[],
-			tiledPatternConfig: $configStore.tiledPatternConfig,
-			pixelScale: $configStore.patternConfig.pixelScale
-		});
+// export const bandPattern = derived([configStore, globuleStore], ([$configStore, $globuleStore]) => {
+// 	// console.debug('DERIVE bandPattern');
+// 	const { bands } = $globuleStore;
+// 	const displayedBandFacets = getRenderableOnGeometry($configStore.renderConfig, bands);
+// 	let pattern: BandPattern;
+// 	if ($configStore.patternConfig.showPattern.band === 'none') {
+// 		pattern = { projectionType: 'none' } as NullBandPattern;
+// 	} else if ($configStore.patternConfig.showPattern.band === 'patterned') {
+// 		pattern = generateTiledBandPattern({
+// 			bands: displayedBandFacets as Band[],
+// 			tiledPatternConfig: $configStore.tiledPatternConfig,
+// 			pixelScale: $configStore.patternConfig.pixelScale
+// 		});
 
-		pattern = applyStrokeWidth(pattern, $configStore.tiledPatternConfig.config);
-	} else {
-		pattern = generateBandPatterns(
-			$configStore.patternConfig,
-			$configStore.cutoutConfig,
-			$configStore.bandConfig.bandStyle,
-			$configStore.bandConfig.tabStyle,
-			displayedBandFacets
-		);
-	}
-	pattern.meta = { ...pattern.meta, ...getPatternLength(pattern) };
-	return pattern;
-});
+// 		pattern = applyStrokeWidth(pattern, $configStore.tiledPatternConfig.config);
+// 	} else {
+// 		pattern = generateBandPatterns(
+// 			$configStore.patternConfig,
+// 			$configStore.cutoutConfig,
+// 			$configStore.bandConfig.bandStyle,
+// 			$configStore.bandConfig.tabStyle,
+// 			displayedBandFacets
+// 		);
+// 	}
+// 	pattern.meta = { ...pattern.meta, ...getPatternLength(pattern) };
+// 	return pattern;
+// });

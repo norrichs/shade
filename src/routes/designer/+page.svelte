@@ -1,6 +1,6 @@
 <script lang="ts">
 	import ThreeRenderer from '../../components/three-renderer/ThreeRenderer.svelte';
-	import CutPattern from '../../components/cut-pattern/CutPattern.svelte';
+	import CutPatternV1 from '../../components/cut-pattern/CutPatternV1.svelte';
 	import type { Level } from '$lib/types';
 	import TilingControl from '../../components/controls/TilingControl.svelte';
 	import CutControl from '../../components/controls/CutControl.svelte';
@@ -42,7 +42,7 @@
 		<ThreeRenderer {levels} {bands} {struts} />
 	</section>
 	<section class="container svg">
-		<CutPattern />
+		<CutPatternV1 />
 	</section>
 	<section class="container controls">
 		<header>

@@ -257,6 +257,7 @@ export type PatternedBand = {
 	svgPath?: string;
 	id?: string;
 	tagAnchorPoint?: Point;
+	projectionType: 'patterned';
 };
 
 export type NullBandPattern = { projectionType: 'none' };
@@ -660,17 +661,21 @@ export type GlobuleGeometry = {
 };
 
 // number array allows for arbitrary, and repeating application of transforms
-export type Recurrence = number | (number)[];
+export type Recurrence = number | number[];
 
 export type Plane = [Point3, Point3];
 
 export type GlobuleTransform = {
 	recurs: Recurrence;
 	translate?: Point3;
-	reflect?: { anchor: Point3; plane: Plane };
-	scale?: { anchor: Point3; value: number };
-	rotate?: { angle: number; anchor: Point3; axis: Point3 };
+	reflect?: GlobuleReflect;
+	scale?: GlobuleScale;
+	rotate?: GlobuleRotate;
 };
+
+export type GlobuleReflect = { anchor: Point3; plane: Plane }
+export type GlobuleScale = { anchor: Point3; value: number }
+export type GlobuleRotate = { angle: number; anchor: Point3; axis: Point3 }
 
 export type GlobuleConfig = {
 	[key: string]:
@@ -682,10 +687,6 @@ export type GlobuleConfig = {
 		| BandConfig
 		| StrutConfig
 		| RenderConfig
-		| CutoutConfig
-		| PatternConfig
-		| PatternViewConfig
-		| TiledPatternConfig
 		| string
 		| number
 		| boolean
@@ -693,7 +694,6 @@ export type GlobuleConfig = {
 
 	type: 'GlobuleConfig';
 	id: Id;
-	tempId?: TempId;
 	name?: string;
 	isModified?: boolean;
 
@@ -705,6 +705,13 @@ export type GlobuleConfig = {
 	bandConfig: BandConfig;
 	strutConfig: StrutConfig;
 	renderConfig: RenderConfig;
+};
+
+export type GlobulePatternConfig = {
+	// [key: string]: CutoutConfig | PatternConfig | PatternViewConfig | TiledPatternConfig;
+	type: 'GlobulePatternConfig';
+	id: Id;
+	name?: string;
 	cutoutConfig: CutoutConfig;
 	patternConfig: PatternConfig;
 	patternViewConfig: PatternViewConfig;

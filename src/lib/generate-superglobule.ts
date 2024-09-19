@@ -5,6 +5,7 @@ import type {
 	Facet,
 	Globule,
 	GlobuleData,
+	GlobuleRotate,
 	GlobuleTransform,
 	Point3,
 	Recurrence,
@@ -103,6 +104,9 @@ const transformGlobuleData = (
 	iteration: number
 ): GlobuleData => {
 	let transformedGlobule: GlobuleData = cloneGlobuleData(globule);
+	if (transform.rotate) {
+		transformedGlobule = rotateMutableGlobule(transformedGlobule, transform.rotate, iteration);
+	}
 	if (transform.translate) {
 		transformedGlobule = translateMutableGlobule(
 			transformedGlobule,
@@ -135,6 +139,38 @@ const translateMutableGlobule = (
 	}));
 	return { bands };
 };
+
+const rotateMutableGlobule = (
+	globuleData: GlobuleData,
+	{ angle, anchor, axis }: GlobuleRotate,
+	multiplier: number
+) => {
+	const anchorVector = new Vector3(anchor.x, anchor.y, anchor.z);
+	const axisVector = new Vector3(axis.x, axis.y, axis.z);
+
+	const bands = globuleData.bands.map((band: Band) => ({
+		...band,
+		facets: band.facets.map((f: Facet) => ({
+			...f,
+			triangle: f.triangle.set(
+				rotateVector(f.triangle.a, anchorVector, axisVector, angle * multiplier),
+				rotateVector(f.triangle.b, anchorVector, axisVector, angle * multiplier),
+				rotateVector(f.triangle.c, anchorVector, axisVector, angle * multiplier),
+			)
+		}))
+	}))
+
+	return { bands };
+};
+
+const rotateVector = (startingVector: Vector3, anchor: Vector3, axis: Vector3, angle: number): Vector3 => {
+	const vector = startingVector.clone();
+	vector.addScaledVector(anchor, 1)
+	vector.applyAxisAngle(axis, angle)
+	vector.addScaledVector(anchor, -1)
+	return vector
+}
+
 
 const cloneGlobuleData = (globuleData: GlobuleData): GlobuleData => {
 	return { bands: globuleData.bands.map((b) => cloneBand(b)) };
