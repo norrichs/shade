@@ -794,7 +794,7 @@ export const getRenderable = (
 };
 
 export const generateGlobuleData = (config: GlobuleConfig): GlobuleData => {
-	console.debug('generateGlobuleData', { globuleConfig: config });
+	// console.debug('generateGlobuleData', { globuleConfig: config });
 	const rotatedShapePrototype: LevelPrototype | LevelPrototype[] = generateLevelPrototype(
 		config.shapeConfig,
 		config.levelConfig

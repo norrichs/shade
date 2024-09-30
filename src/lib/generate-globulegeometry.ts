@@ -1,6 +1,9 @@
+import { generateGlobuleData } from './generate-shape';
+import { generateTempId } from './id-handler';
 import type {
 	Facet,
 	Globule,
+	GlobuleConfig,
 	GlobuleGeometry,
 	SubGlobule,
 	SuperGlobule,
@@ -44,14 +47,28 @@ export const generateSuperGlobuleGeometry = (superGlobule: SuperGlobule): SuperG
 	};
 };
 
-export const generateGlobuleGeometry = (globule: Globule): GlobuleGeometry => {
-	const points = globule.data.bands.map((band) => getBandPoints(band.facets)).flat();
-	return {
-		type: 'GlobuleGeometry',
-		name: globule.name,
-		subGlobuleConfigId: globule.subGlobuleConfigId,
-		subGlobuleRecurrence: globule.recurrence,
-		globuleConfigId: globule.globuleConfigId,
-		points
-	};
+export const generateGlobuleGeometry = (globule: Globule | GlobuleConfig): GlobuleGeometry => {
+	console.debug('generateGlobuleGeometry', { globule });
+	if (globule.type === 'Globule') {
+		const points = globule.data.bands.map((band) => getBandPoints(band.facets)).flat();
+		return {
+			type: 'GlobuleGeometry',
+			name: globule.name,
+			subGlobuleConfigId: globule.subGlobuleConfigId || generateTempId('sub'),
+			subGlobuleRecurrence: globule.recurrence,
+			globuleConfigId: globule.globuleConfigId,
+			points
+		};
+	} else {
+		const { bands } = generateGlobuleData(globule);
+		const points = bands.map((band) => getBandPoints(band.facets)).flat();
+		return {
+			type: 'GlobuleGeometry',
+			name: globule.name,
+			subGlobuleConfigId: generateTempId('sub'),
+			subGlobuleRecurrence: 1,
+			globuleConfigId: globule.id,
+			points
+		};
+	}
 };

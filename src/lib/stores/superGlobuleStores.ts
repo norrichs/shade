@@ -15,7 +15,6 @@ export const superConfigStore = persistable<SuperGlobuleConfig>(
 			bootstrapShouldUsePersisted(),
 			generateDefaultSuperGlobuleConfig
 		);
-		console.debug('superConfigStore init', config);
 		return config;
 	})(),
 	'SuperGlobuleConfig',
@@ -29,22 +28,24 @@ export const superGlobuleStore = derived(superConfigStore, ($superConfigStore) =
 });
 
 export const superGlobuleGeometryStore = derived(superGlobuleStore, ($superGlobuleStore) => {
-	console.debug('SUPER GLOBULE GEOMETRY STORE');
 	const superGlobuleGeometry = generateSuperGlobuleGeometry($superGlobuleStore);
-	console.debug({ $superGlobuleStore, superGlobuleGeometry });
+	console.debug('SUPER GLOBULE GEOMETRY STORE', { $superGlobuleStore, superGlobuleGeometry });
 	return superGlobuleGeometry;
 });
 
 export const superGlobulePatternStore = derived(
 	[superGlobuleStore, superConfigStore, patternConfigStore],
 	([$superGlobuleStore, $superConfigStore, $patternConfigStore]) => {
-		console.debug('SUPER GLOBULE PATTERN STORE');
 		const superGlobulePattern = generateSuperGlobulePattern(
 			$superGlobuleStore,
 			$superConfigStore,
 			$patternConfigStore
 		);
-		console.debug({ $superGlobuleStore, $patternConfigStore, superGlobulePattern });
+		console.debug('SUPER GLOBULE PATTERN STORE', {
+			$superGlobuleStore,
+			$patternConfigStore,
+			superGlobulePattern
+		});
 		return superGlobulePattern;
 	}
 );

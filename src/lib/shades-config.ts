@@ -22,6 +22,7 @@ import type {
 import { rad } from './util';
 import { GENERAL_CONFIG, generateTempId, GLOBULE_CONFIG, SUPER_GLOBULE_CONFIG } from './id-handler';
 import { degToRad } from './patterns/utils';
+import { radToDeg } from 'three/src/math/MathUtils.js';
 
 const defaultSilhouetteConfig = (): SilhouetteConfig => ({
 	type: 'SilhouetteConfig',
@@ -29,10 +30,10 @@ const defaultSilhouetteConfig = (): SilhouetteConfig => ({
 		{
 			type: 'BezierConfig',
 			points: [
-				{ type: 'PointConfig2', x: 50, y: -20 },
-				{ type: 'PointConfig2', x: 150, y: -20 },
-				{ type: 'PointConfig2', x: 150, y: 50 },
-				{ type: 'PointConfig2', x: 150, y: 100 }
+				{ type: 'PointConfig2', x: 50, y: -50 },
+				{ type: 'PointConfig2', x: 150, y: -50 },
+				{ type: 'PointConfig2', x: 150, y: -50 },
+				{ type: 'PointConfig2', x: 150, y: 0 }
 			]
 		}
 	]
@@ -200,7 +201,7 @@ const defaultRenderConfig = (): RenderConfig => ({
 	}
 });
 
-export const tiledPatternConfigs = (): { [key: string]: TiledPatternConfig } => ({
+export const tiledPatternConfigs: { [key: string]: TiledPatternConfig } = ({
 	'tiledHexPattern-1': {
 		type: 'tiledHexPattern-1',
 		tiling: 'quadrilateral',
@@ -274,7 +275,7 @@ export const tiledPatternConfigs = (): { [key: string]: TiledPatternConfig } => 
 });
 
 const defaultTiledPatternConfig = (): TiledPatternConfig =>
-	tiledPatternConfigs()['tiledBoxPattern-0'];
+	tiledPatternConfigs['tiledBoxPattern-0'];
 
 const defaultCutoutConfig = (): CutoutConfig[] => [
 	{
@@ -350,7 +351,7 @@ export const generateDefaultGlobuleConfig = (): GlobuleConfig => {
 		type: 'GlobuleConfig',
 		id: generateTempId(GLOBULE_CONFIG),
 		name: 'New Globule',
-		shapeConfig: generateDefaultShapeConfig(4, { method: 'divideCurve', divisions: 2 }),
+		shapeConfig: generateDefaultShapeConfig(3, { method: 'divideCurve', divisions: 1 }),
 		levelConfig: defaultLevelConfig(),
 		silhouetteConfig: defaultSilhouetteConfig(),
 		depthCurveConfig: defaultDepthCurveConfig(),
@@ -366,25 +367,21 @@ export const generateDefaultGlobuleConfig = (): GlobuleConfig => {
 	return config;
 };
 
-const defaultSubGlobuleConfig = (
-	globuleConfig: GlobuleConfig,
-	cfg?: Partial<SubGlobuleConfig>
-): SubGlobuleConfig => {
-	return {
+const defaultSubGlobuleConfig = (cfg?: Partial<SubGlobuleConfig>): SubGlobuleConfig => {
+	const subglob: SubGlobuleConfig = {
 		type: 'SubGlobuleConfig',
 		id: generateTempId('sub'),
 		name: 'Default Sub Globule',
-		globuleConfig,
-		transform: {
-			recurs: cfg?.transform?.recurs || 1,
-			translate: { x: 0, y: 0, z: 100 },
-			rotate: { anchor: { x: 200, y: 0, z: 0 }, axis: { x: 0, y: 0, z: 1 }, angle: degToRad(90) }
-		}
+		transforms: [],
+		globuleConfig: generateDefaultGlobuleConfig()
 	};
+	return { ...subglob, ...cfg };
 };
 
 export const generateSubGlobuleConfigWrapper = (globule: GlobuleConfig) => {
-	return defaultSubGlobuleConfig(globule, { transform: { recurs: 1 } });
+	return defaultSubGlobuleConfig({
+		globuleConfig: globule
+	});
 };
 
 export const generateSuperGlobuleConfigWrapper = (globule: GlobuleConfig) => {
@@ -399,13 +396,44 @@ export const generateSuperGlobuleConfigWrapper = (globule: GlobuleConfig) => {
 };
 
 export const generateDefaultSuperGlobuleConfig = (): SuperGlobuleConfig => {
+	const base = defaultSubGlobuleConfig()
+
 	const superGlobuleConfig: SuperGlobuleConfig = {
 		type: 'SuperGlobuleConfig',
 		id: generateTempId(SUPER_GLOBULE_CONFIG),
 		name: 'Default Super Globule',
 		subGlobuleConfigs: [
-			defaultSubGlobuleConfig(generateDefaultGlobuleConfig(), { transform: { recurs: 2 } }),
-			defaultSubGlobuleConfig(generateDefaultGlobuleConfig(), { transform: { recurs: [4] } })
+			base,
+			defaultSubGlobuleConfig({
+				globuleConfig: base.globuleConfig,
+				transforms: [
+					{
+						rotate: {
+							axis: { x: 0, y: 0, z: 1 },
+							anchor: { x: 0, y: 0, z: 0 },
+							angle: degToRad(60)
+						}
+					},
+					{
+						translate: { x: 0, y: -150, z: 0 }
+					},
+					{
+						rotate: {
+							axis: { x: 1, y: 0, z: 0 },
+							anchor: { x: 0, y: 75, z: 0 },
+							angle: degToRad(-109.5)
+						}
+					},
+					{
+						recurs: [0,1,2],
+						rotate: {
+							axis: { x: 0, y: 0, z: 1 },
+							anchor: { x: 0, y: 0, z: 0 },
+							angle: degToRad(120)
+						}
+					}
+				]
+			})
 		]
 	};
 	console.debug('generatedDefaultSuperGlobuleConfig', { superGlobuleConfig });

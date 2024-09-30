@@ -19,7 +19,7 @@
 	// 	superGlobuleGeometryStore
 	// } from '$lib/stores';
 	import SuperPathEdit from '../../components/path-edit/SuperPathEdit.svelte';
-	import SuperControl from '../../components/controls/SuperControl.svelte';
+	import SuperControl from '../../components/controls/super-control/SuperControl.svelte';
 
 	let displayLevels: Level[];
 	let showControl: { name: string; value?: unknown } = { name: 'None' };

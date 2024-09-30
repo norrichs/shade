@@ -21,15 +21,6 @@ export const persistable = <T>(
 ) => {
 	const persistObj = doPersistData ? getPersistedConfig(key, name) : undefined;
 	const init = persistObj || defaultInit;
-
-	// console.log(
-	// 	'initialize persistable',
-	// 	name,
-	// 	'\n  with:',
-	// 	init,
-	// 	'\n  doPersistData',
-	// 	doPersistData
-	// );
 	const { subscribe, set, update } = writable<T>(init);
 
 	return {
@@ -42,12 +33,11 @@ export const persistable = <T>(
 			setLocal(key, persistObj);
 		},
 		set: (value: T) => {
-			console.debug('PERSISTABLE SET', { value });
 			const persistObj = getLocal(key) || {};
 			// value.isModified = true;
 			persistObj[name] = value;
 			setLocal(key, persistObj);
-			console.log('***  set persistable', {
+			console.log('SET PERSISTABLE', {
 				name,
 				value,
 				currentLocal: getLocal(AUTO_PERSIST_KEY)

@@ -619,15 +619,14 @@ export type SubGlobuleConfig = {
 	type: 'SubGlobuleConfig';
 	id: Id;
 	name?: string;
-	globuleConfig: GlobuleConfig; // | SubGlobuleConfig;
-	transform: GlobuleTransform;
+	globuleConfig: GlobuleConfig;
+	transforms: ChainableTransform[];
 };
 
 export type SubGlobule = {
 	type: 'SubGlobule';
 	subGlobuleConfigId: Id;
 	name?: string;
-	recurrence: number;
 	data: Globule[];
 };
 
@@ -646,6 +645,7 @@ export type Globule = {
 	globuleConfigId: Id;
 	name?: string;
 	recurrence?: number;
+	transformChain?: GlobuleTransform[];
 	data: GlobuleData;
 };
 
@@ -665,17 +665,32 @@ export type Recurrence = number | number[];
 
 export type Plane = [Point3, Point3];
 
-export type GlobuleTransform = {
-	recurs: Recurrence;
-	translate?: Point3;
-	reflect?: GlobuleReflect;
-	scale?: GlobuleScale;
-	rotate?: GlobuleRotate;
-};
+// export type GlobuleTransform = {
+// 	recurs: Recurrence;
+// 	translate: Point3;
+// 	rotate: GlobuleRotate;
+// 	reflect?: GlobuleReflect;
+// 	scale?: GlobuleScale;
+// };
 
-export type GlobuleReflect = { anchor: Point3; plane: Plane }
-export type GlobuleScale = { anchor: Point3; value: number }
-export type GlobuleRotate = { angle: number; anchor: Point3; axis: Point3 }
+export type GlobuleTransformTranslate =  { translate: Point3 }
+export type GlobuleTransformRotate =  { rotate: GlobuleRotate }
+export type GlobuleTransformReflect =  { reflect: GlobuleReflect }
+export type GlobuleTransformScale =  { scale: GlobuleScale };
+
+export type GlobuleTransform =
+	| GlobuleTransformTranslate
+	| GlobuleTransformRotate
+	| GlobuleTransformReflect
+	| GlobuleTransformScale
+
+export type ChainableTransform = {
+	recurs?: Recurrence;
+} & GlobuleTransform;
+
+export type GlobuleReflect = { anchor: Point3; plane: Plane };
+export type GlobuleScale = { anchor: Point3; value: number };
+export type GlobuleRotate = { angle: number; anchor: Point3; axis: Point3 };
 
 export type GlobuleConfig = {
 	[key: string]:

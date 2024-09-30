@@ -58,7 +58,6 @@ export const generateSuperGlobulePattern = (
 			return bandPatterns;
 		})
 		.flat();
-	console.debug('Patterned Band Pattern', { collectedBandPatterns });
 
 	const bandPatterns = collectedBandPatterns.map((globulePattern: PatternedBandPattern) => globulePattern.bands).flat();
 

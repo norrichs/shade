@@ -30,6 +30,7 @@
 	$: {
 		fitPatternToPage(fitToPage);
 	}
+	console.debug({tiledPatternConfigs})
 </script>
 
 <section>

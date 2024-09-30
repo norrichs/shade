@@ -9,7 +9,6 @@ export const patternConfigStore = persistable<GlobulePatternConfig>(
 			bootstrapShouldUsePersisted(),
 			generateDefaultGlobulePatternConfig
 		);
-		console.debug('patternConfig init', config);
 		return config;
 	})(),
 	'GlobulePatternConfig',

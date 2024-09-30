@@ -4,6 +4,6 @@
 	import { degToRad } from '$lib/patterns/utils';
 </script>
 
-<T.PerspectiveCamera makeDefault position={[0, 600, -5]} fov={50}>
+<T.PerspectiveCamera makeDefault position={[0, 600, -5]} fov={50} near={1} far={10000}>
 	<OrbitControls maxPolarAngle={degToRad(160)} enableZoom={true} target={[0, 0.5, 0]} />
 </T.PerspectiveCamera>
