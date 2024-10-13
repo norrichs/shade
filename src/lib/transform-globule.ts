@@ -18,9 +18,18 @@ import { radToDeg } from 'three/src/math/MathUtils.js';
 import { cloneGlobuleData } from './generate-superglobule';
 
 const constants = {
-	rotate: { title: 'Rotation', defaultTransform: { recurs: [1], rotate: { axis: { x: 0, y: 0, z: 1 }, anchor: { x: 0, y: 0, z: 0}, angle: 0}} },
-	translate: { title: 'Translation', defaultTransform: { recurs: [1], translate: { x: 0, y: 0, z: 0}}},
-	scale: { title: 'Scale', defaultTransform: undefined }, 
+	rotate: {
+		title: 'Rotation',
+		defaultTransform: {
+			recurs: [1],
+			rotate: { axis: { x: 0, y: 0, z: 1 }, anchor: { x: 0, y: 0, z: 0 }, angle: 0 }
+		}
+	},
+	translate: {
+		title: 'Translation',
+		defaultTransform: { recurs: [1], translate: { x: 0, y: 0, z: 0 } }
+	},
+	scale: { title: 'Scale', defaultTransform: undefined },
 	reflect: { title: 'Reflect', defaultTransform: undefined }
 };
 
@@ -29,18 +38,18 @@ export const getConstants = (tx: GlobuleTransform) => {
 	if (isGlobuleTransformTranslate(tx)) return constants.translate;
 	if (isGlobuleTransformReflect(tx)) return constants.reflect;
 	if (isGlobuleTransformScale(tx)) return constants.scale;
-	return constants.translate
+	return constants.translate;
 };
 
 const isKeyOfConstants = (key: string): key is keyof typeof constants => {
-	return Object.keys(constants).includes(key)
-}
+	return Object.keys(constants).includes(key);
+};
 
 export const getDefaultTransform = (key: string) => {
 	if (isKeyOfConstants(key) && constants[key].defaultTransform) {
-		return constants[key].defaultTransform
+		return constants[key].defaultTransform;
 	}
-}
+};
 
 export const isGlobuleTransformTranslate = (
 	tx: GlobuleTransform
@@ -73,19 +82,18 @@ const translateMutableGlobule = (
 ): GlobuleData => {
 	let bands: Band[] = globuleData.bands;
 
-	const translationVector = new Vector3(
-		offset.x * multiplier,
-		offset.y * multiplier,
-		offset.z * multiplier
-	);
+	const translationVector = new Vector3(offset.x, offset.y, offset.z);
+
+	console.debug('translateMutableGlobule', { multiplier, translationVector });
+
 	bands = bands.map((band: Band) => ({
 		...band,
 		facets: band.facets.map((f: Facet) => ({
 			...f,
 			triangle: f.triangle.set(
-				f.triangle.a.addScaledVector(translationVector, 1),
-				f.triangle.b.addScaledVector(translationVector, 1),
-				f.triangle.c.addScaledVector(translationVector, 1)
+				f.triangle.a.addScaledVector(translationVector, multiplier),
+				f.triangle.b.addScaledVector(translationVector, multiplier),
+				f.triangle.c.addScaledVector(translationVector, multiplier)
 			)
 		}))
 	}));
@@ -122,9 +130,9 @@ const rotateVector = (
 	angle: number
 ): Vector3 => {
 	const vector = startingVector.clone();
-	vector.addScaledVector(anchor, 1);
-	vector.applyAxisAngle(axis, angle);
 	vector.addScaledVector(anchor, -1);
+	vector.applyAxisAngle(axis, angle);
+	vector.addScaledVector(anchor, 1);
 	return vector;
 };
 

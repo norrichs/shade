@@ -77,3 +77,11 @@ export const show_svg = (id: string) => {
 	const url = URL.createObjectURL(svg_blob);
 	const svg_win = window.open(url, 'svg_win');
 };
+
+
+export const round = (n: number, decimals?: number) => {
+	const x = decimals && decimals > 0 ? Math.pow(10, decimals - 1)   : 1
+	return Math.round( n * x) / x
+}
+
+export const isClose = (n0: number, n1: number, precision: number = 1/1000000) => Math.abs(n1-n0) < precision

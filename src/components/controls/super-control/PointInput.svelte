@@ -7,7 +7,9 @@
 
 	export let label: string = '';
 	export let constraint: VectorConstraint = undefined;
+		
 	export let value: Point3;
+
 
 	let { x, y, z } = value;
 
@@ -42,5 +44,6 @@
 	.container {
 		display: flex;
 		flex-direction: row;
+		gap: 4px;
 	}
 </style>

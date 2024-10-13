@@ -14,6 +14,10 @@
 	import CombinedNumberInput from '../CombinedNumberInput.svelte';
 	import RecurrenceControl from './RecurrenceControl.svelte';
 	import PointInput from './PointInput.svelte';
+	import PickPointsButton from './PickPointsButton.svelte';
+	import { interactionMode } from '../../three-renderer-v2/interaction-mode';
+	import { Vector3 } from 'three';
+	import { isClose } from '$lib/util';
 
 	export let sgIndex = 0;
 	export let tIndex = 0;
@@ -36,48 +40,133 @@
 	);
 
 	const activate = () => {
-		console.debug('activate', { sgIndex, tIndex });
+		console.debug('activate----------------------------------', sgIndex, tIndex);
 		$activeControl = { sgIndex, tIndex };
+		const transform = $superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex];
+		if (isGlobuleTransformRotate(transform)) {
+			angle = radToDeg(transform.rotate.angle);
+			axis = { ...transform.rotate.axis };
+			anchor = { ...transform.rotate.anchor };
+			recurs = getRecurrences(transform.recurs);
+		}
 	};
 
 	const isUpdatableRotation = (tx: GlobuleTransform): tx is GlobuleTransformRotate => {
-		return isGlobuleTransformRotate(tx) && tx.rotate.angle !== angle;
+		return isGlobuleTransformRotate(tx) && !isClose(tx.rotate.angle, degToRad(angle));
 	};
 	const isUpdatableAxis = (tx: GlobuleTransform): tx is GlobuleTransformRotate => {
 		return (
 			isGlobuleTransformRotate(tx) &&
-			(tx.rotate.axis.x !== axis.x || tx.rotate.axis.y !== axis.y || tx.rotate.axis.z !== axis.z)
+			(!isClose(tx.rotate.axis.x, axis.x) ||
+				!isClose(tx.rotate.axis.y, axis.y) ||
+				!isClose(tx.rotate.axis.z, axis.z))
 		);
 	};
 	const isUpdatableAnchor = (tx: GlobuleTransform): tx is GlobuleTransformRotate => {
 		return (
 			isGlobuleTransformRotate(tx) &&
-			(tx.rotate.anchor.x !== anchor.x ||
-				tx.rotate.anchor.y !== anchor.y ||
-				tx.rotate.anchor.z !== anchor.z)
+			(!isClose(tx.rotate.anchor.x, anchor.x) ||
+				!isClose(tx.rotate.anchor.y, anchor.y) ||
+				!isClose(tx.rotate.anchor.z, anchor.z))
 		);
 	};
-	const isUpdatableRecurs = (tx: GlobuleTransform & { recurs?: Recurrence }) => tx.recurs;
+	const isUpdatableRecurs = (tx: GlobuleTransform & { recurs?: Recurrence }) => {
+		console.debug(tx);
+		if (!tx.recurs || !recurs) return true;
+		const processedTxRecurs = getRecurrences(tx.recurs);
+		if (recurs.length !== processedTxRecurs.length) return true;
 
-	const updateStore = (angle: number, axis: Point3, recurs: number[]) => {
-		console.debug('updateStore', angle, recurs);
+		let isUpdatable = false;
+		recurs.forEach((recurrence, i) => {
+			console.debug('test recurrence', recurrence, processedTxRecurs[i]);
+			if (recurrence !== processedTxRecurs[i]) {
+				isUpdatable = true;
+			}
+		});
+		return isUpdatable;
+	};
 
+	const updateStore = (angle: number, axis: Point3, anchor: Point3, recurs: number[]) => {
+		console.debug(`rotate, updateStore ${sgIndex}, ${tIndex}`, {
+			axis,
+			anchor,
+			angle,
+			recurs,
+			$superConfigStore
+		});
 		if (isUpdatableRotation($superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex])) {
+			console.debug(
+				'isUpdatableAngle',
+				angle,
+				'->',
+				$superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex].rotate.angle
+			);
 			$superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex].rotate.angle =
 				degToRad(angle);
 		}
 		if (isUpdatableRecurs($superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex])) {
+			console.debug(
+				'isUpdatableRecurs',
+				recurs,
+				'->',
+				$superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex].recurs
+			);
 			$superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex].recurs = recurs;
 		}
 		if (isUpdatableAxis($superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex])) {
+			console.debug(
+				'isUpdatableAxis',
+				axis,
+				'->',
+				$superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex].rotate.axis
+			);
 			$superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex].rotate.axis = axis;
 		}
 		if (isUpdatableAnchor($superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex])) {
+			console.debug(
+				'isUpdatableAnchor',
+				anchor,
+				'->',
+				$superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex].recurs
+			);
 			$superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex].rotate.anchor = anchor;
 		}
 	};
 
-	$: updateStore(angle, axis, recurs);
+	const onSelectPoint = () => {
+		if (
+			!isGlobuleTransformRotate($superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex])
+		) {
+			($interactionMode as any).type = 'standard';
+			return;
+		}
+
+		if ($interactionMode.type === 'point-select-rotate') {
+			const [p0, p1] = $interactionMode.data.points;
+
+			anchor = p0;
+
+			const normalizedAxis = new Vector3(p1.x - p0.x, p1.y - p0.y, p1.z - p0.z).setLength(1);
+			axis = { x: normalizedAxis.x, y: normalizedAxis.y, z: normalizedAxis.z };
+			$superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex].rotate = {
+				anchor,
+				axis,
+				angle
+			};
+		} else if ($interactionMode.type === 'point-select-anchor') {
+			[anchor] = $interactionMode.data.points;
+			$superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex].rotate.anchor = anchor;
+		} else if ($interactionMode.type === 'point-select-axis') {
+			const [p0, p1] = $interactionMode.data.points;
+			const normalizedAxis = new Vector3(p1.x - p0.x, p1.y - p0.y, p1.z - p0.z).setLength(1);
+			axis = { x: normalizedAxis.x, y: normalizedAxis.y, z: normalizedAxis.z };
+			$superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex].rotate.axis = axis;
+		}
+
+		($interactionMode as any).type = 'standard';
+	};
+
+	$: updateStore(angle, axis, anchor, recurs);
 </script>
 
 <div class="rotate-card">
@@ -86,8 +175,21 @@
 			<RecurrenceControl bind:recurs />
 			{#if isGlobuleTransformRotate($superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex])}
 				<CombinedNumberInput bind:value={angle} label="Rotate" min={-360} max={360} step={0.1} />
-				<PointInput label="Axis" constraint={{ length: 1 }} bind:value={axis} />
-				<PointInput label="Anchor" bind:value={anchor} />
+				<div>
+					<PointInput label="Axis" constraint={{ length: 1 }} bind:value={axis} />
+					<PickPointsButton
+						mode={{ type: 'point-select-axis', data: { pick: 2, points: [] }, onSelectPoint }}
+					/>
+				</div>
+				<div>
+					<PointInput label="Anchor" bind:value={anchor} />
+					<PickPointsButton
+						mode={{ type: 'point-select-anchor', data: { pick: 1, points: [] }, onSelectPoint }}
+					/>
+				</div>
+				<PickPointsButton
+					mode={{ type: 'point-select-rotate', data: { pick: 2, points: [] }, onSelectPoint }}
+				/>
 			{/if}
 		</div>
 	{:else}

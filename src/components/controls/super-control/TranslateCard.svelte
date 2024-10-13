@@ -1,30 +1,22 @@
 <script lang="ts">
-	import { degToRad, radToDeg } from '$lib/patterns/utils';
 	import { superConfigStore } from '$lib/stores';
-	import {
-		getRecurrences,
-		isGlobuleTransformRotate,
-		isGlobuleTransformTranslate
-	} from '$lib/transform-globule';
+	import { getRecurrences, isGlobuleTransformTranslate } from '$lib/transform-globule';
 	import { activeControl } from './active-control';
 
-	import type {
-		GlobuleTransform,
-		GlobuleTransformTranslate,
-		Recurrence
-	} from '$lib/types';
-	import CombinedNumberInput from '../CombinedNumberInput.svelte';
+	import type { GlobuleTransform, GlobuleTransformTranslate, Point3, Recurrence } from '$lib/types';
 	import RecurrenceControl from './RecurrenceControl.svelte';
+	import PickPointsButton from './PickPointsButton.svelte';
+	import PointInput from './PointInput.svelte';
+	import { round } from '$lib/util';
+	import { interactionMode } from '../../three-renderer-v2/interaction-mode';
 
 	export let sgIndex = 0;
 	export let tIndex = 0;
 	export let active = false;
 
-	let {
-		x: tX,
-		y: tY,
-		z: tZ
-	} = isGlobuleTransformTranslate($superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex])
+	let delta = isGlobuleTransformTranslate(
+		$superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex]
+	)
 		? $superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex].translate
 		: { x: 0, y: 0, z: 0 };
 
@@ -37,27 +29,61 @@
 	const isUpdatableTranslation = (tx: GlobuleTransform): tx is GlobuleTransformTranslate => {
 		return (
 			isGlobuleTransformTranslate(tx) &&
-			(tx.translate.x !== tX || tx.translate.y !== tY || tx.translate.z !== tZ)
+			(tx.translate.x !== delta.x || tx.translate.y !== delta.y || tx.translate.z !== delta.z)
 		);
 	};
-	const isUpdatableRecurs = (tx: GlobuleTransform & { recurs?: Recurrence }) => tx.recurs;
+	const isUpdatableRecurs = (tx: GlobuleTransform & { recurs?: Recurrence }) => {
+		if (!tx.recurs) return true;
+		let isUpdatable = false;
+		const processedTxRecurs = getRecurrences(tx.recurs);
+		recurs.forEach((recurrence, i) => {
+			if (recurrence !== processedTxRecurs[i]) {
+				isUpdatable = true;
+			}
+		});
+		return isUpdatable;
+	};
 
-	const updateStore = (tX: number, tY: number, tZ: number, recurs: number[]) => {
-		console.debug('updateStore', tX, tY, tZ, recurs);
+
+
+	const onSelectPoint = () => {
+		if (
+			$interactionMode.type === 'point-select-translate' &&
+			// $interactionMode.data.points.length === $interactionMode.data.pick &&
+			isGlobuleTransformTranslate($superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex])
+		) {
+			const [p0, p1] = $interactionMode.data.points;
+			$superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex].translate = {
+				x: p1.x - p0.x,
+				y: p1.y - p0.y,
+				z: p1.z - p0.z
+			};
+			($interactionMode as any).type = 'standard';
+			updateLocal($superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex]);
+		}
+	};
+	const updateStore = (delta: Point3, recurs: number[]) => {
+		console.debug('updateStore', delta, recurs);
 
 		if (isUpdatableTranslation($superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex])) {
-			$superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex].translate = {
-				x: tX,
-				y: tY,
-				z: tZ
-			};
+			console.debug("||| isUpdatableTranlsation")
+			$superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex].translate = { ...delta };
 		}
 		if (isUpdatableRecurs($superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex])) {
+			console.debug("||| is updateable Recurs")
 			$superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex].recurs = recurs;
 		}
 	};
+	const updateLocal = (transform: GlobuleTransform) => {
+		console.debug("update local", transform)
+		if (isGlobuleTransformTranslate(transform)) {
+			delta = { ...transform.translate };
+		}
+	};
 
-	$: updateStore(tX, tY, tZ, recurs);
+	$: updateLocal($superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex]);
+
+	$: updateStore(delta, recurs);
 </script>
 
 <div class="rotate-card">
@@ -65,9 +91,12 @@
 		<div>
 			<RecurrenceControl bind:recurs />
 			{#if isGlobuleTransformTranslate($superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex])}
-				<CombinedNumberInput bind:value={tX} label="X" min={-360} max={360} step={0.1} />
-				<CombinedNumberInput bind:value={tY} label="Y" min={-360} max={360} step={0.1} />
-				<CombinedNumberInput bind:value={tZ} label="Z" min={-360} max={360} step={0.1} />
+				<div>
+					<PointInput label="Offset" bind:value={delta} />
+					<PickPointsButton
+						mode={{ type: 'point-select-translate', data: { pick: 2, points: [] }, onSelectPoint }}
+					/>
+				</div>
 			{/if}
 		</div>
 	{:else}
@@ -79,7 +108,7 @@
 				{/each}
 			</div>
 			<div>
-				{`X: ${tX}, Y: ${tY}, Z: ${tZ}`}
+				{`(${round(delta.x, 2)}, ${round(delta.y, 2)}, ${round(delta.z, 2)})`}
 			</div>
 		</button>
 	{/if}

@@ -83,7 +83,7 @@
 	.card-container {
 		display: grid;
 		grid-template-rows: 1rem 1fr;
-		grid-template-columns: 1fr auto;
+		grid-template-columns: 400px auto;
 		grid-template-areas:
 			'a a'
 			'b c';

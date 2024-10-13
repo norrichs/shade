@@ -1,3 +1,4 @@
+import type { Vector3 } from 'three';
 import { generateGlobuleData } from './generate-shape';
 import { generateTempId } from './id-handler';
 import type {
@@ -5,6 +6,7 @@ import type {
 	Globule,
 	GlobuleConfig,
 	GlobuleGeometry,
+	Point3,
 	SubGlobule,
 	SuperGlobule,
 	SuperGlobuleGeometry
@@ -48,7 +50,6 @@ export const generateSuperGlobuleGeometry = (superGlobule: SuperGlobule): SuperG
 };
 
 export const generateGlobuleGeometry = (globule: Globule | GlobuleConfig): GlobuleGeometry => {
-	console.debug('generateGlobuleGeometry', { globule });
 	if (globule.type === 'Globule') {
 		const points = globule.data.bands.map((band) => getBandPoints(band.facets)).flat();
 		return {
@@ -71,4 +72,15 @@ export const generateGlobuleGeometry = (globule: Globule | GlobuleConfig): Globu
 			points
 		};
 	}
+};
+
+export const getNearestPoint = (point: Vector3, globule: GlobuleGeometry) => {
+	let closest = { point: globule.points[0], distance: globule.points[0].distanceTo(point) };
+	globule.points.forEach((p) => {
+		const distance = p.distanceTo(point);
+		if (distance < closest.distance) {
+			closest = { point: p, distance };
+		}
+	});
+	return closest.point;
 };

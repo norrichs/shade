@@ -14,7 +14,9 @@
 </script>
 
 <section>
-	<div>{$superConfigStore.name}</div>
+	<header>
+		<div>{$superConfigStore.name}</div>
+	</header>
 	<div>{$superConfigStore.subGlobuleConfigs.length}</div>
 	<div>
 		{#each $superConfigStore.subGlobuleConfigs as subGlobuleConfig, sgIndex}

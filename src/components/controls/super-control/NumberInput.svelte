@@ -14,11 +14,13 @@
     -webkit-appearance: textfield;
     -moz-appearance: textfield;
     appearance: textfield;
-    background-color: var(--color-highlight);
+    background-color: transparent;
+    /* background-color: var(--color-highlight); */
     border: 0;
-    padding: 4px;
-    width: 30px;
-    border-radius: 4px;
+    /* padding: 4px 8px; */
+    /* min-width: 30px;  */
+    /* border-radius: 4px; */
+
   }
 
   input[type='number']:focus-visible {
