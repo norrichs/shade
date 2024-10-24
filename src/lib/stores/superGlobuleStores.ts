@@ -1,6 +1,6 @@
 import { AUTO_PERSIST_KEY, bootstrapShouldUsePersisted, persistable } from '$lib/persistable';
 import { generateDefaultSuperGlobuleConfig } from '$lib/shades-config';
-import type { Id, Recurrence, SuperGlobuleConfig } from '$lib/types';
+import type { Id, SuperGlobuleConfig } from '$lib/types';
 import { derived, writable } from 'svelte/store';
 import { loadPersistedOrDefault } from './stores';
 import { generateSuperGlobule } from '$lib/generate-superglobule';
@@ -21,6 +21,14 @@ export const superConfigStore = persistable<SuperGlobuleConfig>(
 	AUTO_PERSIST_KEY,
 	bootstrapShouldUsePersisted()
 );
+
+
+
+
+
+
+
+
 
 export const superGlobuleStore = derived(superConfigStore, ($superConfigStore) => {
 	const superGlobule = generateSuperGlobule($superConfigStore);

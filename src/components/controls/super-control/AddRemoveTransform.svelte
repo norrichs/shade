@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { superConfigStore } from '$lib/stores';
+	import { superConfigStore as store } from '$lib/stores';
 	import { getDefaultTransform } from '$lib/transform-globule';
 	import { Icon } from 'svelte-icons-pack';
 	import { FiMinusSquare, FiPlusSquare } from 'svelte-icons-pack/fi';
@@ -9,23 +9,21 @@
 	let canAddTransform = false;
 
 	const removeTransform = () => {
-    $activeControl = undefined
-		$superConfigStore.subGlobuleConfigs[sgIndex].transforms.splice(tIndex, 1);
-		$superConfigStore.subGlobuleConfigs[sgIndex].transforms =
-			$superConfigStore.subGlobuleConfigs[sgIndex].transforms;
+		$activeControl = undefined;
+		$store.subGlobuleConfigs[sgIndex].transforms.splice(tIndex, 1);
+		$store.subGlobuleConfigs[sgIndex].transforms = $store.subGlobuleConfigs[sgIndex].transforms;
 	};
 	const addTransform = () => {
 		canAddTransform = true;
 	};
 	const createTransform = (event: any) => {
-		console.debug('onChange', { event }, event.target.value);
 		canAddTransform = false;
 		const newTransform = getDefaultTransform(event.target.value);
+		console.debug('createTransform, newTransform', newTransform);
 		if (newTransform) {
-			$superConfigStore.subGlobuleConfigs[sgIndex].transforms.splice(tIndex + 1, 0, newTransform);
-			$superConfigStore.subGlobuleConfigs[sgIndex].transforms =
-				$superConfigStore.subGlobuleConfigs[sgIndex].transforms;
-
+			$store.subGlobuleConfigs[sgIndex].transforms.splice(tIndex + 1, 0, newTransform);
+			$store.subGlobuleConfigs[sgIndex].transforms = $store.subGlobuleConfigs[sgIndex].transforms;
+			console.debug({ $store });
 			$activeControl = { sgIndex, tIndex: tIndex + 1 };
 		}
 	};
@@ -41,18 +39,19 @@
 </div>
 <div class={canAddTransform ? 'can-add-transform' : 'cannot-add-transform'}>
 	<select on:change={createTransform}>
-		<option>Choose transform...</option>
+		<option value="" selected>Choose transform...</option>
 		<option value={'translate'}>Translate</option>
 		<option value={'rotate'}>Rotate</option>
+		<option value={'reflect'}>Reflect</option>
 	</select>
 </div>
 
 <style>
-  button {
-    border: none;
-    background-color: transparent;
-    padding: 0;
-  }
+	button {
+		border: none;
+		background-color: transparent;
+		padding: 0;
+	}
 	.cannot-add-transform {
 		display: none;
 	}

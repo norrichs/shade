@@ -86,6 +86,6 @@
 {/if}
 {#each $superGlobuleGeometryStore.subGlobules as globuleGeometry, index}
 	<T.Group position={[0, 0, 0]} on:click={(ev) => handleClick(ev, globuleGeometry)}>
-		<GlobuleMesh {globuleGeometry} selected={$selectedGlobule.subGlobuleGeometryIndex === index} />
+		<GlobuleMesh {globuleGeometry} selected={globuleGeometry.globuleConfigId === $selectedGlobule.globuleId} />
 	</T.Group>
 {/each}

@@ -13,6 +13,7 @@
 <style>
 	.container {
 		position: relative;
+		border: 1px solid grey;
 	}
 
 </style>

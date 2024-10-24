@@ -27,6 +27,7 @@
 	import { getCurvePoints, getLevelLines } from '$lib/generate-level';
 	import CheckboxInput from '../controls/CheckboxInput.svelte';
 	import { string } from 'three/webgpu';
+	import { updateGlobuleConfigs } from '$lib/generate-superglobule';
 
 	type ShowControlCurveValue =
 		| 'ShapeConfig'
@@ -70,6 +71,20 @@
 		}
 	};
 
+	const getGlobuleConfig = () =>
+		$superConfigStore.subGlobuleConfigs[$selectedGlobule.subGlobuleConfigIndex].globuleConfig;
+
+	const updateStores = () => {
+		console.debug('update stores');
+
+		const newGlobuleConfig = getGlobuleConfig();
+		(newGlobuleConfig[curveConfigByType[curveStoreType]] as CurveConfig).curves = curves
+		const newSuperGlobuleConfig = updateGlobuleConfigs($superConfigStore, newGlobuleConfig)
+		$superConfigStore = newSuperGlobuleConfig
+
+		curves = (newGlobuleConfig[curveConfigByType[curveStoreType]] as CurveConfig).curves;
+	};
+
 	$: {
 		reverseUpdate($selectedGlobule.subGlobuleConfigId, curveStoreType);
 	}
@@ -85,10 +100,7 @@
 		]! as SilhouetteConfig,
 		$superConfigStore.subGlobuleConfigs[$selectedGlobule?.subGlobuleConfigIndex || 0].globuleConfig
 			.levelConfig.silhouetteSampleMethod
-		// curveStoreType === 'SpineCurveConfig'
 	);
-	// let levelLines =
-	// 	curveStoreType === 'SpineCurveConfig' ? getLevelLines(curvePoints, $superConfigStore.subGlobuleConfigs[subGlobuleConfigIndex].globuleConfig) : undefined;
 
 	const canv = {
 		minX: -200,
@@ -250,22 +262,6 @@
 			divisions: 4
 		});
 		reverseUpdate();
-	};
-
-	const updateStores = () => {
-		console.debug("update stores");
-
-		(
-			$superConfigStore.subGlobuleConfigs[$selectedGlobule.subGlobuleConfigIndex].globuleConfig[
-				curveConfigByType[curveStoreType]
-			] as CurveConfig
-		).curves = curves;
-
-		curves = (
-			$superConfigStore.subGlobuleConfigs[$selectedGlobule.subGlobuleConfigIndex].globuleConfig[
-				curveConfigByType[curveStoreType]
-			] as CurveConfig
-		).curves;
 	};
 
 	const updateCurves = (

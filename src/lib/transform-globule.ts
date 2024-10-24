@@ -12,9 +12,9 @@ import type {
 	GlobuleTransformScale,
 	Recurrence,
 	ChainableTransform,
-	Globule
+	Globule,
+	GlobuleReflect
 } from './types';
-import { radToDeg } from 'three/src/math/MathUtils.js';
 import { cloneGlobuleData } from './generate-superglobule';
 
 const constants = {
@@ -30,7 +30,13 @@ const constants = {
 		defaultTransform: { recurs: [1], translate: { x: 0, y: 0, z: 0 } }
 	},
 	scale: { title: 'Scale', defaultTransform: undefined },
-	reflect: { title: 'Reflect', defaultTransform: undefined }
+	reflect: {
+		title: 'Reflect',
+		defaultTransform: {
+			recurs: [1],
+			reflect: { normal: { x: 0, y: 0, z: 1 }, anchor: { x: 0, y: 0, z: 0 } }
+		}
+	}
 };
 
 export const getConstants = (tx: GlobuleTransform) => {
@@ -66,11 +72,18 @@ export const transformMutableGlobuleData = (
 	transform: GlobuleTransform,
 	multiplier = 1
 ): GlobuleData => {
+	console.debug('transformMutableGlobuleData');
 	if (isGlobuleTransformTranslate(transform)) {
+		console.debug('  translate');
 		return translateMutableGlobule(globuleData, transform.translate, multiplier);
 	} else if (isGlobuleTransformRotate(transform)) {
+		console.debug('  rotate');
 		return rotateMutableGlobule(globuleData, transform.rotate, multiplier);
+	} else if (isGlobuleTransformReflect(transform)) {
+		console.debug('  reflect');
+		return reflectMutableGlobule(globuleData, transform.reflect, multiplier);
 	} else {
+		console.debug('  none');
 		return globuleData;
 	}
 };
@@ -98,6 +111,41 @@ const translateMutableGlobule = (
 		}))
 	}));
 	return { bands };
+};
+
+const reflectMutableGlobule = (
+	globuleData: GlobuleData,
+	{ anchor, normal }: GlobuleReflect,
+	multiplier: number
+): GlobuleData => {
+	const anchorVector = new Vector3(anchor.x, anchor.y, anchor.z)
+	const normalVector = new Vector3(normal.x, normal.y, normal.z)
+	let bands: Band[] = globuleData.bands;
+	if (multiplier === 0) {
+		return { bands };
+	}
+	bands = bands.map((band: Band) => ({
+		...band,
+		facets: band.facets.map((f: Facet) => ({
+			...f,
+			triangle: f.triangle.set(
+				reflectVector(f.triangle.a, anchorVector, normalVector),
+				reflectVector(f.triangle.b, anchorVector, normalVector),
+				reflectVector(f.triangle.c, anchorVector, normalVector),
+			)
+		}))
+	}));
+	return { bands };
+};
+
+const reflectVector = (startingVector: Vector3, anchor: Vector3, normal: Vector3) => {
+	const vector = startingVector.clone();
+	const length = vector.length()
+	vector.addScaledVector(anchor, -1)
+	vector.reflect(normal)
+	// vector.setLength(-1 * length)
+	vector.addScaledVector(anchor, 1)
+	return vector
 };
 
 const rotateMutableGlobule = (

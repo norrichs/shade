@@ -663,32 +663,24 @@ export type GlobuleGeometry = {
 // number array allows for arbitrary, and repeating application of transforms
 export type Recurrence = number | number[];
 
-export type Plane = [Point3, Point3];
+export type Plane = [Point3, Point3, Point3];
 
-// export type GlobuleTransform = {
-// 	recurs: Recurrence;
-// 	translate: Point3;
-// 	rotate: GlobuleRotate;
-// 	reflect?: GlobuleReflect;
-// 	scale?: GlobuleScale;
-// };
-
-export type GlobuleTransformTranslate =  { translate: Point3 }
-export type GlobuleTransformRotate =  { rotate: GlobuleRotate }
-export type GlobuleTransformReflect =  { reflect: GlobuleReflect }
-export type GlobuleTransformScale =  { scale: GlobuleScale };
+export type GlobuleTransformTranslate = { translate: Point3 };
+export type GlobuleTransformRotate = { rotate: GlobuleRotate };
+export type GlobuleTransformReflect = { reflect: GlobuleReflect };
+export type GlobuleTransformScale = { scale: GlobuleScale };
 
 export type GlobuleTransform =
 	| GlobuleTransformTranslate
 	| GlobuleTransformRotate
 	| GlobuleTransformReflect
-	| GlobuleTransformScale
+	| GlobuleTransformScale;
 
 export type ChainableTransform = {
 	recurs?: Recurrence;
 } & GlobuleTransform;
 
-export type GlobuleReflect = { anchor: Point3; plane: Plane };
+export type GlobuleReflect = { anchor: Point3; normal: Point3 };
 export type GlobuleScale = { anchor: Point3; value: number };
 export type GlobuleRotate = { angle: number; anchor: Point3; axis: Point3 };
 

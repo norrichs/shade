@@ -1,12 +1,17 @@
 <script lang="ts">
 	import { generateGlobuleData } from '$lib/generate-shape';
 	import { superConfigStore as store } from '$lib/stores';
-	import { FiMinusSquare, FiPlusSquare } from 'svelte-icons-pack/fi';
+	import { FiTrash2, FiCopy, FiPlusSquare, FiGitBranch } from 'svelte-icons-pack/fi';
 	import GlobuleTileSimple from '../../globule-tile/GlobuleTileSimple.svelte';
 
 	import AddRemoveTransform from './AddRemoveTransform.svelte';
 	import { Icon } from 'svelte-icons-pack';
-	import { cloneSubGlobuleConfig } from '$lib/generate-superglobule';
+	import {
+		cloneSubGlobuleConfig,
+		copySubGlobuleConfig,
+		divergeSubGlobuleConfig
+	} from '$lib/generate-superglobule';
+	import GlobuleTileScene from '../../globule-tile/GlobuleTileScene.svelte';
 
 	export let sgIndex: number;
 
@@ -14,13 +19,30 @@
 
 	const removeSubGlobule = () => {
 		$store.subGlobuleConfigs.splice(sgIndex, 1);
-		$store.subGlobuleConfigs = $store.subGlobuleConfigs
+		$store.subGlobuleConfigs = $store.subGlobuleConfigs;
 	};
 
 	const copySubGlobule = () => {
-		$store.subGlobuleConfigs.splice(sgIndex + 1, 0, cloneSubGlobuleConfig($store.subGlobuleConfigs[sgIndex]));
-		$store.subGlobuleConfigs = $store.subGlobuleConfigs
-	}
+		$store.subGlobuleConfigs.splice(
+			sgIndex + 1,
+			0,
+			copySubGlobuleConfig($store.subGlobuleConfigs[sgIndex])
+		);
+		$store.subGlobuleConfigs = $store.subGlobuleConfigs;
+	};
+
+	const cloneSubGlobule = () => {
+		$store.subGlobuleConfigs.splice(
+			sgIndex + 1,
+			0,
+			cloneSubGlobuleConfig($store.subGlobuleConfigs[sgIndex])
+		);
+		$store.subGlobuleConfigs = $store.subGlobuleConfigs;
+	};
+
+	const diverge = () => {
+		$store = divergeSubGlobuleConfig($store, $store.subGlobuleConfigs[sgIndex].id);
+	};
 
 	const updateTitle = (newTitle: string) => {
 		if (newTitle && newTitle !== $store.subGlobuleConfigs[sgIndex].name) {
@@ -31,18 +53,27 @@
 
 <div class="container card-container">
 	<header class="card-header">
-		<h1
-			contenteditable="true"
-			on:input={(ev) => console.debug(ev)}
-			on:blur={(ev) => updateTitle(ev.currentTarget?.textContent || '')}
-		>
-			{$store.subGlobuleConfigs[sgIndex].name}
-		</h1>
+		<div>
+			<span
+				contenteditable="true"
+				on:input={(ev) => console.debug(ev)}
+				on:blur={(ev) => updateTitle(ev.currentTarget?.textContent || '')}
+			>
+				{$store.subGlobuleConfigs[sgIndex].name}
+			</span>
+		</div>
+
 		<button on:click={removeSubGlobule}>
-			<Icon size="20" src={FiMinusSquare} />
+			<Icon size="20" src={FiTrash2} />
 		</button>
 		<button on:click={copySubGlobule}>
+			<Icon size="20" src={FiCopy} />
+		</button>
+		<button on:click={cloneSubGlobule}>
 			<Icon size="20" src={FiPlusSquare} />
+		</button>
+		<button on:click={diverge}>
+			<Icon size="20" src={FiGitBranch} />
 		</button>
 	</header>
 	<div class="card-content">
@@ -53,7 +84,15 @@
 		/>
 	</div>
 	<div class="card-sidebar">
-		<GlobuleTileSimple size={200} globuleConfig={$store.subGlobuleConfigs[sgIndex].globuleConfig} />
+		<div>
+			{$store.subGlobuleConfigs[sgIndex].id}
+		</div>
+		<div>
+			{$store.subGlobuleConfigs[sgIndex].globuleConfig.id}
+		</div>
+		<GlobuleTileSimple size={200}>
+			<GlobuleTileScene globuleConfig={$store.subGlobuleConfigs[sgIndex].globuleConfig} {sgIndex} />
+		</GlobuleTileSimple>
 	</div>
 </div>
 

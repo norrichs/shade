@@ -1,6 +1,11 @@
 <script lang="ts">
 	import { superConfigStore } from '$lib/stores';
-	import { isGlobuleTransformRotate, isGlobuleTransformTranslate } from '$lib/transform-globule';
+	import {
+		isGlobuleTransformReflect,
+		isGlobuleTransformRotate,
+		isGlobuleTransformTranslate
+	} from '$lib/transform-globule';
+	import ReflectCard from './ReflectCard.svelte';
 	import RotateCard from './RotateCard.svelte';
 	import SubGlobuleCard from './SubGlobuleCard.svelte';
 	import TransformCard from './TransformCard.svelte';
@@ -18,7 +23,7 @@
 		<div>{$superConfigStore.name}</div>
 	</header>
 	<div>{$superConfigStore.subGlobuleConfigs.length}</div>
-	<div>
+	<div class="scroll-container">
 		{#each $superConfigStore.subGlobuleConfigs as subGlobuleConfig, sgIndex}
 			<SubGlobuleCard {sgIndex}>
 				{#each subGlobuleConfig.transforms as transform, tIndex}
@@ -35,6 +40,12 @@
 								{tIndex}
 								active={$activeControl?.sgIndex === sgIndex && $activeControl?.tIndex === tIndex}
 							/>
+						{:else if isGlobuleTransformReflect(transform)}
+							<ReflectCard
+								{sgIndex}
+								{tIndex}
+								active={$activeControl?.sgIndex === sgIndex && $activeControl?.tIndex === tIndex}
+							/>
 						{/if}
 					</TransformCard>
 				{/each}
@@ -42,3 +53,16 @@
 		{/each}
 	</div>
 </section>
+
+<style>
+	section {
+		width: 100%;
+		background-color: red;
+	}
+	.scroll-container {
+		background-color: aliceblue;
+		height: 50vh;
+		overflow-y: scroll;
+		overflow-x: visible;
+	}
+</style>

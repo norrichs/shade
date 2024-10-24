@@ -5,7 +5,9 @@ import type {
 	Band,
 	Facet,
 	Globule,
+	GlobuleConfig,
 	GlobuleData,
+	Id,
 	SubGlobule,
 	SubGlobuleConfig,
 	SuperGlobule,
@@ -68,10 +70,59 @@ export const cloneSubGlobuleConfig = (original: SubGlobuleConfig): SubGlobuleCon
 	return {
 		...original,
 		id: generateTempId('sub'),
+		globuleConfig: cloneGlobuleConfig(original.globuleConfig),
 		transforms: window.structuredClone(original.transforms)
+	};
+};
 
+export const copySubGlobuleConfig = (original: SubGlobuleConfig): SubGlobuleConfig => {
+	return {
+		...original,
+		id: generateTempId('sub'),
+		transforms: window.structuredClone(original.transforms)
+	};
+};
+
+export const cloneGlobuleConfig = (original: GlobuleConfig): GlobuleConfig => {
+	return {
+		...window.structuredClone(original),
+		id: generateTempId('glb')
+	};
+};
+
+export const updateGlobuleConfigs = (
+	superGlobuleConfig: SuperGlobuleConfig,
+	newGlobuleConfig: GlobuleConfig
+): SuperGlobuleConfig => {
+	return {
+		...superGlobuleConfig,
+		subGlobuleConfigs: superGlobuleConfig.subGlobuleConfigs.map((subGlobuleConfig) => {
+			return {
+				...subGlobuleConfig,
+				globuleConfig:
+					subGlobuleConfig.globuleConfig.id === newGlobuleConfig.id
+						? newGlobuleConfig
+						: subGlobuleConfig.globuleConfig
+			};
+		})
+	};
+};
+
+export const divergeSubGlobuleConfig = (
+	superGlobuleConfig: SuperGlobuleConfig,
+	subGlobuleConfigId: Id
+): SuperGlobuleConfig => {
+	const index = superGlobuleConfig.subGlobuleConfigs.findIndex(
+		(sgc) => sgc.id === subGlobuleConfigId
+	);
+	if (index >= 0) {
+		superGlobuleConfig.subGlobuleConfigs[index] = {
+			...superGlobuleConfig.subGlobuleConfigs[index],
+			globuleConfig: cloneGlobuleConfig(superGlobuleConfig.subGlobuleConfigs[index].globuleConfig)
+		};
 	}
-}
+	return superGlobuleConfig;
+};
 
 export const cloneGlobuleData = (globuleData: GlobuleData): GlobuleData => {
 	return { bands: globuleData.bands.map((b) => cloneBand(b)) };
