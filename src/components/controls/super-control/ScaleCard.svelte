@@ -6,14 +6,15 @@
 		GlobuleTransform,
 		GlobuleTransformRotate,
 		Recurrence,
-		GlobuleTransformReflect
+		GlobuleTransformReflect,
+		GlobuleTransformScale
 	} from '$lib/types';
 	import RecurrenceControl from './RecurrenceControl.svelte';
 	import { superConfigStore as store } from '$lib/stores';
 	import { activeControl } from './active-control';
 	import {
 		getRecurrences,
-		isGlobuleTransformReflect,
+		isGlobuleTransformScale,
 		isGlobuleTransformRotate
 	} from '$lib/transform-globule';
 	import { formatPoint3, isClose } from '$lib/util';
@@ -21,46 +22,42 @@
 	import PickPointsButton from './PickPointsButton.svelte';
 	import { interactionMode } from '../../three-renderer-v2/interaction-mode';
 	import { Vector3 } from 'three';
-  import { round } from '$lib/util';
+	import { round } from '$lib/util';
+	import NumberInput from '../NumberInput.svelte';
 
 	export let sgIndex = 0;
 	export let tIndex = 0;
 	export let active = false;
 
 	let recurs = getRecurrences($store.subGlobuleConfigs[sgIndex].transforms[tIndex].recurs);
-	let { anchor, normal } = isGlobuleTransformReflect(
+	let { anchor, scaleValue } = isGlobuleTransformScale(
 		$store.subGlobuleConfigs[sgIndex].transforms[tIndex]
 	)
-		? $store.subGlobuleConfigs[sgIndex].transforms[tIndex].reflect
+		? $store.subGlobuleConfigs[sgIndex].transforms[tIndex].scale
 		: {
 				anchor: { x: 0, y: 0, z: 0 },
-				normal: { x: 0, y: 0, z: 1 }
+				scaleValue: 1
 		  };
 
 	const activate = () => {
 		$activeControl = { sgIndex, tIndex };
 		const transform = $store.subGlobuleConfigs[sgIndex].transforms[tIndex];
-		if (isGlobuleTransformReflect(transform)) {
-			normal = { ...transform.reflect.normal };
-			anchor = { ...transform.reflect.anchor };
+		if (isGlobuleTransformScale(transform)) {
+			scaleValue = transform.scale.scaleValue;
+			anchor = { ...transform.scale.anchor };
 			recurs = getRecurrences(transform.recurs);
 		}
 	};
 
-	const isUpdatableAnchor = (tx: GlobuleTransform): tx is GlobuleTransformReflect => {
-		return (
-			isGlobuleTransformReflect(tx) &&
-			(!isClose(tx.reflect.anchor.x, anchor.x) ||
-				!isClose(tx.reflect.anchor.y, anchor.y) ||
-				!isClose(tx.reflect.anchor.z, anchor.z))
-		);
+	const isUpdatableScaleValue = (tx: GlobuleTransform): tx is GlobuleTransformScale => {
+		return isGlobuleTransformScale(tx) && !isClose(tx.scale.scaleValue, scaleValue);
 	};
-	const isUpdatableNormal = (tx: GlobuleTransform): tx is GlobuleTransformReflect => {
+	const isUpdatableAnchor = (tx: GlobuleTransform): tx is GlobuleTransformScale => {
 		return (
-			isGlobuleTransformReflect(tx) &&
-			(!isClose(tx.reflect.normal.x, normal.x) ||
-				!isClose(tx.reflect.normal.y, normal.y) ||
-				!isClose(tx.reflect.normal.z, normal.z))
+			isGlobuleTransformScale(tx) &&
+			(!isClose(tx.scale.anchor.x, anchor.x) ||
+				!isClose(tx.scale.anchor.y, anchor.y) ||
+				!isClose(tx.scale.anchor.z, anchor.z))
 		);
 	};
 	const isUpdatableRecurs = (tx: GlobuleTransform & { recurs?: Recurrence }) => {
@@ -78,54 +75,46 @@
 	};
 
 	const onSelectPoint = () => {
-		if (!isGlobuleTransformReflect($store.subGlobuleConfigs[sgIndex].transforms[tIndex])) {
+		if (!isGlobuleTransformScale($store.subGlobuleConfigs[sgIndex].transforms[tIndex])) {
 			($interactionMode as any).type = 'standard';
 			return;
 		}
 		if ($interactionMode.type === 'point-select-anchor') {
 			[anchor] = $interactionMode.data.points;
-			$store.subGlobuleConfigs[sgIndex].transforms[tIndex].reflect.anchor = anchor;
-		} else if ($interactionMode.type === 'point-select-axis') {
-			const [p0, p1] = $interactionMode.data.points;
-			const normalizedAxis = new Vector3(p1.x - p0.x, p1.y - p0.y, p1.z - p0.z).setLength(1);
-			normal = { x: normalizedAxis.x, y: normalizedAxis.y, z: normalizedAxis.z };
-			$store.subGlobuleConfigs[sgIndex].transforms[tIndex].reflect.normal = normal;
+			$store.subGlobuleConfigs[sgIndex].transforms[tIndex].scale.anchor = anchor;
 		}
 
 		($interactionMode as any).type = 'standard';
 	};
 
-	const updateStore = (normal: Point3, anchor: Point3, recurs: number[]) => {
+	const updateStore = (scaleValue: number, anchor: Point3, recurs: number[]) => {
 		if (isUpdatableRecurs($store.subGlobuleConfigs[sgIndex].transforms[tIndex])) {
 			$store.subGlobuleConfigs[sgIndex].transforms[tIndex].recurs = recurs;
 		}
 		if (isUpdatableAnchor($store.subGlobuleConfigs[sgIndex].transforms[tIndex])) {
-			$store.subGlobuleConfigs[sgIndex].transforms[tIndex].reflect.anchor = anchor;
+			$store.subGlobuleConfigs[sgIndex].transforms[tIndex].scale.anchor = anchor;
 		}
-		if (isUpdatableNormal($store.subGlobuleConfigs[sgIndex].transforms[tIndex])) {
-			$store.subGlobuleConfigs[sgIndex].transforms[tIndex].reflect.normal = normal;
+		if (isUpdatableScaleValue($store.subGlobuleConfigs[sgIndex].transforms[tIndex])) {
+			$store.subGlobuleConfigs[sgIndex].transforms[tIndex].scale.scaleValue = scaleValue;
 		}
 	};
 
-	$: updateStore(normal, anchor, recurs);
+	$: updateStore(scaleValue, anchor, recurs);
 </script>
 
-<div class="reflect-card">
+<div class="scale-card">
 	{#if active}
 		<div>
 			<RecurrenceControl bind:recurs />
-			{#if isGlobuleTransformReflect($store.subGlobuleConfigs[sgIndex].transforms[tIndex])}
-				<div>
-					<PointInput label="Normal" constraint={{ length: 1 }} bind:value={normal} />
-					<PickPointsButton
-						mode={{ type: 'point-select-axis', data: { pick: 2, points: [] }, onSelectPoint }}
-					/>
-				</div>
+			{#if isGlobuleTransformScale($store.subGlobuleConfigs[sgIndex].transforms[tIndex])}
 				<div>
 					<PointInput label="Anchor" bind:value={anchor} />
 					<PickPointsButton
 						mode={{ type: 'point-select-anchor', data: { pick: 1, points: [] }, onSelectPoint }}
 					/>
+				</div>
+				<div>
+					<NumberInput label="Scale" step={0.1} min={-10} max={10} bind:value={scaleValue} />
 				</div>
 			{/if}
 		</div>
@@ -140,15 +129,15 @@
 			<div>
 				<span>Anchor: </span><span>{formatPoint3(anchor, 2)}</span>
 			</div>
-      <div>
-				<span>Normal: </span><span>{formatPoint3(normal, 2)}</span>
+			<div>
+				<span>Sacle: </span><span>{round(scaleValue, 3)}</span>
 			</div>
 		</button>
 	{/if}
 </div>
 
 <style>
-	.reflect-card {
+	.scale-card {
 		border: 1px solid black;
 	}
 	.display {

@@ -19,7 +19,6 @@
 	const createTransform = (event: any) => {
 		canAddTransform = false;
 		const newTransform = getDefaultTransform(event.target.value);
-		console.debug('createTransform, newTransform', newTransform);
 		if (newTransform) {
 			$store.subGlobuleConfigs[sgIndex].transforms.splice(tIndex + 1, 0, newTransform);
 			$store.subGlobuleConfigs[sgIndex].transforms = $store.subGlobuleConfigs[sgIndex].transforms;
@@ -43,6 +42,7 @@
 		<option value={'translate'}>Translate</option>
 		<option value={'rotate'}>Rotate</option>
 		<option value={'reflect'}>Reflect</option>
+		<option value={'scale'}>Scale</option>
 	</select>
 </div>
 

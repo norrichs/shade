@@ -3,10 +3,12 @@
 	import {
 		isGlobuleTransformReflect,
 		isGlobuleTransformRotate,
+		isGlobuleTransformScale,
 		isGlobuleTransformTranslate
 	} from '$lib/transform-globule';
 	import ReflectCard from './ReflectCard.svelte';
 	import RotateCard from './RotateCard.svelte';
+	import ScaleCard from './ScaleCard.svelte';
 	import SubGlobuleCard from './SubGlobuleCard.svelte';
 	import TransformCard from './TransformCard.svelte';
 	import TranslateCard from './TranslateCard.svelte';
@@ -42,6 +44,12 @@
 							/>
 						{:else if isGlobuleTransformReflect(transform)}
 							<ReflectCard
+								{sgIndex}
+								{tIndex}
+								active={$activeControl?.sgIndex === sgIndex && $activeControl?.tIndex === tIndex}
+							/>
+						{:else if isGlobuleTransformScale(transform)}
+							<ScaleCard
 								{sgIndex}
 								{tIndex}
 								active={$activeControl?.sgIndex === sgIndex && $activeControl?.tIndex === tIndex}

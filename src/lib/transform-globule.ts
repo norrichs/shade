@@ -13,7 +13,8 @@ import type {
 	Recurrence,
 	ChainableTransform,
 	Globule,
-	GlobuleReflect
+	GlobuleReflect,
+	GlobuleScale
 } from './types';
 import { cloneGlobuleData } from './generate-superglobule';
 
@@ -29,7 +30,13 @@ const constants = {
 		title: 'Translation',
 		defaultTransform: { recurs: [1], translate: { x: 0, y: 0, z: 0 } }
 	},
-	scale: { title: 'Scale', defaultTransform: undefined },
+	scale: {
+		title: 'Scale',
+		defaultTransform: {
+			recurs: [1],
+			scale: { anchor: { x: 0, y: 0, z: 0 }, scaleValue: 1 }
+		}
+	},
 	reflect: {
 		title: 'Reflect',
 		defaultTransform: {
@@ -82,6 +89,9 @@ export const transformMutableGlobuleData = (
 	} else if (isGlobuleTransformReflect(transform)) {
 		console.debug('  reflect');
 		return reflectMutableGlobule(globuleData, transform.reflect, multiplier);
+	} else if (isGlobuleTransformScale(transform)) {
+		console.debug('  scale')
+		return scaleMutableGlobule(globuleData, transform.scale, multiplier)
 	} else {
 		console.debug('  none');
 		return globuleData;
@@ -118,8 +128,8 @@ const reflectMutableGlobule = (
 	{ anchor, normal }: GlobuleReflect,
 	multiplier: number
 ): GlobuleData => {
-	const anchorVector = new Vector3(anchor.x, anchor.y, anchor.z)
-	const normalVector = new Vector3(normal.x, normal.y, normal.z)
+	const anchorVector = new Vector3(anchor.x, anchor.y, anchor.z);
+	const normalVector = new Vector3(normal.x, normal.y, normal.z);
 	let bands: Band[] = globuleData.bands;
 	if (multiplier === 0) {
 		return { bands };
@@ -131,7 +141,7 @@ const reflectMutableGlobule = (
 			triangle: f.triangle.set(
 				reflectVector(f.triangle.a, anchorVector, normalVector),
 				reflectVector(f.triangle.b, anchorVector, normalVector),
-				reflectVector(f.triangle.c, anchorVector, normalVector),
+				reflectVector(f.triangle.c, anchorVector, normalVector)
 			)
 		}))
 	}));
@@ -140,13 +150,43 @@ const reflectMutableGlobule = (
 
 const reflectVector = (startingVector: Vector3, anchor: Vector3, normal: Vector3) => {
 	const vector = startingVector.clone();
-	const length = vector.length()
+	vector.addScaledVector(anchor, -1);
+	vector.reflect(normal);
+	vector.addScaledVector(anchor, 1);
+	return vector;
+};
+
+export const scaleMutableGlobule = (
+	globuleData: GlobuleData,
+	{ anchor, scaleValue }: GlobuleScale,
+	multiplier: number
+): GlobuleData => {
+	const anchorVector = new Vector3(anchor.x, anchor.y, anchor.z);
+	let bands: Band[] = globuleData.bands;
+	if (multiplier === 0) {
+		return { bands };
+	}
+	bands = bands.map((band: Band) => ({
+		...band,
+		facets: band.facets.map((f: Facet) => ({
+			...f,
+			triangle: f.triangle.set(
+				scaleVector(f.triangle.a, anchorVector, scaleValue * multiplier),
+				scaleVector(f.triangle.b, anchorVector, scaleValue * multiplier),
+				scaleVector(f.triangle.c, anchorVector, scaleValue * multiplier)
+			)
+		}))
+	}));
+	return { bands };
+};
+
+const scaleVector = (startingVector: Vector3, anchor: Vector3, value: number) => { 
+	const vector = startingVector.clone();
 	vector.addScaledVector(anchor, -1)
-	vector.reflect(normal)
-	// vector.setLength(-1 * length)
+	vector.setLength(vector.length() * value)
 	vector.addScaledVector(anchor, 1)
 	return vector
-};
+}
 
 const rotateMutableGlobule = (
 	globuleData: GlobuleData,

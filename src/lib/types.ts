@@ -681,7 +681,7 @@ export type ChainableTransform = {
 } & GlobuleTransform;
 
 export type GlobuleReflect = { anchor: Point3; normal: Point3 };
-export type GlobuleScale = { anchor: Point3; value: number };
+export type GlobuleScale = { anchor: Point3; scaleValue: number };
 export type GlobuleRotate = { angle: number; anchor: Point3; axis: Point3 };
 
 export type GlobuleConfig = {
