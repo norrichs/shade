@@ -8,7 +8,12 @@ import type {
 	SpineCurveConfig,
 	BandConfig,
 	StrutConfig,
-	LevelOffset
+	LevelOffset,
+	SubGlobuleConfig,
+	ChainableTransform,
+	Id,
+	SuperGlobuleConfig,
+	GlobuleConfig
 } from '$lib/types';
 
 export const deserializeSilhouetteConfig = (
@@ -39,6 +44,7 @@ export const deserializeShapeConfig = (
 	} as unknown as ShapeConfig;
 };
 export const deserializeLevelConfig = (res: any): LevelConfig => {
+	console.debug('deserializeLevelConfig', { res });
 	return {
 		type: 'LevelConfig',
 		...res,
@@ -72,13 +78,11 @@ export const deserializeRenderConfig = (res: any): RenderConfig => {
 		}
 	};
 };
-export const deserializeSpineCurveConfig = (
-	res: object & { curves: unknown }
-): SpineCurveConfig => {
+export const deserializeSpineCurveConfig = (res: object & { curves: string }): SpineCurveConfig => {
 	return {
 		type: 'SpineCurveConfig',
 		...res,
-		curves: JSON.parse(res.curves as string)
+		curves: JSON.parse(res.curves)
 	} as SpineCurveConfig;
 };
 export const deserializeBandConfig = (res: object): BandConfig => {
@@ -87,14 +91,69 @@ export const deserializeBandConfig = (res: object): BandConfig => {
 export const deserializeStrutConfig = (res: object): StrutConfig => {
 	return { type: 'StrutConfig', ...res } as StrutConfig;
 };
+export type TransitionalSuperGlobuleConfig = Omit<SuperGlobuleConfig, 'subGlobuleConfigs'> & {
+	subGlobuleConfigs: TransitionalSubGlobuleConfig[];
+};
+
+export type TransitionalSubGlobuleConfig = Omit<SubGlobuleConfig, 'globuleConfig'> & {
+	globuleConfigId: Id;
+};
+
+export const deserialzeSuperGlobuleConfig = ({
+	id,
+	name,
+	subGlobuleConfigs
+}: {
+	id: number;
+	name: string | null;
+	subGlobuleConfigs: {
+		id: number;
+		name: string | null;
+		globuleConfigId: number | null;
+		superGlobuleConfigId: number | null;
+		transforms: unknown;
+	}[];
+}): TransitionalSuperGlobuleConfig => {
+	return {
+		type: 'SuperGlobuleConfig',
+		id,
+		name: name || 'unknown',
+		subGlobuleConfigs: subGlobuleConfigs.map((subGC) => deserializeSubGlobuleConfig(subGC))
+	};
+};
+
+export const deserializeSubGlobuleConfig = ({
+	id,
+	name,
+	transforms,
+	globuleConfigId
+}: {
+	id: number;
+	name: string | null;
+	globuleConfigId: number | null;
+	superGlobuleConfigId: number | null;
+	transforms: unknown;
+}): TransitionalSubGlobuleConfig => {
+	return {
+		type: 'SubGlobuleConfig',
+		id,
+		name: name || 'unknown',
+		globuleConfigId: globuleConfigId || '',
+		transforms: JSON.parse(transforms as string) as ChainableTransform[]
+	};
+};
 
 ////////////////////////////////////////////////
 
-export const getSilhouetteConfigValues = (cfg: SilhouetteConfig, globuleConfigId?: number) => ({
-	...cfg,
-	curves: JSON.stringify(cfg.curves),
-	...(globuleConfigId ? { globuleConfigId } : {})
-});
+export const getSilhouetteConfigValues = (cfg: SilhouetteConfig, globuleConfigId?: number) => {
+	const values = {
+		...cfg,
+		curves: JSON.stringify(cfg.curves),
+		...(globuleConfigId ? { globuleConfigId } : {})
+	};
+	console.debug('*** silhouette values', { values });
+	return values;
+};
 
 export const getDepthCurveConfigValues = (cfg: DepthCurveConfig, globuleConfigId?: number) => ({
 	...cfg,
@@ -110,24 +169,37 @@ export const getShapeConfigValues = (cfg: ShapeConfig, globuleConfigId?: number)
 	...(globuleConfigId ? { globuleConfigId } : {})
 });
 
-export const getLevelConfigValues = (cfg: LevelConfig, globuleConfigId?: number) => ({
-	...cfg,
-	silhouetteSampleMethod: cfg.silhouetteSampleMethod.method,
-	silhouetteSampleMethodDivisions: cfg.silhouetteSampleMethod.divisions,
-	...(globuleConfigId ? { globuleConfigId } : {})
-});
+export const getLevelConfigValues = (cfg: LevelConfig, globuleConfigId?: number) => {
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	const { levelOffsets, ...rest } = cfg;
+	return {
+		...rest,
+		silhouetteSampleMethod: rest.silhouetteSampleMethod.method,
+		silhouetteSampleMethodDivisions: rest.silhouetteSampleMethod.divisions,
+		globuleConfigId
+	};
+};
 
-export const getLevelOffsetsValues = (cfg: LevelOffset[], levelConfigId: number) => ({
-	// TODO - remove hack so that this deals with array of offsets correctly
-	...cfg[0],
-	levelConfigId
-});
+export const getLevelOffsetsValues = (cfg: LevelOffset[], levelConfigId: number) => {
+	const values = {
+		// TODO - remove hack so that this deals with array of offsets correctly
+		...cfg[0],
+		levelConfigId
+	};
+	values.id = undefined
+	console.debug('getLevelOffsetValues', { values });
+	return values;
+};
 
-export const getRenderConfigValues = (cfg: RenderConfig, globuleConfigId?: number) => ({
-	...cfg.ranges,
-	...cfg.show,
-	...(globuleConfigId ? { globuleConfigId } : {})
-});
+export const getRenderConfigValues = (cfg: RenderConfig, globuleConfigId?: number) => {
+	const values = {
+		...cfg.ranges,
+		...cfg.show,
+		...(globuleConfigId ? { globuleConfigId } : {})
+	};
+	console.debug('*** getRenderConfigValues', { values });
+	return values;
+};
 
 export const getSpineCurveConfigValues = (cfg: SpineCurveConfig, globuleConfigId?: number) => ({
 	...cfg,
@@ -147,4 +219,13 @@ export const getStrutConfigValues = (cfg: StrutConfig, globuleConfigId?: number)
 		...rest,
 		...(globuleConfigId ? { globuleConfigId } : {})
 	};
+};
+
+export const stripId = (globuleConfig: GlobuleConfig) => {
+	for (const key in globuleConfig) {
+		if (typeof globuleConfig[key] === 'object') {
+			globuleConfig[key].id = undefined;
+		}
+	}
+	return globuleConfig;
 };

@@ -428,7 +428,7 @@ export type LevelOffset = {
 export type LevelConfig = {
 	// silhouetteConfig: SilhouetteConfig,
 	type: 'LevelConfig';
-	id: Id;
+	id?: number;
 	silhouetteSampleMethod: CurveSampleMethod;
 	levelPrototypeSampleMethod: 'shape' | 'curve';
 	levelCount?: number;
@@ -592,6 +592,7 @@ export type GeometryConfig =
 	| RenderConfig;
 
 export type Id = TempId | number;
+export type GlobuleConfigType = 'GlobuleConfig' | 'SuperGlobuleConfig';
 // SUPER
 export type SuperGlobuleConfig = {
 	type: 'SuperGlobuleConfig';

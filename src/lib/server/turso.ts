@@ -2,8 +2,9 @@ import { type LibSQLDatabase, drizzle } from 'drizzle-orm/libsql';
 import { createClient } from '@libsql/client/http';
 import * as globuleSchema from './schema/globule';
 import * as globuleConfigSchema from './schema/globuleConfig';
+import * as superGlobuleConfigSchema from './schema/superGlobuleConfig'
 
-const schema = { ...globuleConfigSchema, ...globuleSchema };
+const schema = { ...globuleConfigSchema, ...globuleSchema, ...superGlobuleConfigSchema };
 
 export function tursoClient(): LibSQLDatabase<typeof schema> {
 	const url = import.meta.env.VITE_TURSO_DB_URL?.trim();

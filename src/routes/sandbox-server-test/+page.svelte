@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { config } from '$lib/stores/stores';
+	import { configStore } from '$lib/stores/stores';
 	import type { GlobuleConfig } from '$lib/types';
 
 	let globuleConfigData: GlobuleConfig[];

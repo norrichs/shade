@@ -1,19 +1,6 @@
-import {
-	globuleConfigs,
-	silhouetteConfigs,
-	depthCurveConfigs,
-	shapeConfigs,
-	levelConfigs,
-	levelOffsets,
-	renderConfigs,
-	spineCurveConfigs,
-	bandConfigs,
-	strutConfigs
-} from '$lib/server/schema/globuleConfig';
 import { tursoClient } from '$lib/server/turso';
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import type { GlobuleConfig } from '$lib/types';
 import {
 	deserializeSilhouetteConfig,
 	deserializeDepthCurveConfig,
@@ -22,65 +9,17 @@ import {
 	deserializeRenderConfig,
 	deserializeSpineCurveConfig,
 	deserializeBandConfig,
-	deserializeStrutConfig,
-	getSilhouetteConfigValues,
-	getDepthCurveConfigValues,
-	getShapeConfigValues,
-	getLevelConfigValues,
-	getLevelOffsetsValues,
-	getRenderConfigValues,
-	getSpineCurveConfigValues,
-	getBandConfigValues,
-	getStrutConfigValues
+	deserializeStrutConfig
 } from './utils';
+import { insertNewGlobuleConfig } from './insertNewGlobule';
+import type { GlobuleConfig } from '$lib/types';
 
 export const POST: RequestHandler = async ({ request }) => {
 	const db = tursoClient();
-	const {
-		silhouetteConfig,
-		depthCurveConfig,
-		shapeConfig,
-		levelConfig,
-		renderConfig,
-		spineCurveConfig,
-		bandConfig,
-		strutConfig,
-		name
-	} = (await request.json()) as GlobuleConfig;
-	const [{ id: globuleConfigId }] = await db
-		.insert(globuleConfigs)
-		.values({ name })
-		.returning({ id: globuleConfigs.id });
+	const globuleConfigData = (await request.json()) as GlobuleConfig;
+	const idResponse = await insertNewGlobuleConfig(globuleConfigData, db);
 
-	await db
-		.insert(silhouetteConfigs)
-		.values(getSilhouetteConfigValues(silhouetteConfig, globuleConfigId));
-
-	await db
-		.insert(depthCurveConfigs)
-		.values(getDepthCurveConfigValues(depthCurveConfig, globuleConfigId));
-
-	await db.insert(shapeConfigs).values(getShapeConfigValues(shapeConfig, globuleConfigId));
-
-	const [{ id: levelConfigId }] = await db
-		.insert(levelConfigs)
-		.values(getLevelConfigValues(levelConfig, globuleConfigId))
-		.returning({ id: levelConfigs.id });
-
-	await db
-		.insert(levelOffsets)
-		.values(getLevelOffsetsValues(levelConfig.levelOffsets, levelConfigId));
-
-	await db.insert(renderConfigs).values(getRenderConfigValues(renderConfig, globuleConfigId));
-
-	await db
-		.insert(spineCurveConfigs)
-		.values(getSpineCurveConfigValues(spineCurveConfig, globuleConfigId));
-	
-	await db.insert(bandConfigs).values(getBandConfigValues(bandConfig, globuleConfigId));
-
-	await db.insert(strutConfigs).values(getStrutConfigValues(strutConfig, globuleConfigId));
-	return json(globuleConfigId);
+	return json(idResponse);
 };
 
 //////////////////////////////////
@@ -89,18 +28,19 @@ export const GET: RequestHandler = async () => {
 	const db = tursoClient();
 	const response = await db.query.globuleConfigs.findMany({
 		with: {
-			silhouetteConfig: true,
-			depthCurveConfig: true,
-			shapeConfig: true,
+			silhouetteConfig: { columns: { globuleConfigId: false } },
+			depthCurveConfig: { columns: { globuleConfigId: false } },
+			shapeConfig: { columns: { globuleConfigId: false } },
 			levelConfig: {
+				columns: { globuleConfigId: false },
 				with: {
 					levelOffsets: true
 				}
 			},
-			renderConfig: true,
-			bandConfig: true,
-			strutConfig: true,
-			spineCurveConfig: true
+			renderConfig: { columns: { globuleConfigId: false } },
+			bandConfig: { columns: { globuleConfigId: false } },
+			strutConfig: { columns: { globuleConfigId: false } },
+			spineCurveConfig: { columns: { globuleConfigId: false } }
 		}
 	});
 

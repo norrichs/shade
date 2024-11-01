@@ -217,18 +217,3 @@ export const strutConfigsRelations = relations(strutConfigs, ({ one }) => ({
 		relationName: 'strutConfig'
 	})
 }));
-
-// silhouetteConfig
-// depthCurveConfig
-// shapeConfig
-// levelConfig
-// renderConfig
-
-// spineCurveConfig
-// bandConfig
-// strutConfig
-
-// cutoutConfig
-// patternConfig
-// patternViewConfig
-// tiledPatternConfig

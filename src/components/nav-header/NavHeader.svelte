@@ -1,7 +1,9 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 
-	import { shouldUsePersisted } from '$lib/stores/stores';
+	import { shouldUsePersisted, superConfigStore } from '$lib/stores';
+	import Button from '../design-system/Button.svelte';
+	import NewConfigButton from './NewConfigButton.svelte';
 	import SaveConfigButton from './SaveConfigButton.svelte';
 	const sandBoxOptions = [
 		{ value: '/sandbox-ellipse-intersections', label: 'Ellipse Intersections' },
@@ -34,9 +36,11 @@
 				{/each}
 			</select>
 		</div>
-		<div>
+		<div class='button-group'>
+			<NewConfigButton />
 			<SaveConfigButton />
-			<button> Settings </button>
+			<Button on:click={() => console.debug({ $superConfigStore })}>Print super</Button>
+			<Button> Settings </Button>
 			<label for="use-persisted-checkbox">persist settings?</label>
 			<input type="checkbox" bind:checked={$shouldUsePersisted} />
 
@@ -55,7 +59,7 @@
 		font-optical-sizing: auto;
 		font-weight: 300;
 		font-style: normal;
-		font-variation-settings: 'wdth' 100;
+		font-variation-settings: 100;
 		font-size: 1.5rem;
 		left: 0;
 		top: 0;
@@ -65,5 +69,11 @@
 		flex-direction: row;
 		justify-content: space-between;
 		background-color: rgba(100, 100, 100, 1);
+	}
+	.button-group {
+		display: flex;
+		flex-direction: row;
+		gap: 12px;
+		
 	}
 </style>
