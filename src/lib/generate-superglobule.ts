@@ -1,5 +1,6 @@
 import { generateGlobuleData } from './generate-shape';
 import { generateTempId } from './id-handler';
+import { recombineSubGlobules } from './recombination';
 import { generateTransformedGlobules } from './transform-globule';
 import type {
 	Band,
@@ -15,35 +16,44 @@ import type {
 } from './types';
 
 export const generateSuperGlobule = (superConfig: SuperGlobuleConfig): SuperGlobule => {
-	const subGlobules = superConfig.subGlobuleConfigs.map((sgc) => generateSubGlobule(sgc)).flat();
+	const subGlobules = superConfig.subGlobuleConfigs
+		.map((sgc, index) => generateSubGlobule(sgc, index))
+		.flat();
+
+	const recombinedSubGlobules = recombineSubGlobules(subGlobules);
 
 	const superGlobule: SuperGlobule = {
 		type: 'SuperGlobule',
 		superGlobuleConfigId: superConfig.id,
 		name: superConfig.name,
-		subGlobules
+		subGlobules: recombinedSubGlobules
 	};
-	console.debug('-----------------  generateSuperGloblule', { superGlobule });
 	return superGlobule;
 };
 
-const generateSubGlobule = (
-	subGlobuleConfig: SubGlobuleConfig,
-	recurrenceIndex?: number
-): SubGlobule => {
+const generateSubGlobule = (subGlobuleConfig: SubGlobuleConfig, sgIndex: number): SubGlobule => {
 	const { transforms, id, name } = subGlobuleConfig;
 
 	const prototypeGlobule: Globule = {
 		type: 'Globule',
+		coord: { s: sgIndex, t: 0, r: 0 },
+		coordStack: [],
+		address: { s: sgIndex, g: [], b: undefined },
 		subGlobuleConfigId: subGlobuleConfig.id,
 		globuleConfigId: subGlobuleConfig.globuleConfig.id,
 		name: subGlobuleConfig.globuleConfig.name,
-		data: generateGlobuleData(subGlobuleConfig.globuleConfig)
+		data: generateGlobuleData(subGlobuleConfig.globuleConfig),
+		visible: true
 	};
 
 	let globules: Globule[];
 	if (transforms) {
 		globules = generateTransformedGlobules(prototypeGlobule, transforms);
+		console.debug(
+			'TRANSFORMED GLOBULES',
+			globules.map((g) => `${g.address.s}[${g.address.g}]`)
+		);
+		
 	} else {
 		globules = [prototypeGlobule];
 	}
@@ -53,16 +63,6 @@ const generateSubGlobule = (
 		subGlobuleConfigId: id,
 		name,
 		data: globules as Globule[]
-	};
-};
-
-export const generateGlobule = (data: GlobuleData, config: SubGlobuleConfig): Globule => {
-	return {
-		type: 'Globule',
-		subGlobuleConfigId: config.id,
-		globuleConfigId: config.globuleConfig.id,
-		name: config.globuleConfig.name,
-		data
 	};
 };
 
@@ -128,7 +128,7 @@ export const cloneGlobuleData = (globuleData: GlobuleData): GlobuleData => {
 	return { bands: globuleData.bands.map((b) => cloneBand(b)) };
 };
 
-const cloneBand = (band: Band): Band => {
+export const cloneBand = (band: Band): Band => {
 	return {
 		...band,
 		facets: band.facets.map((f) => cloneFacet(f))

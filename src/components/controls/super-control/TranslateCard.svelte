@@ -3,7 +3,7 @@
 	import { getRecurrences, isGlobuleTransformTranslate } from '$lib/transform-globule';
 	import { activeControl } from './active-control';
 
-	import type { GlobuleTransform, GlobuleTransformTranslate, Point3, Recurrence } from '$lib/types';
+	import type { GlobuleTransform, GlobuleTransformTranslate, Point3, RecombinatoryRecurrence, Recurrence } from '$lib/types';
 	import RecurrenceControl from './RecurrenceControl.svelte';
 	import PickPointsButton from './PickPointsButton.svelte';
 	import PointInput from './PointInput.svelte';
@@ -62,7 +62,7 @@
 			updateLocal($superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex]);
 		}
 	};
-	const updateStore = (delta: Point3, recurs: number[]) => {
+	const updateStore = (delta: Point3, recurs: RecombinatoryRecurrence[]) => {
 		console.debug('updateStore', delta, recurs);
 
 		if (isUpdatableTranslation($superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex])) {
@@ -104,7 +104,7 @@
 			<div class="recurrence-display">
 				<span>Recurs: </span>
 				{#each recurs as r, i}
-					<div class="recurrence-display-item">{r}</div>
+					<div class="recurrence-display-item">{r.multiplier}</div>
 				{/each}
 			</div>
 			<div>

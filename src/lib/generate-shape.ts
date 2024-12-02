@@ -316,6 +316,7 @@ const getBandStyle = (bandOrientation: BandOrientation): BandStyle => {
 };
 
 const generateCircumferenceBands = (config: GlobuleConfig, levels: Level[]): Band[] => {
+	console.debug("************* generateCircumferenceBands")
 	const validation = validateBandConfig(config.bandConfig, levels);
 	if (!validation.isValid) {
 		throw new Error(validation.msg.join('\n'));
@@ -345,6 +346,15 @@ const generateCircumferenceBands = (config: GlobuleConfig, levels: Level[]): Ban
 	}
 	return bands;
 };
+
+/* 
+Triangle layout diagram
+        __________
+			/c\b     a/
+		/		 \	  /
+	/a     b\c/
+	---------
+*/
 
 /////////////////////////////////////////
 // Struts

@@ -1,9 +1,18 @@
-import type { Point3 } from '$lib/types';
+import type { BandSelection } from '$lib/stores';
+import type { Band, Id, Point3 } from '$lib/types';
 import { writable } from 'svelte/store';
 
-export type InteractionMode = { type: 'standard' } | PointSelectInteractionMode;
+export type InteractionMode =
+	| { type: 'standard' }
+	| PointSelectInteractionMode
+	| BandSelectInteractionMode;
 
 export type PointSelectInteractionMode =
+	| {
+			type: 'point-select-plane';
+			data: { pick: 3; points: Point3[] };
+			onSelectPoint?: () => void;
+	  }
 	| {
 			type: 'point-select-translate';
 			data: { pick: 2; points: Point3[] };
@@ -25,8 +34,32 @@ export type PointSelectInteractionMode =
 			onSelectPoint?: () => void;
 	  };
 
-export const isPointSelectInteractionMode = (mode: InteractionMode): mode is PointSelectInteractionMode =>
-	mode.type.startsWith('point-select');
+export type BandSelectInteractionMode =
+	| {
+			type: 'band-select-partners';
+			data: {
+				pick: 1;
+				originHighlight: BandSelection[];
+				originSelected: BandSelection | undefined;
+				partnerHighlight: BandSelection[];
+				partnerSelected: BandSelection | undefined;
+			};
+			onSelectBands: () => void;
+	  }
+	| {
+			type: 'band-select';
+			data: {
+				pick: 2;
+				bands: BandSelection[];
+			};
+	  };
+
+export const isPointSelectInteractionMode = (
+	mode: InteractionMode
+): mode is PointSelectInteractionMode => mode.type.startsWith('point-select');
+export const isBandSelectInteractionMode = (
+	mode: InteractionMode
+): mode is BandSelectInteractionMode => mode.type.startsWith('band-select');
 
 export const interactionMode = writable<InteractionMode>({ type: 'standard' });
 
@@ -52,6 +85,16 @@ export const interactions: {
 	},
 	'point-select-anchor': {
 		prompt: 'Pick one point to define rotation anchor',
+		buttonPrompt: 'Pick',
+		buttonReady: 'Apply'
+	},
+	'point-select-plane': {
+		prompt: 'Pick three points to define a plane',
+		buttonPrompt: 'Pick',
+		buttonReady: 'Apply'
+	},
+	'band-select-partners': {
+		prompt: 'Pick two touching bands',
 		buttonPrompt: 'Pick',
 		buttonReady: 'Apply'
 	}

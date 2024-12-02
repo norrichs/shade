@@ -257,6 +257,7 @@ export type PatternedBand = {
 	svgPath?: string;
 	id?: string;
 	tagAnchorPoint?: Point;
+	tagAngle?: number;
 	projectionType: 'patterned';
 };
 
@@ -391,6 +392,10 @@ export type DynamicStrokeBasis = 'quadWidth' | 'quadHeight' | 'ranked';
 export type TiledPatternConfig = {
 	type: TiledPattern;
 	tiling: TilingBasis;
+	labels?: {
+		scale: number;
+		angle: number;
+	};
 	config: {
 		rowCount?: number;
 		columnCount?: number;
@@ -489,10 +494,14 @@ export type GlobulePoints = {
 	points: Vector3[];
 };
 
+type BandSelection = string;
+
 export type Band = {
 	facets: Facet[];
 	orientation: BandOrientation;
 	endTab?: FacetTab;
+	selected?: BandSelection;
+	visible?: boolean;
 };
 export type BezierConfig = {
 	[key: string]: PointConfig2[] | string;
@@ -608,12 +617,21 @@ export type SuperGlobule = {
 	subGlobules: SubGlobule[];
 };
 
-export type SuperGlobuleGeometry = {
-	type: 'SuperGlobuleGeometry';
-	superGlobuleConfigId: Id;
-	name?: string;
-	subGlobules: GlobuleGeometry[];
-};
+export type SuperGlobuleGeometry =
+	| {
+			type: 'SuperGlobuleGeometry';
+			variant: 'Globule';
+			superGlobuleConfigId: Id;
+			name?: string;
+			subGlobules: GlobuleGeometry[];
+	  }
+	| {
+			type: 'SuperGlobuleGeometry';
+			variant: 'Band';
+			superGlobuleConfigId: Id;
+			name?: string;
+			subGlobules: BandGeometry[][];
+	  };
 
 // SUB
 export type SubGlobuleConfig = {
@@ -642,15 +660,24 @@ export type SubGlobuleGeometry = {
 // GLOBULE
 export type Globule = {
 	type: 'Globule';
+	coord: GlobuleConfigCoordinates;
+	coordStack: GlobuleConfigCoordinates[];
+	address: GeometryAddress<undefined>;
 	subGlobuleConfigId: Id;
 	globuleConfigId: Id;
 	name?: string;
 	recurrence?: number;
+	visible: boolean;
+	recombination?: Recombination;
 	transformChain?: GlobuleTransform[];
 	data: GlobuleData;
 };
 
-export type GlobuleData = { levels?: Level[]; bands: Band[]; struts?: Strut[] };
+export type GlobuleData = {
+	levels?: Level[];
+	bands: (Band & { visible: boolean })[];
+	struts?: Strut[];
+};
 
 export type GlobuleGeometry = {
 	type: 'GlobuleGeometry';
@@ -660,9 +687,51 @@ export type GlobuleGeometry = {
 	name?: string;
 	points: Vector3[];
 };
+export type BandGeometry = {
+	type: 'BandGeometry';
+	coord: BandConfigCoordinates;
+	coordStack: GlobuleConfigCoordinates[];
+	address: GeometryAddress<number>;
+	globuleConfigId: Id;
+	subGlobuleConfigId: Id;
+	globuleIndex: number;
+	bandIndex: number;
+	name?: string;
+	points: Vector3[];
+};
 
 // number array allows for arbitrary, and repeating application of transforms
-export type Recurrence = number | number[];
+export type Recurrence = number | number[] | RecombinatoryRecurrence[];
+
+export type GlobuleAddressed = undefined;
+export type BandAddressed = number;
+
+export type GeometryAddress<T extends GlobuleAddressed | BandAddressed> = {
+	s: number;
+	g: GlobuleAddress;
+	b: T;
+};
+export type GlobuleAddress = number[]; // where array position indicates transform index and arrayitem value indicates recurrence index
+
+export type GlobuleConfigCoordinates = { s: number; t: number; r: number };
+export type BandConfigCoordinates = GlobuleConfigCoordinates & { b: number };
+export type BandEnd = 'start' | 'end';
+export type BandMapping = {
+	originJoin: BandEnd;
+	partnerJoin: BandEnd;
+	originIndex: number;
+	partnerAddress: GeometryAddress<number>;
+};
+
+export type Recombination = {
+	bandMap: BandMapping[];
+};
+
+export type RecombinatoryRecurrence = {
+	multiplier: number;
+	ghost?: boolean;
+	recombines?: Recombination;
+};
 
 export type Plane = [Point3, Point3, Point3];
 

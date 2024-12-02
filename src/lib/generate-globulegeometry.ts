@@ -2,6 +2,8 @@ import type { Vector3 } from 'three';
 import { generateGlobuleData } from './generate-shape';
 import { generateTempId } from './id-handler';
 import type {
+	BandConfigCoordinates,
+	BandGeometry,
 	Facet,
 	Globule,
 	GlobuleConfig,
@@ -43,10 +45,51 @@ export const generateSuperGlobuleGeometry = (superGlobule: SuperGlobule): SuperG
 	});
 	return {
 		type: 'SuperGlobuleGeometry',
+		variant: 'Globule',
 		superGlobuleConfigId: superGlobule.superGlobuleConfigId,
 		name: superGlobule.name,
 		subGlobules: globules
 	};
+};
+
+export const generateSuperGlobuleBandGeometry = (
+	superGlobule: SuperGlobule
+): SuperGlobuleGeometry => {
+	const globules: BandGeometry[][] = [];
+	superGlobule.subGlobules.forEach((subGlobule: SubGlobule) => {
+		const { data } = subGlobule;
+		data.forEach((globule: Globule, index: number) => {
+			globules.push(generateBandGeometry(globule, index));
+		});
+	});
+	return {
+		type: 'SuperGlobuleGeometry',
+		variant: 'Band',
+		superGlobuleConfigId: superGlobule.superGlobuleConfigId,
+		name: superGlobule.name,
+		subGlobules: globules
+	};
+};
+
+export const generateBandGeometry = (globule: Globule, globuleIndex: number): BandGeometry[] => {
+	const bandGeometry =  globule.data.bands
+		.filter((b) => b.visible)
+		.map((band, bandIndex): BandGeometry => {
+			return {
+				type: 'BandGeometry',
+				coord: { ...globule.coord, b: bandIndex } as BandConfigCoordinates,
+				coordStack: globule.coordStack,
+				address: { ...globule.address, b: bandIndex },
+				name: `${globule.name}-band-${bandIndex}`,
+				globuleConfigId: globule.globuleConfigId,
+				subGlobuleConfigId: globule.subGlobuleConfigId,
+				points: getBandPoints(band.facets),
+				globuleIndex,
+				bandIndex
+			};
+		});
+	console.debug("generateBandGeometry", globule.data.bands.length, bandGeometry.length)
+	return bandGeometry
 };
 
 export const generateGlobuleGeometry = (globule: Globule | GlobuleConfig): GlobuleGeometry => {
@@ -74,7 +117,7 @@ export const generateGlobuleGeometry = (globule: Globule | GlobuleConfig): Globu
 	}
 };
 
-export const getNearestPoint = (point: Vector3, globule: GlobuleGeometry) => {
+export const getNearestPoint = (point: Vector3, globule: GlobuleGeometry | BandGeometry) => {
 	let closest = { point: globule.points[0], distance: globule.points[0].distanceTo(point) };
 	globule.points.forEach((p) => {
 		const distance = p.distanceTo(point);

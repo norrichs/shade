@@ -7,7 +7,10 @@
 		GlobuleTransformRotate,
 		Recurrence,
 		GlobuleTransformReflect,
-		GlobuleTransformScale
+		GlobuleTransformScale,
+
+		RecombinatoryRecurrence
+
 	} from '$lib/types';
 	import RecurrenceControl from './RecurrenceControl.svelte';
 	import { superConfigStore as store } from '$lib/stores';
@@ -87,7 +90,7 @@
 		($interactionMode as any).type = 'standard';
 	};
 
-	const updateStore = (scaleValue: number, anchor: Point3, recurs: number[]) => {
+	const updateStore = (scaleValue: number, anchor: Point3, recurs: RecombinatoryRecurrence[]) => {
 		if (isUpdatableRecurs($store.subGlobuleConfigs[sgIndex].transforms[tIndex])) {
 			$store.subGlobuleConfigs[sgIndex].transforms[tIndex].recurs = recurs;
 		}
@@ -123,7 +126,7 @@
 			<div class="recurrence-display">
 				<span>Recurs: </span>
 				{#each recurs as r, i}
-					<div class="recurrence-display-item">{r}</div>
+					<div class="recurrence-display-item">{r.multiplier}</div>
 				{/each}
 			</div>
 			<div>

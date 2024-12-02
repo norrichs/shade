@@ -73,7 +73,7 @@
 		padding: 0;
 	}
 	.card-container {
-		width: 200px;
+		width: 400px;
 		display: grid;
 		grid-template-rows: 1.5rem 1fr;
 		grid-template-columns: 1fr auto;

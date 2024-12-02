@@ -1,11 +1,23 @@
 <script lang="ts">
+	import { formatBandMap } from '$lib/recombination';
+	import { superConfigStore } from '$lib/stores';
+	import { getRecurrences } from '$lib/transform-globule';
+	import type {
+		BandEnd,
+		GeometryAddress,
+		Recombination,
+		RecombinatoryRecurrence
+	} from '$lib/types';
 	import { round } from '$lib/util';
 	import {
 		interactionMode as mode,
 		interactions,
 		type InteractionMode,
-		type Interaction
+		type Interaction,
+		isPointSelectInteractionMode,
+		isBandSelectInteractionMode
 	} from '../../components/three-renderer-v2/interaction-mode';
+	import Button from '../design-system/Button.svelte';
 
 	const dynamicOverlay = (mode: InteractionMode) => {
 		if (mode.type === 'point-select-translate') {
@@ -15,11 +27,78 @@
 	};
 	let interaction: Interaction;
 
+	const setRecombination = () => {
+		if (
+			$mode.type !== 'band-select-partners' ||
+			$mode.data.originSelected?.address.b === undefined ||
+			$mode.data.partnerSelected?.address.b === undefined
+		) {
+			return;
+		}
+		const {
+			originSelected: { address: origin },
+			partnerSelected: { address: partner }
+		} = $mode.data;
+
+		console.debug(`*** setRecombination originSelected ${origin} partnerSelected ${partner}`);
+		const recurrenceIndex = origin.g[origin.g.length - 1];
+
+		const newRecurrences: RecombinatoryRecurrence[] = getRecurrences(
+			$superConfigStore.subGlobuleConfigs[origin.s].transforms[origin.g.length - 1].recurs
+		);
+
+		const newBandMapping = {
+			originJoin: originJoin,
+			partnerJoin: partnerJoin,
+			originIndex: origin.b!,
+			partnerAddress: { s: partner.s, g: partner.g, b: partner.b }
+		};
+		newRecurrences[recurrenceIndex].recombines = newRecurrences[recurrenceIndex].recombines ?? {
+			bandMap: []
+		};
+
+		const existingMappingIndex = newRecurrences[recurrenceIndex].recombines.bandMap.findIndex(
+			(bandMapping) => bandMapping.originIndex === newBandMapping.originIndex
+		);
+
+		if (existingMappingIndex >= 0) {
+			const newBandMap = newRecurrences[recurrenceIndex].recombines!.bandMap;
+			console.debug(
+				`  * mapping exists ${existingMappingIndex} newBandMap ${newBandMap.join(', ')}`
+			);
+			newBandMap.splice(existingMappingIndex, 1, newBandMapping);
+			newRecurrences[recurrenceIndex].recombines = { bandMap: newBandMap };
+			console.debug(
+				`  * replacing ${formatBandMap(newRecurrences[recurrenceIndex].recombines.bandMap)}`
+			);
+		} else {
+			const newBandMap = newRecurrences[recurrenceIndex].recombines.bandMap;
+			console.debug(`  * mapping doesn't exist ${newBandMap.join(', ')}`);
+			newRecurrences[recurrenceIndex].recombines = { bandMap: [...newBandMap, newBandMapping] };
+			console.debug(`  * adding ${formatBandMap(newRecurrences[recurrenceIndex].recombines.bandMap)}`);
+		}
+
+		$superConfigStore.subGlobuleConfigs[origin.s].transforms[origin.g.length - 1].recurs =
+			newRecurrences;
+
+		console.debug('setRecombination', {
+			newRecurs:
+				$superConfigStore.subGlobuleConfigs[origin.s].transforms[origin.g.length - 1].recurs
+		});
+		$mode.data = { ...$mode.data, originSelected: undefined, partnerSelected: undefined };
+	};
+
+	const toggle = (bandEnd: BandEnd) => {
+		return bandEnd === 'end' ? 'start' : 'end';
+	};
+	let partnerJoin: BandEnd = 'end';
+	let originJoin: BandEnd = 'end';
+
 	$: interaction = interactions[$mode.type];
 </script>
 
 <div class={`overlay ${$mode.type === 'standard' ? 'hide' : 'show'}`}>
-	{#if $mode.type !== 'standard'}
+	{#if isPointSelectInteractionMode($mode)}
 		<div>{interaction.prompt}</div>
 		<div>{$mode.data.points.length}</div>
 		<div>
@@ -32,6 +111,34 @@
 				? interaction.buttonPrompt
 				: interaction.buttonReady}</button
 		>
+	{:else if isBandSelectInteractionMode($mode)}
+		<div>{interaction.prompt}</div>
+		{#if $mode.type === 'band-select-partners' && $mode.data.originSelected && $mode.data.partnerSelected}
+			<div>
+				{`Origin: ${$mode.data.originSelected.address.g} ${$mode.data.originSelected.address.b}`}
+				<Button on:click={() => (originJoin = toggle(originJoin))}>{originJoin}</Button>
+			</div>
+			<div>
+				{`Partner: ${$mode.data.partnerSelected.address.g}, ${$mode.data.partnerSelected.address.b}`}
+				<Button on:click={() => (partnerJoin = toggle(partnerJoin))}>{partnerJoin}</Button>
+			</div>
+			<div>
+				<Button on:click={setRecombination}>OK</Button>
+				<Button>Cancel</Button>
+			</div>
+		{/if}
+
+		<!-- <div>{$mode.data.bands.length}</div>
+		<div>
+			{#each $mode.data.bands as band, i}
+				<div>band {i}</div>
+			{/each}
+		</div>
+		<button on:click={$mode.onSelectBands} disabled={$mode.data.bands.length < $mode.data.pick}>
+			{$mode.data.bands.length < $mode.data.pick
+				? interaction.buttonPrompt
+				: interaction.buttonReady}
+		</button> -->
 	{/if}
 </div>
 

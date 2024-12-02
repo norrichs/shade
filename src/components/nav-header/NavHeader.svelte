@@ -5,6 +5,7 @@
 	import Button from '../design-system/Button.svelte';
 	import NewConfigButton from './NewConfigButton.svelte';
 	import SaveConfigButton from './SaveConfigButton.svelte';
+	import { superGlobuleStore } from '$lib/stores';
 	const sandBoxOptions = [
 		{ value: '/sandbox-ellipse-intersections', label: 'Ellipse Intersections' },
 		{ value: '/sandbox-line-intersections', label: 'Line Intersections' },
@@ -15,6 +16,15 @@
 		{ value: '/sandbox-svg-display', label: 'SVG Display' },
 		{ value: '/sandbox-server-test', label: 'Server Test' }
 	];
+
+	const printGlobuleCoords = () => {
+		const coords = $superGlobuleStore.subGlobules.map((sg) => sg.data.map((g) => g.coord));
+		const coordStacks = $superGlobuleStore.subGlobules.map((sg) =>
+			sg.data.map((g) => g.coordStack)
+		);
+		console.debug({ coords });
+		console.debug({ coordStacks });
+	};
 </script>
 
 <header>
@@ -36,11 +46,12 @@
 				{/each}
 			</select>
 		</div>
-		<div class='button-group'>
+		<div class="button-group">
 			<NewConfigButton />
 			<SaveConfigButton />
 			<Button on:click={() => console.debug({ $superConfigStore })}>Print super</Button>
-			<Button> Settings </Button>
+			<Button on:click={printGlobuleCoords}>Print Coords</Button>
+			<Button>Settings</Button>
 			<label for="use-persisted-checkbox">persist settings?</label>
 			<input type="checkbox" bind:checked={$shouldUsePersisted} />
 
@@ -74,6 +85,5 @@
 		display: flex;
 		flex-direction: row;
 		gap: 12px;
-		
 	}
 </style>

@@ -28,9 +28,11 @@
 	import { generateSuperGlobule } from '$lib/generate-superglobule';
 	import SuperGlobuleTile from '../../components/globule-tile/SuperGlobuleTile.svelte';
 
-	// let globules: Globule[];
+	const VIEW_TILE_PAGE_SIZE = 4
 	let globuleGeometries: GlobuleGeometry[];
 	let superGlobuleGeometries: SuperGlobuleGeometry[];
+	let globuleStartIndex = 0;
+	let superGlobuleStartIndex = 0; 
 
 	export let data: PageData & {
 		globuleConfigs: GlobuleConfig[];
@@ -51,7 +53,8 @@
 	};
 
 	const refreshSuperGlobules = (superGlobuleConfigs: SuperGlobuleConfig[]) => {
-		const data = superGlobuleConfigs.map((superGlobuleConfig) =>
+		const visibleSuperGlobules = superGlobuleConfigs.slice(superGlobuleStartIndex, VIEW_TILE_PAGE_SIZE)
+		const data = visibleSuperGlobules.map((superGlobuleConfig) =>
 			generateSuperGlobule(superGlobuleConfig)
 		);
 		const geometry = data.map((superGlobule) => generateSuperGlobuleGeometry(superGlobule));
@@ -77,16 +80,18 @@
 	};
 
 	const refreshGlobules = (globuleConfigs: GlobuleConfig[]) => {
-		const defaultConfig = generateDefaultGlobuleConfig();
+		// const defaultConfig = generateDefaultGlobuleConfig();
 
 		const mergedGlobuleConfigs = globuleConfigs.map((gc) => {
 			return {
-				...defaultConfig,
+				// ...defaultConfig,
 				...gc
 			};
 		});
 
-		globuleGeometries = [...mergedGlobuleConfigs].map((config, i) => {
+		const visibleGlobules = globuleConfigs.slice(globuleStartIndex, VIEW_TILE_PAGE_SIZE)
+
+		globuleGeometries = visibleGlobules.map((config, i) => {
 			const data = generateGlobuleData(config);
 			const geometry = generateGlobuleGeometry({
 				type: 'Globule',
@@ -163,13 +168,6 @@
 							onDelete={handleDeleteSuperGlobule}
 							onLoad={handleLoadSuperGlobule}
 						/>
-
-						<!-- <div class="super-globule-config-tile">
-							<div>{cfg.name}</div>
-							<div>{cfg.id}</div>
-							<div>{cfg.subGlobuleConfigs.length}</div>
-							<button>Load SuperGlobule</button>
-						</div> -->
 					{/each}
 				</div>
 			{/if}

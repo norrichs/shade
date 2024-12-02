@@ -1,20 +1,13 @@
 import type {
-	BandPattern,
 	Globule,
 	GlobulePatternConfig,
-	PatternedBand,
 	PatternedBandPattern,
 	SubGlobule,
 	SubGlobuleConfig,
 	SuperGlobule,
 	SuperGlobuleConfig
 } from '$lib/types';
-import {
-	generateTiledBandPattern,
-	generateBandPatterns,
-	applyStrokeWidth,
-	getPatternLength
-} from './cut-pattern';
+import { generateTiledBandPattern, applyStrokeWidth } from './cut-pattern';
 
 type PatternGlobule = {
 	globules: Globule[];
@@ -34,7 +27,7 @@ export const generateSuperGlobulePattern = (
 			if (!config) {
 				throw new Error('missing config');
 			}
-			return { globules: subGlobule.data, config };
+			return { globules: subGlobule.data.filter((globule) => globule.visible), config };
 		}
 	);
 
@@ -47,7 +40,11 @@ export const generateSuperGlobulePattern = (
 					patternConfig: { pixelScale }
 				} = globulePatternConfig;
 
-				pattern = generateTiledBandPattern({ bands, tiledPatternConfig, pixelScale });
+				pattern = generateTiledBandPattern({
+					bands: bands.filter((b) => b.visible),
+					tiledPatternConfig,
+					pixelScale
+				});
 				pattern = {
 					...pattern,
 					bands: pattern.bands.map((band) => ({ ...band, projectionType: pattern.projectionType }))
@@ -59,7 +56,9 @@ export const generateSuperGlobulePattern = (
 		})
 		.flat();
 
-	const bandPatterns = collectedBandPatterns.map((globulePattern: PatternedBandPattern) => globulePattern.bands).flat();
+	const bandPatterns = collectedBandPatterns
+		.map((globulePattern: PatternedBandPattern) => globulePattern.bands)
+		.flat();
 
 	return {
 		type: 'SuperGlobulePattern',

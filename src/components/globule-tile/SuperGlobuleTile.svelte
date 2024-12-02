@@ -34,7 +34,7 @@
 		<DesignerLighting />
 		<T.Group position={[0, 0, 0]}>
 			{#each superGlobuleGeometry.subGlobules as globuleGeometry}
-				<GlobuleMesh {globuleGeometry} selected={false} />
+				<GlobuleMesh geometry={globuleGeometry} selected={false} />
 			{/each}
 		</T.Group>
 	</Canvas>

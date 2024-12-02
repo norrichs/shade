@@ -1,20 +1,25 @@
 <script lang="ts">
-	import type { GlobuleGeometry } from '$lib/types';
+	import type { BandGeometry, GlobuleGeometry } from '$lib/types';
 	import { T } from '@threlte/core';
 	import { BufferGeometry } from 'three';
-	import { materials } from '../../components/three-renderer-v2/materials';
+	import { materials, type Material } from '../../components/three-renderer-v2/materials';
 
-	export let globuleGeometry: GlobuleGeometry;
-	export let selected = false;
+	export let geometry: GlobuleGeometry | BandGeometry;
+	export let material: Material = 'default';
+	// export let selectable = true;
 
-	let bandGeometry: BufferGeometry;
+	let bufferGeometry: BufferGeometry;
 
-	$: {
-		bandGeometry = new BufferGeometry().setFromPoints(globuleGeometry.points);
-		bandGeometry.computeVertexNormals();
-	}
+	const update = (geometry: GlobuleGeometry | BandGeometry) => {
+		if (!!geometry?.points) {
+			bufferGeometry = new BufferGeometry().setFromPoints(geometry?.points);
+			bufferGeometry.computeVertexNormals();
+		}
+	};
+
+	$: update(geometry);
 </script>
 
 <T.Group>
-	<T.Mesh geometry={bandGeometry} material={materials[selected ? 'selected' : 'default']} />
+	<T.Mesh geometry={bufferGeometry} material={materials[material]} />
 </T.Group>

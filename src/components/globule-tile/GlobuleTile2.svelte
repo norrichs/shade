@@ -33,7 +33,7 @@
 		<DesignerCamera />
 		<DesignerLighting />
 		<T.Group position={[0, 0, 0]}>
-			<GlobuleMesh {globuleGeometry} selected={false} />
+			<GlobuleMesh geometry={globuleGeometry} selected={false} />
 		</T.Group>
 	</Canvas>
 </GlobuleTileContainer>

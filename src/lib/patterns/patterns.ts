@@ -424,7 +424,7 @@ export const patterns: { [key: string]: PatternGenerator } = {
 	'tiledHexPattern-1': {
 		getPattern: (rows: 1 | 2 | 3, columns: 1 | 2 | 3 | 4 | 5) =>
 			generateHexPattern(rows, columns, { variant: 1, size: 1 }),
-		tagAnchor: { facetIndex: 0, segmentIndex: 15 },
+		tagAnchor: { facetIndex: 0, segmentIndex: 6 },
 		adjustAfterTiling: (facets: [HexPattern, HexPattern]) =>
 			straightenEndSegments(
 				facets[0],
@@ -443,17 +443,17 @@ export const patterns: { [key: string]: PatternGenerator } = {
 		getPattern: (rows: 1 | 2 | 3, columns: 1 | 2 | 3 | 4 | 5) =>
 			generateBoxPattern({ size: 1, height: rows, width: columns }),
 		adjustAfterTiling: (facets: PatternedPattern) => facets,
-		tagAnchor: { facetIndex: 0, segmentIndex: -1 }
+		tagAnchor: { facetIndex: 0, segmentIndex: 5, angle: 0 }
 	},
 	'tiledBowtiePattern-0': {
 		getPattern: (rows: 1 | 2 | 3, columns: 1 | 2 | 3 | 4 | 5) =>
 			generateAuxetic({ size: 1, rows, columns }),
-		tagAnchor: { facetIndex: 0, segmentIndex: -1 }
+		tagAnchor: { facetIndex: 0, segmentIndex: 7, angle: 0 }
 	},
 	'tiledCarnationPattern-0': {
 		getPattern: (rows: 1 | 2 | 3, columns: 1 | 2 | 3 | 4 | 5) =>
 			generateCarnation({ size: 1, rows, columns, variant: 0 }),
-		tagAnchor: { facetIndex: 0, segmentIndex: 5 },
+		tagAnchor: { facetIndex: 0, segmentIndex: 0 },
 		adjustAfterTiling: (tiledBands: { facets: PatternedPattern[] }[]) => {
 			return adjustCarnation(tiledBands);
 		}
@@ -461,7 +461,7 @@ export const patterns: { [key: string]: PatternGenerator } = {
 	'tiledCarnationPattern-1': {
 		getPattern: (rows: 1 | 2 | 3, columns: 1 | 2 | 3 | 4 | 5) =>
 			generateCarnation({ size: 1, rows, columns, variant: 1 }),
-		tagAnchor: { facetIndex: 0, segmentIndex: 5 },
+		tagAnchor: { facetIndex: 0, segmentIndex: 0 },
 		adjustAfterTiling: (tiledBands: { facets: PatternedPattern[] }[]) => {
 			return adjustCarnation(tiledBands);
 		}

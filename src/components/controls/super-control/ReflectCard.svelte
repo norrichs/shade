@@ -6,7 +6,9 @@
 		GlobuleTransform,
 		GlobuleTransformRotate,
 		Recurrence,
-		GlobuleTransformReflect
+		GlobuleTransformReflect,
+		RecombinatoryRecurrence,
+		Recombination
 	} from '$lib/types';
 	import RecurrenceControl from './RecurrenceControl.svelte';
 	import { superConfigStore as store } from '$lib/stores';
@@ -20,8 +22,9 @@
 	import PointInput from './PointInput.svelte';
 	import PickPointsButton from './PickPointsButton.svelte';
 	import { interactionMode } from '../../three-renderer-v2/interaction-mode';
-	import { Vector3 } from 'three';
-  import { round } from '$lib/util';
+	import { Vector3, Triangle } from 'three';
+	import { round } from '$lib/util';
+	import { isSameRecombination } from '$lib/matchers';
 
 	export let sgIndex = 0;
 	export let tIndex = 0;
@@ -63,14 +66,24 @@
 				!isClose(tx.reflect.normal.z, normal.z))
 		);
 	};
+
+	const isSameRecurrence = (a: RecombinatoryRecurrence, b: RecombinatoryRecurrence) => {
+		return (
+			a.multiplier === b.multiplier &&
+			a.ghost === b.ghost &&
+			isSameRecombination(a.recombines, b.recombines)
+		);
+	};
 	const isUpdatableRecurs = (tx: GlobuleTransform & { recurs?: Recurrence }) => {
 		if (!tx.recurs || !recurs) return true;
 		const processedTxRecurs = getRecurrences(tx.recurs);
 		if (recurs.length !== processedTxRecurs.length) return true;
 
 		let isUpdatable = false;
+		console.debug('- ', processedTxRecurs);
 		recurs.forEach((recurrence, i) => {
-			if (recurrence !== processedTxRecurs[i]) {
+			console.debug('    ', recurrence);
+			if (!isSameRecurrence(recurrence, processedTxRecurs[i])) {
 				isUpdatable = true;
 			}
 		});
@@ -90,13 +103,30 @@
 			const normalizedAxis = new Vector3(p1.x - p0.x, p1.y - p0.y, p1.z - p0.z).setLength(1);
 			normal = { x: normalizedAxis.x, y: normalizedAxis.y, z: normalizedAxis.z };
 			$store.subGlobuleConfigs[sgIndex].transforms[tIndex].reflect.normal = normal;
+		} else if ($interactionMode.type === 'point-select-plane') {
+			const [p0, p1, p2] = $interactionMode.data.points;
+			anchor = p0;
+			const normalVector = new Vector3();
+			new Triangle(
+				new Vector3(p0.x, p0.y, p0.z),
+				new Vector3(p1.x, p1.y, p1.z),
+				new Vector3(p2.x, p2.y, p2.z)
+			).getNormal(normalVector);
+			normal = { x: normalVector.x, y: normalVector.y, z: normalVector.z };
+			$store.subGlobuleConfigs[sgIndex].transforms[tIndex].reflect = { anchor, normal };
 		}
 
 		($interactionMode as any).type = 'standard';
 	};
 
-	const updateStore = (normal: Point3, anchor: Point3, recurs: number[]) => {
+	const updateStore = (normal: Point3, anchor: Point3, recurs: RecombinatoryRecurrence[]) => {
+		console.debug(
+			'ReflectCard updateStore',
+			recurs[0].ghost,
+			getRecurrences($store.subGlobuleConfigs[sgIndex].transforms[tIndex]?.recurs)[0].ghost
+		);
 		if (isUpdatableRecurs($store.subGlobuleConfigs[sgIndex].transforms[tIndex])) {
+			console.debug('isUpdatableRecurs');
 			$store.subGlobuleConfigs[sgIndex].transforms[tIndex].recurs = recurs;
 		}
 		if (isUpdatableAnchor($store.subGlobuleConfigs[sgIndex].transforms[tIndex])) {
@@ -113,7 +143,7 @@
 <div class="reflect-card">
 	{#if active}
 		<div>
-			<RecurrenceControl bind:recurs />
+			<RecurrenceControl bind:recurs {sgIndex} {tIndex} />
 			{#if isGlobuleTransformReflect($store.subGlobuleConfigs[sgIndex].transforms[tIndex])}
 				<div>
 					<PointInput label="Normal" constraint={{ length: 1 }} bind:value={normal} />
@@ -127,6 +157,12 @@
 						mode={{ type: 'point-select-anchor', data: { pick: 1, points: [] }, onSelectPoint }}
 					/>
 				</div>
+				<div>
+					<PickPointsButton
+						label="Pick Points for Plane"
+						mode={{ type: 'point-select-plane', data: { pick: 3, points: [] }, onSelectPoint }}
+					/>
+				</div>
 			{/if}
 		</div>
 	{:else}
@@ -134,13 +170,13 @@
 			<div class="recurrence-display">
 				<span>Recurs: </span>
 				{#each recurs as r, i}
-					<div class="recurrence-display-item">{r}</div>
+					<div class="recurrence-display-item">{r.multiplier}</div>
 				{/each}
 			</div>
 			<div>
 				<span>Anchor: </span><span>{formatPoint3(anchor, 2)}</span>
 			</div>
-      <div>
+			<div>
 				<span>Normal: </span><span>{formatPoint3(normal, 2)}</span>
 			</div>
 		</button>

@@ -9,6 +9,7 @@
 		GlobuleTransform,
 		GlobuleTransformRotate,
 		Point3,
+		RecombinatoryRecurrence,
 		Recurrence
 	} from '$lib/types';
 	import CombinedNumberInput from '../CombinedNumberInput.svelte';
@@ -78,7 +79,6 @@
 
 		let isUpdatable = false;
 		recurs.forEach((recurrence, i) => {
-			console.debug('test recurrence', recurrence, processedTxRecurs[i]);
 			if (recurrence !== processedTxRecurs[i]) {
 				isUpdatable = true;
 			}
@@ -86,8 +86,13 @@
 		return isUpdatable;
 	};
 
-	const updateStore = (angle: number, axis: Point3, anchor: Point3, recurs: number[]) => {
-		console.debug(`rotate, updateStore ${sgIndex}, ${tIndex}`, {
+	const updateStore = (
+		angle: number,
+		axis: Point3,
+		anchor: Point3,
+		recurs: RecombinatoryRecurrence[]
+	) => {
+		console.debug(`rotate, updateStore sg${sgIndex}, tx${tIndex}`, {
 			axis,
 			anchor,
 			angle,
@@ -172,7 +177,7 @@
 <div class="rotate-card">
 	{#if active}
 		<div>
-			<RecurrenceControl bind:recurs />
+			<RecurrenceControl bind:recurs {sgIndex} {tIndex}/>
 			{#if isGlobuleTransformRotate($superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex])}
 				<CombinedNumberInput bind:value={angle} label="Rotate" min={-360} max={360} step={0.1} />
 				<div>
@@ -197,7 +202,7 @@
 			<div class="recurrence-display">
 				<span>Recurs: </span>
 				{#each recurs as r, i}
-					<div class="recurrence-display-item">{r}</div>
+					<div class="recurrence-display-item">{r.multiplier}</div>
 				{/each}
 			</div>
 			<div>

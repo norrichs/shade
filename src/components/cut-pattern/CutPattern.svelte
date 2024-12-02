@@ -46,7 +46,7 @@
 			<CutPatternSvg>
 				{#each $superGlobulePatternStore.bandPatterns as band, index}
 					{#if band.projectionType === 'patterned'}
-						<PatternedBandComponent {band} {index} />
+						<PatternedBandComponent {band} {index} showLabel/>
 					{/if}
 				{/each}
 				<!-- <SvgLogger /> -->

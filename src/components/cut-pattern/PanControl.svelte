@@ -1,5 +1,9 @@
 <script lang="ts">
-	import { configStore0 } from '$lib/stores/stores';
+	import { patternConfigStore } from '$lib/stores';
+	import NumberInput from '../controls/super-control/NumberInput.svelte';
+	import Button from '../design-system/Button.svelte';
+	import { FiChevronUp, FiChevronDown, FiChevronRight, FiChevronLeft } from 'svelte-icons-pack/fi';
+	import { Icon } from 'svelte-icons-pack';
 
 	let panInterval: number;
 	let panDelay: number;
@@ -18,20 +22,20 @@
 
 		switch (direction) {
 			case 'up':
-				$configStore0.patternViewConfig.centerOffset.y += step;
-				callBack = () => ($configStore0.patternViewConfig.centerOffset.y += step);
+				$patternConfigStore.patternViewConfig.centerOffset.y += step;
+				callBack = () => ($patternConfigStore.patternViewConfig.centerOffset.y += step);
 				break;
 			case 'down':
-				$configStore0.patternViewConfig.centerOffset.y -= step;
-				callBack = () => ($configStore0.patternViewConfig.centerOffset.y -= step);
+				$patternConfigStore.patternViewConfig.centerOffset.y -= step;
+				callBack = () => ($patternConfigStore.patternViewConfig.centerOffset.y -= step);
 				break;
 			case 'left':
-				$configStore0.patternViewConfig.centerOffset.x += step;
-				callBack = () => ($configStore0.patternViewConfig.centerOffset.x += step);
+				$patternConfigStore.patternViewConfig.centerOffset.x += step;
+				callBack = () => ($patternConfigStore.patternViewConfig.centerOffset.x += step);
 				break;
 			case 'right':
-				$configStore0.patternViewConfig.centerOffset.x -= step;
-				callBack = () => ($configStore0.patternViewConfig.centerOffset.x -= step);
+				$patternConfigStore.patternViewConfig.centerOffset.x -= step;
+				callBack = () => ($patternConfigStore.patternViewConfig.centerOffset.x -= step);
 				break;
 		}
 		clear();
@@ -42,29 +46,60 @@
 </script>
 
 <div class="pan-control-container">
-	<button style="grid-area: u" on:mousedown={() => handlePan('up')} on:mouseup={() => clear()}
-		>+</button
-	>
-	<button style="grid-area: l" on:mousedown={() => handlePan('left')} on:mouseup={() => clear()}
-		>-</button
-	>
-	<button style="grid-area: r" on:mousedown={() => handlePan('right')} on:mouseup={() => clear()}
-		>+</button
-	>
-	<button style="grid-area: d" on:mousedown={() => handlePan('down')} on:mouseup={() => clear()}
-		>-</button
-	>
+	<button class="pan-control u" on:mousedown={() => handlePan('up')} on:mouseup={() => clear()}>
+		<Icon size={30} src={FiChevronUp} />
+	</button>
+	<button class="pan-control l" on:mousedown={() => handlePan('left')} on:mouseup={() => clear()}>
+		<Icon size={30} src={FiChevronLeft} />
+	</button>
+	<button class="pan-control r" on:mousedown={() => handlePan('right')} on:mouseup={() => clear()}>
+		<Icon size={30} src={FiChevronRight} />
+	</button>
+	<button class="pan-control d" on:mousedown={() => handlePan('down')} on:mouseup={() => clear()}>
+		<Icon size={30} src={FiChevronDown} />
+	</button>
+	<div class="inputs-center">
+		<NumberInput bind:value={$patternConfigStore.patternViewConfig.centerOffset.x} />
+		<NumberInput bind:value={$patternConfigStore.patternViewConfig.centerOffset.y} />
+	</div>
 </div>
 
 <style>
+	.pan-control {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0;
+		border: none;
+		background-color: transparent;
+
+	}
+	.pan-control.u {
+		grid-area: u;
+	}
+	.pan-control.l {
+		grid-area: l;
+	}
+	.pan-control.r {
+		grid-area: r;
+	}
+	.pan-control.d {
+		grid-area: d;
+	}
 	.pan-control-container {
 		--size: 75px;
 		display: grid;
 		grid-template-rows: repeat(3, calc(var(--size) / 3));
-		grid-template-columns: repeat(3, calc(var(--size) / 3));
+		grid-template-columns: repeat(4, calc(var(--size) / 3));
 		grid-template-areas:
-			' . u . '
-			' l . r '
-			' . d . ';
+			' . u u  .'
+			' l i i r'
+			' . d d .';
+	}
+	.inputs-center {
+		grid-area: i;
+		display: flex;
+		flex-direction: row;
+		justify-content: space-around;
 	}
 </style>

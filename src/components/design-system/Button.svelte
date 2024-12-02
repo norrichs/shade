@@ -1,8 +1,9 @@
 <script lang="ts">
 	export let variant: 'standard' | 'link' = 'standard'
+	// export let klass = ""
 </script>
 
-<button on:click class={variant}><slot /></button>
+<button on:click on:mousedown on:mouseup class={variant}><slot /></button>
 
 <style>
 	.standard {

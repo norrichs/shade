@@ -1,4 +1,3 @@
-import { AUTO_PERSIST_KEY } from './persistable';
 import type {
 	CutoutConfig,
 	PatternConfig,
@@ -17,12 +16,12 @@ import type {
 	TabStyle,
 	SuperGlobuleConfig,
 	SubGlobuleConfig,
-	GlobulePatternConfig
+	GlobulePatternConfig,
+	RecombinatoryRecurrence
 } from '$lib/types';
 import { rad } from './util';
 import { GENERAL_CONFIG, generateTempId, GLOBULE_CONFIG, SUPER_GLOBULE_CONFIG } from './id-handler';
 import { degToRad } from './patterns/utils';
-import { radToDeg } from 'three/src/math/MathUtils.js';
 
 const defaultSilhouetteConfig = (): SilhouetteConfig => ({
 	type: 'SilhouetteConfig',
@@ -123,7 +122,7 @@ export const generateDefaultShapeConfig = (
 
 const defaultLevelConfig = (): LevelConfig => ({
 	type: 'LevelConfig',
-	id: generateTempId(GENERAL_CONFIG),
+	// id: generateTempId(GENERAL_CONFIG),
 	silhouetteSampleMethod: { method: 'preserveAspectRatio', divisions: 10 },
 	levelPrototypeSampleMethod: 'curve',
 	levelCount: 30,
@@ -201,7 +200,7 @@ const defaultRenderConfig = (): RenderConfig => ({
 	}
 });
 
-export const tiledPatternConfigs: { [key: string]: TiledPatternConfig } = ({
+export const tiledPatternConfigs: { [key: string]: TiledPatternConfig } = {
 	'tiledHexPattern-1': {
 		type: 'tiledHexPattern-1',
 		tiling: 'quadrilateral',
@@ -272,11 +271,15 @@ export const tiledPatternConfigs: { [key: string]: TiledPatternConfig } = ({
 			dynamicStrokeMax: 5
 		}
 	}
+};
+
+const defaultTiledPatternConfig = (): TiledPatternConfig => ({
+	...tiledPatternConfigs['tiledBoxPattern-0'],
+	labels: {
+		scale: 0.1,
+		angle: 0
+	}
 });
-
-const defaultTiledPatternConfig = (): TiledPatternConfig =>
-	tiledPatternConfigs['tiledBoxPattern-0'];
-
 const defaultCutoutConfig = (): CutoutConfig[] => [
 	{
 		tilePattern: { type: 'each-facet' },
@@ -396,7 +399,11 @@ export const generateSuperGlobuleConfigWrapper = (globule: GlobuleConfig) => {
 };
 
 export const generateDefaultSuperGlobuleConfig = (): SuperGlobuleConfig => {
-	const base = defaultSubGlobuleConfig()
+	const base = defaultSubGlobuleConfig();
+	const defaultRecurrence: RecombinatoryRecurrence[] = [
+		{ multiplier: 0, ghost: false, recombines: undefined },
+		{ multiplier: 1, ghost: false, recombines: undefined },
+	];
 
 	const superGlobuleConfig: SuperGlobuleConfig = {
 		type: 'SuperGlobuleConfig',
@@ -425,7 +432,7 @@ export const generateDefaultSuperGlobuleConfig = (): SuperGlobuleConfig => {
 						}
 					},
 					{
-						recurs: [0,1,2],
+						recurs: defaultRecurrence,
 						rotate: {
 							axis: { x: 0, y: 0, z: 1 },
 							anchor: { x: 0, y: 0, z: 0 },
