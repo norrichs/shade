@@ -1,4 +1,5 @@
-<script context="module">
+<script context="module" lang="ts">
+	// @ts-ignore
 	import { asDraggable } from 'svelte-drag-and-drop-actions';
 </script>
 
@@ -20,7 +21,9 @@
 		SilhouetteConfig,
 		DepthCurveConfig,
 		SpineCurveConfig,
-		Id
+		Id,
+		CurveConfigType,
+		Point
 	} from '$lib/types';
 	import CheckBoxInput from '../controls/CheckboxInput.svelte';
 	import PathEditInput from './PathEditInput.svelte';
@@ -28,12 +31,9 @@
 	import CheckboxInput from '../controls/CheckboxInput.svelte';
 	import { string } from 'three/webgpu';
 	import { updateGlobuleConfigs } from '$lib/generate-superglobule';
-
-	type ShowControlCurveValue =
-		| 'ShapeConfig'
-		| 'DepthCurveConfig'
-		| 'SilhouetteConfig'
-		| 'SpineCurveConfig';
+	import PathEditConstraint from './PathEditConstraint.svelte';
+	import NumberInput from '../controls/super-control/NumberInput.svelte';
+	import { getLength } from '$lib/patterns/utils';
 
 	const isCurveConfig = (subConfig: any): subConfig is CurveConfig => {
 		return (
@@ -44,7 +44,7 @@
 		);
 	};
 
-	export let curveStoreType: ShowControlCurveValue;
+	export let curveStoreType: CurveConfigType;
 
 	const curveConfigByType: { [key: string]: string } = {
 		SilhouetteConfig: 'silhouetteConfig',
@@ -56,7 +56,7 @@
 	let curveStore: CurveConfig;
 	let thisConfig: CurveConfig;
 
-	const reverseUpdate = (subGlobuleConfigId?: Id, cst: ShowControlCurveValue) => {
+	const reverseUpdate = (cst: CurveConfigType) => {
 		console.debug('reverseUpdate', { thisConfig });
 		const subGlobuleConfig =
 			$superConfigStore.subGlobuleConfigs[$selectedGlobule.subGlobuleConfigIndex];
@@ -66,8 +66,6 @@
 			curveStore = isCurveConfig(thisConfig)
 				? thisConfig
 				: subGlobuleConfig.globuleConfig.silhouetteConfig;
-		} else {
-			console.error('undefined subGlobuleConfigId');
 		}
 	};
 
@@ -78,16 +76,18 @@
 		console.debug('update stores');
 
 		const newGlobuleConfig = getGlobuleConfig();
-		(newGlobuleConfig[curveConfigByType[curveStoreType]] as CurveConfig).curves = curves
-		const newSuperGlobuleConfig = updateGlobuleConfigs($superConfigStore, newGlobuleConfig)
-		$superConfigStore = newSuperGlobuleConfig
+		(newGlobuleConfig[curveConfigByType[curveStoreType]] as CurveConfig).curves = curves;
+		const newSuperGlobuleConfig = updateGlobuleConfigs($superConfigStore, newGlobuleConfig);
+		$superConfigStore = newSuperGlobuleConfig;
 
 		curves = (newGlobuleConfig[curveConfigByType[curveStoreType]] as CurveConfig).curves;
 	};
 
 	$: {
-		reverseUpdate($selectedGlobule.subGlobuleConfigId, curveStoreType);
+		reverseUpdate(curveStoreType);
 	}
+
+	let testVar: number;
 
 	let symmetry = 1;
 	let reflect = true;
@@ -111,6 +111,7 @@
 
 	$: curves = curveStore?.curves;
 	$: limitAngle = getLimitAngle(curveStore);
+	$: update(curveStoreType, sideLength);
 
 	$: {
 		symmetry = curveStore.type === 'ShapeConfig' ? curveStore.symmetryNumber : 1;
@@ -119,6 +120,57 @@
 				? curveStore.symmetry === 'lateral' || curveStore.symmetry === 'radial-lateral'
 				: true;
 	}
+
+	const getSideLength = ({ curves, symmetry, symmetryNumber }: ShapeConfig): number | undefined => {
+		if (!['radial', 'radial-lateral'].includes(symmetry) || symmetryNumber < 3) return undefined;
+		const p0 = curves[0].points[0];
+		const p1 = curves[curves.length - 1].points[3];
+		return getLength(p0, p1);
+	};
+
+	let sideLength = getSideLength(
+		$superConfigStore.subGlobuleConfigs[$selectedGlobule?.subGlobuleConfigIndex || 0].globuleConfig[
+			curveConfigByType[curveStoreType]
+		] as ShapeConfig
+	);
+
+	const setShapeConfig = ({ sideLength }: { sideLength?: number }) => {
+		const { curves, symmetry, symmetryNumber } = $superConfigStore.subGlobuleConfigs[
+			$selectedGlobule?.subGlobuleConfigIndex || 0
+		].globuleConfig[curveConfigByType[curveStoreType]] as ShapeConfig;
+		if (sideLength) {
+			const alpha = Math.PI / symmetryNumber;
+			const r = sideLength / (2 * Math.sin(alpha));
+			const p0: PointConfig2 = { type: 'PointConfig2', x: 0, y: r };
+			const p1: PointConfig2 = {
+				type: 'PointConfig2',
+				x: -r * Math.sin(2 * alpha),
+				y: r * Math.cos(2 * alpha)
+			};
+			curves[0].points[0] = p0;
+			curves[curves.length - 1].points[3] = p1;
+			(
+				$superConfigStore.subGlobuleConfigs[$selectedGlobule?.subGlobuleConfigIndex || 0]
+					.globuleConfig[curveConfigByType[curveStoreType]] as ShapeConfig
+			).curves = curves;
+		}
+	};
+
+	const update = (curveConfigType: CurveConfigType, newSideLength: number | undefined) => {
+		console.debug('update', curveConfigType, sideLength);
+		if (curveConfigType === 'ShapeConfig' && newSideLength) {
+			const derivedSideLength = getSideLength(
+				$superConfigStore.subGlobuleConfigs[$selectedGlobule?.subGlobuleConfigIndex || 0]
+					.globuleConfig[curveConfigByType[curveConfigType]] as ShapeConfig
+			);
+			console.debug({ derivedSideLength }, derivedSideLength !== undefined);
+			if (newSideLength !== derivedSideLength) {
+				setShapeConfig({ sideLength: newSideLength });
+			}
+			updateStores();
+			console.debug({ sideLength });
+		}
+	};
 
 	const transform = (
 		curves: BezierConfig[],
@@ -261,7 +313,7 @@
 			method: 'divideCurve',
 			divisions: 4
 		});
-		reverseUpdate();
+		reverseUpdate(curveStoreType);
 	};
 
 	const updateCurves = (
@@ -437,6 +489,8 @@
 			>
 
 			{#if curveStore.type === 'ShapeConfig'}
+				<input type="number" bind:value={sideLength} />
+				<!-- <NumberInput label="Side" bind:value={sideLength} /> -->
 				<label for="input-symmetry-number">Symmetry</label>
 				<input
 					id="input-symmetry-number"
@@ -446,7 +500,7 @@
 					bind:value={curveStore.symmetryNumber}
 					on:change={handleSymmetryChange}
 				/>
-				<label for="select-sample-method">Sample Method</label>
+				<label for="select-sample-method">Sample</label>
 				<select bind:value={curveStore.sampleMethod.method} on:change={updateStores}>
 					<option value="divideCurvePath">Whole</option>
 					<option value="divideCurve">Curve</option>

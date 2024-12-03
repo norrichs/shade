@@ -8,6 +8,7 @@
 	export let min = 0;
 	export let max = 100;
 	export let hasButtons = false;
+	export let label
 
 	const handleFocus = (event: FocusEvent) => {
 		(event.target as HTMLInputElement).select();
@@ -23,6 +24,9 @@
 </script>
 
 <div class="container">
+	{#if label}
+		<div>{label}</div>
+	{/if}
 	<input type="number" bind:value {min} {step} {max} on:focus={handleFocus} />
 	{#if hasButtons}
 		<div>

@@ -531,6 +531,8 @@ export type LineConfig = {
 
 export type CurveConfig = SilhouetteConfig | ShapeConfig | DepthCurveConfig | SpineCurveConfig;
 
+export type CurveConfigType = CurveConfig["type"]
+
 export type SilhouetteConfig = {
 	type: 'SilhouetteConfig';
 	id?: number;
