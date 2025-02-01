@@ -1,8 +1,8 @@
 <script lang="ts">
-	import type { PathSegment } from '$lib/cut-pattern/cut-pattern.types';
 	import { flatten_convert } from '$lib/flatten/flatten';
-	import type { Ellipse, Point } from '$lib/patterns/flower-of-life.types';
-	import CombinedNumberInput from '../../components/controls/CheckboxInput.svelte';
+	import type { Ellipse, PathSegment, Point } from '$lib/types';
+	import CombinedNumberInput from '../../components/controls/CombinedNumberInput.svelte';
+
 	import { getCenterParameters, type ArcParams, getIntersectionsOfLineAndEllipse } from '../../lib/patterns/ellipse';
 
 	// Utilities

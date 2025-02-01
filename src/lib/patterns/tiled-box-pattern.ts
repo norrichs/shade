@@ -6,8 +6,8 @@ export const generateBoxPattern = ({
   width = 2
 }: {
   size?: number;
-  height?: 1 | 2 | 3 | 4 | 5 | 6;
-  width?: 1 | 2 | 3 | 4 | 5 | 6;
+  height?: number;
+  width?: number;
 }) => {
   const rowHeight = size / height;
   const columnWidth = size / width;

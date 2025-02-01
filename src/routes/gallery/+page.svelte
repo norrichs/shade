@@ -3,18 +3,14 @@
 	import { FiChevronLeft, FiChevronRight } from 'svelte-icons-pack/fi';
 	import type {
 		GlobuleConfig,
-		Globule,
 		GlobuleGeometry,
 		Id,
 		SuperGlobuleConfig,
 		SuperGlobuleGeometry,
-		GlobuleConfigType
 	} from '$lib/types';
 	import GlobuleTile2 from '../../components/globule-tile/GlobuleTile2.svelte';
 	import { superConfigStore } from '$lib/stores';
 	import {
-		generateDefaultGlobuleConfig,
-		generateDefaultSuperGlobuleConfig,
 		generateSubGlobuleConfigWrapper,
 		generateSuperGlobuleConfigWrapper
 	} from '$lib/shades-config';
@@ -28,7 +24,6 @@
 	import type { TransitionalSuperGlobuleConfig } from '../api/globuleConfig/utils';
 	import { generateSuperGlobule } from '$lib/generate-superglobule';
 	import SuperGlobuleTile from '../../components/globule-tile/SuperGlobuleTile.svelte';
-	import Button from '../../components/design-system/Button.svelte';
 	import { Icon } from 'svelte-icons-pack';
 
 	const VIEW_TILE_PAGE_SIZE = 4;

@@ -8,8 +8,7 @@
 	import { superGlobuleStore, selectedBand } from '$lib/stores';
 	import { formatAddress } from '$lib/recombination';
 	import { downloadSvg } from '$lib/util';
-	import type { GeometryAddress, GlobuleAddressed } from '$lib/types';
-	import { interactionMode, interactions } from '../three-renderer-v2/interaction-mode';
+	import { interactionMode } from '../three-renderer-v2/interaction-mode';
 
 	let downloadUrl: string | undefined = undefined;
 
@@ -18,7 +17,6 @@
 		{ value: '/sandbox-line-intersections', label: 'Line Intersections' },
 		{ value: '/sandbox-box-pattern', label: 'Box Pattern' },
 		{ value: '/sandbox-bezier-intersections', label: 'Bezier Intersections' },
-		{ value: '/sandbox-scaled-svg', label: 'Scaled SVG' },
 		{ value: '/sandbox-patterns', label: 'Patterns' },
 		{ value: '/sandbox-svg-display', label: 'SVG Display' },
 		{ value: '/sandbox-server-test', label: 'Server Test' }

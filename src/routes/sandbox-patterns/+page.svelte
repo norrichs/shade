@@ -77,7 +77,7 @@
 		</section>
 		<section>
 			<svg width="800" height="800" overflow="visible">
-				<Outline paths={branchedPaths} />
+				<!-- <Outline outlineSegments={branchedPaths} /> -->
 			</svg>
 		</section>
 	</header>

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Point } from '$lib/patterns/flower-of-life.types';
+	import type { Point } from '$lib/types'
 	import { getIntersectionOfLimitedLines } from '$lib/patterns/utils';
 	import CombinedNumberInput from '../../components/controls/CombinedNumberInput.svelte';
 
