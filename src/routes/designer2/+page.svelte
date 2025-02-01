@@ -1,44 +1,36 @@
 <script lang="ts">
 	import ThreeRenderer from '../../components/three-renderer-v2/ThreeRenderer.svelte';
 	import CutPattern from '../../components/cut-pattern/CutPattern.svelte';
-	import type { Level } from '$lib/types';
 	import TilingControl from '../../components/controls/TilingControl.svelte';
-	import CutControl from '../../components/controls/CutControl.svelte';
 	import ShowControl from '../../components/controls/ShowControl.svelte';
 	import StrutControl from '../../components/controls/StrutControl.svelte';
 	import LevelControl from '../../components/controls/LevelControl.svelte';
-	import PathEdit from '../../components/path-edit/PathEdit.svelte';
 	import SelectBar from '../../components/select-bar/SelectBar.svelte';
-	import SaveControl from '../../components/save-control/SaveControl.svelte';
-	import DataControl from '../../components/save-control/DataControl.svelte';
 	import Scene from '../../components/three-renderer-v2/Scene.svelte';
-	// import {
-	// 	configStore0,
-	// 	superConfigStore,
-	// 	superGlobuleStore,
-	// 	superGlobuleGeometryStore
-	// } from '$lib/stores';
+
 	import SuperPathEdit from '../../components/path-edit/SuperPathEdit.svelte';
 	import SuperControl from '../../components/controls/super-control/SuperControl.svelte';
+	import { uiStore, type ViewModeSetting } from '$lib/stores/uiStores';
 
-	let displayLevels: Level[];
+	let viewMode: ViewModeSetting = $uiStore.designer.viewMode;
 	let showControl: { name: string; value?: unknown } = { name: 'None' };
-
 	type ShowControlCurveValue = 'ShapeConfig' | 'DepthCurveConfig' | 'SilhouetteConfig';
 	const isShowControlCurveValue = (value: unknown): value is ShowControlCurveValue => {
 		return ['ShapeConfig', 'DepthCurveConfig', 'SilhouetteConfig', 'SpineCurveConfig'].includes(
 			value as string
 		);
 	};
+
+	$: viewMode = $uiStore.designer.viewMode;
 </script>
 
 <main>
-	<section class="container three">
+	<section class={`container ${viewMode === 'three' ? 'primary' : 'secondary'}`}>
 		<ThreeRenderer>
 			<Scene />
 		</ThreeRenderer>
 	</section>
-	<section class="container svg">
+	<section class={`container ${viewMode === 'pattern' ? 'primary' : 'secondary'}`}>
 		<CutPattern />
 	</section>
 	<section class="container controls">
@@ -56,7 +48,7 @@
 					{ name: 'Struts' },
 					{ name: 'Cut' },
 					{ name: 'Pattern' },
-					{ name: 'Super'},
+					{ name: 'Super' },
 					// { name: 'Save' },
 					{ name: 'Data' }
 				]}
@@ -92,35 +84,52 @@
 
 <style>
 	main {
-		height: 100vh;
-		width: 100%;
+		--designer-height: calc(100vh - var(--nav-header-height));
+		--half-designer-height: calc(var(--designer-height) / 2);
+		--secondary-width: 600px;
+		height: var(--designer-height);
+		width: 100vw;
 
 		display: grid;
-		grid-template-rows: 1fr 1fr;
-		grid-template-columns: 1fr 1fr;
+		grid-template-rows: repeat(2, var(--half-designer-height));
+		grid-template-columns: auto var(--secondary-width);
 	}
 	section.container {
-		height: 100%;
-		width: 100%;
+		/* height: 100%; */
+		/* width: 100%; */
 		border: 1px solid gray;
 	}
-	section.container.three {
+	section.container.primary {
+		height: 100%;
+		/* width: 100%; */
+		width: calc(100vw - var(--secondary-width));
 		grid-column: 1 / 2;
 		grid-row: 1 / 3;
 	}
 	section.container.controls {
+		height: var(--half-designer-height);
+		max-height: var(--half-designer-height);
 		grid-column: 2 / 3;
 		grid-row: 1 / 2;
 		display: flex;
 		flex-direction: column;
+		align-items: flex-start;
+	}
+	section.container.controls header {
+		display: flex;
+		flex-direction: row;
+		justify-content: center;
+		width: 100%;
 	}
 	.container.controls .group {
+		width: 100%;
 		display: flex;
 		flex-direction: row;
 		justify-content: flex-start;
 	}
 
-	section.container.svg {
+	section.container.secondary {
+		height: var(--half-designer-height);
 		grid-column: 2/ 3;
 		grid-row: 2 / 3;
 	}

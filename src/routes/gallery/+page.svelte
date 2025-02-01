@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { generateGlobuleData } from '$lib/generate-shape';
+	import { FiChevronLeft, FiChevronRight } from 'svelte-icons-pack/fi';
 	import type {
 		GlobuleConfig,
 		Globule,
@@ -27,16 +28,45 @@
 	import type { TransitionalSuperGlobuleConfig } from '../api/globuleConfig/utils';
 	import { generateSuperGlobule } from '$lib/generate-superglobule';
 	import SuperGlobuleTile from '../../components/globule-tile/SuperGlobuleTile.svelte';
+	import Button from '../../components/design-system/Button.svelte';
+	import { Icon } from 'svelte-icons-pack';
 
-	const VIEW_TILE_PAGE_SIZE = 4
+	const VIEW_TILE_PAGE_SIZE = 4;
 	let globuleGeometries: GlobuleGeometry[];
 	let superGlobuleGeometries: SuperGlobuleGeometry[];
 	let globuleStartIndex = 0;
-	let superGlobuleStartIndex = 0; 
+	let superGlobuleStartIndex = 0;
 
 	export let data: PageData & {
 		globuleConfigs: GlobuleConfig[];
 		superGlobuleConfigs: TransitionalSuperGlobuleConfig[];
+	};
+	const handleRepage = (
+		target: 'globules' | 'superGlobules',
+		action: 'increment' | 'decrement'
+	) => {
+		if (target === 'globules') {
+			if (action === 'increment') {
+				globuleStartIndex = Math.min(
+					globuleStartIndex + VIEW_TILE_PAGE_SIZE,
+					data.globuleConfigs.length - VIEW_TILE_PAGE_SIZE
+				);
+			} else {
+				globuleStartIndex = Math.max(globuleStartIndex - VIEW_TILE_PAGE_SIZE, 0);
+			}
+		}
+		if (target === 'superGlobules') {
+			if (action === 'increment') {
+				superGlobuleStartIndex = Math.min(
+					superGlobuleStartIndex + VIEW_TILE_PAGE_SIZE,
+					data.superGlobuleConfigs.length - VIEW_TILE_PAGE_SIZE
+				);
+			} else {
+				superGlobuleStartIndex = Math.max(superGlobuleStartIndex - VIEW_TILE_PAGE_SIZE, 0);
+			}
+		}
+		console.debug('handleRepage', target, action, { globuleStartIndex, superGlobuleStartIndex });
+		refreshGeometry(data);
 	};
 
 	const refreshGeometry = ({
@@ -53,7 +83,10 @@
 	};
 
 	const refreshSuperGlobules = (superGlobuleConfigs: SuperGlobuleConfig[]) => {
-		const visibleSuperGlobules = superGlobuleConfigs.slice(superGlobuleStartIndex, VIEW_TILE_PAGE_SIZE)
+		const visibleSuperGlobules = superGlobuleConfigs.slice(
+			superGlobuleStartIndex,
+			superGlobuleStartIndex + VIEW_TILE_PAGE_SIZE
+		);
 		const data = visibleSuperGlobules.map((superGlobuleConfig) =>
 			generateSuperGlobule(superGlobuleConfig)
 		);
@@ -80,16 +113,18 @@
 	};
 
 	const refreshGlobules = (globuleConfigs: GlobuleConfig[]) => {
-		// const defaultConfig = generateDefaultGlobuleConfig();
-
-		const mergedGlobuleConfigs = globuleConfigs.map((gc) => {
-			return {
-				// ...defaultConfig,
-				...gc
-			};
+		const visibleGlobules = globuleConfigs.slice(
+			globuleStartIndex,
+			globuleStartIndex + VIEW_TILE_PAGE_SIZE
+		);
+		console.debug('refreshGlobules', globuleStartIndex, VIEW_TILE_PAGE_SIZE, {
+			globuleConfigs,
+			visibleGlobules
 		});
-
-		const visibleGlobules = globuleConfigs.slice(globuleStartIndex, VIEW_TILE_PAGE_SIZE)
+		console.debug(
+			'globule ids',
+			visibleGlobules.map((cfg) => cfg.id)
+		);
 
 		globuleGeometries = visibleGlobules.map((config, i) => {
 			const data = generateGlobuleData(config);
@@ -101,9 +136,10 @@
 				recurrence: 1,
 				data
 			});
-			console.debug(i, 'refreshGlobules', { geometry });
+			console.debug(i, 'refreshGlobules', geometry.globuleConfigId);
 			return geometry;
 		});
+		console.debug('newGlobuleGeometries', globuleGeometries);
 	};
 
 	const handleDeleteGlobule = async (id: number) => {
@@ -123,6 +159,7 @@
 		return response;
 	};
 	const handleLoadGlobule = (id: Id, addToExisting: boolean) => {
+		console.debug('handleLoadGlobule', { id, addToExisting });
 		const config = data.globuleConfigs.find((cfg) => id === cfg.id);
 
 		if (config && addToExisting) {
@@ -135,7 +172,7 @@
 
 	const handleLoadSuperGlobule = (id: Id, addToExisting: boolean) => {
 		const config = data.superGlobuleConfigs.find((cfg) => id === cfg.id);
-		if (!config) return
+		if (!config) return;
 		const hydrated = hydrateSuper(config, data.globuleConfigs);
 
 		if (addToExisting) {
@@ -154,13 +191,27 @@
 		{#if globuleGeometries}
 			<h1>Globules</h1>
 			<div class="globule-gallery">
+				<button on:click={() => handleRepage('globules', 'decrement')}
+					><Icon src={FiChevronLeft} /></button
+				>
 				{#each globuleGeometries as globuleGeometry}
-					<GlobuleTile2 {globuleGeometry} size={300} onDelete={handleDeleteGlobule} onLoad={handleLoadGlobule} />
+					<GlobuleTile2
+						{globuleGeometry}
+						size={300}
+						onDelete={handleDeleteGlobule}
+						onLoad={handleLoadGlobule}
+					/>
 				{/each}
+				<button on:click={() => handleRepage('globules', 'increment')}
+					><Icon src={FiChevronRight} /></button
+				>
 			</div>
 			{#if data.superGlobuleConfigs}
 				<h1>SuperGlobules</h1>
 				<div class="globule-gallery">
+					<button on:click={() => handleRepage('superGlobules', 'decrement')}
+						><Icon src={FiChevronLeft} /></button
+					>
 					{#each superGlobuleGeometries as superGlobuleGeometry}
 						<SuperGlobuleTile
 							{superGlobuleGeometry}
@@ -169,6 +220,9 @@
 							onLoad={handleLoadSuperGlobule}
 						/>
 					{/each}
+					<button on:click={() => handleRepage('superGlobules', 'increment')}
+						><Icon src={FiChevronRight} /></button
+					>
 				</div>
 			{/if}
 		{/if}

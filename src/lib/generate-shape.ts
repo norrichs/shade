@@ -316,7 +316,6 @@ const getBandStyle = (bandOrientation: BandOrientation): BandStyle => {
 };
 
 const generateCircumferenceBands = (config: GlobuleConfig, levels: Level[]): Band[] => {
-	console.debug("************* generateCircumferenceBands")
 	const validation = validateBandConfig(config.bandConfig, levels);
 	if (!validation.isValid) {
 		throw new Error(validation.msg.join('\n'));
@@ -790,21 +789,31 @@ export const getRenderable = (
 			return shapes.slice(start, count ? start + count : shapes.length);
 		} else if (isStrip(shapes)) {
 			start = isStrut(shapes[0]) ? strutStart : bandStart;
-			count = isStrut(shapes[0]) ? strutCount : bandCount;
-			return shapes.slice(start, count ? start + count : shapes.length).map((shape) => ({
-				...shape,
-				facets: shape.facets.slice(
-					facetStart,
-					facetCount ? facetStart + facetCount : shape.facets.length
-				)
-			}));
+			count = (isStrut(shapes[0]) ? strutCount : bandCount) || shapes.length;
+
+			start = ((start % shapes.length) + shapes.length) % shapes.length;
+			start = start === 0 ? shapes.length : start;
+
+			count = count % shapes.length || shapes.length;
+
+			console.debug({ start, count });
+
+			return [...shapes, ...shapes]
+				.slice(start, count ? start + count : shapes.length)
+				.map((shape) => ({
+					...shape,
+					facets: shape.facets.slice(
+						facetStart,
+						facetCount ? facetStart + facetCount : shape.facets.length
+					)
+				}));
 		}
 	}
 	return shapes;
 };
 
-export const generateGlobuleData = (config: GlobuleConfig): GlobuleData => {
-	// console.debug('generateGlobuleData', { globuleConfig: config });
+export const generateGlobuleData = (configStore: GlobuleConfig): GlobuleData => {
+	const config = window.structuredClone(configStore);
 	const rotatedShapePrototype: LevelPrototype | LevelPrototype[] = generateLevelPrototype(
 		config.shapeConfig,
 		config.levelConfig

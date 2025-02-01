@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { formatBandMap } from '$lib/recombination';
 	import { superConfigStore } from '$lib/stores';
-	import { getRecurrences } from '$lib/transform-globule';
 	import type {
 		BandEnd,
 		GeometryAddress,
@@ -43,9 +42,8 @@
 		console.debug(`*** setRecombination originSelected ${origin} partnerSelected ${partner}`);
 		const recurrenceIndex = origin.g[origin.g.length - 1];
 
-		const newRecurrences: RecombinatoryRecurrence[] = getRecurrences(
-			$superConfigStore.subGlobuleConfigs[origin.s].transforms[origin.g.length - 1].recurs
-		);
+		const newRecurrences: RecombinatoryRecurrence[] =
+			$superConfigStore.subGlobuleConfigs[origin.s].transforms[origin.g.length - 1].recurs;
 
 		const newBandMapping = {
 			originJoin: originJoin,
@@ -75,7 +73,9 @@
 			const newBandMap = newRecurrences[recurrenceIndex].recombines.bandMap;
 			console.debug(`  * mapping doesn't exist ${newBandMap.join(', ')}`);
 			newRecurrences[recurrenceIndex].recombines = { bandMap: [...newBandMap, newBandMapping] };
-			console.debug(`  * adding ${formatBandMap(newRecurrences[recurrenceIndex].recombines.bandMap)}`);
+			console.debug(
+				`  * adding ${formatBandMap(newRecurrences[recurrenceIndex].recombines.bandMap)}`
+			);
 		}
 
 		$superConfigStore.subGlobuleConfigs[origin.s].transforms[origin.g.length - 1].recurs =

@@ -1,36 +1,28 @@
 <script lang="ts">
-	import { superConfigStore } from '$lib/stores';
+	import { generateGenericSelection, selectedBand } from '$lib/stores';
 	import type {
 		Point3,
-		Plane,
 		GlobuleTransform,
 		GlobuleTransformRotate,
 		Recurrence,
 		GlobuleTransformReflect,
-		RecombinatoryRecurrence,
-		Recombination
+		RecombinatoryRecurrence
 	} from '$lib/types';
 	import RecurrenceControl from './RecurrenceControl.svelte';
 	import { superConfigStore as store } from '$lib/stores';
-	import { activeControl } from './active-control';
-	import {
-		getRecurrences,
-		isGlobuleTransformReflect,
-		isGlobuleTransformRotate
-	} from '$lib/transform-globule';
+	import { isGlobuleTransformReflect } from '$lib/transform-globule';
 	import { formatPoint3, isClose } from '$lib/util';
 	import PointInput from './PointInput.svelte';
 	import PickPointsButton from './PickPointsButton.svelte';
 	import { interactionMode } from '../../three-renderer-v2/interaction-mode';
 	import { Vector3, Triangle } from 'three';
-	import { round } from '$lib/util';
 	import { isSameRecombination } from '$lib/matchers';
 
 	export let sgIndex = 0;
 	export let tIndex = 0;
 	export let active = false;
 
-	let recurs = getRecurrences($store.subGlobuleConfigs[sgIndex].transforms[tIndex].recurs);
+	let recurs = $store.subGlobuleConfigs[sgIndex].transforms[tIndex].recurs;
 	let { anchor, normal } = isGlobuleTransformReflect(
 		$store.subGlobuleConfigs[sgIndex].transforms[tIndex]
 	)
@@ -41,12 +33,12 @@
 		  };
 
 	const activate = () => {
-		$activeControl = { sgIndex, tIndex };
+		$selectedBand = { ...generateGenericSelection(sgIndex, tIndex + 1), t: tIndex };
 		const transform = $store.subGlobuleConfigs[sgIndex].transforms[tIndex];
 		if (isGlobuleTransformReflect(transform)) {
 			normal = { ...transform.reflect.normal };
 			anchor = { ...transform.reflect.anchor };
-			recurs = getRecurrences(transform.recurs);
+			recurs = transform.recurs;
 		}
 	};
 
@@ -76,13 +68,11 @@
 	};
 	const isUpdatableRecurs = (tx: GlobuleTransform & { recurs?: Recurrence }) => {
 		if (!tx.recurs || !recurs) return true;
-		const processedTxRecurs = getRecurrences(tx.recurs);
+		const processedTxRecurs = tx.recurs;
 		if (recurs.length !== processedTxRecurs.length) return true;
 
 		let isUpdatable = false;
-		console.debug('- ', processedTxRecurs);
 		recurs.forEach((recurrence, i) => {
-			console.debug('    ', recurrence);
 			if (!isSameRecurrence(recurrence, processedTxRecurs[i])) {
 				isUpdatable = true;
 			}
@@ -120,13 +110,7 @@
 	};
 
 	const updateStore = (normal: Point3, anchor: Point3, recurs: RecombinatoryRecurrence[]) => {
-		console.debug(
-			'ReflectCard updateStore',
-			recurs[0].ghost,
-			getRecurrences($store.subGlobuleConfigs[sgIndex].transforms[tIndex]?.recurs)[0].ghost
-		);
 		if (isUpdatableRecurs($store.subGlobuleConfigs[sgIndex].transforms[tIndex])) {
-			console.debug('isUpdatableRecurs');
 			$store.subGlobuleConfigs[sgIndex].transforms[tIndex].recurs = recurs;
 		}
 		if (isUpdatableAnchor($store.subGlobuleConfigs[sgIndex].transforms[tIndex])) {

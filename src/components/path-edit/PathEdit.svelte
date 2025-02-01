@@ -1,9 +1,10 @@
 <script context="module">
+	// @ts-expect-error
 	import { asDraggable } from 'svelte-drag-and-drop-actions';
 </script>
 
 <script lang="ts">
-	import { generateDefaultShapeConfig } from '$lib/shades-config';
+	import { generateDefaultRadialShapeConfig } from '$lib/shades-config';
 	import { configStore0 } from '$lib/stores/stores';
 	import {
 		onPathPointMove,
@@ -42,14 +43,14 @@
 	};
 
 	export let curveStoreType: ShowControlCurveValue;
-	
+
 	const curveConfigByType = {
 		SilhouetteConfig: 'silhouetteConfig',
 		DepthCurveConfig: 'depthCurveConfig',
 		ShapeConfig: 'shapeConfig',
 		SpineCurveConfig: 'spineCurveConfig'
 	};
-	
+
 	let curveStore: CurveConfig;
 	let thisConfig;
 
@@ -229,7 +230,7 @@
 
 	const handleSymmetryChange = (event: any) => {
 		const symmetry = event?.target?.valueAsNumber || 5;
-		$configStore0.shapeConfig = generateDefaultShapeConfig(symmetry, {
+		$configStore0.shapeConfig = generateDefaultRadialShapeConfig(symmetry, {
 			method: 'divideCurve',
 			divisions: 4
 		});
@@ -270,7 +271,6 @@
 			// curveStoreType === 'SpineCurveConfig'
 		);
 		if (curveStoreType === 'SpineCurveConfig') {
-			console.debug('--------------------------------- for Spine', $configStore0);
 			// levelLines = getLevelLines(curvePoints, $configStore0);
 		}
 

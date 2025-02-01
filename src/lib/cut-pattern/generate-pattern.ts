@@ -7,7 +7,8 @@ import type {
 	SuperGlobule,
 	SuperGlobuleConfig
 } from '$lib/types';
-import { generateTiledBandPattern, applyStrokeWidth } from './cut-pattern';
+import { applyStrokeWidth } from './cut-pattern';
+import { generateTiledBandPattern } from './generate-tiled-pattern';
 
 type PatternGlobule = {
 	globules: Globule[];
@@ -27,13 +28,13 @@ export const generateSuperGlobulePattern = (
 			if (!config) {
 				throw new Error('missing config');
 			}
-			return { globules: subGlobule.data.filter((globule) => globule.visible), config };
+			return { globules: subGlobule.data.filter((globule: Globule) => globule.visible), config };
 		}
 	);
 
 	const collectedBandPatterns: PatternedBandPattern[] = patternGlobules
-		.map(({ globules }) => {
-			const bandPatterns = globules.map(({ data: { bands } }) => {
+		.map(({ globules }: { globules: Globule[] }) => {
+			const bandPatterns = globules.map(({ data: { bands }, address }) => {
 				let pattern: PatternedBandPattern;
 				const {
 					tiledPatternConfig,
@@ -41,6 +42,7 @@ export const generateSuperGlobulePattern = (
 				} = globulePatternConfig;
 
 				pattern = generateTiledBandPattern({
+					address,
 					bands: bands.filter((b) => b.visible),
 					tiledPatternConfig,
 					pixelScale

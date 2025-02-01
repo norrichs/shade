@@ -5,7 +5,7 @@
 </script>
 
 {#if show}
-	<div class="row">
+	<div>
 		<span>{label}</span>
 		<input type="checkbox"  bind:checked={value} />
 	</div>

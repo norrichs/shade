@@ -88,7 +88,6 @@ export const generateBandGeometry = (globule: Globule, globuleIndex: number): Ba
 				bandIndex
 			};
 		});
-	console.debug("generateBandGeometry", globule.data.bands.length, bandGeometry.length)
 	return bandGeometry
 };
 

@@ -3,8 +3,12 @@ import { getPersistedConfig, setLocal, getLocal } from './storage';
 
 export const USE_PERSISTED_KEY = 'global-use-persisted';
 export const AUTO_PERSIST_KEY = 'config-auto-persist';
+const OVERRIDE_PERSISTENCE = false;
 
 export const bootstrapShouldUsePersisted = (): boolean => {
+	if (OVERRIDE_PERSISTENCE) {
+		return false;
+	}
 	const retrievedUsePersisted = getLocal(USE_PERSISTED_KEY);
 	return retrievedUsePersisted ? retrievedUsePersisted[USE_PERSISTED_KEY] : undefined;
 };

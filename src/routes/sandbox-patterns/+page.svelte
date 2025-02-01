@@ -1,7 +1,8 @@
 <script lang="ts">
-	import { generateBranched, type DynamicPathCollection } from '$lib/patterns/patterns';
+	import { generateBranched } from '$lib/patterns';
 	import { tiledPatternConfigs } from '$lib/shades-config';
-	import type { Quadrilateral } from '$lib/types';
+	import type { DynamicPathCollection, Quadrilateral } from '$lib/types';
+	import CombinedNumberInput from '../../components/controls/CombinedNumberInput.svelte';
 	import Outline from '../../components/pattern-svg/Outline.svelte';
 	import PatternTile from '../../components/pattern/PatternTile.svelte';
 
@@ -54,26 +55,32 @@
 		minWidth: 1,
 		maxWidth: 10
 	});
+
+	// let rows = 1;
+	// let columns = 1;
 </script>
 
 <main>
-	<section>
-		{#each Object.values(tiledPatternConfigs) as pattern}
-			<PatternTile
-				patternType={pattern.type}
-				tilingBasis={pattern.tiling}
-				rows={3}
-				columns={5}
-				width={100}
-				height={100}
-			/>
-		{/each}
-	</section>
-	<section>
-		<svg width="800" height="800" overflow="visible">
-			<Outline paths={branchedPaths} />
-		</svg>
-	</section>
+	<header>
+		<!-- <CombinedNumberInput label="rows" bind:value={rows} step={1} min={1} max={3}/> -->
+		<section>
+			{#each Object.values(tiledPatternConfigs) as pattern}
+				<PatternTile
+					patternType={pattern.type}
+					tilingBasis={pattern.tiling}
+					rows={2}
+					columns={3}
+					width={200}
+					height={200}
+				/>
+			{/each}
+		</section>
+		<section>
+			<svg width="800" height="800" overflow="visible">
+				<Outline paths={branchedPaths} />
+			</svg>
+		</section>
+	</header>
 </main>
 
 <style>

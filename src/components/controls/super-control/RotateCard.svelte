@@ -1,8 +1,7 @@
 <script lang="ts">
 	import { degToRad, radToDeg } from '$lib/patterns/utils';
-	import { superConfigStore } from '$lib/stores';
-	import { getRecurrences, isGlobuleTransformRotate } from '$lib/transform-globule';
-	import { activeControl } from './active-control';
+	import { generateGenericSelection, selectedBand, superConfigStore } from '$lib/stores';
+	import { isGlobuleTransformRotate } from '$lib/transform-globule';
 
 	import type {
 		GlobuleRotate,
@@ -24,7 +23,6 @@
 	export let tIndex = 0;
 	export let active = false;
 
-	console.debug('active', active);
 	let angle = isGlobuleTransformRotate(
 		$superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex]
 	)
@@ -36,19 +34,16 @@
 		? $superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex].rotate
 		: { axis: { x: 0, y: 0, z: 1 }, anchor: { x: 0, y: 0, z: 0 } };
 
-	let recurs = getRecurrences(
-		$superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex].recurs
-	);
+	let recurs = $superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex].recurs;
 
 	const activate = () => {
-		console.debug('activate----------------------------------', sgIndex, tIndex);
-		$activeControl = { sgIndex, tIndex };
+		$selectedBand = { ...generateGenericSelection(sgIndex, tIndex + 1), t: tIndex };
 		const transform = $superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex];
 		if (isGlobuleTransformRotate(transform)) {
 			angle = radToDeg(transform.rotate.angle);
 			axis = { ...transform.rotate.axis };
 			anchor = { ...transform.rotate.anchor };
-			recurs = getRecurrences(transform.recurs);
+			recurs = transform.recurs;
 		}
 	};
 
@@ -72,9 +67,8 @@
 		);
 	};
 	const isUpdatableRecurs = (tx: GlobuleTransform & { recurs?: Recurrence }) => {
-		console.debug(tx);
 		if (!tx.recurs || !recurs) return true;
-		const processedTxRecurs = getRecurrences(tx.recurs);
+		const processedTxRecurs = tx.recurs;
 		if (recurs.length !== processedTxRecurs.length) return true;
 
 		let isUpdatable = false;
@@ -92,48 +86,17 @@
 		anchor: Point3,
 		recurs: RecombinatoryRecurrence[]
 	) => {
-		console.debug(`rotate, updateStore sg${sgIndex}, tx${tIndex}`, {
-			axis,
-			anchor,
-			angle,
-			recurs,
-			$superConfigStore
-		});
 		if (isUpdatableRotation($superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex])) {
-			console.debug(
-				'isUpdatableAngle',
-				angle,
-				'->',
-				$superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex].rotate.angle
-			);
 			$superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex].rotate.angle =
 				degToRad(angle);
 		}
 		if (isUpdatableRecurs($superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex])) {
-			console.debug(
-				'isUpdatableRecurs',
-				recurs,
-				'->',
-				$superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex].recurs
-			);
 			$superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex].recurs = recurs;
 		}
 		if (isUpdatableAxis($superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex])) {
-			console.debug(
-				'isUpdatableAxis',
-				axis,
-				'->',
-				$superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex].rotate.axis
-			);
 			$superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex].rotate.axis = axis;
 		}
 		if (isUpdatableAnchor($superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex])) {
-			console.debug(
-				'isUpdatableAnchor',
-				anchor,
-				'->',
-				$superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex].recurs
-			);
 			$superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex].rotate.anchor = anchor;
 		}
 	};
@@ -177,7 +140,7 @@
 <div class="rotate-card">
 	{#if active}
 		<div>
-			<RecurrenceControl bind:recurs {sgIndex} {tIndex}/>
+			<RecurrenceControl bind:recurs {sgIndex} {tIndex} />
 			{#if isGlobuleTransformRotate($superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex])}
 				<CombinedNumberInput bind:value={angle} label="Rotate" min={-360} max={360} step={0.1} />
 				<div>

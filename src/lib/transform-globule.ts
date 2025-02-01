@@ -269,17 +269,17 @@ const isRecombinatoryRecurrence = (recurs?: Recurrence): recurs is Recombinatory
 	);
 };
 
-export const getRecurrences = (recurs: Recurrence | undefined): RecombinatoryRecurrence[] => {
-	if (typeof recurs === 'number') {
-		const recurrences = new Array(recurs);
-		return recurrences.fill(0).map((_value, index) => ({ multiplier: index }));
-	} else if (isRecombinatoryRecurrence(recurs)) {
-		return window.structuredClone(recurs);
-	} else if (typeof recurs !== 'undefined') {
-		return recurs?.map((recurrence) => ({ multiplier: recurrence }));
-	}
-	return [{ multiplier: 1 }];
-};
+// export const getRecurrences = (recurs: Recurrence | undefined): RecombinatoryRecurrence[] => {
+// 	if (typeof recurs === 'number') {
+// 		const recurrences = new Array(recurs);
+// 		return recurrences.fill(0).map((_value, index) => ({ multiplier: index }));
+// 	} else if (isRecombinatoryRecurrence(recurs)) {
+// 		return window.structuredClone(recurs);
+// 	} else if (typeof recurs !== 'undefined') {
+// 		return recurs?.map((recurrence) => ({ multiplier: recurrence }));
+// 	}
+// 	return [{ multiplier: 1 }];
+// };
 
 const isVisible = (recurrence: RecombinatoryRecurrence) =>
 	recurrence.ghost === false || recurrence.ghost === undefined;
@@ -288,11 +288,10 @@ export const generateTransformedGlobules = (
 	prototypeGlobule: Globule,
 	transforms: ChainableTransform[]
 ): Globule[] => {
-	console.debug('generateTransformedGlobules');
 	const globules: Globule[][] = [[{ ...prototypeGlobule, visible: true }]];
 	transforms.forEach(({ recurs, ...transform }, transformIndex) => {
 		globules.push([]);
-		const recurrences = getRecurrences(recurs);
+		const recurrences = recurs;
 		recurrences.forEach((recurrence, recurrenceIndex) => {
 			globules[transformIndex].forEach((parentGlobule) => {
 				const newCoord = {
@@ -327,9 +326,5 @@ export const generateTransformedGlobules = (
 		});
 	});
 
-	console.debug(
-		'GLOBULES',
-		globules[globules.length - 1].map((g) => g.name)
-	);
 	return globules[globules.length - 1];
 };

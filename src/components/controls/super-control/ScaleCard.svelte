@@ -1,38 +1,28 @@
 <script lang="ts">
-	import { superConfigStore } from '$lib/stores';
+	import { generateGenericSelection } from '$lib/stores';
 	import type {
 		Point3,
-		Plane,
 		GlobuleTransform,
-		GlobuleTransformRotate,
 		Recurrence,
-		GlobuleTransformReflect,
 		GlobuleTransformScale,
-
 		RecombinatoryRecurrence
-
 	} from '$lib/types';
 	import RecurrenceControl from './RecurrenceControl.svelte';
 	import { superConfigStore as store } from '$lib/stores';
-	import { activeControl } from './active-control';
-	import {
-		getRecurrences,
-		isGlobuleTransformScale,
-		isGlobuleTransformRotate
-	} from '$lib/transform-globule';
+	import { isGlobuleTransformScale } from '$lib/transform-globule';
 	import { formatPoint3, isClose } from '$lib/util';
 	import PointInput from './PointInput.svelte';
-	import PickPointsButton from './PickPointsButton.svelte';
 	import { interactionMode } from '../../three-renderer-v2/interaction-mode';
-	import { Vector3 } from 'three';
 	import { round } from '$lib/util';
 	import NumberInput from '../NumberInput.svelte';
+	import { selectedBand } from '$lib/stores';
+	import PickPointsButton from './PickPointsButton.svelte';
 
 	export let sgIndex = 0;
 	export let tIndex = 0;
 	export let active = false;
 
-	let recurs = getRecurrences($store.subGlobuleConfigs[sgIndex].transforms[tIndex].recurs);
+	let recurs = $store.subGlobuleConfigs[sgIndex].transforms[tIndex].recurs;
 	let { anchor, scaleValue } = isGlobuleTransformScale(
 		$store.subGlobuleConfigs[sgIndex].transforms[tIndex]
 	)
@@ -43,12 +33,12 @@
 		  };
 
 	const activate = () => {
-		$activeControl = { sgIndex, tIndex };
+		$selectedBand = { ...generateGenericSelection(sgIndex, tIndex + 1), t: tIndex };
 		const transform = $store.subGlobuleConfigs[sgIndex].transforms[tIndex];
 		if (isGlobuleTransformScale(transform)) {
 			scaleValue = transform.scale.scaleValue;
 			anchor = { ...transform.scale.anchor };
-			recurs = getRecurrences(transform.recurs);
+			recurs = transform.recurs;
 		}
 	};
 
@@ -65,7 +55,7 @@
 	};
 	const isUpdatableRecurs = (tx: GlobuleTransform & { recurs?: Recurrence }) => {
 		if (!tx.recurs || !recurs) return true;
-		const processedTxRecurs = getRecurrences(tx.recurs);
+		const processedTxRecurs = tx.recurs;
 		if (recurs.length !== processedTxRecurs.length) return true;
 
 		let isUpdatable = false;
@@ -108,7 +98,7 @@
 <div class="scale-card">
 	{#if active}
 		<div>
-			<RecurrenceControl bind:recurs />
+			<RecurrenceControl bind:recurs sgIndex tIndex />
 			{#if isGlobuleTransformScale($store.subGlobuleConfigs[sgIndex].transforms[tIndex])}
 				<div>
 					<PointInput label="Anchor" bind:value={anchor} />

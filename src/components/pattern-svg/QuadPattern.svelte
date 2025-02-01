@@ -1,19 +1,57 @@
 <script lang="ts">
 	import { svgQuad } from '$lib/patterns/quadrilateral';
-	import type { PatternedBand, Quadrilateral } from '$lib/types';
+	import { getMidPoint } from '$lib/patterns/utils';
+	import type { PatternedBand, PatternedPattern, Point, Quadrilateral } from '$lib/types';
 
 	export let band: PatternedBand;
-	$: quads = band.facets
+	export let showQuads = false;
+	export let showLabels = true;
+
+	$: facets = band.facets
 		.filter((facet) => !!facet.quad)
-		.map((facet) => facet.quad) as Quadrilateral[];
+		.map((facet: PatternedPattern, i) => {
+			const labelPoint =
+				facet.quad === undefined ? { x: 0, y: 0 } : getMidPoint(facet.quad.p0, facet.quad.p2);
+			return {
+				label: facet.label,
+				labelPoint,
+				quad: facet.quad
+			};
+		}) as { label: string; labelPoint: Point; quad: Quadrilateral }[];
 </script>
 
-{#each quads as quad}
-	<g>
-		<path d={svgQuad(quad)} fill="black" opacity="0.2" stroke="black" stroke-width="0.5" />
-		<circle cx={quad.p0.x} cy={quad.p0.y} r="2" fill="red" />
-		<circle cx={quad.p1.x} cy={quad.p1.y} r="2" fill="green" />
-		<circle cx={quad.p2.x} cy={quad.p2.y} r="2" fill="blue" />
-		<circle cx={quad.p3.x} cy={quad.p3.y} r="2" fill="purple" />
+{#each facets as facet}
+	<g class="svg-pattern-quad">
+		<path
+			d={svgQuad(facet.quad)}
+			class={` ${showQuads ? 'show' : 'hide'}`}
+			stroke="none"
+			fill="none"
+		/>
+		{#if showLabels}<text
+				stroke="none"
+				font-size="10px"
+				x={facet.labelPoint.x}
+				y={facet.labelPoint.y}>{facet.label}</text
+			>{/if}
+		{#if showQuads}
+			<g stroke="none">
+				<circle cx={facet.quad.p0.x} cy={facet.quad.p0.y} r="2" fill="rgb(0,0,255)" />
+				<circle cx={facet.quad.p1.x} cy={facet.quad.p1.y} r="2" fill="rgb(50,0,150)" />
+				<circle cx={facet.quad.p2.x} cy={facet.quad.p2.y} r="2" fill="rgb(150,0,50)" />
+				<circle cx={facet.quad.p3.x} cy={facet.quad.p3.y} r="2" fill="rgb(255,0,0)" />
+			</g>
+		{/if}
 	</g>
 {/each}
+
+<style>
+	.show {
+		fill: black;
+		opacity: 0.25;
+	}
+	.hide {
+		fill: black;
+		opacity: 0;
+	}
+</style>

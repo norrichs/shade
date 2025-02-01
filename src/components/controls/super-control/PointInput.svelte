@@ -17,9 +17,7 @@
 		if (value.x !== x || value.y !== y || value.z !== z) {
 			if (constraint?.length) {
 				const newVector = new Vector3(x, y, z);
-				console.debug('newVector', newVector.x, newVector.y, newVector.z);
 				newVector.setLength(constraint.length);
-				console.debug('newVector constrained', newVector.x, newVector.y, newVector.z);
 				value = { x: newVector.x, y: newVector.y, z: newVector.z };
 				x = newVector.x;
 				y = newVector.y;

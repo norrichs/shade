@@ -1,11 +1,18 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 
-	import { shouldUsePersisted, superConfigStore } from '$lib/stores';
+	import { shouldUsePersisted, superConfigStore, uiStore } from '$lib/stores';
 	import Button from '../design-system/Button.svelte';
 	import NewConfigButton from './NewConfigButton.svelte';
 	import SaveConfigButton from './SaveConfigButton.svelte';
-	import { superGlobuleStore } from '$lib/stores';
+	import { superGlobuleStore, selectedBand } from '$lib/stores';
+	import { formatAddress } from '$lib/recombination';
+	import { downloadSvg } from '$lib/util';
+	import type { GeometryAddress, GlobuleAddressed } from '$lib/types';
+	import { interactionMode, interactions } from '../three-renderer-v2/interaction-mode';
+
+	let downloadUrl: string | undefined = undefined;
+
 	const sandBoxOptions = [
 		{ value: '/sandbox-ellipse-intersections', label: 'Ellipse Intersections' },
 		{ value: '/sandbox-line-intersections', label: 'Line Intersections' },
@@ -22,8 +29,23 @@
 		const coordStacks = $superGlobuleStore.subGlobules.map((sg) =>
 			sg.data.map((g) => g.coordStack)
 		);
-		console.debug({ coords });
-		console.debug({ coordStacks });
+	};
+
+	const printRecombinations = () => {
+		const recombinations = $superConfigStore.subGlobuleConfigs.forEach((sgc, sgcIndex) => {
+			if (!sgc.transforms || sgc.transforms.length === 0) {
+				console.debug(`${sgcIndex} | []`);
+			} else {
+				return sgc.transforms.forEach((tx, txIndex) =>
+					tx.recurs.forEach((r, rIndex) => {
+						console.debug(`${sgcIndex} | ${txIndex} | ${rIndex}:`);
+						r.recombines?.bandMap.forEach((bm) =>
+							console.debug(`    ${formatAddress(bm.partnerAddress)}`)
+						);
+					})
+				);
+			}
+		});
 	};
 </script>
 
@@ -46,16 +68,37 @@
 				{/each}
 			</select>
 		</div>
+
+		<div>
+			{formatAddress($selectedBand)}
+		</div>
+
 		<div class="button-group">
+			<Button
+				on:click={() => {
+					$interactionMode = { type: 'band-select-multiple', data: { bands: [] } };
+				}}>Select Bands</Button
+			>
+			<Button
+				on:click={() =>
+					downloadSvg('pattern-svg', `globule-pattern ${$superGlobuleStore.name}.svg`)}
+				>Download SVG</Button
+			>
+			<Button
+				on:click={() =>
+					($uiStore.designer.viewMode =
+						$uiStore.designer.viewMode === 'pattern' ? 'three' : 'pattern')}
+				>{`Main: ${$uiStore.designer.viewMode}`}</Button
+			>
 			<NewConfigButton />
 			<SaveConfigButton />
-			<Button on:click={() => console.debug({ $superConfigStore })}>Print super</Button>
-			<Button on:click={printGlobuleCoords}>Print Coords</Button>
-			<Button>Settings</Button>
+			<!-- <Button on:click={() => console.log({ $superConfigStore })}>Print super</Button>
+			<Button on:click={printRecombinations}>Print recombinations</Button>
+			<Button>Settings</Button> -->
 			<label for="use-persisted-checkbox">persist settings?</label>
 			<input type="checkbox" bind:checked={$shouldUsePersisted} />
 
-			<button> User </button>
+			<!-- <button> User </button> -->
 		</div>
 	</nav>
 </header>
@@ -66,6 +109,11 @@
 		color: var(--color-link);
 	}
 	header > nav {
+		--padding: 8px;
+		--height: calc(var(--nav-header-height) - 2 * var(--padding));
+		max-height: var(--height);
+		height: var(--height);
+		padding: var(--padding);
 		font-family: 'Open Sans', sans-serif;
 		font-optical-sizing: auto;
 		font-weight: 300;
@@ -75,7 +123,6 @@
 		left: 0;
 		top: 0;
 		right: 0;
-		padding: 8px;
 		display: flex;
 		flex-direction: row;
 		justify-content: space-between;

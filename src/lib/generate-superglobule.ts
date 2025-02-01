@@ -32,7 +32,9 @@ export const generateSuperGlobule = (superConfig: SuperGlobuleConfig): SuperGlob
 };
 
 const generateSubGlobule = (subGlobuleConfig: SubGlobuleConfig, sgIndex: number): SubGlobule => {
+
 	const { transforms, id, name } = subGlobuleConfig;
+
 
 	const prototypeGlobule: Globule = {
 		type: 'Globule',
@@ -49,11 +51,6 @@ const generateSubGlobule = (subGlobuleConfig: SubGlobuleConfig, sgIndex: number)
 	let globules: Globule[];
 	if (transforms) {
 		globules = generateTransformedGlobules(prototypeGlobule, transforms);
-		console.debug(
-			'TRANSFORMED GLOBULES',
-			globules.map((g) => `${g.address.s}[${g.address.g}]`)
-		);
-		
 	} else {
 		globules = [prototypeGlobule];
 	}

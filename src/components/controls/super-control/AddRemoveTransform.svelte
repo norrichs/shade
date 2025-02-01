@@ -3,13 +3,13 @@
 	import { getDefaultTransform } from '$lib/transform-globule';
 	import { Icon } from 'svelte-icons-pack';
 	import { FiMinusSquare, FiPlusSquare } from 'svelte-icons-pack/fi';
-	import { activeControl } from './active-control';
+	import { selectedBand } from '$lib/stores';
 	export let sgIndex: number;
 	export let tIndex: number;
 	let canAddTransform = false;
 
 	const removeTransform = () => {
-		$activeControl = undefined;
+		$selectedBand = { s: 0, g: [], b: 0 };
 		$store.subGlobuleConfigs[sgIndex].transforms.splice(tIndex, 1);
 		$store.subGlobuleConfigs[sgIndex].transforms = $store.subGlobuleConfigs[sgIndex].transforms;
 	};
@@ -22,8 +22,7 @@
 		if (newTransform) {
 			$store.subGlobuleConfigs[sgIndex].transforms.splice(tIndex + 1, 0, newTransform);
 			$store.subGlobuleConfigs[sgIndex].transforms = $store.subGlobuleConfigs[sgIndex].transforms;
-			console.debug({ $store });
-			$activeControl = { sgIndex, tIndex: tIndex + 1 };
+			$selectedBand = { s: sgIndex, g: new Array(tIndex + 2).fill(0), b: 0 };
 		}
 	};
 </script>

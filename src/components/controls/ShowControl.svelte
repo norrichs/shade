@@ -1,50 +1,47 @@
 <script lang="ts">
 	import { initTabStyle } from '$lib/shades-config';
-	import { superConfigStore, selectedSubGlobuleIndex } from '$lib/stores';
+	import { superConfigStore, selectedSubGlobuleIndex, selectedBand } from '$lib/stores';
 	import type { TabStyle } from '$lib/types';
 	import ControlGroup from './ControlGroup.svelte';
 
 	let tabStyle: TabStyle = window.structuredClone(
-		$superConfigStore.subGlobuleConfigs[$selectedSubGlobuleIndex].globuleConfig.bandConfig.tabStyle
+		$superConfigStore.subGlobuleConfigs[$selectedBand.s].globuleConfig.bandConfig.tabStyle
 	);
 
 	$: {
-		$superConfigStore.subGlobuleConfigs[
-			$selectedSubGlobuleIndex
-		].globuleConfig.bandConfig.tabStyle =
-			$superConfigStore.subGlobuleConfigs[$selectedSubGlobuleIndex].globuleConfig.bandConfig
-				.tabStyle.style !== tabStyle.style
+		$superConfigStore.subGlobuleConfigs[$selectedBand.s].globuleConfig.bandConfig.tabStyle =
+			$superConfigStore.subGlobuleConfigs[$selectedBand.s].globuleConfig.bandConfig.tabStyle
+				.style !== tabStyle.style
 				? initTabStyle(tabStyle.style)
 				: window.structuredClone(tabStyle);
 		tabStyle = window.structuredClone(
-			$superConfigStore.subGlobuleConfigs[$selectedSubGlobuleIndex].globuleConfig.bandConfig
-				.tabStyle
+			$superConfigStore.subGlobuleConfigs[$selectedBand.s].globuleConfig.bandConfig.tabStyle
 		);
 	}
 </script>
 
 <section>
-	{#if $superConfigStore.subGlobuleConfigs[$selectedSubGlobuleIndex].globuleConfig.renderConfig.ranges?.rangeStyle === 'slice'}
+	{#if $superConfigStore.subGlobuleConfigs[$selectedBand.s].globuleConfig.renderConfig.ranges?.rangeStyle === 'slice'}
 		<ControlGroup>
-			{#each Object.keys($superConfigStore.subGlobuleConfigs[$selectedSubGlobuleIndex].globuleConfig.renderConfig.ranges).filter((key) => key !== 'rangeStyle') as rangeKey}
+			{#each Object.keys($superConfigStore.subGlobuleConfigs[$selectedBand.s].globuleConfig.renderConfig.ranges).filter((key) => key !== 'rangeStyle') as rangeKey}
 				<label for={rangeKey}>{rangeKey}</label>
 				<input
 					id={rangeKey}
 					type="number"
-					bind:value={$superConfigStore.subGlobuleConfigs[$selectedSubGlobuleIndex].globuleConfig
+					bind:value={$superConfigStore.subGlobuleConfigs[$selectedBand.s].globuleConfig
 						.renderConfig.ranges[rangeKey]}
 				/>
 			{/each}
 
-			{#if $superConfigStore.subGlobuleConfigs[$selectedSubGlobuleIndex].globuleConfig.renderConfig.show}
+			{#if $superConfigStore.subGlobuleConfigs[$selectedBand.s].globuleConfig.renderConfig.show}
 				<div style="grid-column: 1 / 3; font-size: 20px;">Show</div>
-				{#each Object.keys($superConfigStore.subGlobuleConfigs[$selectedSubGlobuleIndex].globuleConfig.renderConfig.show) as key}
+				{#each Object.keys($superConfigStore.subGlobuleConfigs[$selectedBand.s].globuleConfig.renderConfig.show) as key}
 					<label for={`show-${key}`}>{key}</label>
 					<input
 						id={`show-${key}`}
 						type="checkbox"
-						bind:checked={$superConfigStore.subGlobuleConfigs[$selectedSubGlobuleIndex]
-							.globuleConfig.renderConfig.show[key]}
+						bind:checked={$superConfigStore.subGlobuleConfigs[$selectedBand.s].globuleConfig
+							.renderConfig.show[key]}
 					/>
 				{/each}
 			{/if}
@@ -54,8 +51,8 @@
 		<label for="band-style">Band Style</label>
 		<select
 			id="band-style"
-			bind:value={$superConfigStore.subGlobuleConfigs[$selectedSubGlobuleIndex].globuleConfig
-				.bandConfig.bandStyle}
+			bind:value={$superConfigStore.subGlobuleConfigs[$selectedBand.s].globuleConfig.bandConfig
+				.bandStyle}
 		>
 			<option>circumference</option>
 			<option>helical-right</option>
@@ -67,7 +64,7 @@
 			bind:value={tabStyle.style}
 			on:change={() =>
 				($superConfigStore.subGlobuleConfigs[
-					$selectedSubGlobuleIndex
+					$selectedBand.s
 				].globuleConfig.renderConfig.show.tabs = true)}
 		>
 			<option>none</option>
@@ -82,7 +79,7 @@
 			bind:value={tabStyle.direction}
 			on:change={() =>
 				($superConfigStore.subGlobuleConfigs[
-					$selectedSubGlobuleIndex
+					$selectedBand.s
 				].globuleConfig.renderConfig.show.tabs = true)}
 		>
 			<option>greater</option>
@@ -98,7 +95,7 @@
 				bind:value={tabStyle.width.value}
 				on:change={() =>
 					($superConfigStore.subGlobuleConfigs[
-						$selectedSubGlobuleIndex
+						$selectedBand.s
 					].globuleConfig.renderConfig.show.tabs = true)}
 			/>
 		{/if}

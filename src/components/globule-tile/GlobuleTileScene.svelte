@@ -12,10 +12,10 @@
 
 	export let globuleConfig: GlobuleConfig;
 	export let sgIndex: number;
+	export let selected = false
 	const CLICK_DELTA_THRESHOLD = 10;
 
 	const handleClick = (event: any) => {
-		console.debug('click');
 		event.stopPropagation();
 		if (event.delta > CLICK_DELTA_THRESHOLD) return;
 		$selectedGlobule = { subGlobuleConfigIndex: sgIndex, globuleId: globuleConfig.id };
@@ -27,5 +27,5 @@
 <DesignerCamera />
 <DesignerLighting />
 <T.Group position={[0, 0, 0]} on:click={(ev) => handleClick(ev)}>
-	<GlobuleMesh geometry={globuleGeometry} selected={false} />
+	<GlobuleMesh geometry={globuleGeometry} material={selected ? "selected" : "default"} />
 </T.Group>

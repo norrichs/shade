@@ -9,17 +9,16 @@
 		FiChevronDown,
 		FiXCircle
 	} from 'svelte-icons-pack/fi';
-	import { activeControl } from './active-control';
 	import { interactionMode } from '../../three-renderer-v2/interaction-mode';
 	import AddRemoveTransform from './AddRemoveTransform.svelte';
-	import { superConfigStore as store } from '$lib/stores';
+	import { selectedBand, superConfigStore as store } from '$lib/stores';
 
 	export let transform: GlobuleTransform;
 	export let sgIndex: number;
 	export let tIndex: number;
 
 	const closeCard = () => {
-		$activeControl = undefined;
+		$selectedBand.t = undefined;
 		$interactionMode = { type: 'standard' };
 	};
 

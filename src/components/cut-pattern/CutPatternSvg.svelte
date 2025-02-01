@@ -16,7 +16,7 @@
 	$: viewBoxValue = getViewBox($patternConfigStore.patternViewConfig);
 </script>
 
-<svg id="outer-svg" width="100%" height="100%" viewBox={viewBoxValue}>
+<svg id="outer-svg" viewBox={viewBoxValue}>
 	<svg
 		id="pattern-svg"
 		height={`${2000}${$patternConfigStore.patternConfig.page.unit}`}

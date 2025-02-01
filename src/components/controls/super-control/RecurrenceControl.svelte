@@ -1,55 +1,46 @@
 <script lang="ts">
 	import { Icon } from 'svelte-icons-pack';
-	import { FiPlusSquare, FiMinusSquare, FiEye, FiEyeOff, FiSlash } from 'svelte-icons-pack/fi';
-	import { BiSolidEyedropper } from 'svelte-icons-pack/bi';
+	import {
+		FiPlusSquare,
+		FiMinusSquare,
+		FiEye,
+		FiEyeOff,
+		FiSlash,
+		FiCode
+	} from 'svelte-icons-pack/fi';
 	import NumberInput from './NumberInput.svelte';
 	import type {
 		GeometryAddress,
 		GlobuleAddress,
 		GlobuleConfigCoordinates,
-		RecombinatoryRecurrence,
-		Recurrence,
-		SuperGlobuleConfig
+		RecombinatoryRecurrence
 	} from '$lib/types';
-	import Button from '../../design-system/Button.svelte';
 	import { superGlobuleStore, superConfigStore, type BandSelection } from '$lib/stores';
-	import { getRecurrences } from '$lib/transform-globule';
 	import PickPointsButton from './PickPointsButton.svelte';
-	import {
-		interactionMode,
-		type BandSelectInteractionMode,
-		type InteractionMode
-	} from '../../three-renderer-v2/interaction-mode';
-	import { includesGlobuleCoordinates } from '$lib/matchers';
+	import { interactionMode } from '../../three-renderer-v2/interaction-mode';
+	import { formatAddress } from '$lib/recombination';
+	import Button from '../../design-system/Button.svelte';
 
 	export let recurs: RecombinatoryRecurrence[];
 	export let sgIndex, tIndex;
 	let parentGlobuleAddress: GlobuleAddress = new Array(tIndex);
-
-	// const getGlobuleIndex = (sgc: SuperGlobuleConfig, coord: GlobuleConfigCoordinates) => {
-	// 	const subGlobuleConfig = sgc.subGlobuleConfigs[coord.s]
-	// 	const transforms = subGlobuleConfig.transforms.filter((tx, i) => i < coord.t).map(tx=> getRecurrences()
-	// }
+	let showRecombinationDialog = false;
 
 	const setupPickBands = (recurrenceIndex: number, geometryAddress: GeometryAddress<undefined>) => {
 		const coord: GlobuleConfigCoordinates = { s: sgIndex, t: tIndex, r: recurrenceIndex };
-		console.debug('setup pick bands', { coord, geometryAddress });
 		if ($interactionMode.type === 'band-select-partners') {
-			const originGlobules = $superGlobuleStore.subGlobules[coord.s].data.filter((globule) => {
+			console.debug('setupPickBands', {
+				subGlobule: $superGlobuleStore.subGlobules[sgIndex],
+				sgIndex
+			});
+			const originGlobules = $superGlobuleStore.subGlobules[sgIndex].data.filter((globule) => {
 				const selectorIndex = geometryAddress.g.length - 1;
 				const { g } = globule.address;
-				console.debug('g', g, selectorIndex);
 				return g[selectorIndex] === geometryAddress.g[selectorIndex];
 			});
-			console.debug('originGlobules', originGlobules);
 
 			// Early return
 			if (originGlobules.length === 0) {
-				const coords = $superGlobuleStore.subGlobules.map((sg) => sg.data.map((g) => g.coord));
-				console.debug('setupPickBands - no originGlobules', {
-					'recurrence coord': coord,
-					'coord map': coords
-				});
 				return;
 			}
 
@@ -62,58 +53,24 @@
 						coord: { ...coord, b: i },
 						coordStack: originGlobules[j].coordStack,
 						address: { ...originGlobules[j].address, b: i },
-						subGlobuleConfigIndex: coord.s,
-						subGlobuleConfigId: $superConfigStore.subGlobuleConfigs[coord.s].id,
+						subGlobuleConfigIndex: sgIndex,
+						subGlobuleConfigId: $superConfigStore.subGlobuleConfigs[sgIndex].id,
 						subGlobuleRecurrence: coord.r,
 						transformIndex: coord.t,
 						bandIndex: i
 					});
 				}
 			}
-			console.debug('new interaction mode', originHighlight);
 			$interactionMode.data.originHighlight = originHighlight;
-			console.debug({ $interactionMode });
 		}
 	};
 
 	const onSelectBands = (recurrenceIndex: number) => {
-		const recurrences = getRecurrences(
-			$superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex].recurs
-		);
-
-		// recurrences[recurrenceIndex].recombines = {
-		// 	coordinates: { s: sgIndex, t: tIndex, r: recurrenceIndex },
-		// 	bandMap: [
-		// 		{
-		// 			origin: [
-		// 				($interactionMode as BandSelectInteractionMode).data.bands[0].subGlobuleGeometryIndex!,
-		// 				'end'
-		// 			],
-		// 			partner: [
-		// 				($interactionMode as BandSelectInteractionMode).data.bands[1].subGlobuleGeometryIndex!,
-		// 				'end'
-		// 			]
-		// 		}
-		// 	]
-		// };
-		// $superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex].recurs = [...recurrences];
-
-		// console.debug(
-		// 	'Recurrence Control Interaction Mode',
-		// 	sgIndex,
-		// 	tIndex,
-		// 	recurrenceIndex,
-		// 	$interactionMode
-		// );
+		const recurrences = $superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex].recurs;
 	};
 
 	const handleSelectPartners = (rIndex: number) => {
-		console.debug('handleSelectPartenrs, context:', sgIndex, tIndex, rIndex);
-
-		const thisRecurrences = getRecurrences(
-			$superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex].recurs
-		);
-		console.debug(thisRecurrences[rIndex]);
+		const thisRecurrences = $superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex].recurs;
 	};
 
 	const decrement = () => {
@@ -126,18 +83,17 @@
 
 	const deleteRecombination = (recurrenceIndex: number) => {
 		recurs[recurrenceIndex].recombines = undefined;
+		$superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex].recurs = recurs;
 		recurs = recurs;
-		console.debug('stub');
+		console.debug('deleteRecombination recurs', window.structuredClone(recurs));
 	};
 
 	const toggleGhost = (recurrenceIndex: number) => {
-		console.debug('toggleGhost', recurs[recurrenceIndex].ghost);
 		recurs[recurrenceIndex].ghost =
 			recurs[recurrenceIndex].ghost === false ||
 			typeof recurs[recurrenceIndex].ghost === 'undefined'
 				? true
 				: false;
-		console.debug(recurs[recurrenceIndex].ghost);
 	};
 
 	$: recombinationOptions = $superGlobuleStore.subGlobules
@@ -163,20 +119,19 @@
 	</div>
 	{#each recurs as r, i}
 		<div class="container">
-			<NumberInput bind:value={r.multiplier} min={0} step={1} />
+			<NumberInput label="" bind:value={r.multiplier} min={0} step={1} />
 			<div class="container row">
 				<button on:click={() => toggleGhost(i)}
 					><Icon size="20" src={r.ghost === true ? FiEyeOff : FiEye} /></button
 				>
 				{#if r.recombines}
-					<button on:click={() => deleteRecombination(i)}><Icon size="20" src={FiSlash} /></button>
-					<div>
-						{`Origin: ${r.recombines.bandMap[0].originIndex} -> ${r.recombines.bandMap[0].partnerAddress}`}
-					</div>
+					<button on:click={() => deleteRecombination(i)}
+						><Icon color="red" size="20" src={FiSlash} /></button
+					>
 				{/if}
-				<!-- {#if tIndex === 0} -->
 				<PickPointsButton
-					onClick={() => setupPickBands(i, { s: sgIndex, g: [...parentGlobuleAddress, i], b: undefined })}
+					onClick={() =>
+						setupPickBands(i, { s: sgIndex, g: [...parentGlobuleAddress, i], b: undefined })}
 					mode={{
 						type: 'band-select-partners',
 						data: {
@@ -189,7 +144,60 @@
 						onSelectBands: () => onSelectBands(i)
 					}}
 				/>
-				<!-- {/if} -->
+				<button on:click={() => (showRecombinationDialog = !showRecombinationDialog)}
+					><Icon src={FiCode} /></button
+				>
+				<div class="dialog-anchor">
+					{#if showRecombinationDialog}
+						<div class="recombination-dialog-container">
+							<header>Recombination details</header>
+							{#each r.recombines?.bandMap || [] as mapping, mappingIndex}
+								<div class="row">
+									<div>
+										{mapping.originIndex}
+									</div>
+									<div>
+										<Button
+											on:click={() => {
+												const newEnd = mapping.partnerJoin === 'end' ? 'start' : 'end';
+												if (
+													$superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex].recurs[i]
+														.recombines !== undefined
+												) {
+													$superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex].recurs[
+														i
+													].recombines.bandMap[mappingIndex].partnerJoin = newEnd;
+												}
+											}}
+										>
+											{mapping.partnerJoin}
+										</Button>
+									</div>
+									<div>
+										<Button
+											on:click={() => {
+												const newEnd = mapping.originJoin === 'end' ? 'start' : 'end';
+												if (
+													$superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex].recurs[i]
+														.recombines !== undefined
+												) {
+													$superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex].recurs[
+														i
+													].recombines.bandMap[mappingIndex].originJoin = newEnd;
+												}
+											}}
+										>
+											{mapping.originJoin}
+										</Button>
+									</div>
+									<div>
+										{formatAddress(mapping.partnerAddress)}
+									</div>
+								</div>
+							{/each}
+						</div>
+					{/if}
+				</div>
 			</div>
 		</div>
 	{/each}
@@ -204,6 +212,19 @@
 		flex-direction: row;
 		align-items: center;
 		gap: 4px;
+	}
+	.dialog-anchor {
+		position: relative;
+	}
+	.recombination-dialog-container {
+		width: 400px;
+		background-color: red;
+		border: 1px solid gray;
+		position: absolute;
+	}
+	.recombination-dialog-container .row {
+		display: flex;
+		flex-direction: row;
 	}
 	button {
 		padding: 0;

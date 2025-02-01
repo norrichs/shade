@@ -17,14 +17,21 @@ import {
 	processFlowerOfLife1PatternTransforms,
 	svgPathStringFromSegments
 } from '../patterns/flower-of-life';
-import { arcCircle, getLength, getQuadWidth, simpleTriangle } from '../patterns/utils';
+import {
+	arcCircle,
+	getLength,
+	getQuadWidth,
+	rotatePS,
+	simpleTriangle,
+	translatePS
+} from '../patterns/utils';
 import type {
 	AlignTrianglesConfig,
 	Band,
+	BandAddressed,
 	BandPattern,
 	BandStyle,
 	CutoutConfig,
-	DynamicStrokeConfig,
 	EdgeConfig,
 	Facet,
 	FacetPattern,
@@ -33,6 +40,7 @@ import type {
 	FacetedStrutPattern,
 	FlatStripConfig,
 	FullTabPattern,
+	GeometryAddress,
 	Level,
 	LevelPattern,
 	LevelSetPattern,
@@ -43,10 +51,12 @@ import type {
 	OutlinedStrutPattern,
 	PathSegment,
 	PatternConfig,
+	PatternedBand,
 	PatternedBandPattern,
 	PatternedPattern,
 	PixelScale,
 	Point,
+	Quadrilateral,
 	RenderConfig,
 	Strip,
 	Strut,
@@ -55,9 +65,6 @@ import type {
 	TrianglePoint
 } from '$lib/types';
 import { generateUnitFlowerOfLifeTriangle } from '$lib/patterns/unit-pattern/unit-flower-of-life';
-import type { TiledPatternConfig } from '$lib/types';
-import { getQuadrilaterals, transformPatternByQuad } from '$lib/patterns/quadrilateral';
-import { patterns } from '$lib/patterns/patterns';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-expect-error
 import outline from 'svg-path-outline';
@@ -185,99 +192,7 @@ export const generateStrutPatterns = (
 	return outlinedPattern;
 };
 
-export const generateTiledBandPattern = ({
-	bands,
-	tiledPatternConfig,
-	pixelScale
-}: {
-	bands: Band[];
-	tiledPatternConfig: TiledPatternConfig;
-	pixelScale: PixelScale;
-}): PatternedBandPattern => {
-	const pattern: PatternedBandPattern = { projectionType: 'patterned', bands: [] };
-	const { getPattern, tagAnchor, adjustAfterTiling } = patterns[tiledPatternConfig.type];
-	// Creates a line pattern without inner and outer elements, appropriate for post processing in Affinity
-	// TODO - see if it's possible to convert the output of this to "expanded path" (e.g. convert stroke widths to paths instead of doing so in Affinity)
 
-	const { rowCount, columnCount } = tiledPatternConfig.config;
-	const tiling: {
-		facets: PatternedPattern[];
-		svgPath: string | undefined;
-		id: string;
-		tagAnchorPoint: Point;
-	}[] = bands
-		.filter((b) => b.visible)
-		.map((band, bandIndex) => {
-			const flatBand = getFlatStrip(band, { bandStyle: 'helical-right', pixelScale });
-			const quadBand = getQuadrilaterals(flatBand, pixelScale.value);
-
-			let mappedPatternBand: PathSegment[][] | PathSegment[];
-			if (tiledPatternConfig.tiling === 'quadrilateral') {
-				const unitPattern = getPattern(rowCount as 3 | 1 | 2, columnCount as 1 | 2 | 3 | 4 | 5);
-				mappedPatternBand = quadBand.map((quad) => transformPatternByQuad(unitPattern, quad));
-			} else {
-				mappedPatternBand = [getPattern(1, 1, quadBand)];
-			}
-			const adjustedPatternBand = mappedPatternBand.map((facet) => {
-				return facet;
-				// Fix junctions and ends here
-				// Add accessory geometry, such as pattern segments from adjacent facets
-				// return i === 0 ? facet : adjustAfterTiling([facet, facets[i - 1]]);
-			});
-			const tagAnchorPoint = { x: 0, y: 0 };
-			const cuttablePattern: PatternedPattern[] = quadBand.map((quad, quadBandIndex) => {
-				const facet = adjustedPatternBand[quadBandIndex % adjustedPatternBand.length];
-				const facetPathSegment = facet[(facet.length + tagAnchor.segmentIndex) % facet.length];
-				if (
-					tagAnchor.facetIndex === quadBandIndex &&
-					Array.isArray(facetPathSegment) &&
-					facetPathSegment.length >= 2
-				) {
-					tagAnchorPoint.x = facetPathSegment[1] || 0;
-					tagAnchorPoint.y = facetPathSegment[2] || 0;
-				}
-				// const quad: Quadrilateral = quadBand[j];
-				const quadWidth = getQuadWidth(quad);
-				const cuttable: PatternedPattern = {
-					// TODO - rescale this based on selected real units
-					path: facet,
-					triangle: undefined,
-					quad,
-					quadWidth
-				};
-				return cuttable;
-			});
-			const result = {
-				facets: cuttablePattern,
-				svgPath: undefined, //cuttablePattern.map((p) => p.svgPath).join(),
-				id: `${tiledPatternConfig.type}-band-${bandIndex}`,
-				tagAnchorPoint,
-				tagAngle: tiledPatternConfig.labels?.angle || tagAnchor.angle || 0
-			};
-			return result;
-		});
-
-	if (adjustAfterTiling && tiledPatternConfig.config.doAddenda) {
-		const adjusted = adjustAfterTiling(tiling);
-		pattern.bands = adjusted;
-	} else {
-		pattern.bands = tiling;
-	}
-
-	pattern.bands = pattern.bands.map((band) => ({
-		...band,
-		facets: band.facets.map((facet) => {
-			const segments = facet.path;
-			if (facet.addenda) {
-				const addendaSegments = facet.addenda.map((a) => a.path);
-				segments.push(...facet.addenda.map((a) => a.path).flat());
-			}
-			return { ...facet, svgPath: svgPathStringFromSegments([...segments]) };
-		})
-	}));
-
-	return pattern as PatternedBandPattern;
-};
 
 export const generateBandPatterns = (
 	config: PatternConfig,
@@ -807,10 +722,13 @@ export const applyStrokeWidth = (
 	patternBands: PatternedBandPattern,
 	{ dynamicStroke, dynamicStrokeMax, dynamicStrokeMin }: object & DynamicStrokeConfig
 ): PatternedBandPattern => {
-	const widthVariesByBand = false;
+
+	console.debug("applyStrokeWidth", {patternBands})
+	const widthVariesByBand = true;
 
 	let maxValue: number;
 	let minValue: number;
+
 	if (dynamicStroke === 'quadWidth') {
 		const values: number[] = [];
 		patternBands.bands.forEach((band) =>
@@ -824,6 +742,7 @@ export const applyStrokeWidth = (
 		minValue = Math.min(...values);
 
 		if (!widthVariesByBand && patternBands.bands[0]) {
+			console.debug("not width varies by band")
 			const strokeWidthPrototypes = patternBands.bands[0].facets.map((facet: PatternedPattern) => {
 				const ratio = facet.quadWidth ? (facet.quadWidth - minValue) / (maxValue - minValue) : 1;
 				return ratio * (dynamicStrokeMax - dynamicStrokeMin) + dynamicStrokeMin;

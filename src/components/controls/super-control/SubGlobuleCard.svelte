@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { generateGlobuleData } from '$lib/generate-shape';
-	import { superConfigStore as store } from '$lib/stores';
+	import { superConfigStore as store, selectedBand } from '$lib/stores';
 	import { FiTrash2, FiCopy, FiPlusSquare, FiGitBranch } from 'svelte-icons-pack/fi';
 	import GlobuleTileSimple from '../../globule-tile/GlobuleTileSimple.svelte';
 
@@ -12,8 +12,10 @@
 		divergeSubGlobuleConfig
 	} from '$lib/generate-superglobule';
 	import GlobuleTileScene from '../../globule-tile/GlobuleTileScene.svelte';
+	import TextInput from '../../design-system/TextInput.svelte';
 
 	export let sgIndex: number;
+	export let active = false;
 
 	$: globule = generateGlobuleData($store.subGlobuleConfigs[sgIndex].globuleConfig);
 
@@ -51,17 +53,9 @@
 	};
 </script>
 
-<div class="container card-container">
+<div class="sub-globule container card-container" style={`--left-border-color: ${active ? 'blue' : 'red'};`}>
 	<header class="card-header">
-		<div>
-			<span
-				contenteditable="true"
-				on:input={(ev) => console.debug(ev)}
-				on:blur={(ev) => updateTitle(ev.currentTarget?.textContent || '')}
-			>
-				{$store.subGlobuleConfigs[sgIndex].name}
-			</span>
-		</div>
+		<TextInput bind:value={$store.subGlobuleConfigs[sgIndex].name} />
 
 		<button on:click={removeSubGlobule}>
 			<Icon size="20" src={FiTrash2} />
@@ -84,14 +78,18 @@
 		/>
 	</div>
 	<div class="card-sidebar">
-		<div>
+		<!-- <div>
 			{$store.subGlobuleConfigs[sgIndex].id}
 		</div>
 		<div>
 			{$store.subGlobuleConfigs[sgIndex].globuleConfig.id}
-		</div>
-		<GlobuleTileSimple size={200}>
-			<GlobuleTileScene globuleConfig={$store.subGlobuleConfigs[sgIndex].globuleConfig} {sgIndex} />
+		</div> -->
+		<GlobuleTileSimple size={100}>
+			<GlobuleTileScene
+				globuleConfig={$store.subGlobuleConfigs[sgIndex].globuleConfig}
+				{sgIndex}
+				selected={sgIndex === $selectedBand.s}
+			/>
 		</GlobuleTileSimple>
 	</div>
 </div>
@@ -112,28 +110,31 @@
 		margin: 0;
 	}
 	.container {
-		border: 1px solid var(--color-shaded-medium);
-		width: 300px;
-		padding: 8px;
-	}
-	.container div {
-		padding: 8px;
+		/* border: 1px solid var(--color-shaded-medium); */
+		padding: 0;
 	}
 	.card-container {
 		display: grid;
-		grid-template-rows: 1rem 1fr;
+		grid-template-rows: auto auto;
 		grid-template-columns: 400px auto;
 		grid-template-areas:
-			'a a'
-			'b c';
+		'a a'
+		'b c';
 	}
 	.card-header {
+		padding: 4px;
 		grid-area: a;
 	}
 	.card-content {
+		margin-left: 8px;
+		border-left: 4px solid var(--left-border-color);
+		padding-left: 12px;
 		grid-area: b;
 	}
 	.card-sidebar {
+		display: flex;
+		flex-direction: row;
+		justify-content: flex-end;
 		grid-area: c;
 		padding: 4px;
 	}

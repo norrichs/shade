@@ -19,7 +19,8 @@
 				}}
 			>
 				<div>
-					{name ? name : `id: ${id}`}
+					{`id: ${id}, ${name}`}
+					<!-- {name ? name : `id: ${id}`} -->
 				</div>
 				<Icon src={showOverlay ? FiChevronUp : FiChevronDown} />
 			</header>

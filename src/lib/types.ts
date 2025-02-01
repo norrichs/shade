@@ -1,6 +1,8 @@
 import type { Vector2, Vector3, Triangle as ThreeTriangle } from 'three';
 
 export type PatternViewConfig = {
+	showQuads: boolean;
+	showLabels: boolean;
 	width: number;
 	height: number;
 	zoom: number;
@@ -33,6 +35,30 @@ export type TilePattern =
 			type: 'alternating-band';
 			nthBand: number;
 	  };
+
+export type DynamicPathCollection = { [key: string]: DynamicPath };
+export type DynamicPath = { width: number; path: PathSegment[]; svgPath: string }[];
+
+export type PatternGenerator = UnitPatternGenerator | BandPatternGenerator;
+
+export type UnitPatternGenerator = {
+	getPattern: (
+		rows: 1 | 2 | 3,
+		columns: 1 | 2 | 3 | 4 | 5,
+		quadBand?: Quadrilateral[]
+	) => PathSegment[];
+	tagAnchor?: any;
+	adjustAfterTiling?: any;
+};
+export type BandPatternGenerator = {
+	getPattern: (
+		rows: 1 | 2 | 3,
+		columns: 1 | 2 | 3 | 4 | 5,
+		quadBand?: Quadrilateral[]
+	) => DynamicPathCollection;
+	tagAnchor?: any;
+	adjustAfterTiling?: any;
+};
 
 export type CircleConfig = {
 	[key: string]: 'CircleConfig' | PointConfig2 | number;
@@ -140,6 +166,7 @@ export type PatternedPattern = {
 	quad?: Quadrilateral;
 	tab?: TabPattern;
 	addenda?: Omit<PatternedPattern, 'addenda'>[];
+	label: string;
 };
 
 export type FullTabPattern = {
@@ -259,6 +286,7 @@ export type PatternedBand = {
 	tagAnchorPoint?: Point;
 	tagAngle?: number;
 	projectionType: 'patterned';
+	address: GeometryAddress<BandAddressed>;
 };
 
 export type NullBandPattern = { projectionType: 'none' };
@@ -384,6 +412,7 @@ export type TiledPattern =
 	| 'tiledBowtiePattern-0'
 	| 'tiledCarnationPattern-0'
 	| 'tiledCarnationPattern-1'
+	| 'tiledTriStarPattern-1'
 	| 'bandedBranchedPattern-0';
 
 export type TilingBasis = 'quadrilateral' | 'band';
@@ -403,6 +432,9 @@ export type TiledPatternConfig = {
 		dynamicStrokeEasing: 'linear';
 		dynamicStrokeMin: number;
 		dynamicStrokeMax: number;
+		endsMatched: boolean;
+		endsTrimmed: boolean;
+		endLooped: number;
 	};
 };
 
@@ -502,6 +534,7 @@ export type Band = {
 	endTab?: FacetTab;
 	selected?: BandSelection;
 	visible?: boolean;
+	address?: GeometryAddress<BandAddressed>;
 };
 export type BezierConfig = {
 	[key: string]: PointConfig2[] | string;
@@ -531,7 +564,7 @@ export type LineConfig = {
 
 export type CurveConfig = SilhouetteConfig | ShapeConfig | DepthCurveConfig | SpineCurveConfig;
 
-export type CurveConfigType = CurveConfig["type"]
+export type CurveConfigType = CurveConfig['type'];
 
 export type SilhouetteConfig = {
 	type: 'SilhouetteConfig';
@@ -677,7 +710,7 @@ export type Globule = {
 
 export type GlobuleData = {
 	levels?: Level[];
-	bands: (Band & { visible: boolean })[];
+	bands: Band[];
 	struts?: Strut[];
 };
 
@@ -703,7 +736,7 @@ export type BandGeometry = {
 };
 
 // number array allows for arbitrary, and repeating application of transforms
-export type Recurrence = number | number[] | RecombinatoryRecurrence[];
+export type Recurrence = RecombinatoryRecurrence[];
 
 export type GlobuleAddressed = undefined;
 export type BandAddressed = number;
@@ -749,7 +782,7 @@ export type GlobuleTransform =
 	| GlobuleTransformScale;
 
 export type ChainableTransform = {
-	recurs?: Recurrence;
+	recurs: Recurrence;
 } & GlobuleTransform;
 
 export type GlobuleReflect = { anchor: Point3; normal: Point3 };
@@ -894,6 +927,15 @@ export type Triangle = {
 	b: Point;
 	c: Point;
 };
+
+/* 
+Triangle layout diagram
+        __________
+			/c\b     a/
+		/		 \	  /
+	/a     b\c/
+	---------
+*/
 export type Ellipse = {
 	r0: number;
 	r1: number;
@@ -1011,6 +1053,25 @@ export type Quadrilateral = {
 	p3: Point;
 };
 
+/*
+	Quadrilateral diagram:
+	
+	p3 ------ p2
+	|          |
+	|          |
+	|          |
+	p0 ------ p1
+
+*/
+
+/* 
+Triangle layout diagram:
+    	    p3_______p2
+				/c\b     a/
+			/		 \	  /
+		/a     b\c/
+	p0--------p1
+*/
 export type QuadrilateralTransformMatrix = {
 	u: Point;
 	v: Point;

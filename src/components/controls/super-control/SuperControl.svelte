@@ -1,75 +1,62 @@
 <script lang="ts">
-	import { superConfigStore } from '$lib/stores';
+	import { selectedBand, superConfigStore, type ActiveGeometryAddress } from '$lib/stores';
 	import {
 		isGlobuleTransformReflect,
 		isGlobuleTransformRotate,
 		isGlobuleTransformScale,
 		isGlobuleTransformTranslate
 	} from '$lib/transform-globule';
+	import TextInput from '../../design-system/TextInput.svelte';
 	import ReflectCard from './ReflectCard.svelte';
 	import RotateCard from './RotateCard.svelte';
 	import ScaleCard from './ScaleCard.svelte';
 	import SubGlobuleCard from './SubGlobuleCard.svelte';
 	import TransformCard from './TransformCard.svelte';
 	import TranslateCard from './TranslateCard.svelte';
-	import { activeControl } from './active-control';
 
-	console.debug('SUPERCONTROL', { $superConfigStore });
-	const isActive = (sgIndex: number, tIndex: number) => {
-		return $activeControl?.sgIndex === sgIndex && $activeControl?.tIndex === tIndex;
+	const isActive = (selected: ActiveGeometryAddress, sg: number, t?: number) => {
+		if (t === undefined) {
+			return selected.s === sg;
+		}
+		return selected.s === sg && selected.g.length === t + 1;
 	};
 </script>
 
-<section>
+<section class="scroll-container">
 	<header>
-		<div>{$superConfigStore.name}</div>
+		<TextInput bind:value={$superConfigStore.name} />
 	</header>
-	<div>{$superConfigStore.subGlobuleConfigs.length}</div>
-	<div class="scroll-container">
-		{#each $superConfigStore.subGlobuleConfigs as subGlobuleConfig, sgIndex}
-			<SubGlobuleCard {sgIndex}>
-				{#each subGlobuleConfig.transforms as transform, tIndex}
-					<TransformCard {transform} {tIndex} {sgIndex}>
-						{#if isGlobuleTransformRotate(transform)}
-							<RotateCard
-								{sgIndex}
-								{tIndex}
-								active={$activeControl?.sgIndex === sgIndex && $activeControl?.tIndex === tIndex}
-							/>
-						{:else if isGlobuleTransformTranslate(transform)}
-							<TranslateCard
-								{sgIndex}
-								{tIndex}
-								active={$activeControl?.sgIndex === sgIndex && $activeControl?.tIndex === tIndex}
-							/>
-						{:else if isGlobuleTransformReflect(transform)}
-							<ReflectCard
-								{sgIndex}
-								{tIndex}
-								active={$activeControl?.sgIndex === sgIndex && $activeControl?.tIndex === tIndex}
-							/>
-						{:else if isGlobuleTransformScale(transform)}
-							<ScaleCard
-								{sgIndex}
-								{tIndex}
-								active={$activeControl?.sgIndex === sgIndex && $activeControl?.tIndex === tIndex}
-							/>
-						{/if}
-					</TransformCard>
-				{/each}
-			</SubGlobuleCard>
-		{/each}
-	</div>
+
+	{#each $superConfigStore.subGlobuleConfigs as subGlobuleConfig, sgIndex}
+		<SubGlobuleCard {sgIndex} active={isActive($selectedBand, sgIndex)}>
+			{#each subGlobuleConfig.transforms as transform, tIndex}
+				<TransformCard {transform} {tIndex} {sgIndex}>
+					{#if isGlobuleTransformRotate(transform)}
+						<RotateCard {sgIndex} {tIndex} active={isActive($selectedBand, sgIndex, tIndex)} />
+					{:else if isGlobuleTransformTranslate(transform)}
+						<TranslateCard {sgIndex} {tIndex} active={isActive($selectedBand, sgIndex, tIndex)} />
+					{:else if isGlobuleTransformReflect(transform)}
+						<ReflectCard {sgIndex} {tIndex} active={isActive($selectedBand, sgIndex, tIndex)} />
+					{:else if isGlobuleTransformScale(transform)}
+						<ScaleCard {sgIndex} {tIndex} active={isActive($selectedBand, sgIndex, tIndex)} />
+					{/if}
+				</TransformCard>
+			{/each}
+		</SubGlobuleCard>
+	{/each}
 </section>
 
 <style>
+	header {
+		padding: 4px;
+	}
 	section {
 		width: 100%;
-		background-color: red;
+		height: calc(50vh - var(--nav-header-height) / 2 - 33.5px);
 	}
 	.scroll-container {
-		background-color: aliceblue;
-		height: 50vh;
+		padding-left: 12px;
+		/* height: 100%; */
 		overflow-y: scroll;
 		overflow-x: visible;
 	}

@@ -5,7 +5,7 @@
 
 <div class="container">
 	<PointPick />
-	<Canvas size={{ width: 1000, height: 1000 }}>
+	<Canvas >
 		<slot />
 	</Canvas>
 </div>
@@ -14,6 +14,8 @@
 	.container {
 		position: relative;
 		border: 1px solid grey;
+		background-color: beige;
+		height: 100%;
 	}
 
 </style>

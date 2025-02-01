@@ -69,13 +69,30 @@ export const getCubicBezierIntersection = (
 	// })
 };
 
-export const show_svg = (id: string) => {
+export const generateSvgUrl = (id: string) => {
 	const svg = document.getElementById(id);
+	console.debug('*** svg', svg);
+	if (svg) {
+		const quads = svg.querySelectorAll('.svg-pattern-quad');
+		quads?.forEach((q) => q.remove());
+	}
 	if (!svg) return;
 	const serializer = new XMLSerializer();
 	const svg_blob = new Blob([serializer.serializeToString(svg)], { type: 'image/svg+xml' });
 	const url = URL.createObjectURL(svg_blob);
-	const svg_win = window.open(url, 'svg_win');
+	return url;
+};
+
+export const downloadSvg = (id: string, filename?: string) => {
+	const url = generateSvgUrl('pattern-svg');
+	if (url) {
+		const a = document.createElement('a');
+		a.href = url;
+		a.download = filename || 'globule-pattern.svg';
+		document.body.appendChild(a);
+		a.click();
+		document.body.removeChild(a);
+	}
 };
 
 export const round = (n: number, decimals?: number) => {

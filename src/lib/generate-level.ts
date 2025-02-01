@@ -25,7 +25,6 @@ export const generateLevelSet2 = (
 	const depthCurve: CurvePath<Vector2> = generateDepthCurve(depthCurveConfig);
 	const silhouette: CurvePath<Vector2> = generateSilhouette(silhouetteConfig);
 	// get levels without offsets by applying silhouette points to depthed level prototype vertices
-
 	let rawLevels: Level[] = [];
 	if (levelConfig.silhouetteSampleMethod.method === 'preserveAspectRatio') {
 		rawLevels = generateRawLevelsConstantAspect({
@@ -106,7 +105,6 @@ const generateRawLevelsConstantAspect = ({
 	sampleMethod: CurveSampleMethod;
 	divisionBasis?: number;
 }): Level[] => {
-
 	const levelCount = sampleMethod.divisions + 1;
 	const bandCount = levelPrototypes[0].vertices.length;
 	const spacing = 1 / sampleMethod.divisions;
@@ -335,9 +333,8 @@ const countLevels = (levelConfig: LevelConfig, silhouetteConfig: SilhouetteConfi
 
 const getLevelOffsets = (levelConfig: LevelConfig, levelCount: number) => {
 	const levelOffsets: LevelOffset[] = new Array(levelCount);
-
 	for (let l = 0; l < levelOffsets.length; l++) {
-		levelOffsets[l] = levelConfig.levelOffsets[l % levelConfig.levelOffsets.length];
+		levelOffsets[l] = window.structuredClone(levelConfig.levelOffsets[l % levelConfig.levelOffsets.length]);
 		const { x, y, rotX, rotY, rotZ, scaleX, scaleY } = levelOffsets[l];
 		levelOffsets[l].x = x * l;
 		levelOffsets[l].y = y * l;

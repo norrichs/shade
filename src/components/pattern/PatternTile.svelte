@@ -1,14 +1,14 @@
 <script lang="ts">
+	import { patterns } from '$lib/patterns';
 	import { svgPathStringFromSegments } from '$lib/patterns/flower-of-life';
-	import {
-		patterns,
-		type BandPatternGenerator,
-		type DynamicPath,
-		type DynamicPathCollection,
-		type UnitPatternGenerator
-	} from '$lib/patterns/patterns';
 	import { scalePS } from '$lib/patterns/utils';
-	import type { BandPattern, Quadrilateral, TilingBasis } from '$lib/types';
+	import type {
+		BandPatternGenerator,
+		DynamicPath,
+		Quadrilateral,
+		TilingBasis,
+		UnitPatternGenerator
+	} from '$lib/types';
 
 	export let patternType: string;
 	export let tilingBasis: TilingBasis;

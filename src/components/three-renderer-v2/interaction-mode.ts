@@ -52,6 +52,12 @@ export type BandSelectInteractionMode =
 				pick: 2;
 				bands: BandSelection[];
 			};
+	  }
+	| {
+			type: 'band-select-multiple';
+			data: {
+				bands: BandSelection[];
+			};
 	  };
 
 export const isPointSelectInteractionMode = (
@@ -97,5 +103,10 @@ export const interactions: {
 		prompt: 'Pick two touching bands',
 		buttonPrompt: 'Pick',
 		buttonReady: 'Apply'
+	},
+	'band-select-multiple': {
+		prompt: 'Pick bands to highlight',
+		buttonPrompt: 'Dismiss',
+		buttonReady: 'Dismiss'
 	}
 };

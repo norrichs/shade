@@ -45,7 +45,6 @@
 			const { sgIndex, tIndex } = control;
 			const transform = $superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex];
 			if (isGlobuleTransformRotate(transform)) {
-				console.debug({transform})
 				const points = rotateDisplayPoints(transform);
 				baseGeometry = new BufferGeometry().setFromPoints(points.base);
 				baseGeometry.computeVertexNormals();

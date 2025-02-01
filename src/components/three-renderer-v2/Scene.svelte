@@ -3,13 +3,18 @@
 	import { interactivity, MeshLineGeometry, MeshLineMaterial } from '@threlte/extras';
 	import {
 		superGlobuleBandGeometryStore as geometryStore,
-		selectedGlobule,
 		selectedBand,
 		superConfigStore,
 		type BandSelection
 	} from '$lib/stores';
 	import GlobuleMesh from '../globuleMesh/GlobuleMesh.svelte';
-	import type { BandGeometry, GlobuleGeometry, Id } from '$lib/types';
+	import type {
+		BandAddressed,
+		BandGeometry,
+		GeometryAddress,
+		GlobuleGeometry,
+		Id
+	} from '$lib/types';
 	import DesignerCamera from './DesignerCamera.svelte';
 	import DesignerLighting from './DesignerLighting.svelte';
 	import {
@@ -24,14 +29,16 @@
 	import TransformDisplay from './TransformDisplay.svelte';
 	import { isBand } from '$lib/generate-shape';
 	import type { Material } from './materials';
-	import { mod } from 'three/webgpu';
+	import { If, mod } from 'three/webgpu';
 	import {
+		includesBandAddress,
 		includesGlobuleCoordinates,
 		isSameBand,
 		isSameGlobule,
 		matchBandConfigCoordinates,
 		matchGlobuleConfigCoordinates
 	} from '$lib/matchers';
+	import { formatAddress } from '$lib/recombination';
 
 	interactivity();
 
@@ -52,13 +59,6 @@
 					glob.subGlobuleConfigId === subGlobuleConfigId &&
 					glob.subGlobuleRecurrence === subGlobuleRecurrence
 			);
-
-			$selectedGlobule = {
-				subGlobuleConfigIndex,
-				subGlobuleConfigId,
-				subGlobuleGeometryIndex,
-				globuleId: globuleConfigId
-			};
 		}
 	};
 
@@ -81,15 +81,15 @@
 		globuleIndex,
 		bandIndex
 	}: BandGeometry) => {
+		console.debug('selectBand', address, subGlobuleConfigId);
 		if ($geometryStore.variant === 'Band') {
-			console.debug('selectBand', coord, coordStack);
 			const subGlobuleConfigIndex =
 				$superConfigStore.subGlobuleConfigs.findIndex(
 					(subGlobuleConfig) => subGlobuleConfig.id === subGlobuleConfigId
 				) || 0;
-			const subGlobuleGeometryIndex = $geometryStore.subGlobules.findIndex(
-				(glob) => glob[0].subGlobuleConfigId === subGlobuleConfigId && glob[0].coord.r === coord.r
-			);
+			// const subGlobuleGeometryIndex = $geometryStore.subGlobules.findIndex(
+			// 	(glob) => glob[0].subGlobuleConfigId === subGlobuleConfigId && glob[0].coord.r === coord.r
+			// );
 			const newSelection: BandSelection = {
 				subGlobuleConfigIndex,
 				selection: ['active'],
@@ -113,28 +113,31 @@
 					$interactionMode.data.bands = [bands[bands.length - 1], newSelection];
 				}
 			} else if ($interactionMode.type === 'band-select-partners') {
-				console.debug('doing band-select-partners');
 				const { pick, originHighlight, originSelected, partnerHighlight, partnerSelected } =
 					$interactionMode.data;
 				if (!originSelected) {
-					console.debug('isBandSelectOrigin', { newSelection, originHighlight });
-
 					if (isInOrigin(originHighlight, newSelection)) {
-						console.debug('isInOrigin', newSelection);
 						$interactionMode.data.originSelected = newSelection;
 					}
 				} else if (!partnerSelected && !isInOrigin(originHighlight, newSelection)) {
-					console.debug('select partner band');
 					$interactionMode.data.partnerSelected = newSelection;
-				} else {
-					console.debug('neither origin nor partner?', { $interactionMode, newSelection });
 				}
-			} else {
-				console.debug(
-					'not isBandSelectOrigin, or not band-select-partners',
-					$interactionMode,
-					isBandSelectOrigin($interactionMode)
+			} else if ($interactionMode.type === 'band-select-multiple') {
+				const newSelectedBand: BandSelection = {
+					selection: ['highlighted'],
+					address,
+					subGlobuleConfigIndex,
+					coord
+				};
+				const alreadySelectedIndex = $interactionMode.data.bands.findIndex((bandSelection) =>
+					isSameBand(bandSelection.address, newSelectedBand.address)
 				);
+				if (alreadySelectedIndex === -1) {
+					$interactionMode.data.bands = [newSelectedBand, ...$interactionMode.data.bands];
+					return;
+				}
+				$interactionMode.data.bands.splice(alreadySelectedIndex, 1);
+				$interactionMode.data.bands = [...$interactionMode.data.bands];
 			}
 		}
 	};
@@ -158,23 +161,32 @@
 		return 'default';
 	};
 
-	const handleClick = (event: any, geometry: GlobuleGeometry | BandGeometry) => {
+	const standardSelect = (geometry: BandGeometry) => {
+		$selectedBand = geometry.address;
+	};
+
+	const selectPoint = (event: any, geometry: BandGeometry) => {
+		if (!isPointSelectInteractionMode($interactionMode)) return;
+
+		const { pick, points } = $interactionMode.data;
+		const point = getNearestPoint(event.point, geometry);
+
+		points.unshift(point);
+		const newPoints = points.slice(0, pick);
+		$interactionMode.data.points = [...newPoints];
+	};
+
+	const handleClick = (event: any, geometry: BandGeometry) => {
 		event.stopPropagation();
 
 		if (event.delta > CLICK_DELTA_THRESHOLD) return;
-		if ($interactionMode.type === 'standard' || isBandSelectInteractionMode($interactionMode)) {
-			if (geometry.type === 'GlobuleGeometry') {
-				selectGlobule(geometry);
-			} else {
-				selectBand(geometry);
-			}
-		} else if ($interactionMode.type.startsWith('point-select')) {
-			const { pick, points } = $interactionMode.data;
-			const point = getNearestPoint(event.point, geometry);
 
-			points.unshift(point);
-			const newPoints = points.slice(0, pick);
-			$interactionMode.data.points = [...newPoints];
+		if ($interactionMode.type === 'standard') {
+			standardSelect(geometry);
+		} else if (isBandSelectInteractionMode($interactionMode)) {
+			selectBand(geometry);
+		} else if (isPointSelectInteractionMode($interactionMode)) {
+			selectPoint(event, geometry);
 		}
 	};
 
@@ -194,8 +206,11 @@
 		]
 	};
 
-	const getInteractionMaterial = (band: BandGeometry, mode: InteractionMode): Material => {
-		// console.debug('getInteractionMaterial', { band, mode });
+	const getInteractionMaterial = (
+		band: BandGeometry,
+		mode: InteractionMode,
+		selectedBand: GeometryAddress<BandAddressed>
+	): Material => {
 		if (mode.type === 'band-select-partners') {
 			const { originSelected, partnerSelected, originHighlight } = mode.data;
 			if (originSelected && isSameBand(originSelected.address, band.address)) {
@@ -204,7 +219,6 @@
 				return 'selected';
 			} else if (
 				originHighlight.some((bs) => {
-					// return matchBandConfigCoordinates(band.coord, bs.coord, false);
 					return includesGlobuleCoordinates(band.coordStack, bs.coord);
 				})
 			) {
@@ -212,11 +226,20 @@
 			} else {
 				return 'default';
 			}
+		} else if (mode.type === 'standard') {
+			if ($selectedBand && isSameBand($selectedBand, band.address)) return 'selected';
+			if ($selectedBand && isSameGlobule($selectedBand, band.address)) return 'selectedLight';
+			if ($selectedBand && $selectedBand.s === band.address.s) return 'selectedVeryLight';
+		} else if (mode.type === 'band-select-multiple') {
+			if (includesBandAddress(mode.data.bands, band.address)) {
+				return 'highlightedPrimary';
+			}
 		}
 		return isSelectedBand(band, mode);
 	};
 </script>
 
+<div>{formatAddress($selectedBand)}</div>
 <DesignerCamera />
 <DesignerLighting />
 
@@ -228,25 +251,14 @@
 		</T.Group>
 	{/each}
 {/if}
-{#if $geometryStore.variant === 'Globule'}
-	{#each $geometryStore.subGlobules as globuleGeometry, index}
-		<T.Group position={[0, 0, 0]} on:click={(ev) => handleClick(ev, globuleGeometry)}>
-			<GlobuleMesh
-				geometry={globuleGeometry}
-				material={globuleGeometry.globuleConfigId === $selectedGlobule.globuleId
-					? 'selected'
-					: 'default'}
-			/>
-		</T.Group>
-	{/each}
-{:else if $geometryStore.variant === 'Band'}
+{#if $geometryStore.variant === 'Band'}
 	{#each $geometryStore.subGlobules as glob}
 		{#each glob as bandGeometry}
 			{#if typeof bandGeometry !== 'undefined'}
 				<T.Group position={[0, 0, 0]} on:click={(ev) => handleClick(ev, bandGeometry)}>
 					<GlobuleMesh
 						geometry={bandGeometry}
-						material={getInteractionMaterial(bandGeometry, $interactionMode)}
+						material={getInteractionMaterial(bandGeometry, $interactionMode, $selectedBand)}
 					/>
 				</T.Group>
 			{/if}

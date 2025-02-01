@@ -84,7 +84,56 @@ const defaultSpineCurveConfig = (): SpineCurveConfig => ({
 	]
 });
 
-export const generateDefaultShapeConfig = (
+export const generateDefaultAsymmetricShapeConfig = (
+	sampleMethod: CurveSampleMethod
+): ShapeConfig => {
+	return {
+		type: 'ShapeConfig',
+		symmetry: 'asymmetric',
+		symmetryNumber: 1,
+		sampleMethod,
+		curves: [
+			{
+				type: 'BezierConfig',
+				points: [
+					{ type: 'PointConfig2', x: 100, y: 100 },
+					{ type: 'PointConfig2', x: 100, y: 50 },
+					{ type: 'PointConfig2', x: 100, y: -50 },
+					{ type: 'PointConfig2', x: 100, y: -100 }
+				]
+			},
+			{
+				type: 'BezierConfig',
+				points: [
+					{ type: 'PointConfig2', x: 100, y: -100 },
+					{ type: 'PointConfig2', x: 50, y: -100 },
+					{ type: 'PointConfig2', x: -50, y: -100 },
+					{ type: 'PointConfig2', x: -100, y: -100 }
+				]
+			},
+			{
+				type: 'BezierConfig',
+				points: [
+					{ type: 'PointConfig2', x: -100, y: -100 },
+					{ type: 'PointConfig2', x: -100, y: -50 },
+					{ type: 'PointConfig2', x: -100, y: 50 },
+					{ type: 'PointConfig2', x: -100, y: 100 }
+				]
+			},
+			{
+				type: 'BezierConfig',
+				points: [
+					{ type: 'PointConfig2', x: -100, y: 100 },
+					{ type: 'PointConfig2', x: -50, y: 100 },
+					{ type: 'PointConfig2', x: 50, y: 100 },
+					{ type: 'PointConfig2', x: 100, y: 100 }
+				]
+			}
+		]
+	};
+};
+
+export const generateDefaultRadialShapeConfig = (
 	symmetryNumber: number,
 	sampleMethod: CurveSampleMethod
 ): ShapeConfig => {
@@ -210,7 +259,25 @@ export const tiledPatternConfigs: { [key: string]: TiledPatternConfig } = {
 			dynamicStroke: 'quadWidth',
 			dynamicStrokeEasing: 'linear',
 			dynamicStrokeMin: 1,
-			dynamicStrokeMax: 3
+			dynamicStrokeMax: 3,
+			endsMatched: false,
+			endsTrimmed: true,
+			endLooped: 0
+		}
+	},
+	'tiledTriStarPattern-1': {
+		type: 'tiledTriStarPattern-1',
+		tiling: 'quadrilateral',
+		config: {
+			rowCount: 1,
+			columnCount: 1,
+			dynamicStroke: 'quadWidth',
+			dynamicStrokeEasing: 'linear',
+			dynamicStrokeMin: 1,
+			dynamicStrokeMax: 3,
+			endsMatched: false,
+			endsTrimmed: false,
+			endLooped: 0
 		}
 	},
 	'tiledBoxPattern-0': {
@@ -222,7 +289,10 @@ export const tiledPatternConfigs: { [key: string]: TiledPatternConfig } = {
 			dynamicStroke: 'quadWidth',
 			dynamicStrokeEasing: 'linear',
 			dynamicStrokeMin: 1,
-			dynamicStrokeMax: 3
+			dynamicStrokeMax: 3,
+			endsMatched: false,
+			endsTrimmed: false,
+			endLooped: 0
 		}
 	},
 	'tiledBowtiePattern-0': {
@@ -234,7 +304,10 @@ export const tiledPatternConfigs: { [key: string]: TiledPatternConfig } = {
 			dynamicStroke: 'quadWidth',
 			dynamicStrokeEasing: 'linear',
 			dynamicStrokeMin: 1,
-			dynamicStrokeMax: 3
+			dynamicStrokeMax: 3,
+			endsMatched: false,
+			endsTrimmed: false,
+			endLooped: 0
 		}
 	},
 	'tiledCarnationPattern-0': {
@@ -246,7 +319,10 @@ export const tiledPatternConfigs: { [key: string]: TiledPatternConfig } = {
 			dynamicStroke: 'quadWidth',
 			dynamicStrokeEasing: 'linear',
 			dynamicStrokeMin: 1,
-			dynamicStrokeMax: 3
+			dynamicStrokeMax: 3,
+			endsMatched: false,
+			endsTrimmed: false,
+			endLooped: 0
 		}
 	},
 	'tiledCarnationPattern-1': {
@@ -258,7 +334,10 @@ export const tiledPatternConfigs: { [key: string]: TiledPatternConfig } = {
 			dynamicStroke: 'quadWidth',
 			dynamicStrokeEasing: 'linear',
 			dynamicStrokeMin: 1,
-			dynamicStrokeMax: 3
+			dynamicStrokeMax: 3,
+			endsMatched: false,
+			endsTrimmed: false,
+			endLooped: 0
 		}
 	},
 	'bandedBranchedPattern-0': {
@@ -268,7 +347,10 @@ export const tiledPatternConfigs: { [key: string]: TiledPatternConfig } = {
 			dynamicStroke: 'quadWidth',
 			dynamicStrokeEasing: 'linear',
 			dynamicStrokeMin: 1,
-			dynamicStrokeMax: 5
+			dynamicStrokeMax: 5,
+			endsMatched: false,
+			endsTrimmed: false,
+			endLooped: 0
 		}
 	}
 };
@@ -333,13 +415,15 @@ export const defaultPatternConfig = (): PatternConfig => ({
 });
 
 export const defaultPatternViewConfig = (): PatternViewConfig => ({
+	showQuads: false,
 	width: 800,
 	height: 600,
 	zoom: -1,
 	centerOffset: {
 		x: 0,
 		y: 0
-	}
+	},
+	showLabels: false
 });
 
 export const getLevels = (sampleMethod: CurveSampleMethod, curveCount: number) => {
@@ -354,7 +438,7 @@ export const generateDefaultGlobuleConfig = (): GlobuleConfig => {
 		type: 'GlobuleConfig',
 		id: generateTempId(GLOBULE_CONFIG),
 		name: 'New Globule',
-		shapeConfig: generateDefaultShapeConfig(3, { method: 'divideCurve', divisions: 1 }),
+		shapeConfig: generateDefaultAsymmetricShapeConfig({ method: 'divideCurve', divisions: 1 }),
 		levelConfig: defaultLevelConfig(),
 		silhouetteConfig: defaultSilhouetteConfig(),
 		depthCurveConfig: defaultDepthCurveConfig(),
@@ -402,7 +486,7 @@ export const generateDefaultSuperGlobuleConfig = (): SuperGlobuleConfig => {
 	const base = defaultSubGlobuleConfig();
 	const defaultRecurrence: RecombinatoryRecurrence[] = [
 		{ multiplier: 0, ghost: false, recombines: undefined },
-		{ multiplier: 1, ghost: false, recombines: undefined },
+		{ multiplier: 1, ghost: false, recombines: undefined }
 	];
 
 	const superGlobuleConfig: SuperGlobuleConfig = {
@@ -415,6 +499,7 @@ export const generateDefaultSuperGlobuleConfig = (): SuperGlobuleConfig => {
 				globuleConfig: base.globuleConfig,
 				transforms: [
 					{
+						recurs: [{ multiplier: 1 }],
 						rotate: {
 							axis: { x: 0, y: 0, z: 1 },
 							anchor: { x: 0, y: 0, z: 0 },
@@ -422,9 +507,11 @@ export const generateDefaultSuperGlobuleConfig = (): SuperGlobuleConfig => {
 						}
 					},
 					{
+						recurs: [{ multiplier: 1 }],
 						translate: { x: 0, y: -150, z: 0 }
 					},
 					{
+						recurs: [{ multiplier: 1 }],
 						rotate: {
 							axis: { x: 1, y: 0, z: 0 },
 							anchor: { x: 0, y: 75, z: 0 },

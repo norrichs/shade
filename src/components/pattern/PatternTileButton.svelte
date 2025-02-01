@@ -2,7 +2,7 @@
 	import { patternConfigStore } from '$lib/stores';
 	import PatternTile from './PatternTile.svelte';
 	import { tiledPatternConfigs } from '$lib/shades-config';
-	import { patterns } from '$lib/patterns/patterns';
+	import { patterns } from '$lib/patterns';
 	import type { TilingBasis } from '$lib/types';
 
 	export let patternType: string;
@@ -12,7 +12,7 @@
 <button
 	on:click={() => {
 		if (patterns[patternType]) {
-			$patternConfigStore.tiledPatternConfig =  tiledPatternConfigs[patternType];
+			$patternConfigStore.tiledPatternConfig = tiledPatternConfigs[patternType];
 		}
 	}}
 >

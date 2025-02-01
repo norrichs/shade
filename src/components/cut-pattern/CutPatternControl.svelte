@@ -1,7 +1,9 @@
 <script lang="ts">
 	import { patternConfigStore } from '$lib/stores';
 	import { isClose } from '$lib/util';
+	import CheckboxInput from '../controls/CheckboxInput.svelte';
 	import NumberInput from '../controls/super-control/NumberInput.svelte';
+	import Button from '../design-system/Button.svelte';
 	import PanControl from './PanControl.svelte';
 
 	let labelScale = 0.1;
@@ -44,6 +46,17 @@
 			<span>Label</span>
 			<NumberInput min={-2} max={2} step={0.1} hasButtons bind:value={labelScale} />
 			<NumberInput min={-180} max={180} step={1} hasButtons bind:value={labelAngle} />
+		</div>
+		<div>
+			<CheckboxInput
+				label="show Quadrilaterals"
+				bind:value={$patternConfigStore.patternViewConfig.showQuads}
+			/>
+			<CheckboxInput
+			label="show Labels"
+			bind:value={$patternConfigStore.patternViewConfig.showLabels}
+		/>
+			
 		</div>
 	</div>
 	<label for="svg-width">width</label>

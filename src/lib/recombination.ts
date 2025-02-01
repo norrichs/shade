@@ -36,7 +36,6 @@ export const recombineSubGlobules = (subGlobules: SubGlobule[]) => {
 };
 
 const hidePartnerBands = (subGlobules: SubGlobule[]) => {
-	console.debug('*** hidePartnerBands');
 	const partners: GeometryAddress<BandAddressed>[] = [];
 
 	let bandMap: BandMapping[] | undefined;
@@ -50,7 +49,6 @@ const hidePartnerBands = (subGlobules: SubGlobule[]) => {
 			}
 		}
 	}
-	console.debug('  * partners', partners.length);
 
 	let bandAddress: GeometryAddress<BandAddressed>;
 	for (let i = 0; i < subGlobules.length; i++) {
@@ -58,7 +56,6 @@ const hidePartnerBands = (subGlobules: SubGlobule[]) => {
 			for (let k = 0; k < subGlobules[i].data[j].data.bands.length; k++) {
 				bandAddress = { ...subGlobules[i].data[j].address, b: k };
 				const isPartner = partners.some((p) => isSameBand(p, bandAddress));
-				console.debug(`    ${formatAddress(bandAddress)} isPartner ${isPartner}`);
 				subGlobules[i].data[j].data.bands[k].visible = !isPartner;
 			}
 		}
@@ -73,21 +70,38 @@ const generateRecombined = (
 	globuleIndex: number
 ): GlobuleData => {
 	if (recombination === undefined) return globuleData;
-	console.debug('*** generateRecombined', globuleIndex);
 	const newGlobuleData = cloneGlobuleData(globuleData);
-	recombination.bandMap.forEach((mapping, i) => {
-		console.debug(`  * mapping: ${i}, `, formatBandMapping(mapping));
+	recombination.bandMap.forEach((mapping) => {
 		let partnerBand;
 		try {
 			partnerBand = cloneBand(getGlobuleBand(subGlobules, mapping.partnerAddress));
-			newGlobuleData.bands[mapping.originIndex].facets = [
-				...newGlobuleData.bands[mapping.originIndex].facets,
-				...partnerBand.facets
-			];
+			if (mapping.originJoin === 'end' && mapping.partnerJoin === 'end') {
+				newGlobuleData.bands[mapping.originIndex].facets = [
+					...newGlobuleData.bands[mapping.originIndex].facets,
+					...partnerBand.facets
+				];
+			}
+			if (mapping.originJoin === 'start' && mapping.partnerJoin === 'start') {
+				newGlobuleData.bands[mapping.originIndex].facets = [
+					...newGlobuleData.bands[mapping.originIndex].facets.reverse(),
+					...partnerBand.facets.reverse()
+				];
+			}
+			if (mapping.originJoin === 'end' && mapping.partnerJoin === 'start') {
+				newGlobuleData.bands[mapping.originIndex].facets = [
+					...newGlobuleData.bands[mapping.originIndex].facets,
+					...partnerBand.facets.reverse()
+				];
+			}
+			if (mapping.originJoin === 'start' && mapping.partnerJoin === 'end') {
+				newGlobuleData.bands[mapping.originIndex].facets = [
+					...newGlobuleData.bands[mapping.originIndex].facets.reverse(),
+					...partnerBand.facets
+				];
+			}
 		} catch {
 			console.error('error with recombining');
 		}
-		console.debug(`  * partnerBand`, { partnerBand });
 	});
 
 	return newGlobuleData;
@@ -112,6 +126,7 @@ export const formatBandMap = (bandMap: BandMapping[]): string => {
 	return bandMap.map((mapping) => formatBandMapping(mapping)).join('\n');
 };
 
-export const formatAddress = (a: GeometryAddress<BandAddressed | GlobuleAddressed>) => {
+export const formatAddress = (a?: GeometryAddress<BandAddressed | GlobuleAddressed>) => {
+	if (!a) return 'undefined';
 	return `s: ${a.s}, g: [${a.g.join(', ')}], b: ${a.b ?? 'undefined'}`;
 };

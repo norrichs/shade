@@ -14,7 +14,6 @@
 	export let bands: Band[] = [];
 	export let struts: Strut[] = [];
 
-	console.debug('ThreeRenderer', { levels, bands, struts });
 
 	interactivity();
 
@@ -40,7 +39,6 @@
 
 	const handleClick = (event) => {
 		event.stopPropagation();
-		console.debug('click', event);
 		selectedMaterial = selectedMaterial + 1;
 	};
 

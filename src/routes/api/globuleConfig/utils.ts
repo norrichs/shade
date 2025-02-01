@@ -44,7 +44,6 @@ export const deserializeShapeConfig = (
 	} as unknown as ShapeConfig;
 };
 export const deserializeLevelConfig = (res: any): LevelConfig => {
-	console.debug('deserializeLevelConfig', { res });
 	return {
 		type: 'LevelConfig',
 		...res,
@@ -151,7 +150,6 @@ export const getSilhouetteConfigValues = (cfg: SilhouetteConfig, globuleConfigId
 		curves: JSON.stringify(cfg.curves),
 		...(globuleConfigId ? { globuleConfigId } : {})
 	};
-	console.debug('*** silhouette values', { values });
 	return values;
 };
 
@@ -187,7 +185,6 @@ export const getLevelOffsetsValues = (cfg: LevelOffset[], levelConfigId: number)
 		levelConfigId
 	};
 	values.id = undefined
-	console.debug('getLevelOffsetValues', { values });
 	return values;
 };
 
@@ -197,7 +194,6 @@ export const getRenderConfigValues = (cfg: RenderConfig, globuleConfigId?: numbe
 		...cfg.show,
 		...(globuleConfigId ? { globuleConfigId } : {})
 	};
-	console.debug('*** getRenderConfigValues', { values });
 	return values;
 };
 

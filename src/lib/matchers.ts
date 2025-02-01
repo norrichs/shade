@@ -1,3 +1,4 @@
+import type { BandSelection } from './stores/selectionStores';
 import type {
 	BandAddressed,
 	BandConfigCoordinates,
@@ -14,7 +15,6 @@ export const matchBandConfigCoordinates = (
 	matchAncestors = false
 ) => {
 	if (matchAncestors) {
-		console.debug('matchAncestors', a, b);
 		return a.s === b.s && a.t < b.t;
 	}
 	return a.s === b.s && a.t === b.t && a.r === b.r && a.b === b.b;
@@ -37,8 +37,18 @@ export const includesGlobuleCoordinates = (
 	return stack.some((coord) => matchGlobuleConfigCoordinates(coord, item));
 };
 
-export const isSameBand = (a: GeometryAddress<BandAddressed>, b: GeometryAddress<BandAddressed>) => {
+export const isSameBand = (
+	a: GeometryAddress<BandAddressed>,
+	b: GeometryAddress<BandAddressed>
+) => {
 	return a.s === b.s && a.g.join('-') === b.g.join('-') && a.b === b.b;
+};
+
+export const includesBandAddress = (
+	collection: BandSelection[],
+	band: GeometryAddress<BandAddressed>
+) => {
+	return collection.some((bandSelection) => isSameBand(bandSelection.address, band));
 };
 
 export const isSameGlobule = (
@@ -70,9 +80,5 @@ export const isSameBandMaps = (a: BandMapping[], b: BandMapping[]) => {
 };
 
 export const isSameRecombination = (a?: Recombination, b?: Recombination) => {
-	return (
-		a !== undefined &&
-		b !== undefined &&
-		isSameBandMaps(a.bandMap, b.bandMap)
-	);
+	return a !== undefined && b !== undefined && isSameBandMaps(a.bandMap, b.bandMap);
 };

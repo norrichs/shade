@@ -6,6 +6,7 @@
 	import { tiledPatternConfigs } from '$lib/shades-config';
 	import PatternTileButton from '../pattern/PatternTileButton.svelte';
 	import CheckboxInput from './CheckboxInput.svelte';
+	import NumberInput from './super-control/NumberInput.svelte';
 
 	let fitToPage = false;
 
@@ -30,7 +31,6 @@
 	$: {
 		fitPatternToPage(fitToPage);
 	}
-	console.debug({tiledPatternConfigs})
 </script>
 
 <section>
@@ -84,6 +84,9 @@
 				max={20}
 				step={0.1}
 			/>
+			<CheckboxInput label="Match End Segments" bind:value={$patternConfigStore.tiledPatternConfig.config.endsMatched}/>
+			<CheckboxInput label="Remove End Segments" bind:value={$patternConfigStore.tiledPatternConfig.config.endsTrimmed}/>
+			<NumberInput label="Loop Ends" bind:value={$patternConfigStore.tiledPatternConfig.config.endLooped}/>
 			<div>
 				<div>
 					<span>Model Height:</span>

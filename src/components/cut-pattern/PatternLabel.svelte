@@ -1,18 +1,19 @@
 <script lang="ts">
 	import { svgPathStringFromSegments } from '$lib/patterns/flower-of-life';
-	import { getPathSize, translatePS } from '$lib/patterns/utils';
+	import { getPathSize, rotatePS, scalePS, translatePS } from '$lib/patterns/utils';
 	import type { PathSegment } from '$lib/types';
 	import type { Point } from 'bezier-js';
 	import { get } from 'svelte/store';
 	import { numberPathSegments } from './number-path-segments';
 
+	export let color: string;
 	export let value: number;
 	export let radius = 0;
 	export let scale: number = 1;
 	export let angle = 0;
 	export let anchor: Point = { x: 0, y: 0 };
 
-	const getLabelPath = ({ value, r }: { value: number; r: number }) => {
+	const getLabelPathSegments = ({ value, r }: { value: number; r: number }) => {
 		const labelTextPathSegments = `${value}`
 			.split('')
 			.map((digit, i) => {
@@ -45,18 +46,23 @@
 			['Z']
 		];
 
-		return svgPathStringFromSegments([
+		return [
 			...labelOutlinePathSegments,
 			...translatePS(labelTextPathSegments, 20 - halfWidth, 15 + stemLength)
-		]);
+		];
 	};
 
-	$: path = getLabelPath({ value, r: radius });
+	const adjust = (segments: PathSegment[]) => {
+		let adjusted = segments;
+		adjusted = translatePS(adjusted, anchor.x, anchor.y);
+		adjusted = rotatePS(adjusted, angle, anchor);
+		adjusted = scalePS(adjusted, -scale, anchor);
+		return adjusted;
+	};
+
+	$: path = svgPathStringFromSegments(adjust(getLabelPathSegments({ value, r: radius })));
 </script>
 
-<g transform={`translate(${anchor.x}, ${anchor.y}) rotate(${angle}) scale(${-scale}, ${-scale})`}>
-	<!-- <rect x="0" y="0" width="100" height="100" rx={20} fill="green" /> -->
-	<g fill="red">
-		<path d={path} fill-rule="evenodd" />
-	</g>
-</g>
+<!-- <g transform={`translate(${anchor.x}, ${anchor.y}) rotate(${angle}) scale(${-scale}, ${-scale})`}> -->
+<path d={path} fill-rule="evenodd" fill={color} stroke="none" />
+<!-- </g> -->

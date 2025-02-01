@@ -304,6 +304,10 @@ export const closestPoint = (p0: Point, points: Point[]): Point => {
 	return points[distances.indexOf(minDistance)];
 };
 
+// export const translatePSCollection = (segmentCollection: { [key: string]: PathSegment[] }, x = 0, y = 0) => {
+// 	Object.entries(segmentCollection).forE
+// }
+
 export const translatePS = (segments: PathSegment[], x = 0, y = 0) => {
 	const translated = segments.map((segment) => {
 		const seg = [...segment] as PathSegment;

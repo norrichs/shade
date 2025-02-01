@@ -12,22 +12,21 @@
 	export let onDelete: (id: number) => Promise<Response>;
 	export let onLoad: (id: number, addToExisting: boolean) => void;
 
-	const { name, superGlobuleConfigId } = superGlobuleGeometry;
 </script>
 
-<GlobuleTileContainer name={name || ''} id={superGlobuleConfigId || ''} {size}>
+<GlobuleTileContainer name={superGlobuleGeometry.name || ''} id={superGlobuleGeometry.superGlobuleConfigId || ''} {size}>
 	<button
 		on:click={() => {
-			onLoad(Number.parseInt(`${superGlobuleConfigId}`), false), goto('/designer2');
+			onLoad(Number.parseInt(`${superGlobuleGeometry.superGlobuleConfigId}`), false), goto('/designer2');
 		}}>Load into New Designer</button
 	>
 	<button
 		on:click={() => {
-			onLoad(Number.parseInt(`${superGlobuleConfigId}`), true), goto('/designer2');
+			onLoad(Number.parseInt(`${superGlobuleGeometry.superGlobuleConfigId}`), true), goto('/designer2');
 		}}>Add to Designer</button
 	>
 
-	<button on:click={() => onDelete(Number.parseInt(`${superGlobuleConfigId}`))}>Delete</button>
+	<button on:click={() => onDelete(Number.parseInt(`${superGlobuleGeometry.superGlobuleConfigId}`))}>Delete</button>
 
 	<Canvas slot="globule-tile-3d" size={{ width: size, height: size }}>
 		<DesignerCamera />
