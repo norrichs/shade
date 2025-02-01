@@ -1,7 +1,7 @@
 <script lang="ts">
 	// @ts-expect-error
 	import outline from 'svg-path-outline';
-	import { generateBranched } from '$lib/patterns/patterns';
+	import { generateBranched } from '$lib/patterns';
 	import type { PatternedBand, Quadrilateral } from '$lib/types';
 	import Midline from './Midline.svelte';
 	import Outline from './Outline.svelte';
