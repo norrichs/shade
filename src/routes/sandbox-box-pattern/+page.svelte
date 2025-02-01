@@ -1,7 +1,8 @@
 <script lang="ts">
+	import { generateBoxPattern } from '$lib/patterns';
 	import { svgPathStringFromSegments } from '$lib/patterns/flower-of-life';
-	import { generateBoxPattern } from '$lib/patterns/patterns';
-	import { transformPatternByQuad, type Quadrilateral } from '$lib/patterns/quadrilateral';
+	import { transformPatternByQuad } from '$lib/patterns/quadrilateral';
+	import type { Quadrilateral } from '$lib/types';
 	import CombinedNumberInput from '../../components/controls/CombinedNumberInput.svelte';
 
 	let strokeWidth = 1;
