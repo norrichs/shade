@@ -1,12 +1,11 @@
 <script lang="ts">
 	import ControlGroup from './ControlGroup.svelte';
 	import { superConfigStore, selectedBand } from '$lib/stores';
-	import type { BandAddressed, GeometryAddress } from '$lib/types';
+	import { isCurveSampleMethodMethod, type BandAddressed, type GeometryAddress } from '$lib/types';
 
 	let sgIndex = 0;
 	const update = (selected: GeometryAddress<BandAddressed>) =>
 		(sgIndex = selected === undefined ? 0 : selected.s);
-
 
 	let rotZ: number =
 		($superConfigStore.subGlobuleConfigs[sgIndex].globuleConfig.levelConfig.levelOffsets[0].rotZ *
@@ -35,6 +34,15 @@
 				(rotZ * Math.PI) / 180;
 		}
 	};
+	const handleSampleChange = (ev: Event) => {
+		const target = ev.target as HTMLSelectElement;
+		console.debug(target.value);
+		if (isCurveSampleMethodMethod(target.value)) {
+			$superConfigStore.subGlobuleConfigs[
+				sgIndex
+			].globuleConfig.levelConfig.silhouetteSampleMethod.method = target.value;
+		}
+	};
 
 	$: updateStore(rotZ, rotX, rotY);
 	$: update($selectedBand);
@@ -43,30 +51,20 @@
 <section>
 	<ControlGroup>
 		{#if $superConfigStore.subGlobuleConfigs[sgIndex].globuleConfig.levelConfig}
-			<!-- <label for="by-divisions">Divisions</label> -->
-			<label for="divide-per">Per</label>
-			<select
-				id="divide-per"
-				bind:value={$superConfigStore.subGlobuleConfigs[sgIndex].globuleConfig.levelConfig
-					.levelPrototypeSampleMethod}
-			>
-				<option>shape</option>
-				<option>curve</option>
-				<!-- <option></option> -->
-			</select>
-
-			<label for="silhouette-sample-method">Z Curve Sample</label>
+			<label for="silhouette-sample-method">Silhouette Sampling</label>
 			<select
 				id="silhouette-sample-method"
-				bind:value={$superConfigStore.subGlobuleConfigs[sgIndex].globuleConfig.levelConfig
+				value={$superConfigStore.subGlobuleConfigs[sgIndex].globuleConfig.levelConfig
 					.silhouetteSampleMethod}
+				on:change={handleSampleChange}
 			>
-				<!-- <option value="levelInterval">By Level</option> -->
-				<option value={{ method: 'divideCurvePath', divisions: 10 }}>By Whole Curve</option>
-				<option value={{ method: 'divideCurve', divisions: 3 }}>By Sub-curve</option>
-				<option value={{ method: 'preserveAspectRatio', divisions: 10 }}
-					>Preserve Aspect Ratio</option
+				<option
+					selected={$superConfigStore.subGlobuleConfigs[sgIndex].globuleConfig.levelConfig
+						.silhouetteSampleMethod.method === 'divideCurvePath'}
+					value="divideCurvePath">By Whole Curve</option
 				>
+				<option value="divideCurve">By Sub-curve</option>
+				<option selected value="preserveAspectRatio">Preserve Aspect Ratio</option>
 			</select>
 			{#if typeof $superConfigStore.subGlobuleConfigs[sgIndex].globuleConfig.levelConfig.silhouetteSampleMethod === 'object' && Object.hasOwn($superConfigStore.subGlobuleConfigs[sgIndex].globuleConfig.levelConfig.silhouetteSampleMethod, 'method')}
 				<label for="silhouette-divisions">Divisions</label>

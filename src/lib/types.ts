@@ -43,20 +43,23 @@ export type PatternGenerator = UnitPatternGenerator | BandPatternGenerator;
 
 export type UnitPatternGenerator = {
 	getPattern: (
-		rows: 1 | 2 | 3,
-		columns: 1 | 2 | 3 | 4 | 5,
-		quadBand?: Quadrilateral[]
+		rows: number,
+		columns: number,
+		quadBand?: Quadrilateral[],
+		variant?: TiledPatternVariant
 	) => PathSegment[];
 	tagAnchor?: any;
+	adjustAfterMapping?: (
+		patternBand: PathSegment[][],
+		quadBand: Quadrilateral[],
+		tiledPatternConfig: TiledPatternConfig
+	) => PathSegment[][];
 	adjustAfterTiling?: any;
 };
 export type BandPatternGenerator = {
-	getPattern: (
-		rows: 1 | 2 | 3,
-		columns: 1 | 2 | 3 | 4 | 5,
-		quadBand?: Quadrilateral[]
-	) => DynamicPathCollection;
+	getPattern: (rows: number, columns: number, quadBand?: Quadrilateral[]) => DynamicPathCollection;
 	tagAnchor?: any;
+	adjustAfterMapping?: any;
 	adjustAfterTiling?: any;
 };
 
@@ -282,8 +285,8 @@ export type BandPattern = (
 export type PatternedBand = {
 	facets: PatternedPattern[];
 	svgPath?: string;
-	id?: string;
-	tagAnchorPoint?: Point;
+	id: string;
+	tagAnchorPoint: Point;
 	tagAngle?: number;
 	projectionType: 'patterned';
 	address: GeometryAddress<BandAddressed>;
@@ -408,15 +411,18 @@ export type FlatStripConfig = {
 
 export type TiledPattern =
 	| 'tiledHexPattern-1'
+	| 'tiledGridPattern-0'
 	| 'tiledBoxPattern-0'
 	| 'tiledBowtiePattern-0'
 	| 'tiledCarnationPattern-0'
 	| 'tiledCarnationPattern-1'
 	| 'tiledTriStarPattern-1'
+	| 'tiledShieldTesselationPattern'
 	| 'bandedBranchedPattern-0';
 
 export type TilingBasis = 'quadrilateral' | 'band';
 export type DynamicStrokeBasis = 'quadWidth' | 'quadHeight' | 'ranked';
+export type SkipEdges = 'all' | 'not-both' | 'not-first' | 'not-last' | 'none';
 
 export type TiledPatternConfig = {
 	type: TiledPattern;
@@ -435,8 +441,16 @@ export type TiledPatternConfig = {
 		endsMatched: boolean;
 		endsTrimmed: boolean;
 		endLooped: number;
+		variant?: GridVariant;
+		aspectRatio?: number;
+		skipEdges?: SkipEdges;
 	};
 };
+
+export type GridVariant = 'rect' | 'triangle-0' | 'triangle-1';
+export type ShieldTesselationVariant = 'rect';
+
+export type TiledPatternVariant = undefined | GridVariant | ShieldTesselationVariant;
 
 export type Level = {
 	center: Vector3;
@@ -582,13 +596,20 @@ export type DepthCurveConfig = {
 export type SpineCurveConfig = {
 	type: 'SpineCurveConfig';
 	id?: number;
+	angle: number;
 	curves: BezierConfig[];
 };
 
 export type CurveSampleMethod =
 	| { method: 'divideCurvePath'; divisions: number }
 	| { method: 'divideCurve'; divisions: number }
-	| { method: 'preserveAspectRatio'; divisions: number };
+	| { method: 'preserveAspectRatio'; divisions: number }
+	| { method: 'spineCurve'; divisions: number };
+
+export type CurveSampleMethodMethod = CurveSampleMethod['method'];
+
+export const isCurveSampleMethodMethod = (m: string): m is CurveSampleMethodMethod =>
+	['divideCurvePath', 'divideCurve', 'preserveAspectRatio', 'spineCurve'].includes(m);
 
 export type ShapeConfig = {
 	type: 'ShapeConfig';
@@ -635,6 +656,7 @@ export type GeometryConfig =
 	| StrutConfig
 	| RenderConfig;
 
+export type GeometryConfigType = GeometryConfig['type'];
 export type Id = TempId | number;
 export type GlobuleConfigType = 'GlobuleConfig' | 'SuperGlobuleConfig';
 // SUPER
@@ -709,7 +731,7 @@ export type Globule = {
 };
 
 export type GlobuleData = {
-	levels?: Level[];
+	levels: Level[];
 	bands: Band[];
 	struts?: Strut[];
 };
@@ -795,7 +817,7 @@ export type GlobuleConfig = {
 		| LevelConfig
 		| SilhouetteConfig
 		| DepthCurveConfig
-		| SpineCurveConfig
+		| SpineCurveConfig[]
 		| BandConfig
 		| StrutConfig
 		| RenderConfig
@@ -813,7 +835,7 @@ export type GlobuleConfig = {
 	levelConfig: LevelConfig;
 	silhouetteConfig: SilhouetteConfig;
 	depthCurveConfig: DepthCurveConfig;
-	spineCurveConfig: SpineCurveConfig;
+	spineCurveConfigs: SpineCurveConfig[];
 	bandConfig: BandConfig;
 	strutConfig: StrutConfig;
 	renderConfig: RenderConfig;

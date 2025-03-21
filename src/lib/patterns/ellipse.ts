@@ -1,10 +1,5 @@
 import type { Point } from '$lib/patterns/flower-of-life.types';
-import type {
-	ArcPathSegment,
-	Flag,
-	MovePathSegment,
-	PathSegment
-} from '$lib/cut-pattern/cut-pattern.types';
+import type { ArcPathSegment, Flag, MovePathSegment } from '$lib/cut-pattern/cut-pattern.types';
 import { getMidPoint } from './utils';
 
 export type ArcParams = {
@@ -243,12 +238,13 @@ export const svgArcFromParams = (arc: ArcParams) => {
 };
 
 export const svgArcWedgeFromParams = (arc: ArcParams) => {
-	const {center} = getCenterParameters(arc)
+	const { center } = getCenterParameters(arc);
 
 	const path = `M ${center.x} ${center.y}
 	L ${arc.p0.x} ${arc.p0.y}
 	A ${arc.r0} ${arc.r1} ${(arc.rotationRadians * 180) / Math.PI} ${arc.fa} ${arc.fs} ${arc.p1.x} ${
-		arc.p1.y}
+		arc.p1.y
+	}
 	L ${center.x} ${center.y}
 	Z`;
 	return path;

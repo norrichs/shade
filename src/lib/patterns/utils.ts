@@ -554,3 +554,19 @@ export const serializeBand = (b: Band): { facets: SerializedFacet[] } => {
 export const serializeGlobuleData = (gD: GlobuleData) => {
 	return { bands: gD.bands.map((band) => serializeBand(band)) };
 };
+
+export const svgPathStringFromSegments = (segments: PathSegment[]) => {
+	return segments
+		.map((segment) =>
+			segment
+				.map((elem) => {
+					if (typeof elem === 'string') {
+						return elem;
+					} else {
+						return `${elem}`;
+					}
+				})
+				.join(' ')
+		)
+		.join('\n');
+};

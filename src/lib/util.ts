@@ -1,6 +1,6 @@
-import { Vector2, type CubicBezierCurve } from 'three';
+import { CubicBezierCurve, Vector2 } from 'three';
 import { Bezier, type Line } from 'bezier-js';
-import type { Point, Point3 } from '$lib/types';
+import type { BezierConfig, Point, Point3 } from '$lib/types';
 import type { Intersector } from '$lib/types';
 
 export const rad = (deg: number): number => (Math.PI / 180) * deg;
@@ -106,3 +106,14 @@ export const formatPoint3 = (p: Point3, decimals?: number) => {
 
 export const isClose = (n0?: number, n1?: number, precision: number = 1 / 1000000) =>
 	n1 !== undefined && n0 !== undefined && Math.abs(n1 - n0) < precision;
+
+
+export const getCubicBezier = (cfg: BezierConfig) => {
+	const [p0,p1,p2,p3] = cfg.points
+	return new CubicBezierCurve(
+		new Vector2(p0.x, p0.y),
+		new Vector2(p1.x, p1.y),
+		new Vector2(p2.x, p2.y),
+		new Vector2(p3.x, p3.y),
+	)
+}

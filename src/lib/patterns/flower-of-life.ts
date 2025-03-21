@@ -28,7 +28,8 @@ import {
 	rotatePoint,
 	roundPathSegments,
 	scaleXY,
-	skewXPoint
+	skewXPoint,
+	svgPathStringFromSegments
 } from './utils';
 import type {
 	Circle,
@@ -609,21 +610,7 @@ export const generateFlowerOfLife1BandPattern = (
 	return svgPathString;
 };
 
-export const svgPathStringFromSegments = (segments: PathSegment[]) => {
-	return segments
-		.map((segment) =>
-			segment
-				.map((elem) => {
-					if (typeof elem === 'string') {
-						return elem;
-					} else {
-						return `${elem}`;
-					}
-				})
-				.join(' ')
-		)
-		.join('\n');
-};
+
 
 export const processFlowerOfLife1PatternTransforms = ({
 	svgPath,

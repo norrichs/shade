@@ -15,20 +15,15 @@ import {
 	generateFlowerOfLife1BandPattern,
 	getTransformStringFromTriangle,
 	processFlowerOfLife1PatternTransforms,
-	svgPathStringFromSegments
 } from '../patterns/flower-of-life';
 import {
 	arcCircle,
 	getLength,
-	getQuadWidth,
-	rotatePS,
 	simpleTriangle,
-	translatePS
 } from '../patterns/utils';
 import type {
 	AlignTrianglesConfig,
 	Band,
-	BandAddressed,
 	BandPattern,
 	BandStyle,
 	CutoutConfig,
@@ -40,7 +35,6 @@ import type {
 	FacetedStrutPattern,
 	FlatStripConfig,
 	FullTabPattern,
-	GeometryAddress,
 	Level,
 	LevelPattern,
 	LevelSetPattern,
@@ -51,12 +45,9 @@ import type {
 	OutlinedStrutPattern,
 	PathSegment,
 	PatternConfig,
-	PatternedBand,
 	PatternedBandPattern,
 	PatternedPattern,
-	PixelScale,
 	Point,
-	Quadrilateral,
 	RenderConfig,
 	Strip,
 	Strut,

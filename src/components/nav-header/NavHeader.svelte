@@ -19,7 +19,8 @@
 		{ value: '/sandbox-bezier-intersections', label: 'Bezier Intersections' },
 		{ value: '/sandbox-patterns', label: 'Patterns' },
 		{ value: '/sandbox-svg-display', label: 'SVG Display' },
-		{ value: '/sandbox-server-test', label: 'Server Test' }
+		{ value: '/sandbox-server-test', label: 'Server Test' },
+		{ value: '/sandbox-pattern-test', label: 'Pattern test' }
 	];
 
 	const printGlobuleCoords = () => {

@@ -1,8 +1,4 @@
 <script lang="ts">
-	import { svgPathStringFromSegments } from '$lib/patterns/flower-of-life';
-	import { getPathSize, translatePS } from '$lib/patterns/utils';
-	import type { PathSegment, Point } from '$lib/types';
-	import { numberPathSegments } from './number-path-segments';
 
 	export let values: number[] = [];
 	export let offsetBy = { x: 0, y: 0 };

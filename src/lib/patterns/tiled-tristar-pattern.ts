@@ -147,7 +147,7 @@ export const generateTriStarPattern = ({
 /////////////////////////////////////////////////
 // Adjustment functions.  Make these general so they can be reused
 
-export const adjustTriStarPatternAfterTiling = (
+export const adjustTriStarPatternAfterMapping = (
 	patternBand: PathSegment[][],
 	quadBand: Quadrilateral[],
 	tiledPatternConfig: TiledPatternConfig,

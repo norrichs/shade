@@ -7,8 +7,22 @@
 	import PatternTileButton from '../pattern/PatternTileButton.svelte';
 	import CheckboxInput from './CheckboxInput.svelte';
 	import NumberInput from './super-control/NumberInput.svelte';
+	import type { GridVariant } from '$lib/types';
 
 	let fitToPage = false;
+
+	const handleVariantChange = (e: Event) => {
+		const target = e.target;
+		if (target instanceof HTMLSelectElement) {
+			$patternConfigStore.tiledPatternConfig.config.variant = (target.value ||
+				'rect') as GridVariant;
+			console.debug(
+				'TilingControl',
+				target?.value,
+				$patternConfigStore.tiledPatternConfig.config.variant
+			);
+		}
+	};
 
 	const fitPatternToPage = (fitToPage: boolean) => {
 		if (!fitToPage && $patternConfigStore.patternConfig.pixelScale.value !== 1) {
@@ -31,6 +45,7 @@
 	$: {
 		fitPatternToPage(fitToPage);
 	}
+	console.debug('tiled pattern config', $patternConfigStore.tiledPatternConfig.config);
 </script>
 
 <section>
@@ -49,6 +64,16 @@
 	</ControlGroup>
 	<ControlGroup>
 		<div>
+			{#if $patternConfigStore.tiledPatternConfig.config.variant}
+				<select
+					on:change={handleVariantChange}
+					bind:value={$patternConfigStore.tiledPatternConfig.config.variant}
+				>
+					{#each ['rect', 'triangle-0', 'triangle-1'] as option}
+						<option>{option}</option>
+					{/each}
+				</select>
+			{/if}
 			{#if $patternConfigStore.tiledPatternConfig.config.rowCount && $patternConfigStore.tiledPatternConfig.config.columnCount}
 				<CombinedNumberInput
 					label="Rows"
@@ -84,9 +109,25 @@
 				max={20}
 				step={0.1}
 			/>
-			<CheckboxInput label="Match End Segments" bind:value={$patternConfigStore.tiledPatternConfig.config.endsMatched}/>
-			<CheckboxInput label="Remove End Segments" bind:value={$patternConfigStore.tiledPatternConfig.config.endsTrimmed}/>
-			<NumberInput label="Loop Ends" bind:value={$patternConfigStore.tiledPatternConfig.config.endLooped}/>
+			{#if $patternConfigStore.tiledPatternConfig.config.skipEdges}
+				<SelectInput
+					label="Skip Edges"
+					bind:value={$patternConfigStore.tiledPatternConfig.config.skipEdges}
+					options={['all', 'none', 'not-first', 'not-last', 'not-both']}
+				/>
+			{/if}
+			<CheckboxInput
+				label="Match End Segments"
+				bind:value={$patternConfigStore.tiledPatternConfig.config.endsMatched}
+			/>
+			<CheckboxInput
+				label="Remove End Segments"
+				bind:value={$patternConfigStore.tiledPatternConfig.config.endsTrimmed}
+			/>
+			<NumberInput
+				label="Loop Ends"
+				bind:value={$patternConfigStore.tiledPatternConfig.config.endLooped}
+			/>
 			<div>
 				<div>
 					<span>Model Height:</span>

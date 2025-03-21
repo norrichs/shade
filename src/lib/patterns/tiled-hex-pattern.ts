@@ -176,11 +176,6 @@ export const adjustHexPatternAfterTiling = (
 		} else if (i === facets.length - 1) {
 			const nextQuad = quadBand[0];
 			const tDiff = { x: thisQuad.p3.x - nextQuad.p0.x, y: thisQuad.p3.y - nextQuad.p0.y };
-			console.debug(
-				'ANGLES',
-				getAngle(thisQuad.p3, thisQuad.p2),
-				getAngle(nextQuad.p0, nextQuad.p1)
-			);
 			const aDiff = getAngle(thisQuad.p3, thisQuad.p2) - getAngle(nextQuad.p0, nextQuad.p1);
 			prevFacet = facets[i - 1];
 
@@ -229,7 +224,6 @@ export const adjustHexPatternAfterTiling = (
 		patternBand[0].splice(0, startSegments.length);
 		patternBand[patternBand.length - 1].splice(Math.min(...endSegments), endSegments.length);
 	}
-	console.debug('patternBand', patternBand.length);
 	return patternBand;
 };
 
@@ -271,11 +265,3 @@ export const straightenEndSegments = ({
 
 	return output;
 };
-
-const loopEndSegments = ({
-	prevFacet,
-	thisFacet,
-	nextFacet,
-	rows,
-	columns
-}: StraightenEndSegmentsProps) => {};

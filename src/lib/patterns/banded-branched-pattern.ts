@@ -1,7 +1,6 @@
 import { isLinePathSegment, type Quadrilateral, type DynamicPathCollection, type DynamicPath, type PathSegment, isMovePathSegment } from "$lib/types";
 import type { Point } from "bezier-js";
-import { svgPathStringFromSegments } from "./flower-of-life";
-import { getDirection, getLength, getMidPoint, getQuadWidth } from "./utils";
+import { getDirection, getLength, getMidPoint, getQuadWidth, svgPathStringFromSegments } from "./utils";
 
 export const generateBranched = (
   quadBand: Quadrilateral[],

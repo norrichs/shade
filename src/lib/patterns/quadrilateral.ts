@@ -397,7 +397,7 @@ const getOffsetLine = (
 // 	return matching;
 // };
 
-const isSamePoint = (p0: Point, p1: Point, precision?: number) => {
+export const isSamePoint = (p0: Point, p1: Point, precision?: number) => {
 	if (!precision) {
 		return p0.x === p1.x && p0.y === p1.y;
 	}

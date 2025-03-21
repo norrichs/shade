@@ -32,11 +32,12 @@
 	import PathEditInput from './PathEditInput.svelte';
 	import { getCurvePoints, getLevelLines } from '$lib/generate-level';
 	import CheckboxInput from '../controls/CheckboxInput.svelte';
-	import { string } from 'three/webgpu';
 	import { updateGlobuleConfigs } from '$lib/generate-superglobule';
 	import PathEditConstraint from './PathEditConstraint.svelte';
 	import NumberInput from '../controls/super-control/NumberInput.svelte';
 	import { getLength } from '$lib/patterns/utils';
+	import { colorByType } from './constants';
+	import SpineCurveRibs from './SpineCurveRibs.svelte';
 
 	const isCurveConfig = (subConfig: any): subConfig is CurveConfig => {
 		return (
@@ -325,6 +326,7 @@
 		pointIndex: number,
 		shouldUpdateStores = false
 	) => {
+		console.debug('updateCurves');
 		curves = onPathPointMove(
 			x,
 			-y,
@@ -371,7 +373,7 @@
 <section class="container">
 	<svg
 		viewBox={`${canv.minX} ${canv.minY} ${canv.maxX - canv.minX} ${canv.maxY - canv.minY}`}
-		style="overflow:visible"
+		style={`overflow: visible; background-color: ${colorByType[curveStore.type]}`}
 	>
 		<circle cx="0" cy="0" r="4" fill="none" stroke="black" stroke-width="0.5" />
 		{#if curveStore.type === 'SilhouetteConfig'}
@@ -385,13 +387,14 @@
 				stroke="none"
 				fill="rgba(255,0,0,0.5)"
 			/>
-		{/if}
-		{#if curveStore.type === 'ShapeConfig'}
+		{:else if curveStore.type === 'ShapeConfig'}
 			<path
 				d={getShapeFillFromCurves(radializeCurves(curves, curveStore))}
 				stroke="black"
 				fill="rgba(255,90,0,0.6)"
 			/>
+		{:else if curveStore.type === 'SpineCurveConfig'}
+			<SpineCurveRibs {curves} />
 		{/if}
 		<path
 			d={getPathFromCurves(curves)}
@@ -423,7 +426,7 @@
 			{/each}
 		</g>
 	</svg>
-
+	<!-- Points -->
 	{#each curves as curve, curveIndex}
 		{#each curve.points as point, p}
 			<!-- svelte-ignore a11y-no-static-element-interactions -->
@@ -445,7 +448,8 @@
 			/>
 		{/each}
 	{/each}
-	<div>
+
+	<div class="control-overlay">
 		<div class="control-overlay row">
 			<CheckBoxInput show={true} bind:value={showPointInputs} label="show point inputs" />
 			<CheckboxInput show={showPointInputs} bind:value={showPointInputsInline} label="inline?" />

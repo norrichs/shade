@@ -1,5 +1,5 @@
 import { Vector3, CurvePath, Vector2 } from 'three';
-import { generateDepthCurve, generateSilhouette, generateLevelPrototype } from './generate-shape';
+import { generateDepthCurve, generateSilhouette, generateLevelPrototype, generateSpineCurve } from './generate-shape';
 import type {
 	LevelConfig,
 	SilhouetteConfig,
@@ -8,7 +8,9 @@ import type {
 	Level,
 	LevelOffset,
 	CurveSampleMethod,
-	GlobuleConfig
+	GlobuleConfig,
+	SpineCurveConfig,
+	CurveSampleMethodMethod
 } from './types';
 
 // TODO - bring the call to generateLevelPrototype into this function
@@ -18,6 +20,7 @@ export const generateLevelSet2 = (
 	levelConfig: LevelConfig,
 	silhouetteConfig: SilhouetteConfig,
 	depthCurveConfig: DepthCurveConfig,
+	// spineCurveConfigs: SpineCurveConfig[],
 	levelPrototype: LevelPrototype | LevelPrototype[]
 ): Level[] => {
 	const levelCount = countLevels(levelConfig, silhouetteConfig);
@@ -34,6 +37,15 @@ export const generateLevelSet2 = (
 			sampleMethod: levelConfig.silhouetteSampleMethod,
 			divisionBasis: 0
 		});
+	// } else if (levelConfig.silhouetteSampleMethod.method === 'spineCurve') {
+	// 	const spineCurves: CurvePath<Vector2>[] = spineCurveConfigs.map((cfg) => generateSpineCurve(cfg));
+	// 	rawLevels = generateRawLevelsSpineCurve({
+	// 		silhouette,
+	// 		depthCurve,
+	// 		spineCurves,
+	// 		levelPrototypes,
+	// 		sampleMethod: levelConfig.silhouetteSampleMethod
+	// 	});
 	} else {
 		rawLevels = generateRawLevels({
 			silhouette,
@@ -51,22 +63,11 @@ export const generateLevelSet2 = (
 	return levels;
 };
 
-const applyOffsetToLevel = (
-	offset: LevelOffset,
-	rawLevel: Level,
-	levelNumber: number
-	// prototype: LevelPrototype,
-	// levelNumber: number
-): Level => {
-	// apply offsets to prototype
-	// axes for rotation
+const applyOffsetToLevel = (offset: LevelOffset, rawLevel: Level, levelNumber: number): Level => {
 	const zAxis = new Vector3(0, 0, 1);
 	const xAxis = new Vector3(1, 0, 0);
 	const yAxis = new Vector3(0, 1, 0);
-	// center for coordinate offset
-	// const center = new Vector3(offset.x, offset.y, offset.z);
 
-	// const radialVertices = prototype.vertices.map((p) => getPolar(p.x, p.y));
 	const minLength = Math.min(...rawLevel.vertices.map((v) => v.length()));
 	const depthedVertices = rawLevel.vertices.map((v) => {
 		const length = v.length();
@@ -90,6 +91,34 @@ const applyOffsetToLevel = (
 		vertices
 	};
 	return level;
+};
+
+const generateRawLevelsSpineCurve = ({
+	silhouette,
+	depthCurve,
+	spineCurves,
+	levelPrototypes,
+	sampleMethod
+}: {
+	silhouette: CurvePath<Vector2>;
+	depthCurve: CurvePath<Vector2>;
+	spineCurves: CurvePath<Vector2>[];
+	levelPrototypes: LevelPrototype[];
+	sampleMethod: CurveSampleMethod;
+}): Level[] => {
+	const levelCount = sampleMethod.divisions + 1;
+	const levels: Level[] = [];
+
+
+	// How will multiple spinecurves be reconciled if each operates in a separate plane?
+	// Can they be elevation based?  Is that possible?
+	// Should levels be arrayed along the silhouette curve, then modified according to the spineCurve?
+	
+	for (let l = 0; l < levelCount; l++){
+		const center = new Vector2()
+	}
+
+	return levels
 };
 
 const generateRawLevelsConstantAspect = ({
@@ -144,9 +173,10 @@ const generateRawLevelsConstantAspect = ({
 				);
 			}
 		}
-		const aspectRatios: number[][] = getAspectRatiosFromMeridians(meridians);
+		const aspectRatios = getAspectRatiosFromMeridians(meridians);
 		const divergences = aspectRatios.map((ar) => getDivergence(ar));
 		if (divergenceTest(divergences, divergenceLimit, divisionBasis)) {
+			console.debug('______________ constant aspect ratio iterations:', iteration);
 			break;
 		}
 
@@ -334,7 +364,9 @@ const countLevels = (levelConfig: LevelConfig, silhouetteConfig: SilhouetteConfi
 const getLevelOffsets = (levelConfig: LevelConfig, levelCount: number) => {
 	const levelOffsets: LevelOffset[] = new Array(levelCount);
 	for (let l = 0; l < levelOffsets.length; l++) {
-		levelOffsets[l] = window.structuredClone(levelConfig.levelOffsets[l % levelConfig.levelOffsets.length]);
+		levelOffsets[l] = window.structuredClone(
+			levelConfig.levelOffsets[l % levelConfig.levelOffsets.length]
+		);
 		const { x, y, rotX, rotY, rotZ, scaleX, scaleY } = levelOffsets[l];
 		levelOffsets[l].x = x * l;
 		levelOffsets[l].y = y * l;

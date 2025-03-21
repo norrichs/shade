@@ -265,6 +265,40 @@ export const tiledPatternConfigs: { [key: string]: TiledPatternConfig } = {
 			endLooped: 0
 		}
 	},
+	'tiledGridPattern-0': {
+		type: 'tiledGridPattern-0',
+		tiling: 'quadrilateral',
+		config: {
+			rowCount: 1,
+			columnCount: 1,
+			dynamicStroke: 'quadWidth',
+			dynamicStrokeEasing: 'linear',
+			dynamicStrokeMin: 1,
+			dynamicStrokeMax: 3,
+			endsMatched: false,
+			endsTrimmed: true,
+			endLooped: 0,
+			variant: 'rect'
+		}
+	},
+	tiledShieldTesselationPattern: {
+		type: 'tiledShieldTesselationPattern',
+		tiling: 'quadrilateral',
+		config: {
+			rowCount: 1,
+			columnCount: 1,
+			dynamicStroke: 'quadWidth',
+			dynamicStrokeEasing: 'linear',
+			dynamicStrokeMin: 1,
+			dynamicStrokeMax: 1,
+			endsMatched: false,
+			endsTrimmed: true,
+			endLooped: 0,
+			variant: 'rect',
+			aspectRatio: 4582.575695 / 7937.253933,
+			skipEdges: 'not-last'
+		}
+	},
 	'tiledTriStarPattern-1': {
 		type: 'tiledTriStarPattern-1',
 		tiling: 'quadrilateral',

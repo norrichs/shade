@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { patterns } from '$lib/patterns';
-	import { svgPathStringFromSegments } from '$lib/patterns/flower-of-life';
-	import { scalePS } from '$lib/patterns/utils';
+	import { transformPatternByQuad } from '$lib/patterns/quadrilateral';
+	import { scalePS, svgPathStringFromSegments } from '$lib/patterns/utils';
 	import type {
 		BandPatternGenerator,
 		DynamicPath,
@@ -14,17 +14,31 @@
 	export let tilingBasis: TilingBasis;
 	export let width = 100;
 	export let height = 100;
-	export let rows: 1 | 2 | 3 = 1;
-	export let columns: 1 | 2 | 3 | 4 | 5 = 1;
+	export let rows = 1;
+	export let columns = 1;
 	export let active = false;
+	
 
-	const getPath = (patternType: string) => {
+	const getPath = (
+		patternType: string,
+		rows: number,
+		columns: number,
+		width: number,
+		height: number
+	) => {
 		let path = '';
 		if (patterns[patternType]) {
 			if (tilingBasis === 'quadrilateral') {
 				const { getPattern } = patterns[patternType] as unknown as UnitPatternGenerator;
 				const unitPattern = getPattern(rows, columns);
-				path = svgPathStringFromSegments(scalePS(unitPattern, Math.max(width, height)));
+				const quad: Quadrilateral = {
+					p0: { x: 0, y: 0 },
+					p1: { x: width, y: 0 },
+					p2: { x: width, y: height },
+					p3: { x: 0, y: height }
+				};
+				path = svgPathStringFromSegments(transformPatternByQuad(unitPattern, quad));
+				// path = svgPathStringFromSegments(scalePS(unitPattern, Math.max(width, height)));
 			} else if (tilingBasis === 'band') {
 				const { getPattern } = patterns[patternType] as unknown as BandPatternGenerator;
 				const quadBand: Quadrilateral[] = [
@@ -78,7 +92,7 @@
 		return path;
 	};
 
-	$: tilePath = getPath(patternType);
+	$: tilePath = getPath(patternType, rows, columns, width, height);
 </script>
 
 <div class:active>

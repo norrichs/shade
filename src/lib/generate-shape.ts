@@ -37,7 +37,8 @@ import type {
 	StrutOrientation,
 	TabDirection,
 	TabFootprintInvert,
-	GlobuleData
+	GlobuleData,
+	SpineCurveConfig
 } from '$lib/types';
 import { generateEdgeConfig } from './cut-pattern/cut-pattern';
 import { generateLevelSet2 } from './generate-level';
@@ -79,6 +80,23 @@ export const generateSilhouette = (config: SilhouetteConfig): CurvePath<Vector2>
 		}
 	}
 	return silhouette;
+};
+
+export const generateSpineCurve = (config: SpineCurveConfig): CurvePath<Vector2> => {
+	const spineCurve = new CurvePath<Vector2>();
+	for (const curve of config.curves) {
+		if (curve.type === 'BezierConfig') {
+			spineCurve.add(
+				new CubicBezierCurve(
+					new Vector2(curve.points[0].x, curve.points[0].y),
+					new Vector2(curve.points[1].x, curve.points[1].y),
+					new Vector2(curve.points[2].x, curve.points[2].y),
+					new Vector2(curve.points[3].x, curve.points[3].y)
+				)
+			);
+		}
+	}
+	return spineCurve;
 };
 
 export const generateDepthCurve = (config: DepthCurveConfig): CurvePath<Vector2> => {
@@ -824,6 +842,8 @@ export const generateGlobuleData = (configStore: GlobuleConfig): GlobuleData => 
 		config.depthCurveConfig,
 		rotatedShapePrototype
 	);
+
+	console.debug('levels', levels);
 
 	const struts = generateStruts(levels, config.strutConfig);
 	const unTabbedBands = generateBandSet(config, levels);

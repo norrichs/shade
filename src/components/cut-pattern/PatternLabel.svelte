@@ -1,6 +1,5 @@
 <script lang="ts">
-	import { svgPathStringFromSegments } from '$lib/patterns/flower-of-life';
-	import { getPathSize, rotatePS, scalePS, translatePS } from '$lib/patterns/utils';
+	import { getPathSize, rotatePS, scalePS, svgPathStringFromSegments, translatePS } from '$lib/patterns/utils';
 	import type { PathSegment } from '$lib/types';
 	import type { Point } from 'bezier-js';
 	import { get } from 'svelte/store';

@@ -28,7 +28,6 @@ export const superConfigStore = persistable<SuperGlobuleConfig>(
 );
 
 export const superGlobuleStore = derived(superConfigStore, ($superConfigStore) => {
-	console.debug("superGlobuleStore update", $superConfigStore.subGlobuleConfigs[0].globuleConfig.levelConfig.levelOffsets[0].rotZ)
 	const superGlobule = generateSuperGlobule($superConfigStore);
 	return superGlobule;
 });
