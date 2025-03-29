@@ -1,4 +1,4 @@
-import { CubicBezierCurve, Vector2 } from 'three';
+import { CubicBezierCurve, CurvePath, Vector2, Vector3 } from 'three';
 import { Bezier, type Line } from 'bezier-js';
 import type { BezierConfig, Point, Point3 } from '$lib/types';
 import type { Intersector } from '$lib/types';
@@ -107,13 +107,28 @@ export const formatPoint3 = (p: Point3, decimals?: number) => {
 export const isClose = (n0?: number, n1?: number, precision: number = 1 / 1000000) =>
 	n1 !== undefined && n0 !== undefined && Math.abs(n1 - n0) < precision;
 
-
 export const getCubicBezier = (cfg: BezierConfig) => {
-	const [p0,p1,p2,p3] = cfg.points
+	const [p0, p1, p2, p3] = cfg.points;
 	return new CubicBezierCurve(
 		new Vector2(p0.x, p0.y),
 		new Vector2(p1.x, p1.y),
 		new Vector2(p2.x, p2.y),
-		new Vector2(p3.x, p3.y),
-	)
-}
+		new Vector2(p3.x, p3.y)
+	);
+};
+
+export const getCubicBezierCurvePath = (cfg: BezierConfig[]) => {
+	const curvePath = new CurvePath<Vector2>();
+	cfg.forEach((bezierConfig) => curvePath.add(getCubicBezier(bezierConfig)));
+	return curvePath;
+};
+
+export const getVector3 = (cfg: Point3 | Point3[]) => {
+	if (Array.isArray(cfg)) {
+		return cfg.map((p) => new Vector3(p.x, p.y, p.z));
+	}
+	const { x, y, z } = cfg;
+	return new Vector3(x, y, z);
+};
+
+export const average = (arr: number[]) => arr.reduce((acc, val) => acc + val, 0) / arr.length;

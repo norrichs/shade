@@ -1,18 +1,58 @@
-import { DoubleSide, MeshPhysicalMaterial } from 'three';
+import { Color, DoubleSide, MeshPhysicalMaterial, type ColorRepresentation } from 'three';
+import type { ThreeColor } from './colors';
 
 const theme = {
 	colorSelected: 'rgb(0,150,255)',
 	colorSecondarySelected: 'rgba(100, 200, 255)',
 	colorDefault: 'khaki',
 	colorHighlightedPrimary: 'orangered',
-	colorHighlightedSecondary: "cornflowerblue"
+	colorHighlightedSecondary: 'cornflowerblue'
 };
 
+const defaultPhysicalMaterialConfig = {
+	color: theme.colorDefault,
+	transparent: true,
+	opacity: 0.9,
+	clearcoat: 1,
+	clearcoatRoughness: 0,
+	side: DoubleSide
+};
+
+const colorList: ThreeColor[] = [
+	'red',
+	'orangered',
+	'orange',
+	'yellow',
+	'lime',
+	'green',
+	'forestgreen',
+	'olivedrab',
+	'lightblue',
+	'blue',
+	'indigo',
+	'violet',
+	'darkorchid',
+	'aquamarine',
+	'antiquewhite',
+	'darkmagenta',
+	'cadetblue',
+	'blueviolet',
+	'darkseagreen',
+	'slateblue',
+	'hotpink',
+	'indianred'
+];
+
+const numbered = colorList.map((color) => {
+	return new MeshPhysicalMaterial({ ...defaultPhysicalMaterialConfig, color });
+});
+
 export const materials = {
+	numbered,
 	default: new MeshPhysicalMaterial({
 		color: theme.colorDefault,
 		transparent: true,
-		opacity: 0.90,
+		opacity: 0.9,
 		clearcoat: 1,
 		clearcoatRoughness: 0,
 		side: DoubleSide
@@ -36,7 +76,7 @@ export const materials = {
 	selectedVeryLight: new MeshPhysicalMaterial({
 		color: theme.colorSecondarySelected,
 		transparent: true,
-		opacity: 0.65,
+		opacity: 0.5,
 		clearcoat: 1,
 		clearcoatRoughness: 0,
 		side: DoubleSide

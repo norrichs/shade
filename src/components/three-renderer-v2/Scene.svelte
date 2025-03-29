@@ -39,10 +39,13 @@
 		matchGlobuleConfigCoordinates
 	} from '$lib/matchers';
 	import { formatAddress } from '$lib/recombination';
+	import { PROJECTION_GEOMETRY_OVERRIDE } from '$lib/projection-geometry/constants'
+	import ProjectionScene from '../projection/ProjectionScene.svelte';
 
 	interactivity();
 
 	const CLICK_DELTA_THRESHOLD = 10;
+
 
 	const selectGlobule = ({
 		globuleConfigId,
@@ -251,17 +254,23 @@
 		</T.Group>
 	{/each}
 {/if}
-{#if $geometryStore.variant === 'Band'}
-	{#each $geometryStore.subGlobules as glob}
-		{#each glob as bandGeometry}
-			{#if typeof bandGeometry !== 'undefined'}
-				<T.Group position={[0, 0, 0]} on:click={(ev) => handleClick(ev, bandGeometry)}>
-					<GlobuleMesh
-						geometry={bandGeometry}
-						material={getInteractionMaterial(bandGeometry, $interactionMode, $selectedBand)}
-					/>
-				</T.Group>
-			{/if}
+<ProjectionScene />
+{#if PROJECTION_GEOMETRY_OVERRIDE}
+{:else}
+
+	{#if $geometryStore.variant === 'Band'}
+		{#each $geometryStore.subGlobules as glob}
+			{#each glob as bandGeometry}
+				{#if typeof bandGeometry !== 'undefined'}
+					<T.Group position={[0, 0, 0]} on:click={(ev) => handleClick(ev, bandGeometry)}>
+						<GlobuleMesh
+							geometry={bandGeometry}
+							material={getInteractionMaterial(bandGeometry, $interactionMode, $selectedBand)}
+						/>
+					</T.Group>
+				{/if}
+			{/each}
+			
 		{/each}
-	{/each}
+	{/if}
 {/if}

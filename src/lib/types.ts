@@ -952,11 +952,35 @@ export type Triangle = {
 
 /* 
 Triangle layout diagram
-        __________
+orientation 0
+        _________ _________
+			/c\b     a/c\b     a/
+		/		 \	  /    \    /
+	/a     b\c/a     b\c/
+	--------- ---------
+
+orientation 1
+
+								_________ 
+							/c\b     a/
+						/		 \	  /
+					/a     b\c/
+        _________ 
 			/c\b     a/
 		/		 \	  /
 	/a     b\c/
-	---------
+	--------- 
+orientation -1
+	_________ 
+	\b     a/c\
+		\	  /    \
+		\c/a     b\
+				_________
+			\b     a/c\
+				\	  /    \
+				\c/a     b\
+					---------
+
 */
 export type Ellipse = {
 	r0: number;
