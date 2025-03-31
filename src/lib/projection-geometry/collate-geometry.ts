@@ -1,17 +1,45 @@
 import { BufferGeometry, Vector3 } from 'three';
-import type { Polyhedron, Edge, Polygon, Projection } from './types';
+import type { Polyhedron, Edge, Polygon, Projection, Tube } from './types';
 import type { Band, Facet } from '$lib/types';
+import { type ShowProjectionGeometries } from '$lib/stores/viewControlStore';
+
+export const collateGeometry = (
+	{
+		projection,
+		polyhedron,
+		tubes,
+		surfaceGeometry
+	}: {
+		projection: Projection;
+		polyhedron: Polyhedron;
+		tubes: Tube[];
+		surfaceGeometry: BufferGeometry;
+	},
+	show: ShowProjectionGeometries
+) => {
+	return show.any
+		? {
+				surface: show.surface ? surfaceGeometry : undefined,
+				projection: show.proejection
+					? collateProjectionGeometry(projection, new Vector3(0, 0, 0))
+					: undefined,
+				polygons: show.polygons
+					? polyhedron.polygons.map((p) => collatePolygonGeometry(p))
+					: undefined,
+				sections: show.sections
+					? collateSectionGeometry(tubes.map((tube) => tube.sections).flat(1))
+					: undefined,
+				bands: show.bands ? collateBandGeometry(tubes.map((tube) => tube.bands).flat()) : undefined
+		  }
+		: {};
+};
 
 export const collateProjectionGeometry = (projection: Projection, center: Vector3) => {
-	const crossSectionPoints: Vector3[] = [];
 	const projectionPoints: Vector3[] = [];
 
 	projection.polygons.forEach((polygon) => {
 		polygon.edges.forEach((edge) => {
 			edge.sections.forEach((section) => {
-				crossSectionPoints.push(
-					...collateCrossSectionPoints(section.crossSectionPoints, section.intersections.edge)
-				);
 				projectionPoints.push(center, section.intersections.curve, section.intersections.edge);
 			});
 		});
@@ -19,9 +47,8 @@ export const collateProjectionGeometry = (projection: Projection, center: Vector
 
 	const projectionGeometry = new BufferGeometry().setFromPoints(projectionPoints);
 	projectionGeometry.computeVertexNormals();
-	const crossSectionGeometry = new BufferGeometry().setFromPoints(crossSectionPoints);
-	crossSectionGeometry.computeVertexNormals();
-	return { projectionGeometry, crossSectionGeometry };
+
+	return projectionGeometry;
 };
 
 export const collateEdgePoints = (edgePoints: Vector3[], curvePoints: Vector3[]) => {
@@ -83,15 +110,15 @@ export const collateSectionGeometry = (sections: Vector3[][]) => {
 };
 
 export const collateBandGeometry = (bands: Band[]): BufferGeometry[] => {
-	const bandsGeometry: BufferGeometry[] = []
+	const bandsGeometry: BufferGeometry[] = [];
 	bands.forEach((band) => {
 		const geometryPoints: Vector3[] = [];
 		band.facets.forEach(({ triangle: { a, b, c } }: Facet) => {
 			geometryPoints.push(a.clone(), b.clone(), c.clone());
 		});
-		const bandGeometry = new BufferGeometry().setFromPoints(geometryPoints)
+		const bandGeometry = new BufferGeometry().setFromPoints(geometryPoints);
 		bandGeometry.computeVertexNormals();
-		bandsGeometry.push(bandGeometry)
+		bandsGeometry.push(bandGeometry);
 	});
-	return bandsGeometry
+	return bandsGeometry;
 };

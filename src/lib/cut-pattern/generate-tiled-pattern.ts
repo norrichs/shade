@@ -39,10 +39,13 @@ export const generateTiledBandPattern = ({
 	// TODO - see if it's possible to convert the output of this to "expanded path" (e.g. convert stroke widths to paths instead of doing so in Affinity)
 
 	const visibleBands = bands.filter((b) => b.visible);
+	console.debug({ visibleBands, bands });
 	const quadBands = visibleBands.map((band) => {
 		const flatBand = getFlatStrip(band, { bandStyle: 'helical-right', pixelScale });
 		return getQuadrilaterals(flatBand, pixelScale.value);
 	});
+
+	console.debug();
 
 	const tiling = generateTiling({ quadBands, tiledPatternConfig, address });
 

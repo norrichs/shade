@@ -8,12 +8,13 @@ import {
 import { getPersistedConfig } from '$lib/storage';
 import { generateDefaultGlobuleConfig, getLevels } from '../shades-config';
 import type { GlobuleConfig, SuperGlobuleConfig, GlobulePatternConfig } from '$lib/types';
+import type { ViewControls } from './viewControlStore';
 
 export const shouldUsePersisted = persistable(false, USE_PERSISTED_KEY, USE_PERSISTED_KEY, true);
 
 export const loadPersistedOrDefault = (
 	shouldUsePersisted: boolean,
-	getDefault: () => GlobuleConfig | SuperGlobuleConfig | GlobulePatternConfig
+	getDefault: () => GlobuleConfig | SuperGlobuleConfig | GlobulePatternConfig | ViewControls
 ) => {
 	const autoPersisted = getPersistedConfig(AUTO_PERSIST_KEY, 'GlobuleConfig');
 	if (autoPersisted && shouldUsePersisted) {

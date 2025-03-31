@@ -2,9 +2,9 @@ import type { Band, BandOrientation, BezierConfig, Facet, Point3 } from '$lib/ty
 import { average, getCubicBezierCurvePath, getVector3 } from '$lib/util';
 import { Ray, Sphere, SphereGeometry, Triangle, Vector2, Vector3 } from 'three';
 import type {
+	BaseProjectionConfig,
 	CrossSectionConfig,
 	CrossSectionScaling,
-	CurveIndex,
 	Edge,
 	EdgeConfig,
 	EdgeCurveConfig,
@@ -17,11 +17,11 @@ import type {
 	ProjectionEdge,
 	ProjectorConfig,
 	SurfaceConfig,
-	VertexIndex
+	Tube
 } from './types';
 
 export const prepareProjectionConfig = (
-	config: ProjectionConfig<undefined, VertexIndex, CurveIndex, CurveIndex>
+	config: BaseProjectionConfig
 ): ProjectionConfig<Point3, Point3, EdgeCurveConfig, CrossSectionConfig> => {
 	const { vertices, edgeCurves, crossSectionCurves } = config.projectorConfig.polyhedron;
 
@@ -85,7 +85,6 @@ export const generatePolyhedron = (
 			};
 		})
 	};
-	console.debug({ projectorConfig, polyhedron });
 	return polyhedron;
 };
 
@@ -127,7 +126,6 @@ const generateEdge = ({
 	edgeConfig: EdgeConfig<Point3, Point3, EdgeCurveConfig, CrossSectionConfig>;
 	center: Vector3;
 }) => {
-	console.debug('edgeConfig', isDirectionMatched);
 	const { divisions } = widthCurve.sampleMethod;
 	const [v0, v1] = getVector3([vertex0, vertex1]) as Vector3[];
 	const edgePoints = [];
@@ -276,10 +274,32 @@ const generateProjectionBands = (sections: Vector3[][], orientation: BandOrienta
 					}
 				);
 			}
-			bands.push({ orientation, facets });
+			bands.push({ orientation, facets, visible: true });
+		}
+	} else if (orientation === 1) {
+		for (let f = 0; f < sections[0].length - 1; f++) {
+			const facets: Facet[] = [];
+			for (let s = 0; s < sections.length - 1; s++) {
+				facets.push(
+					{
+						triangle: new Triangle(
+							sections[s][f].clone(),
+							sections[s][f + 1].clone(),
+							sections[s + 1][f].clone()
+						)
+					},
+					{
+						triangle: new Triangle(
+							sections[s + 1][f + 1].clone(),
+							sections[s + 1][f].clone(),
+							sections[s][f + 1].clone()
+						)
+					}
+				);
+			}
+			bands.push({ orientation, facets, visible: true });
 		}
 	}
-	console.debug('generateProjectionBands', { bands, sections });
 	return { bands, sections };
 };
 
@@ -290,8 +310,14 @@ const combineSections = (edge0: ProjectionEdge, edge1: ProjectionEdge) => {
 	const second = edge1.config.isDirectionMatched
 		? edge1
 		: { ...edge1, sections: edge1.sections.reverse() };
+
+	console.debug('combineSections', first.sections.length, first, second.sections.length, second);
+
 	return first.sections.map((section, i) => {
-		return [...section.crossSectionPoints, ...second.sections[i].crossSectionPoints.reverse()];
+		return [
+			...section.crossSectionPoints,
+			...second.sections[i].crossSectionPoints.reverse().slice(1)
+		];
 	});
 };
 
@@ -327,7 +353,6 @@ const sortEdges = (
 			return 0;
 		}
 	});
-	console.debug({ sortedEdgeMap: edgeMap });
 	const sortedAndMapped = edgeMap.map(({ polygonIndex, edgeIndex }) => {
 		return projection.polygons[polygonIndex].edges[edgeIndex];
 	});
@@ -337,20 +362,17 @@ const sortEdges = (
 export const generateTubeBands = (
 	projection: Projection,
 	projectionConfig: ProjectionConfig<undefined, number, number, number>
-): { tubes: { bands: Band[]; sections: Vector3[][] }[] } => {
+): { tubes: Tube[] } => {
 	const tubes: { bands: Band[]; sections: Vector3[][] }[] = [];
 	const sortedEdges = sortEdges(projectionConfig, projection);
-	console.debug({ sortedEdges });
 	const { orientation } = projectionConfig.bandConfig;
 
 	for (let i = 0; i < sortedEdges.length; i += 2) {
-		if (orientation === 0) {
-			const { bands, sections } = generateProjectionBands(
-				combineSections(sortedEdges[i], sortedEdges[i + 1]),
-				orientation
-			);
-			tubes[i / 2] = { bands, sections };
-		}
+		const { bands, sections } = generateProjectionBands(
+			combineSections(sortedEdges[i], sortedEdges[i + 1]),
+			orientation
+		);
+		tubes[i / 2] = { bands, sections };
 	}
 
 	return { tubes };
@@ -364,4 +386,22 @@ const normalizePoints = (points: Vector2[]) => {
 		}
 	});
 	return points.map((p) => p.set(p.x / xMax, p.y));
+};
+
+export const makeProjection = (projectionConfig: BaseProjectionConfig) => {
+	const preparedProjectionConfig = prepareProjectionConfig(projectionConfig);
+
+	const { projectorConfig, surfaceConfig } = preparedProjectionConfig;
+
+	const { sphereGeometry: surfaceGeometry, sphere } = generateSphereInstance(surfaceConfig);
+
+	const polyhedron = generatePolyhedron(projectorConfig);
+	const projection = generateProjection({
+		surface: sphere,
+		projector: polyhedron,
+		projectionConfig: preparedProjectionConfig
+	});
+	const { tubes } = generateTubeBands(projection, projectionConfig);
+
+	return { projection, polyhedron, tubes, surfaceGeometry };
 };

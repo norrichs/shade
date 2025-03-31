@@ -1,4 +1,5 @@
-import type { Vector2, Vector3, Triangle as ThreeTriangle } from 'three';
+import type { Vector2, Vector3, Triangle as ThreeTriangle, SphereGeometry } from 'three';
+import type { BaseProjectionConfig, Polyhedron, Projection, ProjectionConfig, Tube } from './projection-geometry/types';
 
 export type PatternViewConfig = {
 	showQuads: boolean;
@@ -595,7 +596,7 @@ export type DepthCurveConfig = {
 
 export type SpineCurveConfig = {
 	type: 'SpineCurveConfig';
-	id?: number;
+	id?: Id;
 	angle: number;
 	curves: BezierConfig[];
 };
@@ -665,6 +666,7 @@ export type SuperGlobuleConfig = {
 	id: Id;
 	name?: string;
 	subGlobuleConfigs: SubGlobuleConfig[];
+	projectionConfigs: BaseProjectionConfig[];
 };
 
 export type SuperGlobule = {
@@ -672,6 +674,12 @@ export type SuperGlobule = {
 	superGlobuleConfigId: Id;
 	name?: string;
 	subGlobules: SubGlobule[];
+	projections: {
+		projection: Projection;
+		polyhedron: Polyhedron;
+		tubes: Tube[];
+		surfaceGeometry: SphereGeometry;
+	}[];
 };
 
 export type SuperGlobuleGeometry =
@@ -830,7 +838,6 @@ export type GlobuleConfig = {
 	id: Id;
 	name?: string;
 	isModified?: boolean;
-
 	shapeConfig: ShapeConfig;
 	levelConfig: LevelConfig;
 	silhouetteConfig: SilhouetteConfig;

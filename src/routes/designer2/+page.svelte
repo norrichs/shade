@@ -11,6 +11,7 @@
 	import SuperPathEdit from '../../components/path-edit/SuperPathEdit.svelte';
 	import SuperControl from '../../components/controls/super-control/SuperControl.svelte';
 	import { uiStore, type ViewModeSetting } from '$lib/stores/uiStores';
+	import ProjectionGeometryComponent from '../../components/projection/ProjectionGeometryComponent.svelte';
 
 	let viewMode: ViewModeSetting = $uiStore.designer.viewMode;
 	let showControl: { name: string; value?: unknown } = { name: 'None' };

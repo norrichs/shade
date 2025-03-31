@@ -9,6 +9,7 @@
 	import { formatAddress } from '$lib/recombination';
 	import { downloadSvg } from '$lib/util';
 	import { interactionMode } from '../three-renderer-v2/interaction-mode';
+	import ViewMenu from './ViewMenu.svelte';
 
 	let downloadUrl: string | undefined = undefined;
 
@@ -66,6 +67,7 @@
 					<option value={option.value}>{option.label}</option>
 				{/each}
 			</select>
+			<ViewMenu />
 		</div>
 
 		<div>

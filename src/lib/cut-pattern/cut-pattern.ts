@@ -714,7 +714,6 @@ export const applyStrokeWidth = (
 	{ dynamicStroke, dynamicStrokeMax, dynamicStrokeMin }: object & DynamicStrokeConfig
 ): PatternedBandPattern => {
 
-	console.debug("applyStrokeWidth", {patternBands})
 	const widthVariesByBand = true;
 
 	let maxValue: number;

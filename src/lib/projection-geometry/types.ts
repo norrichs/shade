@@ -1,4 +1,4 @@
-import type { BandOrientation, BezierConfig, Id, Point, Point3 } from '$lib/types';
+import type { Band, BandOrientation, BezierConfig, Id, Point, Point3 } from '$lib/types';
 import type { Vector3 } from 'three';
 
 export type SphereConfig = {
@@ -123,6 +123,8 @@ export type ProjectionConfig<
 	bandConfig: ProjectionBandConfig;
 };
 
+export type BaseProjectionConfig = ProjectionConfig<undefined, number, number, number>;
+
 // ------------------------------------------
 // Instantiated
 // ------------------------------------------
@@ -139,6 +141,13 @@ export type Polygon = {
 
 export type Polyhedron = {
 	polygons: Polygon[];
+};
+
+export type Section = Vector3[];
+
+export type Tube = {
+	bands: Band[];
+	sections: Section[];
 };
 
 // export type Section = {};

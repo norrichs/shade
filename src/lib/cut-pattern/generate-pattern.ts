@@ -1,4 +1,7 @@
+import type { Tube } from '$lib/projection-geometry/types';
 import type {
+	BandAddressed,
+	GeometryAddress,
 	Globule,
 	GlobulePatternConfig,
 	PatternedBandPattern,
@@ -61,6 +64,45 @@ export const generateSuperGlobulePattern = (
 	const bandPatterns = collectedBandPatterns
 		.map((globulePattern: PatternedBandPattern) => globulePattern.bands)
 		.flat();
+
+	return {
+		type: 'SuperGlobulePattern',
+		superGlobuleConfigId: superGlobuleConfig.id,
+		bandPatterns
+	};
+};
+
+export const generateProjectionPattern = (
+	tubes: Tube[],
+	superGlobuleConfig: SuperGlobuleConfig,
+	globulePatternConfig: GlobulePatternConfig
+) => {
+	const dummyAddress: GeometryAddress<BandAddressed> = { s: 0, g: [0], b: 0 };
+	const patterns: PatternedBandPattern[] = [];
+	const {
+		tiledPatternConfig,
+		patternConfig: { pixelScale }
+	} = globulePatternConfig;
+
+	tubes.forEach(({ bands }, i) => {
+		let pattern: PatternedBandPattern = generateTiledBandPattern({
+			address: dummyAddress,
+			bands,
+			tiledPatternConfig,
+			pixelScale
+		});
+		console.debug('*-*-*', i, { bands, pattern });
+		pattern = {
+			...pattern,
+			bands: pattern.bands.map((band) => ({ ...band, projectionType: pattern.projectionType }))
+		};
+		pattern = applyStrokeWidth(pattern, tiledPatternConfig.config);
+		patterns.push(pattern);
+	});
+
+	console.debug('*** generateProjectionPattern', patterns);
+
+	const bandPatterns = patterns.map((pattern: PatternedBandPattern) => pattern.bands).flat();
 
 	return {
 		type: 'SuperGlobulePattern',

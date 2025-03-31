@@ -8,13 +8,7 @@
 		type BandSelection
 	} from '$lib/stores';
 	import GlobuleMesh from '../globuleMesh/GlobuleMesh.svelte';
-	import type {
-		BandAddressed,
-		BandGeometry,
-		GeometryAddress,
-		GlobuleGeometry,
-		Id
-	} from '$lib/types';
+	import type { BandAddressed, BandGeometry, GeometryAddress, GlobuleGeometry } from '$lib/types';
 	import DesignerCamera from './DesignerCamera.svelte';
 	import DesignerLighting from './DesignerLighting.svelte';
 	import {
@@ -27,53 +21,21 @@
 	import { Vector3 } from 'three';
 	import { generateTempId } from '$lib/id-handler';
 	import TransformDisplay from './TransformDisplay.svelte';
-	import { isBand } from '$lib/generate-shape';
 	import type { Material } from './materials';
-	import { If, mod } from 'three/webgpu';
 	import {
 		includesBandAddress,
 		includesGlobuleCoordinates,
 		isSameBand,
-		isSameGlobule,
-		matchBandConfigCoordinates,
-		matchGlobuleConfigCoordinates
+		isSameGlobule
 	} from '$lib/matchers';
 	import { formatAddress } from '$lib/recombination';
-	import { PROJECTION_GEOMETRY_OVERRIDE } from '$lib/projection-geometry/constants'
-	import ProjectionScene from '../projection/ProjectionScene.svelte';
+	import { PROJECTION_GEOMETRY_OVERRIDE } from '$lib/projection-geometry/constants';
+	import ProjectionGeometryComponent from '../projection/ProjectionGeometryComponent.svelte';
+	import GlobuleGeometryComponent from './GlobuleGeometryComponent.svelte';
 
 	interactivity();
 
 	const CLICK_DELTA_THRESHOLD = 10;
-
-
-	const selectGlobule = ({
-		globuleConfigId,
-		subGlobuleConfigId,
-		subGlobuleRecurrence
-	}: GlobuleGeometry) => {
-		if ($geometryStore.variant === 'Globule') {
-			const subGlobuleConfigIndex =
-				$superConfigStore.subGlobuleConfigs.findIndex(
-					(subGlobuleConfig) => subGlobuleConfig.id === subGlobuleConfigId
-				) || 0;
-			const subGlobuleGeometryIndex = $geometryStore.subGlobules.findIndex(
-				(glob) =>
-					glob.subGlobuleConfigId === subGlobuleConfigId &&
-					glob.subGlobuleRecurrence === subGlobuleRecurrence
-			);
-		}
-	};
-
-	const BAND_SELECTION_LENGTH = 2;
-
-	const isBandSelectOrigin = (mode: InteractionMode) => {
-		return (
-			isBandSelectInteractionMode(mode) &&
-			mode.type === 'band-select-partners' &&
-			mode.data.originSelected === undefined
-		);
-	};
 
 	const selectBand = ({
 		coord,
@@ -254,23 +216,5 @@
 		</T.Group>
 	{/each}
 {/if}
-<ProjectionScene />
-{#if PROJECTION_GEOMETRY_OVERRIDE}
-{:else}
-
-	{#if $geometryStore.variant === 'Band'}
-		{#each $geometryStore.subGlobules as glob}
-			{#each glob as bandGeometry}
-				{#if typeof bandGeometry !== 'undefined'}
-					<T.Group position={[0, 0, 0]} on:click={(ev) => handleClick(ev, bandGeometry)}>
-						<GlobuleMesh
-							geometry={bandGeometry}
-							material={getInteractionMaterial(bandGeometry, $interactionMode, $selectedBand)}
-						/>
-					</T.Group>
-				{/if}
-			{/each}
-			
-		{/each}
-	{/if}
-{/if}
+<ProjectionGeometryComponent {handleClick} />
+<GlobuleGeometryComponent {getInteractionMaterial} {handleClick} />

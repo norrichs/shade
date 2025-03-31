@@ -2,13 +2,16 @@ import { AUTO_PERSIST_KEY, bootstrapShouldUsePersisted, persistable } from '$lib
 import { generateDefaultSuperGlobuleConfig } from '$lib/shades-config';
 import type { SuperGlobuleConfig } from '$lib/types';
 import { derived } from 'svelte/store';
-import { loadPersistedOrDefault } from './stores';
+import { loadPersistedOrDefault, viewControlStore } from '$lib/stores';
 import { generateSuperGlobule } from '$lib/generate-superglobule';
 import {
 	generateSuperGlobuleBandGeometry,
 	generateSuperGlobuleGeometry
 } from '$lib/generate-globulegeometry';
-import { generateSuperGlobulePattern } from '$lib/cut-pattern/generate-pattern';
+import {
+	generateProjectionPattern,
+	generateSuperGlobulePattern
+} from '$lib/cut-pattern/generate-pattern';
 import { patternConfigStore } from './globulePatternStores';
 import { selectedGlobule } from '.';
 
@@ -48,16 +51,30 @@ export const superGlobulePatternStore = derived(
 	[superGlobuleStore, superConfigStore, patternConfigStore],
 	([$superGlobuleStore, $superConfigStore, $patternConfigStore]) => {
 		console.debug('*** patternConfigStore', $patternConfigStore);
-		const superGlobulePattern = generateSuperGlobulePattern(
-			$superGlobuleStore,
-			$superConfigStore,
-			$patternConfigStore
-		);
+		// const { showGlobuleGeometry, showProjectionGeometry } = $viewControlStore;
+		const showGlobuleGeometry = {
+			any: true
+		};
+		const showProjectionGeometry = {
+			any: true,
+			bands: true
+		};
+		const superGlobulePattern = showGlobuleGeometry.any
+			? generateSuperGlobulePattern($superGlobuleStore, $superConfigStore, $patternConfigStore)
+			: null;
+
+		const { tubes } = $superGlobuleStore.projections[0];
+		const projectionPattern =
+			showProjectionGeometry.any && showProjectionGeometry.bands
+				? generateProjectionPattern(tubes, $superConfigStore, $patternConfigStore)
+				: null;
+
 		console.debug('SUPER GLOBULE PATTERN STORE', {
 			$superGlobuleStore,
 			$patternConfigStore,
-			superGlobulePattern
+			superGlobulePattern,
+			projectionPattern
 		});
-		return superGlobulePattern;
+		return { superGlobulePattern, projectionPattern };
 	}
 );

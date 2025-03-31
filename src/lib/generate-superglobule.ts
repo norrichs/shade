@@ -1,5 +1,6 @@
 import { generateGlobuleData } from './generate-shape';
 import { generateTempId } from './id-handler';
+import { makeProjection } from './projection-geometry/generate-projection';
 import { recombineSubGlobules } from './recombination';
 import { generateTransformedGlobules } from './transform-globule';
 import type {
@@ -22,19 +23,20 @@ export const generateSuperGlobule = (superConfig: SuperGlobuleConfig): SuperGlob
 
 	const recombinedSubGlobules = recombineSubGlobules(subGlobules);
 
+	const projections = superConfig.projectionConfigs.map((config) => makeProjection(config));
+
 	const superGlobule: SuperGlobule = {
 		type: 'SuperGlobule',
 		superGlobuleConfigId: superConfig.id,
 		name: superConfig.name,
-		subGlobules: recombinedSubGlobules
+		subGlobules: recombinedSubGlobules,
+		projections
 	};
 	return superGlobule;
 };
 
 const generateSubGlobule = (subGlobuleConfig: SubGlobuleConfig, sgIndex: number): SubGlobule => {
-
 	const { transforms, id, name } = subGlobuleConfig;
-
 
 	const prototypeGlobule: Globule = {
 		type: 'Globule',

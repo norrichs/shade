@@ -4,8 +4,8 @@
 </script>
 
 <NavHeader />
-
 <slot />
+
 
 <style>
 	:global(body) {

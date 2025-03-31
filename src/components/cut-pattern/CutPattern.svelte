@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { superGlobulePatternStore, patternConfigStore } from '$lib/stores';
+	import { superGlobulePatternStore, patternConfigStore, viewControlStore } from '$lib/stores';
 	import CutPatternControl from './CutPatternControl.svelte';
 	import CutPatternSvg from './CutPatternSvg.svelte';
 	import PatternedBand from './PatternedBand.svelte';
@@ -20,6 +20,8 @@
 	type FlattenMode = 'native-replace' | 'recombine'; // WTF is this. Still relevant?
 
 	let flattenedPatternedSVG: { bands: string[] } = { bands: [] };
+
+	console.debug('superGlobulePatternStore', $superGlobulePatternStore);
 </script>
 
 <!-- <header>
@@ -41,18 +43,35 @@
 <div class="container-svg scroll-container" class:showBands>
 	<div class="scroll-container">
 		<CutPatternSvg>
-			{#each $superGlobulePatternStore.bandPatterns as band, index}
-				<BandComponent {band} {index} showLabel>
-					{#if band.projectionType === 'patterned'}
-						<PatternedBand {band} />
-					{/if}
-					<QuadPattern
+			{#if $viewControlStore.showProjectionGeometry.any && $viewControlStore.showProjectionGeometry.bands}
+				{#each $superGlobulePatternStore.projectionPattern?.bandPatterns || [] as band, index}
+					<BandComponent {band} {index} showLabel>
+						{#if band.projectionType === 'patterned'}
+							<PatternedBand {band} />
+						{/if}
+						<QuadPattern
 						{band}
 						showQuads={$patternConfigStore.patternViewConfig.showQuads}
 						showLabels={$patternConfigStore.patternViewConfig.showLabels}
 					/>
-				</BandComponent>
-			{/each}
+					</BandComponent>
+				{/each}
+			{/if}
+			{#if $viewControlStore.showGlobuleGeometry.any}
+				{#each $superGlobulePatternStore.superGlobulePattern?.bandPatterns || [] as band, index}
+					<BandComponent {band} {index} showLabel>
+						{#if band.projectionType === 'patterned'}
+							<PatternedBand {band} />
+						{/if}
+						<QuadPattern
+							{band}
+							showQuads={$patternConfigStore.patternViewConfig.showQuads}
+							showLabels={$patternConfigStore.patternViewConfig.showLabels}
+						/>
+					</BandComponent>
+				{/each}
+			{/if}
+
 			<!-- <SvgLogger /> -->
 		</CutPatternSvg>
 	</div>

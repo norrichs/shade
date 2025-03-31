@@ -22,6 +22,7 @@ import type {
 import { rad } from './util';
 import { GENERAL_CONFIG, generateTempId, GLOBULE_CONFIG, SUPER_GLOBULE_CONFIG } from './id-handler';
 import { degToRad } from './patterns/utils';
+import { defaultProjectionConfig } from './projection-geometry/configs';
 
 const defaultSilhouetteConfig = (): SilhouetteConfig => ({
 	type: 'SilhouetteConfig',
@@ -71,6 +72,8 @@ const defaultDepthCurveConfig = (): DepthCurveConfig => ({
 
 const defaultSpineCurveConfig = (): SpineCurveConfig => ({
 	type: 'SpineCurveConfig',
+	id: generateTempId('cfg'),
+	angle: 0,
 	curves: [
 		{
 			type: 'BezierConfig',
@@ -476,7 +479,7 @@ export const generateDefaultGlobuleConfig = (): GlobuleConfig => {
 		levelConfig: defaultLevelConfig(),
 		silhouetteConfig: defaultSilhouetteConfig(),
 		depthCurveConfig: defaultDepthCurveConfig(),
-		spineCurveConfig: defaultSpineCurveConfig(),
+		spineCurveConfigs: [defaultSpineCurveConfig()],
 		bandConfig: defaultBandConfig(),
 		strutConfig: defaultStrutConfig(),
 		renderConfig: defaultRenderConfig()
@@ -510,7 +513,8 @@ export const generateSuperGlobuleConfigWrapper = (globule: GlobuleConfig) => {
 		type: 'SuperGlobuleConfig',
 		id: generateTempId(SUPER_GLOBULE_CONFIG),
 		name: 'Default Super Globule',
-		subGlobuleConfigs: [generateSubGlobuleConfigWrapper(globule)]
+		subGlobuleConfigs: [generateSubGlobuleConfigWrapper(globule)],
+		projectionConfigs: []
 	};
 	console.debug('generatedDefaultSuperGlobuleConfigWrapper', { superGlobuleConfig });
 	return superGlobuleConfig;
@@ -562,7 +566,8 @@ export const generateDefaultSuperGlobuleConfig = (): SuperGlobuleConfig => {
 					}
 				]
 			})
-		]
+		],
+		projectionConfigs: [defaultProjectionConfig]
 	};
 	console.debug('generatedDefaultSuperGlobuleConfig', { superGlobuleConfig });
 	return superGlobuleConfig;
