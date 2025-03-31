@@ -91,7 +91,6 @@ export const generateProjectionPattern = (
 			tiledPatternConfig,
 			pixelScale
 		});
-		console.debug('*-*-*', i, { bands, pattern });
 		pattern = {
 			...pattern,
 			bands: pattern.bands.map((band) => ({ ...band, projectionType: pattern.projectionType }))

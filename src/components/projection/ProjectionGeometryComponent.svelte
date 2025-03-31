@@ -2,7 +2,7 @@
 	import { T } from '@threlte/core';
 	import { makeProjection } from '$lib/projection-geometry/generate-projection';
 	import { materials } from '../three-renderer-v2/materials';
-	import { BufferGeometry, SphereGeometry } from 'three';
+	import { BufferGeometry, Mesh, Object3D, SphereGeometry, Vector3 } from 'three';
 	import { collateGeometry } from '$lib/projection-geometry/collate-geometry';
 	import {
 		superConfigStore,
@@ -17,7 +17,7 @@
 		Tube
 	} from '$lib/projection-geometry/types';
 	let geometry: {
-		surface?: BufferGeometry;
+		surface?: Object3D;
 		polygons?: BufferGeometry[];
 		projection?: BufferGeometry;
 		sections?: BufferGeometry;
@@ -29,7 +29,7 @@
 		projection: Projection;
 		polyhedron: Polyhedron;
 		tubes: Tube[];
-		surfaceGeometry: SphereGeometry;
+		surface: Object3D;
 	};
 
 	const update = (show: ShowProjectionGeometries, projectionData: ProjectionData[]) => {
@@ -46,7 +46,7 @@
 {#if projectionConfig}
 	<T.Group position={[0, 0, 0]} on:click={(ev) => handleClick(ev)}>
 		{#if geometry.surface}
-			<T.Mesh geometry={geometry.surface} material={materials.selectedVeryLight} />
+			<T is={geometry.surface} material={materials.selectedVeryLight} />
 		{/if}
 
 		{#each geometry.polygons || [] as p, i}

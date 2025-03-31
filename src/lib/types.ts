@@ -1,5 +1,11 @@
-import type { Vector2, Vector3, Triangle as ThreeTriangle, SphereGeometry } from 'three';
-import type { BaseProjectionConfig, Polyhedron, Projection, ProjectionConfig, Tube } from './projection-geometry/types';
+import type { Vector2, Vector3, Triangle as ThreeTriangle, SphereGeometry, Object3D } from 'three';
+import type {
+	BaseProjectionConfig,
+	Polyhedron,
+	Projection,
+	ProjectionConfig,
+	Tube
+} from './projection-geometry/types';
 
 export type PatternViewConfig = {
 	showQuads: boolean;
@@ -678,7 +684,7 @@ export type SuperGlobule = {
 		projection: Projection;
 		polyhedron: Polyhedron;
 		tubes: Tube[];
-		surfaceGeometry: SphereGeometry;
+		surface: Object3D;
 	}[];
 };
 

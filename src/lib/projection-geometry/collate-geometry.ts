@@ -1,4 +1,4 @@
-import { BufferGeometry, Vector3 } from 'three';
+import { BufferGeometry, Object3D, Vector3 } from 'three';
 import type { Polyhedron, Edge, Polygon, Projection, Tube } from './types';
 import type { Band, Facet } from '$lib/types';
 import { type ShowProjectionGeometries } from '$lib/stores/viewControlStore';
@@ -8,18 +8,18 @@ export const collateGeometry = (
 		projection,
 		polyhedron,
 		tubes,
-		surfaceGeometry
+		surface
 	}: {
 		projection: Projection;
 		polyhedron: Polyhedron;
 		tubes: Tube[];
-		surfaceGeometry: BufferGeometry;
+		surface: Object3D;
 	},
 	show: ShowProjectionGeometries
 ) => {
 	return show.any
 		? {
-				surface: show.surface ? surfaceGeometry : undefined,
+				surface: show.surface ? surface : undefined,
 				projection: show.proejection
 					? collateProjectionGeometry(projection, new Vector3(0, 0, 0))
 					: undefined,

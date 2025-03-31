@@ -1,6 +1,15 @@
 import type { Band, BandOrientation, BezierConfig, Facet, Point3 } from '$lib/types';
 import { average, getCubicBezierCurvePath, getVector3 } from '$lib/util';
-import { Ray, Sphere, SphereGeometry, Triangle, Vector2, Vector3 } from 'three';
+import {
+	Matrix4,
+	Mesh,
+	Object3D,
+	Raycaster,
+	SphereGeometry,
+	Triangle,
+	Vector2,
+	Vector3
+} from 'three';
 import type {
 	BaseProjectionConfig,
 	CrossSectionConfig,
@@ -17,13 +26,24 @@ import type {
 	ProjectionEdge,
 	ProjectorConfig,
 	SurfaceConfig,
+	TransformConfig,
 	Tube
 } from './types';
+import { materials } from '../../components/three-renderer-v2/materials';
+
+const SHOULD_SKEW_CURVE = true;
 
 export const prepareProjectionConfig = (
 	config: BaseProjectionConfig
 ): ProjectionConfig<Point3, Point3, EdgeCurveConfig, CrossSectionConfig> => {
 	const { vertices, edgeCurves, crossSectionCurves } = config.projectorConfig.polyhedron;
+
+	if (config.projectorConfig.polyhedron.transform === 'inherit') {
+		config.projectorConfig.polyhedron.transform = config.meta.transform;
+	}
+	if (config.surfaceConfig.transform === 'inherit') {
+		config.surfaceConfig.transform = config.meta.transform;
+	}
 
 	const polygons: PolygonConfig<Point3, Point3, EdgeCurveConfig, CrossSectionConfig>[] =
 		config.projectorConfig.polyhedron.polygons.map((polygon) => {
@@ -65,21 +85,59 @@ export const prepareProjectionConfig = (
 	return { ...config, projectorConfig };
 };
 
-export const generateSphereInstance = ({ radius, center: { x, y, z } }: SurfaceConfig) => {
-	const sphereGeometry = new SphereGeometry(radius, 100, 50);
-	const sphere = new Sphere(new Vector3(x, y, z), radius);
-	return { sphereGeometry, sphere };
+const getMatrix4 = (
+	{
+		scale: s = { x: 1, y: 1, z: 1 },
+		translate: t = { x: 0, y: 0, z: 0 },
+		rotate: r = { x: 0, y: 0, z: 0 }
+	}: TransformConfig,
+	matrix?: Matrix4
+) => {
+	const resultMatrix = matrix?.clone() || new Matrix4();
+	resultMatrix.set(s.x, 0, 0, t.x, 0, s.y, 0, t.y, 0, 0, s.z, t.z, 0, 0, 0, 1);
+	return resultMatrix;
+};
+
+export const generateSphereMesh = ({ radius }: SurfaceConfig) => {
+	const sphereGeometry = new SphereGeometry(radius, 100, 100);
+	const sphereMesh = new Mesh(sphereGeometry, materials.default);
+	return sphereMesh;
+};
+
+export const generateSurface = (cfg: SurfaceConfig) => {
+	if (cfg.transform === 'inherit') {
+		throw new Error('generateSurface - surface transform should not be "inherit"');
+	}
+
+	const surface = new Object3D();
+	if (cfg.type === 'SphereConfig') {
+		const sphereMesh = generateSphereMesh(cfg);
+		surface.add(sphereMesh);
+	}
+	const transformMatrix = getMatrix4(cfg.transform);
+	surface.applyMatrix4(transformMatrix);
+	surface.updateMatrixWorld(true);
+
+	return surface;
 };
 
 export const generatePolyhedron = (
 	projectorConfig: ProjectorConfig<Point3, Point3, EdgeCurveConfig, CrossSectionConfig>
 ) => {
+	const projectorTransform = projectorConfig.polyhedron.transform;
+	if (projectorTransform === 'inherit') {
+		throw new Error("generatePolyhedron - transform should not be 'inherit'");
+	}
 	const polyhedron: Polyhedron = {
 		polygons: projectorConfig.polyhedron.polygons.map((polygon) => {
 			return {
 				edges: polygon.edges.map((edgeConfig) => {
 					const center = getPolygonCenter(polygon);
-					const { edgePoints, curvePoints } = generateEdge({ edgeConfig, center });
+					const { edgePoints, curvePoints } = generateEdge({
+						edgeConfig,
+						center,
+						transformConfig: projectorTransform
+					});
 					return { edgePoints, curvePoints, config: edgeConfig };
 				})
 			};
@@ -87,20 +145,6 @@ export const generatePolyhedron = (
 	};
 	return polyhedron;
 };
-
-// export const getPolyhedronPoints = (projectorConfig: ProjectorConfig): Vector3[] => {
-// 	const points = new Array<Vector3>();
-
-// 	projectorConfig.polyhedron.polygons.forEach((polygon) => {
-// 		polygon.edges.forEach((edgeConfig) => {
-// 			const center = getPolygonCenter(polygon);
-// 			const { edgePoints, curvePoints } = generateEdge({ projectorConfig, edgeConfig, center });
-// 			points.push(...collateEdgePoints(edgePoints, curvePoints));
-// 		});
-// 	});
-
-// 	return points;
-// };
 
 const getPolygonCenter = (
 	polygon: PolygonConfig<Point3, Point3, EdgeCurveConfig, CrossSectionConfig>
@@ -118,16 +162,65 @@ const getPolygonCenter = (
 };
 
 const generateEdge = ({
-	// projectorConfig,
 	edgeConfig: { vertex0, vertex1, widthCurve, isDirectionMatched },
-	center
+	center: originalCenter,
+	transformConfig
 }: {
-	// projectorConfig: ProjectorConfig<Point3, Point3, EdgeCurveConfig, CrossSectionConfig>;
 	edgeConfig: EdgeConfig<Point3, Point3, EdgeCurveConfig, CrossSectionConfig>;
 	center: Vector3;
+	transformConfig: TransformConfig;
 }) => {
+	// const tx = {
+	// 	scale: new Vector3(1.5, 1.5, 1),
+	// 	translate: new Vector3(0, 0, 0)
+	// };
+	// const transformMatrix: [
+	// 	number,
+	// 	number,
+	// 	number,
+	// 	number,
+	// 	number,
+	// 	number,
+	// 	number,
+	// 	number,
+	// 	number,
+	// 	number,
+	// 	number,
+	// 	number,
+	// 	number,
+	// 	number,
+	// 	number,
+	// 	number
+	// ] = [
+	// 	tx.scale.x,
+	// 	0,
+	// 	0,
+	// 	tx.translate.x,
+	// 	0,
+	// 	tx.scale.y,
+	// 	0,
+	// 	tx.translate.y,
+	// 	0,
+	// 	0,
+	// 	tx.scale.z,
+	// 	tx.translate.z,
+	// 	0,
+	// 	0,
+	// 	0,
+	// 	1
+	// 	];
+
+	// const matrix = new Matrix4();
+
+	const transformMatrix = getMatrix4(transformConfig);
+	// matrix.set(...transformMatrix);
+
 	const { divisions } = widthCurve.sampleMethod;
 	const [v0, v1] = getVector3([vertex0, vertex1]) as Vector3[];
+	v0.applyMatrix4(transformMatrix);
+	v1.applyMatrix4(transformMatrix);
+	const center = originalCenter.clone().applyMatrix4(transformMatrix);
+
 	const edgePoints = [];
 
 	for (let i = 0; i <= divisions; i++) {
@@ -147,6 +240,7 @@ const generateEdge = ({
 				const pointOnLeg1 = v0.clone().lerp(center, point.x);
 				return pointOnLeg0.clone().lerp(pointOnLeg1, point.y);
 		  });
+
 	return { edgePoints, curvePoints };
 };
 
@@ -176,7 +270,7 @@ const getCrossSectionScale = (crossSectionScaling: CrossSectionScaling, edgeWidt
 };
 
 type GenerateProjectionProps = {
-	surface: Sphere;
+	surface: Object3D;
 	projector: Polyhedron;
 	projectionConfig: ProjectionConfig<Point3, Point3, EdgeCurveConfig, CrossSectionConfig>;
 };
@@ -187,10 +281,6 @@ export const generateProjection = ({
 	projectionConfig
 }: GenerateProjectionProps) => {
 	const center = getVector3(projectionConfig.surfaceConfig.center) as Vector3;
-	// const { crossSectionConfig } = projectionConfig.projectorConfig;
-	// const crossSectionDefinitionPoints = normalizePoints(
-	// 	getPoints(crossSectionConfig.curves, crossSectionConfig.sampleMethod.divisions)
-	// );
 
 	const projection: Projection = {
 		polygons: projector.polygons.map((polygon: Polygon, p) => {
@@ -208,17 +298,23 @@ export const generateProjection = ({
 						const yDirection = center.clone().addScaledVector(p, 1).normalize();
 						const curveDirection = center.clone().addScaledVector(c, 1).normalize();
 
-						const edgeRay = new Ray(center, yDirection);
-						const curveRay = new Ray(center, curveDirection);
+						const edgeRaycaster = new Raycaster(center, yDirection, undefined, 2000);
+						const curveRaycaster = new Raycaster(center, curveDirection, undefined, 2000);
+						const edgeIntersections = edgeRaycaster.intersectObject(surface, true);
+						const curveIntersections = curveRaycaster.intersectObject(surface, true);
 
-						edgeRay.intersectSphere(surface, int.edge);
-						curveRay.intersectSphere(surface, int.curve);
+						if (!edgeIntersections[0] || !curveIntersections[0]) {
+							console.debug('missing intersections', { edgeIntersections, curveIntersections });
+							throw new Error('no intersection found');
+						}
 
-						const shouldSkewCurve = true;
+						int.edge = edgeIntersections[0].point.clone();
+						int.curve = curveIntersections[0].point.clone();
+						const edgeRay = edgeRaycaster.ray;
 
 						let xDirection: Vector3;
 						let baseScalingLength: number;
-						if (shouldSkewCurve) {
+						if (SHOULD_SKEW_CURVE) {
 							xDirection = int.curve.clone().addScaledVector(int.edge, -1).normalize();
 							baseScalingLength = int.edge.distanceTo(int.curve);
 						} else {
@@ -311,8 +407,6 @@ const combineSections = (edge0: ProjectionEdge, edge1: ProjectionEdge) => {
 		? edge1
 		: { ...edge1, sections: edge1.sections.reverse() };
 
-	console.debug('combineSections', first.sections.length, first, second.sections.length, second);
-
 	return first.sections.map((section, i) => {
 		return [
 			...section.crossSectionPoints,
@@ -393,15 +487,15 @@ export const makeProjection = (projectionConfig: BaseProjectionConfig) => {
 
 	const { projectorConfig, surfaceConfig } = preparedProjectionConfig;
 
-	const { sphereGeometry: surfaceGeometry, sphere } = generateSphereInstance(surfaceConfig);
+	const surface = generateSurface(surfaceConfig);
 
 	const polyhedron = generatePolyhedron(projectorConfig);
 	const projection = generateProjection({
-		surface: sphere,
+		surface,
 		projector: polyhedron,
 		projectionConfig: preparedProjectionConfig
 	});
 	const { tubes } = generateTubeBands(projection, projectionConfig);
 
-	return { projection, polyhedron, tubes, surfaceGeometry };
+	return { projection, polyhedron, tubes, surface };
 };

@@ -11,16 +11,20 @@ import type {
 	EdgeCurveConfig,
 	VertexIndex,
 	CurveIndex,
-	VerticesConfig
+	VerticesConfig,
+	TransformConfig
 } from './types';
 
 const defaultSphereConfig: SphereConfig = {
 	type: 'SphereConfig',
-	radius: 240,
+	radius: 140,
 	center: { x: 0, y: 0, z: 0 }
 };
 
-const defaultSurfaceConfig: SurfaceConfig = defaultSphereConfig;
+const defaultSurfaceConfig: SurfaceConfig = {
+	...defaultSphereConfig,
+	transform: 'inherit'
+};
 
 const asymmetricEdgeCurve: BezierConfig[] = [
 	{
@@ -41,7 +45,7 @@ const defaultEdgeCurve: BezierConfig[] = [
 			{ type: 'PointConfig2', x: 0.6, y: 0 },
 			{ type: 'PointConfig2', x: 0.5, y: 0.1 },
 			{ type: 'PointConfig2', x: 0.5, y: 0.2 },
-			{ type: 'PointConfig2', x: 0.3, y: .4 }
+			{ type: 'PointConfig2', x: 0.3, y: 0.4 }
 		]
 	},
 	{
@@ -50,7 +54,7 @@ const defaultEdgeCurve: BezierConfig[] = [
 			{ type: 'PointConfig2', x: 0.3, y: 0.4 },
 			{ type: 'PointConfig2', x: 0.2, y: 0.5 },
 			{ type: 'PointConfig2', x: 0.2, y: 0.5 },
-			{ type: 'PointConfig2', x: 0.3, y: .6 }
+			{ type: 'PointConfig2', x: 0.3, y: 0.6 }
 		]
 	},
 	{
@@ -117,7 +121,6 @@ const pIcosohedron: VerticesConfig = [
 	{ x: 0, y: 0, z: -95.10565 } // bottom vertex
 ];
 
-
 const defaultEdgeConfig = {
 	vertex0: undefined,
 	widthCurve: 0,
@@ -138,7 +141,7 @@ const projectorConfigs: {
 			crossSectionCurves: [defaultCrossSection],
 			edgeCurves: [defaultEdgeCurveConfig],
 			vertices: pIcosohedron,
-
+			transform: 'inherit',
 			polygons: [
 				{
 					name: 'triangle1',
@@ -333,7 +336,7 @@ const projectorConfigs: {
 			crossSectionCurves: [defaultCrossSection],
 			edgeCurves: [defaultEdgeCurveConfig],
 			vertices: pTetrahedron,
-
+			transform: 'inherit',
 			polygons: [
 				{
 					name: 'triangle0',
@@ -382,6 +385,12 @@ const defaultBandConfig: ProjectionBandConfig = {
 
 const defaultProjectorConfig = projectorConfigs.icosohedron;
 
+const flattenedDefaultTransform: TransformConfig = {
+	translate: { x: 0, y: 0, z: 0 },
+	scale: { x: 1.75, y: 1.75, z: 1 },
+	rotate: { x: 0, y: 0, z: 0 }
+};
+
 export const defaultProjectionConfig: ProjectionConfig<
 	undefined,
 	VertexIndex,
@@ -390,5 +399,6 @@ export const defaultProjectionConfig: ProjectionConfig<
 > = {
 	surfaceConfig: defaultSurfaceConfig,
 	projectorConfig: defaultProjectorConfig,
-	bandConfig: defaultBandConfig
+	bandConfig: defaultBandConfig,
+	meta: { transform: flattenedDefaultTransform }
 };

@@ -7,7 +7,11 @@ export type SphereConfig = {
 	center: Point3;
 };
 
-export type SurfaceConfig = SphereConfig;
+export type SurfaceGeometryConfig = SphereConfig;
+
+export type SurfaceConfig = SurfaceGeometryConfig & {
+	transform: TransformConfig | 'inherit';
+};
 
 // Validation:
 //   - curve[0].points[0].x === curve[curve.length-1].points[3].x
@@ -65,6 +69,12 @@ export type EdgeMap = {
 	edgePairs: [[PolygonIndex, EdgeIndex], [PolygonIndex, EdgeIndex]][];
 };
 
+export type TransformConfig = {
+	translate: Point3;
+	scale: Point3;
+	rotate: Point3;
+};
+
 export type PolyhedronConfig<
 	S extends undefined | Point3,
 	T extends VertexIndex | Point3,
@@ -78,6 +88,7 @@ export type PolyhedronConfig<
 	crossSectionCurves: CrossSectionConfig[];
 	edgeCurves: EdgeCurveConfig[];
 	vertices: VerticesConfig;
+	transform: TransformConfig | 'inherit';
 	// edgeMap: EdgeMap;
 };
 
@@ -118,6 +129,7 @@ export type ProjectionConfig<
 	U extends CurveIndex | EdgeCurveConfig,
 	V extends CurveIndex | CrossSectionConfig
 > = {
+	meta: { transform: TransformConfig };
 	surfaceConfig: SurfaceConfig;
 	projectorConfig: ProjectorConfig<S, T, U, V>;
 	bandConfig: ProjectionBandConfig;
