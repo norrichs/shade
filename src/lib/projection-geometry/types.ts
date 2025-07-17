@@ -1,5 +1,5 @@
 import type { Band, BandOrientation, BezierConfig, Id, Point, Point3 } from '$lib/types';
-import type { Vector3 } from 'three';
+import type { CubicBezierCurve, CurvePath, Vector2, Vector3 } from 'three';
 
 export type SphereConfig = {
 	type: 'SphereConfig';
@@ -30,10 +30,10 @@ export type VertexIndex = number;
 export type CurveIndex = number;
 
 export type EdgeConfig<
-	S extends undefined | Point3,
-	T extends VertexIndex | Point3,
-	U extends CurveIndex | EdgeCurveConfig,
-	V extends CurveIndex | CrossSectionConfig
+	S extends undefined | Point3 | Point,
+	T extends VertexIndex | Point3 | Point,
+	U extends CurveIndex | EdgeCurveConfig | EdgeCurveConfigVector2,
+	V extends CurveIndex | CrossSectionConfig | CrossSectionConfigVector2
 > = {
 	vertex0: S;
 	vertex1: T;
@@ -47,10 +47,10 @@ export type EdgeConfig<
 //   - all points from edges must be in same plane
 //   - edges[n].p1.point equals edges[(n+1) % edges.length].p0.point
 export type PolygonConfig<
-	S extends undefined | Point3,
-	T extends VertexIndex | Point3,
-	U extends CurveIndex | EdgeCurveConfig,
-	V extends CurveIndex | CrossSectionConfig
+	S extends undefined | Point3 | Point,
+	T extends VertexIndex | Point3 | Point, 
+	U extends CurveIndex | EdgeCurveConfig | EdgeCurveConfigVector2,
+	V extends CurveIndex | CrossSectionConfig | CrossSectionConfigVector2
 > = {
 	name: string;
 	id: Id;
@@ -100,6 +100,12 @@ export type CrossSectionConfig = {
 	sampleMethod: CurveSampleMethod;
 	scaling: CrossSectionScaling;
 };
+export type CrossSectionConfigVector2 = {
+	curves: CurvePath<Vector2>;
+	center: Vector2;
+	sampleMethod: CurveSampleMethod;
+	scaling: CrossSectionScaling;
+};
 
 // validation notes: start and end points must be{ x: [0-1], y: 0} and { x: [same as start], y: 1}.
 
@@ -107,6 +113,10 @@ export type EdgeCurveConfig = {
 	curves: BezierConfig[];
 	sampleMethod: CurveSampleMethod;
 };
+export type EdgeCurveConfigVector2= {
+	curves: CurvePath<Vector2>;
+	sampleMethod: CurveSampleMethod;
+}
 
 export type ProjectionBandConfig = {
 	orientation: BandOrientation;

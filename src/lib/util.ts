@@ -132,3 +132,37 @@ export const getVector3 = (cfg: Point3 | Point3[]) => {
 };
 
 export const average = (arr: number[]) => arr.reduce((acc, val) => acc + val, 0) / arr.length;
+
+export const getSlope = (v0: Vector2, v1: Vector2): number => {
+	return (v1.y - v0.y) / (v1.x - v0.x);
+};
+
+export const getIntersectionOfLines = (
+	l1: { p0: Vector2; p1: Vector2 },
+	l2: { p0: Vector2; p1: Vector2 }
+): Vector2 | null => {
+	let b1, b2, x, y: number;
+
+	const m1 = getSlope(l1.p0, l1.p1);
+	const m2 = getSlope(l2.p0, l2.p1);
+	if (m1 === m2) {
+		return null;
+	} else if (!Number.isFinite(m1)) {
+		x = l1.p1.x;
+		b2 = l2.p1.y - m2 * l2.p1.x;
+		y = m2 * x + b2;
+	} else if (!Number.isFinite(m2)) {
+		x = l2.p1.x;
+		b1 = l1.p1.y - m1 * l1.p1.x;
+		y = m1 * x + b1;
+	} else {
+		b1 = l1.p1.y - m1 * l1.p1.x;
+		b2 = l2.p1.y - m2 * l2.p1.x;
+		x = (b2 - b1) / (m1 - m2);
+		y = m1 * x + b1;
+	}
+	if (!Number.isFinite(x) || !Number.isFinite(y)) {
+		console.error('--------- Infinite', x, y, m1, m2, b1, b2);
+	}
+	return new Vector2(x, y);
+};

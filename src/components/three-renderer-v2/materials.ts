@@ -20,7 +20,6 @@ const defaultPhysicalMaterialConfig = {
 
 const colorList: ThreeColor[] = [
 	'red',
-	'orangered',
 	'orange',
 	'yellow',
 	'lime',

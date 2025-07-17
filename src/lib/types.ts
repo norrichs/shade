@@ -1212,3 +1212,7 @@ export type FlowerOfLifePattern = {
 
 export type TempIdPrefix = 'sup' | 'sub' | 'glb' | 'cfg';
 export type TempId = string;
+
+/////////////////////////////////
+
+export type SelectBarOption = { name: string; value?: unknown };

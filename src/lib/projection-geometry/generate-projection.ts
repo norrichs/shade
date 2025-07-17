@@ -1,5 +1,5 @@
 import type { Band, BandOrientation, BezierConfig, Facet, Point3 } from '$lib/types';
-import { average, getCubicBezierCurvePath, getVector3 } from '$lib/util';
+import { average, getCubicBezierCurvePath, getIntersectionOfLines, getVector3 } from '$lib/util';
 import {
 	Matrix4,
 	Mesh,
@@ -27,11 +27,46 @@ import type {
 	ProjectorConfig,
 	SurfaceConfig,
 	TransformConfig,
-	Tube
+	Tube,
+	VerticesConfig
 } from './types';
 import { materials } from '../../components/three-renderer-v2/materials';
+import { getLength } from '$lib/patterns/utils';
 
 const SHOULD_SKEW_CURVE = true;
+
+export const preparePolygonConfig = (
+	polygonConfig: PolygonConfig<undefined, number, number, number>,
+	vertices: VerticesConfig,
+	edgeCurves: EdgeCurveConfig[],
+	crossSectionCurves: CrossSectionConfig[]
+) => {
+	return {
+		...polygonConfig,
+		edges: polygonConfig.edges.map(
+			(edge: EdgeConfig<undefined, number, number, number>, i: number) => {
+				const { vertex1, widthCurve, heightCurve, crossSectionCurve } = edge;
+				const vertex0 =
+					typeof edge.vertex0 === 'number'
+						? edge.vertex0
+						: polygonConfig.edges[(i + polygonConfig.edges.length - 1) % polygonConfig.edges.length]
+								.vertex1;
+
+				const v = [vertex0, vertex1];
+
+				const backfilled: EdgeConfig<Point3, Point3, EdgeCurveConfig, CrossSectionConfig> = {
+					...edge,
+					vertex0: vertices[v[0]],
+					vertex1: vertices[v[1]],
+					widthCurve: edgeCurves[widthCurve],
+					heightCurve: heightCurve ? edgeCurves[heightCurve] : undefined,
+					crossSectionCurve: crossSectionCurves[crossSectionCurve]
+				};
+				return backfilled;
+			}
+		)
+	};
+};
 
 export const prepareProjectionConfig = (
 	config: BaseProjectionConfig
@@ -46,33 +81,9 @@ export const prepareProjectionConfig = (
 	}
 
 	const polygons: PolygonConfig<Point3, Point3, EdgeCurveConfig, CrossSectionConfig>[] =
-		config.projectorConfig.polyhedron.polygons.map((polygon) => {
-			const backfilledPolygon = {
-				...polygon,
-				edges: polygon.edges.map(
-					(edge: EdgeConfig<undefined, number, number, number>, i: number) => {
-						const { vertex1, widthCurve, heightCurve, crossSectionCurve } = edge;
-						const vertex0 =
-							typeof edge.vertex0 === 'number'
-								? edge.vertex0
-								: polygon.edges[(i + polygon.edges.length - 1) % polygon.edges.length].vertex1;
-
-						const v = [vertex0, vertex1];
-
-						const backfilled: EdgeConfig<Point3, Point3, EdgeCurveConfig, CrossSectionConfig> = {
-							...edge,
-							vertex0: vertices[v[0]],
-							vertex1: vertices[v[1]],
-							widthCurve: edgeCurves[widthCurve],
-							heightCurve: heightCurve ? edgeCurves[heightCurve] : undefined,
-							crossSectionCurve: crossSectionCurves[crossSectionCurve]
-						};
-						return backfilled;
-					}
-				)
-			};
-			return backfilledPolygon;
-		});
+		config.projectorConfig.polyhedron.polygons.map((polygon) =>
+			preparePolygonConfig(polygon, vertices, edgeCurves, crossSectionCurves)
+		);
 	const polyhedron: PolyhedronConfig<Point3, Point3, EdgeCurveConfig, CrossSectionConfig> = {
 		...config.projectorConfig.polyhedron,
 		polygons
@@ -146,7 +157,7 @@ export const generatePolyhedron = (
 	return polyhedron;
 };
 
-const getPolygonCenter = (
+export const getPolygonCenter = (
 	polygon: PolygonConfig<Point3, Point3, EdgeCurveConfig, CrossSectionConfig>
 ): Vector3 => {
 	const xArr: number[] = [];
@@ -227,33 +238,95 @@ const generateEdge = ({
 		edgePoints.push(v0.clone().lerp(v1, i / divisions));
 	}
 
-	const curveDefinitionPoints = getPoints(widthCurve.curves, divisions);
+	const definitionPoints = getPoints(widthCurve.curves, divisions);
+	console.debug('generateEdge');
+	const curvePoints = mapPointsToTriangle(
+		{ a: v0, b: v1, c: center },
+		definitionPoints,
+		isDirectionMatched
+	);
 
-	const curvePoints = isDirectionMatched
-		? curveDefinitionPoints.map((point) => {
-				const pointOnLeg0 = v0.clone().lerp(center, point.x);
-				const pointOnLeg1 = v1.clone().lerp(center, point.x);
-				return pointOnLeg0.clone().lerp(pointOnLeg1, point.y);
-		  })
-		: curveDefinitionPoints.reverse().map((point) => {
-				const pointOnLeg0 = v1.clone().lerp(center, point.x);
-				const pointOnLeg1 = v0.clone().lerp(center, point.x);
-				return pointOnLeg0.clone().lerp(pointOnLeg1, point.y);
-		  });
+	// const curvePoints = isDirectionMatched
 
 	return { edgePoints, curvePoints };
 };
 
-const getPoints = (curveConfigs: BezierConfig[], divisions: number): Vector2[] => {
+export const mapPointsFromTriangle = (
+	triangle: { a: Vector2; b: Vector2; c: Vector2 },
+	points: Vector2[],
+	reverse?: boolean
+) => {
+	// console.debug('Map Points From Triangle', { reverse });
+	const { a, b, c } = triangle;
+	const mappedPoints = reverse
+		? points.reverse().map((point) => {
+				const int = getIntersectionOfLines({ p0: c, p1: point }, { p0: a, p1: b });
+				if (!int) {
+					throw new Error('no intersection!');
+				}
+				return {
+					x: getLength(int, point) / getLength(int, c),
+					y: getLength(a, int) / getLength(a, b)
+				};
+		  })
+		: points.map((point) => {
+				const int = getIntersectionOfLines({ p0: c, p1: point }, { p0: a, p1: b });
+				if (!int) {
+					throw new Error('no intersection!');
+				}
+				return {
+					x: getLength(int, point) / getLength(int, c),
+					y: getLength(a, b) / getLength(a, int)
+				};
+		  });
+	return mappedPoints;
+};
+
+export const mapPointsToTriangle = <V extends Vector2 | Vector3>(
+	triangle: { a: V; b: V; c: V },
+	points: Vector2[],
+	reverse?: boolean
+): V[] => {
+	// console.debug('Map points to Triangle', { reverse });
+	const { a, b, c } = triangle;
+	const mappedPoints = reverse
+		? (points.map((point) => {
+				// @ts-expect-error ts cant' figure out that lerp works for vector2 or vector3
+				const pointOnLeg0 = a.clone().lerp(c, point.x);
+				// @ts-expect-error ts cant' figure out that lerp works for vector2 or vector3
+				const pointOnLeg1 = b.clone().lerp(c, point.x);
+				// @ts-expect-error ts cant' figure out that lerp works for vector2 or vector3
+				return pointOnLeg0.clone().lerp(pointOnLeg1, point.y);
+		  }) as V[])
+		: (points.reverse().map((point) => {
+				// @ts-expect-error ts cant' figure out that lerp works for vector2 or vector3
+				const pointOnLeg0 = b.clone().lerp(c, point.x);
+				// @ts-expect-error ts cant' figure out that lerp works for vector2 or vector3
+				const pointOnLeg1 = a.clone().lerp(c, point.x);
+				// @ts-expect-error ts cant' figure out that lerp works for vector2 or vector3
+				return pointOnLeg0.clone().lerp(pointOnLeg1, point.y);
+		  }) as V[]);
+	return mappedPoints;
+};
+
+export const getPoints = (curveConfigs: BezierConfig[], divisions: number): Vector2[] => {
 	const curvePath = getCubicBezierCurvePath(curveConfigs);
 	const vectors = curvePath.getSpacedPoints(divisions);
 	return vectors;
 };
 
-const getCrossSectionScale = (crossSectionScaling: CrossSectionScaling, edgeWidth: number) => {
+export const getCrossSectionScale = (
+	crossSectionScaling: CrossSectionScaling,
+	edgeWidth?: number
+) => {
 	let xScale: number;
 	if (crossSectionScaling.width === 'curve') {
-		xScale = edgeWidth;
+		if (!edgeWidth) {
+			console.error('getCrossSectionScale, missing edgeWidth, reverting to height or 50');
+			xScale = typeof crossSectionScaling.height === 'number' ? crossSectionScaling.height : 50;
+		} else {
+			xScale = edgeWidth;
+		}
 	} else {
 		xScale = crossSectionScaling.width;
 	}
@@ -304,7 +377,13 @@ export const generateProjection = ({
 						const curveIntersections = curveRaycaster.intersectObject(surface, true);
 
 						if (!edgeIntersections[0] || !curveIntersections[0]) {
-							console.debug('missing intersections', { edgeIntersections, curveIntersections });
+							console.debug('missing intersections', {
+								edgeIntersections,
+								curveIntersections,
+								i,
+								edgePoints: edge.edgePoints,
+								curvePoints: edge.curvePoints
+							});
 							throw new Error('no intersection found');
 						}
 

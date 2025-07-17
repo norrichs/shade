@@ -12,6 +12,7 @@
 	import SuperControl from '../../components/controls/super-control/SuperControl.svelte';
 	import { uiStore, type ViewModeSetting } from '$lib/stores/uiStores';
 	import ProjectionGeometryComponent from '../../components/projection/ProjectionGeometryComponent.svelte';
+	import ProjectionControl from '../../components/projection/ProjectionControl.svelte';
 
 	let viewMode: ViewModeSetting = $uiStore.designer.viewMode;
 	let showControl: { name: string; value?: unknown } = { name: 'None' };
@@ -39,19 +40,17 @@
 			<SelectBar
 				bind:value={showControl}
 				options={[
-					{ name: 'None' },
 					{ name: 'Silhouette', value: 'SilhouetteConfig' },
-					{ name: 'DepthCurve', value: 'DepthCurveConfig' },
+					{ name: 'Depth', value: 'DepthCurveConfig' },
 					{ name: 'Spine', value: 'SpineCurveConfig' },
 					{ name: 'Shape', value: 'ShapeConfig' },
+					{ name: 'Projection'},
 					{ name: '3D' },
 					{ name: 'Levels' },
 					{ name: 'Struts' },
 					{ name: 'Cut' },
 					{ name: 'Pattern' },
-					{ name: 'Super' },
-					// { name: 'Save' },
-					{ name: 'Data' }
+					{ name: 'Super' }
 				]}
 			/>
 		</header>
@@ -62,6 +61,8 @@
 						? showControl.value
 						: 'SilhouetteConfig'}
 				/>
+			{:else if showControl?.name === 'Projection'}
+				<ProjectionControl />
 			{:else if showControl?.name === 'Struts'}
 				<StrutControl />
 			{:else if showControl?.name === '3D'}

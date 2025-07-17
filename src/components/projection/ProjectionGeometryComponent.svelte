@@ -16,6 +16,7 @@
 		Projection,
 		Tube
 	} from '$lib/projection-geometry/types';
+	import ColorMapped from './ColorMapped.svelte';
 	let geometry: {
 		surface?: Object3D;
 		polygons?: BufferGeometry[];
@@ -49,9 +50,11 @@
 			<T is={geometry.surface} material={materials.selectedVeryLight} />
 		{/if}
 
-		{#each geometry.polygons || [] as p, i}
-			<T.Mesh geometry={p} material={materials.numbered[i]} />
-		{/each}
+		<ColorMapped
+			geometry={geometry.polygons}
+			groupSizeMap={[1, 5, 10, 10, 10, 10, 5, 5]}
+			materials={materials.numbered}
+		/>
 
 		{#if geometry.projection}
 			<T.Mesh geometry={geometry.projection} material={materials.highlightedSecondary} />
@@ -59,8 +62,6 @@
 		{#if geometry.sections}
 			<T.Mesh geometry={geometry.sections} material={materials.highlightedPrimary} />
 		{/if}
-		{#each geometry.bands || [] as b, i}
-			<T.Mesh geometry={b} material={materials.selectedLight} />
-		{/each}
+		<ColorMapped geometry={geometry.bands} materials={materials.selectedLight} />
 	</T.Group>
 {/if}

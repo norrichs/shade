@@ -4,6 +4,7 @@
 	export let options: SelectBarOption[];
 	let selected: string;
 	export let value: unknown;
+	export let onChange: (newValue: SelectBarOption) => void;
 
 	$: {
 		value = options.find((option) => option.name === selected);
@@ -16,6 +17,7 @@
 			class:selected={selected === option.name}
 			on:click={() => {
 				selected = option.name;
+				onChange(option)
 				console.debug({ selected, option });
 			}}
 		>
