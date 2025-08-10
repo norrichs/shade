@@ -4,7 +4,8 @@ import type {
 	Quadrilateral,
 	PatternGenerator,
 	TiledPatternConfig,
-	GridVariant
+	GridVariant,
+	PanelVariant
 } from '$lib/types';
 import { adjustHexPatternAfterTiling, generateHexPattern } from './tiled-hex-pattern';
 import { adjustCarnation, generateCarnation } from './tiled-carnation-pattern';
@@ -21,6 +22,10 @@ import {
 	adjustShieldTesselationAfterTiling,
 	generateShieldTesselationTile
 } from './tiled-shield-tesselation-pattern';
+import {
+	adjustPanelPatternAfterTiling,
+	generatePanelPattern
+} from './tiled-triangle-panel-pattern';
 
 export const patterns: { [key: string]: PatternGenerator } = {
 	'tiledHexPattern-1': {
@@ -91,6 +96,23 @@ export const patterns: { [key: string]: PatternGenerator } = {
 			tiledPatternConfig: TiledPatternConfig
 		) => adjustRectPatternAfterTiling(patternBand, quadBand, tiledPatternConfig)
 	},
+	'tiledPanelPattern-0': {
+		getPattern: (
+			rows: number,
+			columns: number,
+			// eslint-disable-next-line @typescript-eslint/no-unused-vars
+			quadBand: Quadrilateral[] | undefined = undefined,
+			variant: PanelVariant | undefined = 'triangle-0'
+		) => {
+			return generatePanelPattern({ size: 1, variant });
+		},
+		tagAnchor: { facetIndex: 0, segmentIndex: 1 },
+		adjustAfterMapping: (
+			patternBand: PathSegment[][],
+			quadBand: Quadrilateral[],
+			tiledPatternConfig: TiledPatternConfig
+		) => adjustPanelPatternAfterTiling(patternBand, quadBand, tiledPatternConfig)
+	},
 	tiledShieldTesselationPattern: {
 		getPattern: (
 			rows: number,
@@ -107,8 +129,12 @@ export const patterns: { [key: string]: PatternGenerator } = {
 			quadBand: Quadrilateral[],
 			tiledPatternConfig: TiledPatternConfig
 		) => {
-			const adjusted = adjustShieldTesselationAfterTiling(patternBand, quadBand, tiledPatternConfig);
-			return adjusted.bands
+			const adjusted = adjustShieldTesselationAfterTiling(
+				patternBand,
+				quadBand,
+				tiledPatternConfig
+			);
+			return adjusted.bands;
 		}
 	},
 

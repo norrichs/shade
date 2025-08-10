@@ -32,6 +32,8 @@
 	import { PROJECTION_GEOMETRY_OVERRIDE } from '$lib/projection-geometry/constants';
 	import ProjectionGeometryComponent from '../projection/ProjectionGeometryComponent.svelte';
 	import GlobuleGeometryComponent from './GlobuleGeometryComponent.svelte';
+	import type { ProjectionAddress_Facet } from '$lib/projection-geometry/types';
+	import { selectedProjection } from '$lib/stores';
 
 	interactivity();
 
@@ -142,6 +144,7 @@
 	};
 
 	const handleClick = (event: any, geometry: BandGeometry) => {
+		console.debug('handleClick', { event, geometry });
 		event.stopPropagation();
 
 		if (event.delta > CLICK_DELTA_THRESHOLD) return;
@@ -153,6 +156,12 @@
 		} else if (isPointSelectInteractionMode($interactionMode)) {
 			selectPoint(event, geometry);
 		}
+	};
+	const handleProjectionClick = (event: any, address: ProjectionAddress_Facet) => {
+		console.debug('handleProjectionClick', { event, address });
+		event.stopPropagation();
+		$selectedProjection = address;
+		console.debug({ event, address });
 	};
 
 	const indicator: GlobuleGeometry = {
@@ -216,5 +225,5 @@
 		</T.Group>
 	{/each}
 {/if}
-<ProjectionGeometryComponent {handleClick} />
+<ProjectionGeometryComponent onClick={handleProjectionClick} />
 <GlobuleGeometryComponent {getInteractionMaterial} {handleClick} />

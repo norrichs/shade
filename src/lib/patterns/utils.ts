@@ -570,3 +570,5 @@ export const svgPathStringFromSegments = (segments: PathSegment[]) => {
 		)
 		.join('\n');
 };
+
+export const mmFromInches = (inches: number) => 25.4 * inches;

@@ -5,6 +5,7 @@
 	export let geometry: BufferGeometry[] | undefined;
 	export let groupSizeMap: number | number[] | undefined = undefined; // array of the sizes of groups to map materials to
 	export let materials: MeshPhysicalMaterial | MeshPhysicalMaterial[];
+	export let onClick: ((ev: any) => void) | undefined;
 
 	const getEffectiveGroupSizeMap = (map: undefined | number | number[]) => {
 		if (Array.isArray(map)) return map;
@@ -50,5 +51,14 @@
 </script>
 
 {#each geometry || [] as g, i}
-	<T.Mesh geometry={g} material={groupMaterials[i]} />
+	<T.Mesh
+		geometry={g}
+		material={groupMaterials[i]}
+		on:click={(ev) => {
+			console.debug('mesh', ev);
+			if (onClick) {
+				onClick(ev);
+			}
+		}}
+	/>
 {/each}

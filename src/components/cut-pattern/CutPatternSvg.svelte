@@ -2,6 +2,9 @@
 	import { patternConfigStore } from '$lib/stores';
 	import type { PatternViewConfig } from '$lib/types';
 
+	export let width = 4000;
+	export let height = 2000;
+
 	const getViewBox = (config: PatternViewConfig) => {
 		const { width, height, zoom, centerOffset } = config;
 		const minX = 0;
@@ -19,15 +22,15 @@
 <svg id="outer-svg" viewBox={viewBoxValue}>
 	<svg
 		id="pattern-svg"
-		height={`${2000}${$patternConfigStore.patternConfig.page.unit}`}
-		width={`${2000}${$patternConfigStore.patternConfig.page.unit}`}
+		height={`${height}${$patternConfigStore.patternConfig.page.unit}`}
+		width={`${width}${$patternConfigStore.patternConfig.page.unit}`}
 		viewBox={`${
 			$patternConfigStore.patternViewConfig.centerOffset.x -
 			$patternConfigStore.patternConfig.page.width
 		} ${
 			$patternConfigStore.patternViewConfig.centerOffset.y -
 			$patternConfigStore.patternConfig.page.height
-		} ${2000} ${2000}`}
+		} ${width} ${height}`}
 	>
 		<slot />
 	</svg>

@@ -1,9 +1,13 @@
-import type { Vector2, Vector3, Triangle as ThreeTriangle, SphereGeometry, Object3D } from 'three';
+import type { Vector2, Vector3, Triangle as ThreeTriangle, Object3D } from 'three';
 import type {
 	BaseProjectionConfig,
 	Polyhedron,
 	Projection,
-	ProjectionConfig,
+	ProjectionAddress_Band,
+	ProjectionAddress_Facet,
+	ProjectionAddress_FacetEdge,
+	ProjectionAddress_Projection,
+	ProjectionAddress_Tube,
 	Tube
 } from './projection-geometry/types';
 
@@ -299,6 +303,39 @@ export type PatternedBand = {
 	address: GeometryAddress<BandAddressed>;
 };
 
+export type ProjectionPanelPattern = {
+	tubes: TubePanelPattern[];
+	address: ProjectionAddress_Projection;
+};
+export type TubePanelPattern = {
+	address: ProjectionAddress_Tube;
+	bands: BandPanelPattern[];
+};
+export type BandPanelPattern = {
+	address: ProjectionAddress_Band;
+	panels: PanelPattern[];
+};
+
+export type PanelEdgeMeta = {
+	cutAngle: number;
+	crease: 'valley' | 'mountain';
+	partner: ProjectionAddress_FacetEdge;
+	label?: string;
+};
+
+export type PanelPattern = {
+	path: PathSegment[];
+	tiling: 'triangle';
+	svgPath: string;
+	triangle: ThreeTriangle;
+	address: ProjectionAddress_Facet;
+	meta: {
+		edges: { ab: PanelEdgeMeta; bc: PanelEdgeMeta; ac: PanelEdgeMeta };
+	};
+};
+
+export type PanelBase = { p0: TrianglePoint; p1: TrianglePoint; v0: Vector3; v1: Vector3 };
+
 export type NullBandPattern = { projectionType: 'none' };
 export type FacetedBandPattern = { projectionType: 'faceted'; bands: { facets: FacetPattern[] }[] };
 export type OutlinedBandPattern = { projectionType: 'outlined'; bands: OutlinePattern[] };
@@ -419,6 +456,7 @@ export type FlatStripConfig = {
 export type TiledPattern =
 	| 'tiledHexPattern-1'
 	| 'tiledGridPattern-0'
+	| 'tiledPanelPattern-0'
 	| 'tiledBoxPattern-0'
 	| 'tiledBowtiePattern-0'
 	| 'tiledCarnationPattern-0'
@@ -427,7 +465,7 @@ export type TiledPattern =
 	| 'tiledShieldTesselationPattern'
 	| 'bandedBranchedPattern-0';
 
-export type TilingBasis = 'quadrilateral' | 'band';
+export type TilingBasis = 'quadrilateral' | 'band' | 'triangle';
 export type DynamicStrokeBasis = 'quadWidth' | 'quadHeight' | 'ranked';
 export type SkipEdges = 'all' | 'not-both' | 'not-first' | 'not-last' | 'none';
 
@@ -455,6 +493,7 @@ export type TiledPatternConfig = {
 };
 
 export type GridVariant = 'rect' | 'triangle-0' | 'triangle-1';
+export type PanelVariant = 'triangle-0' | 'triangle-1';
 export type ShieldTesselationVariant = 'rect';
 
 export type TiledPatternVariant = undefined | GridVariant | ShieldTesselationVariant;
@@ -534,12 +573,58 @@ export type MultiFacetTrapTab = {
 };
 
 // TODO - remove all FacetTab[] = a facet can only have a single attached tab
+
+export type FacetEdgeMeta = {
+	address: ProjectionAddress_FacetEdge;
+	partner: ProjectionAddress_FacetEdge;
+};
+
 export type Facet = {
+	// firstFacet: { [key: string]: FacetEdgeMeta };
 	triangle: ThreeTriangle;
+	address?: ProjectionAddress_Facet;
+	meta?: {
+		ab: FacetEdgeMeta;
+		bc: FacetEdgeMeta;
+		ac: FacetEdgeMeta;
+	};
+	orientation?: FacetOrientation;
 	tab?: FacetTab; // | FacetTab[];
 };
 
-export type BandOrientation = -1 | 0 | 1;
+export type FacetOrientation = -1 | 0 | 1;
+/* 
+Triangle layout diagram
+orientation 0
+        _________ _________
+			/c\b     a/c\b     a/
+		/		 \	  /    \    /
+	/a     b\c/a     b\c/
+	--------- ---------
+
+orientation 1
+
+								_________ 
+							/c\b     a/
+						/		 \	  /
+					/a     b\c/
+        _________ 
+			/c\b     a/
+		/		 \	  /
+	/a     b\c/
+	--------- 
+orientation -1
+	_________ 
+	\b     a/c\
+		\	  /    \
+		\c/a     b\
+				_________
+			\b     a/c\
+				\	  /    \
+				\c/a     b\
+					---------
+
+*/
 
 export type GlobulePoints = {
 	type: 'GlobulePoints';
@@ -551,11 +636,11 @@ type BandSelection = string;
 
 export type Band = {
 	facets: Facet[];
-	orientation: BandOrientation;
+	orientation: FacetOrientation;
 	endTab?: FacetTab;
 	selected?: BandSelection;
 	visible?: boolean;
-	address?: GeometryAddress<BandAddressed>;
+	address?: GeometryAddress<BandAddressed> | ProjectionAddress_Band;
 };
 export type BezierConfig = {
 	[key: string]: PointConfig2[] | string;
@@ -782,6 +867,7 @@ export type GeometryAddress<T extends GlobuleAddressed | BandAddressed> = {
 	g: GlobuleAddress;
 	b: T;
 };
+
 export type GlobuleAddress = number[]; // where array position indicates transform index and arrayitem value indicates recurrence index
 
 export type GlobuleConfigCoordinates = { s: number; t: number; r: number };
@@ -963,38 +1049,6 @@ export type Triangle = {
 	c: Point;
 };
 
-/* 
-Triangle layout diagram
-orientation 0
-        _________ _________
-			/c\b     a/c\b     a/
-		/		 \	  /    \    /
-	/a     b\c/a     b\c/
-	--------- ---------
-
-orientation 1
-
-								_________ 
-							/c\b     a/
-						/		 \	  /
-					/a     b\c/
-        _________ 
-			/c\b     a/
-		/		 \	  /
-	/a     b\c/
-	--------- 
-orientation -1
-	_________ 
-	\b     a/c\
-		\	  /    \
-		\c/a     b\
-				_________
-			\b     a/c\
-				\	  /    \
-				\c/a     b\
-					---------
-
-*/
 export type Ellipse = {
 	r0: number;
 	r1: number;
@@ -1216,3 +1270,9 @@ export type TempId = string;
 /////////////////////////////////
 
 export type SelectBarOption = { name: string; value?: unknown };
+
+export type PatternScale = {
+	unit: 'inch' | 'mm';
+	unitPerSvgUnit: number;
+	quantity: number;
+};

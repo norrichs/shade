@@ -1,4 +1,11 @@
-import type { Band, BandOrientation, BezierConfig, Facet, Point3 } from '$lib/types';
+import type {
+	Band,
+	FacetOrientation,
+	BezierConfig,
+	Facet,
+	Point3,
+	FacetEdgeMeta
+} from '$lib/types';
 import { average, getCubicBezierCurvePath, getIntersectionOfLines, getVector3 } from '$lib/util';
 import {
 	Matrix4,
@@ -22,12 +29,19 @@ import type {
 	Polyhedron,
 	PolyhedronConfig,
 	Projection,
+	ProjectionAddress,
+	ProjectionAddress_Band,
+	ProjectionAddress_FacetEdge,
+	ProjectionAddress_Tube,
 	ProjectionConfig,
 	ProjectionEdge,
 	ProjectorConfig,
+	Section,
 	SurfaceConfig,
 	TransformConfig,
+	TriangleEdge,
 	Tube,
+	TubePartnerAddresses,
 	VerticesConfig
 } from './types';
 import { materials } from '../../components/three-renderer-v2/materials';
@@ -99,8 +113,8 @@ export const prepareProjectionConfig = (
 const getMatrix4 = (
 	{
 		scale: s = { x: 1, y: 1, z: 1 },
-		translate: t = { x: 0, y: 0, z: 0 },
-		rotate: r = { x: 0, y: 0, z: 0 }
+		// rotate: r = { x: 0, y: 0, z: 0 }
+		translate: t = { x: 0, y: 0, z: 0 }
 	}: TransformConfig,
 	matrix?: Matrix4
 ) => {
@@ -239,7 +253,6 @@ const generateEdge = ({
 	}
 
 	const definitionPoints = getPoints(widthCurve.curves, divisions);
-	console.debug('generateEdge');
 	const curvePoints = mapPointsToTriangle(
 		{ a: v0, b: v1, c: center },
 		definitionPoints,
@@ -256,7 +269,6 @@ export const mapPointsFromTriangle = (
 	points: Vector2[],
 	reverse?: boolean
 ) => {
-	// console.debug('Map Points From Triangle', { reverse });
 	const { a, b, c } = triangle;
 	const mappedPoints = reverse
 		? points.reverse().map((point) => {
@@ -287,7 +299,6 @@ export const mapPointsToTriangle = <V extends Vector2 | Vector3>(
 	points: Vector2[],
 	reverse?: boolean
 ): V[] => {
-	// console.debug('Map points to Triangle', { reverse });
 	const { a, b, c } = triangle;
 	const mappedPoints = reverse
 		? (points.map((point) => {
@@ -377,7 +388,7 @@ export const generateProjection = ({
 						const curveIntersections = curveRaycaster.intersectObject(surface, true);
 
 						if (!edgeIntersections[0] || !curveIntersections[0]) {
-							console.debug('missing intersections', {
+							console.error('missing intersections', {
 								edgeIntersections,
 								curveIntersections,
 								i,
@@ -420,56 +431,134 @@ export const generateProjection = ({
 					return { sections: sectionGeometry, config: edge.config };
 				})
 			};
-		})
+		}),
+		address: { projection: 0 }
 	};
 
 	return projection;
 };
 
-const generateProjectionBands = (sections: Vector3[][], orientation: BandOrientation) => {
+const generateFacetPair = ({
+	sections,
+	sectionIndex,
+	pointIndex,
+	bandAddress,
+	facetCount,
+	pairOrientation = 'cOverA'
+}: {
+	sections: Section[];
+	sectionIndex: number;
+	pointIndex: number;
+	bandAddress: ProjectionAddress_Band;
+	facetCount: number;
+	pairOrientation?: 'cOverB' | 'cOverA';
+}): [Facet, Facet] => {
+	if (pairOrientation === 'cOverB') {
+		console.debug({ sectionIndex, pointIndex, pairOrientation });
+		return [
+			{
+				triangle: new Triangle(
+					sections[sectionIndex].points[pointIndex].clone(),
+					sections[sectionIndex].points[pointIndex + 1].clone(),
+					sections[sectionIndex + 1].points[pointIndex + 1].clone()
+				),
+				address: { ...bandAddress, facet: facetCount },
+				pairOrientation
+			},
+			{
+				triangle: new Triangle(
+					sections[sectionIndex + 1].points[pointIndex + 1].clone(),
+					sections[sectionIndex + 1].points[pointIndex].clone(),
+					sections[sectionIndex].points[pointIndex].clone()
+				),
+				address: { ...bandAddress, facet: facetCount + 1 },
+				pairOrientation
+			}
+		];
+	}
+	console.debug({ sectionIndex, pointIndex, pairOrientation });
+	return [
+		{
+			triangle: new Triangle(
+				sections[sectionIndex].points[pointIndex].clone(),
+				sections[sectionIndex].points[pointIndex + 1].clone(),
+				sections[sectionIndex + 1].points[pointIndex].clone()
+			),
+			address: { ...bandAddress, facet: facetCount },
+			pairOrientation
+		},
+		{
+			triangle: new Triangle(
+				sections[sectionIndex + 1].points[pointIndex + 1].clone(),
+				sections[sectionIndex + 1].points[pointIndex].clone(),
+				sections[sectionIndex].points[pointIndex + 1].clone()
+			),
+			address: { ...bandAddress, facet: facetCount + 1 },
+			pairOrientation
+		}
+	];
+};
+
+const generateProjectionBands = (
+	sections: Section[],
+	orientation: FacetOrientation, // 0 === circumferential, 1 = longitudinal
+	tubeAddress: ProjectionAddress_Tube,
+	tubeSymmetry = { axial: false, lateral: false }
+) => {
+	if (orientation == -1) throw Error('orientation -1 not allowed for projectionbands');
+	console.debug('generateProjectionBands', { orientation, sections });
+	const sectionLength = sections[0].points.length;
 	const bands: Band[] = [];
 	if (orientation === 0) {
 		for (let s = 0; s < sections.length - 1; s++) {
+			const bandAddress = { ...tubeAddress, band: bands.length };
 			const facets: Facet[] = [];
-			for (let f = 0; f < sections[s].length - 1; f++) {
+			for (let f = 0; f < sectionLength - 1; f++) {
 				facets.push(
-					{
-						triangle: new Triangle(
-							sections[s][f].clone(),
-							sections[s][f + 1].clone(),
-							sections[s + 1][f].clone()
-						)
-					},
-					{
-						triangle: new Triangle(
-							sections[s + 1][f + 1].clone(),
-							sections[s + 1][f].clone(),
-							sections[s][f + 1].clone()
-						)
-					}
+					...generateFacetPair({
+						sections,
+						sectionIndex: s,
+						pointIndex: f,
+						bandAddress,
+						facetCount: facets.length
+					})
+				);
+			}
+			bands.push({ orientation, facets, visible: true });
+		}
+	} else if (orientation === 1 && tubeSymmetry) {
+		console.debug('TUBESYMMETRY', sectionLength, sections.length);
+		const { axial, lateral } = tubeSymmetry;
+		for (let f = 0; f < sectionLength - 1; f++) {
+			const bandAddress = { ...tubeAddress, band: bands.length };
+			const facets: Facet[] = [];
+			for (let s = 0; s < sections.length - 1; s++) {
+				facets.push(
+					...generateFacetPair({
+						sections,
+						sectionIndex: s,
+						pointIndex: f,
+						bandAddress,
+						facetCount: facets.length,
+						pairOrientation: lateral && f < sectionLength / 2 - 1 ? 'cOverB' : 'cOverA'
+					})
 				);
 			}
 			bands.push({ orientation, facets, visible: true });
 		}
 	} else if (orientation === 1) {
-		for (let f = 0; f < sections[0].length - 1; f++) {
+		for (let f = 0; f < sectionLength - 1; f++) {
+			const bandAddress = { ...tubeAddress, band: bands.length };
 			const facets: Facet[] = [];
 			for (let s = 0; s < sections.length - 1; s++) {
 				facets.push(
-					{
-						triangle: new Triangle(
-							sections[s][f].clone(),
-							sections[s][f + 1].clone(),
-							sections[s + 1][f].clone()
-						)
-					},
-					{
-						triangle: new Triangle(
-							sections[s + 1][f + 1].clone(),
-							sections[s + 1][f].clone(),
-							sections[s][f + 1].clone()
-						)
-					}
+					...generateFacetPair({
+						sections,
+						sectionIndex: s,
+						pointIndex: f,
+						bandAddress,
+						facetCount: facets.length
+					})
 				);
 			}
 			bands.push({ orientation, facets, visible: true });
@@ -478,7 +567,7 @@ const generateProjectionBands = (sections: Vector3[][], orientation: BandOrienta
 	return { bands, sections };
 };
 
-const combineSections = (edge0: ProjectionEdge, edge1: ProjectionEdge) => {
+const combineSections = (edge0: ProjectionEdge, edge1: ProjectionEdge): Section[] => {
 	const first = edge0.config.isDirectionMatched
 		? edge0
 		: { ...edge0, sections: edge0.sections.reverse() };
@@ -486,11 +575,16 @@ const combineSections = (edge0: ProjectionEdge, edge1: ProjectionEdge) => {
 		? edge1
 		: { ...edge1, sections: edge1.sections.reverse() };
 
-	return first.sections.map((section, i) => {
-		return [
-			...section.crossSectionPoints,
-			...second.sections[i].crossSectionPoints.reverse().slice(1)
-		];
+	return first.sections.map((section, i): Section => {
+		const comboSection = {
+			points: [
+				...section.crossSectionPoints,
+				...second.sections[i].crossSectionPoints.reverse().slice(1)
+			]
+		};
+		return !edge1.config.isDirectionMatched
+			? comboSection
+			: { ...comboSection, points: comboSection.points.reverse() };
 	});
 };
 
@@ -526,7 +620,7 @@ const sortEdges = (
 			return 0;
 		}
 	});
-	const sortedAndMapped = edgeMap.map(({ polygonIndex, edgeIndex }) => {
+	const sortedAndMapped: ProjectionEdge[] = edgeMap.map(({ polygonIndex, edgeIndex }) => {
 		return projection.polygons[polygonIndex].edges[edgeIndex];
 	});
 	return sortedAndMapped;
@@ -534,22 +628,161 @@ const sortEdges = (
 
 export const generateTubeBands = (
 	projection: Projection,
-	projectionConfig: ProjectionConfig<undefined, number, number, number>
+	projectionConfig: ProjectionConfig<undefined, number, number, number>,
+	projectionAddress: ProjectionAddress
 ): { tubes: Tube[] } => {
-	const tubes: { bands: Band[]; sections: Vector3[][] }[] = [];
+	const tubes: Omit<Tube, 'partners'>[] = [];
 	const sortedEdges = sortEdges(projectionConfig, projection);
 	const { orientation } = projectionConfig.bandConfig;
 
 	for (let i = 0; i < sortedEdges.length; i += 2) {
+		const tubeAddress = { ...projectionAddress, tube: i / 2 };
 		const { bands, sections } = generateProjectionBands(
 			combineSections(sortedEdges[i], sortedEdges[i + 1]),
-			orientation
+			orientation,
+			tubeAddress
 		);
-		tubes[i / 2] = { bands, sections };
-	}
+		const tube = {
+			bands,
+			sections,
+			orientation,
+			address: tubeAddress
+		};
 
-	return { tubes };
+		tubes[i / 2] = tube;
+	}
+	matchTubeEnds(tubes);
+	return { tubes: tubes as Tube[] };
 };
+
+const matchTubeEnds = (tubes: Tube[]) => {
+	const endFacets: Facet[] = [];
+	tubes.forEach((tube) =>
+		tube.bands.forEach((band) =>
+			band.facets.forEach((facet, f, facets) => {
+				if (f === 0 || f === facets.length - 1) {
+					endFacets.push(facet);
+				}
+			})
+		)
+	);
+
+	tubes.forEach((tube) =>
+		tube.bands.forEach((band) => {
+			const firstFacet = band.facets[0];
+			const lastFacet = band.facets[band.facets.length - 1];
+
+			if (!firstFacet.address || !lastFacet.address)
+				throw Error('facets without address when they should');
+			if (hasNoPartner(firstFacet)) {
+				const { edge, partnerEdge, partner } = findPartner(firstFacet, endFacets);
+				if (!partner.address) throw Error('facets without address when they should');
+				const newMeta: { [key: string]: FacetEdgeMeta } = {};
+				newMeta[edge] = {
+					address: { ...firstFacet.address, edge },
+					partner: { ...partner.address, edge: partnerEdge }
+				};
+				// @ts-expect-error: meta property may be missing or have an incompatible type, but we want to assign it here
+				firstFacet.meta = firstFacet.meta ? { ...firstFacet.meta, ...newMeta } : newMeta;
+			}
+			if (hasNoPartner(lastFacet)) {
+				const { edge, partnerEdge, partner } = findPartner(lastFacet, endFacets);
+				if (!partner.address) throw Error('facets without address when they should');
+				const newMeta: { [key: string]: FacetEdgeMeta } = {};
+				newMeta[edge] = {
+					address: { ...lastFacet.address, edge },
+					partner: { ...partner.address, edge: partnerEdge }
+				};
+				// @ts-expect-error: meta property may be missing or have an incompatible type, but we want to assign it here
+				lastFacet.meta = lastFacet.meta ? { ...lastFacet.meta, ...newMeta } : newMeta;
+			}
+		})
+	);
+	console.debug({ endFacets });
+};
+
+const findPartner = (facet0: Facet, facets: Facet[]) => {
+	for (const facet of facets) {
+		const match = getEdgeMatchedTriangles(facet0.triangle, facet.triangle);
+		if (match) {
+			return { partner: facet, partnerEdge: match.t1, edge: match.t0 };
+		}
+	}
+	throw Error('failed to find partner for facet');
+};
+
+const hasNoPartner = (facet: Facet) =>
+	!facet.meta?.ab.partner && !facet.meta?.ac.partner && !facet.meta?.bc.partner;
+
+// const getPartnerTubes = ({
+// 	tubeAddress,
+// 	tubes
+// }: {
+// 	tubeAddress: ProjectionAddress_Tube;
+// 	tubes: Omit<Tube, 'partners'>[];
+// }): TubePartnerAddresses => {
+// 	const tube = tubes[tubeAddress.tube];
+// 	const otherTubes = tubes.toSpliced(tubeAddress.tube, 1);
+
+// 	const partners: { [key: string]: ProjectionAddress_FacetEdge[] } = {
+// 		startStart: [],
+// 		startEnd: [],
+// 		endStart: [],
+// 		endEnd: []
+// 	};
+
+// 	const lastBand = tubes[0].bands.length - 1;
+// 	const lastFacet = tubes[0].bands[0].facets.length - 1;
+// 	const tubeEnds = {
+// 		startStart: tube.bands[0].facets[0].triangle,
+// 		startEnd: tube.bands[0].facets[lastFacet].triangle,
+// 		endStart: tube.bands[lastBand].facets[0].triangle,
+// 		endEnd: tube.bands[lastBand].facets[lastFacet].triangle
+// 	};
+
+// 	const endMapper: { [key: string]: [number, number] } = {
+// 		startStart: [0, 0],
+// 		startEnd: [0, lastFacet],
+// 		endStart: [lastBand, 0],
+// 		endEnd: [lastBand, lastFacet]
+// 	};
+
+// 	Object.entries(tubeEnds).forEach(([key, triangle0]) => {
+// 		otherTubes.forEach((otherTube) => {
+// 			const otherTubeEnds = {
+// 				startStart: otherTube.bands[0].facets[0].triangle,
+// 				startEnd: otherTube.bands[0].facets[lastFacet].triangle,
+// 				endStart: otherTube.bands[lastBand].facets[0].triangle,
+// 				endEnd: otherTube.bands[lastBand].facets[lastFacet].triangle
+// 			};
+// 			Object.entries(otherTubeEnds).forEach(([otherKey, triangle1]) => {
+// 				const matched = getEdgeMatchedTriangles(triangle0, triangle1);
+// 				if (matched) {
+// 					partners[key].push(
+// 						{
+// 							...tube.address,
+// 							band: endMapper[key][0],
+// 							facet: endMapper[key][1],
+// 							edge: matched.t0
+// 						},
+// 						{
+// 							...otherTube.address,
+// 							band: endMapper[otherKey][0],
+// 							facet: endMapper[otherKey][1],
+// 							edge: matched.t1
+// 						}
+// 					);
+// 				}
+// 			});
+// 		});
+// 	});
+// 	console.debug({ partners });
+
+// 	Object.values(partners).forEach((partner) => {
+// 		if (partner.length !== 2) throw Error('partner length not 2');
+// 	});
+// 	return partners as TubePartnerAddresses;
+// };
 
 const normalizePoints = (points: Vector2[]) => {
 	let xMax = 0;
@@ -561,7 +794,76 @@ const normalizePoints = (points: Vector2[]) => {
 	return points.map((p) => p.set(p.x / xMax, p.y));
 };
 
-export const makeProjection = (projectionConfig: BaseProjectionConfig) => {
+export const getEdgeMatchedTriangles = (
+	t0: Triangle,
+	t1: Triangle,
+	precision = 1 / 10_000
+): { t0: TriangleEdge; t1: TriangleEdge } | false => {
+	const matched = ['', ''];
+	if (isSameVector3(t0.a, t1.a, precision)) {
+		matched[0] += 'a';
+		matched[1] += 'a';
+	}
+	if (isSameVector3(t0.a, t1.b, precision)) {
+		matched[0] += 'a';
+		matched[1] += 'b';
+	}
+	if (isSameVector3(t0.a, t1.c, precision)) {
+		matched[0] += 'a';
+		matched[1] += 'c';
+	}
+	if (isSameVector3(t0.b, t1.a, precision)) {
+		matched[0] += 'b';
+		matched[1] += 'a';
+	}
+	if (isSameVector3(t0.b, t1.b, precision)) {
+		matched[0] += 'b';
+		matched[1] += 'b';
+	}
+	if (isSameVector3(t0.b, t1.c, precision)) {
+		matched[0] += 'b';
+		matched[1] += 'c';
+	}
+	if (isSameVector3(t0.c, t1.a, precision)) {
+		matched[0] += 'c';
+		matched[1] += 'a';
+	}
+	if (isSameVector3(t0.c, t1.b, precision)) {
+		matched[0] += 'c';
+		matched[1] += 'b';
+	}
+	if (isSameVector3(t0.c, t1.c, precision)) {
+		matched[0] += 'c';
+		matched[1] += 'c';
+	}
+
+	const result =
+		matched[0].length === 2 && matched[1].length === 2
+			? { t0: matched[0] as TriangleEdge, t1: matched[1] as TriangleEdge }
+			: false;
+	return result;
+
+	// const remap = (m: string) => {
+	// 	if (m === 'ba') return 'ab' as TriangleEdge;
+	// 	if (m === 'cb') return 'bc' as TriangleEdge;
+	// 	if (m === 'ca') return 'ac' as TriangleEdge;
+	// 	return m as TriangleEdge;
+	// };
+	// return result === false ? result : { t0: remap(result.t0), t1: remap(result.t1) };
+};
+
+export const isSameVector3 = (v0: Vector3, v1: Vector3, precision = 1 / 10_000) => {
+	return (
+		Math.abs(v0.x - v1.x) < precision &&
+		Math.abs(v0.y - v1.y) < precision &&
+		Math.abs(v0.z - v1.z) < precision
+	);
+};
+
+export const makeProjection = (
+	projectionConfig: BaseProjectionConfig,
+	address: ProjectionAddress
+) => {
 	const preparedProjectionConfig = prepareProjectionConfig(projectionConfig);
 
 	const { projectorConfig, surfaceConfig } = preparedProjectionConfig;
@@ -574,7 +876,18 @@ export const makeProjection = (projectionConfig: BaseProjectionConfig) => {
 		projector: polyhedron,
 		projectionConfig: preparedProjectionConfig
 	});
-	const { tubes } = generateTubeBands(projection, projectionConfig);
+	const { tubes } = generateTubeBands(projection, projectionConfig, address);
 
 	return { projection, polyhedron, tubes, surface };
+};
+
+export const printProjectionAddress = (
+	a: ProjectionAddress | null | undefined,
+	config?: { hideProjection?: boolean }
+) => {
+	if (!a) return '---';
+	const showProjection = !config?.hideProjection;
+	return `${showProjection ? `p${a.projection}` : ''}${'tube' in a ? `t${a.tube}` : ''}${
+		'band' in a ? `b${a.band}` : ''
+	}${'facet' in a ? `f${a.facet}` : ''}${'edge' in a ? `-${a.edge}` : ''}`;
 };

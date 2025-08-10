@@ -77,6 +77,9 @@ export type GenerateTilingProps = {
 };
 
 export const generateTiling = ({ quadBands, tiledPatternConfig, address }: GenerateTilingProps) => {
+	// console.debug('----------------------------------------');
+	// console.debug('     generate tiling - ', tiledPatternConfig.type);
+	// console.debug('----------------------------------------');
 	const tiling: {
 		facets: PatternedPattern[];
 		svgPath?: string | undefined;
@@ -88,6 +91,7 @@ export const generateTiling = ({ quadBands, tiledPatternConfig, address }: Gener
 
 		let mappedPatternBand: PathSegment[][] | PathSegment[];
 		if (tiledPatternConfig.tiling === 'quadrilateral') {
+			// console.debug('quadrilateral tiling basis');
 			const unitPattern = getPattern(
 				rowCount as 3 | 1 | 2,
 				columnCount as 1 | 2 | 3 | 4 | 5,
@@ -97,6 +101,15 @@ export const generateTiling = ({ quadBands, tiledPatternConfig, address }: Gener
 			mappedPatternBand = quadBand.map((quad) =>
 				transformPatternByQuad(unitPattern, quad)
 			) as PathSegment[][];
+		} else if (tiledPatternConfig.tiling === 'triangle') {
+			console.debug('**** triangle tiling basis');
+			const unitPattern = getPattern(
+				rowCount as 3 | 1 | 2,
+				columnCount as 1 | 2 | 3 | 4 | 5,
+				undefined,
+				variant
+			);
+			console.debug({ quadBand, unitPattern });
 		} else {
 			mappedPatternBand = [getPattern(1, 1, quadBand)] as PathSegment[][];
 		}

@@ -1,7 +1,12 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 
-	import { shouldUsePersisted, superConfigStore, uiStore } from '$lib/stores';
+	import {
+		shouldUsePersisted,
+		superConfigStore,
+		uiStore,
+		selectedProjectionGeometry
+	} from '$lib/stores';
 	import Button from '../design-system/Button.svelte';
 	import NewConfigButton from './NewConfigButton.svelte';
 	import SaveConfigButton from './SaveConfigButton.svelte';
@@ -10,6 +15,7 @@
 	import { downloadSvg } from '$lib/util';
 	import { interactionMode } from '../three-renderer-v2/interaction-mode';
 	import ViewMenu from './ViewMenu.svelte';
+	import { printProjectionAddress } from '$lib/projection-geometry/generate-projection';
 
 	let downloadUrl: string | undefined = undefined;
 
@@ -73,6 +79,17 @@
 		<div>
 			{formatAddress($selectedBand)}
 		</div>
+
+		{#if $selectedProjectionGeometry}
+			<div>
+				<span>
+					{printProjectionAddress($selectedProjectionGeometry.selected[0])}
+				</span>
+				{#each $selectedProjectionGeometry.selectedPartners as partner}
+					<span>{`[${printProjectionAddress(partner)}]`}</span>
+				{/each}
+			</div>
+		{/if}
 
 		<div class="button-group">
 			<Button

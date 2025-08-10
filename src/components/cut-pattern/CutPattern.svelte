@@ -1,10 +1,22 @@
 <script lang="ts">
-	import { superGlobulePatternStore, patternConfigStore, viewControlStore } from '$lib/stores';
+	import {
+		superGlobulePatternStore,
+		patternConfigStore,
+		viewControlStore,
+		selectedProjectionGeometry
+	} from '$lib/stores';
 	import CutPatternControl from './CutPatternControl.svelte';
 	import CutPatternSvg from './CutPatternSvg.svelte';
 	import PatternedBand from './PatternedBand.svelte';
 	import BandComponent from './BandComponent.svelte';
 	import QuadPattern from '../pattern-svg/QuadPattern.svelte';
+	import BandPanelComponent from './BandPanelComponent.svelte';
+	import PanelComponent from './PanelComponent.svelte';
+	import type { BandPanelPattern } from '$lib/types';
+	import type { ProjectionAddress_Facet } from '$lib/projection-geometry/types';
+	import ProjectionPanelPatterns from './ProjectionPanelPatterns.svelte';
+	import { mmFromInches } from '$lib/patterns/utils';
+	import ProjectionBandPattern from './ProjectionBandPattern.svelte';
 
 	let showBands = true;
 	let showQuadPattern = false;
@@ -24,40 +36,24 @@
 	console.debug('superGlobulePatternStore', $superGlobulePatternStore);
 </script>
 
-<!-- <header>
-	<button on:click={() => (useExpandStroke = !useExpandStroke)}
-		>{useExpandStroke ? "Don't Expand Stroke" : 'Expand Stroke'}</button
-	>
-	<button on:click={() => (useLabels = !useLabels)}>{useLabels ? "Don't Label" : 'Label'}</button>
-	<button on:click={() => (showQuadPattern = !showQuadPattern)}
-		>{showQuadPattern ? "Don't show quads" : 'Show quads'}</button
-	>
-	<label for="showBands"> Bands </label>
-	<input type="checkbox" name="showBands" bind:checked={showBands} />
-	{#if flattenedPatternedSVG.bands.length > 0}
-		<div>FLATTENED PATTERNED</div>
-	{/if}
-	<LoggerControls />
-</header> -->
-
 <div class="container-svg scroll-container" class:showBands>
 	<div class="scroll-container">
-		<CutPatternSvg>
-			{#if $viewControlStore.showProjectionGeometry.any && $viewControlStore.showProjectionGeometry.bands}
-				{#each $superGlobulePatternStore.projectionPattern?.bandPatterns || [] as band, index}
-					<BandComponent {band} {index} showLabel>
-						{#if band.projectionType === 'patterned'}
-							<PatternedBand {band} />
-						{/if}
-						<QuadPattern
-						{band}
-						showQuads={$patternConfigStore.patternViewConfig.showQuads}
-						showLabels={$patternConfigStore.patternViewConfig.showLabels}
-					/>
-					</BandComponent>
-				{/each}
-			{/if}
+		<CutPatternSvg width={6000} height={6000}>
+			<ProjectionBandPattern projectionPattern={$superGlobulePatternStore.projectionPattern} />
+			<ProjectionPanelPatterns
+				range={{}}
+				showSelectedOnly={'band'}
+				patternStyle="view"
+				labelSize={8}
+				scaleBar={{
+					unit: 'mm',
+					unitPerSvgUnit: mmFromInches(1) / 15,
+					quantity: Math.round(mmFromInches(60) * 10) / 10
+				}}
+			/>
+
 			{#if $viewControlStore.showGlobuleGeometry.any}
+				<circle cx={100} cy={100} r={20} />
 				{#each $superGlobulePatternStore.superGlobulePattern?.bandPatterns || [] as band, index}
 					<BandComponent {band} {index} showLabel>
 						{#if band.projectionType === 'patterned'}
@@ -86,11 +82,6 @@
 		overflow-x: scroll;
 	}
 
-	.container {
-		display: flex;
-		flex-direction: column;
-		justify-content: flex-start;
-	}
 	.container-svg {
 		display: none;
 		flex-direction: column;

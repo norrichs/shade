@@ -17,7 +17,7 @@ import type {
 
 const defaultSphereConfig: SphereConfig = {
 	type: 'SphereConfig',
-	radius: 190,
+	radius: 220,
 	center: { x: 0, y: 0, z: 0 }
 };
 
@@ -42,10 +42,10 @@ const secondEdgeCurve: BezierConfig[] = [
 	{
 		type: 'BezierConfig',
 		points: [
-			{ type: 'PointConfig2', x: 0.4, y: 0 },
-			{ type: 'PointConfig2', x: 0, y: 0.4 },
-			{ type: 'PointConfig2', x: 0.1, y: 0.8 },
-			{ type: 'PointConfig2', x: 0.4, y: 1 }
+			{ type: 'PointConfig2', x: 0.75, y: 0 },
+			{ type: 'PointConfig2', x: 0.6, y: 0.4 },
+			{ type: 'PointConfig2', x: 0.6, y: 0.6 },
+			{ type: 'PointConfig2', x: 0.75, y: 1 }
 		]
 	}
 ];
@@ -79,9 +79,9 @@ const defaultEdgeCurve: BezierConfig[] = [
 		]
 	}
 ];
-const defaultEdgeSampleMethod: CurveSampleMethod = { method: 'divideCurvePath', divisions:9 };
+const defaultEdgeSampleMethod: CurveSampleMethod = { method: 'divideCurvePath', divisions: 4 };
 const defaultEdgeCurveConfig: EdgeCurveConfig = {
-	curves: defaultEdgeCurve,
+	curves: secondEdgeCurve,
 	// curves: asymmetricEdgeCurve,
 	sampleMethod: defaultEdgeSampleMethod
 };
@@ -96,15 +96,15 @@ const defaultCrossSection: CrossSectionConfig = {
 			type: 'BezierConfig',
 			points: [
 				{ type: 'PointConfig2', x: 0, y: 0 },
-				{ type: 'PointConfig2', x: 1, y: 0 },
-				{ type: 'PointConfig2', x: 1, y: 1 },
+				{ type: 'PointConfig2', x: 0.5, y: 0 },
+				{ type: 'PointConfig2', x: 0.5, y: 1 },
 				{ type: 'PointConfig2', x: 0, y: 1 }
 			]
 		}
 	],
 	center: { x: 0, y: 0.5 },
-	sampleMethod: { method: 'divideCurvePath', divisions: 4 },
-	scaling: { width: 'curve', height: 20 }
+	sampleMethod: { method: 'divideCurvePath', divisions: 3 },
+	scaling: { width: 'curve', height: 120 }
 };
 
 const pTetrahedron: VerticesConfig = [
@@ -1108,11 +1108,11 @@ const defaultBandConfig: ProjectionBandConfig = {
 	orientation: 1
 };
 
-const defaultProjectorConfig = projectorConfigs.poly60dodeca		;
+const defaultProjectorConfig = projectorConfigs.tetrahedron;
 
 const flattenedDefaultTransform: TransformConfig = {
 	translate: { x: 0, y: 0, z: 0 },
-	scale: { x: 1, y: 1, z: 0.75 },
+	scale: { x: 1, y: 1, z: 1 },
 	rotate: { x: 0, y: 0, z: 0 }
 };
 

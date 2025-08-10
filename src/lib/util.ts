@@ -1,4 +1,4 @@
-import { CubicBezierCurve, CurvePath, Vector2, Vector3 } from 'three';
+import { CubicBezierCurve, CurvePath, Triangle, Vector2, Vector3 } from 'three';
 import { Bezier, type Line } from 'bezier-js';
 import type { BezierConfig, Point, Point3 } from '$lib/types';
 import type { Intersector } from '$lib/types';
@@ -165,4 +165,15 @@ export const getIntersectionOfLines = (
 		console.error('--------- Infinite', x, y, m1, m2, b1, b2);
 	}
 	return new Vector2(x, y);
+};
+
+export const printTriangle = (t: Triangle, decimals = 3) => {
+	return `a: ${round(t.a.x, decimals)}, ${round(t.a.y, decimals)}, ${round(t.a.z, decimals)}
+b: ${round(t.b.x, decimals)}, ${round(t.b.y, decimals)}, ${round(t.b.z, decimals)}
+c: ${round(t.c.x, decimals)}, ${round(t.c.y, decimals)}, ${round(t.c.z, decimals)}`;
+};
+
+export const formatAngle = (angle: number, precision = 1 / 10) => {
+	const p = 1 / precision;
+	return `${Math.round(((angle * 180) / Math.PI) * p) / p}°`;
 };

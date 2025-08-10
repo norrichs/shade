@@ -1,5 +1,5 @@
-import type { Band, BandOrientation, BezierConfig, Id, Point, Point3 } from '$lib/types';
-import type { CubicBezierCurve, CurvePath, Vector2, Vector3 } from 'three';
+import type { Band, FacetOrientation, BezierConfig, Id, Point, Point3 } from '$lib/types';
+import type { CurvePath, Vector2, Vector3 } from 'three';
 
 export type SphereConfig = {
 	type: 'SphereConfig';
@@ -48,7 +48,7 @@ export type EdgeConfig<
 //   - edges[n].p1.point equals edges[(n+1) % edges.length].p0.point
 export type PolygonConfig<
 	S extends undefined | Point3 | Point,
-	T extends VertexIndex | Point3 | Point, 
+	T extends VertexIndex | Point3 | Point,
 	U extends CurveIndex | EdgeCurveConfig | EdgeCurveConfigVector2,
 	V extends CurveIndex | CrossSectionConfig | CrossSectionConfigVector2
 > = {
@@ -113,13 +113,13 @@ export type EdgeCurveConfig = {
 	curves: BezierConfig[];
 	sampleMethod: CurveSampleMethod;
 };
-export type EdgeCurveConfigVector2= {
+export type EdgeCurveConfigVector2 = {
 	curves: CurvePath<Vector2>;
 	sampleMethod: CurveSampleMethod;
-}
+};
 
 export type ProjectionBandConfig = {
-	orientation: BandOrientation;
+	orientation: FacetOrientation;
 };
 
 export type ProjectorConfig<
@@ -165,11 +165,26 @@ export type Polyhedron = {
 	polygons: Polygon[];
 };
 
-export type Section = Vector3[];
+export type Section = {
+	points: Vector3[];
+};
 
 export type Tube = {
 	bands: Band[];
 	sections: Section[];
+	orientation: FacetOrientation;
+	address: ProjectionAddress_Tube;
+	// refers to matching points and 'start of tube array', 'start of band'
+	// for: tube = [band0, band1];  band0 = [facet0, facet1, facet2, facet3]; band1 = [facet4, facet5, facet6, facet7]
+	// startStart === facet0, startEnd === facet1, endStart === facet4, endEnd === facet7
+	// partners: TubePartnerAddresses;
+};
+
+export type TubePartnerAddresses = {
+	startStart: [ProjectionAddress_FacetEdge, ProjectionAddress_FacetEdge];
+	startEnd: [ProjectionAddress_FacetEdge, ProjectionAddress_FacetEdge];
+	endStart: [ProjectionAddress_FacetEdge, ProjectionAddress_FacetEdge];
+	endEnd: [ProjectionAddress_FacetEdge, ProjectionAddress_FacetEdge];
 };
 
 // export type Section = {};
@@ -186,4 +201,46 @@ export type Projection = {
 	polygons: {
 		edges: ProjectionEdge[];
 	}[];
+	address: ProjectionAddress_Projection;
+};
+
+export type ProjectionAddress =
+	| ProjectionAddress_Projection
+	| ProjectionAddress_Tube
+	| ProjectionAddress_Band
+	| ProjectionAddress_Facet
+	| ProjectionAddress_Quad
+	| ProjectionAddress_FacetEdge;
+
+export type ProjectionAddress_Projection = {
+	projection: number;
+};
+
+export type ProjectionAddress_Tube = ProjectionAddress_Projection & {
+	tube: number;
+};
+
+export type ProjectionAddress_Band = ProjectionAddress_Tube & {
+	band: number;
+};
+
+export type ProjectionAddress_Quad = ProjectionAddress_Band & {
+	quad: number;
+};
+
+export type ProjectionAddress_Facet = ProjectionAddress_Band & {
+	facet: number;
+};
+
+export type ProjectionAddress_FacetEdge = ProjectionAddress_Facet & {
+	edge: TriangleEdge;
+};
+
+export type TriangleEdge = `ab` | 'bc' | 'ac';
+
+// TODO:  a mapper is required between configuration and ProjectionAddress
+export type TriangleVectorLabel = 'a' | 'b' | 'c';
+export type OrientedTriangleSide = {
+	v0: { label: TriangleVectorLabel; vector: Vector3 };
+	v1: { label: TriangleVectorLabel; vector: Vector3 };
 };

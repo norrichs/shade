@@ -50,10 +50,15 @@
 
 <section>
 	<h4>Tiling</h4>
-	<ControlGroup>
+	<section class="tiles">
 		<div class="option-tile-group">
 			{#each Object.values(tiledPatternConfigs).filter((config) => config.tiling === 'quadrilateral') as config}
 				<PatternTileButton patternType={config.type} tilingBasis="quadrilateral" />
+			{/each}
+		</div>
+		<div class="option-tile-group">
+			{#each Object.values(tiledPatternConfigs).filter((config) => config.tiling === 'triangle') as config}
+				<PatternTileButton patternType={config.type} tilingBasis="triangle" />
 			{/each}
 		</div>
 		<div class="option-tile-group">
@@ -61,7 +66,7 @@
 				<PatternTileButton patternType={config.type} tilingBasis="band" />
 			{/each}
 		</div>
-	</ControlGroup>
+	</section>
 	<ControlGroup>
 		<div>
 			{#if $patternConfigStore.tiledPatternConfig.config.variant}
@@ -150,6 +155,10 @@
 </section>
 
 <style>
+	.tiles {
+		display: flex;
+		flex-direction: column;
+	}
 	.option-tile-group {
 		display: flex;
 		flex-direction: row;

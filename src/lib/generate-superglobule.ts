@@ -23,7 +23,9 @@ export const generateSuperGlobule = (superConfig: SuperGlobuleConfig): SuperGlob
 
 	const recombinedSubGlobules = recombineSubGlobules(subGlobules);
 
-	const projections = superConfig.projectionConfigs.map((config) => makeProjection(config));
+	const projections = superConfig.projectionConfigs.map((config, i) =>
+		makeProjection(config, { projection: i })
+	);
 
 	const superGlobule: SuperGlobule = {
 		type: 'SuperGlobule',

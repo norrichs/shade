@@ -1,5 +1,13 @@
 import { BufferGeometry, Object3D, Vector3 } from 'three';
-import type { Polyhedron, Edge, Polygon, Projection, Tube } from './types';
+import type {
+	Polyhedron,
+	Edge,
+	Polygon,
+	Projection,
+	Tube,
+	ProjectionAddress_Facet,
+	Section
+} from './types';
 import type { Band, Facet } from '$lib/types';
 import { type ShowProjectionGeometries } from '$lib/stores/viewControlStore';
 
@@ -29,7 +37,10 @@ export const collateGeometry = (
 				sections: show.sections
 					? collateSectionGeometry(tubes.map((tube) => tube.sections).flat(1))
 					: undefined,
-				bands: show.bands ? collateBandGeometry(tubes.map((tube) => tube.bands).flat()) : undefined
+				bands: show.bands ? collateBandGeometry(tubes.map((tube) => tube.bands).flat()) : undefined,
+				facets: show.facets
+					? collateFacetGeometry(tubes.map((tube) => tube.bands).flat())
+					: undefined
 		  }
 		: {};
 };
@@ -94,14 +105,14 @@ export const collateCrossSectionPoints = (points: Vector3[], center: Vector3) =>
 	return geometryPoints;
 };
 
-export const collateSectionGeometry = (sections: Vector3[][]) => {
+export const collateSectionGeometry = (sections: Section[]) => {
 	const geometryPoints: Vector3[] = [];
-	sections.forEach((section) => {
-		const v0 = section[0];
-		const v1 = section[Math.round(section.length / 2)];
+	sections.forEach(({ points }) => {
+		const v0 = points[0];
+		const v1 = points[Math.floor(points.length / 2)];
 		const center = new Vector3((v0.x + v1.x) / 2, (v0.y + v1.y) / 2, (v0.z + v1.z) / 2);
-		for (let i = 0; i < section.length - 1; i++) {
-			geometryPoints.push(section[i], center, section[i + 1]);
+		for (let i = 0; i < points.length - 1; i++) {
+			geometryPoints.push(points[i], center, points[i + 1]);
 		}
 	});
 	const sectionGeometry = new BufferGeometry().setFromPoints(geometryPoints);
@@ -121,4 +132,18 @@ export const collateBandGeometry = (bands: Band[]): BufferGeometry[] => {
 		bandsGeometry.push(bandGeometry);
 	});
 	return bandsGeometry;
+};
+
+export const collateFacetGeometry = (
+	bands: Band[]
+): { address: ProjectionAddress_Facet; geometry: BufferGeometry }[] => {
+	const facetGeometry: { address: ProjectionAddress_Facet; geometry: BufferGeometry }[] = [];
+	bands.forEach((band) => {
+		band.facets.forEach(({ address, triangle: { a, b, c } }) => {
+			const geometry = new BufferGeometry().setFromPoints([a.clone(), b.clone(), c.clone()]);
+			geometry.computeVertexNormals();
+			facetGeometry.push({ geometry, address });
+		});
+	});
+	return facetGeometry;
 };

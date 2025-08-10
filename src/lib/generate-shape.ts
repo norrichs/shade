@@ -31,7 +31,7 @@ import type {
 	Validation,
 	TabWidth,
 	TabFootprint,
-	BandOrientation,
+	FacetOrientation,
 	RadiateOrientation,
 	StripSide,
 	StrutOrientation,
@@ -321,13 +321,13 @@ const generateHelicalBands = (cBands: Band[]): Band[] => {
 	return helicalBands;
 };
 
-const getBandOrientation = (bandStyle: BandStyle): BandOrientation => {
+const getFacetOrientation = (bandStyle: BandStyle): FacetOrientation => {
 	if (bandStyle === 'helical-left') return -1;
 	if (bandStyle === 'helical-right') return 1;
 	return 0;
 };
 
-const getBandStyle = (bandOrientation: BandOrientation): BandStyle => {
+const getBandStyle = (bandOrientation: FacetOrientation): BandStyle => {
 	if (bandOrientation === -1) return 'helical-left';
 	if (bandOrientation === 1) return 'helical-right';
 	return 'circumference';
@@ -342,7 +342,7 @@ const generateCircumferenceBands = (config: GlobuleConfig, levels: Level[]): Ban
 
 	for (let i = 0; i < levels.length - 1; i++) {
 		const band: Band = {
-			orientation: getBandOrientation(config.bandConfig.bandStyle),
+			orientation: getFacetOrientation(config.bandConfig.bandStyle),
 			facets: []
 		};
 		levels[i].vertices.forEach((vertex, v, vertices) => {

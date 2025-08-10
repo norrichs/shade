@@ -1,24 +1,32 @@
-import { Color, DoubleSide, MeshPhysicalMaterial, type ColorRepresentation } from 'three';
+import {
+	BackSide,
+	Color,
+	DoubleSide,
+	FrontSide,
+	MeshPhysicalMaterial,
+	type ColorRepresentation
+} from 'three';
 import type { ThreeColor } from './colors';
 
 const theme = {
 	colorSelected: 'rgb(0,150,255)',
 	colorSecondarySelected: 'rgba(100, 200, 255)',
 	colorDefault: 'khaki',
-	colorHighlightedPrimary: 'orangered',
+	colorHighlightedPrimary: 'black',
 	colorHighlightedSecondary: 'cornflowerblue'
 };
 
 const defaultPhysicalMaterialConfig = {
 	color: theme.colorDefault,
 	transparent: true,
-	opacity: 0.9,
+	opacity: 1,
 	clearcoat: 1,
 	clearcoatRoughness: 0,
 	side: DoubleSide
 };
 
 const colorList: ThreeColor[] = [
+	'darkred',
 	'red',
 	'orange',
 	'yellow',

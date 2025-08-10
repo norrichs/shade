@@ -284,6 +284,22 @@ export const tiledPatternConfigs: { [key: string]: TiledPatternConfig } = {
 			variant: 'rect'
 		}
 	},
+	'tiledPanelPattern-0': {
+		type: 'tiledPanelPattern-0',
+		tiling: 'triangle',
+		config: {
+			rowCount: 1,
+			columnCount: 1,
+			dynamicStroke: 'quadWidth',
+			dynamicStrokeEasing: 'linear',
+			dynamicStrokeMin: 1,
+			dynamicStrokeMax: 3,
+			endsMatched: false,
+			endsTrimmed: true,
+			endLooped: 0,
+			variant: 'triangle-0'
+		}
+	},
 	tiledShieldTesselationPattern: {
 		type: 'tiledShieldTesselationPattern',
 		tiling: 'quadrilateral',
@@ -393,7 +409,7 @@ export const tiledPatternConfigs: { [key: string]: TiledPatternConfig } = {
 };
 
 const defaultTiledPatternConfig = (): TiledPatternConfig => ({
-	...tiledPatternConfigs['tiledBoxPattern-0'],
+	...tiledPatternConfigs['tiledPanelPattern-0'],
 	labels: {
 		scale: 0.1,
 		angle: 0
