@@ -301,7 +301,7 @@ const generateHelicalBands = (cBands: Band[]): Band[] => {
 	const helicalBands: Band[] = new Array(bandCount);
 	for (let b = 0; b < bandCount; b++) {
 		helicalBands[b] = { orientation: cBands[0].orientation, facets: [], endTab: undefined };
-		if (helicalBands[b].orientation === 1) {
+		if (helicalBands[b].orientation === 'axial-right') {
 			for (let f = 0; f < facetCount; f++) {
 				helicalBands[b].facets.push(
 					{ ...cBands[f].facets[b * 2] },
@@ -322,14 +322,14 @@ const generateHelicalBands = (cBands: Band[]): Band[] => {
 };
 
 const getFacetOrientation = (bandStyle: BandStyle): FacetOrientation => {
-	if (bandStyle === 'helical-left') return -1;
-	if (bandStyle === 'helical-right') return 1;
-	return 0;
+	if (bandStyle === 'helical-left') return 'axial-left';
+	if (bandStyle === 'helical-right') return 'axial-right';
+	return 'circumferential';
 };
 
 const getBandStyle = (bandOrientation: FacetOrientation): BandStyle => {
-	if (bandOrientation === -1) return 'helical-left';
-	if (bandOrientation === 1) return 'helical-right';
+	if (bandOrientation === 'axial-left') return 'helical-left';
+	if (bandOrientation === 'axial-right') return 'helical-right';
 	return 'circumference';
 };
 
@@ -831,6 +831,7 @@ export const getRenderable = (
 };
 
 export const generateGlobuleData = (configStore: GlobuleConfig): GlobuleData => {
+	console.debug('GENERATE GLOBULE DATA');
 	const config = window.structuredClone(configStore);
 	const rotatedShapePrototype: LevelPrototype | LevelPrototype[] = generateLevelPrototype(
 		config.shapeConfig,

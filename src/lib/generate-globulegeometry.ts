@@ -72,7 +72,7 @@ export const generateSuperGlobuleBandGeometry = (
 };
 
 export const generateBandGeometry = (globule: Globule, globuleIndex: number): BandGeometry[] => {
-	const bandGeometry =  globule.data.bands
+	const bandGeometry = globule.data.bands
 		.filter((b) => b.visible)
 		.map((band, bandIndex): BandGeometry => {
 			return {
@@ -88,7 +88,7 @@ export const generateBandGeometry = (globule: Globule, globuleIndex: number): Ba
 				bandIndex
 			};
 		});
-	return bandGeometry
+	return bandGeometry;
 };
 
 export const generateGlobuleGeometry = (globule: Globule | GlobuleConfig): GlobuleGeometry => {

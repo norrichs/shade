@@ -178,7 +178,7 @@ const generateProjectionPanelPattern = ({
 		tubes: []
 	};
 	console.debug('generateProjectionPanelPattern', { tubes, range });
-	const PANEl_OFFSET = -30;
+	const PANEl_OFFSET = -10;
 
 	const tubeStart = range?.tubes?.start || 0;
 	const tubeEnd = range?.tubes?.end || tubes.length;
@@ -340,6 +340,8 @@ export const getPanelEdgeMeta = (
 	const facet = band.facets[f];
 	const orientation =
 		typeof facet.orientation === 'undefined' ? band.orientation : facet.orientation;
+
+	// TODO: update this so that it takes into account the facet orientation
 
 	const edges: { [key: string]: TriangleEdge } = {
 		base: getEdge('base', f, orientation),
@@ -551,7 +553,7 @@ const getEdgeFromBase = ({ p0, p1 }: PanelBase) => {
 // it would be better to set orientation as a facet property, which would help enable dynamic orientations
 
 const edgeMap: { [key: string]: { [key: string]: { [key: string]: TriangleEdge } } } = {
-	'1': {
+	'axial-right': {
 		even: {
 			base: 'ab',
 			second: 'bc',
@@ -563,7 +565,7 @@ const edgeMap: { [key: string]: { [key: string]: { [key: string]: TriangleEdge }
 			outer: 'ac'
 		}
 	},
-	'0': {
+	circumferential: {
 		even: {
 			base: 'ac',
 			second: 'bc',
@@ -575,7 +577,7 @@ const edgeMap: { [key: string]: { [key: string]: { [key: string]: TriangleEdge }
 			outer: 'ab'
 		}
 	},
-	'-1': {
+	'axial-left': {
 		even: {
 			base: 'ab',
 			second: 'ac',

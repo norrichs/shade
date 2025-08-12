@@ -31,7 +31,7 @@ export const generateSuperGlobule = (superConfig: SuperGlobuleConfig): SuperGlob
 		type: 'SuperGlobule',
 		superGlobuleConfigId: superConfig.id,
 		name: superConfig.name,
-		subGlobules: recombinedSubGlobules,
+		subGlobules: [], //recombinedSubGlobules,
 		projections
 	};
 	return superGlobule;
@@ -39,6 +39,8 @@ export const generateSuperGlobule = (superConfig: SuperGlobuleConfig): SuperGlob
 
 const generateSubGlobule = (subGlobuleConfig: SubGlobuleConfig, sgIndex: number): SubGlobule => {
 	const { transforms, id, name } = subGlobuleConfig;
+
+	console.debug('GENERATE SUBGLOBULE');
 
 	const prototypeGlobule: Globule = {
 		type: 'Globule',

@@ -6,7 +6,7 @@
 		GlobuleGeometry,
 		Id,
 		SuperGlobuleConfig,
-		SuperGlobuleGeometry,
+		SuperGlobuleGeometry
 	} from '$lib/types';
 	import GlobuleTile2 from '../../components/globule-tile/GlobuleTile2.svelte';
 	import { superConfigStore } from '$lib/stores';
@@ -122,6 +122,7 @@
 		);
 
 		globuleGeometries = visibleGlobules.map((config, i) => {
+			console.debug('GLOBULE GEOMETRIES', i);
 			const data = generateGlobuleData(config);
 			const geometry = generateGlobuleGeometry({
 				type: 'Globule',

@@ -7,6 +7,7 @@
 	const FILL_RAINBOW = true;
 
 	const colors = ['purple', 'blue', 'green', 'yellow', 'orange', 'red'];
+	console.debug('PatternedBand', band);
 </script>
 
 {#each band.facets as facet, f}

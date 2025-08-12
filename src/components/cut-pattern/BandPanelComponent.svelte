@@ -28,7 +28,6 @@
 	};
 
 	$: angle = getCorrectedAngle(band);
-	console.debug('BAND PANEL', { band });
 
 	let color = colors.default;
 	let isFocused = false;

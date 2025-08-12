@@ -16,7 +16,10 @@
 	<text
 		transform={`rotate(-90) translate(${(-1 / scale.unitPerSvgUnit) * scale.quantity}, -10)`}
 		x={0}
-		y={0}>{`${scale.quantity} ${scale.unit}`}</text
+		y={0}
+		>{`${scale.quantity} ${scale.unit} ${
+			scale.secondary ? ` / ${scale.secondary.quantity} ${scale.secondary.unit}` : ''
+		}`}</text
 	>
 	<path d={scaleBarPath} />
 </g>

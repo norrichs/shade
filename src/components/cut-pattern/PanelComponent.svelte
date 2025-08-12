@@ -22,7 +22,8 @@
 	export let showCrease = true;
 	export let patternStyle: 'view' | 'cut';
 	export let labelSize: number;
-	export let labelOffset = 10;
+	export let labelOffset = -3;
+	export let edgeLabelAnchor: 'start' | 'end' | 'center' = 'center';
 
 	let { a, b, c } = panel.triangle;
 	let center = { x: (a.x + b.x + c.x) / 3, y: (a.y + b.y + c.y) / 3 };
@@ -33,6 +34,22 @@
 	const handleClick = () => {
 		$selectedProjection = panel.address;
 	};
+
+	const getAnchor = (v0: Vector3, v1: Vector3, style: 'start' | 'end' | 'center') => {
+		switch (style) {
+			case 'start':
+				return v0.clone();
+			case 'end':
+				return v1.clone();
+			case 'center':
+			default:
+				return new Vector3(v0.x + (v1.x - v0.x) / 2, v0.y + (v1.y - v0.y) / 2, 0);
+		}
+	};
+
+	let anchorAB = getAnchor(a, b, edgeLabelAnchor);
+	let anchorBC = getAnchor(b, c, edgeLabelAnchor);
+	let anchorAC = getAnchor(c, a, edgeLabelAnchor);
 
 	const getPanelLabelAnchors = (t: Triangle) => {
 		const triangleEdgeVectors = (['a', 'b', 'c'] as TrianglePoint[]).map((p0, i, points) => {
@@ -71,12 +88,16 @@
 	const update = (
 		p: PanelPattern,
 		sPG: typeof $selectedProjectionGeometry,
-		patternStyle: 'cut' | 'view'
+		patternStyle: 'cut' | 'view',
+		edgeLabelAnchor: 'start' | 'end' | 'center'
 	) => {
 		styles = patternStyles[patternStyle];
 		a = p.triangle.a;
 		b = p.triangle.b;
 		c = p.triangle.c;
+		anchorAB = getAnchor(a, b, edgeLabelAnchor);
+		anchorBC = getAnchor(b, c, edgeLabelAnchor);
+		anchorAC = getAnchor(c, a, edgeLabelAnchor);
 		center = { x: (a.x + b.x + c.x) / 3, y: (a.y + b.y + c.y) / 3 };
 		addressString = printProjectionAddress(panel.address, { hideProjection: true });
 
@@ -122,10 +143,19 @@
 		return `M ${x0} ${y0} L ${x1} ${y1}`;
 	};
 
-	$: update(panel, $selectedProjectionGeometry, patternStyle);
+	$: update(panel, $selectedProjectionGeometry, patternStyle, edgeLabelAnchor);
 </script>
 
-<g id={`panel-${addressString}`} font-family="courier" font-size={labelSize} {...styles}>
+<g id={`panel-${addressString}`} class="relief-font" font-size={labelSize} {...styles}>
+	<style>
+		@font-face {
+			font-family: 'Relief SingleLine OTF-SVG';
+			src: url('/fonts/ReliefSingleLineOTF-SVG-Regular.otf') format('truetype');
+			font-weight: normal;
+			font-style: normal;
+		}
+	</style>
+
 	{#if patternStyle === 'view'}
 		<path d={panel.svgPath} fill={panelFill} stroke="none" on:click={handleClick} />
 	{/if}
@@ -141,24 +171,25 @@
 	{/if}
 
 	<g
-		fill={styles.textFill}
-		stroke={styles.textStroke}
-		stroke-width={styles['stroke-width']}
+		fill="none"
+		stroke="black"
+		stroke-width={0.2}
 		fill-opacity="1"
+		font-family="Relief SingleLine OTF-SVG"
 	>
 		<text x={center.x - labelSize * 2} y={center.y}>{addressString}</text>
-		<g transform={`translate(${a.x}, ${a.y}) rotate(${getAngle('ab')})`}>
-			<text transform={`translate(0, ${labelOffset})`}>
+		<g transform={`translate(${anchorAB.x}, ${anchorAB.y}) rotate(${getAngle('ab')})`}>
+			<text transform={`translate(-10, ${labelOffset})`}>
 				{panelEdgeLabel('ab')}
 			</text>
 		</g>
-		<g transform={`translate(${b.x}, ${b.y}) rotate(${getAngle('bc')})`}>
-			<text transform={`translate(0, ${labelOffset})`}>
+		<g transform={`translate(${anchorBC.x}, ${anchorBC.y}) rotate(${getAngle('bc')})`}>
+			<text transform={`translate(-10, ${labelOffset})`}>
 				{panelEdgeLabel('bc')}
 			</text>
 		</g>
-		<g transform={`translate(${c.x}, ${c.y}) rotate(${getAngle('ac')})`}>
-			<text transform={`translate(0, ${labelOffset})`}>
+		<g transform={`translate(${anchorAC.x}, ${anchorAC.y}) rotate(${getAngle('ac')})`}>
+			<text transform={`translate(-10, ${labelOffset})`}>
 				{panelEdgeLabel('ac')}
 			</text>
 		</g>

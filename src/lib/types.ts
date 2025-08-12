@@ -592,17 +592,18 @@ export type Facet = {
 	tab?: FacetTab; // | FacetTab[];
 };
 
-export type FacetOrientation = -1 | 0 | 1;
+export type FacetOrientation = 'circumferential' | 'axial-right' | 'axial-left';
+
 /* 
 Triangle layout diagram
-orientation 0
+orientation 'circumferential' (0)
         _________ _________
 			/c\b     a/c\b     a/
 		/		 \	  /    \    /
 	/a     b\c/a     b\c/
 	--------- ---------
 
-orientation 1
+orientation 'axial-right' (1)
 
 								_________ 
 							/c\b     a/
@@ -613,7 +614,7 @@ orientation 1
 		/		 \	  /
 	/a     b\c/
 	--------- 
-orientation -1
+orientation 'axial-left' (-1)
 	_________ 
 	\b     a/c\
 		\	  /    \
@@ -1271,8 +1272,13 @@ export type TempId = string;
 
 export type SelectBarOption = { name: string; value?: unknown };
 
+export type ScaleUnit = 'inch' | 'mm';
 export type PatternScale = {
-	unit: 'inch' | 'mm';
+	unit: ScaleUnit;
+	secondary?: {
+		unit: ScaleUnit;
+		quantity: number;
+	};
 	unitPerSvgUnit: number;
 	quantity: number;
 };

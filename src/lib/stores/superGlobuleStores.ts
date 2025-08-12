@@ -68,6 +68,7 @@ export const superGlobulePatternStore = derived(
 			any: true,
 			bands: true
 		};
+		console.debug('GENERATE OLD STYLE? ', showGlobuleGeometry.any);
 		const superGlobulePattern = showGlobuleGeometry.any
 			? generateSuperGlobulePattern($superGlobuleStore, $superConfigStore, $patternConfigStore)
 			: null;

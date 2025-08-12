@@ -1105,7 +1105,7 @@ const projectorConfigs: {
 };
 
 const defaultBandConfig: ProjectionBandConfig = {
-	orientation: 1
+	orientation: 'axial-right'
 };
 
 const defaultProjectorConfig = projectorConfigs.tetrahedron;
