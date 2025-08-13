@@ -1,7 +1,6 @@
 import { AUTO_PERSIST_KEY, bootstrapShouldUsePersisted, persistable } from '$lib/persistable';
 import { generateDefaultSuperGlobuleConfig } from '$lib/shades-config';
 import type {
-	BandPattern,
 	Id,
 	PatternedBand,
 	ProjectionPanelPattern,
@@ -9,7 +8,7 @@ import type {
 	SuperGlobuleConfig
 } from '$lib/types';
 import { derived } from 'svelte/store';
-import { loadPersistedOrDefault, viewControlStore } from '$lib/stores';
+import { loadPersistedOrDefault } from '$lib/stores';
 import { generateSuperGlobule } from '$lib/generate-superglobule';
 import {
 	generateSuperGlobuleBandGeometry,
@@ -21,7 +20,6 @@ import {
 	validateAllPanels
 } from '$lib/cut-pattern/generate-pattern';
 import { patternConfigStore } from './globulePatternStores';
-import { selectedGlobule } from '.';
 import { overrideStore } from './overrideStore';
 
 // SUPER CONFIGS
@@ -68,32 +66,16 @@ export const superGlobulePatternStore = derived(
 			any: true,
 			bands: true
 		};
-		console.debug('GENERATE OLD STYLE? ', showGlobuleGeometry.any);
 		const superGlobulePattern = showGlobuleGeometry.any
 			? generateSuperGlobulePattern($superGlobuleStore, $superConfigStore, $patternConfigStore)
 			: null;
 
 		const projection = $superGlobuleStore.projections[0];
-		// const range = {
-		// 	tubes: { start: 0, end: 6 },
-		// 	bands: { start: 0, end: 6 },
-		// 	panels: { start: 0, end: 8 }
-		// };
 
-		let projectionPattern;
-		if ($overrideStore.shouldUseOverride && $overrideStore.projection.tubes) {
-			console.debug('OVERRIDE STORE', $overrideStore);
-			projectionPattern = generateProjectionPattern(
-				$overrideStore.projection.tubes,
-				$superConfigStore.id,
-				$patternConfigStore
-			);
-		} else {
-			projectionPattern =
-				showProjectionGeometry.any && showProjectionGeometry.bands
-					? generateProjectionPattern(projection.tubes, $superConfigStore.id, $patternConfigStore)
-					: undefined;
-		}
+		const projectionPattern =
+			showProjectionGeometry.any && showProjectionGeometry.bands
+				? generateProjectionPattern(projection.tubes, $superConfigStore.id, $patternConfigStore)
+				: undefined;
 		if (isSuperGlobuleProjectionPanelPattern(projectionPattern)) {
 			validateAllPanels(projectionPattern.projectionPanelPattern.tubes);
 		}

@@ -316,9 +316,10 @@ export type BandPanelPattern = {
 	panels: PanelPattern[];
 };
 
+export type Crease = 'valley' | 'mountain';
 export type PanelEdgeMeta = {
 	cutAngle: number;
-	crease: 'valley' | 'mountain';
+	crease: Crease;
 	partner: ProjectionAddress_FacetEdge;
 	label?: string;
 };
@@ -575,7 +576,7 @@ export type MultiFacetTrapTab = {
 // TODO - remove all FacetTab[] = a facet can only have a single attached tab
 
 export type FacetEdgeMeta = {
-	address: ProjectionAddress_FacetEdge;
+	// address: ProjectionAddress_FacetEdge;
 	partner: ProjectionAddress_FacetEdge;
 };
 
@@ -588,7 +589,7 @@ export type Facet = {
 		bc: FacetEdgeMeta;
 		ac: FacetEdgeMeta;
 	};
-	orientation?: FacetOrientation;
+	orientation: FacetOrientation;
 	tab?: FacetTab; // | FacetTab[];
 };
 

@@ -1,13 +1,9 @@
 <script lang="ts">
-	import type { BandAddressed, BandPanelPattern, GeometryAddress, PatternedBand } from '$lib/types';
-	import PatternLabel from './PatternLabel.svelte';
-	import { patternConfigStore, selectedBand } from '$lib/stores';
+	import type { BandPanelPattern } from '$lib/types';
 	import { printProjectionAddress } from '$lib/projection-geometry/generate-projection';
 	import { Vector3 } from 'three';
-
 	export let band: BandPanelPattern;
 	export let index: number;
-	export let showLabel = true;
 	export let correctAngle = true;
 
 	let colors = {

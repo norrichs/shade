@@ -17,7 +17,8 @@ import type {
 	SuperGlobuleConfig,
 	SubGlobuleConfig,
 	GlobulePatternConfig,
-	RecombinatoryRecurrence
+	RecombinatoryRecurrence,
+	TiledPattern
 } from '$lib/types';
 import { rad } from './util';
 import { GENERAL_CONFIG, generateTempId, GLOBULE_CONFIG, SUPER_GLOBULE_CONFIG } from './id-handler';
@@ -408,13 +409,17 @@ export const tiledPatternConfigs: { [key: string]: TiledPatternConfig } = {
 	}
 };
 
-const defaultTiledPatternConfig = (): TiledPatternConfig => ({
-	...tiledPatternConfigs['tiledHexPattern-1'],
-	labels: {
-		scale: 0.1,
-		angle: 0
-	}
-});
+const defaultTiledPatternConfig = (): TiledPatternConfig => {
+	const pattern: TiledPattern = 'tiledPanelPattern-0';
+	return {
+		...tiledPatternConfigs[pattern],
+		labels: {
+			scale: 0.1,
+			angle: 0
+		}
+	};
+};
+
 const defaultCutoutConfig = (): CutoutConfig[] => [
 	{
 		tilePattern: { type: 'each-facet' },

@@ -6,13 +6,12 @@ import type {
 	BandConfigCoordinates,
 	GlobuleConfigCoordinates,
 	Facet,
-	SuperGlobule,
-	TubePanelPattern
+	SuperGlobule
 } from '$lib/types';
 import { derived, writable } from 'svelte/store';
 import {
+	isSuperGlobuleProjectionPanelPattern,
 	superConfigStore,
-	superGlobuleGeometryStore,
 	superGlobulePatternStore,
 	superGlobuleStore
 } from './superGlobuleStores';
@@ -22,8 +21,7 @@ import type {
 	ProjectionAddress_Facet,
 	ProjectionAddress_FacetEdge,
 	ProjectionAddress_Projection,
-	ProjectionAddress_Tube,
-	Tube
+	ProjectionAddress_Tube
 } from '$lib/projection-geometry/types';
 import { BufferGeometry } from 'three';
 
@@ -133,10 +131,14 @@ export const selectedProjectionGeometry = derived(
 			selectedFacets.forEach((facet) => {
 				const { address: a } = facet;
 				if (!a) return;
-				const panel =
-					$superGlobulePatternStore.projectionPattern?.projectionPanelPattern?.tubes[a.tube].bands[
-						a.band
-					].panels[a.facet];
+
+				const panel = isSuperGlobuleProjectionPanelPattern(
+					$superGlobulePatternStore.projectionPattern
+				)
+					? $superGlobulePatternStore.projectionPattern.projectionPanelPattern?.tubes[a.tube].bands[
+							a.band
+					  ].panels[a.facet]
+					: undefined;
 
 				if (panel) {
 					const edgesMeta = panel.meta.edges;
@@ -152,7 +154,6 @@ export const selectedProjectionGeometry = derived(
 					}
 				}
 			});
-			console.debug('PARTNERS', partners);
 
 			const partnerPoints = Array.from(partners)
 				.map((partner) => {

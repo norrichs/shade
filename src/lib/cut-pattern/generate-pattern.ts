@@ -9,8 +9,7 @@ import type {
 	Band,
 	BandAddressed,
 	BandPanelPattern,
-	FacetEdgeMeta,
-	FacetOrientation,
+	Crease,
 	GeometryAddress,
 	Globule,
 	GlobulePatternConfig,
@@ -33,7 +32,6 @@ import { applyStrokeWidth } from './cut-pattern';
 import { generateTiledBandPattern } from './generate-tiled-pattern';
 import { getEdgeMatchedTriangles } from '$lib/projection-geometry/generate-projection';
 import { svgPathStringFromSegments } from '$lib/patterns/utils';
-import { formatAngle } from '$lib/util';
 import type { SuperGlobuleBandPattern, SuperGlobuleProjectionPattern } from '$lib/stores';
 
 type PatternGlobule = {
@@ -116,7 +114,6 @@ export const generateProjectionPattern = (
 		patternConfig: { pixelScale }
 	} = globulePatternConfig;
 	if (shouldUsePanelPattern(tiledPatternConfig)) {
-		console.debug('use tiled panel pattern');
 		const projectionPanelPattern = generateProjectionPanelPattern({
 			tubes,
 			range
@@ -128,7 +125,6 @@ export const generateProjectionPattern = (
 		};
 	} else {
 		tubes.forEach(({ bands }) => {
-			console.debug('use tiled band pattern');
 			let pattern: PatternedBandPattern = generateTiledBandPattern({
 				address: dummyAddress,
 				bands,
@@ -158,15 +154,10 @@ const shouldUsePanelPattern = ({ type, tiling }: TiledPatternConfig) => {
 
 const generateProjectionPanelPattern = ({
 	tubes,
-	// superGlobuleConfig,
-	// globulePatternConfig,
-	existingPattern,
 	range
 }: {
 	tubes: Tube[];
-	// superGlobuleConfig: SuperGlobuleConfig;
-	// globulePatternConfig: GlobulePatternConfig;
-	existingPattern?: ProjectionPanelPattern;
+
 	range?: {
 		tubes?: { start: number; end: number };
 		bands?: { start: number; end: number };
@@ -256,12 +247,6 @@ const edgeMapper = (edge: TriangleEdge) => {
 	return EDGE_MAP[edge];
 };
 
-const BAND_BASE_MAP: { [key: string]: [TriangleEdge, TriangleEdge] } = {
-	ac: ['ab', 'bc'],
-	ab: ['bc', 'ac'],
-	bc: ['ab', 'ac']
-};
-
 const getBandBasePoints = (
 	band: Band
 ): [{ p0: TrianglePoint; p1: TrianglePoint }, { p0: TrianglePoint; p1: TrianglePoint }] => {
@@ -284,10 +269,6 @@ const getBandBasePoints = (
 	const secondTriangleEdge = edgeMapper(firstEdgeMatch.t0);
 
 	return [firstTriangleEdge, secondTriangleEdge];
-};
-
-const bandBaseMapper = (edge: TriangleEdge) => {
-	return BAND_BASE_MAP[edge];
 };
 
 const generatePanelPattern = ({
@@ -321,112 +302,33 @@ const generatePanelPattern = ({
 
 export const getPanelEdgeMeta = (
 	address: ProjectionAddress_Facet,
-	tubes: Tube[],
-	debug?: boolean
+	tubes: Tube[]
 ): PanelPattern['meta']['edges'] => {
 	const tube = tubes[address.tube];
-	const bandCount = tube.bands.length;
 	const band = tube.bands[address.band];
-	const facetCount = band.facets.length;
-
-	let edgeMeta = { ab: {}, bc: {}, ac: {} } as PanelPattern['meta']['edges'];
 
 	const f = address.facet;
-	const b = address.band;
-	let self, partner;
 
-	const isFirstFacet = f === 0;
-	const isLastFacet = f === facetCount - 1;
 	const facet = band.facets[f];
-	const orientation =
-		typeof facet.orientation === 'undefined' ? band.orientation : facet.orientation;
 
-	// TODO: update this so that it takes into account the facet orientation
+	const edgeMeta = Object.fromEntries(
+		(['ab', 'bc', 'ac'] as TriangleEdge[]).map((edge) => {
+			if (!facet.meta || !facet.meta[edge]) throw Error('facet edge missing meta');
 
-	const edges: { [key: string]: TriangleEdge } = {
-		base: getEdge('base', f, orientation),
-		second: getEdge('second', f, orientation),
-		outer: getEdge('outer', f, orientation)
-	};
+			const { partner } = facet.meta[edge];
+			const partnerFacet = tubes[partner.tube].bands[partner.band].facets[partner.facet];
 
-	if (isFirstFacet) {
-		if (!facet.meta) throw Error('end facet should already have end partner in meta');
-		edgeMeta[edges.base].partner = { ...facet.meta[edges.base].partner };
-		edgeMeta[edges.second].partner = { ...address, facet: f + 1, edge: edges.second };
-		edgeMeta[edges.outer].partner = {
-			...address,
-			band: (b - 1 + bandCount) % bandCount,
-			facet: f + 1,
-			edge: edges.outer
-		};
-	} else if (isLastFacet) {
-		if (!facet.meta) throw Error('end facet should already have end partner in meta');
-		edgeMeta[edges.second].partner = { ...facet.meta[edges.second].partner };
-		edgeMeta[edges.base].partner = { ...address, facet: f - 1, edge: edges.base };
-		edgeMeta[edges.outer].partner = {
-			...address,
-			band: (b + 1) % bandCount,
-			facet: f - 1,
-			edge: edges.outer
-		};
-	} else if (f % 2 === 0) {
-		edgeMeta[edges.base].partner = {
-			...address,
-			facet: f - 1,
-			edge: edges.base
-		};
-		edgeMeta[edges.second].partner = {
-			...address,
-			facet: f + 1,
-			edge: edges.second
-		};
-		edgeMeta[edges.outer].partner = {
-			...address,
-			band: (b - 1 + bandCount) % bandCount,
-			facet: f + 1,
-			edge: edges.outer
-		};
-	} else {
-		edgeMeta[edges.base].partner = {
-			...address,
-			facet: f - 1,
-			edge: edges.base
-		};
-		edgeMeta[edges.second].partner = {
-			...address,
-			facet: f + 1,
-			edge: edges.second
-		};
-		edgeMeta[edges.outer].partner = {
-			...address,
-			band: (b + 1) % bandCount,
-			facet: f - 1,
-			edge: edges.outer
-		};
-	}
+			const { cutAngle, crease } = getCutAngle(facet.triangle, partnerFacet.triangle, edge);
 
-	// Get cutAngles for all facets
-	edgeMeta = Object.fromEntries(
-		Object.entries(edgeMeta).map(([key, value]) => {
-			const pAddress = { ...value.partner, edge: corrected(value.partner.edge) };
-			const partnerFacet = tubes[pAddress.tube].bands[pAddress.band].facets[pAddress.facet];
-
-			const { angle, isConcave, dihedral } = getCutAngle(
-				facet.triangle,
-				partnerFacet.triangle,
-				pAddress.edge,
-				debug
-			);
-
-			const newValue: PanelEdgeMeta = {
-				partner: pAddress,
-				cutAngle: angle,
-				crease: isConcave ? 'valley' : 'mountain'
+			const panelEdgeMeta: PanelEdgeMeta = {
+				partner,
+				cutAngle,
+				crease
 			};
-			return [key, newValue];
+			return [edge, panelEdgeMeta];
 		})
-	) as { ab: PanelEdgeMeta; bc: PanelEdgeMeta; ac: PanelEdgeMeta };
-	return edgeMeta;
+	);
+	return edgeMeta as { ab: PanelEdgeMeta; bc: PanelEdgeMeta; ac: PanelEdgeMeta };
 };
 
 const TRIANGLE_POINT_MAP = {
@@ -470,9 +372,8 @@ export const getOtherTrianglePointFromTriangleEdge = (edge: TriangleEdge): Trian
 const getCutAngle = (
 	t0: Triangle,
 	t1: Triangle,
-	edge: TriangleEdge,
-	debug: boolean | string = false
-) => {
+	edge: TriangleEdge
+): { cutAngle: number; crease: Crease } => {
 	const n0 = new Vector3();
 	const n1 = new Vector3();
 	t0.getNormal(n0);
@@ -482,21 +383,6 @@ const getCutAngle = (
 	// const dihedral = n0.angleTo(n1);
 	const dihedral = getDihedral(t0, t1, edge);
 
-	// Dihedral angles can get screwed up if normals of adjacent triangles are facing opposite directions (e.g. we get 185 degrees instead of 5 degrees).
-	// May need to correct or not rely on  threejs normal calc
-	// Concavity test is also not reliable for some reason
-
-	// 1) calculated dihedral from scratch, without normals
-	// 2) if the outside point needs to rotate counter clockwise to meet other outside, it is positive
-	// Can we test that with the following?
-	//
-	// For t0 (a0 b c), t1 (a1 c b)
-	// 1) get vector from b to a0
-	// 2) rotated = rotate around vector b to c
-	// 3) get plane defined by t1.normal
-	// 4) test = b.addScaledVector(rotated, 1)
-	// 5) get distance from plane to test
-	// 6) if distance is < precision (1/10000?), concave (or convex, not sure), else the other
 	const p2 = getOtherTrianglePointFromTriangleEdge(edge);
 
 	const p0p2Vector = t0[p2].clone().addScaledVector(t0[p0], -1);
@@ -509,8 +395,12 @@ const getCutAngle = (
 
 	const isConcave = Math.abs(distance) < PRECISION;
 
-	const angle = isConcave ? (Math.PI - dihedral) / -2 : (Math.PI - dihedral) / 2;
-	return { angle, isConcave, dihedral };
+	const cutAngle = isConcave ? (Math.PI - dihedral) / -2 : (Math.PI - dihedral) / 2;
+	if (isNaN(cutAngle)) {
+		console.debug({ dihedral, cutAngle, t0, t1, edge });
+		throw Error('bad cut angle calculation');
+	}
+	return { cutAngle, crease: isConcave ? 'valley' : 'mountain' };
 };
 
 const getDihedral = (t0: Triangle, t1: Triangle, edge: TriangleEdge) => {
@@ -537,67 +427,6 @@ export const corrected = (s: string): TriangleEdge => {
 	if (s === 'ca') return 'ac';
 	if (s === 'cb') return 'bc';
 	return s as TriangleEdge;
-};
-
-const getEdgeFromBase = ({ p0, p1 }: PanelBase) => {
-	if (p0 === 'a') {
-		return p1 === 'b' ? 'ab' : 'ac';
-	}
-	if (p1 === 'a') {
-		return p0 === 'b' ? 'ab' : 'ac';
-	}
-	return 'bc';
-};
-// need to take into account triangle orientation
-// we could test if non-base vertex is the same as facet[f+2].p0 or p1
-// it would be better to set orientation as a facet property, which would help enable dynamic orientations
-
-const edgeMap: { [key: string]: { [key: string]: { [key: string]: TriangleEdge } } } = {
-	'axial-right': {
-		even: {
-			base: 'ab',
-			second: 'bc',
-			outer: 'ac'
-		},
-		odd: {
-			base: 'bc',
-			second: 'ab',
-			outer: 'ac'
-		}
-	},
-	circumferential: {
-		even: {
-			base: 'ac',
-			second: 'bc',
-			outer: 'ab'
-		},
-		odd: {
-			base: 'bc',
-			second: 'ac',
-			outer: 'ab'
-		}
-	},
-	'axial-left': {
-		even: {
-			base: 'ab',
-			second: 'ac',
-			outer: 'bc'
-		},
-		odd: {
-			base: 'ac',
-			second: 'ab',
-			outer: 'bc'
-		}
-	}
-};
-
-const getEdge = (
-	edgeType: 'base' | 'second' | 'outer',
-	parity: 'odd' | 'even' | number,
-	orientation: FacetOrientation
-) => {
-	const p = typeof parity === 'number' ? (parity % 2 === 0 ? 'even' : 'odd') : parity;
-	return edgeMap[orientation.toString()][p][edgeType];
 };
 
 const getFacet = (
