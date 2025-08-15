@@ -41,9 +41,10 @@
 		<CutPatternSvg width={6000} height={6000}>
 			<ProjectionBandPattern projectionPattern={$superGlobulePatternStore.projectionPattern} />
 			<ProjectionPanelPatterns
-				showSelectedOnly={'band'}
+				showSelectedOnly={false}
+				range={{ tubes: [0, 1], bands: [2, 4] }}
 				patternStyle="view"
-				labelSize={4}
+				labelSize={6}
 				scaleBar={{
 					unit: 'mm',
 					unitPerSvgUnit: mmFromInches(1) / 20,

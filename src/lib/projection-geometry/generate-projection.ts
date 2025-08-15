@@ -46,6 +46,7 @@ import type {
 } from './types';
 import { materials } from '../../components/three-renderer-v2/materials';
 import { getLength } from '$lib/patterns/utils';
+import { getTrianglePointFromTriangleEdge } from '$lib/cut-pattern/generate-pattern';
 
 const SHOULD_SKEW_CURVE = true;
 
@@ -195,50 +196,7 @@ const generateEdge = ({
 	center: Vector3;
 	transformConfig: TransformConfig;
 }) => {
-	// const tx = {
-	// 	scale: new Vector3(1.5, 1.5, 1),
-	// 	translate: new Vector3(0, 0, 0)
-	// };
-	// const transformMatrix: [
-	// 	number,
-	// 	number,
-	// 	number,
-	// 	number,
-	// 	number,
-	// 	number,
-	// 	number,
-	// 	number,
-	// 	number,
-	// 	number,
-	// 	number,
-	// 	number,
-	// 	number,
-	// 	number,
-	// 	number,
-	// 	number
-	// ] = [
-	// 	tx.scale.x,
-	// 	0,
-	// 	0,
-	// 	tx.translate.x,
-	// 	0,
-	// 	tx.scale.y,
-	// 	0,
-	// 	tx.translate.y,
-	// 	0,
-	// 	0,
-	// 	tx.scale.z,
-	// 	tx.translate.z,
-	// 	0,
-	// 	0,
-	// 	0,
-	// 	1
-	// 	];
-
-	// const matrix = new Matrix4();
-
 	const transformMatrix = getMatrix4(transformConfig);
-	// matrix.set(...transformMatrix);
 
 	const { divisions } = widthCurve.sampleMethod;
 	const [v0, v1] = getVector3([vertex0, vertex1]) as Vector3[];
@@ -258,8 +216,6 @@ const generateEdge = ({
 		definitionPoints,
 		isDirectionMatched
 	);
-
-	// const curvePoints = isDirectionMatched
 
 	return { edgePoints, curvePoints };
 };
@@ -507,11 +463,31 @@ const generateProjectionBands = (
 	tubeAddress: ProjectionAddress_Tube,
 	tubeSymmetry = { axial: false, lateral: false }
 ) => {
-	if (bandOrientation === 'axial-left')
-		throw Error('orientation -1 not allowed for projectionbands');
+	// if (bandOrientation === 'axial-left')
+	// 	throw Error('orientation -1 not allowed for projectionbands');
 	const sectionLength = sections[0].points.length;
 	const bands: Band[] = [];
-	if (bandOrientation === 'circumferential') {
+	if (tubeSymmetry.lateral && bandOrientation !== 'circumferential') {
+		for (let f = 0; f < sectionLength - 1; f++) {
+			const reflectedOrientation = bandOrientation === 'axial-right' ? 'axial-left' : 'axial-right';
+
+			const bandAddress = { ...tubeAddress, band: bands.length };
+			const facets: Facet[] = [];
+			for (let s = 0; s < sections.length - 1; s++) {
+				facets.push(
+					...generateFacetPair({
+						sections,
+						sectionIndex: s,
+						pointIndex: f,
+						bandAddress,
+						facetCount: facets.length,
+						pairOrientation: f < sectionLength / 2 ? bandOrientation : reflectedOrientation
+					})
+				);
+			}
+			bands.push({ orientation: bandOrientation, facets, visible: true });
+		}
+	} else if (bandOrientation === 'circumferential') {
 		for (let s = 0; s < sections.length - 1; s++) {
 			const bandAddress = { ...tubeAddress, band: bands.length };
 			const facets: Facet[] = [];
@@ -529,8 +505,7 @@ const generateProjectionBands = (
 			}
 			bands.push({ orientation: bandOrientation, facets, visible: true });
 		}
-	} else if (bandOrientation === 'axial-right' && tubeSymmetry) {
-		// const { axial, lateral } = tubeSymmetry;
+	} else if (bandOrientation === 'axial-left') {
 		for (let f = 0; f < sectionLength - 1; f++) {
 			const bandAddress = { ...tubeAddress, band: bands.length };
 			const facets: Facet[] = [];
@@ -549,6 +524,7 @@ const generateProjectionBands = (
 			bands.push({ orientation: bandOrientation, facets, visible: true });
 		}
 	} else if (bandOrientation === 'axial-right') {
+		console.debug('AXIAL RIGHT');
 		for (let f = 0; f < sectionLength - 1; f++) {
 			const bandAddress = { ...tubeAddress, band: bands.length };
 			const facets: Facet[] = [];
@@ -567,7 +543,7 @@ const generateProjectionBands = (
 			bands.push({ orientation: bandOrientation, facets, visible: true });
 		}
 	}
-	return { bands, sections };
+	return bands;
 };
 
 const combineSections = (edge0: ProjectionEdge, edge1: ProjectionEdge): Section[] => {
@@ -640,11 +616,8 @@ export const generateTubeBands = (
 
 	for (let i = 0; i < sortedEdges.length; i += 2) {
 		const tubeAddress = { ...projectionAddress, tube: i / 2 };
-		const { bands, sections } = generateProjectionBands(
-			combineSections(sortedEdges[i], sortedEdges[i + 1]),
-			orientation,
-			tubeAddress
-		);
+		const sections = combineSections(sortedEdges[i], sortedEdges[i + 1]);
+		const bands = generateProjectionBands(sections, orientation, tubeAddress);
 		const tube = {
 			bands,
 			sections,
@@ -655,7 +628,9 @@ export const generateTubeBands = (
 		tubes[i / 2] = tube;
 	}
 	matchTubeEnds(tubes);
+	console.debug('MATCHED TUBES', window.structuredClone(tubes));
 	matchFacets(tubes);
+	console.debug('MATCHED FACETS', tubes);
 	return { tubes: tubes as Tube[] };
 };
 
@@ -671,7 +646,7 @@ const matchFacets = (tubes: Tube[]) => {
 	});
 };
 
-const edgeMap: { [key: string]: { [key: string]: { [key: string]: TriangleEdge } } } = {
+const EDGE_MAP: { [key: string]: { [key: string]: { [key: string]: TriangleEdge } } } = {
 	'axial-right': {
 		even: {
 			base: 'ab',
@@ -709,13 +684,13 @@ const edgeMap: { [key: string]: { [key: string]: { [key: string]: TriangleEdge }
 		}
 	}
 };
-const getEdge = (
+export const getEdge = (
 	edgeType: 'base' | 'second' | 'outer',
 	parity: 'odd' | 'even' | number,
 	orientation: FacetOrientation
 ) => {
 	const p = typeof parity === 'number' ? (parity % 2 === 0 ? 'even' : 'odd') : parity;
-	return edgeMap[orientation][p][edgeType];
+	return EDGE_MAP[orientation][p][edgeType];
 };
 
 const getFacetEdgeMeta = (address: ProjectionAddress_Facet, tubes: Tube[]): Facet['meta'] => {
@@ -734,6 +709,7 @@ const getFacetEdgeMeta = (address: ProjectionAddress_Facet, tubes: Tube[]): Face
 	const isLastFacet = f === facetCount - 1;
 	const facet = band.facets[f];
 	const { orientation } = facet;
+	const bandOffsetIndex = orientation === 'axial-left' ? -1 : 1;
 
 	const edges: { [key: string]: TriangleEdge } = {
 		base: getEdge('base', f, orientation),
@@ -743,11 +719,12 @@ const getFacetEdgeMeta = (address: ProjectionAddress_Facet, tubes: Tube[]): Face
 
 	if (isFirstFacet) {
 		if (!facet.meta) throw Error('end facet should already have end partner in meta');
+		console.debug('first facet', { facet, edges, meta: facet.meta });
 		edgeMeta[edges.base].partner = { ...facet.meta[edges.base].partner };
 		edgeMeta[edges.second].partner = { ...address, facet: f + 1, edge: edges.second };
 		edgeMeta[edges.outer].partner = {
 			...address,
-			band: (b - 1 + bandCount) % bandCount,
+			band: (b - bandOffsetIndex + bandCount) % bandCount,
 			facet: f + 1,
 			edge: edges.outer
 		};
@@ -757,7 +734,7 @@ const getFacetEdgeMeta = (address: ProjectionAddress_Facet, tubes: Tube[]): Face
 		edgeMeta[edges.base].partner = { ...address, facet: f - 1, edge: edges.base };
 		edgeMeta[edges.outer].partner = {
 			...address,
-			band: (b + 1) % bandCount,
+			band: (b + bandOffsetIndex + bandCount) % bandCount,
 			facet: f - 1,
 			edge: edges.outer
 		};
@@ -774,7 +751,7 @@ const getFacetEdgeMeta = (address: ProjectionAddress_Facet, tubes: Tube[]): Face
 		};
 		edgeMeta[edges.outer].partner = {
 			...address,
-			band: (b - 1 + bandCount) % bandCount,
+			band: (b - bandOffsetIndex + bandCount) % bandCount,
 			facet: f + 1,
 			edge: edges.outer
 		};
@@ -791,7 +768,7 @@ const getFacetEdgeMeta = (address: ProjectionAddress_Facet, tubes: Tube[]): Face
 		};
 		edgeMeta[edges.outer].partner = {
 			...address,
-			band: (b + 1) % bandCount,
+			band: (b + bandOffsetIndex + bandCount) % bandCount,
 			facet: f - 1,
 			edge: edges.outer
 		};
@@ -812,15 +789,31 @@ const matchTubeEnds = (tubes: Tube[]) => {
 		)
 	);
 
-	tubes.forEach((tube) =>
-		tube.bands.forEach((band) => {
+	tubes.forEach((tube, t) =>
+		tube.bands.forEach((band, b) => {
 			const firstFacet = band.facets[0];
 			const lastFacet = band.facets[band.facets.length - 1];
 
 			if (!firstFacet.address || !lastFacet.address)
 				throw Error('facets without address when they should');
 			if (hasNoPartner(firstFacet)) {
-				const { edge, partnerEdge, partner } = findPartner(firstFacet, endFacets);
+				// TODO: fix the error here that is returning a self as partner
+				const { edge, partnerEdge, partner } = findPartner(
+					firstFacet,
+					endFacets,
+					getEdge('base', 'even', firstFacet.orientation)
+				);
+				if (t === 0 && b === 0) {
+					console.debug('MATCH TUBE ENDS', {
+						t,
+						b,
+						edge,
+						partnerEdge,
+						partner,
+						firstFacet,
+						endFacets
+					});
+				}
 				if (!partner.address) throw Error('facets without address when they should');
 				const newMeta: { [key: string]: FacetEdgeMeta } = {};
 				newMeta[edge] = {
@@ -831,7 +824,11 @@ const matchTubeEnds = (tubes: Tube[]) => {
 				firstFacet.meta = firstFacet.meta ? { ...firstFacet.meta, ...newMeta } : newMeta;
 			}
 			if (hasNoPartner(lastFacet)) {
-				const { edge, partnerEdge, partner } = findPartner(lastFacet, endFacets);
+				const { edge, partnerEdge, partner } = findPartner(
+					lastFacet,
+					endFacets,
+					getEdge('base', 'even', lastFacet.orientation)
+				);
 				if (!partner.address) throw Error('facets without address when they should');
 				const newMeta: { [key: string]: FacetEdgeMeta } = {};
 				newMeta[edge] = {
@@ -845,10 +842,15 @@ const matchTubeEnds = (tubes: Tube[]) => {
 	);
 };
 
-const findPartner = (facet0: Facet, facets: Facet[]) => {
+const findPartner = (facet0: Facet, facets: Facet[], edgeToMatch: TriangleEdge) => {
 	for (const facet of facets) {
-		const match = getEdgeMatchedTriangles(facet0.triangle, facet.triangle);
+		const match =
+			facet0.address && facet.address && facet0.address.tube !== facet.address.tube &&
+			getEdgeMatchedTriangles(facet0.triangle, facet.triangle, edgeToMatch);
 		if (match) {
+			if (facet0.address?.tube === 0 && facet0.address.band === 0) {
+				console.debug('FINDPARTNER', { facet0, facet, match });
+			}
 			return { partner: facet, partnerEdge: match.t1, edge: match.t0 };
 		}
 	}
@@ -871,11 +873,16 @@ const normalizePoints = (points: Vector2[]) => {
 export const getEdgeMatchedTriangles = (
 	t0: Triangle,
 	t1: Triangle,
+	edgeToMatch?: TriangleEdge | undefined,
 	precision = 1 / 10_000
 ): { t0: TriangleEdge; t1: TriangleEdge } | false => {
 	const matched = ['', ''];
 
-	(['a', 'b', 'c'] as TrianglePoint[]).forEach((side0) => {
+	const t0Points = edgeToMatch
+		? getTrianglePointFromTriangleEdge(edgeToMatch, 'triangle-order')
+		: (['a', 'b', 'c'] as TrianglePoint[]);
+
+	t0Points.forEach((side0) => {
 		(['a', 'b', 'c'] as TrianglePoint[]).forEach((side1) => {
 			if (isSameVector3(t0[side0], t1[side1], precision)) {
 				matched[0] += side0;

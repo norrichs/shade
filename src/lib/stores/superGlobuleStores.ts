@@ -76,9 +76,9 @@ export const superGlobulePatternStore = derived(
 			showProjectionGeometry.any && showProjectionGeometry.bands
 				? generateProjectionPattern(projection.tubes, $superConfigStore.id, $patternConfigStore)
 				: undefined;
-		if (isSuperGlobuleProjectionPanelPattern(projectionPattern)) {
-			validateAllPanels(projectionPattern.projectionPanelPattern.tubes);
-		}
+		// if (isSuperGlobuleProjectionPanelPattern(projectionPattern)) {
+		// 	validateAllPanels(projectionPattern.projectionPanelPattern.tubes);
+		// }
 
 		console.debug('SUPER GLOBULE PATTERN STORE', {
 			$superGlobuleStore,

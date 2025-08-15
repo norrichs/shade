@@ -30,7 +30,7 @@ import type {
 import { Plane, Triangle, Vector3 } from 'three';
 import { applyStrokeWidth } from './cut-pattern';
 import { generateTiledBandPattern } from './generate-tiled-pattern';
-import { getEdgeMatchedTriangles } from '$lib/projection-geometry/generate-projection';
+import { getEdge, getEdgeMatchedTriangles } from '$lib/projection-geometry/generate-projection';
 import { svgPathStringFromSegments } from '$lib/patterns/utils';
 import type { SuperGlobuleBandPattern, SuperGlobuleProjectionPattern } from '$lib/stores';
 
@@ -185,6 +185,9 @@ const generateProjectionPanelPattern = ({
 			const panelEnd = range?.panels?.end || band.facets.length;
 
 			const bandBasePoints = getBandBasePoints(band);
+			if (t === 0 && b === 0) {
+				console.debug({ bandBasePoints });
+			}
 			const bandPattern: BandPanelPattern = {
 				address: band.address
 					? ({ ...band.address } as ProjectionAddress_Band)
@@ -237,38 +240,22 @@ const generateProjectionPanelPattern = ({
 	return pattern;
 };
 
-const EDGE_MAP: { [key: string]: { p0: 'a' | 'b' | 'c'; p1: 'a' | 'b' | 'c' } } = {
-	ab: { p0: 'a', p1: 'b' },
-	bc: { p0: 'b', p1: 'c' },
-	ac: { p0: 'a', p1: 'c' }
-};
-
-const edgeMapper = (edge: TriangleEdge) => {
-	return EDGE_MAP[edge];
-};
-
-const getBandBasePoints = (
+export const getBandBasePoints = (
 	band: Band
 ): [{ p0: TrianglePoint; p1: TrianglePoint }, { p0: TrianglePoint; p1: TrianglePoint }] => {
-	const firstEdgeMatch = getEdgeMatchedTriangles(band.facets[0].triangle, band.facets[1].triangle);
-	const secondEdgeMatch = getEdgeMatchedTriangles(band.facets[1].triangle, band.facets[2].triangle);
+	const base0 = getTrianglePointFromTriangleEdge(
+		getEdge('base', 'even', band.orientation),
+		'triangle-order'
+	);
+	const base1 = getTrianglePointFromTriangleEdge(
+		getEdge('base', 'odd', band.orientation),
+		'triangle-order'
+	);
 
-	if (firstEdgeMatch === false || secondEdgeMatch === false)
-		throw Error('a set of triangles has no matching edges');
-
-	const invalid =
-		firstEdgeMatch.t0[0] !== firstEdgeMatch.t1[1] || firstEdgeMatch.t0[1] !== firstEdgeMatch.t1[0];
-	secondEdgeMatch.t0[0] !== secondEdgeMatch.t1[1] ||
-		secondEdgeMatch.t0[1] !== secondEdgeMatch.t1[0];
-	if (invalid)
-		throw Error(
-			`getBandBasedEdges - edge matching invalid - ${firstEdgeMatch?.t0}, ${firstEdgeMatch?.t1}, ${secondEdgeMatch?.t0}, ${secondEdgeMatch?.t1}`
-		);
-
-	const firstTriangleEdge = edgeMapper(secondEdgeMatch.t0);
-	const secondTriangleEdge = edgeMapper(firstEdgeMatch.t0);
-
-	return [firstTriangleEdge, secondTriangleEdge];
+	return [
+		{ p0: base0[0], p1: base0[1] },
+		{ p0: base1[0], p1: base1[1] }
+	] as [{ p0: TrianglePoint; p1: TrianglePoint }, { p0: TrianglePoint; p1: TrianglePoint }];
 };
 
 const generatePanelPattern = ({

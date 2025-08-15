@@ -73,12 +73,8 @@
 
 {#if show}
 	{#each pattern.tubes as tube, tubeIndex (concatAddress_Tube(tube.address))}
-		{#each tube.bands || [] as band, bandIndex (concatAddress_Band(band.address))}
-			<BandPanelComponent
-				{band}
-				index={tubeIndex * pattern.tubes[0].bands.length + bandIndex}
-				showLabel
-			>
+		{#each tube.bands?.reverse() || [] as band, bandIndex (concatAddress_Band(band.address))}
+			<BandPanelComponent {band} index={tubeIndex * pattern.tubes[0].bands.length + bandIndex}>
 				{#each band.panels as panel (concatAddress_Facet(panel.address))}
 					<PanelComponent {panel} {patternStyle} {labelSize} />
 				{/each}
