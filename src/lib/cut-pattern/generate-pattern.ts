@@ -305,7 +305,15 @@ export const getPanelEdgeMeta = (
 			const { partner } = facet.meta[edge];
 			const partnerFacet = tubes[partner.tube].bands[partner.band].facets[partner.facet];
 
-			const { cutAngle, crease } = getCutAngle(facet.triangle, partnerFacet.triangle, edge);
+			// console.debug('  -- getPanelEdgeMeta', { edge, address, partner });
+			const { cutAngle, crease } = getCutAngle(
+				facet.triangle,
+				partnerFacet.triangle,
+				edge,
+				partner.edge,
+				{ ...address, edge },
+				partner
+			);
 
 			const panelEdgeMeta: PanelEdgeMeta = {
 				partner,
@@ -359,18 +367,21 @@ export const getOtherTrianglePointFromTriangleEdge = (edge: TriangleEdge): Trian
 const getCutAngle = (
 	t0: Triangle,
 	t1: Triangle,
-	edge: TriangleEdge
+	edge0: TriangleEdge,
+	edge1: TriangleEdge,
+	address0?: ProjectionAddress_FacetEdge,
+	address1?: ProjectionAddress_FacetEdge
 ): { cutAngle: number; crease: Crease } => {
 	const n0 = new Vector3();
 	const n1 = new Vector3();
 	t0.getNormal(n0);
 	t1.getNormal(n1);
-	const [p0, p1] = getTrianglePointFromTriangleEdge(edge, 'triangle-order');
+	const [p0, p1] = getTrianglePointFromTriangleEdge(edge0, 'triangle-order');
 	const commonVector = t0[p1].clone().addScaledVector(t0[p0], -1).normalize();
 	// const dihedral = n0.angleTo(n1);
-	const dihedral = getDihedral(t0, t1, edge);
+	const dihedral = getDihedral(t0, t1, edge0, edge1);
 
-	const p2 = getOtherTrianglePointFromTriangleEdge(edge);
+	const p2 = getOtherTrianglePointFromTriangleEdge(edge0);
 
 	const p0p2Vector = t0[p2].clone().addScaledVector(t0[p0], -1);
 	p0p2Vector.applyAxisAngle(commonVector, dihedral);
@@ -384,20 +395,21 @@ const getCutAngle = (
 
 	const cutAngle = isConcave ? (Math.PI - dihedral) / -2 : (Math.PI - dihedral) / 2;
 	if (isNaN(cutAngle)) {
-		console.debug({ dihedral, cutAngle, t0, t1, edge });
+		console.debug({ dihedral, cutAngle, t0, t1, edge0, edge1, address0, address1 });
 		throw Error('bad cut angle calculation');
 	}
 	return { cutAngle, crease: isConcave ? 'valley' : 'mountain' };
 };
 
-const getDihedral = (t0: Triangle, t1: Triangle, edge: TriangleEdge) => {
-	const [p0, p1] = getTrianglePointFromTriangleEdge(edge, 'triangle-order');
-	const p2 = getOtherTrianglePointFromTriangleEdge(edge);
+const getDihedral = (t0: Triangle, t1: Triangle, edge0: TriangleEdge, edge1: TriangleEdge) => {
+	const [p0, p1] = getTrianglePointFromTriangleEdge(edge0, 'triangle-order');
+	const t0p2 = getOtherTrianglePointFromTriangleEdge(edge0);
+	const t1p2 = getOtherTrianglePointFromTriangleEdge(edge1);
 
 	const P = t0[p0].clone();
 	const b0 = t0[p1].clone().addScaledVector(P, -1);
-	const b1 = t0[p2].clone().addScaledVector(P, -1);
-	const b2 = t1[p2].clone().addScaledVector(P, -1);
+	const b1 = t0[t0p2].clone().addScaledVector(P, -1);
+	const b2 = t1[t1p2].clone().addScaledVector(P, -1);
 
 	const cross1 = new Vector3();
 	const cross2 = new Vector3();
@@ -406,6 +418,11 @@ const getDihedral = (t0: Triangle, t1: Triangle, edge: TriangleEdge) => {
 	cross2.crossVectors(b0, b2);
 
 	const dihedral = Math.acos(cross1.dot(cross2) / (cross1.length() * cross2.length()));
+
+	if (isNaN(dihedral)) {
+		console.debug({ dihedral, P, b0, b1, b2, t0, t1, edge0, edge1 });
+	}
+
 	return dihedral;
 };
 

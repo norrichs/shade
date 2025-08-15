@@ -22,7 +22,7 @@
 	export let showCrease = true;
 	export let patternStyle: 'view' | 'cut';
 	export let labelSize: number;
-	export let labelOffset = -3;
+	export let labelOffset = -2;
 	export let edgeLabelAnchor: 'start' | 'end' | 'center' = 'center';
 
 	let { a, b, c } = panel.triangle;
@@ -50,6 +50,10 @@
 	let anchorAB = getAnchor(a, b, edgeLabelAnchor);
 	let anchorBC = getAnchor(b, c, edgeLabelAnchor);
 	let anchorAC = getAnchor(c, a, edgeLabelAnchor);
+
+	let labelABWidth = 0;
+	let labelBCWidth = 0;
+	let labelACWidth = 0;
 
 	const getPanelLabelAnchors = (t: Triangle) => {
 		const triangleEdgeVectors = (['a', 'b', 'c'] as TrianglePoint[]).map((p0, i, points) => {
@@ -110,6 +114,15 @@
 				panelFill = 'black';
 			}
 		}
+
+		const labelAB = document.querySelector(`#label-${addressString}_ab`);
+		const labelBC = document.querySelector(`#label-${addressString}_bc`);
+		const labelAC = document.querySelector(`#label-${addressString}_ac`);
+		labelABWidth = (labelAB as SVGTextElement)?.getBBox().width;
+		labelBCWidth = (labelBC as SVGTextElement)?.getBBox().width;
+		labelACWidth = (labelAC as SVGTextElement)?.getBBox().width;
+
+		console.debug({ labelAB, labelABWidth });
 	};
 	const edges = ['ab', 'bc', 'ac'] as TriangleEdge[];
 
@@ -135,6 +148,13 @@
 	};
 
 	let styles = patternStyles[patternStyle];
+
+	const edgeLength = (edge: TriangleEdge) => {
+		const [p0, p1] = getTrianglePointFromTriangleEdge(edge, 'edge-order');
+		const dx = Math.abs(panel.triangle[p1].x - panel.triangle[p0].x);
+		const dy = Math.abs(panel.triangle[p1].y - panel.triangle[p0].y);
+		return Math.sqrt(dx * dx + dy * dy);
+	};
 
 	const edgeSegment = (t: Triangle, edge: TriangleEdge) => {
 		const [p0, p1] = getTrianglePointFromTriangleEdge(edge, 'triangle-order');
@@ -179,17 +199,26 @@
 	>
 		<text x={center.x - labelSize * 2} y={center.y}>{addressString}</text>
 		<g transform={`translate(${anchorAB.x}, ${anchorAB.y}) rotate(${getAngle('ab')})`}>
-			<text transform={`translate(-10, ${labelOffset})`}>
+			<text
+				id={`label-${addressString}_ab`}
+				transform={`translate(-${labelABWidth / 2 + 3}, ${labelOffset})`}
+			>
 				{panelEdgeLabel('ab')}
 			</text>
 		</g>
 		<g transform={`translate(${anchorBC.x}, ${anchorBC.y}) rotate(${getAngle('bc')})`}>
-			<text transform={`translate(-10, ${labelOffset})`}>
+			<text
+				id={`label-${addressString}_bc`}
+				transform={`translate(-${labelBCWidth / 2 + 3}, ${labelOffset})`}
+			>
 				{panelEdgeLabel('bc')}
 			</text>
 		</g>
 		<g transform={`translate(${anchorAC.x}, ${anchorAC.y}) rotate(${getAngle('ac')})`}>
-			<text transform={`translate(-10, ${labelOffset})`}>
+			<text
+				id={`label-${addressString}_ac`}
+				transform={`translate(-${labelACWidth / 2 + 3}, ${labelOffset})`}
+			>
 				{panelEdgeLabel('ac')}
 			</text>
 		</g>

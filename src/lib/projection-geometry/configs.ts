@@ -17,7 +17,7 @@ import type {
 
 const defaultSphereConfig: SphereConfig = {
 	type: 'SphereConfig',
-	radius: 220,
+	radius: 280,
 	center: { x: 0, y: 0, z: 0 }
 };
 
@@ -104,7 +104,7 @@ const defaultCrossSection: CrossSectionConfig = {
 	],
 	center: { x: 0, y: 0.5 },
 	sampleMethod: { method: 'divideCurvePath', divisions: 3 },
-	scaling: { width: 'curve', height: 120 }
+	scaling: { width: 'curve', height: 220 }
 };
 
 const pTetrahedron: VerticesConfig = [
@@ -1105,7 +1105,7 @@ const projectorConfigs: {
 };
 
 const defaultBandConfig: ProjectionBandConfig = {
-	orientation: 'axial-left'
+	orientation: 'axial-right'
 };
 
 const defaultProjectorConfig = projectorConfigs.tetrahedron;

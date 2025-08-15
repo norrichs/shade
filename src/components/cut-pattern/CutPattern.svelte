@@ -42,9 +42,9 @@
 			<ProjectionBandPattern projectionPattern={$superGlobulePatternStore.projectionPattern} />
 			<ProjectionPanelPatterns
 				showSelectedOnly={false}
-				range={{ tubes: [0, 1], bands: [2, 4] }}
-				patternStyle="view"
-				labelSize={6}
+				range={{ tubes: [0, 2]	 }}
+				patternStyle="cut"
+				labelSize={3}
 				scaleBar={{
 					unit: 'mm',
 					unitPerSvgUnit: mmFromInches(1) / 20,

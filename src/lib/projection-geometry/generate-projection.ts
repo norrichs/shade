@@ -459,17 +459,21 @@ const generateFacetPair = ({
 
 const generateProjectionBands = (
 	sections: Section[],
-	bandOrientation: FacetOrientation,
+	projectOrientation: FacetOrientation,
 	tubeAddress: ProjectionAddress_Tube,
-	tubeSymmetry = { axial: false, lateral: false }
+	tubeSymmetry = { axial: false, lateral: true }
 ) => {
 	// if (bandOrientation === 'axial-left')
 	// 	throw Error('orientation -1 not allowed for projectionbands');
 	const sectionLength = sections[0].points.length;
 	const bands: Band[] = [];
-	if (tubeSymmetry.lateral && bandOrientation !== 'circumferential') {
+	if (tubeSymmetry.lateral && projectOrientation !== 'circumferential') {
+		console.debug(tubeAddress.tube, '---------- LATERAL SYMMETRY');
 		for (let f = 0; f < sectionLength - 1; f++) {
-			const reflectedOrientation = bandOrientation === 'axial-right' ? 'axial-left' : 'axial-right';
+			const reflectedOrientation =
+				projectOrientation === 'axial-right' ? 'axial-left' : 'axial-right';
+			const bandOrientation = f < sectionLength / 2 - 1 ? projectOrientation : reflectedOrientation;
+			console.debug(`band ${f}`, { bandOrientation });
 
 			const bandAddress = { ...tubeAddress, band: bands.length };
 			const facets: Facet[] = [];
@@ -481,13 +485,14 @@ const generateProjectionBands = (
 						pointIndex: f,
 						bandAddress,
 						facetCount: facets.length,
-						pairOrientation: f < sectionLength / 2 ? bandOrientation : reflectedOrientation
+						pairOrientation: bandOrientation
 					})
 				);
 			}
 			bands.push({ orientation: bandOrientation, facets, visible: true });
 		}
-	} else if (bandOrientation === 'circumferential') {
+		console.debug('---------------------------');
+	} else if (projectOrientation === 'circumferential') {
 		for (let s = 0; s < sections.length - 1; s++) {
 			const bandAddress = { ...tubeAddress, band: bands.length };
 			const facets: Facet[] = [];
@@ -499,13 +504,13 @@ const generateProjectionBands = (
 						pointIndex: f,
 						bandAddress,
 						facetCount: facets.length,
-						pairOrientation: bandOrientation
+						pairOrientation: projectOrientation
 					})
 				);
 			}
-			bands.push({ orientation: bandOrientation, facets, visible: true });
+			bands.push({ orientation: projectOrientation, facets, visible: true });
 		}
-	} else if (bandOrientation === 'axial-left') {
+	} else {
 		for (let f = 0; f < sectionLength - 1; f++) {
 			const bandAddress = { ...tubeAddress, band: bands.length };
 			const facets: Facet[] = [];
@@ -517,30 +522,11 @@ const generateProjectionBands = (
 						pointIndex: f,
 						bandAddress,
 						facetCount: facets.length,
-						pairOrientation: bandOrientation
+						pairOrientation: projectOrientation
 					})
 				);
 			}
-			bands.push({ orientation: bandOrientation, facets, visible: true });
-		}
-	} else if (bandOrientation === 'axial-right') {
-		console.debug('AXIAL RIGHT');
-		for (let f = 0; f < sectionLength - 1; f++) {
-			const bandAddress = { ...tubeAddress, band: bands.length };
-			const facets: Facet[] = [];
-			for (let s = 0; s < sections.length - 1; s++) {
-				facets.push(
-					...generateFacetPair({
-						sections,
-						sectionIndex: s,
-						pointIndex: f,
-						bandAddress,
-						facetCount: facets.length,
-						pairOrientation: bandOrientation
-					})
-				);
-			}
-			bands.push({ orientation: bandOrientation, facets, visible: true });
+			bands.push({ orientation: projectOrientation, facets, visible: true });
 		}
 	}
 	return bands;
@@ -709,73 +695,46 @@ const getFacetEdgeMeta = (address: ProjectionAddress_Facet, tubes: Tube[]): Face
 	const isLastFacet = f === facetCount - 1;
 	const facet = band.facets[f];
 	const { orientation } = facet;
-	const bandOffsetIndex = orientation === 'axial-left' ? -1 : 1;
 
-	const edges: { [key: string]: TriangleEdge } = {
-		base: getEdge('base', f, orientation),
-		second: getEdge('second', f, orientation),
-		outer: getEdge('outer', f, orientation)
-	};
+	const isEven = f % 2 === 0;
+
+	const bandOffset = (orientation === 'axial-left' ? -1 : 1) * (isEven ? -1 : 1);
+	const partnerBand = (b + bandOffset + bandCount) % bandCount;
+	const partnerBandOrientation = tube.bands[partnerBand].orientation;
+
+	const facetOffset = (isEven ? 1 : -1) * (partnerBandOrientation === orientation ? 1 : 0);
+	const partnerFacet = f + facetOffset;
+
+	const base = getEdge('base', f, orientation);
+	const second = getEdge('second', f, orientation);
+
+	const pBase = getEdge('base', f, partnerBandOrientation);
+	const pSecond = getEdge('second', f, partnerBandOrientation);
+	const pOuter = getEdge('outer', f, partnerBandOrientation);
 
 	if (isFirstFacet) {
 		if (!facet.meta) throw Error('end facet should already have end partner in meta');
-		console.debug('first facet', { facet, edges, meta: facet.meta });
-		edgeMeta[edges.base].partner = { ...facet.meta[edges.base].partner };
-		edgeMeta[edges.second].partner = { ...address, facet: f + 1, edge: edges.second };
-		edgeMeta[edges.outer].partner = {
-			...address,
-			band: (b - bandOffsetIndex + bandCount) % bandCount,
-			facet: f + 1,
-			edge: edges.outer
-		};
+		edgeMeta[pBase].partner = { ...facet.meta[base].partner };
+		edgeMeta[pSecond].partner = { ...address, facet: f + 1, edge: second };
+		edgeMeta[pOuter].partner = { ...address, band: partnerBand, facet: partnerFacet, edge: pOuter };
 	} else if (isLastFacet) {
 		if (!facet.meta) throw Error('end facet should already have end partner in meta');
-		edgeMeta[edges.second].partner = { ...facet.meta[edges.second].partner };
-		edgeMeta[edges.base].partner = { ...address, facet: f - 1, edge: edges.base };
-		edgeMeta[edges.outer].partner = {
-			...address,
-			band: (b + bandOffsetIndex + bandCount) % bandCount,
-			facet: f - 1,
-			edge: edges.outer
-		};
-	} else if (f % 2 === 0) {
-		edgeMeta[edges.base].partner = {
-			...address,
-			facet: f - 1,
-			edge: edges.base
-		};
-		edgeMeta[edges.second].partner = {
-			...address,
-			facet: f + 1,
-			edge: edges.second
-		};
-		edgeMeta[edges.outer].partner = {
-			...address,
-			band: (b - bandOffsetIndex + bandCount) % bandCount,
-			facet: f + 1,
-			edge: edges.outer
-		};
+		edgeMeta[pSecond].partner = { ...facet.meta[second].partner };
+		edgeMeta[pBase].partner = { ...address, facet: f - 1, edge: base };
+		edgeMeta[pOuter].partner = { ...address, band: partnerBand, facet: partnerFacet, edge: pOuter };
 	} else {
-		edgeMeta[edges.base].partner = {
-			...address,
-			facet: f - 1,
-			edge: edges.base
-		};
-		edgeMeta[edges.second].partner = {
-			...address,
-			facet: f + 1,
-			edge: edges.second
-		};
-		edgeMeta[edges.outer].partner = {
-			...address,
-			band: (b + bandOffsetIndex + bandCount) % bandCount,
-			facet: f - 1,
-			edge: edges.outer
-		};
+		edgeMeta[pBase].partner = { ...address, facet: f - 1, edge: base };
+		edgeMeta[pSecond].partner = { ...address, facet: f + 1, edge: second };
+		edgeMeta[pOuter].partner = { ...address, band: partnerBand, facet: partnerFacet, edge: pOuter };
 	}
 
 	return edgeMeta;
 };
+
+// WARNING -
+// matchTubeEnds is configured for axial facet orientation only.
+// Circumferential orientation will need to match first and last bands rather than the first and last facets of each band
+// TODO: create new matchTubeEnds function for circumferential orientation only
 
 const matchTubeEnds = (tubes: Tube[]) => {
 	const endFacets: Facet[] = [];
@@ -845,10 +804,12 @@ const matchTubeEnds = (tubes: Tube[]) => {
 const findPartner = (facet0: Facet, facets: Facet[], edgeToMatch: TriangleEdge) => {
 	for (const facet of facets) {
 		const match =
-			facet0.address && facet.address && facet0.address.tube !== facet.address.tube &&
+			facet0.address &&
+			facet.address &&
+			facet0.address.tube !== facet.address.tube &&
 			getEdgeMatchedTriangles(facet0.triangle, facet.triangle, edgeToMatch);
 		if (match) {
-			if (facet0.address?.tube === 0 && facet0.address.band === 0) {
+			if (facet0.address?.facet === 0) {
 				console.debug('FINDPARTNER', { facet0, facet, match });
 			}
 			return { partner: facet, partnerEdge: match.t1, edge: match.t0 };
