@@ -41,7 +41,7 @@ import type {
 	TrianglePatternMode,
 	MatchedFlowerOfLifeConfig,
 	PathSegment,
-	PatternedBandConfig,
+	BandCutPatternConfig,
 	MovePathSegment,
 	ArcPathSegment,
 	FlowerOfLifePathSegments,
@@ -482,7 +482,7 @@ export const getTransformStringFromTriangle = (
 
 export const generateFlowerOfLife1BandPattern = (
 	facets: PathSegment[][],
-	config?: PatternedBandConfig
+	config?: BandCutPatternConfig
 ): string => {
 	const pathSeq: PathSegment[] = [];
 	const cutoutSeq: PathSegment[] = [];
@@ -609,8 +609,6 @@ export const generateFlowerOfLife1BandPattern = (
 	const svgPathString = svgPathStringFromSegments(pathSeq);
 	return svgPathString;
 };
-
-
 
 export const processFlowerOfLife1PatternTransforms = ({
 	svgPath,

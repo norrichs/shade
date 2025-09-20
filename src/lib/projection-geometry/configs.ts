@@ -79,7 +79,7 @@ const defaultEdgeCurve: BezierConfig[] = [
 		]
 	}
 ];
-const defaultEdgeSampleMethod: CurveSampleMethod = { method: 'divideCurvePath', divisions: 4 };
+const defaultEdgeSampleMethod: CurveSampleMethod = { method: 'divideCurvePath', divisions: 4};
 const defaultEdgeCurveConfig: EdgeCurveConfig = {
 	curves: secondEdgeCurve,
 	// curves: asymmetricEdgeCurve,
@@ -1105,7 +1105,8 @@ const projectorConfigs: {
 };
 
 const defaultBandConfig: ProjectionBandConfig = {
-	orientation: 'axial-right'
+	orientation: 'axial-right',
+	tubeSymmetry: 'lateral'
 };
 
 const defaultProjectorConfig = projectorConfigs.tetrahedron;

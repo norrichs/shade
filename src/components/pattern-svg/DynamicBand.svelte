@@ -2,12 +2,12 @@
 	// @ts-expect-error
 	import outline from 'svg-path-outline';
 	import { generateBranched } from '$lib/patterns';
-	import type { PatternedBand, Quadrilateral } from '$lib/types';
+	import type { BandCutPattern, Quadrilateral } from '$lib/types';
 	import Midline from './Midline.svelte';
 	import Outline from './Outline.svelte';
 	import Branches from './Branches.svelte';
 
-	export let band: PatternedBand;
+	export let band: BandCutPattern;
 	export let minWidth: number;
 	export let maxWidth: number;
 	export let variant: number;

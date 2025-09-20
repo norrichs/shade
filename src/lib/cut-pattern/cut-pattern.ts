@@ -14,13 +14,9 @@ import { validateCutoutConfig } from '../validators';
 import {
 	generateFlowerOfLife1BandPattern,
 	getTransformStringFromTriangle,
-	processFlowerOfLife1PatternTransforms,
+	processFlowerOfLife1PatternTransforms
 } from '../patterns/flower-of-life';
-import {
-	arcCircle,
-	getLength,
-	simpleTriangle,
-} from '../patterns/utils';
+import { arcCircle, getLength, simpleTriangle } from '../patterns/utils';
 import type {
 	AlignTrianglesConfig,
 	Band,
@@ -45,8 +41,8 @@ import type {
 	OutlinedStrutPattern,
 	PathSegment,
 	PatternConfig,
-	PatternedBandPattern,
-	PatternedPattern,
+	BandCutPatternPattern,
+	CutPattern,
 	Point,
 	RenderConfig,
 	Strip,
@@ -74,7 +70,7 @@ export const expandStroke = (rawPathString?: string, strokeWidth?: number) => {
 	return pathString;
 };
 
-export const expandAndCombine = (band: { svgPath?: string; facets: PatternedPattern[] }) => {
+export const expandAndCombine = (band: { svgPath?: string; facets: CutPattern[] }) => {
 	const expandedPaths = band.facets.map((facet) => {
 		return outline(facet.svgPath, (facet.strokeWidth || 1) / 2);
 	});
@@ -183,15 +179,13 @@ export const generateStrutPatterns = (
 	return outlinedPattern;
 };
 
-
-
 export const generateBandPatterns = (
 	config: PatternConfig,
 	cutoutConfig: CutoutConfig,
 	bandStyle: BandStyle,
 	tabStyle: TabStyle,
 	bands: Band[]
-): FacetedBandPattern | OutlinedBandPattern | PatternedBandPattern => {
+): FacetedBandPattern | OutlinedBandPattern | BandCutPatternPattern => {
 	if (config.showPattern.band === 'none') throw new Error('Band patterns not configured');
 	const flattenedGeometry: Band[] = bands.map((band, i) =>
 		getFlatStrip(
@@ -265,7 +259,7 @@ export const generateBandPatterns = (
 			generatePattern[patternName];
 		const patternUnit = generatePatternUnit();
 
-		const patternedPattern: PatternedBandPattern = {
+		const patternedPattern: BandCutPatternPattern = {
 			projectionType: 'patterned',
 			bands: flattenedGeometry.map((flatBand) => {
 				// 				console.debug(`**********************************
@@ -274,7 +268,7 @@ export const generateBandPatterns = (
 				const bandPattern = {
 					svgPath: '',
 					facets: flatBand.facets.map((facet, i) => {
-						const pattern: PatternedPattern = {
+						const pattern: CutPattern = {
 							svgPath: patternUnit?.svgPath || '',
 							svgTransform: deriveTransforms(facet.triangle, i),
 							triangle: facet.triangle.clone()
@@ -710,10 +704,9 @@ const generatePattern = {
 };
 
 export const applyStrokeWidth = (
-	patternBands: PatternedBandPattern,
+	patternBands: BandCutPatternPattern,
 	{ dynamicStroke, dynamicStrokeMax, dynamicStrokeMin }: object & DynamicStrokeConfig
-): PatternedBandPattern => {
-
+): BandCutPatternPattern => {
 	const widthVariesByBand = true;
 
 	let maxValue: number;
@@ -732,14 +725,14 @@ export const applyStrokeWidth = (
 		minValue = Math.min(...values);
 
 		if (!widthVariesByBand && patternBands.bands[0]) {
-			console.debug("not width varies by band")
-			const strokeWidthPrototypes = patternBands.bands[0].facets.map((facet: PatternedPattern) => {
+			console.debug('not width varies by band');
+			const strokeWidthPrototypes = patternBands.bands[0].facets.map((facet: CutPattern) => {
 				const ratio = facet.quadWidth ? (facet.quadWidth - minValue) / (maxValue - minValue) : 1;
 				return ratio * (dynamicStrokeMax - dynamicStrokeMin) + dynamicStrokeMin;
 			});
 			patternBands.bands = patternBands.bands.map((band) => ({
 				...band,
-				facets: band.facets.map((facet: PatternedPattern, i) => {
+				facets: band.facets.map((facet: CutPattern, i) => {
 					return {
 						...facet,
 						strokeWidth: strokeWidthPrototypes[i]
@@ -749,7 +742,7 @@ export const applyStrokeWidth = (
 		} else {
 			patternBands.bands = patternBands.bands.map((band) => ({
 				...band,
-				facets: band.facets.map((facet: PatternedPattern) => {
+				facets: band.facets.map((facet: CutPattern) => {
 					const ratio = facet.quadWidth ? (facet.quadWidth - minValue) / (maxValue - minValue) : 1;
 					const strokeWidth = ratio * (dynamicStrokeMax - dynamicStrokeMin) + dynamicStrokeMin;
 					return {
@@ -784,7 +777,7 @@ export const getPatternLength = (
 		return { minLength: 0, maxLength: 15 };
 	}
 
-	const points = (bands as PatternedBandPattern).bands.map((band) =>
+	const points = (bands as BandCutPatternPattern).bands.map((band) =>
 		band.facets.map((facet) => Object.values(facet.quad || {})).flat(2)
 	);
 	const distances = points.map((band) => {

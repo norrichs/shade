@@ -1,9 +1,9 @@
 <script lang="ts">
-	import type { BandAddressed, GeometryAddress, PatternedBand } from '$lib/types';
+	import type { BandAddressed, GeometryAddress, BandCutPattern } from '$lib/types';
 	import PatternLabel from './PatternLabel.svelte';
 	import { patternConfigStore, selectedBand } from '$lib/stores';
 
-	export let band: PatternedBand;
+	export let band: BandCutPattern;
 	export let index: number;
 	export let showLabel = true;
 

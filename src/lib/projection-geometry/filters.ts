@@ -14,8 +14,9 @@ const getIndices = (range?: number | [number] | [number, number]) => {
 
 export const sliceProjectionPanelPattern = (
 	projectionPanelPattern: ProjectionPanelPattern,
-	{ tubes, bands, facets }: ProjectionRange
+	{ tubes, bands, facets }: ProjectionRange = {}
 ): ProjectionPanelPattern => {
+	console.debug({ tubes, bands, facets });
 	const sliced = {
 		...projectionPanelPattern,
 		tubes: projectionPanelPattern.tubes.slice(...getIndices(tubes)).map((tube) => ({

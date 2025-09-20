@@ -1,4 +1,4 @@
-import type { PathSegment, PatternedPattern, MovePathSegment } from '$lib/types';
+import type { PathSegment, CutPattern, MovePathSegment } from '$lib/types';
 import { transformPatternByQuad } from './quadrilateral';
 import { translatePS, getAngle, rotatePoint } from './utils';
 
@@ -57,7 +57,7 @@ export const generateCarnation = ({
 	return patternSegments;
 };
 
-export const adjustCarnation = (tiledBands: { facets: PatternedPattern[] }[], variant: 0 | 1) => {
+export const adjustCarnation = (tiledBands: { facets: CutPattern[] }[], variant: 0 | 1) => {
 	const patternPrototype = generateCarnation({ variant, size: 1, rows: 1, columns: 1 });
 	const addendaPrototype = [
 		['M', patternPrototype[3][5], patternPrototype[3][6]] as MovePathSegment,

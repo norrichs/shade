@@ -1,6 +1,6 @@
 import type {
 	PathSegment,
-	PatternedPattern,
+	CutPattern,
 	Quadrilateral,
 	PatternGenerator,
 	TiledPatternConfig,
@@ -37,7 +37,7 @@ export const patterns: { [key: string]: PatternGenerator } = {
 	'tiledBoxPattern-0': {
 		getPattern: (rows: 1 | 2 | 3, columns: 1 | 2 | 3 | 4 | 5) =>
 			generateBoxPattern({ size: 1, height: rows, width: columns }),
-		// adjustAfterTiling: (facets: PatternedPattern) => facets,
+		// adjustAfterTiling: (facets: CutPattern) => facets,
 		tagAnchor: { facetIndex: 0, segmentIndex: 5, angle: 0 }
 	},
 	'tiledBowtiePattern-0': {
@@ -49,7 +49,7 @@ export const patterns: { [key: string]: PatternGenerator } = {
 		getPattern: (rows: 1 | 2 | 3, columns: 1 | 2 | 3 | 4 | 5) =>
 			generateCarnation({ size: 1, rows, columns, variant: 0 }),
 		tagAnchor: { facetIndex: 0, segmentIndex: 0 },
-		adjustAfterTiling: (tiledBands: { facets: PatternedPattern[] }[]) => {
+		adjustAfterTiling: (tiledBands: { facets: CutPattern[] }[]) => {
 			return adjustCarnation(tiledBands, 0);
 		}
 	},
@@ -57,7 +57,7 @@ export const patterns: { [key: string]: PatternGenerator } = {
 		getPattern: (rows: 1 | 2 | 3, columns: 1 | 2 | 3 | 4 | 5) =>
 			generateCarnation({ size: 1, rows, columns, variant: 1 }),
 		tagAnchor: { facetIndex: 0, segmentIndex: 0 },
-		adjustAfterTiling: (tiledBands: { facets: PatternedPattern[] }[]) => {
+		adjustAfterTiling: (tiledBands: { facets: CutPattern[] }[]) => {
 			return adjustCarnation(tiledBands, 1);
 		}
 	},
@@ -146,7 +146,7 @@ export const patterns: { [key: string]: PatternGenerator } = {
 			return generateBranched(quadBand, { rows, columns, variant: 0 });
 		},
 		tagAnchor: { facetIndex: 0, segmentIndex: 5 },
-		adjustAfterTiling: (tiledBands: { facets: PatternedPattern[] }[]) => {
+		adjustAfterTiling: (tiledBands: { facets: CutPattern[] }[]) => {
 			return adjustCarnation(tiledBands);
 		}
 	}

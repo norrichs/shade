@@ -38,13 +38,24 @@ export const getLength = <T extends Point | Vector2 | Vector3>(p0: T, p1: T): nu
 	}
 	return Math.sqrt(Math.pow(p1.x - p0.x, 2) + Math.pow(p1.y - p0.y, 2));
 };
-export const getMidPoint = (p1: Point, p2: Point): Point => {
-	const mid = {
-		x: p1.x + (p2.x - p1.x) / 2,
-		y: p1.y + (p2.y - p1.y) / 2
-	};
-	return mid;
-};
+
+export const getMidPoint = <T extends Point | Vector2 | Vector3>(p1: T, p2: T): T => {
+	if (p1 instanceof Vector3 && p2 instanceof Vector3) {
+		return p1.clone().add(p2).multiplyScalar(0.5) as T;
+	}
+	if (p1 instanceof Vector2 && p2 instanceof Vector2) {
+		return p1.clone().add(p2).multiplyScalar(0.5) as T;
+	}
+	// Default case for Point objects
+	const point1 = p1 as Point;
+	const point2 = p2 as Point;
+	return {
+		x: point1.x + (point2.x - point1.x) / 2,
+		y: point1.y + (point2.y - point1.y) / 2
+	} as T;
+}
+
+
 export const getDirection = (p0: Point, p1: Point): 0 | 1 | 2 | 3 => {
 	const diff = { x: p1.x - p0.x, y: p1.y - p0.y };
 	if (diff.x >= 0 && diff.y >= 0) {

@@ -7,6 +7,7 @@
 
 	export let patternType: string;
 	export let tilingBasis: TilingBasis;
+	export let size = 50;
 </script>
 
 <button
@@ -20,8 +21,8 @@
 		{patternType}
 		rows={2}
 		columns={2}
-		width={50}
-		height={50}
+		width={size}
+		height={size}
 		active={patternType === $patternConfigStore.tiledPatternConfig.type}
 		{tilingBasis}
 	/>

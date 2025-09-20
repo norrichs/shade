@@ -18,12 +18,15 @@ import type {
 	SubGlobuleConfig,
 	GlobulePatternConfig,
 	RecombinatoryRecurrence,
-	TiledPattern
+	TiledPattern,
+	PatternScale
 } from '$lib/types';
 import { rad } from './util';
 import { GENERAL_CONFIG, generateTempId, GLOBULE_CONFIG, SUPER_GLOBULE_CONFIG } from './id-handler';
-import { degToRad } from './patterns/utils';
+import { degToRad, mmFromInches } from './patterns/utils';
 import { defaultProjectionConfig } from './projection-geometry/configs';
+import type { PanelHoleConfig } from './cut-pattern/generate-pattern';
+import type { DistributionConfig } from '../components/cut-pattern/distrubute-panels';
 
 const defaultSilhouetteConfig = (): SilhouetteConfig => ({
 	type: 'SilhouetteConfig',
@@ -253,6 +256,35 @@ const defaultRenderConfig = (): RenderConfig => ({
 	}
 });
 
+export const defaultScaleConfig: PatternScale = {
+	unit: 'mm',
+	unitPerSvgUnit: mmFromInches(1) / 20,
+	quantity: Math.round(mmFromInches(24) * 10) / 10,
+	secondary: {
+		quantity: 24,
+		unit: 'inch'
+	}
+};
+
+
+export const defaultPanelHoleConfig: PanelHoleConfig = {
+	holeDistribution: 'vertex',
+	units: 'in',
+	thickness: 0.47,
+	count: 1,
+	minimumInset: 5/16,
+	vertexInset: 1/2,
+	holeDiameter: 0.1730,
+	headDiameter: 0.3610,
+	nutDiameter: 5/16
+};
+
+export const defaultDistributionConfig: DistributionConfig = {
+	type: 'contiguous',
+	panelOffset: 0,
+	reAlignBands: true
+};
+
 export const tiledPatternConfigs: { [key: string]: TiledPatternConfig } = {
 	'tiledHexPattern-1': {
 		type: 'tiledHexPattern-1',
@@ -266,7 +298,8 @@ export const tiledPatternConfigs: { [key: string]: TiledPatternConfig } = {
 			dynamicStrokeMax: 3,
 			endsMatched: false,
 			endsTrimmed: true,
-			endLooped: 0
+			endLooped: 0,
+			scaleConfig: defaultScaleConfig
 		}
 	},
 	'tiledGridPattern-0': {
@@ -282,7 +315,8 @@ export const tiledPatternConfigs: { [key: string]: TiledPatternConfig } = {
 			endsMatched: false,
 			endsTrimmed: true,
 			endLooped: 0,
-			variant: 'rect'
+			variant: 'rect',
+			scaleConfig: defaultScaleConfig
 		}
 	},
 	'tiledPanelPattern-0': {
@@ -298,7 +332,12 @@ export const tiledPatternConfigs: { [key: string]: TiledPatternConfig } = {
 			endsMatched: false,
 			endsTrimmed: true,
 			endLooped: 0,
-			variant: 'triangle-0'
+			variant: 'triangle-0',
+			distributePanels: false,
+			distributionOffset: -10,
+			scaleConfig: defaultScaleConfig,
+			panelHoleConfig: defaultPanelHoleConfig,
+			distributionConfig: defaultDistributionConfig
 		}
 	},
 	tiledShieldTesselationPattern: {
@@ -316,7 +355,8 @@ export const tiledPatternConfigs: { [key: string]: TiledPatternConfig } = {
 			endLooped: 0,
 			variant: 'rect',
 			aspectRatio: 4582.575695 / 7937.253933,
-			skipEdges: 'not-last'
+			skipEdges: 'not-last',
+			scaleConfig: defaultScaleConfig
 		}
 	},
 	'tiledTriStarPattern-1': {
@@ -331,7 +371,8 @@ export const tiledPatternConfigs: { [key: string]: TiledPatternConfig } = {
 			dynamicStrokeMax: 3,
 			endsMatched: false,
 			endsTrimmed: false,
-			endLooped: 0
+			endLooped: 0,
+			scaleConfig: defaultScaleConfig
 		}
 	},
 	'tiledBoxPattern-0': {
@@ -346,7 +387,8 @@ export const tiledPatternConfigs: { [key: string]: TiledPatternConfig } = {
 			dynamicStrokeMax: 3,
 			endsMatched: false,
 			endsTrimmed: false,
-			endLooped: 0
+			endLooped: 0,
+			scaleConfig: defaultScaleConfig
 		}
 	},
 	'tiledBowtiePattern-0': {
@@ -361,7 +403,8 @@ export const tiledPatternConfigs: { [key: string]: TiledPatternConfig } = {
 			dynamicStrokeMax: 3,
 			endsMatched: false,
 			endsTrimmed: false,
-			endLooped: 0
+			endLooped: 0,
+			scaleConfig: defaultScaleConfig
 		}
 	},
 	'tiledCarnationPattern-0': {
@@ -376,7 +419,8 @@ export const tiledPatternConfigs: { [key: string]: TiledPatternConfig } = {
 			dynamicStrokeMax: 3,
 			endsMatched: false,
 			endsTrimmed: false,
-			endLooped: 0
+			endLooped: 0,
+			scaleConfig: defaultScaleConfig
 		}
 	},
 	'tiledCarnationPattern-1': {
@@ -391,7 +435,8 @@ export const tiledPatternConfigs: { [key: string]: TiledPatternConfig } = {
 			dynamicStrokeMax: 3,
 			endsMatched: false,
 			endsTrimmed: false,
-			endLooped: 0
+			endLooped: 0,
+			scaleConfig: defaultScaleConfig
 		}
 	},
 	'bandedBranchedPattern-0': {
@@ -404,7 +449,8 @@ export const tiledPatternConfigs: { [key: string]: TiledPatternConfig } = {
 			dynamicStrokeMax: 5,
 			endsMatched: false,
 			endsTrimmed: false,
-			endLooped: 0
+			endLooped: 0,
+			scaleConfig: defaultScaleConfig
 		}
 	}
 };

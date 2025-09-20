@@ -1,13 +1,13 @@
 <script lang="ts">
-	import type { PatternedBand } from '$lib/types';
+	import type { BandCutPattern } from '$lib/types';
 
-	export let band: PatternedBand;
+	export let band: BandCutPattern;
 
 	const RAINBOW = false;
 	const FILL_RAINBOW = true;
 
 	const colors = ['purple', 'blue', 'green', 'yellow', 'orange', 'red'];
-	console.debug('PatternedBand', band);
+	console.debug('BandCutPattern', band);
 </script>
 
 {#each band.facets as facet, f}

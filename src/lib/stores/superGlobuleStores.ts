@@ -2,7 +2,7 @@ import { AUTO_PERSIST_KEY, bootstrapShouldUsePersisted, persistable } from '$lib
 import { generateDefaultSuperGlobuleConfig } from '$lib/shades-config';
 import type {
 	Id,
-	PatternedBand,
+	BandCutPattern,
 	ProjectionPanelPattern,
 	SuperGlobule,
 	SuperGlobuleConfig
@@ -107,23 +107,21 @@ export function isSuperGlobuleProjectionPanelPattern(
 	);
 }
 
-export function isSuperGlobuleProjectionBandPattern(
+export function isSuperGlobuleProjectionCutPattern(
 	pattern: SuperGlobulePattern | undefined
-): pattern is SuperGlobuleProjectionBandPattern {
-	return (
-		(pattern as SuperGlobuleProjectionBandPattern).type === 'SuperGlobuleProjectionBandPattern'
-	);
+): pattern is SuperGlobuleProjectionCutPattern {
+	return (pattern as SuperGlobuleProjectionCutPattern).type === 'SuperGlobuleProjectionCutPattern';
 }
 
 export type SuperGlobuleBandPattern = {
 	type: 'SuperGlobulePattern';
 	superGlobuleConfigId: Id;
-	bandPatterns: PatternedBand[];
+	bandPatterns: BandCutPattern[];
 };
 
 export type SuperGlobuleProjectionPattern =
 	| SuperGlobuleProjectionPanelPattern
-	| SuperGlobuleProjectionBandPattern;
+	| SuperGlobuleProjectionCutPattern;
 
 export type SuperGlobuleProjectionPanelPattern = {
 	type: 'SuperGlobuleProjectionPanelPattern';
@@ -131,8 +129,8 @@ export type SuperGlobuleProjectionPanelPattern = {
 	projectionPanelPattern: ProjectionPanelPattern;
 };
 
-export type SuperGlobuleProjectionBandPattern = {
-	type: 'SuperGlobuleProjectionBandPattern';
+export type SuperGlobuleProjectionCutPattern = {
+	type: 'SuperGlobuleProjectionCutPattern';
 	superGlobuleConfigId: Id;
-	bandPatterns: PatternedBand[];
+	bandPatterns: BandCutPattern[];
 };

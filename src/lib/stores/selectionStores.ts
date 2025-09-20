@@ -114,8 +114,7 @@ export const selectedProjectionGeometry = derived(
 		if (!$selectedProjection) return null;
 		const { projection: p, tube: t, band: b, facet: f } = $selectedProjection;
 
-		const selectedFacets: Facet[] = [];
-		selectedFacets.push($superGlobuleStore.projections[p].tubes[t].bands[b].facets[f]);
+		const selectedFacets: Facet[] = [$superGlobuleStore.projections[p].tubes[t].bands[b].facets[f]];
 
 		const facetPoints = selectedFacets
 			.map(({ triangle }) => [triangle.a, triangle.b, triangle.c])

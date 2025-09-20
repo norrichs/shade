@@ -1,7 +1,7 @@
 import type {
 	GridVariant,
 	PathSegment,
-	PatternedPattern,
+	CutPattern,
 	Point,
 	SkipEdges,
 	TiledPatternConfig
@@ -169,7 +169,7 @@ export const generateShieldTesselationTile = ({ size, rows, columns }: Props): P
 };
 
 export const adjustShieldTesselationAfterTiling = (
-	bands: { facets: PatternedPattern[]; id: string; tagAnchorPoint: Point }[],
+	bands: { facets: CutPattern[]; id: string; tagAnchorPoint: Point }[],
 	tiledPatternConfig: TiledPatternConfig
 ) => {
 	const {
@@ -182,7 +182,7 @@ export const adjustShieldTesselationAfterTiling = (
 		const band = bands[b];
 
 		const prevBandPaths = bands[(bands.length + b - 1) % bands.length].facets.map(
-			(facet: PatternedPattern, f) => {
+			(facet: CutPattern, f) => {
 				const { path, quad } = facet;
 				const referenceQuad = band.facets[f].quad;
 				if (!quad || !referenceQuad) throw new Error('missing quad');

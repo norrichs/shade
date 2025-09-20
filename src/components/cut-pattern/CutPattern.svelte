@@ -1,22 +1,14 @@
 <script lang="ts">
-	import {
-		superGlobulePatternStore,
-		patternConfigStore,
-		viewControlStore,
-		selectedProjectionGeometry
-	} from '$lib/stores';
+	import { superGlobulePatternStore, patternConfigStore, viewControlStore } from '$lib/stores';
 	import CutPatternControl from './CutPatternControl.svelte';
 	import CutPatternSvg from './CutPatternSvg.svelte';
-	import PatternedBand from './PatternedBand.svelte';
+	import BandCutPatternComponent from './BandCutPatternComponent.svelte';
 	import BandComponent from './BandComponent.svelte';
 	import QuadPattern from '../pattern-svg/QuadPattern.svelte';
-	import BandPanelComponent from './BandPanelComponent.svelte';
-	import PanelComponent from './PanelComponent.svelte';
-	import type { BandPanelPattern } from '$lib/types';
-	import type { ProjectionAddress_Facet } from '$lib/projection-geometry/types';
+
 	import ProjectionPanelPatterns from './ProjectionPanelPatterns.svelte';
 	import { mmFromInches } from '$lib/patterns/utils';
-	import ProjectionBandPattern from './ProjectionBandPattern.svelte';
+	import ProjectionCutPattern from './ProjectionCutPattern.svelte';
 
 	let showBands = true;
 	let showQuadPattern = false;
@@ -39,21 +31,13 @@
 <div class="container-svg scroll-container" class:showBands>
 	<div class="scroll-container">
 		<CutPatternSvg width={6000} height={6000}>
-			<ProjectionBandPattern projectionPattern={$superGlobulePatternStore.projectionPattern} />
+			<ProjectionCutPattern projectionPattern={$superGlobulePatternStore.projectionPattern} />
 			<ProjectionPanelPatterns
-				showSelectedOnly={false}
-				range={{ tubes: [0, 2]	 }}
-				patternStyle="cut"
-				labelSize={3}
-				scaleBar={{
-					unit: 'mm',
-					unitPerSvgUnit: mmFromInches(1) / 20,
-					quantity: Math.round(mmFromInches(24) * 10) / 10,
-					secondary: {
-						quantity: 24,
-						unit: 'inch'
-					}
-				}}
+				showSelectedOnly={undefined}
+				range={{ tubes: [0, 1], bands: [0, 6], facets: [0,8] }}
+				patternStyle="view"
+				labelSize={2.15}
+				showScalebar={false}
 			/>
 
 			{#if $viewControlStore.showGlobuleGeometry.any}
@@ -61,7 +45,7 @@
 				{#each $superGlobulePatternStore.superGlobulePattern?.bandPatterns || [] as band, index}
 					<BandComponent {band} {index} showLabel>
 						{#if band.projectionType === 'patterned'}
-							<PatternedBand {band} />
+							<BandCutPatternComponent {band} />
 						{/if}
 						<QuadPattern
 							{band}

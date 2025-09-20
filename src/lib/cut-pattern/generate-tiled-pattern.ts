@@ -3,15 +3,15 @@ import type {
 	BandAddressed,
 	GeometryAddress,
 	PathSegment,
-	PatternedBand,
-	PatternedPattern,
+	BandCutPattern,
+	CutPattern,
 	PixelScale,
 	Point,
 	Quadrilateral,
 	TiledPattern
 } from '$lib/types';
 import { getQuadrilaterals, transformPatternByQuad } from '$lib/patterns/quadrilateral';
-import type { PatternedBandPattern, TiledPatternConfig } from '$lib/types';
+import type { BandCutPatternPattern, TiledPatternConfig } from '$lib/types';
 import { getFlatStrip } from './cut-pattern';
 import { patterns } from '$lib/patterns';
 import {
@@ -32,8 +32,8 @@ export const generateTiledBandPattern = ({
 	bands: Band[];
 	tiledPatternConfig: TiledPatternConfig;
 	pixelScale: PixelScale;
-}): PatternedBandPattern => {
-	const pattern: PatternedBandPattern = { projectionType: 'patterned', bands: [] };
+}): BandCutPatternPattern => {
+	const pattern: BandCutPatternPattern = { projectionType: 'patterned', bands: [] };
 	const { adjustAfterTiling } = patterns[tiledPatternConfig.type];
 	// Creates a line pattern without inner and outer elements, appropriate for post processing in Affinity
 	// TODO - see if it's possible to convert the output of this to "expanded path" (e.g. convert stroke widths to paths instead of doing so in Affinity)
@@ -67,7 +67,7 @@ export const generateTiledBandPattern = ({
 		})
 	}));
 
-	return pattern as PatternedBandPattern;
+	return pattern as BandCutPatternPattern;
 };
 
 export type GenerateTilingProps = {
@@ -81,7 +81,7 @@ export const generateTiling = ({ quadBands, tiledPatternConfig, address }: Gener
 	// console.debug('     generate tiling - ', tiledPatternConfig.type);
 	// console.debug('----------------------------------------');
 	const tiling: {
-		facets: PatternedPattern[];
+		facets: CutPattern[];
 		svgPath?: string | undefined;
 		id: string;
 		tagAnchorPoint: Point;
@@ -122,7 +122,7 @@ export const generateTiling = ({ quadBands, tiledPatternConfig, address }: Gener
 			adjustedPatternBand = mappedPatternBand;
 		}
 		const tagAnchorPoint = { x: 0, y: 0 };
-		const cuttablePattern: PatternedPattern[] = adjustedPatternBand.map((facet, facetIndex) => {
+		const cuttablePattern: CutPattern[] = adjustedPatternBand.map((facet, facetIndex) => {
 			const quad = window.structuredClone(quadBand[facetIndex % quadBand.length]);
 			const facetPathSegment = facet[(facet.length + tagAnchor.segmentIndex) % facet.length];
 			if (
@@ -134,7 +134,7 @@ export const generateTiling = ({ quadBands, tiledPatternConfig, address }: Gener
 				tagAnchorPoint.y = facetPathSegment[2] || 0;
 			}
 			const quadWidth = getQuadWidth(quad);
-			const cuttable: PatternedPattern = {
+			const cuttable: CutPattern = {
 				// TODO - rescale this based on selected real units
 				path: facet,
 				triangle: undefined,
@@ -144,7 +144,7 @@ export const generateTiling = ({ quadBands, tiledPatternConfig, address }: Gener
 			};
 			return cuttable;
 		});
-		const result: PatternedBand = {
+		const result: BandCutPattern = {
 			facets: cuttablePattern,
 			svgPath: undefined, //cuttablePattern.map((p) => p.svgPath).join(),
 			id: `${tiledPatternConfig.type}-band-${bandIndex}`,

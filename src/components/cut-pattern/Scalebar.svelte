@@ -1,11 +1,12 @@
 <script lang="ts">
 	import type { PatternScale, Point } from '$lib/types';
 
-	export let scale: PatternScale = { unit: 'inch', unitPerSvgUnit: 1 / 100, quantity: 1 };
+	export let scale: PatternScale;
 	export let origin: Point = { x: 100, y: 100 };
 
 	const getScaleBarPath = ({ unit, unitPerSvgUnit, quantity }: PatternScale) => {
-		const height = (1 / unitPerSvgUnit) * quantity;
+		const unitConversionFactor = unit === 'in' ? 25.4 : 1
+		const height = (1 / unitPerSvgUnit) * quantity * unitConversionFactor;
 		return `M 0 0 l 20 0 m -20 0 l 0 ${height} l 20 0`;
 	};
 

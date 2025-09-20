@@ -7,7 +7,7 @@
 	import PatternTileButton from '../pattern/PatternTileButton.svelte';
 	import CheckboxInput from './CheckboxInput.svelte';
 	import NumberInput from './super-control/NumberInput.svelte';
-	import type { GridVariant } from '$lib/types';
+	import type { GridVariant, TiledPatternConfig } from '$lib/types';
 
 	let fitToPage = false;
 
@@ -41,6 +41,13 @@
 		// 	};
 		// }
 	};
+	const getTiles = (configs: { [key: string]: TiledPatternConfig }) => {
+		return ['quadrilateral', 'triangle', 'band']
+			.map((tilingBasis) => {
+				return Object.values(configs).filter((config) => config.tiling === tilingBasis);
+			})
+			.flat();
+	};
 
 	$: {
 		fitPatternToPage(fitToPage);
@@ -49,24 +56,14 @@
 </script>
 
 <section>
-	<h4>Tiling</h4>
 	<section class="tiles">
 		<div class="option-tile-group">
-			{#each Object.values(tiledPatternConfigs).filter((config) => config.tiling === 'quadrilateral') as config}
-				<PatternTileButton patternType={config.type} tilingBasis="quadrilateral" />
-			{/each}
-		</div>
-		<div class="option-tile-group">
-			{#each Object.values(tiledPatternConfigs).filter((config) => config.tiling === 'triangle') as config}
-				<PatternTileButton patternType={config.type} tilingBasis="triangle" />
-			{/each}
-		</div>
-		<div class="option-tile-group">
-			{#each Object.values(tiledPatternConfigs).filter((config) => config.tiling === 'band') as config}
-				<PatternTileButton patternType={config.type} tilingBasis="band" />
+			{#each getTiles(tiledPatternConfigs) as config}
+				<PatternTileButton size={45} patternType={config.type} tilingBasis={config.tiling} />
 			{/each}
 		</div>
 	</section>
+
 	<ControlGroup>
 		<div>
 			{#if $patternConfigStore.tiledPatternConfig.config.variant}
@@ -158,9 +155,14 @@
 	.tiles {
 		display: flex;
 		flex-direction: column;
+		width: var(--secondary-width);
 	}
 	.option-tile-group {
 		display: flex;
 		flex-direction: row;
+		gap: 4px;
+		width: calc(var(--secondary-width) - 16px);
+		overflow: auto;
+		padding: 4px;
 	}
 </style>

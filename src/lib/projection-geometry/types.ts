@@ -120,6 +120,7 @@ export type EdgeCurveConfigVector2 = {
 
 export type ProjectionBandConfig = {
 	orientation: FacetOrientation;
+	tubeSymmetry?: 'axial' | 'lateral'
 };
 
 export type ProjectorConfig<
@@ -237,7 +238,7 @@ export type ProjectionAddress_FacetEdge = ProjectionAddress_Facet & {
 };
 
 export type TriangleEdge = `ab` | 'bc' | 'ac';
-
+export type TriangleEdgePermissive = TriangleEdge | 'ba' | 'cb' | 'ca'
 // TODO:  a mapper is required between configuration and ProjectionAddress
 export type TriangleVectorLabel = 'a' | 'b' | 'c';
 export type OrientedTriangleSide = {

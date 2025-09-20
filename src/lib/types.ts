@@ -8,8 +8,11 @@ import type {
 	ProjectionAddress_FacetEdge,
 	ProjectionAddress_Projection,
 	ProjectionAddress_Tube,
+	TriangleEdge,
 	Tube
 } from './projection-geometry/types';
+import type { PanelHoleConfig } from './cut-pattern/generate-pattern';
+import type { DistributionConfig } from '../components/cut-pattern/distrubute-panels';
 
 export type PatternViewConfig = {
 	showQuads: boolean;
@@ -155,7 +158,7 @@ export type PatternConfig = {
 	showTabs: boolean;
 	pixelScale: PixelScale;
 	page: PageSize;
-	// patternedConfig: PatternedPatternConfig;
+	// patternedConfig: CutPatternConfig;
 };
 
 export type TabPattern =
@@ -170,7 +173,7 @@ export type FacetPattern = {
 	tab?: TabPattern;
 };
 
-export type PatternedPattern = {
+export type CutPattern = {
 	path: PathSegment[];
 	svgPath?: string;
 	strokeWidth?: number;
@@ -179,7 +182,7 @@ export type PatternedPattern = {
 	triangle?: ThreeTriangle;
 	quad?: Quadrilateral;
 	tab?: TabPattern;
-	addenda?: Omit<PatternedPattern, 'addenda'>[];
+	addenda?: Omit<CutPattern, 'addenda'>[];
 	label: string;
 };
 
@@ -240,7 +243,7 @@ export type Pattern =
 	| FacetedBandPattern
 	| OutlinedBandPattern
 	| LevelSetPattern
-	| PatternedBandPattern;
+	| BandCutPatternPattern;
 
 export type Flag = 0 | 1;
 
@@ -273,7 +276,7 @@ export const isReturnPathSegment = (seg: PathSegment): seg is ReturnPathSegment 
 	seg[0] === 'Z' && seg.length === 1;
 
 export type PatternName = 'flower-of-life-1';
-export type PatternedBandConfig = {
+export type BandCutPatternConfig = {
 	range?: [number, number];
 	pattern: {
 		name: PatternName;
@@ -289,12 +292,12 @@ export type Patterns = {
 export type BandPattern = (
 	| OutlinedBandPattern
 	| FacetedBandPattern
-	| PatternedBandPattern
+	| BandCutPatternPattern
 	| NullBandPattern
 ) & { meta?: { minLength?: number; maxLength?: number } };
 
-export type PatternedBand = {
-	facets: PatternedPattern[];
+export type BandCutPattern = {
+	facets: CutPattern[];
 	svgPath?: string;
 	id: string;
 	tagAnchorPoint: Point;
@@ -302,6 +305,19 @@ export type PatternedBand = {
 	projectionType: 'patterned';
 	address: GeometryAddress<BandAddressed>;
 };
+
+export type TubeCutPattern = {
+	address: ProjectionAddress_Tube;
+	bands: BandCutPattern[];
+}
+
+export type ProjectionCutPattern = {
+	address: ProjectionAddress_Projection;
+	tubes: TubeCutPattern[]
+}
+
+
+
 
 export type ProjectionPanelPattern = {
 	tubes: TubePanelPattern[];
@@ -313,7 +329,15 @@ export type TubePanelPattern = {
 };
 export type BandPanelPattern = {
 	address: ProjectionAddress_Band;
+	orientation: FacetOrientation;
 	panels: PanelPattern[];
+	bounds?: {
+		left: number;
+		top: number;
+		width: number;
+		height: number;
+		center: Vector3;
+	};
 };
 
 export type Crease = 'valley' | 'mountain';
@@ -322,6 +346,27 @@ export type PanelEdgeMeta = {
 	crease: Crease;
 	partner: ProjectionAddress_FacetEdge;
 	label?: string;
+	holes?: { location: Vector3, holeDiameter: number, headDiameter: number }[];
+};
+
+export type BoundingBox = {
+	left: number;
+	top: number;
+	width: number;
+	height: number;
+};
+
+export type HingePattern = {
+	address: ProjectionAddress_FacetEdge;
+	edge: TriangleEdge;
+	bounds: BoundingBox;
+	pattern: {
+		partnerBackFaceTriangle: ThreeTriangle;
+		backfFaceTriangle: ThreeTriangle;
+		outline: Vector3[],
+		hinge: [Vector3, Vector3],
+		holes: { location: Vector3, holeDiameter: number, headDiameter: number, nutDiameter: number }[]
+	};
 };
 
 export type PanelPattern = {
@@ -331,6 +376,11 @@ export type PanelPattern = {
 	triangle: ThreeTriangle;
 	address: ProjectionAddress_Facet;
 	meta: {
+		insetTriangle?: ThreeTriangle;
+		backFaceTriangle?: ThreeTriangle;
+		frontFaceRegistrationPoints?: { ab: Vector3, bc: Vector3, ac: Vector3 };
+		backFaceRegistrationPoints?: { ab: Vector3, bc: Vector3, ac: Vector3 };
+		hingePatterns?: HingePattern[]
 		edges: { ab: PanelEdgeMeta; bc: PanelEdgeMeta; ac: PanelEdgeMeta };
 	};
 };
@@ -340,10 +390,11 @@ export type PanelBase = { p0: TrianglePoint; p1: TrianglePoint; v0: Vector3; v1:
 export type NullBandPattern = { projectionType: 'none' };
 export type FacetedBandPattern = { projectionType: 'faceted'; bands: { facets: FacetPattern[] }[] };
 export type OutlinedBandPattern = { projectionType: 'outlined'; bands: OutlinePattern[] };
-export type PatternedBandPattern = {
+export type BandCutPatternPattern = {
 	projectionType: 'patterned';
-	bands: PatternedBand[];
+	bands: BandCutPattern[];
 };
+
 export type LevelSetPattern = { projectionType: 'outlined'; levels: LevelPattern[] };
 export type FacetedStrutPattern = {
 	projectionType: 'faceted';
@@ -490,6 +541,11 @@ export type TiledPatternConfig = {
 		variant?: GridVariant;
 		aspectRatio?: number;
 		skipEdges?: SkipEdges;
+		distributePanels?: boolean;
+		distributionOffset?: number;
+		scaleConfig: PatternScale,
+		panelHoleConfig?: PanelHoleConfig;
+		distributionConfig?: DistributionConfig;
 	};
 };
 
@@ -1273,7 +1329,7 @@ export type TempId = string;
 
 export type SelectBarOption = { name: string; value?: unknown };
 
-export type ScaleUnit = 'inch' | 'mm';
+export type ScaleUnit = 'in' | 'mm' | 'px';
 export type PatternScale = {
 	unit: ScaleUnit;
 	secondary?: {

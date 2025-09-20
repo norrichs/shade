@@ -22,7 +22,7 @@
 		type LinePathSegment,
 		type MovePathSegment,
 		type PathSegment,
-		type PatternedPattern,
+		type CutPattern,
 		type PixelScale,
 		type Point,
 		type Quadrilateral,
@@ -186,7 +186,7 @@
 
 	const generateCrossQuad = (
 		quadBands: Quadrilateral[][],
-		tiledBands: { facets: PatternedPattern[] }[],
+		tiledBands: { facets: CutPattern[] }[],
 		adjacentBands: PathSegment[][][]
 	) => {
 		let leftQuads = [getSegmentsFromQuad(quadBands[0][1]) as PathSegment[]];

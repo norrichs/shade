@@ -1,15 +1,15 @@
 <script lang="ts">
 	import { svgQuad } from '$lib/patterns/quadrilateral';
 	import { getMidPoint } from '$lib/patterns/utils';
-	import type { PatternedBand, PatternedPattern, Point, Quadrilateral } from '$lib/types';
+	import type { BandCutPattern, CutPattern, Point, Quadrilateral } from '$lib/types';
 
-	export let band: PatternedBand;
+	export let band: BandCutPattern;
 	export let showQuads = false;
 	export let showLabels = true;
 
 	$: facets = band.facets
 		.filter((facet) => !!facet.quad)
-		.map((facet: PatternedPattern, i) => {
+		.map((facet: CutPattern, i) => {
 			const labelPoint =
 				facet.quad === undefined ? { x: 0, y: 0 } : getMidPoint(facet.quad.p0, facet.quad.p2);
 			return {
