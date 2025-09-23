@@ -267,7 +267,7 @@ export const defaultScaleConfig: PatternScale = {
 };
 
 
-export const defaultPanelHoleConfig: PanelHoleConfig = {
+export const defaultPanelHoleConfig: PanelHoleCkonfig = {
 	holeDistribution: 'vertex',
 	units: 'in',
 	thickness: 0.47,

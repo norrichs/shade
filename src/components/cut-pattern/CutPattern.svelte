@@ -34,10 +34,11 @@
 			<ProjectionCutPattern projectionPattern={$superGlobulePatternStore.projectionPattern} />
 			<ProjectionPanelPatterns
 				showSelectedOnly={undefined}
-				range={{ tubes: [0, 1], bands: [0, 6], facets: [0,8] }}
+				range={{ tubes: [0, 1], bands: [0, 6], facets: [0,2] }}
 				patternStyle="view"
 				labelSize={2.15}
-				showScalebar={false}
+				showScalebar={true}
+				verbose={true}
 			/>
 
 			{#if $viewControlStore.showGlobuleGeometry.any}

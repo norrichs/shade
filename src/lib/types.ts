@@ -358,11 +358,13 @@ export type BoundingBox = {
 
 export type HingePattern = {
 	address: ProjectionAddress_FacetEdge;
+	partnerAddress: ProjectionAddress_FacetEdge;
 	edge: TriangleEdge;
 	bounds: BoundingBox;
 	pattern: {
 		partnerBackFaceTriangle: ThreeTriangle;
 		backfFaceTriangle: ThreeTriangle;
+		registrationPoint: Vector3;
 		outline: Vector3[],
 		hinge: [Vector3, Vector3],
 		holes: { location: Vector3, holeDiameter: number, headDiameter: number, nutDiameter: number }[]
@@ -370,7 +372,7 @@ export type HingePattern = {
 };
 
 export type PanelPattern = {
-	path: PathSegment[];
+	path: PathSegment[];k
 	tiling: 'triangle';
 	svgPath: string;
 	triangle: ThreeTriangle;

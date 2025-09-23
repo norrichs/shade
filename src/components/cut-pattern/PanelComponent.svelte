@@ -32,7 +32,6 @@
 	export let edgeLabelAnchor: 'start' | 'end' | 'center' = 'center';
 	export let verbose = false;
 	export let showErrors = false;
-	export let showRegistrationMarks = true;
 
 	let { a, b, c } = panel.triangle;
 	let center = { x: (a.x + b.x + c.x) / 3, y: (a.y + b.y + c.y) / 3 };
@@ -297,13 +296,13 @@
 				offset={{ x: 'center', y: -2.5 }}
 			/>
 		{/each}
-		{#if showRegistrationMarks}
-			{#each edges as edge}
+		{#if verbose}
+			<!-- {#each edges as edge}
 				{#if panel.meta.backFaceRegistrationPoints}
 					<circle
 						cx={panel.meta.backFaceRegistrationPoints[edge].x}
 						cy={panel.meta.backFaceRegistrationPoints[edge].y}
-						r={2}
+						r={2	}
 						fill="blue"
 					/>
 				{/if}
@@ -315,7 +314,7 @@
 						fill="red"
 					/>
 				{/if}
-			{/each}
+			{/each} -->
 
 			{#each edges as edge}
 				<RegistrationMark {edge} triangle={panel.triangle} style="tick" length={2.5} />

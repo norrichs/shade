@@ -11,7 +11,7 @@
 	export let offsetX: number
 	export let offsetY: number
 	export let correctAngle = true;
-	export let showBounds = true;
+	export let showBounds = false;
 
 	let colors = {
 		default: 'orange',

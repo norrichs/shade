@@ -30,6 +30,8 @@
 	export let labelSize: number;
 	export let shouldUseSVGLabels = true;
 	export let showScalebar: boolean;
+	export let verbose: boolean;
+	
 
 	let {
 		distributionConfig,
@@ -143,11 +145,15 @@
 				>
 					{#each band.panels as panel, p (concatAddress_Facet(panel.address))}
 						<g>
-							<PanelComponent {panel} {patternStyle} {labelSize} {labelStyle} {holeConfig} />
+							<PanelComponent {panel} {patternStyle} {labelSize} {labelStyle} {verbose}/>
 							{#if showHingePatterns}
 								{#each panel.meta.hingePatterns || [] as hingePattern, h}
-									<g transform={`translate(${-400 +b * 300 + h * 140}, ${300 +p * -20})`}>
-										<HingePatternComponent {hingePattern} {panel} showTriangles={false} />
+									<g
+										transform={`translate(${hingePattern.bounds.width / 2}, ${
+											-hingePattern.bounds.height - p * 55 - h*40
+										})`}
+									>
+										<HingePatternComponent {hingePattern} {panel} showTriangles={true} {patternStyle} />
 									</g>
 								{/each}
 							{/if}

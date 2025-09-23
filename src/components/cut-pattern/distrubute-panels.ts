@@ -249,7 +249,7 @@ export function signedZAxisAngleTo(u: Vector3, v: Vector3) {
 	// Handle the case when vectors are exactly opposite (180 degrees)
 	// In this case, cross product is zero, so we return π
 	if (Math.abs(angle - Math.PI) < 1e-10) {
-		return Math.PI;
+		return Math.PI;k
 	}
 	
 	const cross = new Vector3().crossVectors(u, v);
