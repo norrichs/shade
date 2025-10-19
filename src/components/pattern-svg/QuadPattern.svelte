@@ -11,7 +11,7 @@
 		.filter((facet) => !!facet.quad)
 		.map((facet: CutPattern, i) => {
 			const labelPoint =
-				facet.quad === undefined ? { x: 0, y: 0 } : getMidPoint(facet.quad.p0, facet.quad.p2);
+				facet.quad === undefined ? { x: 0, y: 0 } : getMidPoint(facet.quad.a, facet.quad.c);
 			return {
 				label: facet.label,
 				labelPoint,
@@ -36,10 +36,10 @@
 			>{/if}
 		{#if showQuads}
 			<g stroke="none">
-				<circle cx={facet.quad.p0.x} cy={facet.quad.p0.y} r="2" fill="rgb(0,0,255)" />
-				<circle cx={facet.quad.p1.x} cy={facet.quad.p1.y} r="2" fill="rgb(50,0,150)" />
-				<circle cx={facet.quad.p2.x} cy={facet.quad.p2.y} r="2" fill="rgb(150,0,50)" />
-				<circle cx={facet.quad.p3.x} cy={facet.quad.p3.y} r="2" fill="rgb(255,0,0)" />
+				<circle cx={facet.quad.a.x} cy={facet.quad.a.y} r="2" fill="rgb(0,0,255)" />
+				<circle cx={facet.quad.b.x} cy={facet.quad.b.y} r="2" fill="rgb(50,0,150)" />
+				<circle cx={facet.quad.c.x} cy={facet.quad.c.y} r="2" fill="rgb(150,0,50)" />
+				<circle cx={facet.quad.d.x} cy={facet.quad.d.y} r="2" fill="rgb(255,0,0)" />
 			</g>
 		{/if}
 	</g>

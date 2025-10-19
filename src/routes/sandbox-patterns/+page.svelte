@@ -5,46 +5,47 @@
 	import CombinedNumberInput from '../../components/controls/CombinedNumberInput.svelte';
 	import Outline from '../../components/pattern-svg/Outline.svelte';
 	import PatternTile from '../../components/pattern/PatternTile.svelte';
+	import { Vector3 } from 'three';
 
 	let quadBand: Quadrilateral[] = [
 		{
-			p0: { x: 0.4, y: 0 },
-			p3: { x: 0.3, y: 0.2 },
-			p2: { x: 0.7, y: 0.2 },
-			p1: { x: 0.6, y: 0 }
+			a: new Vector3(0.4, 0, 0),
+			d: new Vector3(0.3, 0.2, 0),
+			c: new Vector3(0.7, 0.2, 0),
+			b: new Vector3(0.6, 0, 0)
 		},
 		{
-			p0: { x: 0.3, y: 0.2 },
-			p3: { x: 0.25, y: 0.4 },
-			p2: { x: 0.75, y: 0.4 },
-			p1: { x: 0.7, y: 0.2 }
+			a: new Vector3(0.3, 0.2, 0),
+			d: new Vector3(0.25, 0.4, 0),
+			c: new Vector3(0.75, 0.4, 0),
+			b: new Vector3(0.7, 0.2, 0)
 		},
 		{
-			p0: { x: 0.25, y: 0.4 },
-			p3: { x: 0.25, y: 0.6 },
-			p2: { x: 0.75, y: 0.6 },
-			p1: { x: 0.75, y: 0.4 }
+			a: new Vector3(0.25, 0.4, 0),
+			d: new Vector3(0.25, 0.6, 0),
+			c: new Vector3(0.75, 0.6, 0),
+			b: new Vector3(0.75, 0.4, 0)
 		},
 		{
-			p0: { x: 0.25, y: 0.6 },
-			p3: { x: 0.3, y: 0.8 },
-			p2: { x: 0.7, y: 0.8 },
-			p1: { x: 0.75, y: 0.6 }
+			a: new Vector3(0.25, 0.6, 0),
+			d: new Vector3(0.3, 0.8, 0),
+			c: new Vector3(0.7, 0.8, 0),
+			b: new Vector3(0.75, 0.6, 0)
 		},
 		{
-			p0: { x: 0.3, y: 0.8 },
-			p3: { x: 0.4, y: 1 },
-			p2: { x: 0.6, y: 1 },
-			p1: { x: 0.7, y: 0.8 }
+			a: new Vector3(0.3, 0.8, 0),
+			d: new Vector3(0.4, 1, 0),
+			c: new Vector3(0.6, 1, 0),
+			b: new Vector3(0.7, 0.8, 0)
 		}
 	];
 	quadBand = quadBand.map((quad) => {
 		const scale = 500;
 		return {
-			p0: { x: quad.p0.x * scale, y: quad.p0.y * scale },
-			p1: { x: quad.p1.x * scale, y: quad.p1.y * scale },
-			p2: { x: quad.p2.x * scale, y: quad.p2.y * scale },
-			p3: { x: quad.p3.x * scale, y: quad.p3.y * scale }
+			a: quad.a.clone().multiplyScalar(scale),
+			b: quad.b.clone().multiplyScalar(scale),
+			c: quad.c.clone().multiplyScalar(scale),
+			d: quad.d.clone().multiplyScalar(scale)
 		};
 	});
 

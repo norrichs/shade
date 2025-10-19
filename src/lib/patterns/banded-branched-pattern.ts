@@ -18,26 +18,26 @@ export const generateBranched = (
     quadBand.forEach((quad, i) => {
       if (i === 0) {
         left.push([
-          ['M', quad.p2.x, quad.p2.y],
-          ['L', quad.p1.x, quad.p1.y],
-          ['L', quad.p0.x, quad.p0.y],
-          ['L', quad.p3.x, quad.p3.y]
+          ['M', quad.c.x, quad.c.y],
+          ['L', quad.b.x, quad.b.y],
+          ['L', quad.a.x, quad.a.y],
+          ['L', quad.d.x, quad.d.y]
         ]);
       } else if (i === quadBand.length - 1) {
         right.push([
-          ['M', quad.p0.x, quad.p0.y],
-          ['L', quad.p3.x, quad.p3.y],
-          ['L', quad.p2.x, quad.p2.y],
-          ['L', quad.p1.x, quad.p1.y]
+          ['M', quad.a.x, quad.a.y],
+          ['L', quad.d.x, quad.d.y],
+          ['L', quad.c.x, quad.c.y],
+          ['L', quad.b.x, quad.b.y]
         ]);
       } else {
         left.push([
-          ['M', quad.p0.x, quad.p0.y],
-          ['L', quad.p3.x, quad.p3.y]
+          ['M', quad.a.x, quad.a.y],
+          ['L', quad.d.x, quad.d.y]
         ]);
         right.push([
-          ['M', quad.p2.x, quad.p2.y],
-          ['L', quad.p1.x, quad.p1.y]
+          ['M', quad.c.x, quad.c.y],
+          ['L', quad.b.x, quad.b.y]
         ]);
       }
     });
@@ -113,9 +113,9 @@ export const generateBranched = (
   const midPoints: { point: Point; quadWidth: number }[] = [];
   quadBand.forEach((quad, i) => {
     if (i === 0) {
-      midPoints.push({ point: getMidPoint(quad.p0, quad.p1), quadWidth: 0 });
+      midPoints.push({ point: getMidPoint(quad.a, quad.b), quadWidth: 0 });
     }
-    midPoints.push({ point: getMidPoint(quad.p2, quad.p3), quadWidth: getQuadWidth(quad) });
+    midPoints.push({ point: getMidPoint(quad.c, quad.d), quadWidth: getQuadWidth(quad) });
   });
   const minQuadWidth = Math.min(...midPoints.map((mp) => mp.quadWidth));
   const maxQuadWidth = Math.max(...midPoints.map((mp) => mp.quadWidth));
@@ -141,9 +141,9 @@ export const generateBranched = (
     const branch = { ...midlineSegment };
     branch.path = [
       branch.path[0],
-      ['L', quadBand[i].p3.x, quadBand[i].p3.y],
+      ['L', quadBand[i].d.x, quadBand[i].d.y],
       branch.path[0],
-      ['L', quadBand[i].p2.x, quadBand[i].p2.y]
+      ['L', quadBand[i].c.x, quadBand[i].c.y]
     ];
     branch.svgPath = svgPathStringFromSegments(branch.path);
     branch.width = branch.width / 4;

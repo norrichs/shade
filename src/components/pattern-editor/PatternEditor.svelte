@@ -30,6 +30,7 @@
 		type TilingBasis,
 		type UnitPatternGenerator
 	} from '$lib/types';
+	import { Vector3 } from 'three';
 	import { point } from 'drizzle-orm/pg-core';
 	import CombinedNumberInput from '../../components/controls/CombinedNumberInput.svelte';
 	import Outline from '../../components/pattern-svg/Outline.svelte';
@@ -45,43 +46,43 @@
 
 	let quadBand: Quadrilateral[] = [
 		{
-			p0: { x: 0.4, y: 0 },
-			p3: { x: 0.3, y: 0.2 },
-			p2: { x: 0.7, y: 0.2 },
-			p1: { x: 0.6, y: 0 }
+			a: new Vector3(0.4, 0, 0),
+			d: new Vector3(0.3, 0.2, 0),
+			c: new Vector3(0.7, 0.2, 0),
+			b: new Vector3(0.6, 0, 0)
 		},
 		{
-			p0: { x: 0.3, y: 0.2 },
-			p3: { x: 0.25, y: 0.4 },
-			p2: { x: 0.75, y: 0.4 },
-			p1: { x: 0.7, y: 0.2 }
+			a: new Vector3(0.3, 0.2, 0),
+			d: new Vector3(0.25, 0.4, 0),
+			c: new Vector3(0.75, 0.4, 0),
+			b: new Vector3(0.7, 0.2, 0)
 		},
 		{
-			p0: { x: 0.25, y: 0.4 },
-			p3: { x: 0.25, y: 0.6 },
-			p2: { x: 0.75, y: 0.6 },
-			p1: { x: 0.75, y: 0.4 }
+			a: new Vector3(0.25, 0.4, 0),
+			d: new Vector3(0.25, 0.6, 0),
+			c: new Vector3(0.75, 0.6, 0),
+			b: new Vector3(0.75, 0.4, 0)
 		},
 		{
-			p0: { x: 0.25, y: 0.6 },
-			p3: { x: 0.3, y: 0.8 },
-			p2: { x: 0.7, y: 0.8 },
-			p1: { x: 0.75, y: 0.6 }
+			a: new Vector3(0.25, 0.6, 0),
+			d: new Vector3(0.3, 0.8, 0),
+			c: new Vector3(0.7, 0.8, 0),
+			b: new Vector3(0.75, 0.6, 0)
 		},
 		{
-			p0: { x: 0.3, y: 0.8 },
-			p3: { x: 0.4, y: 1 },
-			p2: { x: 0.6, y: 1 },
-			p1: { x: 0.7, y: 0.8 }
+			a: new Vector3(0.3, 0.8, 0),
+			d: new Vector3(0.4, 1, 0),
+			c: new Vector3(0.6, 1, 0),
+			b: new Vector3(0.7, 0.8, 0)
 		}
 	];
 	quadBand = quadBand.map((quad) => {
 		const scale = 500;
 		return {
-			p0: { x: quad.p0.x * scale, y: quad.p0.y * scale },
-			p1: { x: quad.p1.x * scale, y: quad.p1.y * scale },
-			p2: { x: quad.p2.x * scale, y: quad.p2.y * scale },
-			p3: { x: quad.p3.x * scale, y: quad.p3.y * scale }
+			a: quad.a.clone().multiplyScalar(scale),
+			b: quad.b.clone().multiplyScalar(scale),
+			c: quad.c.clone().multiplyScalar(scale),
+			d: quad.d.clone().multiplyScalar(scale)
 		};
 	});
 
@@ -110,10 +111,10 @@
 			const { getPattern } = patterns[patternType] as unknown as UnitPatternGenerator;
 			const unitPattern = getPattern(rows, columns);
 			const quad: Quadrilateral = {
-				p0: { x: 0, y: 0 },
-				p1: { x: width, y: 0 },
-				p2: { x: width, y: height },
-				p3: { x: 0, y: height }
+				a: new Vector3(0, 0, 0),
+				b: new Vector3(width, 0, 0),
+				c: new Vector3(width, height, 0),
+				d: new Vector3(0, height, 0)
 			};
 			const path = transformPatternByQuad(unitPattern, quad);
 			mapped = {
@@ -177,10 +178,10 @@
 		q: Quadrilateral
 	): [MovePathSegment, LinePathSegment, LinePathSegment, LinePathSegment] => {
 		return [
-			['M', q.p0.x, q.p0.y],
-			['L', q.p1.x, q.p1.y],
-			['L', q.p2.x, q.p2.y],
-			['L', q.p3.x, q.p3.y]
+			['M', q.a.x, q.a.y],
+			['L', q.b.x, q.b.y],
+			['L', q.c.x, q.c.y],
+			['L', q.d.x, q.d.y]
 		];
 	};
 
@@ -198,12 +199,12 @@
 		const centerTiles = tiledBands[1];
 
 		const leftOffset = {
-			x: quadBands[1][1].p0.x - quadBands[0][1].p1.x,
-			y: quadBands[1][1].p0.y - quadBands[0][1].p1.y
+			x: quadBands[1][1].a.x - quadBands[0][1].b.x,
+			y: quadBands[1][1].a.y - quadBands[0][1].b.y
 		};
 		const rightOffset = {
-			x: quadBands[1][1].p1.x - quadBands[2][1].p0.x,
-			y: quadBands[1][1].p1.y - quadBands[2][1].p0.y
+			x: quadBands[1][1].b.x - quadBands[2][1].a.x,
+			y: quadBands[1][1].b.y - quadBands[2][1].a.y
 		};
 
 		leftQuads = [translatePS(leftQuads[0], leftOffset.x, leftOffset.y)];
@@ -212,16 +213,16 @@
 		rightTiles[0].path = translatePS(rightTiles[0].path, rightOffset.x, rightOffset.y);
 
 		const leftAngle =
-			getAngle(quadBands[1][1].p0, quadBands[1][1].p3) -
-			getAngle(quadBands[0][1].p1, quadBands[0][1].p2);
+			getAngle(quadBands[1][1].a, quadBands[1][1].d) -
+			getAngle(quadBands[0][1].b, quadBands[0][1].c);
 		const rightAngle =
-			getAngle(quadBands[1][1].p1, quadBands[1][1].p2) -
-			getAngle(quadBands[2][1].p0, quadBands[2][1].p3);
+			getAngle(quadBands[1][1].b, quadBands[1][1].c) -
+			getAngle(quadBands[2][1].a, quadBands[2][1].d);
 
-		leftQuads = [rotatePS(leftQuads[0], leftAngle, quadBands[1][1].p0)];
-		rightQuads = [rotatePS(rightQuads[0], rightAngle, quadBands[1][1].p1)];
-		leftTiles[0].path = rotatePS(leftTiles[0].path, leftAngle, quadBands[1][1].p0);
-		rightTiles[0].path = rotatePS(rightTiles[0].path, rightAngle, quadBands[1][1].p1);
+		leftQuads = [rotatePS(leftQuads[0], leftAngle, quadBands[1][1].a)];
+		rightQuads = [rotatePS(rightQuads[0], rightAngle, quadBands[1][1].b)];
+		leftTiles[0].path = rotatePS(leftTiles[0].path, leftAngle, quadBands[1][1].a);
+		rightTiles[0].path = rotatePS(rightTiles[0].path, rightAngle, quadBands[1][1].b);
 
 		return {
 			left: { quads: leftQuads, tiles: leftTiles },

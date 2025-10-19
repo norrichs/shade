@@ -531,10 +531,10 @@ export const generateLabelPath = (
 	// return svgPathStringFromSegments(combinedPaths);
 };
 export const getQuadWidth = (quad: Quadrilateral) => {
-	return getLength(getMidPoint(quad.p0, quad.p3), getMidPoint(quad.p1, quad.p2));
+	return getLength(getMidPoint(quad.a, quad.d), getMidPoint(quad.b, quad.c));
 };
 export const getQuadHeight = (quad: Quadrilateral) => {
-	return getLength(getMidPoint(quad.p0, quad.p1), getMidPoint(quad.p3, quad.p2));
+	return getLength(getMidPoint(quad.a, quad.b), getMidPoint(quad.d, quad.c));
 };
 
 export type SerializedFacet = { triangle: Triangle };

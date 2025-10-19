@@ -1,4 +1,4 @@
-import type { CutoutConfig } from './cut-pattern/cut-pattern';
+import type { CutoutConfig } from './cut-pattern/generate-cut-pattern';
 
 export type Validity = {
 	isValid: boolean;

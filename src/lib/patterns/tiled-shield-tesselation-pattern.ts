@@ -187,11 +187,11 @@ export const adjustShieldTesselationAfterTiling = (
 				const referenceQuad = band.facets[f].quad;
 				if (!quad || !referenceQuad) throw new Error('missing quad');
 
-				const offset = { x: referenceQuad.p0.x - quad.p1.x, y: referenceQuad.p0.y - quad.p1.y };
-				const angle = getAngle(referenceQuad.p0, referenceQuad.p3) - getAngle(quad.p1, quad.p2);
+				const offset = { x: referenceQuad.a.x - quad.b.x, y: referenceQuad.a.y - quad.b.y };
+				const angle = getAngle(referenceQuad.a, referenceQuad.d) - getAngle(quad.b, quad.c);
 
 				let newPath = translatePS(window.structuredClone(path), offset.x, offset.y);
-				newPath = rotatePS(newPath, angle, referenceQuad.p0);
+				newPath = rotatePS(newPath, angle, referenceQuad.a);
 
 				return newPath;
 			}

@@ -164,7 +164,7 @@ export const adjustTriStarPatternAfterMapping = (
 		thisQuad = quadBand[i];
 		if (i === 0) {
 			const prevQuad = quadBand[facets.length - 1];
-			const tDiff = { x: thisQuad.p0.x - prevQuad.p3.x, y: thisQuad.p0.y - prevQuad.p3.y };
+			const tDiff = { x: thisQuad.a.x - prevQuad.d.x, y: thisQuad.a.y - prevQuad.d.y };
 			const rDiff = 0;
 			prevFacet = endsMatched
 				? rotatePS(
@@ -177,7 +177,7 @@ export const adjustTriStarPatternAfterMapping = (
 			// console.debug('prevFacet', prevFacet, 'quad', quadBand[facets.length - 1]);
 		} else if (i === facets.length - 1) {
 			const nextQuad = quadBand[0];
-			const tDiff = { x: thisQuad.p3.x - nextQuad.p0.x, y: thisQuad.p3.y - nextQuad.p0.y };
+			const tDiff = { x: thisQuad.d.x - nextQuad.a.x, y: thisQuad.d.y - nextQuad.a.y };
 			const rDiff = 0;
 			prevFacet = facets[i - 1];
 			nextFacet = endsMatched

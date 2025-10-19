@@ -5,7 +5,7 @@ import {
 	type PathSegment,
 	type Band,
 	type Facet,
-	type TiledPatternSubConfig,
+	type TiledPatternConfig,
 	type Quadrilateral,
 	type QuadrilateralTransformMatrix,
 	type HexPattern,
@@ -23,17 +23,17 @@ import type { Vector3 } from 'three';
 export const getQuadrilateralTransformMatrix = (
 	quad: Quadrilateral
 ): QuadrilateralTransformMatrix => {
-	const u = addScaled(quad.p1, quad.p0, -1);
-	const v = addScaled(quad.p3, quad.p0, -1);
-	const sum = addScaled(u, v, 1);
-	const normalizedP2 = addScaled(quad.p2, quad.p0, -1);
-	const w = addScaled(normalizedP2, sum, -1);
+	const u = quad.b.clone().sub(quad.a);
+	const v = quad.d.clone().sub(quad.a);
+	const sum = u.clone().add(v);
+	const normalizedP2 = quad.c.clone().sub(quad.a);
+	const w = normalizedP2.clone().sub(sum);
 	return { u, v, w };
 };
 
 // SVG path functions
 export const svgQuad = (q: Quadrilateral) => {
-	return `M ${q.p0.x} ${q.p0.y} L ${q.p1.x} ${q.p1.y} L ${q.p2.x} ${q.p2.y} L ${q.p3.x} ${q.p3.y} Z`;
+	return `M ${q.a.x} ${q.a.y} L ${q.b.x} ${q.b.y} L ${q.c.x} ${q.c.y} L ${q.d.x} ${q.d.y} Z`;
 };
 export const svgLines = (points: Point[], isClosed = false) => {
 	const path = `${points.reduce((acc, point, i) => {
@@ -73,19 +73,20 @@ export const transformShapeByQuadrilateralTransform = (
 export const transformPointByQuadrilateralTransform = (
 	p: Point,
 	tx: QuadrilateralTransformMatrix,
-	anchor: Point = { x: 0, y: 0 }
+	anchor: Point | Vector3 = { x: 0, y: 0 }
 ) => {
 	// let result = addScaled(p, anchor, -1);
 	let result = multiply(p, tx);
-	result = addScaled(result, anchor, 1);
+	result = addScaled(result, { x: anchor.x, y: anchor.y }, 1);
 	return result;
 };
 
-export const svgTX = (tx: QuadrilateralTransformMatrix, anchor: Point) => {
-	const seg1 = addScaled(anchor, tx.u, 1);
-	const seg2 = addScaled(anchor, tx.v, 1);
-	const sum = addScaled(anchor, addScaled(tx.u, tx.v, 1), 1);
-	const end = addScaled(sum, tx.w, 1);
+export const svgTX = (tx: QuadrilateralTransformMatrix, anchor: Point | Vector3) => {
+	const anchorPt = { x: anchor.x, y: anchor.y };
+	const seg1 = addScaled(anchorPt, { x: tx.u.x, y: tx.u.y }, 1);
+	const seg2 = addScaled(anchorPt, { x: tx.v.x, y: tx.v.y }, 1);
+	const sum = addScaled(anchorPt, addScaled({ x: tx.u.x, y: tx.u.y }, { x: tx.v.x, y: tx.v.y }, 1), 1);
+	const end = addScaled(sum, { x: tx.w.x, y: tx.w.y }, 1);
 	return `
 	M ${anchor.x} ${anchor.y}
 	L ${seg1.x} ${seg1.y}
@@ -106,7 +107,7 @@ export const transformPatternByQuad = (
 			const newCoord = transformPointByQuadrilateralTransform(
 				{ x: segment[1], y: segment[2] },
 				tx,
-				quad.p0
+				quad.a
 			);
 			const mapped: MovePathSegment | LinePathSegment = [segment[0], newCoord.x, newCoord.y];
 			return mapped;
@@ -114,29 +115,29 @@ export const transformPatternByQuad = (
 			const { x: x0, y: y0 } = transformPointByQuadrilateralTransform(
 				{ x: segment[1], y: segment[2] },
 				tx,
-				quad.p0
+				quad.a
 			);
 			const { x: x1, y: y1 } = transformPointByQuadrilateralTransform(
 				{ x: segment[3], y: segment[4] },
 				tx,
-				quad.p0
+				quad.a
 			);
 			return ['Q', x0, y0, x1, y1];
 		} else if (isCubicBezierPathSegment(segment)) {
 			const { x: x0, y: y0 } = transformPointByQuadrilateralTransform(
 				{ x: segment[1], y: segment[2] },
 				tx,
-				quad.p0
+				quad.a
 			);
 			const { x: x1, y: y1 } = transformPointByQuadrilateralTransform(
 				{ x: segment[3], y: segment[4] },
 				tx,
-				quad.p0
+				quad.a
 			);
 			const { x: x2, y: y2 } = transformPointByQuadrilateralTransform(
 				{ x: segment[5], y: segment[6] },
 				tx,
-				quad.p0
+				quad.a
 			);
 			return ['C', x0, y0, x1, y1, x2, y2];
 		} else {
@@ -149,7 +150,7 @@ export const transformPatternByQuad = (
 export const extractShapesFromMappedHexPatterns = (
 	mappedPatterns: HexPattern[],
 	containingQuads: Quadrilateral[],
-	config: TiledPatternSubConfig[]
+	config: TiledPatternConfig[]
 ) => {
 	const fillEnd = config.find((cfg) => cfg.type === 'filledEndSize')?.value as number;
 	const shapes: { outline: PathSegment[]; holes: InsettablePolygon[] } = { outline: [], holes: [] };
@@ -164,8 +165,8 @@ export const extractShapesFromMappedHexPatterns = (
 				perimeter: { isPerimeter: true, index: 0 },
 				segments: [
 					{ variant: getInner(), p0: pointFrom(mp[0]), p1: pointFrom(mp[1]) },
-					{ variant: getOuter(), p0: pointFrom(mp[1]), p1: { ...q.p0 } },
-					{ variant: getOuter(), p0: { ...q.p0 }, p1: pointFrom(mp[0]) }
+					{ variant: getOuter(), p0: pointFrom(mp[1]), p1: { ...q.a } },
+					{ variant: getOuter(), p0: { ...q.a }, p1: pointFrom(mp[0]) }
 				]
 			});
 			shapes.holes.push({
@@ -180,16 +181,16 @@ export const extractShapesFromMappedHexPatterns = (
 				perimeter: { isPerimeter: true, index: 2 },
 				segments: [
 					{ variant: getInner(), p0: pointFrom(mp[3]), p1: pointFrom(mp[4]) },
-					{ variant: getOuter(), p0: pointFrom(mp[4]), p1: { ...q.p1 } },
-					{ variant: getOuter(), p0: { ...q.p1 }, p1: pointFrom(mp[3]) }
+					{ variant: getOuter(), p0: pointFrom(mp[4]), p1: { ...q.b } },
+					{ variant: getOuter(), p0: { ...q.b }, p1: pointFrom(mp[3]) }
 				]
 			});
 		} else if (i === mappedPatterns.length - 1) {
 			shapes.holes.push({
 				perimeter: { isPerimeter: true, index: 5 + i },
 				segments: [
-					{ variant: getOuter(), p0: pointFrom(mp[17]), p1: { ...q.p3 } },
-					{ variant: getOuter(), p0: { ...q.p3 }, p1: pointFrom(mp[11]) },
+					{ variant: getOuter(), p0: pointFrom(mp[17]), p1: { ...q.d } },
+					{ variant: getOuter(), p0: { ...q.d }, p1: pointFrom(mp[11]) },
 					{ variant: getInner(), p0: pointFrom(mp[11]), p1: pointFrom(mp[12]) },
 					{ variant: getInner(), p0: pointFrom(mp[12]), p1: pointFrom(mp[17]) }
 				]
@@ -209,8 +210,8 @@ export const extractShapesFromMappedHexPatterns = (
 				segments: [
 					{ variant: getInner(), p0: pointFrom(mp[14]), p1: pointFrom(mp[15]) },
 					{ variant: getInner(), p0: pointFrom(mp[19]), p1: pointFrom(mp[14]) },
-					{ variant: getOuter(), p0: { ...q.p2 }, p1: pointFrom(mp[19]) },
-					{ variant: getOuter(), p0: pointFrom(mp[15]), p1: { ...q.p2 } }
+					{ variant: getOuter(), p0: { ...q.c }, p1: pointFrom(mp[19]) },
+					{ variant: getOuter(), p0: pointFrom(mp[15]), p1: { ...q.c } }
 				]
 			});
 		}
@@ -221,8 +222,8 @@ export const extractShapesFromMappedHexPatterns = (
 					{ variant: getInner(), p0: pointFrom(mp[11]), p1: pointFrom(mp[12]) },
 					{ variant: getInner(), p0: pointFrom(mp[12]), p1: pointFrom(mp[17]) },
 					{ variant: getInner(), p0: pointFrom(mp[17]), p1: pointFrom(mappedPatterns[i + 1][0]) },
-					{ variant: getOuter(), p0: pointFrom(mappedPatterns[i + 1][0]), p1: { ...q.p3 } },
-					{ variant: getOuter(), p0: { ...q.p3 }, p1: pointFrom(mp[11]) }
+					{ variant: getOuter(), p0: pointFrom(mappedPatterns[i + 1][0]), p1: { ...q.d } },
+					{ variant: getOuter(), p0: { ...q.d }, p1: pointFrom(mp[11]) }
 				]
 			});
 			shapes.holes.push({
@@ -241,8 +242,8 @@ export const extractShapesFromMappedHexPatterns = (
 				perimeter: { isPerimeter: true, index: 3 + i },
 				segments: [
 					{ variant: getInner(), p0: pointFrom(mp[14]), p1: pointFrom(mp[15]) },
-					{ variant: getOuter(), p0: pointFrom(mp[15]), p1: { ...q.p2 } },
-					{ variant: getOuter(), p0: { ...q.p2 }, p1: pointFrom(mappedPatterns[i + 1][4]) },
+					{ variant: getOuter(), p0: pointFrom(mp[15]), p1: { ...q.c } },
+					{ variant: getOuter(), p0: { ...q.c }, p1: pointFrom(mappedPatterns[i + 1][4]) },
 					{ variant: getInner(), p0: pointFrom(mappedPatterns[i + 1][4]), p1: pointFrom(mp[19]) },
 					{ variant: getInner(), p0: pointFrom(mp[19]), p1: pointFrom(mp[14]) }
 				]
@@ -444,15 +445,11 @@ export const getQuadrilaterals = (band: Band, scale?: number): Quadrilateral[] =
 		facets.forEach((facet, i) => {
 			if (i % 2 === 1 && i < facets.length) {
 				const quad = {
-					p0: pointFromVector3(facets[i - 1].triangle.a),
-					p1: pointFromVector3(facets[i - 1].triangle.b),
-					p2: pointFromVector3(facet.triangle.a),
-					p3: pointFromVector3(facets[i - 1].triangle.c)
+					a: facets[i - 1].triangle.a.clone().multiplyScalar(scale),
+					b: facets[i - 1].triangle.b.clone().multiplyScalar(scale),
+					c: facet.triangle.a.clone().multiplyScalar(scale),
+					d: facets[i - 1].triangle.c.clone().multiplyScalar(scale)
 				};
-				quad.p0 = { x: quad.p0.x * scale, y: quad.p0.y * scale };
-				quad.p1 = { x: quad.p1.x * scale, y: quad.p1.y * scale };
-				quad.p2 = { x: quad.p2.x * scale, y: quad.p2.y * scale };
-				quad.p3 = { x: quad.p3.x * scale, y: quad.p3.y * scale };
 				quads.push(quad);
 			}
 		});
@@ -460,10 +457,10 @@ export const getQuadrilaterals = (band: Band, scale?: number): Quadrilateral[] =
 		facets.forEach((facet, i) => {
 			if (i % 2 === 1 && i < facets.length) {
 				quads.push({
-					p0: pointFromVector3(facets[i - 1].triangle.a),
-					p1: pointFromVector3(facets[i - 1].triangle.b),
-					p2: pointFromVector3(facet.triangle.a),
-					p3: pointFromVector3(facets[i - 1].triangle.c)
+					a: facets[i - 1].triangle.a.clone(),
+					b: facets[i - 1].triangle.b.clone(),
+					c: facet.triangle.a.clone(),
+					d: facets[i - 1].triangle.c.clone()
 				});
 			}
 		});
@@ -476,19 +473,19 @@ export const getOutline = (quads: Quadrilateral[]) => {
 	for (let i = 0; i < quads.length; i++) {
 		const q = quads[i];
 		if (i === 0) {
-			outline.push(['M', q.p0.x, q.p0.y], ['L', q.p3.x, q.p3.y]);
+			outline.push(['M', q.a.x, q.a.y], ['L', q.d.x, q.d.y]);
 		} else {
-			outline.push(['L', q.p3.x, q.p3.y]);
+			outline.push(['L', q.d.x, q.d.y]);
 		}
 	}
 	for (let i = quads.length - 1; i >= 0; i--) {
 		const q = quads[i];
 		if (i === quads.length - 1) {
-			outline.push(['L', q.p2.x, q.p2.y], ['L', q.p1.x, q.p1.y]);
+			outline.push(['L', q.c.x, q.c.y], ['L', q.b.x, q.b.y]);
 		} else if (i === 0) {
-			outline.push(['L', q.p1.x, q.p1.y], ['L', q.p0.x, q.p0.y]);
+			outline.push(['L', q.b.x, q.b.y], ['L', q.a.x, q.a.y]);
 		} else {
-			outline.push(['L', q.p1.x, q.p1.y]);
+			outline.push(['L', q.b.x, q.b.y]);
 		}
 	}
 	outline.push(['Z']);

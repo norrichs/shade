@@ -1,64 +1,65 @@
 import type { Quadrilateral } from '$lib/types';
+import { Vector3 } from 'three';
 
 export const quadBands = (w: number, h: number): Quadrilateral[][] => [
 	[
 		{
-			p1: { x: 0 * w, y: 0 * h },
-			p0: { x: -1 * w, y: 0 * h },
-			p3: { x: -1.4 * w, y: 1 * h },
-			p2: { x: 0.2 * w, y: 1 * h }
+			b: new Vector3(0 * w, 0 * h, 0),
+			a: new Vector3(-1 * w, 0 * h, 0),
+			d: new Vector3(-1.4 * w, 1 * h, 0),
+			c: new Vector3(0.2 * w, 1 * h, 0)
 		},
 		{
-			p0: { x: -1.4 * w, y: 1 * h },
-			p1: { x: 0.2 * w, y: 1 * h },
-			p2: { x: 0 * w, y: 2 * h },
-			p3: { x: -1.0 * w, y: 2 * h },
+			a: new Vector3(-1.4 * w, 1 * h, 0),
+			b: new Vector3(0.2 * w, 1 * h, 0),
+			c: new Vector3(0 * w, 2 * h, 0),
+			d: new Vector3(-1.0 * w, 2 * h, 0),
 		},
 		{
-			p1: { x: 0 * w, y: 2 * h },
-			p0: { x: -1.0 * w, y: 2 * h },
-			p3: { x: -1 * w, y: 2.75 * h },
-			p2: { x: -0.3 * w, y: 3 * h }
+			b: new Vector3(0 * w, 2 * h, 0),
+			a: new Vector3(-1.0 * w, 2 * h, 0),
+			d: new Vector3(-1 * w, 2.75 * h, 0),
+			c: new Vector3(-0.3 * w, 3 * h, 0)
 		}
 	],
 	[
 		{
-			p0: { x: 0 * w, y: 0 * h },
-			p1: { x: 1 * w, y: 0 * h },
-			p2: { x: 1.2 * w, y: 1 * h },
-			p3: { x: -0.2 * w, y: 1 * h }
+			a: new Vector3(0 * w, 0 * h, 0),
+			b: new Vector3(1 * w, 0 * h, 0),
+			c: new Vector3(1.2 * w, 1 * h, 0),
+			d: new Vector3(-0.2 * w, 1 * h, 0)
 		},
 		{
-			p0: { x: -0.2 * w, y: 1 * h },
-			p1: { x: 1.2 * w, y: 1 * h },
-			p2: { x: 1.1 * w, y: 2 * h },
-			p3: { x: 0 * w, y: 2 * h }
+			a: new Vector3(-0.2 * w, 1 * h, 0),
+			b: new Vector3(1.2 * w, 1 * h, 0),
+			c: new Vector3(1.1 * w, 2 * h, 0),
+			d: new Vector3(0 * w, 2 * h, 0)
 		},
 		{
-			p0: { x: 0 * w, y: 2 * h },
-			p1: { x: 1.1 * w, y: 2 * h },
-			p2: { x: 1 * w, y: 2.75 * h },
-			p3: { x: 0.3 * w, y: 3 * h }
+			a: new Vector3(0 * w, 2 * h, 0),
+			b: new Vector3(1.1 * w, 2 * h, 0),
+			c: new Vector3(1 * w, 2.75 * h, 0),
+			d: new Vector3(0.3 * w, 3 * h, 0)
 		}
 	],
 	[
 		{
-			p1: { x: 0 * w, y: 0 * h },
-			p0: { x: -1 * w, y: 0 * h },
-			p3: { x: -1.2 * w, y: 1 * h },
-			p2: { x: 0.2 * w, y: 1 * h }
+			b: new Vector3(0 * w, 0 * h, 0),
+			a: new Vector3(-1 * w, 0 * h, 0),
+			d: new Vector3(-1.2 * w, 1 * h, 0),
+			c: new Vector3(0.2 * w, 1 * h, 0)
 		},
 		{
-			p1: { x: 0.2 * w, y: 1 * h },
-			p0: { x: -1.2 * w, y: 1 * h },
-			p3: { x: -1.1 * w, y: 2 * h },
-			p2: { x: 0 * w, y: 2 * h }
+			b: new Vector3(0.2 * w, 1 * h, 0),
+			a: new Vector3(-1.2 * w, 1 * h, 0),
+			d: new Vector3(-1.1 * w, 2 * h, 0),
+			c: new Vector3(0 * w, 2 * h, 0)
 		},
 		{
-			p1: { x: 0 * w, y: 2 * h },
-			p0: { x: -1.1 * w, y: 2 * h },
-			p3: { x: -1 * w, y: 2.75 * h },
-			p2: { x: -0.3 * w, y: 3 * h }
+			b: new Vector3(0 * w, 2 * h, 0),
+			a: new Vector3(-1.1 * w, 2 * h, 0),
+			d: new Vector3(-1 * w, 2.75 * h, 0),
+			c: new Vector3(-0.3 * w, 3 * h, 0)
 		}
 	],
 ];

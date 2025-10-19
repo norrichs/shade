@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { getModelHeight } from '$lib/cut-pattern/cut-pattern';
+	import { getModelHeight } from '$lib/cut-pattern/generate-cut-pattern';
 	import { patternConfigStore } from '$lib/stores';
 	import ControlGroup from './ControlGroup.svelte';
 

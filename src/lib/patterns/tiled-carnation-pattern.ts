@@ -1,6 +1,7 @@
 import type { PathSegment, CutPattern, MovePathSegment } from '$lib/types';
 import { transformPatternByQuad } from './quadrilateral';
 import { translatePS, getAngle, rotatePoint } from './utils';
+import { Vector3 } from 'three';
 
 export const generateCarnation = ({
 	size = 1,
@@ -74,33 +75,36 @@ export const adjustCarnation = (tiledBands: { facets: CutPattern[] }[], variant:
 
 			if (facet.quad && addendaFacet0.quad) {
 				const offset = {
-					x: facet.quad.p0.x - addendaFacet0.quad.p1.x,
-					y: facet.quad?.p0.y - addendaFacet0.quad?.p1.y
+					x: facet.quad.a.x - addendaFacet0.quad.b.x,
+					y: facet.quad?.a.y - addendaFacet0.quad?.b.y
 				};
 				const offsetAngle =
-					getAngle(facet.quad.p0, facet.quad.p3) -
-					getAngle(addendaFacet0.quad.p1, addendaFacet0.quad.p2);
+					getAngle(facet.quad.a, facet.quad.d) -
+					getAngle(addendaFacet0.quad.b, addendaFacet0.quad.c);
 				const anchorPoint = {
-					x: addendaFacet0.quad.p1.x + offset.x,
-					y: addendaFacet0.quad.p1.y + offset.y
+					x: addendaFacet0.quad.b.x + offset.x,
+					y: addendaFacet0.quad.b.y + offset.y
 				};
+				const rotatedA = rotatePoint(
+					anchorPoint,
+					{ x: addendaFacet0.quad.a.x + offset.x, y: addendaFacet0.quad.a.y + offset.y },
+					offsetAngle
+				);
+				const rotatedC = rotatePoint(
+					anchorPoint,
+					{ x: addendaFacet0.quad.c.x + offset.x, y: addendaFacet0.quad.c.y + offset.y },
+					offsetAngle
+				);
+				const rotatedD = rotatePoint(
+					anchorPoint,
+					{ x: addendaFacet0.quad.d.x + offset.x, y: addendaFacet0.quad.d.y + offset.y },
+					offsetAngle
+				);
 				addendaFacet0.quad = {
-					p0: rotatePoint(
-						anchorPoint,
-						{ x: addendaFacet0.quad.p0.x + offset.x, y: addendaFacet0.quad.p0.y + offset.y },
-						offsetAngle
-					),
-					p1: anchorPoint,
-					p2: rotatePoint(
-						anchorPoint,
-						{ x: addendaFacet0.quad.p2.x + offset.x, y: addendaFacet0.quad.p2.y + offset.y },
-						offsetAngle
-					),
-					p3: rotatePoint(
-						anchorPoint,
-						{ x: addendaFacet0.quad.p3.x + offset.x, y: addendaFacet0.quad.p3.y + offset.y },
-						offsetAngle
-					)
+					a: new Vector3(rotatedA.x, rotatedA.y, 0),
+					b: new Vector3(anchorPoint.x, anchorPoint.y, 0),
+					c: new Vector3(rotatedC.x, rotatedC.y, 0),
+					d: new Vector3(rotatedD.x, rotatedD.y, 0)
 				};
 			}
 
@@ -108,7 +112,7 @@ export const adjustCarnation = (tiledBands: { facets: CutPattern[] }[], variant:
 			const addenda0 = {
 				quad: addendaFacet0.quad,
 				quadWidth: addendaFacet0.quadWidth,
-				path: transformPatternByQuad(addendaPrototype, addendaFacet0.quad)
+				path: addendaFacet0.quad ? transformPatternByQuad(addendaPrototype, addendaFacet0.quad) : []
 			};
 			// const addendaFacet1 = bands[(bandIndex + bands.length + 1) % bands.length].facets[facetIndex];
 			// const addenda1 = {

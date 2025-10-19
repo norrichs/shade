@@ -9,6 +9,7 @@
 		TilingBasis,
 		UnitPatternGenerator
 	} from '$lib/types';
+	import { Vector3 } from 'three';
 
 	export let patternType: string;
 	export let tilingBasis: TilingBasis;
@@ -31,10 +32,10 @@
 				const { getPattern } = patterns[patternType] as unknown as UnitPatternGenerator;
 				const unitPattern = getPattern(rows, columns);
 				const quad: Quadrilateral = {
-					p0: { x: 0, y: 0 },
-					p1: { x: width, y: 0 },
-					p2: { x: width, y: height },
-					p3: { x: 0, y: height }
+					a: new Vector3(0, 0, 0),
+					b: new Vector3(width, 0, 0),
+					c: new Vector3(width, height, 0),
+					d: new Vector3(0, height, 0)
 				};
 				path = svgPathStringFromSegments(transformPatternByQuad(unitPattern, quad));
 				// path = svgPathStringFromSegments(scalePS(unitPattern, Math.max(width, height)));
@@ -43,10 +44,10 @@
 				const { getPattern } = patterns[patternType] as unknown as UnitPatternGenerator;
 				const unitPattern = getPattern(rows, columns);
 				const quad: Quadrilateral = {
-					p0: { x: 0, y: 0 },
-					p1: { x: width, y: 0 },
-					p2: { x: width, y: height },
-					p3: { x: 0, y: height }
+					a: new Vector3(0, 0, 0),
+					b: new Vector3(width, 0, 0),
+					c: new Vector3(width, height, 0),
+					d: new Vector3(0, height, 0)
 				};
 				path = svgPathStringFromSegments(transformPatternByQuad(unitPattern, quad));
 				// path = svgPathStringFromSegments(scalePS(unitPattern, Math.max(width, height)));
@@ -54,34 +55,34 @@
 				const { getPattern } = patterns[patternType] as unknown as BandPatternGenerator;
 				const quadBand: Quadrilateral[] = [
 					{
-						p0: { x: 0.4, y: 0 },
-						p3: { x: 0.3, y: 0.2 },
-						p2: { x: 0.7, y: 0.2 },
-						p1: { x: 0.6, y: 0 }
+						a: new Vector3(0.4, 0, 0),
+						d: new Vector3(0.3, 0.2, 0),
+						c: new Vector3(0.7, 0.2, 0),
+						b: new Vector3(0.6, 0, 0)
 					},
 					{
-						p0: { x: 0.3, y: 0.2 },
-						p3: { x: 0.25, y: 0.4 },
-						p2: { x: 0.75, y: 0.4 },
-						p1: { x: 0.7, y: 0.2 }
+						a: new Vector3(0.3, 0.2, 0),
+						d: new Vector3(0.25, 0.4, 0),
+						c: new Vector3(0.75, 0.4, 0),
+						b: new Vector3(0.7, 0.2, 0)
 					},
 					{
-						p0: { x: 0.25, y: 0.4 },
-						p3: { x: 0.25, y: 0.6 },
-						p2: { x: 0.75, y: 0.6 },
-						p1: { x: 0.75, y: 0.4 }
+						a: new Vector3(0.25, 0.4, 0),
+						d: new Vector3(0.25, 0.6, 0),
+						c: new Vector3(0.75, 0.6, 0),
+						b: new Vector3(0.75, 0.4, 0)
 					},
 					{
-						p0: { x: 0.25, y: 0.6 },
-						p3: { x: 0.3, y: 0.8 },
-						p2: { x: 0.7, y: 0.8 },
-						p1: { x: 0.75, y: 0.6 }
+						a: new Vector3(0.25, 0.6, 0),
+						d: new Vector3(0.3, 0.8, 0),
+						c: new Vector3(0.7, 0.8, 0),
+						b: new Vector3(0.75, 0.6, 0)
 					},
 					{
-						p0: { x: 0.3, y: 0.8 },
-						p3: { x: 0.4, y: 1 },
-						p2: { x: 0.6, y: 1 },
-						p1: { x: 0.7, y: 0.8 }
+						a: new Vector3(0.3, 0.8, 0),
+						d: new Vector3(0.4, 1, 0),
+						c: new Vector3(0.6, 1, 0),
+						b: new Vector3(0.7, 0.8, 0)
 					}
 				];
 				const outlineShape: DynamicPath = getPattern(1, 1, quadBand).outlineShape;

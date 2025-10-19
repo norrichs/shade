@@ -372,7 +372,7 @@ export type HingePattern = {
 };
 
 export type PanelPattern = {
-	path: PathSegment[];k
+	path: PathSegment[];
 	tiling: 'triangle';
 	svgPath: string;
 	triangle: ThreeTriangle;
@@ -1220,35 +1220,35 @@ export type FlowerOfLifePathSegments = [
 // Quadrilaterals
 
 export type Quadrilateral = {
-	p0: Point;
-	p1: Point;
-	p2: Point;
-	p3: Point;
-};
+	a: Vector3;
+	b: Vector3;
+	c: Vector3;
+	d: Vector3;
+}
 
 /*
 	Quadrilateral diagram:
 	
-	p3 ------ p2
-	|          |
-	|          |
-	|          |
-	p0 ------ p1
+	d ------- c
+	|         |
+	|         |
+	|         |
+	a ------- b
 
 */
 
 /* 
 Triangle layout diagram:
-    	    p3_______p2
+    	    d________c
 				/c\b     a/
 			/		 \	  /
 		/a     b\c/
-	p0--------p1
+	a---------b
 */
 export type QuadrilateralTransformMatrix = {
-	u: Point;
-	v: Point;
-	w: Point;
+	u: Vector3;
+	v: Vector3;
+	w: Vector3;
 };
 
 export type HexPattern =

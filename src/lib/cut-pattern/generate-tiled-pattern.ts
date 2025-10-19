@@ -12,7 +12,7 @@ import type {
 } from '$lib/types';
 import { getQuadrilaterals, transformPatternByQuad } from '$lib/patterns/quadrilateral';
 import type { BandCutPatternPattern, TiledPatternConfig } from '$lib/types';
-import { getFlatStrip } from './cut-pattern';
+import { getFlatStrip, getFlatStripV2 } from './generate-cut-pattern';
 import { patterns } from '$lib/patterns';
 import {
 	rotatePS,
@@ -40,7 +40,7 @@ export const generateTiledBandPattern = ({
 
 	const visibleBands = bands.filter((b) => b.visible);
 	const quadBands = visibleBands.map((band) => {
-		const flatBand = getFlatStrip(band, { bandStyle: 'helical-right', pixelScale });
+		const flatBand = getFlatStripV2(band, { bandStyle: 'helical-right', pixelScale });
 		return getQuadrilaterals(flatBand, pixelScale.value);
 	});
 
@@ -77,9 +77,6 @@ export type GenerateTilingProps = {
 };
 
 export const generateTiling = ({ quadBands, tiledPatternConfig, address }: GenerateTilingProps) => {
-	// console.debug('----------------------------------------');
-	// console.debug('     generate tiling - ', tiledPatternConfig.type);
-	// console.debug('----------------------------------------');
 	const tiling: {
 		facets: CutPattern[];
 		svgPath?: string | undefined;
@@ -109,7 +106,7 @@ export const generateTiling = ({ quadBands, tiledPatternConfig, address }: Gener
 				undefined,
 				variant
 			);
-			console.debug({ quadBand, unitPattern });
+
 		} else {
 			mappedPatternBand = [getPattern(1, 1, quadBand)] as PathSegment[][];
 		}

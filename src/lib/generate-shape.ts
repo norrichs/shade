@@ -40,7 +40,7 @@ import type {
 	GlobuleData,
 	SpineCurveConfig
 } from '$lib/types';
-import { generateEdgeConfig } from './cut-pattern/cut-pattern';
+import { generateEdgeConfig } from './cut-pattern/generate-cut-pattern';
 import { generateLevelSet2 } from './generate-level';
 
 // Rotated Shape Levels are 2d.  How can I enforce that?

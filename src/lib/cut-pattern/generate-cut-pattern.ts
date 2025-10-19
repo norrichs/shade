@@ -628,6 +628,156 @@ export const getFlatStrip = <T extends Strut | Band>(
 	return flatStrip as T;
 };
 
+export const getFlatStripV2 = <T extends Strut | Band>(
+	strip: T,
+	flatStripConfig: FlatStripConfig,
+	tabStyle?: TabStyle
+): T => {
+	const config = {
+		origin: new Vector3(0, 0, 0),
+		direction: new Vector3(0, -1, 0),
+		...flatStripConfig
+	};
+
+	const scale = config.pixelScale?.value || 1;
+	const scaleMatrix = new Matrix3();
+	scaleMatrix.makeScale(scale, scale);
+
+	const flatStrip: Strip = { ...strip, facets: [] };
+
+	strip.facets.forEach((facet, i) => {
+		const alignedFacet: Facet = { ...facet };
+
+		// let edgeConfig
+		let edgeConfig = generateEdgeConfig(
+			flatStripConfig.bandStyle,
+			Math.abs((i - 1) % 2) == 0,
+			isStrut(strip),
+			false
+		);
+		let alignConfig: AlignTrianglesConfig;
+
+		if (i === 0) {
+			const firstAlignedPoints: { pivot: TrianglePoint; constrained: TrianglePoint } = !isStrut(
+				strip
+			)
+				? { pivot: 'a', constrained: 'c' }
+				: { pivot: 'c', constrained: 'a' };
+			const firstLength = getLength(
+				facet.triangle[firstAlignedPoints.pivot],
+				facet.triangle[firstAlignedPoints.constrained]
+			);
+			alignConfig = {
+				isEven: getFirstTriangleParity(flatStripConfig.bandStyle),
+				isTabOnGreaterSide: false,
+				lead: {
+					p: firstAlignedPoints.constrained,
+					vec: config.direction.clone().setLength(firstLength).addScaledVector(config.origin, 1)
+				},
+				follow: { p: firstAlignedPoints.pivot, vec: config.origin.clone() }
+			};
+		} else {
+			const prevFlatTriangle = flatStrip.facets[i - 1].triangle;
+			alignConfig = {
+				isEven: Math.abs((i - 1) % 2) === 0,
+				isTabOnGreaterSide: false,
+				lead: { p: edgeConfig.lead, vec: prevFlatTriangle[edgeConfig.lead].clone() },
+				follow: { p: edgeConfig.follow, vec: prevFlatTriangle[edgeConfig.follow].clone() }
+			};
+		}
+		alignedFacet.triangle = alignTriangle(facet.triangle, alignConfig);
+		// if (config.pixelScale && config.pixelScale.value !== 1) {
+		// 	const oldTriangle = alignedFacet.triangle.clone();
+		// 	alignedFacet.triangle = new Triangle(
+		// 		oldTriangle.a.clone().applyMatrix3(scaleMatrix),
+		// 		oldTriangle.b.clone().applyMatrix3(scaleMatrix),
+		// 		oldTriangle.c.clone().applyMatrix3(scaleMatrix)
+		// 	);
+		// 	console.debug(
+		// 		'||| alignedFacet.triangle',
+		// 		scale,
+		// 		oldTriangle.a,
+		// 		'->',
+		// 		alignedFacet.triangle.a
+		// 	);
+		// } else {
+		// 	console.debug('*** alignedFacet.triangle', scale, alignedFacet.triangle.a);
+		// }
+
+		if (facet.tab && tabStyle) {
+			edgeConfig = generateEdgeConfig(config.bandStyle, i % 2 === 0, false, true);
+			const tabAlignConfig = {
+				isEven: Math.abs((i - 1) % 2) === 0,
+				isTabOnGreaterSide: Math.abs((i - 1) % 2) === 1,
+				lead: { p: edgeConfig.lead, vec: alignedFacet.triangle[edgeConfig.lead].clone() },
+				follow: { p: edgeConfig.follow, vec: alignedFacet.triangle[edgeConfig.follow].clone() }
+			};
+			if (facet.tab.style === 'full' || facet.tab.style === 'trapezoid') {
+				const tabFootprint = alignTriangle(facet.tab.footprint.triangle, tabAlignConfig);
+
+				if (tabStyle?.style === 'full') {
+					alignedFacet.tab = generateFullTab(tabStyle, tabFootprint, edgeConfig);
+				} else if (tabStyle?.style === 'trapezoid') {
+					alignedFacet.tab = generateTrapTab(tabStyle, tabFootprint, edgeConfig);
+				}
+			} else if (facet.tab?.style.startsWith('multi-facet')) {
+				if (facet.tab.style === 'multi-facet-full') {
+					const edgeConfig0 = generateEdgeConfig(config.bandStyle, i % 2 === 0, false, true);
+					const alignConfig0: AlignTrianglesConfig = {
+						isEven: i % 2 === 0,
+						isTabOnGreaterSide: i % 2 === 1,
+						lead: { vec: alignedFacet.triangle[edgeConfig0.follow], p: edgeConfig0.follow },
+						follow: { vec: alignedFacet.triangle[edgeConfig0.lead], p: edgeConfig0.lead }
+					};
+					const tabTriangle0: Triangle = alignTriangle(
+						facet.tab.footprint[0].triangle,
+						alignConfig0
+					);
+					// Configure second triangle of tab
+					const edgeConfig1 =
+						i % 2 === 0
+							? generateEdgeConfig(config.bandStyle, i % 2 !== 0, false, false)
+							: ({ lead: 'b', follow: 'a' } as EdgeConfig);
+					const alignConfig1: AlignTrianglesConfig = {
+						isEven: false,
+						isTabOnGreaterSide: false,
+						lead: { vec: tabTriangle0[edgeConfig1.lead], p: edgeConfig1.lead },
+						follow: { vec: tabTriangle0[edgeConfig1.follow], p: edgeConfig1.follow }
+					};
+					const tabTriangle1: Triangle = alignTriangle(
+						facet.tab.footprint[1].triangle,
+						alignConfig1
+					);
+					alignedFacet.tab = generateMultiFacetFullTab(
+						{
+							...facet.tab.footprint[0],
+							triangle: tabTriangle0
+						},
+						{
+							...facet.tab.footprint[1],
+							triangle: tabTriangle1
+						},
+						generateEdgeConfig(flatStripConfig.bandStyle, i % 2 === 0, false, true),
+						i % 2 === 0 ? 'lesser' : 'greater',
+						tabStyle
+					);
+				}
+			}
+
+			// alignedFacet.tab = {
+			//   ...facet.tab,
+			//   footprint: {
+			//     ...facet.tab.footprint,
+			//     triangle: tabFootprint
+			//   }
+			// }
+		}
+		flatStrip.facets.push(alignedFacet);
+	});
+
+	return flatStrip as T;
+};
+
 // Looks up the edge configuration for a given triangle
 // "lead" is defined as:
 //  the forwardmost vertex of a pair of vertices on the edge of the strip
