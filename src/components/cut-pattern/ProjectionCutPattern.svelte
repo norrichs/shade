@@ -1,19 +1,24 @@
 <script lang="ts">
-	import { sliceProjectionPanelPattern, type ProjectionRange } from '$lib/projection-geometry/filters';
+	import {
+		sliceProjectionPanelPattern,
+		type ProjectionRange
+	} from '$lib/projection-geometry/filters';
 	import {
 		isSuperGlobuleProjectionCutPattern,
 		patternConfigStore,
 		viewControlStore,
 		superGlobulePatternStore,
 		type SuperGlobuleProjectionPattern,
-		type SuperGlobuleProjectionCutPattern
+		type SuperGlobuleProjectionCutPattern,
+		concatAddress_Tube,
+		concatAddress_Band
 	} from '$lib/stores';
-	import type { BandCutPattern } from '$lib/types';
 	import QuadPattern from '../pattern-svg/QuadPattern.svelte';
 	import BandComponent from './BandComponent.svelte';
 	import BandCutPatternComponent from './BandCutPatternComponent.svelte';
 
 	export let projectionPattern: SuperGlobuleProjectionPattern | undefined;
+	console.debug('ProjectionCutPattern', projectionPattern);
 	export let range: ProjectionRange = {};
 	export let showSelectedOnly: 'panel' | 'band' | false = false;
 
@@ -61,28 +66,36 @@
 		const { any, bands, facets } = store.showProjectionGeometry;
 		const isValid = isSuperGlobuleProjectionCutPattern(projectionPattern);
 		showPattern = any && (bands || facets) && isValid;
-		bandPatterns = isValid ? projectionPattern.bandPatterns : [];
+		console.debug('update', { any, bands, facets, showPattern });
+		// bandPatterns = isValid ? projectionPattern.bandPatterns : [];
 	};
 
 	let showPattern = false;
-	let bandPatterns: BandCutPattern[] = [];
 
 	$: update($viewControlStore, projectionPattern);
 	$: show = isSuperGlobuleProjectionCutPattern($superGlobulePatternStore.projectionPattern);
 	// $: pattern = filtered($superGlobulePatternStore.projectionPattern, range);
 </script>
 
-{#if showPattern}
-	{#each bandPatterns || [] as band, index}
-		<BandComponent {band} {index} showLabel>
-			{#if band.projectionType === 'patterned'}
-				<BandCutPatternComponent {band} />
-			{/if}
-			<QuadPattern
-				{band}
-				showQuads={$patternConfigStore.patternViewConfig.showQuads}
-				showLabels={$patternConfigStore.patternViewConfig.showLabels}
-			/>
-		</BandComponent>
+{#if showPattern && isSuperGlobuleProjectionCutPattern(projectionPattern)}
+
+	{#each projectionPattern?.projectionCutPattern?.tubes || [] as tube,t }
+		<g 
+		id={`${concatAddress_Tube(tube.address)}`}
+		transform={`translate(${t * 1500}, 0)`}
+		>
+			{#each tube.bands as band, b}
+				<BandComponent {band} index={b} showLabel>
+					{#if band.projectionType === 'patterned'}
+						<BandCutPatternComponent {band} />
+					{/if}
+					<QuadPattern
+						{band}
+						showQuads={$patternConfigStore.patternViewConfig.showQuads}
+						showLabels={$patternConfigStore.patternViewConfig.showLabels}
+					/>
+				</BandComponent>
+			{/each}
+		</g>
 	{/each}
 {/if}

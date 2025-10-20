@@ -147,133 +147,6 @@ export const transformPatternByQuad = (
 	return transformedSegments;
 };
 
-export const extractShapesFromMappedHexPatterns = (
-	mappedPatterns: HexPattern[],
-	containingQuads: Quadrilateral[],
-	config: TiledPatternConfig[]
-) => {
-	const fillEnd = config.find((cfg) => cfg.type === 'filledEndSize')?.value as number;
-	const shapes: { outline: PathSegment[]; holes: InsettablePolygon[] } = { outline: [], holes: [] };
-	shapes.outline = getOutline(containingQuads);
-
-	mappedPatterns.forEach((mp, i) => {
-		const getInner = () => (i < fillEnd ? 'interior' : 'insettable');
-		const getOuter = () => (i < fillEnd ? 'edge' : 'permeable');
-		const q = containingQuads[i];
-		if (i === 0) {
-			shapes.holes.push({
-				perimeter: { isPerimeter: true, index: 0 },
-				segments: [
-					{ variant: getInner(), p0: pointFrom(mp[0]), p1: pointFrom(mp[1]) },
-					{ variant: getOuter(), p0: pointFrom(mp[1]), p1: { ...q.a } },
-					{ variant: getOuter(), p0: { ...q.a }, p1: pointFrom(mp[0]) }
-				]
-			});
-			shapes.holes.push({
-				perimeter: { isPerimeter: true, index: 1 },
-				segments: [
-					{ variant: getInner(), p0: pointFrom(mp[1]), p1: pointFrom(mp[2]) },
-					{ variant: getInner(), p0: pointFrom(mp[2]), p1: pointFrom(mp[3]) },
-					{ variant: getOuter(), p0: pointFrom(mp[3]), p1: pointFrom(mp[1]) }
-				]
-			});
-			shapes.holes.push({
-				perimeter: { isPerimeter: true, index: 2 },
-				segments: [
-					{ variant: getInner(), p0: pointFrom(mp[3]), p1: pointFrom(mp[4]) },
-					{ variant: getOuter(), p0: pointFrom(mp[4]), p1: { ...q.b } },
-					{ variant: getOuter(), p0: { ...q.b }, p1: pointFrom(mp[3]) }
-				]
-			});
-		} else if (i === mappedPatterns.length - 1) {
-			shapes.holes.push({
-				perimeter: { isPerimeter: true, index: 5 + i },
-				segments: [
-					{ variant: getOuter(), p0: pointFrom(mp[17]), p1: { ...q.d } },
-					{ variant: getOuter(), p0: { ...q.d }, p1: pointFrom(mp[11]) },
-					{ variant: getInner(), p0: pointFrom(mp[11]), p1: pointFrom(mp[12]) },
-					{ variant: getInner(), p0: pointFrom(mp[12]), p1: pointFrom(mp[17]) }
-				]
-			});
-			shapes.holes.push({
-				perimeter: { isPerimeter: true, index: 4 + i },
-				segments: [
-					{ variant: getInner(), p0: pointFrom(mp[17]), p1: pointFrom(mp[12]) },
-					{ variant: getInner(), p0: pointFrom(mp[12]), p1: pointFrom(mp[13]) },
-					{ variant: getInner(), p0: pointFrom(mp[13]), p1: pointFrom(mp[14]) },
-					{ variant: getInner(), p0: pointFrom(mp[14]), p1: pointFrom(mp[19]) },
-					{ variant: getOuter(), p0: pointFrom(mp[19]), p1: pointFrom(mp[17]) }
-				]
-			});
-			shapes.holes.push({
-				perimeter: { isPerimeter: true, index: 3 + i },
-				segments: [
-					{ variant: getInner(), p0: pointFrom(mp[14]), p1: pointFrom(mp[15]) },
-					{ variant: getInner(), p0: pointFrom(mp[19]), p1: pointFrom(mp[14]) },
-					{ variant: getOuter(), p0: { ...q.c }, p1: pointFrom(mp[19]) },
-					{ variant: getOuter(), p0: pointFrom(mp[15]), p1: { ...q.c } }
-				]
-			});
-		}
-		if (i < mappedPatterns.length - 1) {
-			shapes.holes.push({
-				perimeter: { isPerimeter: true, index: mappedPatterns.length * 2 + 3 - i },
-				segments: [
-					{ variant: getInner(), p0: pointFrom(mp[11]), p1: pointFrom(mp[12]) },
-					{ variant: getInner(), p0: pointFrom(mp[12]), p1: pointFrom(mp[17]) },
-					{ variant: getInner(), p0: pointFrom(mp[17]), p1: pointFrom(mappedPatterns[i + 1][0]) },
-					{ variant: getOuter(), p0: pointFrom(mappedPatterns[i + 1][0]), p1: { ...q.d } },
-					{ variant: getOuter(), p0: { ...q.d }, p1: pointFrom(mp[11]) }
-				]
-			});
-			shapes.holes.push({
-				perimeter: { isPerimeter: false, index: -1 },
-				segments: [
-					{ variant: getInner(), p0: pointFrom(mp[12]), p1: pointFrom(mp[13]) },
-					{ variant: getInner(), p0: pointFrom(mp[13]), p1: pointFrom(mp[14]) },
-					{ variant: getInner(), p0: pointFrom(mp[14]), p1: pointFrom(mp[19]) },
-					{ variant: getInner(), p0: pointFrom(mp[19]), p1: pointFrom(mappedPatterns[i + 1][2]) },
-					{ variant: getInner(), p0: pointFrom(mappedPatterns[i + 1][2]), p1: pointFrom(mp[17]) },
-					{ variant: getInner(), p0: pointFrom(mp[17]), p1: pointFrom(mp[12]) }
-				]
-			});
-
-			shapes.holes.push({
-				perimeter: { isPerimeter: true, index: 3 + i },
-				segments: [
-					{ variant: getInner(), p0: pointFrom(mp[14]), p1: pointFrom(mp[15]) },
-					{ variant: getOuter(), p0: pointFrom(mp[15]), p1: { ...q.c } },
-					{ variant: getOuter(), p0: { ...q.c }, p1: pointFrom(mappedPatterns[i + 1][4]) },
-					{ variant: getInner(), p0: pointFrom(mappedPatterns[i + 1][4]), p1: pointFrom(mp[19]) },
-					{ variant: getInner(), p0: pointFrom(mp[19]), p1: pointFrom(mp[14]) }
-				]
-			});
-		}
-		shapes.holes.push({
-			perimeter: { isPerimeter: false, index: -1 },
-			segments: [
-				{ variant: getInner(), p0: pointFrom(mp[0]), p1: pointFrom(mp[1]) },
-				{ variant: getInner(), p0: pointFrom(mp[1]), p1: pointFrom(mp[2]) },
-				{ variant: getInner(), p0: pointFrom(mp[2]), p1: pointFrom(mp[13]) },
-				{ variant: getInner(), p0: pointFrom(mp[13]), p1: pointFrom(mp[12]) },
-				{ variant: getInner(), p0: pointFrom(mp[12]), p1: pointFrom(mp[11]) },
-				{ variant: getInner(), p0: pointFrom(mp[11]), p1: pointFrom(mp[0]) }
-			]
-		});
-		shapes.holes.push({
-			perimeter: { isPerimeter: false, index: -1 },
-			segments: [
-				{ variant: getInner(), p0: pointFrom(mp[2]), p1: pointFrom(mp[3]) },
-				{ variant: getInner(), p0: pointFrom(mp[3]), p1: pointFrom(mp[4]) },
-				{ variant: getInner(), p0: pointFrom(mp[4]), p1: pointFrom(mp[15]) },
-				{ variant: getInner(), p0: pointFrom(mp[15]), p1: pointFrom(mp[14]) },
-				{ variant: getInner(), p0: pointFrom(mp[14]), p1: pointFrom(mp[13]) },
-				{ variant: getInner(), p0: pointFrom(mp[13]), p1: pointFrom(mp[2]) }
-			]
-		});
-	});
-	return shapes;
-};
 
 export const pointFrom = (seg: PathSegment): Point => {
 	if (seg[0] === 'M' || seg[0] === 'L') {
@@ -441,30 +314,34 @@ export const getIntersectionOfLines = (
 export const getQuadrilaterals = (band: Band, scale?: number): Quadrilateral[] => {
 	const facets: Facet[] = band.facets;
 	const quads: Quadrilateral[] = [];
-	if (scale && scale !== 1) {
-		facets.forEach((facet, i) => {
-			if (i % 2 === 1 && i < facets.length) {
-				const quad = {
-					a: facets[i - 1].triangle.a.clone().multiplyScalar(scale),
-					b: facets[i - 1].triangle.b.clone().multiplyScalar(scale),
-					c: facet.triangle.a.clone().multiplyScalar(scale),
-					d: facets[i - 1].triangle.c.clone().multiplyScalar(scale)
-				};
-				quads.push(quad);
-			}
-		});
-	} else {
-		facets.forEach((facet, i) => {
-			if (i % 2 === 1 && i < facets.length) {
-				quads.push({
+	facets.forEach((facet, i) => {
+		if (i % 2 === 1) {
+			const quad = band.orientation === 'axial-right'
+				? {
 					a: facets[i - 1].triangle.a.clone(),
 					b: facets[i - 1].triangle.b.clone(),
 					c: facet.triangle.a.clone(),
 					d: facets[i - 1].triangle.c.clone()
-				});
+				}
+				: {
+					a: facets[i - 1].triangle.a.clone(),
+					b: facets[i - 1].triangle.b.clone(),
+					c: facets[i - 1].triangle.c.clone(),
+					d: facet.triangle.b.clone(),
+				}
+
+			if (scale && scale !== 1) {
+				quad.a.multiplyScalar(scale);
+				quad.b.multiplyScalar(scale);
+				quad.c.multiplyScalar(scale);
+				quad.d.multiplyScalar(scale);
 			}
-		});
-	}
+			quads.push(quad)
+		}
+	});
+
+
+
 	return quads;
 };
 

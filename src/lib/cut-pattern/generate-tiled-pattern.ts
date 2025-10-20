@@ -8,19 +8,66 @@ import type {
 	PixelScale,
 	Point,
 	Quadrilateral,
-	TiledPattern
+	TiledPattern,
+	TubeCutPattern,
+	Facet
 } from '$lib/types';
 import { getQuadrilaterals, transformPatternByQuad } from '$lib/patterns/quadrilateral';
 import type { BandCutPatternPattern, TiledPatternConfig } from '$lib/types';
-import { getFlatStrip, getFlatStripV2 } from './generate-cut-pattern';
+import { getFlatStripV2 } from './generate-cut-pattern';
 import { patterns } from '$lib/patterns';
 import {
-	rotatePS,
-	translatePS,
+
 	getQuadWidth,
 	svgPathStringFromSegments
 } from '$lib/patterns/utils';
 import { formatAddress } from '$lib/recombination';
+import type { ProjectionAddress_Band, ProjectionAddress_Tube } from '$lib/projection-geometry/types';
+
+export const generateTubeCutPattern = ({
+	address,
+	bands,
+	tiledPatternConfig,
+	pixelScale
+}: {
+	address: ProjectionAddress_Tube;
+	bands: Band[];
+	tiledPatternConfig: TiledPatternConfig;
+	pixelScale: PixelScale;
+}): TubeCutPattern => {
+	const pattern: TubeCutPattern = { projectionType: 'patterned', address, bands: [] };
+	const { adjustAfterTiling } = patterns[tiledPatternConfig.type];
+	// Creates a line pattern without inner and outer elements, appropriate for post processing in Affinity
+	// TODO - see if it's possible to convert the output of this to "expanded path" (e.g. convert stroke widths to paths instead of doing so in Affinity)
+
+	const visibleBands = bands.filter((b) => b.visible);
+	const flatBands = visibleBands.map((band) => getFlatStripV2(band, { bandStyle: 'helical-right', pixelScale }))
+	const quadBands = flatBands.map((flatBand) => getQuadrilaterals(flatBand, pixelScale.value));
+
+	console.debug("generateTubeCutPattern", { quadBands, flatBands, bands, visibleBands })
+	const tiling = generateTiling({ quadBands, bands: flatBands, tiledPatternConfig, address });
+
+	if (adjustAfterTiling) {
+		const adjusted = adjustAfterTiling(tiling, tiledPatternConfig);
+		pattern.bands = adjusted;
+	} else {
+		pattern.bands = tiling;
+	}
+
+	pattern.bands = pattern.bands.map((band) => ({
+		...band,
+		facets: band.facets.map((facet) => {
+			const segments = facet.path;
+			if (facet.addenda) {
+				const addendaSegments = facet.addenda.map((a) => a.path);
+				segments.push(...facet.addenda.map((a) => a.path).flat());
+			}
+			return { ...facet, svgPath: svgPathStringFromSegments([...segments]) };
+		})
+	}));
+
+	return pattern;
+};
 
 export const generateTiledBandPattern = ({
 	address,
@@ -44,7 +91,6 @@ export const generateTiledBandPattern = ({
 		return getQuadrilaterals(flatBand, pixelScale.value);
 	});
 
-	console.debug();
 
 	const tiling = generateTiling({ quadBands, tiledPatternConfig, address });
 
@@ -72,11 +118,12 @@ export const generateTiledBandPattern = ({
 
 export type GenerateTilingProps = {
 	quadBands: Quadrilateral[][];
+	bands: Band[];
 	tiledPatternConfig: TiledPatternConfig;
-	address: GeometryAddress<BandAddressed>;
+	address: Proj
 };
 
-export const generateTiling = ({ quadBands, tiledPatternConfig, address }: GenerateTilingProps) => {
+export const generateTiling = ({ quadBands, bands, tiledPatternConfig, address }: GenerateTilingProps) => {
 	const tiling: {
 		facets: CutPattern[];
 		svgPath?: string | undefined;
@@ -88,7 +135,7 @@ export const generateTiling = ({ quadBands, tiledPatternConfig, address }: Gener
 
 		let mappedPatternBand: PathSegment[][] | PathSegment[];
 		if (tiledPatternConfig.tiling === 'quadrilateral') {
-			// console.debug('quadrilateral tiling basis');
+
 			const unitPattern = getPattern(
 				rowCount as 3 | 1 | 2,
 				columnCount as 1 | 2 | 3 | 4 | 5,
@@ -131,14 +178,20 @@ export const generateTiling = ({ quadBands, tiledPatternConfig, address }: Gener
 				tagAnchorPoint.y = facetPathSegment[2] || 0;
 			}
 			const quadWidth = getQuadWidth(quad);
+			console.debug("generateTiling", {bands, bandIndex, facetIndex})
 			const cuttable: CutPattern = {
 				// TODO - rescale this based on selected real units
 				path: facet,
 				triangle: undefined,
+				triangles: [
+					bands[bandIndex].facets[facetIndex * 2].triangle.clone(),
+					bands[bandIndex].facets[facetIndex * 2 + 1].triangle.clone()
+				],
 				quad,
 				quadWidth,
-				label: `${formatAddress(address)}: ${facetIndex}`
+				label: "test label" //`${formatAddress(address)}: ${facetIndex}`
 			};
+			console.debug("cuttable", {cuttable})
 			return cuttable;
 		});
 		const result: BandCutPattern = {

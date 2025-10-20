@@ -42,7 +42,7 @@
 </script>
 
 <g
-	transform={`translate(${-250 + 50 * index} -50) scale(-1,-1)`}
+	transform={`translate(${-250 + 250 * index} 0)`}
 	id={`band-${band.id}`}
 	role="group"
 	on:mouseover={() => handleMouseOver(band.address)}

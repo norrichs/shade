@@ -4,13 +4,15 @@
 	export let band: BandCutPattern;
 
 	const RAINBOW = false;
-	const FILL_RAINBOW = true;
+	const FILL_RAINBOW = false;
 
 	const colors = ['purple', 'blue', 'green', 'yellow', 'orange', 'red'];
 	console.debug('BandCutPattern', band);
 </script>
 
+
 {#each band.facets as facet, f}
+
 	<path
 		d={facet.svgPath}
 		fill={FILL_RAINBOW ? colors[f % colors.length] : 'none'}

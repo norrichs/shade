@@ -245,7 +245,7 @@ const getHingedEdgePatternV2 = (panel: RequiredPanelPattern, partnerPanel: Requi
 	const outline = [...thisSide.outline, ...partnerSide.outline.reverse()];
 	const bounds = getBounds(outline);
 
-	console.debug({ registrationPoint: panel.meta.backFaceRegistrationPoints[edge] });
+
 
 	const hingePattern: HingePattern = {
 		edge,
@@ -626,7 +626,6 @@ const getCutAngle = (
 
 	const cutAngle = isConcave ? (Math.PI - dihedral) / -2 : (Math.PI - dihedral) / 2;
 	if (isNaN(cutAngle)) {
-		console.debug({ dihedral, cutAngle, t0, t1, edge0, edge1, address0, address1 });
 		throw Error('bad cut angle calculation');
 	}
 	return { cutAngle, crease: isConcave ? 'valley' : 'mountain' };
@@ -764,14 +763,7 @@ const validateEdgeMeta = ({
 		Math.abs(partnerMeta?.cutAngle - edgeMeta?.cutAngle) < cutAnglePrecision;
 
 	if (!isCreaseMatched || !isCutAngleMatched) {
-		const thisPanel = tubes[panelAddress.tube].bands[panelAddress.band].panels[panelAddress.facet];
-		console.debug('VALIDATE EDGE META', {
-			partner,
-			partnerMeta,
-			edgeMeta,
-			panelAddress,
-			partnerAddress: pA
-		});
+
 		throw Error(
 			`partner cut does not match - cutAngle ${partnerMeta?.cutAngle}, ${edgeMeta?.cutAngle
 			} diff ${Math.abs(partnerMeta?.cutAngle - edgeMeta?.cutAngle)} - ${partnerMeta?.crease}, ${edgeMeta?.crease

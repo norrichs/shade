@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { svgTriangle } from '$lib/patterns/flower-of-life';
 	import { svgQuad } from '$lib/patterns/quadrilateral';
 	import { getMidPoint } from '$lib/patterns/utils';
 	import type { BandCutPattern, CutPattern, Point, Quadrilateral } from '$lib/types';
@@ -6,6 +7,7 @@
 	export let band: BandCutPattern;
 	export let showQuads = false;
 	export let showLabels = true;
+	export let showTriangles = false;
 
 	$: facets = band.facets
 		.filter((facet) => !!facet.quad)
@@ -15,9 +17,10 @@
 			return {
 				label: facet.label,
 				labelPoint,
-				quad: facet.quad
+				quad: facet.quad,
+				triangles: facet.triangles
 			};
-		}) as { label: string; labelPoint: Point; quad: Quadrilateral }[];
+		}) as { label: string; labelPoint: Point; quad: Quadrilateral; triangles?: any }[];
 </script>
 
 {#each facets as facet}
@@ -41,6 +44,10 @@
 				<circle cx={facet.quad.c.x} cy={facet.quad.c.y} r="2" fill="rgb(150,0,50)" />
 				<circle cx={facet.quad.d.x} cy={facet.quad.d.y} r="2" fill="rgb(255,0,0)" />
 			</g>
+		{/if}
+		{#if showTriangles && facet.triangles}
+			<path d={svgTriangle(facet.triangles[0])} stroke="black" fill="rgba(0,255,0,0.1)" />
+			<path d={svgTriangle(facet.triangles[1])} stroke="none" fill="rgba(255,0,0,0.1)" />
 		{/if}
 	</g>
 {/each}

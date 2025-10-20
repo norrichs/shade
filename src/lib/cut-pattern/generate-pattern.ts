@@ -1,40 +1,25 @@
 import type {
-	ProjectionAddress_Band,
-	ProjectionAddress_Facet,
-	ProjectionAddress_FacetEdge,
 	TriangleEdge,
 	TriangleEdgePermissive,
 	Tube
 } from '$lib/projection-geometry/types';
 import type {
-	Band,
-	BandAddressed,
-	BandPanelPattern,
-	Crease,
-	GeometryAddress,
 	Globule,
 	GlobulePatternConfig,
-	PanelBase,
-	PanelEdgeMeta,
-	PanelPattern,
-	PathSegment,
 	BandCutPatternPattern,
-	ProjectionPanelPattern,
 	SubGlobule,
 	SubGlobuleConfig,
 	SuperGlobule,
 	SuperGlobuleConfig,
-	TiledPatternConfig,
 	TrianglePoint,
-	TubePanelPattern,
 	FacetOrientation,
-	ScaleUnit,
-	PatternScale,
-	HingePattern
+	TubeCutPattern,
+	Band,
+
 } from '$lib/types';
-import { Triangle, Vector3 } from 'three';
+
 import { applyStrokeWidth } from './generate-cut-pattern';
-import { generateTiledBandPattern } from './generate-tiled-pattern';
+import { generateTiledBandPattern, generateTubeCutPattern } from './generate-tiled-pattern';
 import { getEdge } from '$lib/projection-geometry/generate-projection';
 import type { SuperGlobuleBandPattern, SuperGlobuleProjectionPattern } from '$lib/stores';
 import {
@@ -115,15 +100,13 @@ export const generateProjectionPattern = (
 	tubes: Tube[],
 	id: SuperGlobuleConfig['id'],
 	globulePatternConfig: GlobulePatternConfig,
-	// existingPattern?: { tubes: { bands: { panels: PanelPattern[] } } },
 	range?: {
 		tubes: { start: number; end: number };
 		bands: { start: number; end: number };
 		panels: { start: number; end: number };
 	}
 ): SuperGlobuleProjectionPattern => {
-	const dummyAddress: GeometryAddress<BandAddressed> = { s: 0, g: [0], b: 0 };
-	const patterns: BandCutPatternPattern[] = [];
+
 	const {
 		tiledPatternConfig,
 		patternConfig: { pixelScale }
@@ -142,27 +125,24 @@ export const generateProjectionPattern = (
 			projectionPanelPattern
 		};
 	} else {
-		console.debug('SHOULD USE CUT PATTERN');
-		tubes.forEach(({ bands }) => {
-			let pattern: BandCutPatternPattern = generateTiledBandPattern({
-				address: dummyAddress,
+		const tubePatterns: TubeCutPattern[] = tubes.map(({ bands, address }, t) => {
+			const tubePattern = generateTubeCutPattern({
+				address,
 				bands,
 				tiledPatternConfig,
 				pixelScale
-			});
-			pattern = {
-				...pattern,
-				bands: pattern.bands.map((band) => ({ ...band, projectionType: pattern.projectionType }))
-			};
-			pattern = applyStrokeWidth(pattern, tiledPatternConfig.config);
-			patterns.push(pattern);
-		});
-		const bandPatterns = patterns.map((pattern: BandCutPatternPattern) => pattern.bands).flat();
+			})
+			console.debug('tubePattern', tubePattern);
+			return tubePattern;
+		})
 
 		return {
 			type: 'SuperGlobuleProjectionCutPattern',
 			superGlobuleConfigId: id,
-			bandPatterns
+			projectionCutPattern: {
+				address: { projection: tubes[0].address.projection },
+				tubes: tubePatterns
+			}
 		};
 	}
 };
@@ -334,4 +314,3 @@ export const corrected = (s: string): TriangleEdge => {
 	if (s === 'cb') return 'bc';
 	return s as TriangleEdge;
 };
-

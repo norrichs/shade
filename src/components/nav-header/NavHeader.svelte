@@ -76,9 +76,9 @@
 			<ViewMenu />
 		</div>
 
-		<div>
+		<!-- <div>
 			{formatAddress($selectedBand)}
-		</div>
+		</div> -->
 
 		{#if $selectedProjectionGeometry}
 			<div>

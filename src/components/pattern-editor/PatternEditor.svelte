@@ -38,7 +38,6 @@
 	import { quadBands } from './quads';
 	import { degToRad } from 'three/src/math/MathUtils.js';
 	import {
-		generateTiledBandPattern,
 		generateTiling,
 		type GenerateTilingProps
 	} from '$lib/cut-pattern/generate-tiled-pattern';

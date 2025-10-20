@@ -180,6 +180,7 @@ export type CutPattern = {
 	quadWidth?: number;
 	svgTransform?: string;
 	triangle?: ThreeTriangle;
+	triangles?: [ThreeTriangle, ThreeTriangle];
 	quad?: Quadrilateral;
 	tab?: TabPattern;
 	addenda?: Omit<CutPattern, 'addenda'>[];
@@ -303,10 +304,11 @@ export type BandCutPattern = {
 	tagAnchorPoint: Point;
 	tagAngle?: number;
 	projectionType: 'patterned';
-	address: GeometryAddress<BandAddressed>;
+	address: ProjectionAddress_Band;
 };
 
 export type TubeCutPattern = {
+	projectionType: 'patterned';
 	address: ProjectionAddress_Tube;
 	bands: BandCutPattern[];
 }

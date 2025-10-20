@@ -5,7 +5,8 @@ import type {
 	BandCutPattern,
 	ProjectionPanelPattern,
 	SuperGlobule,
-	SuperGlobuleConfig
+	SuperGlobuleConfig,
+	TubeCutPattern
 } from '$lib/types';
 import { derived } from 'svelte/store';
 import { loadPersistedOrDefault } from '$lib/stores';
@@ -132,5 +133,5 @@ export type SuperGlobuleProjectionPanelPattern = {
 export type SuperGlobuleProjectionCutPattern = {
 	type: 'SuperGlobuleProjectionCutPattern';
 	superGlobuleConfigId: Id;
-	bandPatterns: BandCutPattern[];
+	projectionCutPattern: ProjectionCutPattern;
 };

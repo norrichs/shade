@@ -262,12 +262,12 @@ export const defaultScaleConfig: PatternScale = {
 	quantity: Math.round(mmFromInches(24) * 10) / 10,
 	secondary: {
 		quantity: 24,
-		unit: 'inch'
+		unit: 'in'
 	}
 };
 
 
-export const defaultPanelHoleConfig: PanelHoleCkonfig = {
+export const defaultPanelHoleConfig: PanelHoleConfig = {
 	holeDistribution: 'vertex',
 	units: 'in',
 	thickness: 0.47,
@@ -456,7 +456,7 @@ export const tiledPatternConfigs: { [key: string]: TiledPatternConfig } = {
 };
 
 const defaultTiledPatternConfig = (): TiledPatternConfig => {
-	const pattern: TiledPattern = 'tiledPanelPattern-0';
+	const pattern: TiledPattern = 'tiledHexPattern-1';
 	return {
 		...tiledPatternConfigs[pattern],
 		labels: {
@@ -519,13 +519,13 @@ export const defaultPatternConfig = (): PatternConfig => ({
 });
 
 export const defaultPatternViewConfig = (): PatternViewConfig => ({
-	showQuads: false,
+	showQuads: true,
 	width: 800,
 	height: 600,
-	zoom: -1,
+	zoom: -1.2,
 	centerOffset: {
 		x: 0,
-		y: 0
+		y: -300
 	},
 	showLabels: false
 });

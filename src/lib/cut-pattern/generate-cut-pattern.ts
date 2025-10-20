@@ -11,6 +11,8 @@ import {
 	getRenderable
 } from '../generate-shape';
 import { validateCutoutConfig } from '../validators';
+import { getFlatTriangle } from './generate-panel-pattern';
+import { getBandBasePoints } from './generate-pattern';
 import {
 	generateFlowerOfLife1BandPattern,
 	getTransformStringFromTriangle,
@@ -39,6 +41,7 @@ import type {
 	OutlinePattern,
 	OutlinedBandPattern,
 	OutlinedStrutPattern,
+	PanelBase,
 	PathSegment,
 	PatternConfig,
 	BandCutPatternPattern,
@@ -639,73 +642,42 @@ export const getFlatStripV2 = <T extends Strut | Band>(
 		...flatStripConfig
 	};
 
-	const scale = config.pixelScale?.value || 1;
-	const scaleMatrix = new Matrix3();
-	scaleMatrix.makeScale(scale, scale);
-
 	const flatStrip: Strip = { ...strip, facets: [] };
+
+	// Get the base points for even/odd triangles based on the first facet's orientation
+	const bandBasePoints = getBandBasePoints(strip.facets[0].orientation);
 
 	strip.facets.forEach((facet, i) => {
 		const alignedFacet: Facet = { ...facet };
 
-		// let edgeConfig
-		let edgeConfig = generateEdgeConfig(
-			flatStripConfig.bandStyle,
-			Math.abs((i - 1) % 2) == 0,
-			isStrut(strip),
-			false
-		);
-		let alignConfig: AlignTrianglesConfig;
+		// Determine which base points to use (even or odd)
+		const thisBasePoints = bandBasePoints[i % 2];
+		let base: PanelBase;
 
 		if (i === 0) {
-			const firstAlignedPoints: { pivot: TrianglePoint; constrained: TrianglePoint } = !isStrut(
-				strip
-			)
-				? { pivot: 'a', constrained: 'c' }
-				: { pivot: 'c', constrained: 'a' };
-			const firstLength = getLength(
-				facet.triangle[firstAlignedPoints.pivot],
-				facet.triangle[firstAlignedPoints.constrained]
-			);
-			alignConfig = {
-				isEven: getFirstTriangleParity(flatStripConfig.bandStyle),
-				isTabOnGreaterSide: false,
-				lead: {
-					p: firstAlignedPoints.constrained,
-					vec: config.direction.clone().setLength(firstLength).addScaledVector(config.origin, 1)
-				},
-				follow: { p: firstAlignedPoints.pivot, vec: config.origin.clone() }
+			// First triangle: use origin and (1,0,0) as the base
+			base = {
+				...thisBasePoints,
+				v0: config.origin.clone(),
+				v1: config.origin.clone().add(new Vector3(1, 0, 0))
 			};
 		} else {
-			const prevFlatTriangle = flatStrip.facets[i - 1].triangle;
-			alignConfig = {
-				isEven: Math.abs((i - 1) % 2) === 0,
-				isTabOnGreaterSide: false,
-				lead: { p: edgeConfig.lead, vec: prevFlatTriangle[edgeConfig.lead].clone() },
-				follow: { p: edgeConfig.follow, vec: prevFlatTriangle[edgeConfig.follow].clone() }
+			// Subsequent triangles: derive base from previous triangle's "second" points
+			// The second points are p1, p0 (reversed order) from thisBasePoints
+			const prevTriangle = flatStrip.facets[i - 1].triangle;
+			base = {
+				...thisBasePoints,
+				v0: prevTriangle[thisBasePoints.p1].clone(),
+				v1: prevTriangle[thisBasePoints.p0].clone()
 			};
 		}
-		alignedFacet.triangle = alignTriangle(facet.triangle, alignConfig);
-		// if (config.pixelScale && config.pixelScale.value !== 1) {
-		// 	const oldTriangle = alignedFacet.triangle.clone();
-		// 	alignedFacet.triangle = new Triangle(
-		// 		oldTriangle.a.clone().applyMatrix3(scaleMatrix),
-		// 		oldTriangle.b.clone().applyMatrix3(scaleMatrix),
-		// 		oldTriangle.c.clone().applyMatrix3(scaleMatrix)
-		// 	);
-		// 	console.debug(
-		// 		'||| alignedFacet.triangle',
-		// 		scale,
-		// 		oldTriangle.a,
-		// 		'->',
-		// 		alignedFacet.triangle.a
-		// 	);
-		// } else {
-		// 	console.debug('*** alignedFacet.triangle', scale, alignedFacet.triangle.a);
-		// }
 
+		// Use getFlatTriangle to get the aligned triangle
+		alignedFacet.triangle = getFlatTriangle({ triangle: facet.triangle, base });
+
+		// Handle tabs
 		if (facet.tab && tabStyle) {
-			edgeConfig = generateEdgeConfig(config.bandStyle, i % 2 === 0, false, true);
+			const edgeConfig = generateEdgeConfig(config.bandStyle, i % 2 === 0, false, true);
 			const tabAlignConfig = {
 				isEven: Math.abs((i - 1) % 2) === 0,
 				isTabOnGreaterSide: Math.abs((i - 1) % 2) === 1,
@@ -763,14 +735,6 @@ export const getFlatStripV2 = <T extends Strut | Band>(
 					);
 				}
 			}
-
-			// alignedFacet.tab = {
-			//   ...facet.tab,
-			//   footprint: {
-			//     ...facet.tab.footprint,
-			//     triangle: tabFootprint
-			//   }
-			// }
 		}
 		flatStrip.facets.push(alignedFacet);
 	});

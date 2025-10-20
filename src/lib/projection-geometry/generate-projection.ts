@@ -467,11 +467,9 @@ const generateProjectionBands = (
 	tubeAddress: ProjectionAddress_Tube,
 	tubeSymmetry?: 'lateral' | 'axial'
 ) => {
-	console.debug({ tubeSymmetry });
 	const sectionLength = sections[0].points.length;
 	const bands: Band[] = [];
 	if (tubeSymmetry === 'lateral' && projectOrientation !== 'circumferential') {
-		console.debug('LATERAL SYMMETRY');
 		for (let f = 0; f < sectionLength - 1; f++) {
 			const reflectedOrientation =
 				projectOrientation === 'axial-right' ? 'axial-left' : 'axial-right';
@@ -737,16 +735,6 @@ const getFacetEdgeMeta = (address: ProjectionAddress_Facet, tubes: Tube[]): Face
 	// const pSecond = getEdge('second', f, partnerBandOrientation);
 	const pOuter = getEdge('outer', f, partnerBandOrientation);
 
-	if (printProjectionAddress(address) === 'p0t0b2f1') {
-		console.debug('-------------', {
-			address,
-			orientation,
-			partnerBandOrientation,
-			facetOffset,
-			partnerFacet,
-			partnerBand
-		});
-	}
 
 	if (isFirstFacet) {
 		if (!facet.meta) throw Error('end facet should already have end partner in meta');
@@ -764,15 +752,12 @@ const getFacetEdgeMeta = (address: ProjectionAddress_Facet, tubes: Tube[]): Face
 		edgeMeta[outer].partner = { ...address, band: partnerBand, facet: partnerFacet, edge: pOuter };
 	}
 	if (!edgeMeta.ab.partner) {
-		console.debug({ base, second, pOuter, isFirstFacet, isLastFacet });
 		throw Error('missing partner ab');
 	}
 	if (!edgeMeta.bc.partner) {
-		console.debug({ base, second, pOuter, isFirstFacet, isLastFacet });
 		throw Error('missing partner bc');
 	}
 	if (!edgeMeta.ac.partner) {
-		console.debug({ base, second, pOuter, isFirstFacet, isLastFacet });
 		throw Error('missing partner ac');
 	}
 	return edgeMeta;
