@@ -23,6 +23,8 @@ import {
 } from '$lib/patterns/utils';
 import { formatAddress } from '$lib/recombination';
 import type { ProjectionAddress_Band, ProjectionAddress_Tube } from '$lib/projection-geometry/types';
+import { getAllTrianglePoints, getMinimalBoundingBoxAndRotationAngle } from '../../components/cut-pattern/distrubute-panels';
+import { Triangle, Vector3 } from 'three';
 
 export const generateTubeCutPattern = ({
 	address,
@@ -42,10 +44,13 @@ export const generateTubeCutPattern = ({
 
 	const visibleBands = bands.filter((b) => b.visible);
 	const flatBands = visibleBands.map((band) => getFlatStripV2(band, { bandStyle: 'helical-right', pixelScale }))
-	const quadBands = flatBands.map((flatBand) => getQuadrilaterals(flatBand, pixelScale.value));
+  const alignedBands = alignBands(flatBands);
 
-	console.debug("generateTubeCutPattern", { quadBands, flatBands, bands, visibleBands })
-	const tiling = generateTiling({ quadBands, bands: flatBands, tiledPatternConfig, address });
+
+	
+	const quadBands = alignedBands.map((flatBand) => getQuadrilaterals(flatBand, pixelScale.value));
+
+	const tiling = generateTiling({ quadBands, bands: alignedBands, tiledPatternConfig, address });
 
 	if (adjustAfterTiling) {
 		const adjusted = adjustAfterTiling(tiling, tiledPatternConfig);
@@ -65,6 +70,7 @@ export const generateTubeCutPattern = ({
 			return { ...facet, svgPath: svgPathStringFromSegments([...segments]) };
 		})
 	}));
+	console.debug("generateTubeCutPattern", { pattern })
 
 	return pattern;
 };
@@ -146,7 +152,7 @@ export const generateTiling = ({ quadBands, bands, tiledPatternConfig, address }
 				transformPatternByQuad(unitPattern, quad)
 			) as PathSegment[][];
 		} else if (tiledPatternConfig.tiling === 'triangle') {
-			console.debug('**** triangle tiling basis');
+			
 			const unitPattern = getPattern(
 				rowCount as 3 | 1 | 2,
 				columnCount as 1 | 2 | 3 | 4 | 5,
@@ -178,7 +184,7 @@ export const generateTiling = ({ quadBands, bands, tiledPatternConfig, address }
 				tagAnchorPoint.y = facetPathSegment[2] || 0;
 			}
 			const quadWidth = getQuadWidth(quad);
-			console.debug("generateTiling", {bands, bandIndex, facetIndex})
+
 			const cuttable: CutPattern = {
 				// TODO - rescale this based on selected real units
 				path: facet,
@@ -191,7 +197,7 @@ export const generateTiling = ({ quadBands, bands, tiledPatternConfig, address }
 				quadWidth,
 				label: "test label" //`${formatAddress(address)}: ${facetIndex}`
 			};
-			console.debug("cuttable", {cuttable})
+			
 			return cuttable;
 		});
 		const result: BandCutPattern = {
@@ -201,9 +207,93 @@ export const generateTiling = ({ quadBands, bands, tiledPatternConfig, address }
 			tagAnchorPoint,
 			tagAngle: tiledPatternConfig.labels?.angle || tagAnchor.angle || 0,
 			projectionType: 'patterned',
-			address: { ...address, b: bandIndex }
+			address: { ...address, b: bandIndex },
+			bounds: bands[bandIndex].bounds
 		};
 		return result;
 	});
 	return tiling;
+};
+
+
+const alignBands = (bands: Band[]) => {
+	return bands.map((originalBand, bandIndex) => {
+		const points = getAllTrianglePoints(originalBand);
+		const bounds = getMinimalBoundingBoxAndRotationAngle(points)
+		console.debug("alignBands", { bounds })
+		const realignedBand = reAlignBand(originalBand, bounds.rotatedCoordinates)
+		realignedBand.bounds = getSimpleBounds(realignedBand)
+		if (realignedBand.bounds.left !== 0 || realignedBand.bounds.top !== 0) {
+			return normalizeBand(realignedBand);
+		}
+		return realignedBand
+
+	})
+}
+
+export const normalizeBand = (band: Band): Band => {
+	const anchor = new Vector3(band.bounds?.left || 0, band.bounds?.top || 0, 0);
+	const newFacets = band.facets.map((facet) => {
+		return {...facet, triangle: new Triangle(
+			facet.triangle.a.clone().sub(anchor),
+			facet.triangle.b.clone().sub(anchor),
+			facet.triangle.c.clone().sub(anchor))};
+		});
+		const newBand: Band = {
+			...band,
+			facets: newFacets
+		};
+	const newBounds = getSimpleBounds(newBand);
+	newBand.bounds = newBounds;
+		
+	return newBand;
+};
+
+
+const reAlignBand = (band: Band , rotatedCoordinates: { x: number, y: number }[]): Band => {
+	const newBand = {
+		...band,
+		facets: band.facets.map((facet, index) => {
+			return {
+				...facet, triangle: new Triangle(
+					new Vector3(rotatedCoordinates[index * 3].x, rotatedCoordinates[index * 3].y, 0),
+					new Vector3(rotatedCoordinates[index * 3 + 1].x, rotatedCoordinates[index * 3 + 1].y, 0),
+					new Vector3(rotatedCoordinates[index * 3 + 2].x, rotatedCoordinates[index * 3 + 2].y, 0))
+			};
+		})
+	};
+	const isAscending = newBand.facets[0].triangle.a.y < newBand.facets[newBand.facets.length - 1].triangle.a.y;
+	if (isAscending) {
+		newBand.facets = rotateFacets(newBand.facets, Math.PI)
+	}
+	return newBand;
+};
+
+const rotateFacets = (facets: Band['facets'], angle: number) => {
+	return facets.map((facet: Facet) => {
+		return {
+			...facet,
+			triangle: new Triangle(
+				facet.triangle.a.clone().applyAxisAngle(Z_AXIS, angle),
+				facet.triangle.b.clone().applyAxisAngle(Z_AXIS, angle),
+				facet.triangle.c.clone().applyAxisAngle(Z_AXIS, angle)
+			)
+		};
+	});
+};
+
+const Z_AXIS = new Vector3(0, 0, 1);
+
+const getSimpleBounds = (band: Band): {left: number, top: number, width: number, height: number, center: Vector3} => {
+	const points = getAllTrianglePoints(band);
+	const xValues = points.map((point) => point.x);
+	const yValues = points.map((point) => point.y);
+	const minX = Math.min(...xValues);
+	const maxX = Math.max(...xValues);
+	const minY = Math.min(...yValues);
+	const maxY = Math.max(...yValues);
+	const width = maxX - minX;
+	const height = maxY - minY;
+	const center = new Vector3(minX + width / 2, minY + height / 2, 0);
+	return {left: minX, top: minY, width, height, center};
 };

@@ -67,7 +67,7 @@ const getContiguousDistribution2 = (tubes: TubePanelPattern[], config?: Distribu
 					})
 				};
 				if (reAlignBands) {
-					const bounds = getMinimalBoundingBoxAndRotationAngle(distributedBand);
+					const bounds = getMinimalBoundingBoxAndRotationAngle(getAllTrianglePoints(distributedBand));
 					const realignedBand = reAlignBand(distributedBand, bounds.rotatedCoordinates);
 					realignedBand.bounds = getSimpleBounds(realignedBand);
 					if (realignedBand.bounds.left !== 0 || realignedBand.bounds.top !== 0) {
@@ -83,7 +83,7 @@ const getContiguousDistribution2 = (tubes: TubePanelPattern[], config?: Distribu
 };
 
 
-const normalizeBand = (band: BandPanelPattern): BandPanelPattern => {
+ const normalizeBand = (band: BandPanelPattern): BandPanelPattern => {
 	const anchor = new Vector3(band.bounds?.left || 0, band.bounds?.top || 0, 0);
 	const newPanels = band.panels.map((panel) => {
 		return {...panel, triangle: new Triangle(
@@ -116,7 +116,7 @@ const getSimpleBounds = (band: BandPanelPattern): {left: number, top: number, wi
 	return {left: minX, top: minY, width, height, center};
 };
 
-const reAlignBand = (band: BandPanelPattern, rotatedCoordinates: { x: number, y: number }[]): BandPanelPattern => {
+const reAlignBand = (band: BandPanelPattern , rotatedCoordinates: { x: number, y: number }[]): BandPanelPattern => {
 	const newBand = {
 		...band,
 		panels: band.panels.map((panel, panelIndex) => {
@@ -173,7 +173,7 @@ const redrawTriangle = ({triangle, anchor, vector, p0, p1}:
 	const normalizedVector = vector.normalize();
 
 	const p2 = getOtherTriangleElements([p0, p1])
-
+ 
 
 	const firstEdgeVector = getEdgeVector(triangle, [p0, p1]);
 	const secondEdgeVector = getEdgeVector(triangle, [p0, p2]);
@@ -340,9 +340,11 @@ export const getBandSlopeVector = (band: BandPanelPattern) => {
 	return findSlopeVectorByLeastSquares(points);
 }
 
-const getAllTrianglePoints = (band: BandPanelPattern): Vector3[] => {
+
+type GenericBand = {panels?: {triangle: Triangle}[], facets?: {triangle: Triangle}[]}
+export const getAllTrianglePoints = (band: GenericBand): Vector3[] => {
 	const points: Vector3[] = [];
-	band.panels.forEach((panel) => {
+	(band.panels || band.facets || []).forEach((panel) => {
 		points.push(panel.triangle.a);
 		points.push(panel.triangle.b);
 		points.push(panel.triangle.c);
@@ -400,17 +402,17 @@ const findSlopeVectorByLeastSquares = (points: Vector3[]) => {
 
 export const getBounds = (pattern: TubePanelPattern[]): { bands: { angle: number, width: number, height: number, averageX: number, averageY: number }[] }[] => {
 	const bounds = pattern.map((tube) => ({
-		bands: tube.bands.map((band) => getMinimalBoundingBoxAndRotationAngle(band))
+		bands: tube.bands.map((band) => getMinimalBoundingBoxAndRotationAngle(getAllTrianglePoints(band)))
 	}));
 
 	return bounds;
 }
 
-export const getMinimalBoundingBoxAndRotationAngle = (band: BandPanelPattern): {
+export const getMinimalBoundingBoxAndRotationAngle = (points: Vector3[]): {
 	angle: number,
 	width: number, height: number, averageX: number, averageY: number, rotatedCoordinates: { x: number, y: number }[]
 } => {
-	const points = getAllTrianglePoints(band);
+
 	
 	if (points.length === 0) {
 		return { angle: 0, width: 0, height: 0, averageX: 0, averageY: 0, rotatedCoordinates: [] };

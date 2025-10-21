@@ -31,7 +31,8 @@
 			$patternConfigStore.patternViewConfig.centerOffset.y -
 			$patternConfigStore.patternConfig.page.height
 		} ${width} ${height}`}
-	>
+	>	
+	  <circle cx={0} cy={0} r={10} fill="red" />
 		<slot />
 	</svg>
 </svg>

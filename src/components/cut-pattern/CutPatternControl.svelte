@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { ProjectionRange } from '$lib/projection-geometry/filters';
 	import { patternConfigStore } from '$lib/stores';
 	import { isClose } from '$lib/util';
 	import CheckboxInput from '../controls/CheckboxInput.svelte';
@@ -8,8 +9,17 @@
 
 	let labelScale = 0.1;
 	let labelAngle = 0;
+  let rangeTubes: ProjectionRange["tubes"] = $patternConfigStore.patternViewConfig.range?.tubes || [0,1]
+  let rangeBands: ProjectionRange["bands"] = $patternConfigStore.patternViewConfig.range?.bands || [0,1]
+  let rangeFacets: ProjectionRange["facets"] = $patternConfigStore.patternViewConfig.range?.facets || [0,1]
 
-	const updateStore = (scale?: number, angle?: number) => {
+	const updateStore = (scale?: number, angle?: number, rangeTubes: ProjectionRange["tubes"], rangeBands: ProjectionRange["bands"], rangeFacets: ProjectionRange["facets"]) => {
+		$patternConfigStore.patternViewConfig.range = {
+			tubes: rangeTubes,
+			bands: rangeBands,
+			facets: rangeFacets
+		};
+		
 		if (!$patternConfigStore.tiledPatternConfig.labels) {
 			$patternConfigStore.tiledPatternConfig.labels = { scale: labelScale, angle: labelAngle };
 			return;
@@ -26,7 +36,7 @@
 		}
 		$patternConfigStore.tiledPatternConfig.labels = newLabelParams;
 	};
-	$: updateStore(labelScale, labelAngle);
+	$: updateStore(labelScale, labelAngle, rangeTubes, rangeBands, rangeFacets);
 </script>
 
 <div class="view-control-box">
@@ -53,10 +63,28 @@
 				bind:value={$patternConfigStore.patternViewConfig.showQuads}
 			/>
 			<CheckboxInput
-			label="show Labels"
-			bind:value={$patternConfigStore.patternViewConfig.showLabels}
-		/>
-			
+				label="show Labels"
+				bind:value={$patternConfigStore.patternViewConfig.showLabels}
+			/>
+
+		</div>
+		<div>
+			<div>
+				<span>Range</span>
+				<div class="range-inputs">
+					<NumberInput label="tubes" min={0} max={1} step={1} bind:value={rangeTubes[0]} />
+					<NumberInput min={0} max={1} step={1} bind:value={rangeTubes[1]} />
+				</div>
+				<div class="range-inputs">
+					<NumberInput label="bands" min={0} max={1} step={1} bind:value={rangeBands[0]} />
+					<NumberInput min={0} max={1} step={1} bind:value={rangeBands[1]} />
+				</div>
+				<div class="range-inputs">
+					<NumberInput label="facets" min={0} max={1} step={1} bind:value={rangeFacets[0]} />
+					<NumberInput min={0} max={1} step={1} bind:value={rangeFacets[1]} />
+				</div>
+
+			</div>
 		</div>
 	</div>
 	<label for="svg-width">width</label>
@@ -103,6 +131,11 @@
 </div>
 
 <style>
+	.range-inputs {
+		display: flex;
+		flex-direction: row;
+		gap: 0px;
+	}
 	.view-control-box {
 		position: absolute;
 		top: 20px;

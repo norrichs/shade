@@ -5,8 +5,9 @@
 
 	export let band: BandCutPattern;
 	export let index: number;
+	export let origin: Vector3;
 	export let showLabel = true;
-
+	export let showBounds = true;
 	let colors = {
 		default: 'orange',
 		hovered: 'blue',
@@ -42,7 +43,7 @@
 </script>
 
 <g
-	transform={`translate(${-250 + 250 * index} 0)`}
+	transform={`translate(${origin.x} ${origin.y})`}
 	id={`band-${band.id}`}
 	role="group"
 	on:mouseover={() => handleMouseOver(band.address)}
@@ -54,6 +55,7 @@
 	on:blur={() => (isFocused = false)}
 	stroke={color}
 >
+	{#if showBounds}<rect x={band.bounds.left} y={band.bounds.top} width={band.bounds.width} height={band.bounds.height} fill="rgba(0, 0, 0, 0.05)" stroke="red" stroke-width={.1} />{/if}
 	<slot />
 	{#if showLabel}
 		<PatternLabel

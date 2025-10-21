@@ -8,7 +8,7 @@
 	export let min = 0;
 	export let max = 100;
 	export let hasButtons = false;
-	export let label
+	export let label = ''
 
 	const handleFocus = (event: FocusEvent) => {
 		(event.target as HTMLInputElement).select();

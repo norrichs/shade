@@ -13,14 +13,20 @@
 		concatAddress_Tube,
 		concatAddress_Band
 	} from '$lib/stores';
+	import { Vector3 } from 'three';
 	import QuadPattern from '../pattern-svg/QuadPattern.svelte';
 	import BandComponent from './BandComponent.svelte';
 	import BandCutPatternComponent from './BandCutPatternComponent.svelte';
+	import type { TubeCutPattern } from '$lib/types';
 
 	export let projectionPattern: SuperGlobuleProjectionPattern | undefined;
+	let tubes = isSuperGlobuleProjectionCutPattern(projectionPattern)
+		? projectionPattern.projectionCutPattern.tubes
+		: [];
+	let origins: { tubes: { bands: Vector3[] }[] } = { tubes: [{ bands: [] }] };
 	console.debug('ProjectionCutPattern', projectionPattern);
-	export let range: ProjectionRange = {};
-	export let showSelectedOnly: 'panel' | 'band' | false = false;
+	// export let range: ProjectionRange = {};
+	// export let showSelectedOnly: 'panel' | 'band' | false = false;
 
 	const filtered = (
 		store: typeof $superGlobulePatternStore,
@@ -59,33 +65,50 @@
 		// }
 		return pattern;
 	};
+
+	const getCumulativeOrigins = (tubes: TubeCutPattern[]) => {
+		const cumulativeOrigin = new Vector3(0, 0, 0);
+
+		return {
+			tubes: tubes.map((tube) => ({
+				bands: tube.bands.map((band) => {
+					const result = cumulativeOrigin.clone();
+					cumulativeOrigin.set(cumulativeOrigin.x + band.bounds?.width || 0, 0, 0);
+					return result;
+				})
+			}))
+		};
+	};
+
+	const updateTubes = (projectionPattern: SuperGlobuleProjectionPattern | undefined) => {
+		if (!isSuperGlobuleProjectionCutPattern(projectionPattern)) tubes = [];
+		else tubes = projectionPattern.projectionCutPattern.tubes;
+	};
 	const update = (
 		store: typeof $viewControlStore,
-		projectionPattern: SuperGlobuleProjectionPattern | undefined
+		tubes: TubeCutPattern[]
 	) => {
 		const { any, bands, facets } = store.showProjectionGeometry;
 		const isValid = isSuperGlobuleProjectionCutPattern(projectionPattern);
 		showPattern = any && (bands || facets) && isValid;
 		console.debug('update', { any, bands, facets, showPattern });
-		// bandPatterns = isValid ? projectionPattern.bandPatterns : [];
+
+		origins = getCumulativeOrigins(tubes);
 	};
 
 	let showPattern = false;
 
-	$: update($viewControlStore, projectionPattern);
+	$: updateTubes($superGlobulePatternStore.projectionPattern);
+	$: update($viewControlStore, tubes);
 	$: show = isSuperGlobuleProjectionCutPattern($superGlobulePatternStore.projectionPattern);
 	// $: pattern = filtered($superGlobulePatternStore.projectionPattern, range);
 </script>
 
-{#if showPattern && isSuperGlobuleProjectionCutPattern(projectionPattern)}
-
-	{#each projectionPattern?.projectionCutPattern?.tubes || [] as tube,t }
-		<g 
-		id={`${concatAddress_Tube(tube.address)}`}
-		transform={`translate(${t * 1500}, 0)`}
-		>
+{#if showPattern}
+	{#each tubes || [] as tube, t}
+		<g id={`${concatAddress_Tube(tube.address)}`} transform={`translate(0, 0)`}>
 			{#each tube.bands as band, b}
-				<BandComponent {band} index={b} showLabel>
+				<BandComponent {band} index={b} origin={origins.tubes[t].bands[b]} showLabel>
 					{#if band.projectionType === 'patterned'}
 						<BandCutPatternComponent {band} />
 					{/if}

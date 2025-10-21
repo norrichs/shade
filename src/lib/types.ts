@@ -13,9 +13,11 @@ import type {
 } from './projection-geometry/types';
 import type { PanelHoleConfig } from './cut-pattern/generate-pattern';
 import type { DistributionConfig } from '../components/cut-pattern/distrubute-panels';
+import type { ProjectionRange } from './projection-geometry/filters';
 
 export type PatternViewConfig = {
 	showQuads: boolean;
+	showTriangles: boolean;
 	showLabels: boolean;
 	width: number;
 	height: number;
@@ -24,6 +26,7 @@ export type PatternViewConfig = {
 		x: number;
 		y: number;
 	};
+	range: ProjectionRange;
 };
 export type PatternStyle = 'faceted' | 'outlined' | 'patterned' | 'none' | 'layered';
 

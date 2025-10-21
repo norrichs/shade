@@ -1,10 +1,6 @@
 <script lang="ts">
 	import type { BandPanelPattern } from '$lib/types';
 	import { printProjectionAddress } from '$lib/projection-geometry/generate-projection';
-	import { Vector3 } from 'three';
-	import { getBandSlopeVector, getMinimalBoundingBoxAndRotationAngle } from './distrubute-panels';
-	import { radToDeg } from '$lib/patterns/utils';
-	import { CgEnter } from 'svelte-icons-pack/cg';
 
 	export let band: BandPanelPattern;
 	export let index: number;
@@ -19,7 +15,7 @@
 		focused: 'rebeccapurple'
 	};
 
-	const localbounds = getMinimalBoundingBoxAndRotationAngle(band);
+
 
 	let color = colors.default;
 	let isFocused = false;

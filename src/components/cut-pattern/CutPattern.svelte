@@ -34,7 +34,7 @@
 			<ProjectionCutPattern projectionPattern={$superGlobulePatternStore.projectionPattern} />
 			<ProjectionPanelPatterns
 				showSelectedOnly={undefined}
-				range={{ tubes: [0, 1], bands: [0, 6], facets: [0,2] }}
+				range={$patternConfigStore.patternViewConfig.range}
 				patternStyle="view"
 				labelSize={2.15}
 				showScalebar={true}

@@ -519,15 +519,18 @@ export const defaultPatternConfig = (): PatternConfig => ({
 });
 
 export const defaultPatternViewConfig = (): PatternViewConfig => ({
-	showQuads: true,
+	showQuads: false,
+	showTriangles: false,
 	width: 800,
 	height: 600,
 	zoom: -1.2,
 	centerOffset: {
 		x: 0,
-		y: -300
+		y: 0
 	},
-	showLabels: false
+	showLabels: false,
+	range: { tubes: [0, 1], bands: [0, 1] },
+	
 });
 
 export const getLevels = (sampleMethod: CurveSampleMethod, curveCount: number) => {
