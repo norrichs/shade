@@ -14,7 +14,7 @@ import type {
 } from '$lib/types';
 import { getQuadrilaterals, transformPatternByQuad } from '$lib/patterns/quadrilateral';
 import type { BandCutPatternPattern, TiledPatternConfig } from '$lib/types';
-import { getFlatStripV2 } from './generate-cut-pattern';
+import { applyStrokeWidth, getFlatStripV2 } from './generate-cut-pattern';
 import { patterns } from '$lib/patterns';
 import {
 
@@ -37,7 +37,7 @@ export const generateTubeCutPattern = ({
 	tiledPatternConfig: TiledPatternConfig;
 	pixelScale: PixelScale;
 }): TubeCutPattern => {
-	const pattern: TubeCutPattern = { projectionType: 'patterned', address, bands: [] };
+	const tubeCutPattern: TubeCutPattern = { projectionType: 'patterned', address, bands: [] };
 	const { adjustAfterTiling } = patterns[tiledPatternConfig.type];
 	// Creates a line pattern without inner and outer elements, appropriate for post processing in Affinity
 	// TODO - see if it's possible to convert the output of this to "expanded path" (e.g. convert stroke widths to paths instead of doing so in Affinity)
@@ -54,12 +54,12 @@ export const generateTubeCutPattern = ({
 
 	if (adjustAfterTiling) {
 		const adjusted = adjustAfterTiling(tiling, tiledPatternConfig);
-		pattern.bands = adjusted;
+		tubeCutPattern.bands = adjusted;
 	} else {
-		pattern.bands = tiling;
+		tubeCutPattern.bands = tiling;
 	}
 
-	pattern.bands = pattern.bands.map((band) => ({
+	tubeCutPattern.bands = tubeCutPattern.bands.map((band) => ({
 		...band,
 		facets: band.facets.map((facet) => {
 			const segments = facet.path;
@@ -70,9 +70,9 @@ export const generateTubeCutPattern = ({
 			return { ...facet, svgPath: svgPathStringFromSegments([...segments]) };
 		})
 	}));
-	console.debug("generateTubeCutPattern", { pattern })
+	tubeCutPattern.bands = applyStrokeWidth(tubeCutPattern.bands, tiledPatternConfig.config);
 
-	return pattern;
+	return tubeCutPattern;
 };
 
 export const generateTiledBandPattern = ({
@@ -151,14 +151,14 @@ export const generateTiling = ({ quadBands, bands, tiledPatternConfig, address }
 			mappedPatternBand = quadBand.map((quad) =>
 				transformPatternByQuad(unitPattern, quad)
 			) as PathSegment[][];
-		} else if (tiledPatternConfig.tiling === 'triangle') {
+		// } else if (tiledPatternConfig.tiling === 'triangle') {
 			
-			const unitPattern = getPattern(
-				rowCount as 3 | 1 | 2,
-				columnCount as 1 | 2 | 3 | 4 | 5,
-				undefined,
-				variant
-			);
+		// 	const unitPattern = getPattern(
+		// 		rowCount as 3 | 1 | 2,
+		// 		columnCount as 1 | 2 | 3 | 4 | 5,
+		// 		undefined,
+		// 		variant
+		// 	);
 
 		} else {
 			mappedPatternBand = [getPattern(1, 1, quadBand)] as PathSegment[][];
@@ -220,7 +220,7 @@ const alignBands = (bands: Band[]) => {
 	return bands.map((originalBand, bandIndex) => {
 		const points = getAllTrianglePoints(originalBand);
 		const bounds = getMinimalBoundingBoxAndRotationAngle(points)
-		console.debug("alignBands", { bounds })
+// TODO - make bounds a part of the type Band
 		const realignedBand = reAlignBand(originalBand, bounds.rotatedCoordinates)
 		realignedBand.bounds = getSimpleBounds(realignedBand)
 		if (realignedBand.bounds.left !== 0 || realignedBand.bounds.top !== 0) {

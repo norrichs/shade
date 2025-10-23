@@ -47,7 +47,6 @@ export const processSvg = (rawText: string, rawSvg: string): SVGFontDictionary =
 		})
 	);
 
-	console.debug({ pathArray, textArray, dict });
 	return dict;
 };
 const GAP = 0.3;
@@ -74,7 +73,6 @@ const parseSvg = (svgStr: string): PathSegment[][] => {
 	const normalizedCharacters = characters.map((char: PathSegment[]) =>
 		normalizePathSegments(char, 0.01)
 	);
-	console.debug('PARSE SVG', { normalizedCharacters, characters });
 	return normalizedCharacters;
 };
 

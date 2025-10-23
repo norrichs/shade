@@ -25,11 +25,9 @@
 		height={`${height}${$patternConfigStore.patternConfig.page.unit}`}
 		width={`${width}${$patternConfigStore.patternConfig.page.unit}`}
 		viewBox={`${
-			$patternConfigStore.patternViewConfig.centerOffset.x -
-			$patternConfigStore.patternConfig.page.width
+			$patternConfigStore.patternViewConfig.centerOffset.x
 		} ${
-			$patternConfigStore.patternViewConfig.centerOffset.y -
-			$patternConfigStore.patternConfig.page.height
+			$patternConfigStore.patternViewConfig.centerOffset.y
 		} ${width} ${height}`}
 	>	
 	  <circle cx={0} cy={0} r={10} fill="red" />

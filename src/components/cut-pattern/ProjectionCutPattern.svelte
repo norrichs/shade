@@ -1,5 +1,6 @@
 <script lang="ts">
 	import {
+		sliceProjectionCutPattern,
 		sliceProjectionPanelPattern,
 		type ProjectionRange
 	} from '$lib/projection-geometry/filters';
@@ -7,64 +8,27 @@
 		isSuperGlobuleProjectionCutPattern,
 		patternConfigStore,
 		viewControlStore,
-		superGlobulePatternStore,
 		type SuperGlobuleProjectionPattern,
-		type SuperGlobuleProjectionCutPattern,
 		concatAddress_Tube,
 		concatAddress_Band
 	} from '$lib/stores';
 	import { Vector3 } from 'three';
-	import QuadPattern from '../pattern-svg/QuadPattern.svelte';
+	import type { TubeCutPattern } from '$lib/types';
 	import BandComponent from './BandComponent.svelte';
 	import BandCutPatternComponent from './BandCutPatternComponent.svelte';
-	import type { TubeCutPattern } from '$lib/types';
+	import QuadPattern from '../pattern-svg/QuadPattern.svelte';
 
 	export let projectionPattern: SuperGlobuleProjectionPattern | undefined;
-	let tubes = isSuperGlobuleProjectionCutPattern(projectionPattern)
+
+	$: range = $patternConfigStore.patternViewConfig.range;
+	$: tubes = isSuperGlobuleProjectionCutPattern(projectionPattern)
 		? projectionPattern.projectionCutPattern.tubes
 		: [];
+
+	let filteredTubes: TubeCutPattern[] = [];
 	let origins: { tubes: { bands: Vector3[] }[] } = { tubes: [{ bands: [] }] };
 	console.debug('ProjectionCutPattern', projectionPattern);
-	// export let range: ProjectionRange = {};
-	// export let showSelectedOnly: 'panel' | 'band' | false = false;
 
-	const filtered = (
-		store: typeof $superGlobulePatternStore,
-		selectedGeometry: typeof $selectedProjectionGeometry,
-		sliceRange: ProjectionRange = {}
-	) => {
-		console.debug('sliceRange', sliceRange, Object.keys(sliceRange).length > 0);
-		const projectionPattern = store.projectionPattern;
-		if (!isSuperGlobuleProjectionCutPattern(projectionPattern)) return null;
-		const { bandPatterns } = projectionPattern as SuperGlobuleProjectionCutPattern;
-
-		const pattern = sliceProjectionPanelPattern(projectionPanelPattern, sliceRange);
-
-		// if (showSelectedOnly) {
-		// 	if (!selectedGeometry) return pattern;
-		// 	const filterFn = selectedGeometry.isSelectedOrPartner;
-		// 	const filtered: ProjectionPanelPattern = {
-		// 		...pattern,
-		// 		tubes: pattern.tubes
-		// 			.filter(({ address }) => filterFn(address))
-		// 			.map((tube) => ({
-		// 				...tube,
-		// 				bands: tube.bands
-		// 					.filter(({ address }) => filterFn(address))
-		// 					.map((band) => ({
-		// 						...band,
-		// 						panels:
-		// 							showSelectedOnly === 'panel'
-		// 								? band.panels.filter(({ address }) => filterFn(address))
-		// 								: band.panels
-		// 					}))
-		// 			}))
-		// 	};
-		// 	console.debug({ filtered });
-		// 	return filtered;
-		// }
-		return pattern;
-	};
 
 	const getCumulativeOrigins = (tubes: TubeCutPattern[]) => {
 		const cumulativeOrigin = new Vector3(0, 0, 0);
@@ -80,34 +44,48 @@
 		};
 	};
 
-	const updateTubes = (projectionPattern: SuperGlobuleProjectionPattern | undefined) => {
-		if (!isSuperGlobuleProjectionCutPattern(projectionPattern)) tubes = [];
-		else tubes = projectionPattern.projectionCutPattern.tubes;
+	const filtered = ({
+		projectionPattern,
+		range
+	}: {
+		projectionPattern?: SuperGlobuleProjectionPattern;
+		range: ProjectionRange;
+	}) => {
+		if (!isSuperGlobuleProjectionCutPattern(projectionPattern)) return [];
+		console.debug('filtered', { projectionPattern, range });
+		const sliced = sliceProjectionCutPattern(projectionPattern.projectionCutPattern.tubes, range);
+		console.debug('slicedTubes', { sliced });
+		return sliced;
 	};
+
 	const update = (
 		store: typeof $viewControlStore,
-		tubes: TubeCutPattern[]
+		tubes: TubeCutPattern[],
+		range: ProjectionRange
 	) => {
+		if (!isSuperGlobuleProjectionCutPattern(projectionPattern)) tubes = [];
+
 		const { any, bands, facets } = store.showProjectionGeometry;
 		const isValid = isSuperGlobuleProjectionCutPattern(projectionPattern);
 		showPattern = any && (bands || facets) && isValid;
-		console.debug('update', { any, bands, facets, showPattern });
 
+		filteredTubes = filtered({ projectionPattern, range });
 		origins = getCumulativeOrigins(tubes);
+		console.debug('update', tubes.length, { tubes, origins });
 	};
 
 	let showPattern = false;
 
-	$: updateTubes($superGlobulePatternStore.projectionPattern);
-	$: update($viewControlStore, tubes);
-	$: show = isSuperGlobuleProjectionCutPattern($superGlobulePatternStore.projectionPattern);
-	// $: pattern = filtered($superGlobulePatternStore.projectionPattern, range);
+	$: update($viewControlStore, tubes, range);
 </script>
 
 {#if showPattern}
-	{#each tubes || [] as tube, t}
+	{#each filteredTubes || [] as tube, t}
 		<g id={`${concatAddress_Tube(tube.address)}`} transform={`translate(0, 0)`}>
-			{#each tube.bands as band, b}
+			{#each tube.bands || [] as band, b}
+				<text font-size="10px" x={b * 60} y={t * 40} fill="blue"
+					>{concatAddress_Band(band.address)}</text
+				>
 				<BandComponent {band} index={b} origin={origins.tubes[t].bands[b]} showLabel>
 					{#if band.projectionType === 'patterned'}
 						<BandCutPatternComponent {band} />

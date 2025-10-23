@@ -41,7 +41,6 @@
 
 	const FONT_NAME = 'reliefSingleLine';
 	const updateLabels = (shouldUseSVGLabels: boolean) => {
-		console.debug('UPDATE LABELS');
 		if (shouldUseSVGLabels) {
 			$svgTextDictionary = processSvg(Fonts[FONT_NAME].keyString, Fonts[FONT_NAME].svgString);
 		}
@@ -64,7 +63,6 @@
 				};
 			})
 		};
-		console.debug({ result });
 		return result;
 	};
 
@@ -73,7 +71,6 @@
 		selectedGeometry: typeof $selectedProjectionGeometry,
 		sliceRange: ProjectionRange = {}
 	) => {
-		console.debug('sliceRange', sliceRange, Object.keys(sliceRange).length > 0);
 		const projectionPattern = store.projectionPattern;
 		if (!isSuperGlobuleProjectionPanelPattern(projectionPattern)) return null;
 		const { projectionPanelPattern } = projectionPattern;

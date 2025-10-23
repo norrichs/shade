@@ -104,7 +104,7 @@ const defaultCrossSection: CrossSectionConfig = {
 	],
 	center: { x: 0, y: 0.5 },
 	sampleMethod: { method: 'divideCurvePath', divisions: 3 },
-	scaling: { width: 'curve', height: 220 }
+	scaling: { width: 'curve', height: 280 }
 };
 
 const pTetrahedron: VerticesConfig = [

@@ -30,7 +30,7 @@ export const superConfigStore = persistable<SuperGlobuleConfig>(
 			bootstrapShouldUsePersisted(),
 			generateDefaultSuperGlobuleConfig
 		);
-		console.debug('SUPER GLOBULE CONFIG STORE', { config });
+		console.log('SUPER GLOBULE CONFIG STORE', { config });
 		return config;
 	})(),
 	'SuperGlobuleConfig',
@@ -45,20 +45,20 @@ export const superGlobuleStore = derived(superConfigStore, ($superConfigStore) =
 
 export const superGlobuleGeometryStore = derived(superGlobuleStore, ($superGlobuleStore) => {
 	const superGlobuleGeometry = generateSuperGlobuleGeometry($superGlobuleStore);
-	console.debug('SUPER GLOBULE GEOMETRY STORE', { $superGlobuleStore, superGlobuleGeometry });
+	console.log('SUPER GLOBULE GEOMETRY STORE', { $superGlobuleStore, superGlobuleGeometry });
 	return superGlobuleGeometry;
 });
 
 export const superGlobuleBandGeometryStore = derived(superGlobuleStore, ($superGlobuleStore) => {
 	const superGlobuleGeometry = generateSuperGlobuleBandGeometry($superGlobuleStore);
-	console.debug('SUPER GLOBULE BAND GEOMETRY STORE', { $superGlobuleStore, superGlobuleGeometry });
+	console.log('SUPER GLOBULE BAND GEOMETRY STORE', { $superGlobuleStore, superGlobuleGeometry });
 	return superGlobuleGeometry;
 });
 
 export const superGlobulePatternStore = derived(
 	[superGlobuleStore, superConfigStore, patternConfigStore, overrideStore],
 	([$superGlobuleStore, $superConfigStore, $patternConfigStore, $overrideStore]) => {
-		console.debug('*** patternConfigStore', $patternConfigStore);
+
 		// const { showGlobuleGeometry, showProjectionGeometry } = $viewControlStore;
 		const showGlobuleGeometry = {
 			any: false
@@ -81,7 +81,7 @@ export const superGlobulePatternStore = derived(
 		// 	validateAllPanels(projectionPattern.projectionPanelPattern.tubes);
 		// }
 
-		console.debug('SUPER GLOBULE PATTERN STORE', {
+		console.log('SUPER GLOBULE PATTERN STORE', {
 			$superGlobuleStore,
 			$patternConfigStore,
 			$overrideStore,

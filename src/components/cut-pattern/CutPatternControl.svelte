@@ -9,17 +9,55 @@
 
 	let labelScale = 0.1;
 	let labelAngle = 0;
-  let rangeTubes: ProjectionRange["tubes"] = $patternConfigStore.patternViewConfig.range?.tubes || [0,1]
-  let rangeBands: ProjectionRange["bands"] = $patternConfigStore.patternViewConfig.range?.bands || [0,1]
-  let rangeFacets: ProjectionRange["facets"] = $patternConfigStore.patternViewConfig.range?.facets || [0,1]
+	let rangeTubes: ProjectionRange['tubes'] = $patternConfigStore.patternViewConfig.range?.tubes;
+	let rangeBands: ProjectionRange['bands'] = $patternConfigStore.patternViewConfig.range?.bands;
+	let rangeFacets: ProjectionRange['facets'] = $patternConfigStore.patternViewConfig.range?.facets;
 
-	const updateStore = (scale?: number, angle?: number, rangeTubes: ProjectionRange["tubes"], rangeBands: ProjectionRange["bands"], rangeFacets: ProjectionRange["facets"]) => {
+	const updateStore = (
+		scale?: number,
+		angle?: number,
+		rangeTubes?: ProjectionRange['tubes'] | undefined,
+		rangeBands?: ProjectionRange['bands'] | undefined,
+		rangeFacets?: ProjectionRange['facets'] | undefined
+	) => {
+		console.debug(
+			'updateStore preupdate',
+			$patternConfigStore.patternViewConfig.range.tubes,
+			rangeTubes
+		);
+		console.debug(
+			'updateStore preupdate',
+			$patternConfigStore.patternViewConfig.range.bands,
+			rangeBands
+		);
+		console.debug(
+			'updateStore preupdate',
+			$patternConfigStore.patternViewConfig.range.facets,
+			rangeFacets
+		);
+
 		$patternConfigStore.patternViewConfig.range = {
 			tubes: rangeTubes,
 			bands: rangeBands,
 			facets: rangeFacets
 		};
-		
+
+		console.debug(
+			'updateStore postupdate',
+			$patternConfigStore.patternViewConfig.range.tubes,
+			rangeTubes
+		);
+		console.debug(
+			'updateStore postupdate',
+			$patternConfigStore.patternViewConfig.range.bands,
+			rangeBands
+		);
+		console.debug(
+			'updateStore postupdate',
+			$patternConfigStore.patternViewConfig.range.facets,
+			rangeFacets
+		);
+
 		if (!$patternConfigStore.tiledPatternConfig.labels) {
 			$patternConfigStore.tiledPatternConfig.labels = { scale: labelScale, angle: labelAngle };
 			return;
@@ -66,24 +104,34 @@
 				label="show Labels"
 				bind:value={$patternConfigStore.patternViewConfig.showLabels}
 			/>
-
 		</div>
 		<div>
 			<div>
 				<span>Range</span>
 				<div class="range-inputs">
-					<NumberInput label="tubes" min={0} max={1} step={1} bind:value={rangeTubes[0]} />
-					<NumberInput min={0} max={1} step={1} bind:value={rangeTubes[1]} />
+					{#if Array.isArray(rangeTubes) && rangeTubes.length == 2}
+						<NumberInput label="tubes" min={0} max={1} step={1} bind:value={rangeTubes[0]} />
+						<NumberInput min={0} max={1} step={1} bind:value={rangeTubes[1]} />
+					{:else}
+						<button on:click={() => rangeTubes = [0, 1]}>SetTubes</button>
+					{/if}
 				</div>
 				<div class="range-inputs">
-					<NumberInput label="bands" min={0} max={1} step={1} bind:value={rangeBands[0]} />
-					<NumberInput min={0} max={1} step={1} bind:value={rangeBands[1]} />
+					{#if Array.isArray(rangeBands) && rangeBands.length == 2}
+						<NumberInput label="bands" min={0} max={1} step={1} bind:value={rangeBands[0]} />
+						<NumberInput min={0} max={1} step={1} bind:value={rangeBands[1]} />
+					{:else}
+						<button on:click={() => rangeBands = [0, 1]}>SetBands</button>
+					{/if}
 				</div>
 				<div class="range-inputs">
-					<NumberInput label="facets" min={0} max={1} step={1} bind:value={rangeFacets[0]} />
-					<NumberInput min={0} max={1} step={1} bind:value={rangeFacets[1]} />
+					{#if Array.isArray(rangeFacets) && rangeFacets.length == 2}
+						<NumberInput label="facets" min={0} max={1} step={1} bind:value={rangeFacets[0]} />
+						<NumberInput min={0} max={1} step={1} bind:value={rangeFacets[1]} />
+					{:else}
+						<button on:click={() => rangeFacets = [0, 1]}>SetFacets</button>
+					{/if}
 				</div>
-
 			</div>
 		</div>
 	</div>

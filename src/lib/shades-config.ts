@@ -529,7 +529,7 @@ export const defaultPatternViewConfig = (): PatternViewConfig => ({
 		y: 0
 	},
 	showLabels: false,
-	range: { tubes: [0, 1], bands: [0, 1] },
+	range: { },
 	
 });
 

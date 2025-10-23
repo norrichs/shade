@@ -39,7 +39,6 @@
 		$selectedBand = { ...address, g: [...address.g] };
 	};
 	$: update(isHovered, isFocused);
-	console.debug('BAND COMPONENT');
 </script>
 
 <g

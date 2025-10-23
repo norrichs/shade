@@ -75,7 +75,7 @@ export const generateSuperGlobulePattern = (
 					...pattern,
 					bands: pattern.bands.map((band) => ({ ...band, projectionType: pattern.projectionType }))
 				};
-				pattern = applyStrokeWidth(pattern, tiledPatternConfig.config);
+				pattern.bands = applyStrokeWidth(pattern.bands, tiledPatternConfig.config);
 				return pattern;
 			});
 			return bandPatterns;
@@ -132,7 +132,6 @@ export const generateProjectionPattern = (
 				tiledPatternConfig,
 				pixelScale
 			})
-			console.debug('tubePattern', tubePattern);
 			return tubePattern;
 		})
 

@@ -7,7 +7,6 @@
 	const FILL_RAINBOW = false;
 
 	const colors = ['purple', 'blue', 'green', 'yellow', 'orange', 'red'];
-	console.debug('BandCutPattern', band);
 </script>
 
 

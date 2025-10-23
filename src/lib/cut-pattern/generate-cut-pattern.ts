@@ -52,7 +52,8 @@ import type {
 	Strut,
 	TabStyle,
 	TrapTabPattern,
-	TrianglePoint
+	TrianglePoint,
+	BandCutPattern
 } from '$lib/types';
 import { generateUnitFlowerOfLifeTriangle } from '$lib/patterns/unit-pattern/unit-flower-of-life';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -818,9 +819,11 @@ const generatePattern = {
 };
 
 export const applyStrokeWidth = (
-	patternBands: BandCutPatternPattern,
+	bands: BandCutPattern[],
 	{ dynamicStroke, dynamicStrokeMax, dynamicStrokeMin }: object & DynamicStrokeConfig
-): BandCutPatternPattern => {
+): BandCutPattern[] => {
+
+	let patternBands = [...bands]
 	const widthVariesByBand = true;
 
 	let maxValue: number;
@@ -828,7 +831,7 @@ export const applyStrokeWidth = (
 
 	if (dynamicStroke === 'quadWidth') {
 		const values: number[] = [];
-		patternBands.bands.forEach((band) =>
+		patternBands.forEach((band) =>
 			band.facets.forEach((facet) => {
 				if (facet.quadWidth) {
 					values.push(facet.quadWidth);
@@ -838,13 +841,13 @@ export const applyStrokeWidth = (
 		maxValue = Math.max(...values);
 		minValue = Math.min(...values);
 
-		if (!widthVariesByBand && patternBands.bands[0]) {
+		if (!widthVariesByBand && patternBands[0]) {
 			console.debug('not width varies by band');
-			const strokeWidthPrototypes = patternBands.bands[0].facets.map((facet: CutPattern) => {
+			const strokeWidthPrototypes = patternBands[0].facets.map((facet: CutPattern) => {
 				const ratio = facet.quadWidth ? (facet.quadWidth - minValue) / (maxValue - minValue) : 1;
 				return ratio * (dynamicStrokeMax - dynamicStrokeMin) + dynamicStrokeMin;
 			});
-			patternBands.bands = patternBands.bands.map((band) => ({
+			patternBands = patternBands.map((band) => ({
 				...band,
 				facets: band.facets.map((facet: CutPattern, i) => {
 					return {
@@ -854,7 +857,7 @@ export const applyStrokeWidth = (
 				})
 			}));
 		} else {
-			patternBands.bands = patternBands.bands.map((band) => ({
+			patternBands = patternBands.map((band) => ({
 				...band,
 				facets: band.facets.map((facet: CutPattern) => {
 					const ratio = facet.quadWidth ? (facet.quadWidth - minValue) / (maxValue - minValue) : 1;
@@ -866,6 +869,8 @@ export const applyStrokeWidth = (
 				})
 			}));
 		}
+	} else {
+		console.debug({dynamicStroke})
 	}
 	return patternBands;
 };
