@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { T } from '@threlte/core';
-	import { materials } from '../three-renderer-v2/materials';
+	import { materials } from '../three-renderer/materials';
 	import { BufferGeometry, Object3D, Vector3 } from 'three';
 	import { collateGeometry } from '$lib/projection-geometry/collate-geometry';
 	import {
@@ -30,7 +30,7 @@
 		facets?: { address: ProjectionAddress_Facet; geometry: BufferGeometry }[];
 	} = {};
 	export let onClick: (event: any, address: ProjectionAddress_Facet) => void;
-	let showNormals = true;
+	let showNormals = false;
 
 	type ProjectionData = {
 		projection: Projection;

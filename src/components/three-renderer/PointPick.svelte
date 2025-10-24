@@ -15,7 +15,7 @@
 		type Interaction,
 		isPointSelectInteractionMode,
 		isBandSelectInteractionMode
-	} from '../../components/three-renderer-v2/interaction-mode';
+	} from '../../components/three-renderer/interaction-mode';
 	import Button from '../design-system/Button.svelte';
 
 	const dynamicOverlay = (mode: InteractionMode) => {

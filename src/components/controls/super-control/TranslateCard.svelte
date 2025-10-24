@@ -13,7 +13,7 @@
 	import PickPointsButton from './PickPointsButton.svelte';
 	import PointInput from './PointInput.svelte';
 	import { round } from '$lib/util';
-	import { interactionMode } from '../../three-renderer-v2/interaction-mode';
+	import { interactionMode } from '../../three-renderer/interaction-mode';
 
 	export let sgIndex = 0;
 	export let tIndex = 0;
@@ -66,7 +66,6 @@
 		}
 	};
 	const updateStore = (delta: Point3, recurs: RecombinatoryRecurrence[]) => {
-
 		if (isUpdatableTranslation($superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex])) {
 			$superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex].translate = { ...delta };
 		}

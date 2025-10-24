@@ -46,7 +46,7 @@ import type {
 	Tube,
 	VerticesConfig
 } from './types';
-import { materials } from '../../components/three-renderer-v2/materials';
+import { materials } from '../../components/three-renderer/materials';
 import { getLength } from '$lib/patterns/utils';
 import {
 	corrected,

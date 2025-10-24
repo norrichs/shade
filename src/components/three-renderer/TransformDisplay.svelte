@@ -2,7 +2,7 @@
 	import { T } from '@threlte/core';
 	import { activeControl } from '../controls/super-control/active-control';
 	import { superConfigStore } from '$lib/stores';
-	import { materials } from '../../components/three-renderer-v2/materials';
+	import { materials } from '../../components/three-renderer/materials';
 	import { BufferGeometry, Vector3 } from 'three';
 	import type { GlobuleTransformRotate, SuperGlobuleConfig } from '$lib/types';
 	import { isGlobuleTransformRotate } from '$lib/transform-globule';

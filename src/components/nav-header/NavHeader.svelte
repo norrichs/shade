@@ -13,7 +13,7 @@
 	import { superGlobuleStore, selectedBand } from '$lib/stores';
 	import { formatAddress } from '$lib/recombination';
 	import { downloadSvg } from '$lib/util';
-	import { interactionMode } from '../three-renderer-v2/interaction-mode';
+	import { interactionMode } from '../three-renderer/interaction-mode';
 	import ViewMenu from './ViewMenu.svelte';
 	import { printProjectionAddress } from '$lib/projection-geometry/generate-projection';
 

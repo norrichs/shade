@@ -2,11 +2,10 @@
 	import type { BandGeometry, GlobuleGeometry } from '$lib/types';
 	import { T } from '@threlte/core';
 	import { BufferGeometry } from 'three';
-	import { materials, type Material } from '../../components/three-renderer-v2/materials';
+	import { materials, type Material } from '../../components/three-renderer/materials';
 
 	export let geometry: GlobuleGeometry | BandGeometry;
 	export let material: Material = 'default';
-	// export let selectable = true;
 
 	let bufferGeometry: BufferGeometry;
 

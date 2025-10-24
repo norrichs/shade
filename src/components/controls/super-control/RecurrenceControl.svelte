@@ -17,7 +17,7 @@
 	} from '$lib/types';
 	import { superGlobuleStore, superConfigStore, type BandSelection } from '$lib/stores';
 	import PickPointsButton from './PickPointsButton.svelte';
-	import { interactionMode } from '../../three-renderer-v2/interaction-mode';
+	import { interactionMode } from '../../three-renderer/interaction-mode';
 	import { formatAddress } from '$lib/recombination';
 	import Button from '../../design-system/Button.svelte';
 

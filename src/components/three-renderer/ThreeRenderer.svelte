@@ -1,13 +1,21 @@
 <script lang="ts">
 	import { Canvas } from '@threlte/core';
-	import Scene from './Scene.svelte';
-	import type { Band, Level, Strut } from '$lib/types';
-
-	export let levels: Level[] = [];
-	export let bands: Band[] = [];
-	export let struts: Strut[] = [];
+	import PointPick from './PointPick.svelte';
 </script>
 
-<Canvas size={{ width: 1000, height: 1000 }}>
-	<Scene {levels} {bands} {struts} />
-</Canvas>
+<div class="container">
+	<PointPick />
+	<Canvas >
+		<slot />
+	</Canvas>
+</div>
+
+<style>
+	.container {
+		position: relative;
+		border: 1px solid grey;
+		background-color: beige;
+		height: 100%;
+	}
+
+</style>

@@ -12,7 +12,7 @@
 	import { isGlobuleTransformScale } from '$lib/transform-globule';
 	import { formatPoint3, isClose } from '$lib/util';
 	import PointInput from './PointInput.svelte';
-	import { interactionMode } from '../../three-renderer-v2/interaction-mode';
+	import { interactionMode } from '../../three-renderer/interaction-mode';
 	import { round } from '$lib/util';
 	import NumberInput from '../NumberInput.svelte';
 	import { selectedBand } from '$lib/stores';

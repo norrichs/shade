@@ -9,7 +9,7 @@
 		FiChevronDown,
 		FiXCircle
 	} from 'svelte-icons-pack/fi';
-	import { interactionMode } from '../../three-renderer-v2/interaction-mode';
+	import { interactionMode } from '../../three-renderer/interaction-mode';
 	import AddRemoveTransform from './AddRemoveTransform.svelte';
 	import { selectedBand, superConfigStore as store } from '$lib/stores';
 
@@ -89,8 +89,7 @@
 	}
 	.card-header div {
 		display: flex;
-		flex-direction: row
-
+		flex-direction: row;
 	}
 	.card-content {
 		grid-area: b;

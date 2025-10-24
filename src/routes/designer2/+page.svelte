@@ -1,12 +1,12 @@
 <script lang="ts">
-	import ThreeRenderer from '../../components/three-renderer-v2/ThreeRenderer.svelte';
+	import ThreeRenderer from '../../components/three-renderer/ThreeRenderer.svelte';
 	import CutPattern from '../../components/cut-pattern/CutPattern.svelte';
 	import TilingControl from '../../components/controls/TilingControl.svelte';
 	import ShowControl from '../../components/controls/ShowControl.svelte';
 	import StrutControl from '../../components/controls/StrutControl.svelte';
 	import LevelControl from '../../components/controls/LevelControl.svelte';
 	import SelectBar from '../../components/select-bar/SelectBar.svelte';
-	import Scene from '../../components/three-renderer-v2/Scene.svelte';
+	import Scene from '../../components/three-renderer/Scene.svelte';
 
 	import SuperPathEdit from '../../components/path-edit/SuperPathEdit.svelte';
 	import SuperControl from '../../components/controls/super-control/SuperControl.svelte';
@@ -44,7 +44,7 @@
 					{ name: 'Depth', value: 'DepthCurveConfig' },
 					{ name: 'Spine', value: 'SpineCurveConfig' },
 					{ name: 'Shape', value: 'ShapeConfig' },
-					{ name: 'Projection'},
+					{ name: 'Projection' },
 					{ name: '3D' },
 					{ name: 'Levels' },
 					{ name: 'Struts' },

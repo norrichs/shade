@@ -1,11 +1,10 @@
 <script lang="ts">
 	import { Icon } from 'svelte-icons-pack';
-	import { interactionMode, type InteractionMode } from '../../three-renderer-v2/interaction-mode';
+	import { interactionMode, type InteractionMode } from '../../three-renderer/interaction-mode';
 	import { BiSolidEyedropper } from 'svelte-icons-pack/bi';
 
-
 	export let mode: InteractionMode;
-	export let label = ""
+	export let label = '';
 	export let onClick: (() => void) | undefined = undefined;
 
 	const pickPointsMode = () => {

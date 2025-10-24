@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { materials } from '../three-renderer-v2/materials';
+	import { materials } from '../three-renderer/materials';
 	import { selectedProjectionGeometry } from '$lib/stores';
 	import { T } from '@threlte/core';
 </script>

@@ -14,7 +14,7 @@
 	import { formatPoint3, isClose } from '$lib/util';
 	import PointInput from './PointInput.svelte';
 	import PickPointsButton from './PickPointsButton.svelte';
-	import { interactionMode } from '../../three-renderer-v2/interaction-mode';
+	import { interactionMode } from '../../three-renderer/interaction-mode';
 	import { Vector3, Triangle } from 'three';
 	import { isSameRecombination } from '$lib/matchers';
 
