@@ -92,18 +92,35 @@ export type PolyhedronConfig<
 	// edgeMap: EdgeMap;
 };
 
-export type CurveSampleMethod = { method: 'divideCurvePath'; divisions: number };
+export type ManualDivisionsConfig =
+	| { divisions: 2; divisionsArray: [number] }
+	| { divisions: 3; divisionsArray: [number, number] }
+	| { divisions: 4; divisionsArray: [number, number, number] }
+	| { divisions: 5; divisionsArray: [number, number, number, number] }
+	| { divisions: 6; divisionsArray: [number, number, number, number, number] }
+	| { divisions: 7; divisionsArray: [number, number, number, number, number, number] }
+	| { divisions: 8; divisionsArray: [number, number, number, number, number, number, number] }
+	| { divisions: 9; divisionsArray: [number, number, number, number, number, number, number, number] }
+	| { divisions: 10; divisionsArray: [number, number, number, number, number, number, number, number, number] }
+
+
+export type ProjectionCurveSampleMethod =
+	| { method: 'divideCurvePath'; divisions: number }
+	| { method: 'manualDivisions' } & ManualDivisionsConfig
+
+
+
 
 export type CrossSectionConfig = {
 	curves: BezierConfig[];
 	center: Point;
-	sampleMethod: CurveSampleMethod;
+	sampleMethod: ProjectionCurveSampleMethod;
 	scaling: CrossSectionScaling;
 };
 export type CrossSectionConfigVector2 = {
 	curves: CurvePath<Vector2>;
 	center: Vector2;
-	sampleMethod: CurveSampleMethod;
+	sampleMethod: ProjectionCurveSampleMethod;
 	scaling: CrossSectionScaling;
 };
 
@@ -111,11 +128,11 @@ export type CrossSectionConfigVector2 = {
 
 export type EdgeCurveConfig = {
 	curves: BezierConfig[];
-	sampleMethod: CurveSampleMethod;
+	sampleMethod: ProjectionCurveSampleMethod;
 };
 export type EdgeCurveConfigVector2 = {
 	curves: CurvePath<Vector2>;
-	sampleMethod: CurveSampleMethod;
+	sampleMethod: ProjectionCurveSampleMethod;
 };
 
 export type ProjectionBandConfig = {

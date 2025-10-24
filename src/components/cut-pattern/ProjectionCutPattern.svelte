@@ -81,11 +81,9 @@
 
 {#if showPattern}
 	{#each filteredTubes || [] as tube, t}
-		<g id={`${concatAddress_Tube(tube.address)}`} transform={`translate(0, 0)`}>
+		<g id={`${concatAddress_Tube(tube.address)}`} transform={`translate(50, 130)`}>
 			{#each tube.bands || [] as band, b}
-				<text font-size="10px" x={b * 60} y={t * 40} fill="blue"
-					>{concatAddress_Band(band.address)}</text
-				>
+
 				<BandComponent {band} index={b} origin={origins.tubes[t].bands[b]} showLabel>
 					{#if band.projectionType === 'patterned'}
 						<BandCutPatternComponent {band} />

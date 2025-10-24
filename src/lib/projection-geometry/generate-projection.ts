@@ -9,6 +9,7 @@ import type {
 } from '$lib/types';
 import { average, getCubicBezierCurvePath, getIntersectionOfLines, getVector3 } from '$lib/util';
 import {
+	CurvePath,
 	Matrix4,
 	Mesh,
 	Object3D,
@@ -35,6 +36,7 @@ import type {
 	ProjectionAddress_Facet,
 	ProjectionAddress_Tube,
 	ProjectionConfig,
+	ProjectionCurveSampleMethod,
 	ProjectionEdge,
 	ProjectorConfig,
 	Section,
@@ -214,7 +216,7 @@ const generateEdge = ({
 		edgePoints.push(v0.clone().lerp(v1, i / divisions));
 	}
 
-	const definitionPoints = getPoints(widthCurve.curves, divisions);
+	const definitionPoints = getPoints(widthCurve.curves, widthCurve.sampleMethod);
 	const curvePoints = mapPointsToTriangle(
 		{ a: v0, b: v1, c: center },
 		definitionPoints,
@@ -280,9 +282,24 @@ export const mapPointsToTriangle = <V extends Vector2 | Vector3>(
 	return mappedPoints;
 };
 
-export const getPoints = (curveConfigs: BezierConfig[], divisions: number): Vector2[] => {
+const MANUAL_EDGE_DIVISIONS = [0.18, 0.38, 0.65]
+
+const getManualPoints = (curvePath: CurvePath<Vector2>, divisionsArray: number[]): Vector2[] => {
+	if (divisionsArray.some(d => d <= 0 || d >= 1)) {
+		throw new Error('getManualPoints, divisions must be between 0 and 1');
+	}
+	const vectors = [0, ...divisionsArray, 1].map((t) => {
+		return curvePath.getPointAt(t);
+	});
+	return vectors;
+};
+
+
+export const getPoints = (curveConfigs: BezierConfig[], sampleMethod: ProjectionCurveSampleMethod): Vector2[] => {
 	const curvePath = getCubicBezierCurvePath(curveConfigs);
-	const vectors = curvePath.getSpacedPoints(divisions);
+	const vectors = sampleMethod.method === 'manualDivisions'
+		? getManualPoints(curvePath, sampleMethod.divisionsArray)
+		: curvePath.getSpacedPoints(sampleMethod.divisions);
 	return vectors;
 };
 
@@ -333,7 +350,7 @@ export const generateProjection = ({
 					const crossSectionConfig =
 						projectionConfig.projectorConfig.polyhedron.polygons[p].edges[e].crossSectionCurve;
 					const crossSectionDefinitionPoints = normalizePoints(
-						getPoints(crossSectionConfig.curves, crossSectionConfig.sampleMethod.divisions)
+						getPoints(crossSectionConfig.curves, crossSectionConfig.sampleMethod)
 					);
 					const sectionGeometry = edge.edgePoints.map((p, i) => {
 						const c = edge.curvePoints[i];

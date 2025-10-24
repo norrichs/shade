@@ -12,7 +12,8 @@ import type {
 	VertexIndex,
 	CurveIndex,
 	VerticesConfig,
-	TransformConfig
+	TransformConfig,
+	ProjectionCurveSampleMethod
 } from './types';
 
 const defaultSphereConfig: SphereConfig = {
@@ -83,12 +84,12 @@ const defaultEdgeSampleMethod: CurveSampleMethod = { method: 'divideCurvePath', 
 const defaultEdgeCurveConfig: EdgeCurveConfig = {
 	curves: secondEdgeCurve,
 	// curves: asymmetricEdgeCurve,
-	sampleMethod: defaultEdgeSampleMethod
+	sampleMethod: defaultEdgeSampleMethod// { method: 'manualDivisions', divisions: 6, divisionsArray: [0.27, 0.4, 0.5, 0.6, 0.73] } //, divisionsArray: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9] }
 };
 
 const secondEdgeCurveConfig: EdgeCurveConfig = {
 	curves: secondEdgeCurve,
-	sampleMethod: defaultEdgeSampleMethod
+	sampleMethod:  defaultEdgeSampleMethod,//{ method: 'manualDivisions', divisions: 5, divisionsArray: [0.25, 0.5, 0.75, 0.9] }
 };
 const defaultCrossSection: CrossSectionConfig = {
 	curves: [
@@ -103,7 +104,7 @@ const defaultCrossSection: CrossSectionConfig = {
 		}
 	],
 	center: { x: 0, y: 0.5 },
-	sampleMethod: { method: 'divideCurvePath', divisions: 3 },
+	sampleMethod:   { method: 'divideCurvePath', divisions: 3 },//{ method: 'manualDivisions', divisions: 5, divisionsArray: [0.15, 0.3, 0.45, 0.65] },
 	scaling: { width: 'curve', height: 280 }
 };
 
@@ -1109,7 +1110,7 @@ const defaultBandConfig: ProjectionBandConfig = {
 	tubeSymmetry: 'lateral'
 };
 
-const defaultProjectorConfig = projectorConfigs.tetrahedron;
+const defaultProjectorConfig = projectorConfigs.tetrahedron
 
 const flattenedDefaultTransform: TransformConfig = {
 	translate: { x: 0, y: 0, z: 0 },

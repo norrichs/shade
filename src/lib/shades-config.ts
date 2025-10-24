@@ -519,7 +519,7 @@ export const defaultPatternConfig = (): PatternConfig => ({
 });
 
 export const defaultPatternViewConfig = (): PatternViewConfig => ({
-	showQuads: false,
+	showQuads: true,
 	showTriangles: false,
 	width: 800,
 	height: 600,
