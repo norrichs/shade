@@ -8,10 +8,16 @@
 	export let min = 0;
 	export let max = 100;
 	export let hasButtons = false;
-	export let label = ''
+	export let label = '';
+	export let onChange: ((newValue: number) => void) | undefined = undefined;
 
 	const handleFocus = (event: FocusEvent) => {
 		(event.target as HTMLInputElement).select();
+	};
+
+	const handleChange = (event: Event) => {
+		console.debug('handleChange', event);
+		onChange?.(parseInt((event.target as HTMLInputElement).value));
 	};
 
 	const click = (direction: 'up' | 'down') => {
@@ -20,6 +26,7 @@
 		} else if (value > min + step) {
 			value = round(value - step, 2);
 		}
+		onChange?.(value);
 	};
 </script>
 
@@ -27,7 +34,7 @@
 	{#if label}
 		<div>{label}</div>
 	{/if}
-	<input type="number" bind:value {min} {step} {max} on:focus={handleFocus} />
+	<input type="number" bind:value {min} {step} {max} on:focus={handleFocus} on:change={handleChange} />
 	{#if hasButtons}
 		<div>
 			<button on:click={() => click('up')}><Icon size="16" src={FiChevronUp} /></button>

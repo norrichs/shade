@@ -1,0 +1,65 @@
+<script lang="ts">
+	export let onClick: () => void;
+	export let color: string = 'aliceblue';
+	export let shortTitle: string;
+	export let mainTitle: string;
+
+	const getSplitTitle = (title: string) => {
+		const words = title.split(' ');
+		return words.map((word) => [word[0], `${word.slice(1)}`]);
+	};
+
+	$: words = getSplitTitle(mainTitle);
+</script>
+
+<button on:click={onClick} style={`--color: ${color}`}>
+	<div class="title-container">
+		{#each words as word}
+			<div class="word">
+				<div class="word-initial">{word[0]}</div>
+				<div class="word-rest">{word[1]}</div>
+			</div>
+		{/each}
+	</div>
+</button>
+
+<style>
+	button {
+		background-color: var(--color);
+		overflow: visible;
+		border: none;
+		padding: 8px;
+		border-radius: 4px;
+		box-shadow: 0 0 10px 0 black;
+	}
+	.title-container {
+		display: flex;
+		flex-direction: row;
+		flex-wrap: nowrap;
+		align-items: center;
+	}
+	.word {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		justify-content: flex-start;
+		gap: 0px;
+	}
+	.word-initial {
+		font-size: 1.25em;
+	}
+	.word-rest {
+		font-size: 1.25em;
+		max-width: 0;
+		overflow: hidden;
+		white-space: nowrap;
+	}
+	button:hover .title-container {
+		gap: 4px;
+		transition: gap .3s ease-in;
+	}
+	button:hover .word-rest {
+	  max-width: 60px;
+		transition: max-width .3s ease-in;
+	}
+</style>

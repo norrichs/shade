@@ -16,9 +16,14 @@
 	import { interactionMode } from '../three-renderer/interaction-mode';
 	import ViewMenu from './ViewMenu.svelte';
 	import { printProjectionAddress } from '$lib/projection-geometry/generate-projection';
+	import Floater from '../modal/Floater.svelte';
 
 	let downloadUrl: string | undefined = undefined;
-
+	let showModal = false;
+  const toggleModal = () => {
+    showModal = !showModal;
+  }
+	
 	const sandBoxOptions = [
 		{ value: '/sandbox-ellipse-intersections', label: 'Ellipse Intersections' },
 		{ value: '/sandbox-line-intersections', label: 'Line Intersections' },
@@ -92,6 +97,7 @@
 		{/if}
 
 		<div class="button-group">
+			<Button on:click={toggleModal}>Edit</Button>
 			<Button
 				on:click={() => {
 					$interactionMode = { type: 'band-select-multiple', data: { bands: [] } };
@@ -119,6 +125,13 @@
 			<!-- <button> User </button> -->
 		</div>
 	</nav>
+	{#if showModal}
+		<Floater onClose={toggleModal} title="Cross section">
+				<div slot="body">
+					Test
+				</div>
+			</Floater>
+	{/if}
 </header>
 
 <style>
