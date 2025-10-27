@@ -5,7 +5,8 @@ import type {
 	Facet,
 	Point3,
 	FacetEdgeMeta,
-	TrianglePoint
+	TrianglePoint,
+	SuperGlobule
 } from '$lib/types';
 import { average, getCubicBezierCurvePath, getIntersectionOfLines, getVector3 } from '$lib/util';
 import {
@@ -54,7 +55,7 @@ import {
 	getTrianglePointFromTriangleEdge
 } from '$lib/cut-pattern/generate-pattern';
 
-const SHOULD_SKEW_CURVE = true;
+
 
 export const preparePolygonConfig = (
 	polygonConfig: PolygonConfig<undefined, number, number, number>,
@@ -381,7 +382,7 @@ export const generateProjection = ({
 
 						let xDirection: Vector3;
 						let baseScalingLength: number;
-						if (SHOULD_SKEW_CURVE) {
+						if (crossSectionConfig.shouldSkewCurve) {
 							xDirection = int.curve.clone().addScaledVector(int.edge, -1).normalize();
 							baseScalingLength = int.edge.distanceTo(int.curve);
 						} else {
@@ -618,6 +619,11 @@ export const generateTubeBands = (
 
 	for (let i = 0; i < sortedEdges.length; i += 2) {
 		const tubeAddress = { ...projectionAddress, tube: i / 2 };
+		
+		// Assign tube addresses to the edges
+		sortedEdges[i].tubeAddress = tubeAddress;
+		sortedEdges[i + 1].tubeAddress = tubeAddress;
+		
 		const sections = combineSections(sortedEdges[i], sortedEdges[i + 1]);
 		const bands = generateProjectionBands(sections, orientation, tubeAddress, tubeSymmetry);
 		const tube = {
@@ -933,4 +939,88 @@ export const printProjectionAddress = (
 	const edge = 'edge' in a ? `-${corrected(a.edge)}` : '';
 
 	return projection + tube + band + facet + edge;
+};
+
+export const getSections = (
+	tubeAddress: ProjectionAddress_Tube,
+	projections: SuperGlobule['projections']
+): Section[] => {
+	const projection = projections[tubeAddress.projection].projection;
+
+	// Find all edges with matching tubeAddress
+	const matchingEdges = [];
+	for (const polygon of projection.polygons) {
+		for (const edge of polygon.edges) {
+			if (
+				edge.tubeAddress?.tube === tubeAddress.tube &&
+				edge.tubeAddress?.projection === tubeAddress.projection
+			) {
+				matchingEdges.push(edge);
+			}
+		}
+	}
+
+	if (matchingEdges.length === 0) {
+		return [];
+	}
+
+	// Get number of sections (all matching edges should have the same number)
+	const numSections = matchingEdges[0].sections.length;
+
+	// For each section index, concatenate crossSectionPoints from all matching edges
+	const sections: Section[] = [];
+	for (let sectionIndex = 0; sectionIndex < numSections; sectionIndex++) {
+		const points = [];
+		for (const edge of matchingEdges) {
+			points.push(...edge.sections[sectionIndex].crossSectionPoints);
+		}
+		sections.push({ points });
+	}
+
+	return sections;
+};
+
+
+const Z_AXIS = new Vector3(0, 0, 1);
+export const getCrossSectionPath = (
+	address: ProjectionAddress_Tube,
+	projections: SuperGlobule['projections'],
+	sectionIndex?: number
+): string => {
+	const sections = getSections(address, projections);
+	console.debug('getCrossSectionPath', { address, sectionIndex, projections, sections });
+
+
+	const tube = projections[address.projection].tubes[address.tube];
+	if (!sectionIndex) sectionIndex = Math.ceil(tube.bands[0].facets.length / 4);
+	if (
+		sectionIndex !== undefined &&
+		(sectionIndex < 0 || sectionIndex > tube.bands[0].facets.length / 2 + 1)
+	)
+		throw Error(`Invalid section index: ${sectionIndex}`);
+
+	const vectors = sections[sectionIndex].points;
+
+	const middle = vectors.length / 2;
+	const relativeVectors = vectors.map((v) => v.clone().addScaledVector(vectors[0], -1));
+	const referenceVector = relativeVectors[middle];
+	const params = relativeVectors.map((v, i) => {
+		const angle = v.angleTo(referenceVector);
+		const length = v.length();
+		return { angle: i < middle ? angle : -angle, length };
+	});
+
+	const newReferenceVector = new Vector3(0, params[middle].length, 0);
+	const pathVectors = params.map((p, i) => {
+		if (i === 0) return new Vector3(0, 0, 0);
+		if (i === middle) return newReferenceVector.clone();
+		return newReferenceVector.clone().applyAxisAngle(Z_AXIS, p.angle).setLength(p.length);
+	});
+
+	const path =
+		pathVectors.reduce((path, v) => {
+			return path + `L ${v.x} ${v.y}`;
+		}, `M 0 0`) + `Z`;
+
+	return path;
 };

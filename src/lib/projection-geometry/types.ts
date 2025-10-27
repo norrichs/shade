@@ -116,6 +116,7 @@ export type CrossSectionConfig = {
 	center: Point;
 	sampleMethod: ProjectionCurveSampleMethod;
 	scaling: CrossSectionScaling;
+	shouldSkewCurve: boolean;
 };
 export type CrossSectionConfigVector2 = {
 	curves: CurvePath<Vector2>;
@@ -213,6 +214,7 @@ export type ProjectionEdge = {
 		intersections: { edge: Vector3; curve: Vector3 };
 		crossSectionPoints: Vector3[];
 	}[];
+	tubeAddress?: ProjectionAddress_Tube;
 };
 
 export type Projection = {

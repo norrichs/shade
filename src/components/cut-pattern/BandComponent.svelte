@@ -28,7 +28,7 @@
 
 	const handleMouseOver = (address: GeometryAddress<BandAddressed>) => {
 		isHovered = true;
-		$selectedBand = { ...address, g: [...address.g] };
+		// $selectedBand = { ...address, g: [...address.g] };
 	};
 	const handleMouseOut = (address: GeometryAddress<BandAddressed>) => {
 		isHovered = false;
@@ -36,7 +36,7 @@
 	};
 
 	const handleClick = (address: GeometryAddress<BandAddressed>) => {
-		$selectedBand = { ...address, g: [...address.g] };
+		// $selectedBand = { ...address, g: [...address.g] };
 	};
 	$: update(isHovered, isFocused);
 </script>
