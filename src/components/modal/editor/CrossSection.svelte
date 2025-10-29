@@ -6,8 +6,9 @@
 	} from '$lib/projection-geometry/types';
 	import { superConfigStore, superGlobuleStore } from '$lib/stores';
 	import NumberInput from '../../controls/super-control/NumberInput.svelte';
+	import Button from '../../design-system/Button.svelte';
 	import LabeledControl from './LabeledControl.svelte';
-	import { endPointsInRange, endPointsZeroX } from './path-editor';
+	import { endPointsInRange, endPointsZeroX, insertPoint, neighborPointMatch } from './path-editor';
 	import PathEditor from './PathEditor.svelte';
 	import Container from './Container.svelte';
 
@@ -101,10 +102,13 @@
 							onChangeCurveDef={(curveDef) => {
 								crossSection.curves = curveDef;
 							}}
-							limits={[endPointsZeroX, endPointsInRange]}
+							limits={[endPointsZeroX, endPointsInRange, neighborPointMatch]}
 						>
 							<rect x="0" y="0" width="1" height="1"  fill="rgba(0,0,0,0.1)"/>
 						</PathEditor>
+						<Button on:click={() => {
+							crossSection.curves = insertPoint(0, crossSection.curves, { type: 'PointConfig2', x: 0.5, y: 0.5 })
+							}}>Insert Point</Button>
 					{/if}
 				</Container>
 				<Container direction='column'>

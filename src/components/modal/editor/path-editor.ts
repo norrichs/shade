@@ -2,6 +2,7 @@ import type { Edge, Polygon } from "$lib/projection-geometry/types";
 import type { BezierConfig, PointConfig2 } from "$lib/types";
 import { Vector2 } from "three";
 import { getPathFromVectors } from "../../projection/path-edit";
+import { getMidPoint } from "$lib/patterns/utils";
 
 export type PathEditorConfig = {
   padding: number;
@@ -160,19 +161,19 @@ export const applyLimits = ({ limits, curveDef, ...props }: LimitProps & { limit
 // Limit functions need to return curveDef
 
 
-export const endPointsZeroX = ({ curveIndex: c, pointIndex: p, curveDef, newPoint }: LimitProps): BezierConfig[] =>{
-  if (!isEndPoint(c, p, curveDef)) {
-    curveDef[c].points[p] = { ...newPoint }
+export const endPointsZeroX: LimitFunction = ({ curveIndex, pointIndex, curveDef, newPoint }) =>{
+  if (!isEndPoint(curveIndex, pointIndex, curveDef)) {
+    curveDef[curveIndex].points[pointIndex] = { ...newPoint }
     return curveDef
   };
 
-  curveDef[c].points[p] = { ...newPoint, x: 0 }
+  curveDef[curveIndex].points[pointIndex] = { ...newPoint, x: 0 }
   return curveDef
 }
 
-export const endPointsInRange = ({ curveIndex: c, pointIndex: p, curveDef, newPoint }: LimitProps): BezierConfig[] =>{
-  if (!isEndPoint(c, p, curveDef)) {
-    curveDef[c].points[p] = { ...newPoint }
+export const endPointsInRange: LimitFunction = ({ curveIndex, pointIndex, curveDef, newPoint }) =>{
+  if (!isEndPoint(curveIndex, pointIndex, curveDef)) {
+    curveDef[curveIndex].points[pointIndex] = { ...newPoint }
     return curveDef
   };
 
@@ -182,12 +183,12 @@ export const endPointsInRange = ({ curveIndex: c, pointIndex: p, curveDef, newPo
   y = y < 0 ? 0 : y
   y = y > 1 ? 1 : y
 
-  curveDef[c].points[p] ={ ...newPoint, x,y}
+  curveDef[curveIndex].points[pointIndex] ={ ...newPoint, x,y}
   return curveDef;
 }
 
 
-export const endPointsLockedY = ({ curveIndex, pointIndex, curveDef, newPoint, oldPoint }: LimitProps): BezierConfig[] =>{
+export const endPointsLockedY: LimitFunction  = ({ curveIndex, pointIndex, curveDef, newPoint, oldPoint }) =>{
   if (!isEndPoint(curveIndex, pointIndex, curveDef)) {
     curveDef[curveIndex].points[pointIndex] = { ...newPoint }
     return curveDef
@@ -196,7 +197,7 @@ export const endPointsLockedY = ({ curveIndex, pointIndex, curveDef, newPoint, o
   return curveDef
 }
 
-export const endPointsMatchedX = ({ curveIndex, pointIndex, curveDef, newPoint, oldPoint }: LimitProps): BezierConfig[] => {
+export const endPointsMatchedX: LimitFunction  = ({ curveIndex, pointIndex, curveDef, newPoint })=> {
   if (!isEndPoint(curveIndex, pointIndex, curveDef)) {
     curveDef[curveIndex].points[pointIndex] = { ...newPoint }
     return curveDef
@@ -211,7 +212,45 @@ export const endPointsMatchedX = ({ curveIndex, pointIndex, curveDef, newPoint, 
   return curveDef
 }
 
+export const neighborPointMatch: LimitFunction = ({ curveIndex, pointIndex, curveDef, newPoint }) => {
+  curveDef[curveIndex].points[pointIndex] = { ...newPoint }
+  if (isEndPoint(curveIndex, pointIndex, curveDef) || isDirectionPoint(pointIndex)) return curveDef
+
+  const partnerPointIndex = pointIndex === 0 ? 3 : 0
+  const partnerCurveIndex = pointIndex === 0 ? curveIndex - 1 : curveIndex + 1
+  curveDef[partnerCurveIndex].points[partnerPointIndex] = { ...newPoint }
+  
+  return curveDef
+ }
+
+
+// Utility functions
 
 const isEndPoint = (curveIndex: number, pointIndex: number, curveDef: any[]) => {
   return (curveIndex === 0 && pointIndex === 0) || (curveIndex === curveDef.length - 1 && pointIndex === 3);
+}
+
+const isDirectionPoint = (pointIndex: number) => {
+  return pointIndex === 1 || pointIndex === 2;
+}
+
+export const insertPoint = (curveIndex: number, curveDef: BezierConfig[], newPoint: PointConfig2): BezierConfig[] => {
+  const curve0: BezierConfig = {
+    ...curveDef[curveIndex],
+    points: [
+      ...curveDef[curveIndex].points.slice(0, 2),
+      getMidPoint(curveDef[curveIndex].points[0], newPoint),
+      newPoint
+    ] as [PointConfig2, PointConfig2, PointConfig2, PointConfig2]
+  }
+  const curve1: BezierConfig = {
+    ...curveDef[curveIndex],
+    points: [
+      newPoint,
+      getMidPoint(newPoint, curveDef[curveIndex].points[3]),
+      ...curveDef[curveIndex].points.slice(2)
+    ] as [PointConfig2, PointConfig2, PointConfig2, PointConfig2]
+  }
+  const newCurveDef: BezierConfig[] = [...curveDef.slice(0, curveIndex), curve0, curve1, ...curveDef.slice(curveIndex + 1)]
+  return newCurveDef
 }

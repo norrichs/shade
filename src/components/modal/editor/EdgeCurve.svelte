@@ -11,10 +11,11 @@
 	} from '$lib/projection-geometry/types';
 	import { superConfigStore, superGlobuleStore } from '$lib/stores';
 	import NumberInput from '../../controls/super-control/NumberInput.svelte';
+	import Button from '../../design-system/Button.svelte';
 	import { getPathFromVectors } from '../../projection/path-edit';
 	import Container from './Container.svelte';
 	import LabeledControl from './LabeledControl.svelte';
-	import { endPointsLockedY, endPointsMatchedX, flattenPolygon, getPolygonPaths } from './path-editor';
+	import { endPointsLockedY, endPointsMatchedX, flattenPolygon, getPolygonPaths, insertPoint, neighborPointMatch } from './path-editor';
 	import PathEditor from './PathEditor.svelte';
 
 	const handleChangeSampleMethod = (event: Event, config: EdgeCurveConfig) => {
@@ -70,7 +71,6 @@
 	$: polygonPaths = getPolygonPaths(flattenedPolygon);
 </script>
 
-<div>CrossSection</div>
 <main>
 	{#each $superConfigStore.projectionConfigs[0].projectorConfig.polyhedron.edgeCurves as edgeCurve, edgeCurveIndex}
 		<section class="cross-section-container">
@@ -113,7 +113,7 @@
 						curveDef={edgeCurve.curves}
 						config={{
 							gutter: 3,
-							padding: 1,
+							padding: 0.2,
 							contentBounds: { top: 0, left: 0, width: 1, height: 1 },
 							size: { width: 200, height: 200 }
 						}}
@@ -121,10 +121,13 @@
 							console.debug("EdgeCurve, onChangeCurveDef", curveDef)
 							edgeCurve.curves = curveDef;
 						}}
-						limits={[endPointsLockedY, endPointsMatchedX]}
+						limits={[endPointsLockedY, endPointsMatchedX, neighborPointMatch]}
 					>
 						<rect x="0" y="0" width="1" height="1"  fill="rgba(0,0,0,0.1)"/>
 					</PathEditor>
+					<Button on:click={() => {
+						edgeCurve.curves = insertPoint(0, edgeCurve.curves, { type: 'PointConfig2', x: 0.5, y: 0.5 })
+						}}>Insert Point</Button>
 				</Container>
 				<Container direction="column">
 					<LabeledControl label="Divisions:">
