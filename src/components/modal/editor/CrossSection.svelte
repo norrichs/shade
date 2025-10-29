@@ -7,8 +7,9 @@
 	import { superConfigStore, superGlobuleStore } from '$lib/stores';
 	import NumberInput from '../../controls/super-control/NumberInput.svelte';
 	import LabeledControl from './LabeledControl.svelte';
-	import { endPointsZeroX } from './path-editor';
+	import { endPointsInRange, endPointsZeroX } from './path-editor';
 	import PathEditor from './PathEditor.svelte';
+	import Container from './Container.svelte';
 
 
 	export let editCurve = true;
@@ -71,8 +72,8 @@
 	{#each $superConfigStore.projectionConfigs[0].projectorConfig.polyhedron.crossSectionCurves as crossSection, crossSectionIndex}
 		<section class="cross-section-container">
 			<header>{crossSectionIndex}</header>
-			<div>
-				<div>
+			<Container>
+				<Container direction='column'>
 					<LabeledControl label="Edit Curve:">
 						<input type="checkbox" bind:checked={editCurve} />
 					</LabeledControl>
@@ -100,11 +101,13 @@
 							onChangeCurveDef={(curveDef) => {
 								crossSection.curves = curveDef;
 							}}
-							limits={[endPointsZeroX]}
-						/>
+							limits={[endPointsZeroX, endPointsInRange]}
+						>
+							<rect x="0" y="0" width="1" height="1"  fill="rgba(0,0,0,0.1)"/>
+						</PathEditor>
 					{/if}
-				</div>
-				<div>
+				</Container>
+				<Container direction='column'>
 					<LabeledControl label="Divisions:">
 						<NumberInput
 							value={crossSection.sampleMethod.divisions}
@@ -165,8 +168,8 @@
 					<LabeledControl label="Should Skew Curve:">
 						<input type="checkbox" bind:checked={crossSection.shouldSkewCurve} />
 					</LabeledControl>
-				</div>
-			</div>
+				</Container>
+			</Container>
 		</section>
 	{/each}
 </main>

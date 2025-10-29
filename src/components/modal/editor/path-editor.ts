@@ -1,4 +1,7 @@
+import type { Edge, Polygon } from "$lib/projection-geometry/types";
 import type { BezierConfig, PointConfig2 } from "$lib/types";
+import { Vector2 } from "three";
+import { getPathFromVectors } from "../../projection/path-edit";
 
 export type PathEditorConfig = {
   padding: number;
@@ -58,6 +61,64 @@ export type LimitedBezierConfig = {
 }
 
 
+export type FlattenedPolygon = {
+  edges: {
+    edgePoints: Vector2[];
+    curvePoints: Vector2[];
+  }[];
+}
+
+const DIRECTION_VECTOR = new Vector2(1, 0);
+export const flattenPolygon = (polygon: Polygon): FlattenedPolygon => {
+  const anchor = polygon.edges[0].edgePoints[0]
+  const originalReference = polygon.edges[0].edgePoints[polygon.edges[0].edgePoints.length - 1].clone().addScaledVector(anchor, -1)
+  const polygonParams = {
+    edges: polygon.edges.map((edge: Edge) => ({
+      edgePoints: edge.edgePoints.map((edgePoint) => {
+        const relativeVector = edgePoint.clone().addScaledVector(anchor, -1)
+        return {
+          angle: originalReference.angleTo(relativeVector),
+          length: relativeVector.length()
+        }
+      }),
+      curvePoints: edge.curvePoints.map((curvePoint) => {
+        const relativeVector = curvePoint.clone().addScaledVector(anchor, -1)
+        return {
+          angle: originalReference.angleTo(relativeVector),
+          length: relativeVector.length()
+        }
+      })
+    }))
+  }
+
+  const ORIGIN = new Vector2(0, 0)
+  const flattenedPolygon = {
+    edges: polygonParams.edges.map((edge) => ({
+      edgePoints: edge.edgePoints.map(({ angle, length }) => DIRECTION_VECTOR.clone().rotateAround(ORIGIN, angle).setLength(length)),
+      curvePoints: edge.curvePoints.map(({ angle, length }) => DIRECTION_VECTOR.clone().rotateAround(ORIGIN, angle).setLength(length))
+    }))
+  }
+
+  const centerPoint = flattenedPolygon.edges.map(edge => edge.edgePoints[0]).reduce((acc, point) => acc.add(point), new Vector2(0, 0)).divideScalar(flattenedPolygon.edges.length);
+  const recenteredPolygon = {
+    edges: flattenedPolygon.edges.map((edge) => ({
+      edgePoints: edge.edgePoints.map((point) => point.sub(centerPoint)),
+      curvePoints: edge.curvePoints.map((point) => point.sub(centerPoint))
+    }))
+  }
+
+  return recenteredPolygon
+}
+
+export const getPolygonPaths = (polygon: FlattenedPolygon): string[] => {
+  const edgePaths = polygon.edges.map((edge) => {
+    const combinedPoints = [...edge.edgePoints, ...edge.curvePoints.reverse()];
+    return getPathFromVectors(combinedPoints);
+  });
+
+  return edgePaths;
+};
+
 
 // LIMITS
 
@@ -66,17 +127,91 @@ export type LimitProps = {
   pointIndex: number;
   curveDef: BezierConfig[];
   newPoint: PointConfig2
+  oldPoint: PointConfig2
 }
 
-export type LimitFunction = (props: LimitProps) => PointConfig2;
+export type LimitFunction = (props: LimitProps) => BezierConfig[];
 
-export const endPointsZeroX = ({ curveIndex: c, pointIndex: p, curveDef, newPoint }: LimitProps): PointConfig2 =>
-  (c + p === 0 || (c === curveDef.length - 1 && p === 3))
-    ? { ...newPoint, x: 0 }
-    : newPoint;
 
-export const applyLimits = ({ limits, ...props }: LimitProps & { limits: LimitFunction[] }) => {
-  let newPoint = {type: 'PointConfig2', x: 0, y: 0};
-  limits.forEach((limit) => newPoint = limit(props));
-  return newPoint;
+// export const applyLimits = ({ limits, ...props }: LimitProps & { limits: LimitFunction[] }) => {
+//   let newPoint = {...props.newPoint}
+//   limits.forEach((limit) => newPoint = limit({...props, newPoint}));
+//   return newPoint;
+// }
+
+const cloneCurveDef = (curveDef: BezierConfig[]): BezierConfig[] => {
+  return curveDef.map((curve) => ({...curve}));
+}
+
+
+export const applyLimits = ({ limits, curveDef, ...props }: LimitProps & { limits: LimitFunction[] }) => {
+  let newCurveDef = cloneCurveDef(curveDef);
+  let newPoint = {...props.newPoint}
+
+  limits.forEach((limit) => {
+    newCurveDef = limit({ ...props, curveDef: newCurveDef, newPoint })
+    newPoint = newCurveDef[props.curveIndex].points[props.pointIndex]
+  });
+  return newCurveDef;
+}
+
+
+
+// Limit functions need to return curveDef
+
+
+export const endPointsZeroX = ({ curveIndex: c, pointIndex: p, curveDef, newPoint }: LimitProps): BezierConfig[] =>{
+  if (!isEndPoint(c, p, curveDef)) {
+    curveDef[c].points[p] = { ...newPoint }
+    return curveDef
+  };
+
+  curveDef[c].points[p] = { ...newPoint, x: 0 }
+  return curveDef
+}
+
+export const endPointsInRange = ({ curveIndex: c, pointIndex: p, curveDef, newPoint }: LimitProps): BezierConfig[] =>{
+  if (!isEndPoint(c, p, curveDef)) {
+    curveDef[c].points[p] = { ...newPoint }
+    return curveDef
+  };
+
+  let { x, y } = newPoint;
+  x = x < 0 ? 0 : x
+  x = x > 1 ? 1 : x
+  y = y < 0 ? 0 : y
+  y = y > 1 ? 1 : y
+
+  curveDef[c].points[p] ={ ...newPoint, x,y}
+  return curveDef;
+}
+
+
+export const endPointsLockedY = ({ curveIndex, pointIndex, curveDef, newPoint, oldPoint }: LimitProps): BezierConfig[] =>{
+  if (!isEndPoint(curveIndex, pointIndex, curveDef)) {
+    curveDef[curveIndex].points[pointIndex] = { ...newPoint }
+    return curveDef
+  };
+  curveDef[curveIndex].points[pointIndex] = { ...newPoint, y: oldPoint.y }
+  return curveDef
+}
+
+export const endPointsMatchedX = ({ curveIndex, pointIndex, curveDef, newPoint, oldPoint }: LimitProps): BezierConfig[] => {
+  if (!isEndPoint(curveIndex, pointIndex, curveDef)) {
+    curveDef[curveIndex].points[pointIndex] = { ...newPoint }
+    return curveDef
+  };
+
+  curveDef[curveIndex].points[pointIndex] = { ...newPoint }
+  if (curveIndex === 0) {
+    curveDef[curveDef.length - 1].points[3].x = newPoint.x
+  } else {
+    curveDef[0].points[0].x = newPoint.x
+  }
+  return curveDef
+}
+
+
+const isEndPoint = (curveIndex: number, pointIndex: number, curveDef: any[]) => {
+  return (curveIndex === 0 && pointIndex === 0) || (curveIndex === curveDef.length - 1 && pointIndex === 3);
 }

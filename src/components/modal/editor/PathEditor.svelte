@@ -4,11 +4,10 @@
 </script>
 
 <script lang="ts">
-	import type { BezierConfig } from '$lib/types';
+	import type { BezierConfig, PointConfig2 } from '$lib/types';
 	import Button from '../../design-system/Button.svelte';
 	import CurveDefPath from './CurveDefPath.svelte';
 	import {
-		getPointClass,
 		getCanvas,
 		applyLimits,
 		type LimitFunction,
@@ -34,19 +33,20 @@
 	};
 
 	const handleDrag = (newX: number, newY: number, curveIndex: number, pointIndex: number) => {
-		const { x, y } = applyLimits({
+		const scaledPoint = { type: 'PointConfig2', x: newX * canv.scale, y: newY * canv.scale } as PointConfig2;
+		if (!limits || limits.length === 0) {
+			curveDef[curveIndex].points[pointIndex] = scaledPoint
+			curveDef = curveDef
+			return
+		}
+		curveDef = applyLimits({
 			limits,
 			curveDef,
 			curveIndex,
 			pointIndex,
-			newPoint: { type: 'PointConfig2', x: newX, y: newY }
+			newPoint: scaledPoint,
+			oldPoint: {...curveDef[curveIndex].points[pointIndex]}
 		});
-
-		curveDef[curveIndex].points[pointIndex] = {
-			type: 'PointConfig2',
-			x: x * canv.scale,
-			y: y * canv.scale
-		};
 	};
 
 	$: canv = getCanvas(config);
