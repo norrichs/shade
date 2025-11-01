@@ -3,7 +3,7 @@
 	import Button from '../design-system/Button.svelte';
 
 	export let onClose: () => void;
-	export let title: string | undefined;
+	export let title: string | string[] | undefined;
 	export let showFloater: boolean;
 	export let content: ComponentType<SvelteComponent> | undefined;
 </script>

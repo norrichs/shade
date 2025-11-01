@@ -1,63 +1,39 @@
 <script lang="ts">
-	import type { ComponentType, SvelteComponent } from 'svelte';
 	import HoverButton from './HoverButton.svelte';
 	import Floater from './Floater.svelte';
-	import CrossSection from './editor/CrossSection.svelte';
-	import EdgeCurve from './editor/EdgeCurve.svelte';
+	import type { FloaterContent, SidebarDefinition } from './sidebar-definitions';
 
+	export let sidebarDefinition: SidebarDefinition;
+	
 	let showFloater = false;
 	let currentFloater: FloaterContent | undefined = undefined;
 
-	type FloaterContent = {
-		shortTitle: string;
-		title: string;
-		content: ComponentType<SvelteComponent>;
-	};
 
-	const floaters: Map<FloaterContent['title'], FloaterContent> = new Map([
-		[
-			'Cross Sections',
-			{
-				shortTitle: 'CS',
-				title: 'Cross Section',
-				content: CrossSection
-			}
-		],
-		[
-			`Edge Curves`,
-			{
-				shortTitle: 'Edge',
-				title: 'Edge Curve',
-				content: EdgeCurve
-			}
-		]
-	]);
 
 	const toggleFloater = (floater?: FloaterContent['title']) => {
-		console.debug('toggleFloater', floater, floaters);
 		if (!floater) {
 			showFloater = false;
 			currentFloater = undefined;
 		} else if (!currentFloater) {
 			showFloater = true;
-			currentFloater = floaters.get(floater);
+			currentFloater = sidebarDefinition.get(floater);
 		} else if (currentFloater && floater === currentFloater.title) {
 			showFloater = false;
 			currentFloater = undefined;
 		} else if (currentFloater && floater !== currentFloater.title) {
 			showFloater = true;
-			currentFloater = floaters.get(floater);
+			currentFloater = sidebarDefinition.get(floater);
 		}
 	};
 </script>
 
 <nav>
 	<div class="hover-button-container">
-		{#each floaters as [title, floater]}
+		{#each sidebarDefinition as [title, floater]}
 			<HoverButton
 				onClick={() => toggleFloater(title)}
 				shortTitle={floater.shortTitle}
-				mainTitle={title}
+				mainTitle={floater.title}
 			/>
 		{/each}
 	</div>

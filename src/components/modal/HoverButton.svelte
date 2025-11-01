@@ -2,11 +2,12 @@
 	export let onClick: () => void;
 	export let color: string = 'aliceblue';
 	export let shortTitle: string;
-	export let mainTitle: string;
+	export let mainTitle: string | string[];
 
-	const getSplitTitle = (title: string) => {
-		const words = title.split(' ');
-		return words.map((word) => [word[0], `${word.slice(1)}`]);
+	const getSplitTitle = (title: string | string[]) => {
+		const words = Array.isArray(title) ? title : title.split(' ');
+		const mappedWords = words.map((word) => [word[0], `${word.slice(1)}`]);
+		return mappedWords;
 	};
 
 	$: words = getSplitTitle(mainTitle);
@@ -31,6 +32,7 @@
 		padding: 8px;
 		border-radius: 4px;
 		box-shadow: 0 0 10px 0 black;
+		min-width: 40px;
 	}
 	.title-container {
 		display: flex;
@@ -57,9 +59,11 @@
 	button:hover .title-container {
 		gap: 4px;
 		transition: gap .3s ease-in;
+		margin-right: 8px;
+		transition: margin-right .3s ease-in;
 	}
 	button:hover .word-rest {
-	  max-width: 60px;
+	  max-width: 70px;
 		transition: max-width .3s ease-in;
 	}
 </style>

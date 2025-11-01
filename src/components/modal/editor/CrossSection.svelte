@@ -11,6 +11,7 @@
 	import { endPointsInRange, endPointsZeroX, insertPoint, neighborPointMatch } from './path-editor';
 	import PathEditor from './PathEditor.svelte';
 	import Container from './Container.svelte';
+	import Editor from './Editor.svelte';
 
 
 	export let editCurve = true;
@@ -68,8 +69,7 @@
 	);
 </script>
 
-<div>CrossSection</div>
-<main>
+<Editor>
 	{#each $superConfigStore.projectionConfigs[0].projectorConfig.polyhedron.crossSectionCurves as crossSection, crossSectionIndex}
 		<section class="cross-section-container">
 			<header>{crossSectionIndex}</header>
@@ -176,29 +176,8 @@
 			</Container>
 		</section>
 	{/each}
-</main>
+</Editor>
 
 <style>
-	:root {
-		font-family: monospace;
-	}
-	.cross-section-container {
-		border: 1px dotted black;
-		padding: 0;
-		display: flex;
-		flex-direction: column;
-	}
-	.cross-section-container > header {
-		background-color: rgba(0, 0, 0, 0.1);
-		padding: 4px;
-		font-size: 1em;
-	}
-	.cross-section-container > div {
-		display: flex;
-		flex-direction: row;
-	}
-	.cross-section-container > div > div {
-		padding: 10px;
-	}
 
 </style>

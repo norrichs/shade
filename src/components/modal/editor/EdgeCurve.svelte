@@ -1,21 +1,22 @@
 <script lang="ts">
 	import type {
-		CrossSectionConfig,
 		EdgeCurveConfig,
-		ManualDivisionsConfig,
-		Polygon,
-		Polyhedron,
-		PolyhedronConfig,
-		Projection,
 		ProjectionCurveSampleMethod
 	} from '$lib/projection-geometry/types';
 	import { superConfigStore, superGlobuleStore } from '$lib/stores';
 	import NumberInput from '../../controls/super-control/NumberInput.svelte';
 	import Button from '../../design-system/Button.svelte';
-	import { getPathFromVectors } from '../../projection/path-edit';
 	import Container from './Container.svelte';
+	import Editor from './Editor.svelte';
 	import LabeledControl from './LabeledControl.svelte';
-	import { endPointsLockedY, endPointsMatchedX, flattenPolygon, getPolygonPaths, insertPoint, neighborPointMatch } from './path-editor';
+	import {
+		endPointsLockedY,
+		endPointsMatchedX,
+		flattenPolygon,
+		getPolygonPaths,
+		insertPoint,
+		neighborPointMatch
+	} from './path-editor';
 	import PathEditor from './PathEditor.svelte';
 
 	const handleChangeSampleMethod = (event: Event, config: EdgeCurveConfig) => {
@@ -71,7 +72,7 @@
 	$: polygonPaths = getPolygonPaths(flattenedPolygon);
 </script>
 
-<main>
+<Editor>
 	{#each $superConfigStore.projectionConfigs[0].projectorConfig.polyhedron.edgeCurves as edgeCurve, edgeCurveIndex}
 		<section class="cross-section-container">
 			<header>{edgeCurveIndex}</header>
@@ -118,16 +119,22 @@
 							size: { width: 200, height: 200 }
 						}}
 						onChangeCurveDef={(curveDef) => {
-							console.debug("EdgeCurve, onChangeCurveDef", curveDef)
+							console.debug('EdgeCurve, onChangeCurveDef', curveDef);
 							edgeCurve.curves = curveDef;
 						}}
 						limits={[endPointsLockedY, endPointsMatchedX, neighborPointMatch]}
 					>
-						<rect x="0" y="0" width="1" height="1"  fill="rgba(0,0,0,0.1)"/>
+						<rect x="0" y="0" width="1" height="1" fill="rgba(0,0,0,0.1)" />
 					</PathEditor>
-					<Button on:click={() => {
-						edgeCurve.curves = insertPoint(0, edgeCurve.curves, { type: 'PointConfig2', x: 0.5, y: 0.5 })
-						}}>Insert Point</Button>
+					<Button
+						on:click={() => {
+							edgeCurve.curves = insertPoint(0, edgeCurve.curves, {
+								type: 'PointConfig2',
+								x: 0.5,
+								y: 0.5
+							});
+						}}>Insert Point</Button
+					>
 				</Container>
 				<Container direction="column">
 					<LabeledControl label="Divisions:">
@@ -156,28 +163,25 @@
 						show={edgeCurve.sampleMethod.method === 'manualDivisions'}
 					>
 						{#if edgeCurve.sampleMethod.method === 'manualDivisions'}
-							<div class="labeled-control">
-								<div>Divide at:</div>
-								<div>
-									{#each edgeCurve.sampleMethod.divisionsArray as division, index}
-										<div>{Math.round(division * 100) / 100}</div>
-										<input
-											type="range"
-											min={0}
-											max={1}
-											step={0.001}
-											bind:value={edgeCurve.sampleMethod.divisionsArray[index]}
-										/>
-									{/each}
-								</div>
-							</div>
+							<LabeledControl label="Divide at:">
+								{#each edgeCurve.sampleMethod.divisionsArray as division, index}
+									<div>{Math.round(division * 100) / 100}</div>
+									<input
+										type="range"
+										min={0}
+										max={1}
+										step={0.001}
+										bind:value={edgeCurve.sampleMethod.divisionsArray[index]}
+									/>
+								{/each}
+							</LabeledControl>
 						{/if}
 					</LabeledControl>
 				</Container>
 			</Container>
 		</section>
 	{/each}
-</main>
+	</Editor>
 
 <style>
 	:root {

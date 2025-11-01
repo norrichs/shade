@@ -125,13 +125,6 @@
 			<!-- <button> User </button> -->
 		</div>
 	</nav>
-	{#if showModal}
-		<Floater onClose={toggleModal} title="Cross section">
-				<div slot="body">
-					Test
-				</div>
-			</Floater>
-	{/if}
 </header>
 
 <style>

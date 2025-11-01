@@ -14,6 +14,7 @@
 	import ProjectionGeometryComponent from '../../components/projection/ProjectionGeometryComponent.svelte';
 	import ProjectionControl from '../../components/projection/ProjectionControl.svelte';
 	import HoverSidebar from '../../components/modal/HoverSidebar.svelte';
+	import { projectionConfigs } from '../../components/modal/sidebar-definitions';
 
 	let viewMode: ViewModeSetting = $uiStore.designer.viewMode;
 	let showControl: { name: string; value?: unknown } = { name: 'None' };
@@ -83,7 +84,7 @@
 			{/if}
 		</div>
 	</section>
-	<HoverSidebar />
+	<HoverSidebar sidebarDefinition={projectionConfigs} />
 </main>
 
 <style>
