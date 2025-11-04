@@ -308,6 +308,10 @@ export type BandCutPattern = {
 	tagAngle?: number;
 	projectionType: 'patterned';
 	address: ProjectionAddress_Band;
+	meta?: {
+		startPartnerBand: ProjectionAddress_Band;
+		endPartnerBand: ProjectionAddress_Band;
+	}
 };
 
 export type TubeCutPattern = {

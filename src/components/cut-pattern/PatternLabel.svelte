@@ -1,18 +1,36 @@
 <script lang="ts">
-	import { getPathSize, rotatePS, scalePS, svgPathStringFromSegments, translatePS } from '$lib/patterns/utils';
+	import {
+		getPathSize,
+		rotatePS,
+		scalePS,
+		svgPathStringFromSegments,
+		translatePS
+	} from '$lib/patterns/utils';
 	import type { PathSegment } from '$lib/types';
 	import type { Point } from 'bezier-js';
 	import { get } from 'svelte/store';
 	import { numberPathSegments } from './number-path-segments';
+	import SvgText from './SvgText/SvgText.svelte';
 
+	export let id: string | undefined = undefined;
 	export let color: string;
 	export let value: number;
-	export let radius = 0;
+	export let addressStrings: string[] | undefined;
+	export let radius = 10;
 	export let scale: number = 1;
 	export let angle = 0;
 	export let anchor: Point = { x: 0, y: 0 };
+	export let portal: { target: string; transform: string } | undefined = undefined;
 
-	const getLabelPathSegments = ({ value, r }: { value: number; r: number }) => {
+	const getLabelPathSegments = ({
+		value,
+		r,
+		addressStrings
+	}: {
+		value: number;
+		r: number;
+		addressStrings: string[] | undefined;
+	}) => {
 		const labelTextPathSegments = `${value}`
 			.split('')
 			.map((digit, i) => {
@@ -20,7 +38,9 @@
 			})
 			.flat(1);
 
-		const { width, height } = getPathSize(labelTextPathSegments);
+		const { width, height } = addressStrings
+			? { width: 350, height: 280 }
+			: getPathSize(labelTextPathSegments);
 		const padding = 20;
 
 		const stemWidth = 20;
@@ -33,10 +53,10 @@
 			['L', stemWidth / 2, stemLength],
 			['L', halfWidth - r, stemLength],
 			['Q', halfWidth, stemLength, halfWidth, r + stemLength],
-			['L', halfWidth, stemLength + 100 - r],
-			['Q', halfWidth, 100 + stemLength, halfWidth - r, 100 + stemLength],
-			['L', r - halfWidth, 100 + stemLength],
-			['Q', -halfWidth, 100 + stemLength, -halfWidth, 100 - r + stemLength],
+			['L', halfWidth, stemLength + height - r],
+			['Q', halfWidth, height + stemLength, halfWidth - r, height + stemLength],
+			['L', r - halfWidth, height + stemLength],
+			['Q', -halfWidth, height + stemLength, -halfWidth, height - r + stemLength],
 			['L', -halfWidth, r + stemLength],
 			['Q', -halfWidth, stemLength, r - halfWidth, stemLength],
 			['L', -stemWidth / 2, stemLength],
@@ -47,11 +67,11 @@
 
 		return [
 			...labelOutlinePathSegments,
-			...translatePS(labelTextPathSegments, 20 - halfWidth, 15 + stemLength)
+			...(addressStrings ? [] : translatePS(labelTextPathSegments, 20 - halfWidth, 15 + stemLength))
 		];
 	};
 
-	const adjust = (segments: PathSegment[]) => {
+	const adjust = (segments: PathSegment[], anchor: Point, angle: number, scale: number) => {
 		let adjusted = segments;
 		adjusted = translatePS(adjusted, anchor.x, anchor.y);
 		adjusted = rotatePS(adjusted, angle, anchor);
@@ -59,9 +79,23 @@
 		return adjusted;
 	};
 
-	$: path = svgPathStringFromSegments(adjust(getLabelPathSegments({ value, r: radius })));
+	$: path = svgPathStringFromSegments(
+		adjust(getLabelPathSegments({ value, r: radius, addressStrings }), anchor, angle, scale)
+	);
 </script>
 
 <!-- <g transform={`translate(${anchor.x}, ${anchor.y}) rotate(${angle}) scale(${-scale}, ${-scale})`}> -->
 <path d={path} fill-rule="evenodd" fill={color} stroke="none" />
+{#if addressStrings}
+	{#each addressStrings as string, i}
+		<SvgText
+			id={`label-text${id ? `-${id}` : ''}`}
+			{string}
+			size={5}
+			anchor={{ ...anchor, y: anchor.y + 7 * (i + 1) }}
+			color="white"
+			{portal}
+		/>
+	{/each}
+{/if}
 <!-- </g> -->

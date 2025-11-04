@@ -7,7 +7,17 @@ export type SphereConfig = {
 	center: Point3;
 };
 
-export type SurfaceGeometryConfig = SphereConfig;
+export type CapsuleConfig = {
+	type: 'CapsuleConfig';
+	radius: number;
+	center: Point3;
+	height: number;
+	capSegments: number;
+	radialSegments: number;
+	heightSegments: number;
+};
+
+export type SurfaceGeometryConfig = SphereConfig | CapsuleConfig;
 
 export type SurfaceConfig = SurfaceGeometryConfig & {
 	transform: TransformConfig | 'inherit';

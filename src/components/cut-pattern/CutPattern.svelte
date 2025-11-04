@@ -42,7 +42,6 @@
 			/>
 
 			{#if $viewControlStore.showGlobuleGeometry.any}
-				<circle cx={100} cy={100} r={20} />
 				{#each $superGlobulePatternStore.superGlobulePattern?.bandPatterns || [] as band, index}
 					<BandComponent {band} {index} showLabel>
 						{#if band.projectionType === 'patterned'}

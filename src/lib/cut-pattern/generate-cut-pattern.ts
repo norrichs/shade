@@ -59,6 +59,14 @@ import { generateUnitFlowerOfLifeTriangle } from '$lib/patterns/unit-pattern/uni
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-expect-error
 import outline from 'svg-path-outline';
+import {
+	getBandTriangleEdges,
+	getBandTrianglePoints
+} from '$lib/projection-geometry/generate-projection';
+import type {
+	ProjectionAddress_Band,
+	ProjectionAddress_FacetEdge
+} from '$lib/projection-geometry/types';
 
 export const expandStroke = (rawPathString?: string, strokeWidth?: number) => {
 	if (!rawPathString) {
@@ -269,6 +277,22 @@ export const generateBandPatterns = (
 				// 				console.debug(`**********************************
 				// ** Patterned Pattern - band: ${i}  **
 				// **********************************`);
+				const edges = getBandTriangleEdges(flatBand.orientation);
+				const startPartner: ProjectionAddress_FacetEdge | undefined =
+					flatBand.facets[0].meta?.[edges[0].base].partner;
+				const endPartner: ProjectionAddress_FacetEdge | undefined =
+					flatBand.facets[flatBand.facets.length - 1].meta?.[edges[1].second].partner;
+				const startPartnerBand: ProjectionAddress_Band | undefined = startPartner
+					? {
+							projection: startPartner.projection,
+							tube: startPartner.tube,
+							band: startPartner.band
+					  }
+					: undefined;
+				const endPartnerBand: ProjectionAddress_Band | undefined = endPartner
+					? { projection: endPartner.projection, tube: endPartner.tube, band: endPartner.band }
+					: undefined;
+
 				const bandPattern = {
 					svgPath: '',
 					facets: flatBand.facets.map((facet, i) => {
@@ -277,14 +301,11 @@ export const generateBandPatterns = (
 							svgTransform: deriveTransforms(facet.triangle, i),
 							triangle: facet.triangle.clone()
 						};
-
 						return pattern;
-					})
+					}),
+					meta: { startPartnerBand, endPartnerBand }
 				};
-				// console.debug(
-				// 	'  prototype:',
-				// 	parsePathString(bandPattern.facets[0].svgPath).map((seg: PathSegment) => roundPathSegments(seg))
-				// );
+
 				// Convert prototype facets deformed by transforms into new svg paths
 				const transformedFacets: PathSegment[][] = [];
 				bandPattern.facets.forEach((facet) => {
@@ -305,6 +326,7 @@ export const generateBandPatterns = (
 				return bandPattern;
 			})
 		};
+		console.debug('patternedPattern', patternedPattern);
 		return patternedPattern;
 	}
 };
@@ -822,8 +844,7 @@ export const applyStrokeWidth = (
 	bands: BandCutPattern[],
 	{ dynamicStroke, dynamicStrokeMax, dynamicStrokeMin }: object & DynamicStrokeConfig
 ): BandCutPattern[] => {
-
-	let patternBands = [...bands]
+	let patternBands = [...bands];
 	const widthVariesByBand = true;
 
 	let maxValue: number;
@@ -870,7 +891,7 @@ export const applyStrokeWidth = (
 			}));
 		}
 	} else {
-		console.debug({dynamicStroke})
+		console.debug({ dynamicStroke });
 	}
 	return patternBands;
 };

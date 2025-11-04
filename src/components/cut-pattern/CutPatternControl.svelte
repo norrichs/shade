@@ -8,7 +8,8 @@
 	import PanControl from './PanControl.svelte';
 
 	let labelScale = 0.1;
-	let labelAngle = 0;
+	let labelAngle = $patternConfigStore.tiledPatternConfig.labels?.angle ?? 0;
+	
 	let rangeTubes: ProjectionRange['tubes'] = $patternConfigStore.patternViewConfig.range?.tubes;
 	let rangeBands: ProjectionRange['bands'] = $patternConfigStore.patternViewConfig.range?.bands;
 	let rangeFacets: ProjectionRange['facets'] = $patternConfigStore.patternViewConfig.range?.facets;
@@ -20,43 +21,13 @@
 		rangeBands?: ProjectionRange['bands'] | undefined,
 		rangeFacets?: ProjectionRange['facets'] | undefined
 	) => {
-		console.debug(
-			'updateStore preupdate',
-			$patternConfigStore.patternViewConfig.range.tubes,
-			rangeTubes
-		);
-		console.debug(
-			'updateStore preupdate',
-			$patternConfigStore.patternViewConfig.range.bands,
-			rangeBands
-		);
-		console.debug(
-			'updateStore preupdate',
-			$patternConfigStore.patternViewConfig.range.facets,
-			rangeFacets
-		);
-
+		
 		$patternConfigStore.patternViewConfig.range = {
 			tubes: rangeTubes,
 			bands: rangeBands,
 			facets: rangeFacets
 		};
 
-		console.debug(
-			'updateStore postupdate',
-			$patternConfigStore.patternViewConfig.range.tubes,
-			rangeTubes
-		);
-		console.debug(
-			'updateStore postupdate',
-			$patternConfigStore.patternViewConfig.range.bands,
-			rangeBands
-		);
-		console.debug(
-			'updateStore postupdate',
-			$patternConfigStore.patternViewConfig.range.facets,
-			rangeFacets
-		);
 
 		if (!$patternConfigStore.tiledPatternConfig.labels) {
 			$patternConfigStore.tiledPatternConfig.labels = { scale: labelScale, angle: labelAngle };
@@ -64,7 +35,7 @@
 		}
 		const newLabelParams: { scale: number; angle: number } = {
 			scale: 0.1,
-			angle: 0
+			angle: Math.PI
 		};
 		if (!isClose(scale, $patternConfigStore.tiledPatternConfig.labels.scale)) {
 			newLabelParams.scale = labelScale;

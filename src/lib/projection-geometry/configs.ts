@@ -13,17 +13,28 @@ import type {
 	CurveIndex,
 	VerticesConfig,
 	TransformConfig,
-	ProjectionCurveSampleMethod
+	ProjectionCurveSampleMethod,
+	CapsuleConfig
 } from './types';
 
 const defaultSphereConfig: SphereConfig = {
 	type: 'SphereConfig',
-	radius: 280,
-	center: { x: 0, y: 0, z: 0 }
+	radius: 200,
+	center: { x: 0.001, y: 0.001, z: 0.001 }
 };
 
+const defaultCapsuleConfig: CapsuleConfig = {
+	type: 'CapsuleConfig',
+	radius: 200,
+	center: { x: 0.001, y: 0.001, z: 0.001 },
+	height: 400,
+	capSegments: 10,
+	radialSegments: 20,
+	heightSegments: 1
+}
+
 const defaultSurfaceConfig: SurfaceConfig = {
-	...defaultSphereConfig,
+	...defaultCapsuleConfig,
 	transform: 'inherit'
 };
 
@@ -81,17 +92,17 @@ const defaultEdgeCurve: BezierConfig[] = [
 	}
 ];
 const defaultEdgeSampleMethod: CurveSampleMethod = { method: 'divideCurvePath', divisions: 4};
-const defaultEdgeCurveConfig: EdgeCurveConfig = {
+export const defaultEdgeCurveConfig: EdgeCurveConfig = {
 	curves: secondEdgeCurve,
 	// curves: asymmetricEdgeCurve,
 	sampleMethod: defaultEdgeSampleMethod// { method: 'manualDivisions', divisions: 6, divisionsArray: [0.27, 0.4, 0.5, 0.6, 0.73] } //, divisionsArray: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9] }
 };
 
-const secondEdgeCurveConfig: EdgeCurveConfig = {
+export const secondEdgeCurveConfig: EdgeCurveConfig = {
 	curves: secondEdgeCurve,
 	sampleMethod:  defaultEdgeSampleMethod,//{ method: 'manualDivisions', divisions: 5, divisionsArray: [0.25, 0.5, 0.75, 0.9] }
 };
-const defaultCrossSection: CrossSectionConfig = {
+export const defaultCrossSection: CrossSectionConfig = {
 	curves: [
 		{
 			type: 'BezierConfig',
@@ -169,7 +180,7 @@ const pIcosohedron: VerticesConfig = [
 // ];
 
 const p60Dodeca: VerticesConfig = [
-	{ x: 0, y: 0, z: 140.12585 },
+	{ x: 0.00001, y: 0, z: 140.12585 },
 
 	{ x: 0, y: 85.06508, z: 111.35164 },
 	{ x: 80.9017, y: 26.28656, z: 111.35164 },
@@ -210,7 +221,7 @@ const p60Dodeca: VerticesConfig = [
 	{ x: 0, y: 0, z: -140.12585 }
 ];
 
-const defaultEdgeConfig = {
+export const defaultEdgeConfig = {
 	vertex0: undefined,
 	widthCurve: 0,
 	crossSectionCurve: 0,
@@ -1105,6 +1116,8 @@ const projectorConfigs: {
 		}
 	}
 };
+
+
 
 const defaultBandConfig: ProjectionBandConfig = {
 	orientation: 'axial-right',

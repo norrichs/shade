@@ -10,6 +10,7 @@ import type {
 } from '$lib/types';
 import { average, getCubicBezierCurvePath, getIntersectionOfLines, getVector3 } from '$lib/util';
 import {
+	CapsuleGeometry,
 	CurvePath,
 	Matrix4,
 	Mesh,
@@ -22,6 +23,7 @@ import {
 } from 'three';
 import type {
 	BaseProjectionConfig,
+	CapsuleConfig,
 	CrossSectionConfig,
 	CrossSectionScaling,
 	Edge,
@@ -54,8 +56,6 @@ import {
 	getTrianglePointAsKVFromTriangleEdge,
 	getTrianglePointFromTriangleEdge
 } from '$lib/cut-pattern/generate-pattern';
-
-
 
 export const preparePolygonConfig = (
 	polygonConfig: PolygonConfig<undefined, number, number, number>,
@@ -137,6 +137,12 @@ export const generateSphereMesh = ({ radius }: SurfaceConfig) => {
 	return sphereMesh;
 };
 
+export const generateCapsuleMesh = ({ radius, height, capSegments, radialSegments, heightSegments }: CapsuleConfig) => {
+	const capsuleGeometry = new CapsuleGeometry(radius, height, capSegments,radialSegments);
+	const capsuleMesh = new Mesh(capsuleGeometry, materials.default);
+	return capsuleMesh;
+};
+
 export const generateSurface = (cfg: SurfaceConfig) => {
 	if (cfg.transform === 'inherit') {
 		throw new Error('generateSurface - surface transform should not be "inherit"');
@@ -146,6 +152,9 @@ export const generateSurface = (cfg: SurfaceConfig) => {
 	if (cfg.type === 'SphereConfig') {
 		const sphereMesh = generateSphereMesh(cfg);
 		surface.add(sphereMesh);
+	} else if (cfg.type === 'CapsuleConfig') {
+		const capsuleMesh = generateCapsuleMesh(cfg);
+		surface.add(capsuleMesh);
 	}
 	const transformMatrix = getMatrix4(cfg.transform);
 	surface.applyMatrix4(transformMatrix);
@@ -283,10 +292,10 @@ export const mapPointsToTriangle = <V extends Vector2 | Vector3>(
 	return mappedPoints;
 };
 
-const MANUAL_EDGE_DIVISIONS = [0.18, 0.38, 0.65]
+const MANUAL_EDGE_DIVISIONS = [0.18, 0.38, 0.65];
 
 const getManualPoints = (curvePath: CurvePath<Vector2>, divisionsArray: number[]): Vector2[] => {
-	if (divisionsArray.some(d => d <= 0 || d >= 1)) {
+	if (divisionsArray.some((d) => d <= 0 || d >= 1)) {
 		throw new Error('getManualPoints, divisions must be between 0 and 1');
 	}
 	const vectors = [0, ...divisionsArray, 1].map((t) => {
@@ -295,12 +304,15 @@ const getManualPoints = (curvePath: CurvePath<Vector2>, divisionsArray: number[]
 	return vectors;
 };
 
-
-export const getPoints = (curveConfigs: BezierConfig[], sampleMethod: ProjectionCurveSampleMethod): Vector2[] => {
+export const getPoints = (
+	curveConfigs: BezierConfig[],
+	sampleMethod: ProjectionCurveSampleMethod
+): Vector2[] => {
 	const curvePath = getCubicBezierCurvePath(curveConfigs);
-	const vectors = sampleMethod.method === 'manualDivisions'
-		? getManualPoints(curvePath, sampleMethod.divisionsArray)
-		: curvePath.getSpacedPoints(sampleMethod.divisions);
+	const vectors =
+		sampleMethod.method === 'manualDivisions'
+			? getManualPoints(curvePath, sampleMethod.divisionsArray)
+			: curvePath.getSpacedPoints(sampleMethod.divisions);
 	return vectors;
 };
 
@@ -507,7 +519,7 @@ const generateProjectionBands = (
 					})
 				);
 			}
-			bands.push({ orientation: bandOrientation, facets, visible: true });
+			bands.push({ orientation: bandOrientation, facets, visible: true, address: bandAddress });
 		}
 	} else if (projectOrientation === 'circumferential') {
 		for (let s = 0; s < sections.length - 1; s++) {
@@ -605,6 +617,10 @@ const sortEdges = (
 	const sortedAndMapped: ProjectionEdge[] = edgeMap.map(({ polygonIndex, edgeIndex }) => {
 		return projection.polygons[polygonIndex].edges[edgeIndex];
 	});
+	if (sortedAndMapped.length % 2 !== 0) {
+		console.error({sortedAndMapped, projectionConfig, projection})
+		throw new Error('sortedEdges length must be even');
+	}
 	return sortedAndMapped;
 };
 
@@ -615,11 +631,12 @@ export const generateTubeBands = (
 ): { tubes: Tube[] } => {
 	const tubes: Omit<Tube, 'partners'>[] = [];
 	const sortedEdges = sortEdges(projectionConfig, projection);
+
 	const { orientation, tubeSymmetry } = projectionConfig.bandConfig;
 
 	for (let i = 0; i < sortedEdges.length; i += 2) {
 		const tubeAddress = { ...projectionAddress, tube: i / 2 };
-		
+
 		// Assign tube addresses to the edges
 		sortedEdges[i].tubeAddress = tubeAddress;
 		sortedEdges[i + 1].tubeAddress = tubeAddress;
@@ -758,7 +775,6 @@ const getFacetEdgeMeta = (address: ProjectionAddress_Facet, tubes: Tube[]): Face
 	// const pSecond = getEdge('second', f, partnerBandOrientation);
 	const pOuter = getEdge('outer', f, partnerBandOrientation);
 
-
 	if (isFirstFacet) {
 		if (!facet.meta) throw Error('end facet should already have end partner in meta');
 		edgeMeta[base].partner = { ...facet.meta[base].partner };
@@ -802,7 +818,6 @@ const matchTubeEnds = (tubes: Tube[]) => {
 			})
 		)
 	);
-
 	tubes.forEach((tube, t) =>
 		tube.bands.forEach((band, b) => {
 			const firstFacet = band.facets[0];
@@ -980,7 +995,6 @@ export const getSections = (
 	return sections;
 };
 
-
 const Z_AXIS = new Vector3(0, 0, 1);
 export const getCrossSectionPath = (
 	address: ProjectionAddress_Tube,
@@ -988,8 +1002,6 @@ export const getCrossSectionPath = (
 	sectionIndex?: number
 ): string => {
 	const sections = getSections(address, projections);
-	console.debug('getCrossSectionPath', { address, sectionIndex, projections, sections });
-
 
 	const tube = projections[address.projection].tubes[address.tube];
 	if (!sectionIndex) sectionIndex = Math.ceil(tube.bands[0].facets.length / 4);

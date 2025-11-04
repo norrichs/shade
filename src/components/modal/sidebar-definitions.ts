@@ -2,6 +2,7 @@ import type { ComponentType, SvelteComponent } from 'svelte';
 import CrossSection from './editor/CrossSection.svelte';
 import EdgeCurve from './editor/EdgeCurve.svelte';
 import Polyhedra from './editor/Polyhedra.svelte';
+import Surface from './editor/Surface.svelte';
 
 export type FloaterContent = {
   shortTitle: string;
@@ -34,6 +35,14 @@ export const projectionConfigs: SidebarDefinition = new Map([
       shortTitle: 'Ph',
       title: 'Polyhedra',
       content: Polyhedra
+    }
+  ],
+  [
+    `Surface`,
+    {
+      shortTitle: "Su",
+      title: "Surface",
+      content: Surface
     }
   ]
 ]);

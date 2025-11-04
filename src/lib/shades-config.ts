@@ -461,7 +461,7 @@ const defaultTiledPatternConfig = (): TiledPatternConfig => {
 		...tiledPatternConfigs[pattern],
 		labels: {
 			scale: 0.1,
-			angle: 0
+			angle: Math.PI
 		}
 	};
 };
@@ -519,7 +519,7 @@ export const defaultPatternConfig = (): PatternConfig => ({
 });
 
 export const defaultPatternViewConfig = (): PatternViewConfig => ({
-	showQuads: true,
+	showQuads: false,
 	showTriangles: false,
 	width: 800,
 	height: 600,

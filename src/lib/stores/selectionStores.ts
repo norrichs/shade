@@ -227,6 +227,8 @@ export const addressIsInArray = (
 	return arr.some((a) => a && concatAddress_Facet(a) === a0str);
 };
 
+type AddressFormat = 'ptbf' | 'ptb' | 'pt' | 'tbf' | 'tb' | 't' | 'b' | 'f';
+
 const isProjectionAddress_Facet = (a: ProjectionAddress): a is ProjectionAddress_Facet =>
 	isProjectionAddress_Band(a) && Object.hasOwn(a, 'facet');
 const isProjectionAddress_Band = (a: ProjectionAddress): a is ProjectionAddress_Band =>
@@ -236,12 +238,57 @@ const isProjectionAddress_Tube = (a: ProjectionAddress): a is ProjectionAddress_
 const isProjectionAddress_Projection = (a: ProjectionAddress): a is ProjectionAddress_Projection =>
 	Object.hasOwn(a, 'projection');
 
-export const concatAddress_Facet = (a: ProjectionAddress_Facet) => {
-	return `p${a.projection}t${a.tube}b${a.band}f${a.facet}`;
+export const concatAddress_Facet = (a: ProjectionAddress_Facet, format: AddressFormat = 'ptbf') => {
+	switch (format) {
+		case 'tbf':
+			return `t${a.tube}b${a.band}f${a.facet}`;
+		case 'tb':
+			return `t${a.tube}b${a.band}`;
+		case 't':
+			return `t${a.tube}`;
+		case 'b':
+			return `b${a.band}`;
+		case 'f':
+			return `f${a.facet}`;
+		case 'ptbf':
+		default:
+			return `p${a.projection}t${a.tube}b${a.band}f${a.facet}`;
+	}
 };
-export const concatAddress_Band = (a: ProjectionAddress_Band) => {
-	return `p${a.projection}t${a.tube}b${a.band}`;
+export const concatAddress_Band = (a: ProjectionAddress_Band, format: AddressFormat = 'ptb') => {
+	switch (format) {
+		case 'tb':
+			return `t${a.tube}b${a.band}`;
+		case 't':
+			return `t${a.tube}`;
+		case 'b':
+			return `b${a.band}`;
+		case 'ptb':
+		default:
+			return `p${a.projection}t${a.tube}b${a.band}`;
+	}
 };
-export const concatAddress_Tube = (a: ProjectionAddress_Tube) => {
-	return `p${a.projection}t${a.tube}`;
+export const concatAddress_Tube = (a: ProjectionAddress_Tube, format: AddressFormat = 't') => {
+	switch (format) {
+		case 't':
+			return `t${a.tube}`;
+		case 'pt':
+		default:
+			return `p${a.projection}t${a.tube}`;
+	}
 };
+
+export const concatAddress = (a: ProjectionAddress | undefined, format: AddressFormat = 'ptbf'): string => {
+	if (!a) return '';
+	if (isProjectionAddress_Facet(a)) {
+		return concatAddress_Facet(a, format);
+	}
+	if (isProjectionAddress_Band(a)) {
+		return concatAddress_Band(a, format);
+	}
+	if (isProjectionAddress_Tube(a)) {
+		return concatAddress_Tube(a, format);
+	}
+	return '';
+};
+

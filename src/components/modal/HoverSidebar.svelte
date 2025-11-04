@@ -50,8 +50,9 @@
 	nav {
 		background-color: transparent;
 		position: fixed;
-		top: 0;
-		right: 0;
+		top: 50px;
+		right: 0px;
+		bottom: 0px;
 		height: 100%;
 		width: 30px;
 		display: flex;
