@@ -103,8 +103,8 @@
 
 		<ColorMapped
 			onClick={undefined}
-			geometry={geometry.polygons?.slice(0,32)}
-			groupSizeMap={[1, 5, 10, 10, 10, 10, 5, 5]}
+			geometry={geometry.polygons}
+			groupSizeMap={[1, 130, 5, 5, 5, 5, 5, 5, 5, 5]}
 			materials={materials.numbered}
 		/>
 

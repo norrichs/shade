@@ -87,6 +87,8 @@ export type TransformConfig = {
 	rotate: Point3;
 };
 
+export type PolyhedronConfig_Initial = PolyhedronConfig<undefined, VertexIndex, CurveIndex, CurveIndex>;
+
 export type PolyhedronConfig<
 	S extends undefined | Point3,
 	T extends VertexIndex | Point3,

@@ -653,8 +653,8 @@ export const generateTubeBands = (
 
 		tubes[i / 2] = tube;
 	}
-	matchTubeEnds(tubes);
-	matchFacets(tubes);
+	// matchTubeEnds(tubes);
+	// matchFacets(tubes);
 	return { tubes: tubes as Tube[] };
 };
 

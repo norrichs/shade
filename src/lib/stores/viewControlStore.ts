@@ -28,7 +28,7 @@ const defaultViewControls = (): ViewControls => ({
 		projection: false,
 		sections: false,
 		bands: false,
-		facets: true
+		facets: false
 	},
 	showGlobuleGeometry: {
 		any: false

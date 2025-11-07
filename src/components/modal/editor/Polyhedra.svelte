@@ -1,22 +1,11 @@
 <script lang="ts">
 	import { getCrossSectionPath } from '$lib/projection-geometry/generate-projection';
 
-	import type {
-		CrossSectionConfig,
-		ProjectionCurveSampleMethod
-	} from '$lib/projection-geometry/types';
 	import { superConfigStore, superGlobuleStore } from '$lib/stores';
-	import NumberInput from '../../controls/super-control/NumberInput.svelte';
-	import Button from '../../design-system/Button.svelte';
 	import LabeledControl from './LabeledControl.svelte';
-	import { endPointsInRange, endPointsZeroX, insertPoint, neighborPointMatch } from './path-editor';
-	import PathEditor from './PathEditor.svelte';
 	import Container from './Container.svelte';
 	import Editor from './Editor.svelte';
-	import { polyhedronConfigs } from '$lib/projection-geometry/polyhedra-configs';
-
-	export let editCurve = true;
-	export let sectionIndex = 0;
+	import { polyhedronConfigs } from './polyhedra-configs';
 
 
 	const handleChangePolyhedron = (event: Event) => {
@@ -31,11 +20,6 @@
 
 	console.debug($superConfigStore.projectionConfigs[0].projectorConfig.polyhedron.name);
 
-	$: crossSectionPath = getCrossSectionPath(
-		{ projection: 0, tube: 0 },
-		$superGlobuleStore.projections,
-		sectionIndex
-	);
 </script>
 
 <Editor>
