@@ -152,7 +152,6 @@ const getEditableCrossSection = ({
 		const vectors = curveConfig.points.map((p) => new Vector2(p.x * xScale, p.y * yScale));
 		curves.add(new CubicBezierCurve(...vectors));
 	});
-	console.debug('getEditableCrossSection', { crossSectionConfig, yScale, xScale, curves });
 
 	return { curves };
 };

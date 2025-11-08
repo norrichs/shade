@@ -47,10 +47,6 @@
 		projectionConfigs: [projectionConfig]
 	} = $superConfigStore;
 
-	const getFacet = (event: any) => {
-		console.debug('getFacet', { event });
-	};
-
 	const getNormalIndicator = (
 		{ address }: { address: ProjectionAddress_Facet },
 		store: typeof $superGlobuleStore

@@ -7,9 +7,6 @@ import {
 } from '../generate-polyhedra';
 import type { PolyhedronConfig, VertexIndex, CurveIndex } from '../types';
 
-console.debug(
-	'--------------------------------doublyTruncatedIcosohedron--------------------------------'
-);
 const doublyTruncatedIcosohedronXYZString = `-0.4920297 -0.0325608 -2.32743835
 -0.41719913 -0.26286554 -2.32743835
 -0.37892163 0.31555003 -2.32743835
@@ -796,9 +793,5 @@ const doublyTruncatedIcosohedron: PolyhedronConfig<undefined, VertexIndex, Curve
 		vertices,
 		transform: 'inherit'
 	};
-
-console.debug(
-	'xxxxxx----------------------------doublyTruncatedIcosohedron--------------------------------'
-);
 
 export default doublyTruncatedIcosohedron;

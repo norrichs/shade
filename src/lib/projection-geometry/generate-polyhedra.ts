@@ -73,7 +73,6 @@ export const getPolarVertices = (
 	if (polarVertices.some((v) => v.theta < 0)) {
 		throw new Error('Some theta values are negative');
 	}
-	console.debug('getPolarVertices', polarVertices);
 	return polarVertices;
 };
 
@@ -148,12 +147,6 @@ export const getPolygonEdgesFromSequence = ({
 	const { sequence } = row;
 	let edges: EdgeConfig<undefined, number, number, number>[] = [];
 	sequence.forEach(([levelIndex, pointIndex]) => {
-		if (radialSymmetry === 3) {
-			// console.debug('getPolygonEdgesFromSequence', levelIndex, {
-			// 	levelIndex,
-			// 	level: levels[levelIndex]
-			// });
-		}
 		const pointIndexOffset = polygonIndex * (levels[levelIndex].length / row.count); // 5 is the radial symmetry.  Some rows have 5 points, some 10
 
 		let actualPointIndex = pointIndex + pointIndexOffset;
@@ -1089,7 +1082,6 @@ export function convertXYZtoVertices(
 	vertices = vertices.sort((a, b) => {
 		return a.z - b.z;
 	});
-	console.debug({ vertices });
 	return vertices;
 }
 
@@ -1135,8 +1127,6 @@ export const generatePolygonConfigs = ({
 			}
 		});
 	}
-
-	console.debug({ levels });
 
 	let polygons: PolygonConfig<undefined, VertexIndex, CurveIndex, CurveIndex>[] = [];
 

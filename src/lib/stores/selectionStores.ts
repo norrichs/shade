@@ -141,7 +141,6 @@ export const selectedProjectionGeometry = derived(
 
 				if (panel) {
 					const edgesMeta = panel.meta.edges;
-					console.debug({ edgesMeta });
 					if (edgesMeta?.ab) {
 						partners.add(edgesMeta.ab.partner);
 					}
@@ -278,7 +277,10 @@ export const concatAddress_Tube = (a: ProjectionAddress_Tube, format: AddressFor
 	}
 };
 
-export const concatAddress = (a: ProjectionAddress | undefined, format: AddressFormat = 'ptbf'): string => {
+export const concatAddress = (
+	a: ProjectionAddress | undefined,
+	format: AddressFormat = 'ptbf'
+): string => {
 	if (!a) return '';
 	if (isProjectionAddress_Facet(a)) {
 		return concatAddress_Facet(a, format);
@@ -291,4 +293,3 @@ export const concatAddress = (a: ProjectionAddress | undefined, format: AddressF
 	}
 	return '';
 };
-

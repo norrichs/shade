@@ -7,7 +7,10 @@ export type ProjectionRange = {
 	facets?: number | [number] | [number, number];
 };
 
-const getIndices = (range?: number | [number] | [number, number], naturalRange: [number, number] = [0, 1]) => {
+const getIndices = (
+	range?: number | [number] | [number, number],
+	naturalRange: [number, number] = [0, 1]
+) => {
 	if (!range) return naturalRange;
 	return typeof range === 'number' ? [range] : range;
 };
@@ -16,7 +19,6 @@ export const sliceProjectionPanelPattern = (
 	projectionPanelPattern: ProjectionPanelPattern,
 	{ tubes, bands, facets }: ProjectionRange = {}
 ): ProjectionPanelPattern => {
-	console.debug({ tubes, bands, facets });
 	const sliced = {
 		...projectionPanelPattern,
 		tubes: projectionPanelPattern.tubes.slice(...getIndices(tubes)).map((tube) => ({
@@ -37,14 +39,18 @@ export const sliceProjectionCutPattern = (
 	const tubeCount = patternTubes.length;
 	const bandCount = patternTubes[0].bands.length;
 	const facetCount = patternTubes[0].bands[0].facets.length;
-	console.debug('sliceProjectionCutPattern', { tubes, bands, facets,tubeCount, bandCount, facetCount });
-	const slicedTubes: TubeCutPattern[] = patternTubes.slice(...getIndices(tubes, [0, tubeCount])).map((tube) => ({
+
+	const slicedTubes: TubeCutPattern[] = patternTubes
+		.slice(...getIndices(tubes, [0, tubeCount]))
+		.map((tube) => ({
 			...tube,
 			bands: tube.bands
 				.slice(...getIndices(bands, [0, bandCount]))
-				.map((band) => ({ ...band, facets: band.facets.slice(...getIndices(facets, [0, facetCount])) }))
-	}))
-	console.debug('slicedProjectionCutPattern', { slicedTubes });
+				.map((band) => ({
+					...band,
+					facets: band.facets.slice(...getIndices(facets, [0, facetCount]))
+				}))
+		}));
 
 	return slicedTubes;
 };

@@ -23,11 +23,6 @@
 		focused: 'rebeccapurple'
 	};
 
-	console.debug('BandComponent', {
-		band,
-		globuleBand: $superGlobuleStore.projections[0].tubes[band.address.tube].bands[band.address.band]
-	});
-
 	let color = colors.default;
 	let isFocused = false;
 	let isHovered = false;
@@ -81,7 +76,7 @@
 	<slot />
 	{#if showLabel}
 		<PatternLabel
-		  id={`band-${band.id}`}
+			id={`band-${band.id}`}
 			{color}
 			value={index}
 			radius={20}
@@ -97,7 +92,7 @@
 					? [` > ${concatAddress(band.meta?.endPartnerBand, 'tb')}`]
 					: [])
 			]}
-			portal={{target: 'label-text-container', transform: `translate(${origin.x} ${origin.y})`}}
+			portal={{ target: 'label-text-container', transform: `translate(${origin.x} ${origin.y})` }}
 		/>
 	{/if}
 </g>

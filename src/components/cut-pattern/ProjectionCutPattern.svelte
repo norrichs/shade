@@ -30,7 +30,7 @@
 
 	let filteredTubes: TubeCutPattern[] = [];
 	let origins: { tubes: { bands: Vector3[] }[] } = { tubes: [{ bands: [] }] };
-	console.debug('ProjectionCutPattern', projectionPattern);
+
 
 	const getCumulativeOrigins = (tubes: TubeCutPattern[], gap: number = 20) => {
 		const cumulativeOrigin = new Vector3(0, 0, 0);
@@ -44,7 +44,7 @@
 				})
 			}))
 		};
-		console.debug('origins', { origins });
+
 		return origins;
 	};
 

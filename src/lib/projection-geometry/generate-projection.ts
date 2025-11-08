@@ -137,8 +137,14 @@ export const generateSphereMesh = ({ radius }: SurfaceConfig) => {
 	return sphereMesh;
 };
 
-export const generateCapsuleMesh = ({ radius, height, capSegments, radialSegments, heightSegments }: CapsuleConfig) => {
-	const capsuleGeometry = new CapsuleGeometry(radius, height, capSegments,radialSegments);
+export const generateCapsuleMesh = ({
+	radius,
+	height,
+	capSegments,
+	radialSegments,
+	heightSegments
+}: CapsuleConfig) => {
+	const capsuleGeometry = new CapsuleGeometry(radius, height, capSegments, radialSegments);
 	const capsuleMesh = new Mesh(capsuleGeometry, materials.default);
 	return capsuleMesh;
 };
@@ -354,6 +360,7 @@ export const generateProjection = ({
 	projector,
 	projectionConfig
 }: GenerateProjectionProps) => {
+	const startTime = performance.now();
 	const center = getVector3(projectionConfig.surfaceConfig.center) as Vector3;
 
 	const projection: Projection = {
@@ -424,6 +431,14 @@ export const generateProjection = ({
 		}),
 		address: { projection: 0 }
 	};
+
+	const endTime = performance.now();
+	const elapsedSeconds = (endTime - startTime) / 1000;
+	console.log(
+		`--------------------------------generateProjection completed in ${elapsedSeconds.toFixed(
+			3
+		)}s--------------------------------`
+	);
 
 	return projection;
 };
@@ -618,7 +633,7 @@ const sortEdges = (
 		return projection.polygons[polygonIndex].edges[edgeIndex];
 	});
 	if (sortedAndMapped.length % 2 !== 0) {
-		console.error({sortedAndMapped, projectionConfig, projection})
+		console.error({ sortedAndMapped, projectionConfig, projection });
 		throw new Error('sortedEdges length must be even');
 	}
 	return sortedAndMapped;
@@ -640,7 +655,7 @@ export const generateTubeBands = (
 		// Assign tube addresses to the edges
 		sortedEdges[i].tubeAddress = tubeAddress;
 		sortedEdges[i + 1].tubeAddress = tubeAddress;
-		
+
 		const sections = combineSections(sortedEdges[i], sortedEdges[i + 1]);
 		const bands = generateProjectionBands(sections, orientation, tubeAddress, tubeSymmetry);
 		const tube = {
