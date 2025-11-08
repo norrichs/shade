@@ -698,8 +698,12 @@ export const generateTubeBands = (
 
 		tubes[i / 2] = tube;
 	}
-	// matchTubeEnds(tubes);
-	// matchFacets(tubes);
+	try {
+		matchTubeEnds(tubes);
+		matchFacets(tubes);
+	} catch (error) {
+		console.error('error matching tube ends or facets', error);
+	}
 	return { tubes: tubes as Tube[] };
 };
 

@@ -8,6 +8,8 @@
 	export let patternType: string;
 	export let tilingBasis: TilingBasis;
 	export let size = 50;
+
+	$: strokeWidth = size >= 50 ? 2 : 0.5;
 </script>
 
 <button
@@ -25,6 +27,7 @@
 		height={size}
 		active={patternType === $patternConfigStore.tiledPatternConfig.type}
 		{tilingBasis}
+		{strokeWidth}
 	/>
 </button>
 

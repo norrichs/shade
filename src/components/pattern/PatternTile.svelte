@@ -18,7 +18,8 @@
 	export let rows = 1;
 	export let columns = 1;
 	export let active = false;
-
+	export let strokeWidth = 2;	
+	
 	const getPath = (
 		patternType: string,
 		rows: number,
@@ -113,7 +114,7 @@
 			d={tilePath}
 			fill="none"
 			stroke="black"
-			stroke-width="2"
+			stroke-width={strokeWidth}
 			stroke-linejoin="round"
 			stroke-linecap="round"
 		/>
