@@ -363,24 +363,47 @@ export const generateProjection = ({
 	const startTime = performance.now();
 	const center = getVector3(projectionConfig.surfaceConfig.center) as Vector3;
 
+	// Create raycasters once and reuse them for all points (optimization)
+	const edgeRaycaster = new Raycaster(undefined, undefined, undefined, 2000);
+	const curveRaycaster = new Raycaster(undefined, undefined, undefined, 2000);
+	const yDirection = new Vector3();
+	const curveDirection = new Vector3();
+
+	// Object pool for temporary Vector3 calculations (optimization)
+	const xDirection = new Vector3();
+	const nearestPoint = new Vector3();
+	const tempVec = new Vector3();
+
+	// Cache for cross-section definition points (optimization)
+	// Many edges share the same cross-section config, so cache the normalized points
+	const crossSectionCache = new Map<CrossSectionConfig, Vector2[]>();
+
+	const getCachedCrossSectionPoints = (config: CrossSectionConfig): Vector2[] => {
+		let cached = crossSectionCache.get(config);
+		if (!cached) {
+			cached = normalizePoints(getPoints(config.curves, config.sampleMethod));
+			crossSectionCache.set(config, cached);
+		}
+		return cached;
+	};
+
 	const projection: Projection = {
 		polygons: projector.polygons.map((polygon: Polygon, p) => {
 			return {
 				edges: polygon.edges.map((edge: Edge, e) => {
 					const crossSectionConfig =
 						projectionConfig.projectorConfig.polyhedron.polygons[p].edges[e].crossSectionCurve;
-					const crossSectionDefinitionPoints = normalizePoints(
-						getPoints(crossSectionConfig.curves, crossSectionConfig.sampleMethod)
-					);
+					const crossSectionDefinitionPoints = getCachedCrossSectionPoints(crossSectionConfig);
 					const sectionGeometry = edge.edgePoints.map((p, i) => {
 						const c = edge.curvePoints[i];
 						const int = { edge: new Vector3(), curve: new Vector3() };
 
-						const yDirection = center.clone().addScaledVector(p, 1).normalize();
-						const curveDirection = center.clone().addScaledVector(c, 1).normalize();
+						// Reuse Vector3 objects and raycasters instead of creating new ones
+						yDirection.copy(center).addScaledVector(p, 1).normalize();
+						curveDirection.copy(center).addScaledVector(c, 1).normalize();
 
-						const edgeRaycaster = new Raycaster(center, yDirection, undefined, 2000);
-						const curveRaycaster = new Raycaster(center, curveDirection, undefined, 2000);
+						edgeRaycaster.set(center, yDirection);
+						curveRaycaster.set(center, curveDirection);
 						const edgeIntersections = edgeRaycaster.intersectObject(surface, true);
 						const curveIntersections = curveRaycaster.intersectObject(surface, true);
 
@@ -399,15 +422,15 @@ export const generateProjection = ({
 						int.curve = curveIntersections[0].point.clone();
 						const edgeRay = edgeRaycaster.ray;
 
-						let xDirection: Vector3;
 						let baseScalingLength: number;
 						if (crossSectionConfig.shouldSkewCurve) {
-							xDirection = int.curve.clone().addScaledVector(int.edge, -1).normalize();
+							// Reuse xDirection vector instead of creating new one
+							xDirection.copy(int.curve).addScaledVector(int.edge, -1).normalize();
 							baseScalingLength = int.edge.distanceTo(int.curve);
 						} else {
-							const nearestPoint = new Vector3();
+							// Reuse nearestPoint vector instead of creating new one
 							edgeRay.closestPointToPoint(int.curve, nearestPoint);
-							xDirection = int.curve.clone().addScaledVector(nearestPoint, -1).normalize();
+							xDirection.copy(int.curve).addScaledVector(nearestPoint, -1).normalize();
 							baseScalingLength = edgeRay.distanceToPoint(int.curve);
 						}
 
@@ -434,10 +457,17 @@ export const generateProjection = ({
 
 	const endTime = performance.now();
 	const elapsedSeconds = (endTime - startTime) / 1000;
+	const totalEdges = projection.polygons.reduce((sum, p) => sum + p.edges.length, 0);
+	const cacheHitRate =
+		crossSectionCache.size > 0
+			? (((totalEdges - crossSectionCache.size) / totalEdges) * 100).toFixed(1)
+			: '0.0';
 	console.log(
 		`--------------------------------generateProjection completed in ${elapsedSeconds.toFixed(
 			3
-		)}s--------------------------------`
+		)}s ` +
+			`(${totalEdges} edges, ${crossSectionCache.size} unique cross-sections, ${cacheHitRate}% cache hits)` +
+			`--------------------------------`
 	);
 
 	return projection;

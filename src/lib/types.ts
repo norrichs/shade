@@ -16,6 +16,7 @@ import type { DistributionConfig } from '../components/cut-pattern/distrubute-pa
 import type { ProjectionRange } from './projection-geometry/filters';
 
 export type PatternViewConfig = {
+	showBands: boolean;
 	showQuads: boolean;
 	showTriangles: boolean;
 	showLabels: boolean;

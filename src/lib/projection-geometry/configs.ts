@@ -14,9 +14,8 @@ import type {
 	ProjectionBandConfig,
 	VertexIndex,
 	CurveIndex,
-	TransformConfig,
+	TransformConfig
 } from './types';
-
 
 const projectorConfigs: {
 	[key: string]: ProjectorConfig<undefined, VertexIndex, CurveIndex, CurveIndex>;
@@ -53,7 +52,7 @@ const defaultBandConfig: ProjectionBandConfig = {
 	tubeSymmetry: 'lateral'
 };
 
-const defaultProjectorConfig = projectorConfigs.truncatedDodecahedron;
+const defaultProjectorConfig = projectorConfigs.cube;
 
 const flattenedDefaultTransform: TransformConfig = {
 	translate: { x: 0, y: 0, z: 0 },

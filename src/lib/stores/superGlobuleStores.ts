@@ -74,7 +74,7 @@ export const superGlobulePatternStore = derived(
 		const projection = $superGlobuleStore.projections[0];
 
 		const projectionPattern =
-			showProjectionGeometry.any && showProjectionGeometry.bands
+			showProjectionGeometry.any && showProjectionGeometry.bands && $patternConfigStore.patternViewConfig.showBands
 				? generateProjectionPattern(projection.tubes, $superConfigStore.id, $patternConfigStore)
 				: undefined;
 		// if (isSuperGlobuleProjectionPanelPattern(projectionPattern)) {
@@ -104,14 +104,14 @@ export function isSuperGlobuleProjectionPanelPattern(
 	pattern: SuperGlobulePattern | undefined
 ): pattern is SuperGlobuleProjectionPanelPattern {
 	return (
-		(pattern as SuperGlobuleProjectionPanelPattern).type === 'SuperGlobuleProjectionPanelPattern'
+		!!pattern && (pattern as SuperGlobuleProjectionPanelPattern).type === 'SuperGlobuleProjectionPanelPattern'
 	);
 }
 
 export function isSuperGlobuleProjectionCutPattern(
 	pattern: SuperGlobulePattern | undefined
 ): pattern is SuperGlobuleProjectionCutPattern {
-	return (pattern as SuperGlobuleProjectionCutPattern).type === 'SuperGlobuleProjectionCutPattern';
+	return !!pattern && (pattern as SuperGlobuleProjectionCutPattern).type === 'SuperGlobuleProjectionCutPattern';
 }
 
 export type SuperGlobuleBandPattern = {
