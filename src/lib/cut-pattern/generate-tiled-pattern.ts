@@ -19,9 +19,9 @@ import { patterns } from '$lib/patterns';
 import { getQuadWidth, svgPathStringFromSegments } from '$lib/patterns/utils';
 import { formatAddress } from '$lib/recombination';
 import type {
-	ProjectionAddress_Band,
-	ProjectionAddress_FacetEdge,
-	ProjectionAddress_Tube
+	GlobuleAddress_Band,
+	GlobuleAddress_FacetEdge,
+	GlobuleAddress_Tube
 } from '$lib/projection-geometry/types';
 import {
 	getAllTrianglePoints,
@@ -36,7 +36,7 @@ export const generateTubeCutPattern = ({
 	tiledPatternConfig,
 	pixelScale
 }: {
-	address: ProjectionAddress_Tube;
+	address: GlobuleAddress_Tube;
 	bands: Band[];
 	tiledPatternConfig: TiledPatternConfig;
 	pixelScale: PixelScale;
@@ -129,7 +129,7 @@ export type GenerateTilingProps = {
 	quadBands: Quadrilateral[][];
 	bands: Band[];
 	tiledPatternConfig: TiledPatternConfig;
-	address: Proj;
+	address: GlobuleAddress_Tube | GeometryAddress<BandAddressed>;
 };
 
 export const generateTiling = ({
@@ -181,19 +181,19 @@ export const generateTiling = ({
 
 		const band = bands[bandIndex];
 		const edges = getBandTriangleEdges(band.orientation);
-		const startPartner: ProjectionAddress_FacetEdge | undefined =
+		const startPartner: GlobuleAddress_FacetEdge | undefined =
 			band.facets[0].meta?.[edges[0].base].partner;
-		const endPartner: ProjectionAddress_FacetEdge | undefined =
+		const endPartner: GlobuleAddress_FacetEdge | undefined =
 			band.facets[band.facets.length - 1].meta?.[edges[1].second].partner;
-		const startPartnerBand: ProjectionAddress_Band | undefined = startPartner
+		const startPartnerBand: GlobuleAddress_Band | undefined = startPartner
 			? {
-					projection: startPartner.projection,
+					globule: startPartner.globule,
 					tube: startPartner.tube,
 					band: startPartner.band
 			  }
 			: undefined;
-		const endPartnerBand: ProjectionAddress_Band | undefined = endPartner
-			? { projection: endPartner.projection, tube: endPartner.tube, band: endPartner.band }
+		const endPartnerBand: GlobuleAddress_Band | undefined = endPartner
+			? { globule: endPartner.globule, tube: endPartner.tube, band: endPartner.band }
 			: undefined;
 
 		const cuttablePattern: CutPattern[] = adjustedPatternBand.map((facet, facetIndex) => {

@@ -87,7 +87,12 @@ export type TransformConfig = {
 	rotate: Point3;
 };
 
-export type PolyhedronConfig_Initial = PolyhedronConfig<undefined, VertexIndex, CurveIndex, CurveIndex>;
+export type PolyhedronConfig_Initial = PolyhedronConfig<
+	undefined,
+	VertexIndex,
+	CurveIndex,
+	CurveIndex
+>;
 
 export type PolyhedronConfig<
 	S extends undefined | Point3,
@@ -114,16 +119,18 @@ export type ManualDivisionsConfig =
 	| { divisions: 6; divisionsArray: [number, number, number, number, number] }
 	| { divisions: 7; divisionsArray: [number, number, number, number, number, number] }
 	| { divisions: 8; divisionsArray: [number, number, number, number, number, number, number] }
-	| { divisions: 9; divisionsArray: [number, number, number, number, number, number, number, number] }
-	| { divisions: 10; divisionsArray: [number, number, number, number, number, number, number, number, number] }
-
+	| {
+			divisions: 9;
+			divisionsArray: [number, number, number, number, number, number, number, number];
+	  }
+	| {
+			divisions: 10;
+			divisionsArray: [number, number, number, number, number, number, number, number, number];
+	  };
 
 export type ProjectionCurveSampleMethod =
 	| { method: 'divideCurvePath'; divisions: number }
-	| { method: 'manualDivisions' } & ManualDivisionsConfig
-
-
-
+	| ({ method: 'manualDivisions' } & ManualDivisionsConfig);
 
 export type CrossSectionConfig = {
 	curves: BezierConfig[];
@@ -152,7 +159,7 @@ export type EdgeCurveConfigVector2 = {
 
 export type ProjectionBandConfig = {
 	orientation: FacetOrientation;
-	tubeSymmetry?: 'axial' | 'lateral'
+	tubeSymmetry?: 'axial' | 'lateral';
 };
 
 export type ProjectorConfig<
@@ -206,7 +213,7 @@ export type Tube = {
 	bands: Band[];
 	sections: Section[];
 	orientation: FacetOrientation;
-	address: ProjectionAddress_Tube;
+	address: GlobuleAddress_Tube;
 	// refers to matching points and 'start of tube array', 'start of band'
 	// for: tube = [band0, band1];  band0 = [facet0, facet1, facet2, facet3]; band1 = [facet4, facet5, facet6, facet7]
 	// startStart === facet0, startEnd === facet1, endStart === facet4, endEnd === facet7
@@ -214,10 +221,10 @@ export type Tube = {
 };
 
 export type TubePartnerAddresses = {
-	startStart: [ProjectionAddress_FacetEdge, ProjectionAddress_FacetEdge];
-	startEnd: [ProjectionAddress_FacetEdge, ProjectionAddress_FacetEdge];
-	endStart: [ProjectionAddress_FacetEdge, ProjectionAddress_FacetEdge];
-	endEnd: [ProjectionAddress_FacetEdge, ProjectionAddress_FacetEdge];
+	startStart: [GlobuleAddress_FacetEdge, GlobuleAddress_FacetEdge];
+	startEnd: [GlobuleAddress_FacetEdge, GlobuleAddress_FacetEdge];
+	endStart: [GlobuleAddress_FacetEdge, GlobuleAddress_FacetEdge];
+	endEnd: [GlobuleAddress_FacetEdge, GlobuleAddress_FacetEdge];
 };
 
 // export type Section = {};
@@ -228,51 +235,51 @@ export type ProjectionEdge = {
 		intersections: { edge: Vector3; curve: Vector3 };
 		crossSectionPoints: Vector3[];
 	}[];
-	tubeAddress?: ProjectionAddress_Tube;
+	tubeAddress?: GlobuleAddress_Tube;
 };
 
 export type Projection = {
 	polygons: {
 		edges: ProjectionEdge[];
 	}[];
-	address: ProjectionAddress_Projection;
+	address: GlobuleAddress_Globule;
 };
 
-export type ProjectionAddress =
-	| ProjectionAddress_Projection
-	| ProjectionAddress_Tube
-	| ProjectionAddress_Band
-	| ProjectionAddress_Facet
-	| ProjectionAddress_Quad
-	| ProjectionAddress_FacetEdge;
+export type GlobuleAddress =
+	| GlobuleAddress_Globule
+	| GlobuleAddress_Tube
+	| GlobuleAddress_Band
+	| GlobuleAddress_Facet
+	| GlobuleAddress_Quad
+	| GlobuleAddress_FacetEdge;
 
-export type ProjectionAddress_Projection = {
-	projection: number;
+export type GlobuleAddress_Globule = {
+	globule: number;
 };
 
-export type ProjectionAddress_Tube = ProjectionAddress_Projection & {
+export type GlobuleAddress_Tube = GlobuleAddress_Globule & {
 	tube: number;
 };
 
-export type ProjectionAddress_Band = ProjectionAddress_Tube & {
+export type GlobuleAddress_Band = GlobuleAddress_Tube & {
 	band: number;
 };
 
-export type ProjectionAddress_Quad = ProjectionAddress_Band & {
+export type GlobuleAddress_Quad = GlobuleAddress_Band & {
 	quad: number;
 };
 
-export type ProjectionAddress_Facet = ProjectionAddress_Band & {
+export type GlobuleAddress_Facet = GlobuleAddress_Band & {
 	facet: number;
 };
 
-export type ProjectionAddress_FacetEdge = ProjectionAddress_Facet & {
+export type GlobuleAddress_FacetEdge = GlobuleAddress_Facet & {
 	edge: TriangleEdge;
 };
 
 export type TriangleEdge = `ab` | 'bc' | 'ac';
-export type TriangleEdgePermissive = TriangleEdge | 'ba' | 'cb' | 'ca'
-// TODO:  a mapper is required between configuration and ProjectionAddress
+export type TriangleEdgePermissive = TriangleEdge | 'ba' | 'cb' | 'ca';
+// TODO:  a mapper is required between configuration and GlobuleAddress
 export type TriangleVectorLabel = 'a' | 'b' | 'c';
 export type OrientedTriangleSide = {
 	v0: { label: TriangleVectorLabel; vector: Vector3 };

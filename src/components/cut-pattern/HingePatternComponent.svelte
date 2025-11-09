@@ -68,7 +68,7 @@
 			size={3}
 			offset={{ x: 'center', y: -3.5 }}
 			string={printProjectionAddress(hingePattern.address, {
-				hideProjection: true,
+				hideGlobule: true,
 				hideTube: true
 			})}
 			anchor={{
@@ -80,7 +80,7 @@
 			size={3}
 			offset={{ x: 'center', y: 2.5 }}
 			string={printProjectionAddress(hingePattern.partnerAddress, {
-				hideProjection: true,
+				hideGlobule: true,
 				hideTube: true
 			})}
 			anchor={{
@@ -131,7 +131,7 @@
 		/>
 	{/if}
 	<SvgText
-		string={printProjectionAddress(hingePattern.address, { hideProjection: true, hideTube: true })}
+		string={printProjectionAddress(hingePattern.address, { hideGlobule: true, hideTube: true })}
 		anchor={{
 			x:
 				hingePattern.pattern.hinge[1].x -

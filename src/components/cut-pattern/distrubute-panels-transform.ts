@@ -1,6 +1,6 @@
 import {  getOtherTrianglePointsFromTrianglePoint } from '$lib/cut-pattern/generate-pattern';
 import { getBandTrianglePoints } from '$lib/projection-geometry/generate-projection';
-import type { ProjectionAddress_Facet } from '$lib/projection-geometry/types';
+import type { GlobuleAddress_Facet } from '$lib/projection-geometry/types';
 import type { ProjectionPanelPattern, TrianglePoint, TubePanelPattern } from '$lib/types';
 import { Triangle, Vector3 } from 'three';
 import { radToDeg } from 'three/src/math/MathUtils.js';
@@ -137,7 +137,7 @@ const getSpacedDistribution = (tubes: TubePanelPattern[]) => {
 
 export const getTransform = (
 	distribution: null | ProjectionDistribution,
-	address: ProjectionAddress_Facet
+	address: GlobuleAddress_Facet
 ): string => {
 	const panelDistribution =
 		distribution?.tubes[address.tube].bands[address.band].panels[address.facet];

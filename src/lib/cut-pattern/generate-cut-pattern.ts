@@ -64,8 +64,8 @@ import {
 	getBandTrianglePoints
 } from '$lib/projection-geometry/generate-projection';
 import type {
-	ProjectionAddress_Band,
-	ProjectionAddress_FacetEdge
+	GlobuleAddress_Band,
+	GlobuleAddress_FacetEdge
 } from '$lib/projection-geometry/types';
 
 export const expandStroke = (rawPathString?: string, strokeWidth?: number) => {
@@ -278,19 +278,19 @@ export const generateBandPatterns = (
 				// ** Patterned Pattern - band: ${i}  **
 				// **********************************`);
 				const edges = getBandTriangleEdges(flatBand.orientation);
-				const startPartner: ProjectionAddress_FacetEdge | undefined =
+				const startPartner: GlobuleAddress_FacetEdge | undefined =
 					flatBand.facets[0].meta?.[edges[0].base].partner;
-				const endPartner: ProjectionAddress_FacetEdge | undefined =
+				const endPartner: GlobuleAddress_FacetEdge | undefined =
 					flatBand.facets[flatBand.facets.length - 1].meta?.[edges[1].second].partner;
-				const startPartnerBand: ProjectionAddress_Band | undefined = startPartner
+				const startPartnerBand: GlobuleAddress_Band | undefined = startPartner
 					? {
-							projection: startPartner.projection,
+							globule: startPartner.globule,
 							tube: startPartner.tube,
 							band: startPartner.band
 					  }
 					: undefined;
-				const endPartnerBand: ProjectionAddress_Band | undefined = endPartner
-					? { projection: endPartner.projection, tube: endPartner.tube, band: endPartner.band }
+				const endPartnerBand: GlobuleAddress_Band | undefined = endPartner
+					? { globule: endPartner.globule, tube: endPartner.tube, band: endPartner.band }
 					: undefined;
 
 				const bandPattern = {

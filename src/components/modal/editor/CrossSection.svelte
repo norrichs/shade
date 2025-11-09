@@ -63,7 +63,7 @@
 
 
 	$: crossSectionPath = getCrossSectionPath(
-		{ projection: 0, tube: 0 },
+		{ globule: 0, tube: 0 },
 		$superGlobuleStore.projections,
 		sectionIndex
 	);

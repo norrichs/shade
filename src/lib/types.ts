@@ -3,11 +3,11 @@ import type {
 	BaseProjectionConfig,
 	Polyhedron,
 	Projection,
-	ProjectionAddress_Band,
-	ProjectionAddress_Facet,
-	ProjectionAddress_FacetEdge,
-	ProjectionAddress_Projection,
-	ProjectionAddress_Tube,
+	GlobuleAddress_Band,
+	GlobuleAddress_Facet,
+	GlobuleAddress_FacetEdge,
+	GlobuleAddress_Globule,
+	GlobuleAddress_Tube,
 	TriangleEdge,
 	Tube
 } from './projection-geometry/types';
@@ -308,37 +308,34 @@ export type BandCutPattern = {
 	tagAnchorPoint: Point;
 	tagAngle?: number;
 	projectionType: 'patterned';
-	address: ProjectionAddress_Band;
+	address: GlobuleAddress_Band;
 	meta?: {
-		startPartnerBand: ProjectionAddress_Band;
-		endPartnerBand: ProjectionAddress_Band;
-	}
+		startPartnerBand: GlobuleAddress_Band;
+		endPartnerBand: GlobuleAddress_Band;
+	};
 };
 
 export type TubeCutPattern = {
 	projectionType: 'patterned';
-	address: ProjectionAddress_Tube;
+	address: GlobuleAddress_Tube;
 	bands: BandCutPattern[];
-}
+};
 
 export type ProjectionCutPattern = {
-	address: ProjectionAddress_Projection;
-	tubes: TubeCutPattern[]
-}
-
-
-
+	address: GlobuleAddress_Globule;
+	tubes: TubeCutPattern[];
+};
 
 export type ProjectionPanelPattern = {
 	tubes: TubePanelPattern[];
-	address: ProjectionAddress_Projection;
+	address: GlobuleAddress_Globule;
 };
 export type TubePanelPattern = {
-	address: ProjectionAddress_Tube;
+	address: GlobuleAddress_Tube;
 	bands: BandPanelPattern[];
 };
 export type BandPanelPattern = {
-	address: ProjectionAddress_Band;
+	address: GlobuleAddress_Band;
 	orientation: FacetOrientation;
 	panels: PanelPattern[];
 	bounds?: {
@@ -354,9 +351,9 @@ export type Crease = 'valley' | 'mountain';
 export type PanelEdgeMeta = {
 	cutAngle: number;
 	crease: Crease;
-	partner: ProjectionAddress_FacetEdge;
+	partner: GlobuleAddress_FacetEdge;
 	label?: string;
-	holes?: { location: Vector3, holeDiameter: number, headDiameter: number }[];
+	holes?: { location: Vector3; holeDiameter: number; headDiameter: number }[];
 };
 
 export type BoundingBox = {
@@ -367,17 +364,17 @@ export type BoundingBox = {
 };
 
 export type HingePattern = {
-	address: ProjectionAddress_FacetEdge;
-	partnerAddress: ProjectionAddress_FacetEdge;
+	address: GlobuleAddress_FacetEdge;
+	partnerAddress: GlobuleAddress_FacetEdge;
 	edge: TriangleEdge;
 	bounds: BoundingBox;
 	pattern: {
 		partnerBackFaceTriangle: ThreeTriangle;
 		backfFaceTriangle: ThreeTriangle;
 		registrationPoint: Vector3;
-		outline: Vector3[],
-		hinge: [Vector3, Vector3],
-		holes: { location: Vector3, holeDiameter: number, headDiameter: number, nutDiameter: number }[]
+		outline: Vector3[];
+		hinge: [Vector3, Vector3];
+		holes: { location: Vector3; holeDiameter: number; headDiameter: number; nutDiameter: number }[];
 	};
 };
 
@@ -386,13 +383,13 @@ export type PanelPattern = {
 	tiling: 'triangle';
 	svgPath: string;
 	triangle: ThreeTriangle;
-	address: ProjectionAddress_Facet;
+	address: GlobuleAddress_Facet;
 	meta: {
 		insetTriangle?: ThreeTriangle;
 		backFaceTriangle?: ThreeTriangle;
-		frontFaceRegistrationPoints?: { ab: Vector3, bc: Vector3, ac: Vector3 };
-		backFaceRegistrationPoints?: { ab: Vector3, bc: Vector3, ac: Vector3 };
-		hingePatterns?: HingePattern[]
+		frontFaceRegistrationPoints?: { ab: Vector3; bc: Vector3; ac: Vector3 };
+		backFaceRegistrationPoints?: { ab: Vector3; bc: Vector3; ac: Vector3 };
+		hingePatterns?: HingePattern[];
 		edges: { ab: PanelEdgeMeta; bc: PanelEdgeMeta; ac: PanelEdgeMeta };
 	};
 };
@@ -555,7 +552,7 @@ export type TiledPatternConfig = {
 		skipEdges?: SkipEdges;
 		distributePanels?: boolean;
 		distributionOffset?: number;
-		scaleConfig: PatternScale,
+		scaleConfig: PatternScale;
 		panelHoleConfig?: PanelHoleConfig;
 		distributionConfig?: DistributionConfig;
 	};
@@ -644,14 +641,14 @@ export type MultiFacetTrapTab = {
 // TODO - remove all FacetTab[] = a facet can only have a single attached tab
 
 export type FacetEdgeMeta = {
-	// address: ProjectionAddress_FacetEdge;
-	partner: ProjectionAddress_FacetEdge;
+	// address: GlobuleAddress_FacetEdge;
+	partner: GlobuleAddress_FacetEdge;
 };
 
 export type Facet = {
 	// firstFacet: { [key: string]: FacetEdgeMeta };
 	triangle: ThreeTriangle;
-	address?: ProjectionAddress_Facet;
+	address?: GlobuleAddress_Facet;
 	meta?: {
 		ab: FacetEdgeMeta;
 		bc: FacetEdgeMeta;
@@ -710,7 +707,7 @@ export type Band = {
 	endTab?: FacetTab;
 	selected?: BandSelection;
 	visible?: boolean;
-	address?: GeometryAddress<BandAddressed> | ProjectionAddress_Band;
+	address?: GeometryAddress<BandAddressed> | GlobuleAddress_Band;
 };
 export type BezierConfig = {
 	[key: string]: PointConfig2[] | string;
@@ -1235,7 +1232,7 @@ export type Quadrilateral = {
 	b: Vector3;
 	c: Vector3;
 	d: Vector3;
-}
+};
 
 /*
 	Quadrilateral diagram:

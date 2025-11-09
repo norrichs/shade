@@ -15,7 +15,7 @@
 		BaseProjectionConfig,
 		Polyhedron,
 		Projection,
-		ProjectionAddress_Facet,
+		GlobuleAddress_Facet,
 		Tube
 	} from '$lib/projection-geometry/types';
 	import ColorMapped from './ColorMapped.svelte';
@@ -27,9 +27,9 @@
 		projection?: BufferGeometry;
 		sections?: BufferGeometry;
 		bands?: BufferGeometry[];
-		facets?: { address: ProjectionAddress_Facet; geometry: BufferGeometry }[];
+		facets?: { address: GlobuleAddress_Facet; geometry: BufferGeometry }[];
 	} = {};
-	export let onClick: (event: any, address: ProjectionAddress_Facet) => void;
+	export let onClick: (event: any, address: GlobuleAddress_Facet) => void;
 	let showNormals = false;
 
 	type ProjectionData = {
@@ -48,12 +48,12 @@
 	} = $superConfigStore;
 
 	const getNormalIndicator = (
-		{ address }: { address: ProjectionAddress_Facet },
+		{ address }: { address: GlobuleAddress_Facet },
 		store: typeof $superGlobuleStore
 	) => {
 		const LENGTH = 25;
 		const { triangle } =
-			store.projections[address.projection].tubes[address.tube].bands[address.band].facets[
+			store.projections[address.globule].tubes[address.tube].bands[address.band].facets[
 				address.facet
 			];
 		const normal = new Vector3();
@@ -73,7 +73,7 @@
 	const COLOR_BY_BAND = true;
 
 	const getMaterial = (
-		address: ProjectionAddress_Facet,
+		address: GlobuleAddress_Facet,
 		selectedGeometry: typeof $selectedProjectionGeometry
 	) => {
 		if (!selectedGeometry?.selected) return materials.default;

@@ -34,10 +34,10 @@ import type {
 	Polyhedron,
 	PolyhedronConfig,
 	Projection,
-	ProjectionAddress,
-	ProjectionAddress_Band,
-	ProjectionAddress_Facet,
-	ProjectionAddress_Tube,
+	GlobuleAddress,
+	GlobuleAddress_Band,
+	GlobuleAddress_Facet,
+	GlobuleAddress_Tube,
 	ProjectionConfig,
 	ProjectionCurveSampleMethod,
 	ProjectionEdge,
@@ -452,7 +452,7 @@ export const generateProjection = ({
 				})
 			};
 		}),
-		address: { projection: 0 }
+		address: { globule: 0 }
 	};
 
 	const endTime = performance.now();
@@ -484,7 +484,7 @@ const generateFacetPair = ({
 	sections: Section[];
 	sectionIndex: number;
 	pointIndex: number;
-	bandAddress: ProjectionAddress_Band;
+	bandAddress: GlobuleAddress_Band;
 	facetCount: number;
 	pairOrientation: FacetOrientation;
 }): [Facet, Facet] => {
@@ -539,7 +539,7 @@ const generateFacetPair = ({
 export const generateProjectionBands = (
 	sections: Section[],
 	projectOrientation: FacetOrientation,
-	tubeAddress: ProjectionAddress_Tube,
+	tubeAddress: GlobuleAddress_Tube,
 	tubeSymmetry?: 'lateral' | 'axial'
 ) => {
 	const sectionLength = sections[0].points.length;
@@ -672,7 +672,7 @@ const sortEdges = (
 export const generateTubeBands = (
 	projection: Projection,
 	projectionConfig: ProjectionConfig<undefined, number, number, number>,
-	projectionAddress: ProjectionAddress
+	projectionAddress: GlobuleAddress
 ): { tubes: Tube[] } => {
 	const tubes: Omit<Tube, 'partners'>[] = [];
 	const sortedEdges = sortEdges(projectionConfig, projection);
@@ -790,7 +790,7 @@ export const getBandTrianglePoints = (orientation: FacetOrientation) => {
 	];
 };
 
-const getFacetEdgeMeta = (address: ProjectionAddress_Facet, tubes: Tube[]): Facet['meta'] => {
+const getFacetEdgeMeta = (address: GlobuleAddress_Facet, tubes: Tube[]): Facet['meta'] => {
 	const tube = tubes[address.tube];
 	const bandCount = tube.bands.length;
 	const band = tube.bands[address.band];
@@ -970,10 +970,7 @@ export const isSameVector3 = (v0: Vector3, v1: Vector3, precision = 1 / 10_000) 
 	);
 };
 
-export const makeProjection = (
-	projectionConfig: BaseProjectionConfig,
-	address: ProjectionAddress
-) => {
+export const makeProjection = (projectionConfig: BaseProjectionConfig, address: GlobuleAddress) => {
 	const preparedProjectionConfig = prepareProjectionConfig(projectionConfig);
 
 	const { projectorConfig, surfaceConfig } = preparedProjectionConfig;
@@ -992,24 +989,24 @@ export const makeProjection = (
 };
 
 export const printProjectionAddress = (
-	a: ProjectionAddress | null | undefined,
-	config?: { hideProjection?: boolean; hideTube?: boolean }
+	a: GlobuleAddress | null | undefined,
+	config?: { hideGlobule?: boolean; hideTube?: boolean }
 ) => {
 	if (!a) return '---';
-	const projection = config?.hideProjection ? '' : `p${a.projection}`;
+	const globule = config?.hideGlobule ? '' : `g${a.globule}`;
 	const tube = config?.hideTube ? '' : 'tube' in a ? `t${a.tube}` : '';
 	const band = 'band' in a ? `b${a.band}` : '';
 	const facet = 'facet' in a ? `f${a.facet}` : '';
 	const edge = 'edge' in a ? `-${corrected(a.edge)}` : '';
 
-	return projection + tube + band + facet + edge;
+	return globule + tube + band + facet + edge;
 };
 
 export const getSections = (
-	tubeAddress: ProjectionAddress_Tube,
+	tubeAddress: GlobuleAddress_Tube,
 	projections: SuperGlobule['projections']
 ): Section[] => {
-	const projection = projections[tubeAddress.projection].projection;
+	const projection = projections[tubeAddress.globule].projection;
 
 	// Find all edges with matching tubeAddress
 	const matchingEdges = [];
@@ -1017,7 +1014,7 @@ export const getSections = (
 		for (const edge of polygon.edges) {
 			if (
 				edge.tubeAddress?.tube === tubeAddress.tube &&
-				edge.tubeAddress?.projection === tubeAddress.projection
+				edge.tubeAddress?.globule === tubeAddress.globule
 			) {
 				matchingEdges.push(edge);
 			}
@@ -1046,13 +1043,13 @@ export const getSections = (
 
 const Z_AXIS = new Vector3(0, 0, 1);
 export const getCrossSectionPath = (
-	address: ProjectionAddress_Tube,
+	address: GlobuleAddress_Tube,
 	projections: SuperGlobule['projections'],
 	sectionIndex?: number
 ): string => {
 	const sections = getSections(address, projections);
 
-	const tube = projections[address.projection].tubes[address.tube];
+	const tube = projections[address.globule].tubes[address.tube];
 	if (!sectionIndex) sectionIndex = Math.ceil(tube.bands[0].facets.length / 4);
 	if (
 		sectionIndex !== undefined &&

@@ -1,7 +1,7 @@
 import type {
-	ProjectionAddress_Band,
-	ProjectionAddress_Facet,
-	ProjectionAddress_FacetEdge,
+	GlobuleAddress_Band,
+	GlobuleAddress_Facet,
+	GlobuleAddress_FacetEdge,
 	TriangleEdge,
 	Tube
 } from '$lib/projection-geometry/types';
@@ -95,7 +95,7 @@ export const generateProjectionPanelPattern = ({
 	const panelOffset = tiledPatternConfig.config.distributionOffset || -10;
 
 	const pattern: ProjectionPanelPattern = {
-		address: { projection: tubes[0].address.projection },
+		address: { globule: tubes[0].address.globule },
 		tubes: []
 	};
 	console.debug('generateProjectionPanelPattern', { tubes, range });
@@ -117,12 +117,12 @@ export const generateProjectionPanelPattern = ({
 			const bandPattern: BandPanelPattern = {
 				orientation: band.orientation,
 				address: band.address
-					? ({ ...band.address } as ProjectionAddress_Band)
+					? ({ ...band.address } as GlobuleAddress_Band)
 					: ({
-							projection: band.facets[0].address?.projection,
+							globule: band.facets[0].address?.globule,
 							tube: band.facets[0].address?.tube,
 							band: band.facets[0].address?.band
-					  } as ProjectionAddress_Band),
+					  } as GlobuleAddress_Band),
 				panels: []
 			};
 			for (let p = panelStart; p < panelEnd; p++) {
@@ -152,7 +152,7 @@ export const generateProjectionPanelPattern = ({
 					};
 				}
 
-				const facetAddress: ProjectionAddress_Facet = { ...tube.address, band: b, facet: p };
+				const facetAddress: GlobuleAddress_Facet = { ...tube.address, band: b, facet: p };
 				bandPattern.panels.push(
 					generatePanelPattern({
 						base,
@@ -440,7 +440,7 @@ const generatePanelPattern = ({
 	tubes,
 	base
 }: {
-	address: ProjectionAddress_Facet;
+	address: GlobuleAddress_Facet;
 	tubes: Tube[];
 	base: PanelBase;
 }): PanelPattern => {
@@ -465,7 +465,7 @@ const generatePanelPattern = ({
 };
 
 export const getPanelEdgeMeta = (
-	address: ProjectionAddress_Facet,
+	address: GlobuleAddress_Facet,
 	tubes: Tube[]
 ): PanelPattern['meta']['edges'] => {
 	const tube = tubes[address.tube];
@@ -601,8 +601,8 @@ const getCutAngle = (
 	t1: Triangle,
 	edge0: TriangleEdge,
 	edge1: TriangleEdge,
-	address0?: ProjectionAddress_FacetEdge,
-	address1?: ProjectionAddress_FacetEdge
+	address0?: GlobuleAddress_FacetEdge,
+	address1?: GlobuleAddress_FacetEdge
 ): { cutAngle: number; crease: Crease } => {
 	const n0 = new Vector3();
 	const n1 = new Vector3();
@@ -662,7 +662,7 @@ const getDihedral = (t0: Triangle, t1: Triangle, edge0: TriangleEdge, edge1: Tri
 
 const getFacet = (
 	tubes: Tube[],
-	address: ProjectionAddress_Facet | ProjectionAddress_FacetEdge
+	address: GlobuleAddress_Facet | GlobuleAddress_FacetEdge
 ) => {
 	return tubes[address.tube].bands[address.band].facets[address.facet];
 };
@@ -749,7 +749,7 @@ const validateEdgeMeta = ({
 	cutAnglePrecision = 1 / 1000000
 }: {
 	edge: TriangleEdge;
-	panelAddress: ProjectionAddress_Facet;
+	panelAddress: GlobuleAddress_Facet;
 	edgeMeta: PanelEdgeMeta;
 	tubes: TubePanelPattern[];
 	cutAnglePrecision?: number;
@@ -780,11 +780,11 @@ partner   ${printProjectionAddress(pA)} -> ${printProjectionAddress(
 };
 
 const facetEdgeAddressMatch = (
-	a0: ProjectionAddress_FacetEdge,
-	a1: ProjectionAddress_FacetEdge
+	a0: GlobuleAddress_FacetEdge,
+	a1: GlobuleAddress_FacetEdge
 ) => {
 	return (
-		a0.projection === a1.projection &&
+		a0.globule === a1.globule &&
 		a0.tube === a1.tube &&
 		a0.band === a1.band &&
 		a0.facet === a1.facet &&

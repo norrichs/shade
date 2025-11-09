@@ -7,7 +7,7 @@
 	} from '$lib/cut-pattern/generate-pattern';
 	import { getLength, svgPathStringFromSegments } from '$lib/patterns/utils';
 	import { printProjectionAddress } from '$lib/projection-geometry/generate-projection';
-	import type { ProjectionAddress_Facet, TriangleEdge } from '$lib/projection-geometry/types';
+	import type { GlobuleAddress_Facet, TriangleEdge } from '$lib/projection-geometry/types';
 	import type { PanelPattern, PathSegment, TrianglePoint } from '$lib/types';
 	import { Vector3, type Triangle } from 'three';
 	import PatternLabel from './PatternLabel.svelte';
@@ -36,7 +36,7 @@
 	let { a, b, c } = panel.triangle;
 	let center = { x: (a.x + b.x + c.x) / 3, y: (a.y + b.y + c.y) / 3 };
 	let addressString = printProjectionAddress(panel.address, {
-		hideProjection: true,
+		hideGlobule: true,
 		hideTube: true
 	});
 	const trianglePoints = ['a', 'b', 'c'] as TrianglePoint[];
@@ -129,13 +129,13 @@
 			const { thisEdgeStr, reflectedEdgeStr } = getPairAddresses(edge);
 			return `${thisEdgeStr} <- ${reflectedEdgeStr}`;
 		}
-		return `-> ${printProjectionAddress(reflectedAddress, { hideProjection: true })}`;
+		return `-> ${printProjectionAddress(reflectedAddress, { hideGlobule: true })}`;
 	};
 
 	const panelEdgeLabel = (edge: TriangleEdge) => {
 		const m = panel.meta.edges[edge];
 		return `${edge}: ${
-			m.partner ? printProjectionAddress(m.partner, { hideProjection: true, hideTube: true }) : ''
+			m.partner ? printProjectionAddress(m.partner, { hideGlobule: true, hideTube: true }) : ''
 		} [${formatAngle(m.cutAngle || 0)}] ${m.label ? m.label : ''}${
 			verbose ? verboseLabel(edge) : ''
 		}`;
@@ -166,7 +166,7 @@
 		anchors.bc = getAnchor(b, c, edgeLabelAnchor);
 		anchors.ac = getAnchor(c, a, edgeLabelAnchor);
 		center = { x: (a.x + b.x + c.x) / 3, y: (a.y + b.y + c.y) / 3 };
-		addressString = printProjectionAddress(panel.address, { hideProjection: true, hideTube: true });
+		addressString = printProjectionAddress(panel.address, { hideGlobule: true, hideTube: true });
 
 		if (sPG) {
 			if (addressIsInArray(panel.address, sPG.selected)) {

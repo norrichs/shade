@@ -18,7 +18,7 @@ import type {
 } from './types';
 
 export const generateSuperGlobule = (superConfig: SuperGlobuleConfig): SuperGlobule => {
-	
+
 	// Old Globule Pipeline
 	const subGlobules: SubGlobule[] = recombineSubGlobules(
 		superConfig.subGlobuleConfigs.map((sgc, index) => generateSubGlobule(sgc, index)).flat()
@@ -31,7 +31,7 @@ export const generateSuperGlobule = (superConfig: SuperGlobuleConfig): SuperGlob
 
 	// Projection Tube pipeline
 	const projections = superConfig.projectionConfigs.map((config, i) =>
-		makeProjection(config, { projection: i })
+		makeProjection(config, { globule: i })
 	);
 
 	const superGlobule: SuperGlobule = {
@@ -53,7 +53,7 @@ export const generateSuperGlobuleTubes = (superConfig: SuperGlobuleConfig): Supe
 	// const recombinedSubGlobules: SubGlobule[] = recombineSubGlobules(subGlobules);
 
 	const projections = superConfig.projectionConfigs.map((config, i) =>
-		makeProjection(config, { projection: i })
+		makeProjection(config, { globule: i })
 	);
 
 	const superGlobule: SuperGlobule = {

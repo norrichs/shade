@@ -31,7 +31,7 @@
 	import { PROJECTION_GEOMETRY_OVERRIDE } from '$lib/projection-geometry/constants';
 	import ProjectionGeometryComponent from '../projection/ProjectionGeometryComponent.svelte';
 	import GlobuleGeometryComponent from './GlobuleGeometryComponent.svelte';
-	import type { ProjectionAddress_Facet } from '$lib/projection-geometry/types';
+	import type { GlobuleAddress_Facet } from '$lib/projection-geometry/types';
 	import { selectedProjection } from '$lib/stores';
 	import type { Material } from './materials';
 
@@ -157,7 +157,7 @@
 			selectPoint(event, geometry);
 		}
 	};
-	const handleProjectionClick = (event: any, address: ProjectionAddress_Facet) => {
+	const handleProjectionClick = (event: any, address: GlobuleAddress_Facet) => {
 		console.debug('handleProjectionClick', { event, address });
 		event.stopPropagation();
 		$selectedProjection = address;

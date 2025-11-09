@@ -5,7 +5,7 @@ import type {
 	Polygon,
 	Projection,
 	Tube,
-	ProjectionAddress_Facet,
+	GlobuleAddress_Facet,
 	Section
 } from './types';
 import type { Band, Facet } from '$lib/types';
@@ -136,8 +136,8 @@ export const collateBandGeometry = (bands: Band[]): BufferGeometry[] => {
 
 export const collateFacetGeometry = (
 	bands: Band[]
-): { address: ProjectionAddress_Facet; geometry: BufferGeometry }[] => {
-	const facetGeometry: { address: ProjectionAddress_Facet; geometry: BufferGeometry }[] = [];
+): { address: GlobuleAddress_Facet; geometry: BufferGeometry }[] => {
+	const facetGeometry: { address: GlobuleAddress_Facet; geometry: BufferGeometry }[] = [];
 	bands.forEach((band) => {
 		band.facets.forEach(({ address, triangle: { a, b, c } }) => {
 			const geometry = new BufferGeometry().setFromPoints([a.clone(), b.clone(), c.clone()]);

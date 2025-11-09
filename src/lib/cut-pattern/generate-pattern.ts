@@ -1,8 +1,4 @@
-import type {
-	TriangleEdge,
-	TriangleEdgePermissive,
-	Tube
-} from '$lib/projection-geometry/types';
+import type { TriangleEdge, TriangleEdgePermissive, Tube } from '$lib/projection-geometry/types';
 import type {
 	Globule,
 	GlobulePatternConfig,
@@ -14,8 +10,7 @@ import type {
 	TrianglePoint,
 	FacetOrientation,
 	TubeCutPattern,
-	Band,
-
+	Band
 } from '$lib/types';
 
 import { applyStrokeWidth } from './generate-cut-pattern';
@@ -44,7 +39,7 @@ export const generateSuperGlobulePattern = (
 	superGlobuleConfig: SuperGlobuleConfig,
 	globulePatternConfig: GlobulePatternConfig
 ): SuperGlobuleBandPattern => {
-console.debug("------------------ generateSuperGlobulePattern ------------------");
+	console.debug('------------------ generateSuperGlobulePattern ------------------');
 	const patternGlobules: PatternGlobule[] = superGlobule.subGlobules.map(
 		(subGlobule: SubGlobule) => {
 			const config = superGlobuleConfig.subGlobuleConfigs.find(
@@ -86,7 +81,6 @@ console.debug("------------------ generateSuperGlobulePattern ------------------
 		.map((globulePattern: BandCutPatternPattern) => globulePattern.bands)
 		.flat();
 
-	
 	const result = {
 		type: 'SuperGlobulePattern',
 		superGlobuleConfigId: superGlobuleConfig.id,
@@ -111,7 +105,6 @@ export const generateProjectionPattern = (
 		panels: { start: number; end: number };
 	}
 ): SuperGlobuleProjectionPattern => {
-
 	const {
 		tiledPatternConfig,
 		patternConfig: { pixelScale }
@@ -136,15 +129,15 @@ export const generateProjectionPattern = (
 				bands,
 				tiledPatternConfig,
 				pixelScale
-			})
+			});
 			return tubePattern;
-		})
+		});
 
 		return {
 			type: 'SuperGlobuleProjectionCutPattern',
 			superGlobuleConfigId: id,
 			projectionCutPattern: {
-				address: { projection: tubes[0].address.projection },
+				address: { globule: tubes[0].address.globule },
 				tubes: tubePatterns
 			}
 		};
@@ -193,7 +186,7 @@ export const getTrianglePointFromTriangleEdge = (
 	ordering: 'edge-order' | 'triangle-order'
 ) => {
 	const [p0, p1] = TRIANGLE_POINT_MAP[ordering][edge] as [TrianglePoint, TrianglePoint];
-	const p2 = getOtherTrianglePointFromTriangleEdge(edge)
+	const p2 = getOtherTrianglePointFromTriangleEdge(edge);
 	return [p0, p1, p2] as [TrianglePoint, TrianglePoint, TrianglePoint];
 };
 
@@ -224,10 +217,7 @@ type GetOtherTriangleElementsConfig = {
 };
 
 // Function overloads for type-safe return types
-export function getOtherTriangleElements(
-	p: TrianglePoint,
-	config?: undefined
-): TrianglePointPair;
+export function getOtherTriangleElements(p: TrianglePoint, config?: undefined): TrianglePointPair;
 
 export function getOtherTriangleElements(
 	p: TrianglePoint,
@@ -244,11 +234,10 @@ export function getOtherTriangleElements(
 	config?: GetOtherTriangleElementsConfig
 ): TrianglePoint;
 
-
 // Implementation
 export function getOtherTriangleElements(
 	p: TrianglePoint | [TrianglePoint, TrianglePoint] | TriangleEdgePermissive,
-	config: GetOtherTriangleElementsConfig = {ordering: 'triangle-order', split: true}
+	config: GetOtherTriangleElementsConfig = { ordering: 'triangle-order', split: true }
 ): TriangleEdgePermissive | TrianglePoint | TrianglePointPair {
 	const { ordering = 'triangle-order', split = true } = config;
 	const others: { [key: string]: { [key: string]: TriangleEdgePermissive | TrianglePoint } } = {
@@ -275,10 +264,12 @@ export function getOtherTriangleElements(
 			ca: 'b'
 		}
 	};
-	
-	const key: TrianglePoint | TriangleEdgePermissive = isTrianglePointPair(p) ? `${p[0]}${p[1]}` as TriangleEdgePermissive : p;
+
+	const key: TrianglePoint | TriangleEdgePermissive = isTrianglePointPair(p)
+		? (`${p[0]}${p[1]}` as TriangleEdgePermissive)
+		: p;
 	const result = others[ordering][key];
-	return result.length === 2 && split ? result.split('') as TrianglePointPair : result;
+	return result.length === 2 && split ? (result.split('') as TrianglePointPair) : result;
 }
 
 export const getOtherTrianglePointFromTriangleEdge = (edge: TriangleEdge): TrianglePoint => {

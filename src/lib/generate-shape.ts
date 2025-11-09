@@ -43,7 +43,10 @@ import type {
 import { generateEdgeConfig } from './cut-pattern/generate-cut-pattern';
 import { generateLevelSet2, generateSections } from './generate-level';
 import type { Tube } from './projection-geometry/types';
-import { generateProjectionBands, generateTubeBands } from './projection-geometry/generate-projection';
+import {
+	generateProjectionBands,
+	generateTubeBands
+} from './projection-geometry/generate-projection';
 
 // Rotated Shape Levels are 2d.  How can I enforce that?
 
@@ -879,18 +882,23 @@ export const generateGlobuleTube = (configStore: GlobuleConfig): Tube => {
 
 	console.debug('sections', sections);
 
-	const bands = generateProjectionBands(sections, 'axial-right', { projection: 0, tube: 0 });
+	const bands = generateProjectionBands(sections, 'axial-right', { globule: 0, tube: 0 });
 
 	// const struts = generateStruts(levels, config.strutConfig);
 	// const unTabbedBands = generateBandSet(config, sections);
 	// const bands = unTabbedBands
-		// !config.bandConfig?.tabStyle
-		// ? unTabbedBands
-		// : generateTabs(unTabbedBands, config.bandConfig, struts);
+	// !config.bandConfig?.tabStyle
+	// ? unTabbedBands
+	// : generateTabs(unTabbedBands, config.bandConfig, struts);
 
 	const filteredBands = getRenderable(config.renderConfig, bands) as Band[];
 
-	const tube: Tube = { sections, bands: filteredBands, orientation: 'axial-right', address: { projection: 0, tube: 0 } };
+	const tube: Tube = {
+		sections,
+		bands: filteredBands,
+		orientation: 'axial-right',
+		address: { globule: 0, tube: 0 }
+	};
 	console.debug('tube', tube);
-	return tube
+	return tube;
 };
