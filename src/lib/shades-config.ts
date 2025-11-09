@@ -599,40 +599,40 @@ export const generateDefaultSuperGlobuleConfig = (): SuperGlobuleConfig => {
 		id: generateTempId(SUPER_GLOBULE_CONFIG),
 		name: 'Default Super Globule',
 		subGlobuleConfigs: [
-			// base,
-			// defaultSubGlobuleConfig({
-			// 	globuleConfig: base.globuleConfig,
-			// 	transforms: [
-			// 		{
-			// 			recurs: [{ multiplier: 1 }],
-			// 			rotate: {
-			// 				axis: { x: 0, y: 0, z: 1 },
-			// 				anchor: { x: 0, y: 0, z: 0 },
-			// 				angle: degToRad(60)
-			// 			}
-			// 		},
-			// 		{
-			// 			recurs: [{ multiplier: 1 }],
-			// 			translate: { x: 0, y: -150, z: 0 }
-			// 		},
-			// 		{
-			// 			recurs: [{ multiplier: 1 }],
-			// 			rotate: {
-			// 				axis: { x: 1, y: 0, z: 0 },
-			// 				anchor: { x: 0, y: 75, z: 0 },
-			// 				angle: degToRad(-109.5)
-			// 			}
-			// 		},
-			// 		{
-			// 			recurs: defaultRecurrence,
-			// 			rotate: {
-			// 				axis: { x: 0, y: 0, z: 1 },
-			// 				anchor: { x: 0, y: 0, z: 0 },
-			// 				angle: degToRad(120)
-			// 			}
-			// 		}
-			// 	]
-			// })
+			base,
+			defaultSubGlobuleConfig({
+				globuleConfig: base.globuleConfig,
+				transforms: [
+					{
+						recurs: [{ multiplier: 1 }],
+						rotate: {
+							axis: { x: 0, y: 0, z: 1 },
+							anchor: { x: 0, y: 0, z: 0 },
+							angle: degToRad(60)
+						}
+					},
+					{
+						recurs: [{ multiplier: 1 }],
+						translate: { x: 0, y: -150, z: 0 }
+					},
+					{
+						recurs: [{ multiplier: 1 }],
+						rotate: {
+							axis: { x: 1, y: 0, z: 0 },
+							anchor: { x: 0, y: 75, z: 0 },
+							angle: degToRad(-109.5)
+						}
+					},
+					{
+						recurs: defaultRecurrence,
+						rotate: {
+							axis: { x: 0, y: 0, z: 1 },
+							anchor: { x: 0, y: 0, z: 0 },
+							angle: degToRad(120)
+						}
+					}
+				]
+			})
 		],
 		projectionConfigs: [defaultProjectionConfig]
 	};

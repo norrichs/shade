@@ -31,7 +31,9 @@
 <div class="container-svg scroll-container" class:showBands>
 	<div class="scroll-container">
 		<CutPatternSvg width={6000} height={6000}>
-			<ProjectionCutPattern projectionPattern={$superGlobulePatternStore.projectionPattern} />
+			{#if $superGlobulePatternStore.globuleTubePattern}
+				<ProjectionCutPattern projectionPattern={$superGlobulePatternStore.globuleTubePattern} />
+			{/if}
 			<ProjectionPanelPatterns
 				showSelectedOnly={undefined}
 				range={$patternConfigStore.patternViewConfig.range}

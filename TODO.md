@@ -1,14 +1,37 @@
-## Wooden Globule Exports
+## SuperGlobule updates
 
-### Registration marks
+### Restore pattern making from superglobules
+- Prioritized.  I want to make a steel frame hex pattern
+- Optimizations to pattern calculation based on what is meant to be displayed
 
-Holes
- - calculate offset from outer edge, based on an offset from inner edge.
- - inner edge is calculated as 
- ```
- offset_inner = material_thickness / tan(dihedral_angle / 2)
-```
- - inset on that offset_inner line by some amount from intersection with other edges
- - draw circle with diameter and crossed lines at center
 
-Metal strapping template
+
+### Changes to config
+- give each top level globule config (subGlobule, projection) an array of roles
+  - `generate-pattern`
+  - `generate-geometry`
+
+
+
+## Changes to calculation
+- use new Address scheme
+- addresses will have to be refactored completely
+- instead of `projection`, should we use `globule`?
+- instead of `subGlobule`, should we use `tube`?
+- `gtbfe`
+- where does recombination fit in?
+
+### Changes to display logic
+
+
+
+### Changes to controls
+- Transition all relevant controls to new "Floater" scheme
+- Increase button visibility
+- Implement nested floating sidebar buttons, with sticky "open" / "collapsed" states
+- Implement reusable pattern for making local changes with debounced or explicit recalculation
+
+
+### Saving
+- start over with config saving.
+- just use json

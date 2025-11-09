@@ -15,9 +15,17 @@ export type ShowGlobuleGeometries = {
 	[key: string]: boolean;
 	any: boolean;
 };
+export type ShowGlobuleTubeGeometries = {
+	[key: string]: boolean;
+	any: boolean;
+	bands: boolean;
+	facets: boolean;
+	sections: boolean;
+};
 export type ViewControls = {
 	showProjectionGeometry: ShowProjectionGeometries;
 	showGlobuleGeometry: ShowGlobuleGeometries;
+	showGlobuleTubeGeometry: ShowGlobuleTubeGeometries;
 };
 
 const defaultViewControls = (): ViewControls => ({
@@ -32,6 +40,12 @@ const defaultViewControls = (): ViewControls => ({
 	},
 	showGlobuleGeometry: {
 		any: false
+	}, 
+	showGlobuleTubeGeometry: {
+		any: false,
+		bands: false,
+		facets: false,
+		sections: false
 	}
 });
 

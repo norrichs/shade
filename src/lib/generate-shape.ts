@@ -41,7 +41,9 @@ import type {
 	SpineCurveConfig
 } from '$lib/types';
 import { generateEdgeConfig } from './cut-pattern/generate-cut-pattern';
-import { generateLevelSet2 } from './generate-level';
+import { generateLevelSet2, generateSections } from './generate-level';
+import type { Tube } from './projection-geometry/types';
+import { generateProjectionBands, generateTubeBands } from './projection-geometry/generate-projection';
 
 // Rotated Shape Levels are 2d.  How can I enforce that?
 
@@ -830,6 +832,10 @@ export const getRenderable = (
 	return shapes;
 };
 
+/**
+ * @deprecated - use generateGlobuleTube instead
+ */
+
 export const generateGlobuleData = (configStore: GlobuleConfig): GlobuleData => {
 	console.debug('GENERATE GLOBULE DATA');
 	const config = window.structuredClone(configStore);
@@ -855,4 +861,36 @@ export const generateGlobuleData = (configStore: GlobuleConfig): GlobuleData => 
 	const filteredBands = getRenderable(config.renderConfig, bands) as Band[];
 
 	return { levels, bands: filteredBands, struts };
+};
+
+export const generateGlobuleTube = (configStore: GlobuleConfig): Tube => {
+	console.debug('*** *** *** GENERATE GLOBULE TUBE *** *** ***');
+	const config = window.structuredClone(configStore);
+	const rotatedShapePrototype: LevelPrototype | LevelPrototype[] = generateLevelPrototype(
+		config.shapeConfig,
+		config.levelConfig
+	);
+	const sections = generateSections(
+		config.levelConfig,
+		config.silhouetteConfig,
+		config.depthCurveConfig,
+		rotatedShapePrototype
+	);
+
+	console.debug('sections', sections);
+
+	const bands = generateProjectionBands(sections, 'axial-right', { projection: 0, tube: 0 });
+
+	// const struts = generateStruts(levels, config.strutConfig);
+	// const unTabbedBands = generateBandSet(config, sections);
+	// const bands = unTabbedBands
+		// !config.bandConfig?.tabStyle
+		// ? unTabbedBands
+		// : generateTabs(unTabbedBands, config.bandConfig, struts);
+
+	const filteredBands = getRenderable(config.renderConfig, bands) as Band[];
+
+	const tube: Tube = { sections, bands: filteredBands, orientation: 'axial-right', address: { projection: 0, tube: 0 } };
+	console.debug('tube', tube);
+	return tube
 };

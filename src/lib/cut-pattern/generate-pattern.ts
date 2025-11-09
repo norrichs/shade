@@ -44,7 +44,7 @@ export const generateSuperGlobulePattern = (
 	superGlobuleConfig: SuperGlobuleConfig,
 	globulePatternConfig: GlobulePatternConfig
 ): SuperGlobuleBandPattern => {
-	console.debug(' -- generateSuperGlobulePattern');
+console.debug("------------------ generateSuperGlobulePattern ------------------");
 	const patternGlobules: PatternGlobule[] = superGlobule.subGlobules.map(
 		(subGlobule: SubGlobule) => {
 			const config = superGlobuleConfig.subGlobuleConfigs.find(
@@ -86,15 +86,20 @@ export const generateSuperGlobulePattern = (
 		.map((globulePattern: BandCutPatternPattern) => globulePattern.bands)
 		.flat();
 
-	return {
+	
+	const result = {
 		type: 'SuperGlobulePattern',
 		superGlobuleConfigId: superGlobuleConfig.id,
 		bandPatterns
 	};
+
+	console.debug('superGlobulePattern', result);
+	return result;
 };
 
 // TODO: Refactor this to accept range and existing pattern arguments, so that
 //       it is possible to do granular updates
+// TODO: Refactor so that this accepts globules as tubes
 
 export const generateProjectionPattern = (
 	tubes: Tube[],

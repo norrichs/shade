@@ -10,7 +10,7 @@ import type {
 } from '$lib/types';
 import { derived } from 'svelte/store';
 import { loadPersistedOrDefault } from '$lib/stores';
-import { generateSuperGlobule } from '$lib/generate-superglobule';
+import { generateSuperGlobule, generateSuperGlobuleTubes } from '$lib/generate-superglobule';
 import {
 	generateSuperGlobuleBandGeometry,
 	generateSuperGlobuleGeometry
@@ -67,11 +67,23 @@ export const superGlobulePatternStore = derived(
 			any: true,
 			bands: true
 		};
+		const showGlobuleTubeGeometry = {
+			any: true,
+			bands: false,
+			facets: false,
+			sections: false
+		};
 		const superGlobulePattern = showGlobuleGeometry.any
 			? generateSuperGlobulePattern($superGlobuleStore, $superConfigStore, $patternConfigStore)
 			: null;
 
 		const projection = $superGlobuleStore.projections[0];
+		const globuleTubes = $superGlobuleStore.globuleTubes;
+
+
+		const globuleTubePattern = showGlobuleTubeGeometry.any
+			? generateProjectionPattern(globuleTubes, $superConfigStore.id, $patternConfigStore)
+			: null;
 
 		const projectionPattern =
 			showProjectionGeometry.any && showProjectionGeometry.bands && $patternConfigStore.patternViewConfig.showBands
@@ -88,7 +100,7 @@ export const superGlobulePatternStore = derived(
 			superGlobulePattern,
 			projectionPattern
 		});
-		return { superGlobulePattern, projectionPattern };
+		return { superGlobulePattern, projectionPattern, globuleTubePattern };
 	}
 );
 

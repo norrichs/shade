@@ -835,6 +835,7 @@ export type SuperGlobule = {
 	superGlobuleConfigId: Id;
 	name?: string;
 	subGlobules: SubGlobule[];
+	globuleTubes: Tube[];
 	projections: {
 		projection: Projection;
 		polyhedron: Polyhedron;

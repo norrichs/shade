@@ -536,7 +536,7 @@ const generateFacetPair = ({
 	}
 };
 
-const generateProjectionBands = (
+export const generateProjectionBands = (
 	sections: Section[],
 	projectOrientation: FacetOrientation,
 	tubeAddress: ProjectionAddress_Tube,

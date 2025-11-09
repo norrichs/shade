@@ -1,5 +1,10 @@
 import { Vector3, CurvePath, Vector2 } from 'three';
-import { generateDepthCurve, generateSilhouette, generateLevelPrototype, generateSpineCurve } from './generate-shape';
+import {
+	generateDepthCurve,
+	generateSilhouette,
+	generateLevelPrototype,
+	generateSpineCurve
+} from './generate-shape';
 import type {
 	LevelConfig,
 	SilhouetteConfig,
@@ -12,10 +17,11 @@ import type {
 	SpineCurveConfig,
 	CurveSampleMethodMethod
 } from './types';
+import type { Section } from './projection-geometry/types';
 
-// TODO - bring the call to generateLevelPrototype into this function
-
-//
+/**
+ * @deprecated - use generateSections instead
+ */
 export const generateLevelSet2 = (
 	levelConfig: LevelConfig,
 	silhouetteConfig: SilhouetteConfig,
@@ -37,15 +43,15 @@ export const generateLevelSet2 = (
 			sampleMethod: levelConfig.silhouetteSampleMethod,
 			divisionBasis: 0
 		});
-	// } else if (levelConfig.silhouetteSampleMethod.method === 'spineCurve') {
-	// 	const spineCurves: CurvePath<Vector2>[] = spineCurveConfigs.map((cfg) => generateSpineCurve(cfg));
-	// 	rawLevels = generateRawLevelsSpineCurve({
-	// 		silhouette,
-	// 		depthCurve,
-	// 		spineCurves,
-	// 		levelPrototypes,
-	// 		sampleMethod: levelConfig.silhouetteSampleMethod
-	// 	});
+		// } else if (levelConfig.silhouetteSampleMethod.method === 'spineCurve') {
+		// 	const spineCurves: CurvePath<Vector2>[] = spineCurveConfigs.map((cfg) => generateSpineCurve(cfg));
+		// 	rawLevels = generateRawLevelsSpineCurve({
+		// 		silhouette,
+		// 		depthCurve,
+		// 		spineCurves,
+		// 		levelPrototypes,
+		// 		sampleMethod: levelConfig.silhouetteSampleMethod
+		// 	});
 	} else {
 		rawLevels = generateRawLevels({
 			silhouette,
@@ -61,6 +67,60 @@ export const generateLevelSet2 = (
 		return applyOffsetToLevel(offset, rl, i);
 	});
 	return levels;
+};
+
+export const generateSections = (
+	levelConfig: LevelConfig,
+	silhouetteConfig: SilhouetteConfig,
+	depthCurveConfig: DepthCurveConfig,
+	// spineCurveConfigs: SpineCurveConfig[],
+	levelPrototype: LevelPrototype | LevelPrototype[]
+): Section[] => {
+	const levelCount = countLevels(levelConfig, silhouetteConfig);
+	const levelPrototypes: LevelPrototype[] = getLevelPrototypeArray(levelCount, levelPrototype);
+	const depthCurve: CurvePath<Vector2> = generateDepthCurve(depthCurveConfig);
+	const silhouette: CurvePath<Vector2> = generateSilhouette(silhouetteConfig);
+	// get levels without offsets by applying silhouette points to depthed level prototype vertices
+	let rawLevels: Level[] = [];
+	if (levelConfig.silhouetteSampleMethod.method === 'preserveAspectRatio') {
+		rawLevels = generateRawLevelsConstantAspect({
+			silhouette,
+			depthCurve,
+			levelPrototypes,
+			sampleMethod: levelConfig.silhouetteSampleMethod,
+			divisionBasis: 0
+		});
+		// } else if (levelConfig.silhouetteSampleMethod.method === 'spineCurve') {
+		// 	const spineCurves: CurvePath<Vector2>[] = spineCurveConfigs.map((cfg) => generateSpineCurve(cfg));
+		// 	rawLevels = generateRawLevelsSpineCurve({
+		// 		silhouette,
+		// 		depthCurve,
+		// 		spineCurves,
+		// 		levelPrototypes,
+		// 		sampleMethod: levelConfig.silhouetteSampleMethod
+		// 	});
+	} else {
+		rawLevels = generateRawLevels({
+			silhouette,
+			depthCurve,
+			levelPrototypes,
+			sampleMethod: levelConfig.silhouetteSampleMethod
+		});
+	}
+	const levelOffsets = getLevelOffsets(levelConfig, levelCount);
+
+	const levels = rawLevels.map((rl, i): Level => {
+		const offset = levelOffsets[i];
+		return applyOffsetToLevel(offset, rl, i);
+	});
+
+	const sections: Section[] = levels.map((level): Section => {
+		return {
+			points: level.vertices.map((v) => v.clone())
+		};
+	});
+
+	return sections;
 };
 
 const applyOffsetToLevel = (offset: LevelOffset, rawLevel: Level, levelNumber: number): Level => {
@@ -109,16 +169,15 @@ const generateRawLevelsSpineCurve = ({
 	const levelCount = sampleMethod.divisions + 1;
 	const levels: Level[] = [];
 
-
 	// How will multiple spinecurves be reconciled if each operates in a separate plane?
 	// Can they be elevation based?  Is that possible?
 	// Should levels be arrayed along the silhouette curve, then modified according to the spineCurve?
-	
-	for (let l = 0; l < levelCount; l++){
-		const center = new Vector2()
+
+	for (let l = 0; l < levelCount; l++) {
+		const center = new Vector2();
 	}
 
-	return levels
+	return levels;
 };
 
 const generateRawLevelsConstantAspect = ({
