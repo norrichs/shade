@@ -32,7 +32,7 @@
 	<div class="scroll-container">
 		<CutPatternSvg width={6000} height={6000}>
 			{#if $superGlobulePatternStore.globuleTubePattern}
-				<ProjectionCutPattern projectionPattern={$superGlobulePatternStore.globuleTubePattern} />
+				<ProjectionCutPattern projectionPattern={$superGlobulePatternStore.projectionPattern} />
 			{/if}
 			<ProjectionPanelPatterns
 				showSelectedOnly={undefined}

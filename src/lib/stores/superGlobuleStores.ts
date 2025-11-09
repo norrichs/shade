@@ -43,6 +43,8 @@ export const superGlobuleStore = derived(superConfigStore, ($superConfigStore) =
 	return superGlobule;
 });
 
+
+
 export const superGlobuleGeometryStore = derived(superGlobuleStore, ($superGlobuleStore) => {
 	const superGlobuleGeometry = generateSuperGlobuleGeometry($superGlobuleStore);
 	console.log('SUPER GLOBULE GEOMETRY STORE', { $superGlobuleStore, superGlobuleGeometry });
