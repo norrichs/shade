@@ -116,7 +116,7 @@ export const generateSections = (
 
 	const sections: Section[] = levels.map((level): Section => {
 		return {
-			points: level.vertices.map((v) => v.clone())
+			points: [...level.vertices.map((v) => v.clone()), level.vertices[0].clone()]
 		};
 	});
 

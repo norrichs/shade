@@ -519,7 +519,7 @@ export const defaultPatternConfig = (): PatternConfig => ({
 });
 
 export const defaultPatternViewConfig = (): PatternViewConfig => ({
-	showBands: false,
+	showBands: true,
 	showQuads: false,
 	showTriangles: false,
 	showLabels: false,

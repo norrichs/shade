@@ -1,5 +1,13 @@
 <script lang="ts">
-	import { superGlobulePatternStore, patternConfigStore, viewControlStore } from '$lib/stores';
+	import {
+		superGlobulePatternStore,
+		patternConfigStore,
+		viewControlStore,
+		type ShowGlobuleTubeGeometries,
+		type ShowProjectionGeometries,
+		type SuperGlobuleProjectionPattern,
+		isSuperGlobuleProjectionCutPattern
+	} from '$lib/stores';
 	import CutPatternControl from './CutPatternControl.svelte';
 	import CutPatternSvg from './CutPatternSvg.svelte';
 	import BandCutPatternComponent from './BandCutPatternComponent.svelte';
@@ -8,7 +16,8 @@
 
 	import ProjectionPanelPatterns from './ProjectionPanelPatterns.svelte';
 	import { mmFromInches } from '$lib/patterns/utils';
-	import ProjectionCutPattern from './ProjectionCutPattern.svelte';
+	import CutPatternRenderer from './CutPatternRenderer.svelte';
+	import type { TubeCutPattern } from '$lib/types';
 
 	let showBands = true;
 	let showQuadPattern = false;
@@ -21,18 +30,47 @@
 		return colors[index % 6];
 	};
 
+	const collatePatterns = (
+		globuleTubePattern: SuperGlobuleProjectionPattern | null,
+		projectionPattern: SuperGlobuleProjectionPattern | undefined,
+		showGlobuleTubeGeometry: ShowGlobuleTubeGeometries,
+		showProjectionGeometry: ShowProjectionGeometries
+	) => {
+		const hasGlobuleTubePattern =
+			globuleTubePattern &&
+			isSuperGlobuleProjectionCutPattern(globuleTubePattern) &&
+			globuleTubePattern.projectionCutPattern.tubes.length > 0;
+		const hasProjectionPattern =
+			projectionPattern &&
+			isSuperGlobuleProjectionCutPattern(projectionPattern) &&
+			projectionPattern.projectionCutPattern.tubes.length > 0;
+
+		collatedPatterns = [
+			...(hasGlobuleTubePattern ? globuleTubePattern.projectionCutPattern.tubes : []),
+			...(hasProjectionPattern ? projectionPattern.projectionCutPattern.tubes : [])
+		];
+		console.debug('collatePatterns', { collatedPatterns, hasGlobuleTubePattern, hasProjectionPattern, globuleTubePattern, projectionPattern });
+	};
+
 	type FlattenMode = 'native-replace' | 'recombine'; // WTF is this. Still relevant?
 
 	let flattenedPatternedSVG: { bands: string[] } = { bands: [] };
 
 	console.debug('superGlobulePatternStore', $superGlobulePatternStore);
+	let collatedPatterns: TubeCutPattern[] = [];
+	$: collatePatterns(
+		$superGlobulePatternStore.globuleTubePattern,
+		$superGlobulePatternStore.projectionPattern,
+		$viewControlStore.showGlobuleTubeGeometry,
+		$viewControlStore.showProjectionGeometry
+	);
 </script>
 
 <div class="container-svg scroll-container" class:showBands>
 	<div class="scroll-container">
 		<CutPatternSvg width={6000} height={6000}>
 			{#if $superGlobulePatternStore.globuleTubePattern}
-				<ProjectionCutPattern projectionPattern={$superGlobulePatternStore.projectionPattern} />
+				<CutPatternRenderer tubes={collatedPatterns} />
 			{/if}
 			<ProjectionPanelPatterns
 				showSelectedOnly={undefined}
@@ -43,7 +81,7 @@
 				verbose={true}
 			/>
 
-			{#if $viewControlStore.showGlobuleGeometry.any}
+			<!-- {#if $viewControlStore.showGlobuleGeometry.any}
 				{#each $superGlobulePatternStore.superGlobulePattern?.bandPatterns || [] as band, index}
 					<BandComponent {band} {index} showLabel>
 						{#if band.projectionType === 'patterned'}
@@ -56,7 +94,7 @@
 						/>
 					</BandComponent>
 				{/each}
-			{/if}
+			{/if} -->
 
 			<!-- <SvgLogger /> -->
 		</CutPatternSvg>

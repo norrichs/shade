@@ -4,6 +4,7 @@ import EdgeCurve from './editor/EdgeCurve.svelte';
 import Polyhedra from './editor/Polyhedra.svelte';
 import Surface from './editor/Surface.svelte';
 import PatternView from './editor/PatternView.svelte';
+import Utilities from './editor/Utilities.svelte';
 
 export type FloaterContent = {
   shortTitle: string;
@@ -12,6 +13,17 @@ export type FloaterContent = {
 };
 
 export type SidebarDefinition = Map<FloaterContent['title'], FloaterContent>
+
+export const utilities: SidebarDefinition = new Map([
+  [
+    'Utilities',
+    {
+      shortTitle: 'UT',
+      title: 'Utilities',
+      content: Utilities
+    }
+  ]
+]);
 
 export const patternConfigs: SidebarDefinition = new Map([
   [
@@ -25,6 +37,7 @@ export const patternConfigs: SidebarDefinition = new Map([
 ]);
 
 export const projectionConfigs: SidebarDefinition = new Map([
+  ...utilities,
   ...patternConfigs,
   [
     'Cross Sections',

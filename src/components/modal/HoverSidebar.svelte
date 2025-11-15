@@ -2,13 +2,13 @@
 	import HoverButton from './HoverButton.svelte';
 	import Floater from './Floater.svelte';
 	import type { FloaterContent, SidebarDefinition } from './sidebar-definitions';
+	import Button from '../design-system/Button.svelte';
 
 	export let sidebarDefinition: SidebarDefinition;
-	
+
 	let showFloater = false;
 	let currentFloater: FloaterContent | undefined = undefined;
-
-
+	let showMode: 'onHover' | 'always' = 'always';
 
 	const toggleFloater = (floater?: FloaterContent['title']) => {
 		if (!floater) {
@@ -27,8 +27,11 @@
 	};
 </script>
 
-<nav>
+<nav class={showMode === 'onHover' ? 'show-on-hover' : 'show-always'}>
 	<div class="hover-button-container">
+		<Button on:click={() => (showMode = showMode === 'onHover' ? 'always' : 'onHover')}
+			>{showMode}</Button
+		>
 		{#each sidebarDefinition as [title, floater]}
 			<HoverButton
 				onClick={() => toggleFloater(title)}
@@ -37,18 +40,18 @@
 			/>
 		{/each}
 	</div>
-
 </nav>
+
 <Floater
-  {showFloater}
-  onClose={toggleFloater}
-  title={currentFloater?.title}
-  content={currentFloater?.content}
+	{showFloater}
+	onClose={toggleFloater}
+	title={currentFloater?.title}
+	content={currentFloater?.content}
 />
 
 <style>
 	nav {
-		background-color: transparent;
+		background-color: rgba(0, 0, 0, 0.1);
 		position: fixed;
 		top: 50px;
 		right: 0px;
@@ -60,16 +63,19 @@
 		align-items: flex-end;
 		justify-content: center;
 	}
+	nav.show-always > .hover-button-container {
+		transform: translateX(0);
+	}
 	.hover-button-container {
 		display: flex;
 		flex-direction: column;
 		align-items: flex-end;
 		justify-content: center;
 		gap: 10px;
-    transform: translateX(90%);
+		transform: translateX(90%);
 	}
-  nav:hover > .hover-button-container {
-    transform: translateX(0);
-    transition: transform 0.2s ease-in
-  }
+	nav.show-on-hover:hover > .hover-button-container {
+		transform: translateX(0);
+		transition: transform 0.2s ease-in;
+	}
 </style>

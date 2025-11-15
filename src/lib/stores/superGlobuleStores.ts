@@ -6,7 +6,8 @@ import type {
 	ProjectionPanelPattern,
 	SuperGlobule,
 	SuperGlobuleConfig,
-	TubeCutPattern
+	TubeCutPattern,
+	ProjectionCutPattern
 } from '$lib/types';
 import { derived } from 'svelte/store';
 import { loadPersistedOrDefault } from '$lib/stores';

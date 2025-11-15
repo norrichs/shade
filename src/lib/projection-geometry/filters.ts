@@ -37,20 +37,21 @@ export const sliceProjectionCutPattern = (
 	{ tubes, bands, facets }: ProjectionRange = {}
 ): TubeCutPattern[] => {
 	const tubeCount = patternTubes.length;
-	const bandCount = patternTubes[0].bands.length;
-	const facetCount = patternTubes[0].bands[0].facets.length;
-
 	const slicedTubes: TubeCutPattern[] = patternTubes
 		.slice(...getIndices(tubes, [0, tubeCount]))
-		.map((tube) => ({
-			...tube,
-			bands: tube.bands
-				.slice(...getIndices(bands, [0, bandCount]))
-				.map((band) => ({
-					...band,
-					facets: band.facets.slice(...getIndices(facets, [0, facetCount]))
-				}))
-		}));
+		.map((tube) => {
+			const bandCount = tube.bands.length;
+			return {
+				...tube,
+				bands: tube.bands.slice(...getIndices(bands, [0, bandCount])).map((band) => {
+					const facetCount = band.facets.length;
+					return {
+						...band,
+						facets: band.facets.slice(...getIndices(facets, [0, facetCount]))
+					};
+				})
+			};
+		});
 
 	return slicedTubes;
 };

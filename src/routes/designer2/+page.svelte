@@ -1,6 +1,6 @@
 <script lang="ts">
 	import ThreeRenderer from '../../components/three-renderer/ThreeRenderer.svelte';
-	import CutPattern from '../../components/cut-pattern/CutPattern.svelte';
+	import PatternViewer from '../../components/cut-pattern/PatternViewer.svelte';
 	import TilingControl from '../../components/controls/TilingControl.svelte';
 	import ShowControl from '../../components/controls/ShowControl.svelte';
 	import StrutControl from '../../components/controls/StrutControl.svelte';
@@ -35,7 +35,7 @@
 		</ThreeRenderer>
 	</section>
 	<section class={`container ${viewMode === 'pattern' ? 'primary' : 'secondary'}`}>
-		<CutPattern />
+		<PatternViewer />
 	</section>
 	<section class="container controls">
 		<header>

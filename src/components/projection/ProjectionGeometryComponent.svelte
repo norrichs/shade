@@ -2,17 +2,17 @@
 	import { T } from '@threlte/core';
 	import { materials } from '../three-renderer/materials';
 	import { BufferGeometry, Object3D, Vector3 } from 'three';
-	import { collateGeometry } from '$lib/projection-geometry/collate-geometry';
 	import {
-		superConfigStore,
+		collateGeometry,
+		collateGlobuleTubeGeometry
+	} from '$lib/projection-geometry/collate-geometry';
+	import {
 		viewControlStore,
 		type ShowProjectionGeometries,
-		superGlobuleStore,
-		addressIsInArray,
-		superGlobulePatternStore
+		type ShowGlobuleTubeGeometries,
+		superGlobuleStore
 	} from '$lib/stores';
 	import type {
-		BaseProjectionConfig,
 		Polyhedron,
 		Projection,
 		GlobuleAddress_Facet,
@@ -21,10 +21,15 @@
 	import ColorMapped from './ColorMapped.svelte';
 	import { selectedProjectionGeometry } from '$lib/stores';
 
-	let geometry: {
+	let projectionGeometry: {
 		surface?: Object3D;
 		polygons?: BufferGeometry[];
 		projection?: BufferGeometry;
+		sections?: BufferGeometry;
+		bands?: BufferGeometry[];
+		facets?: { address: GlobuleAddress_Facet; geometry: BufferGeometry }[];
+	} = {};
+	let globuleTubeGeometry: {
 		sections?: BufferGeometry;
 		bands?: BufferGeometry[];
 		facets?: { address: GlobuleAddress_Facet; geometry: BufferGeometry }[];
@@ -39,13 +44,16 @@
 		surface: Object3D;
 	};
 
-	const update = (show: ShowProjectionGeometries, projectionData: ProjectionData[]) => {
-		geometry = collateGeometry(projectionData[0], show);
+	const updateProjectionGeometry = (
+		show: ShowProjectionGeometries,
+		projectionData: ProjectionData[]
+	) => {
+		projectionGeometry = collateGeometry(projectionData[0], show);
 	};
 
-	const {
-		projectionConfigs: [projectionConfig]
-	} = $superConfigStore;
+	const updateGlobuleTubeGeometry = (show: ShowGlobuleTubeGeometries, globuleTubes: Tube[]) => {
+		globuleTubeGeometry = collateGlobuleTubeGeometry(globuleTubes, show);
+	};
 
 	const getNormalIndicator = (
 		{ address }: { address: GlobuleAddress_Facet },
@@ -88,41 +96,48 @@
 		return materials.default;
 	};
 
-	$: update($viewControlStore.showProjectionGeometry, $superGlobuleStore.projections);
+	$: updateProjectionGeometry(
+		$viewControlStore.showProjectionGeometry,
+		$superGlobuleStore.projections
+	);
+	$: updateGlobuleTubeGeometry(
+		$viewControlStore.showGlobuleTubeGeometry,
+		$superGlobuleStore.globuleTubes
+	);
 </script>
 
-{#if projectionConfig}
+{#if $viewControlStore.showProjectionGeometry.any}
 	<T.Group position={[0, 0, 0]}>
-		{#if geometry.surface}
-			<T is={geometry.surface} material={materials.selectedVeryLight} />
+		{#if projectionGeometry.surface}
+			<T is={projectionGeometry.surface} material={materials.selectedVeryLight} />
 		{/if}
 
 		<ColorMapped
 			onClick={undefined}
-			geometry={geometry.polygons}
+			geometry={projectionGeometry.polygons}
 			groupSizeMap={[1, 130, 5, 5, 5, 5, 5, 5, 5, 5]}
 			materials={materials.numbered}
 		/>
 
-		{#if geometry.projection}
-			<T.Mesh geometry={geometry.projection} material={materials.highlightedSecondary} />
+		{#if projectionGeometry.projection}
+			<T.Mesh geometry={projectionGeometry.projection} material={materials.highlightedSecondary} />
 		{/if}
-		{#if geometry.sections}
-			<T.Mesh geometry={geometry.sections} material={materials.numbered[4]} />
+		{#if projectionGeometry.sections}
+			<T.Mesh geometry={projectionGeometry.sections} material={materials.numbered[4]} />
 		{/if}
 
-		{#each geometry.bands || [] as band}
+		{#each projectionGeometry.bands || [] as band}
 			<T.Mesh geometry={band} material={materials.default} />
 		{/each}
-		{#each geometry.facets || [] as facet}
+		{#each projectionGeometry.facets || [] as facet}
 			<T.Mesh
 				geometry={facet.geometry}
 				material={getMaterial(facet.address, $selectedProjectionGeometry)}
 				on:click={(ev) => onClick(ev, facet.address)}
 			/>
 		{/each}
-		{#if showNormals && geometry.facets}
-			{#each geometry.facets as facet}
+		{#if showNormals && projectionGeometry.facets}
+			{#each projectionGeometry.facets as facet}
 				<T.Mesh
 					geometry={getNormalIndicator(facet, $superGlobuleStore)}
 					material={materials.default}
@@ -137,4 +152,30 @@
 		/> -->
 		<!-- <Highlight /> -->
 	</T.Group>
+{/if}
+
+{#if $viewControlStore.showGlobuleTubeGeometry.any}
+  <T.Group position={[0, 0, 0]}>
+    {#if globuleTubeGeometry.sections}
+      <T.Mesh geometry={globuleTubeGeometry.sections} material={materials.numbered[4]} />
+    {/if}
+    {#each globuleTubeGeometry.bands || [] as band}
+      <T.Mesh geometry={band} material={materials.default} />
+    {/each}
+    {#each globuleTubeGeometry.facets || [] as facet}
+      <T.Mesh
+        geometry={facet.geometry}
+        material={getMaterial(facet.address, $selectedProjectionGeometry)}
+        on:click={(ev) => onClick(ev, facet.address)}
+      />
+    {/each}
+    {#if showNormals && globuleTubeGeometry.facets}
+      {#each globuleTubeGeometry.facets as facet}
+        <T.Mesh
+          geometry={getNormalIndicator(facet, $superGlobuleStore)}
+          material={materials.default}
+        />
+      {/each}
+    {/if}
+  </T.Group>
 {/if}

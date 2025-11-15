@@ -9,7 +9,7 @@ import type {
 	Section
 } from './types';
 import type { Band, Facet } from '$lib/types';
-import { type ShowProjectionGeometries } from '$lib/stores/viewControlStore';
+import { type ShowGlobuleTubeGeometries, type ShowProjectionGeometries } from '$lib/stores/viewControlStore';
 
 export const collateGeometry = (
 	{
@@ -25,24 +25,24 @@ export const collateGeometry = (
 	},
 	show: ShowProjectionGeometries
 ) => {
-	return show.any
-		? {
-				surface: show.surface ? surface : undefined,
-				projection: show.proejection
-					? collateProjectionGeometry(projection, new Vector3(0, 0, 0))
-					: undefined,
-				polygons: show.polygons
-					? polyhedron.polygons.map((p) => collatePolygonGeometry(p))
-					: undefined,
-				sections: show.sections
-					? collateSectionGeometry(tubes.map((tube) => tube.sections).flat(1))
-					: undefined,
-				bands: show.bands ? collateBandGeometry(tubes.map((tube) => tube.bands).flat()) : undefined,
-				facets: show.facets
-					? collateFacetGeometry(tubes.map((tube) => tube.bands).flat())
-					: undefined
-		  }
-		: {};
+	if (!show.any) return {};
+	return {
+		surface: show.surface ? surface : undefined,
+		projection: show.projection ? collateProjectionGeometry(projection, new Vector3(0, 0, 0)) : undefined,
+		polygons: show.polygons ? polyhedron.polygons.map((p) => collatePolygonGeometry(p)) : undefined,
+		sections: show.sections ? collateSectionGeometry(tubes.map((tube) => tube.sections).flat(1)) : undefined,
+		bands: show.bands ? collateBandGeometry(tubes.map((tube) => tube.bands).flat()) : undefined,
+		facets: show.facets ? collateFacetGeometry(tubes.map((tube) => tube.bands).flat()) : undefined
+	};
+};
+
+export const collateGlobuleTubeGeometry = (globuleTubes: Tube[], show: ShowGlobuleTubeGeometries) => {
+	if (!show.any) return {};
+	return {
+		sections: show.sections ? collateSectionGeometry(globuleTubes.map((tube) => tube.sections).flat(1)) : undefined,
+		bands: show.bands ? collateBandGeometry(globuleTubes.map((tube) => tube.bands).flat()) : undefined,
+		facets: show.facets ? collateFacetGeometry(globuleTubes.map((tube) => tube.bands).flat()) : undefined
+	};
 };
 
 export const collateProjectionGeometry = (projection: Projection, center: Vector3) => {
