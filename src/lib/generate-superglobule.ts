@@ -29,6 +29,7 @@ export const generateSuperGlobule = (superConfig: SuperGlobuleConfig): SuperGlob
 		.flat();
 
 	// Projection Tube pipeline
+	console.debug('|||||||||||||||||||||||||||| generateSuperGlobule - superConfig.projectionConfigs', superConfig.projectionConfigs);
 	const projections = superConfig.projectionConfigs.map((config, i) =>
 		makeProjection(config, { globule: i })
 	);
@@ -45,15 +46,18 @@ export const generateSuperGlobule = (superConfig: SuperGlobuleConfig): SuperGlob
 };
 
 export const generateSuperGlobuleTubes = (superConfig: SuperGlobuleConfig): SuperGlobule => {
-	console.debug('*** *** *** GENERATE SUPER GLOBULE TUBES *** *** ***');
-	console.debug('superConfig', superConfig);
+	// console.debug('*** *** *** GENERATE SUPER GLOBULE TUBES *** *** ***');
+	// console.debug('superConfig', superConfig);
 
 	const globuleTubes = superConfig.subGlobuleConfigs
 		.map((sgc, index) => generateSubGlobuleTubes(sgc, index))
 		.flat();
 
 	// const recombinedSubGlobules: SubGlobule[] = recombineSubGlobules(subGlobules);
-
+	console.debug(
+		'generateSuperGlobuleTubes - superConfig.projectionConfigs',
+		superConfig.projectionConfigs
+	);
 	const projections = superConfig.projectionConfigs.map((config, i) =>
 		makeProjection(config, { globule: i })
 	);

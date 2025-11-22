@@ -1,4 +1,12 @@
-import type { Band, FacetOrientation, BezierConfig, Id, Point, Point3 } from '$lib/types';
+import type {
+	Band,
+	FacetOrientation,
+	BezierConfig,
+	Id,
+	Point,
+	Point3,
+	GlobuleConfig
+} from '$lib/types';
 import type { CurvePath, Vector2, Vector3 } from 'three';
 
 export type SphereConfig = {
@@ -17,7 +25,7 @@ export type CapsuleConfig = {
 	heightSegments: number;
 };
 
-export type SurfaceGeometryConfig = SphereConfig | CapsuleConfig;
+export type SurfaceGeometryConfig = SphereConfig | CapsuleConfig | GlobuleConfig;
 
 export type SurfaceConfig = SurfaceGeometryConfig & {
 	transform: TransformConfig | 'inherit';
@@ -42,7 +50,7 @@ export type LevelIndex = number;
 export type PointIndex = number;
 
 export type EdgeConfig<
-	S extends undefined | Point3 | Point,
+	S extends undefined | VertexIndex | Point3 | Point,
 	T extends VertexIndex | Point3 | Point,
 	U extends CurveIndex | EdgeCurveConfig | EdgeCurveConfigVector2,
 	V extends CurveIndex | CrossSectionConfig | CrossSectionConfigVector2

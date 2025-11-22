@@ -33,5 +33,5 @@
 
 
 ### Saving
-- start over with config saving.
-- just use json
+- start over with config saving to database and/or files
+- just use json. granularity is not useful here

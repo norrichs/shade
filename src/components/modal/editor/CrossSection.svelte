@@ -156,7 +156,7 @@
 							type="range"
 							min={0}
 							step={1}
-							max={$superConfigStore.projectionConfigs[0].surfaceConfig.radius * 2}
+							max={$superConfigStore.projectionConfigs[0].surfaceConfig.radius || 100 * 2}
 							bind:value={crossSection.scaling.width}
 						/>
 					</LabeledControl>
@@ -165,7 +165,7 @@
 							type="range"
 							min={0}
 							step={1}
-							max={$superConfigStore.projectionConfigs[0].surfaceConfig.radius * 2}
+							max={$superConfigStore.projectionConfigs[0].surfaceConfig.radius || 100 * 2}
 							bind:value={crossSection.scaling.height}
 						/>
 					</LabeledControl>

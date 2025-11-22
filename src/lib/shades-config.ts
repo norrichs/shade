@@ -34,10 +34,10 @@ const defaultSilhouetteConfig = (): SilhouetteConfig => ({
 		{
 			type: 'BezierConfig',
 			points: [
-				{ type: 'PointConfig2', x: 50, y: -50 },
-				{ type: 'PointConfig2', x: 150, y: -50 },
-				{ type: 'PointConfig2', x: 150, y: -50 },
-				{ type: 'PointConfig2', x: 150, y: 0 }
+				{ type: 'PointConfig2', x: 0, y: 65 },
+				{ type: 'PointConfig2', x: 85, y: 65},
+				{ type: 'PointConfig2', x: 20, y: -100 },
+				{ type: 'PointConfig2', x: 0, y: -65 }
 			]
 		}
 	]
@@ -179,7 +179,7 @@ export const generateDefaultRadialShapeConfig = (
 const defaultLevelConfig = (): LevelConfig => ({
 	type: 'LevelConfig',
 	// id: generateTempId(GENERAL_CONFIG),
-	silhouetteSampleMethod: { method: 'preserveAspectRatio', divisions: 10 },
+	silhouetteSampleMethod: { method: 'divideCurve', divisions: 10 },
 	levelPrototypeSampleMethod: 'curve',
 	levelCount: 30,
 	levelOffsets: [
@@ -266,17 +266,16 @@ export const defaultScaleConfig: PatternScale = {
 	}
 };
 
-
 export const defaultPanelHoleConfig: PanelHoleConfig = {
 	holeDistribution: 'vertex',
 	units: 'in',
 	thickness: 0.47,
 	count: 1,
-	minimumInset: 5/16,
-	vertexInset: 1/2,
-	holeDiameter: 0.1730,
-	headDiameter: 0.3610,
-	nutDiameter: 5/16
+	minimumInset: 5 / 16,
+	vertexInset: 1 / 2,
+	holeDiameter: 0.173,
+	headDiameter: 0.361,
+	nutDiameter: 5 / 16
 };
 
 export const defaultDistributionConfig: DistributionConfig = {
@@ -523,7 +522,7 @@ export const defaultPatternViewConfig = (): PatternViewConfig => ({
 	showQuads: false,
 	showTriangles: false,
 	showLabels: false,
-	range: { },
+	range: {},
 	width: 800,
 	height: 600,
 	zoom: -1.2,
@@ -542,7 +541,7 @@ export const generateDefaultGlobuleConfig = (): GlobuleConfig => {
 		type: 'GlobuleConfig',
 		id: generateTempId(GLOBULE_CONFIG),
 		name: 'New Globule',
-		shapeConfig: generateDefaultAsymmetricShapeConfig({ method: 'divideCurve', divisions: 1 }),
+		shapeConfig: generateDefaultRadialShapeConfig(5, { method: 'divideCurve', divisions: 30 }), // generateDefaultAsymmetricShapeConfig({ method: 'divideCurve', divisions: 1 }),
 		levelConfig: defaultLevelConfig(),
 		silhouetteConfig: defaultSilhouetteConfig(),
 		depthCurveConfig: defaultDepthCurveConfig(),

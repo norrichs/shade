@@ -13,9 +13,6 @@
 		{ name: 'Height' }
 	];
 
-	const update = (x: any) => console.debug('update', x);
-
-	$: update(showing);
 </script>
 
 <section>

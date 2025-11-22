@@ -69,7 +69,7 @@ export const defaultCrossSection: CrossSectionConfig = {
 	],
 	center: { x: 0, y: 0.5 },
 	sampleMethod: { method: 'divideCurvePath', divisions: 3 }, //{ method: 'manualDivisions', divisions: 5, divisionsArray: [0.15, 0.3, 0.45, 0.65] },
-	scaling: { width: 'curve', height: 280 },
+	scaling: { width: 'curve', height: 880 },
 	shouldSkewCurve: false
 };
 

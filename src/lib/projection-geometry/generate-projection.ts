@@ -6,7 +6,8 @@ import type {
 	Point3,
 	FacetEdgeMeta,
 	TrianglePoint,
-	SuperGlobule
+	SuperGlobule,
+	GlobuleConfig
 } from '$lib/types';
 import { average, getCubicBezierCurvePath, getIntersectionOfLines, getVector3 } from '$lib/util';
 import {
@@ -43,6 +44,7 @@ import type {
 	ProjectionEdge,
 	ProjectorConfig,
 	Section,
+	SphereConfig,
 	SurfaceConfig,
 	TransformConfig,
 	TriangleEdge,
@@ -56,6 +58,9 @@ import {
 	getTrianglePointAsKVFromTriangleEdge,
 	getTrianglePointFromTriangleEdge
 } from '$lib/cut-pattern/generate-pattern';
+import { generateGlobuleTube } from '$lib/generate-shape';
+import { collateGlobuleTubeGeometry } from './collate-geometry';
+import { generateDefaultGlobuleConfig } from '$lib/shades-config';
 
 export const preparePolygonConfig = (
 	polygonConfig: PolygonConfig<undefined, number, number, number>,
@@ -131,10 +136,32 @@ const getMatrix4 = (
 	return resultMatrix;
 };
 
-export const generateSphereMesh = ({ radius }: SurfaceConfig) => {
+export const generateSphereMesh = ({ radius }: SphereConfig) => {
 	const sphereGeometry = new SphereGeometry(radius, 100, 100);
 	const sphereMesh = new Mesh(sphereGeometry, materials.default);
 	return sphereMesh;
+};
+
+export const generateGlobuleMesh = (config: GlobuleConfig) => {
+	const tube = generateGlobuleTube(config);
+	const geometries = collateGlobuleTubeGeometry([tube], {
+		any: true,
+		bands: true,
+		facets: false,
+		sections: false
+	});
+
+	const globuleMesh = new Object3D();
+
+	// Add band geometries as meshes
+	if (geometries.bands) {
+		geometries.bands.forEach((bandGeometry) => {
+			const bandMesh = new Mesh(bandGeometry, materials.default);
+			globuleMesh.add(bandMesh);
+		});
+	}
+
+	return globuleMesh;
 };
 
 export const generateCapsuleMesh = ({
@@ -161,6 +188,10 @@ export const generateSurface = (cfg: SurfaceConfig) => {
 	} else if (cfg.type === 'CapsuleConfig') {
 		const capsuleMesh = generateCapsuleMesh(cfg);
 		surface.add(capsuleMesh);
+	} else if (cfg.type === 'GlobuleConfig') {
+		console.debug('generateSurface - globule config', cfg);
+		const globuleMesh = generateGlobuleMesh(cfg);
+		surface.add(globuleMesh);
 	}
 	const transformMatrix = getMatrix4(cfg.transform);
 	surface.applyMatrix4(transformMatrix);
@@ -361,7 +392,15 @@ export const generateProjection = ({
 	projectionConfig
 }: GenerateProjectionProps) => {
 	const startTime = performance.now();
-	const center = getVector3(projectionConfig.surfaceConfig.center) as Vector3;
+
+	// Get center based on surface config type
+	let center: Vector3;
+	if (projectionConfig.surfaceConfig.type === 'GlobuleConfig') {
+		// For GlobuleConfig, use origin as center
+		center = new Vector3(0, 0, 0);
+	} else {
+		center = getVector3(projectionConfig.surfaceConfig.center) as Vector3;
+	}
 
 	// Create raycasters once and reuse them for all points (optimization)
 	const edgeRaycaster = new Raycaster(undefined, undefined, undefined, 2000);
@@ -971,10 +1010,18 @@ export const isSameVector3 = (v0: Vector3, v1: Vector3, precision = 1 / 10_000) 
 };
 
 export const makeProjection = (projectionConfig: BaseProjectionConfig, address: GlobuleAddress) => {
+	const globuleConfig = generateDefaultGlobuleConfig();
+	projectionConfig.surfaceConfig = {
+		...globuleConfig,
+		type: 'GlobuleConfig',
+		transform: 'inherit'
+	};
+	console.debug('makeProjection - projectionConfig', projectionConfig);
 	const preparedProjectionConfig = prepareProjectionConfig(projectionConfig);
 
 	const { projectorConfig, surfaceConfig } = preparedProjectionConfig;
 
+	console.debug('makeProjection - surfaceConfig', surfaceConfig);
 	const surface = generateSurface(surfaceConfig);
 
 	const polyhedron = generatePolyhedron(projectorConfig);
