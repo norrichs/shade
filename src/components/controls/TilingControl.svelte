@@ -16,11 +16,6 @@
 		if (target instanceof HTMLSelectElement) {
 			$patternConfigStore.tiledPatternConfig.config.variant = (target.value ||
 				'rect') as GridVariant;
-			console.debug(
-				'TilingControl',
-				target?.value,
-				$patternConfigStore.tiledPatternConfig.config.variant
-			);
 		}
 	};
 
@@ -52,7 +47,6 @@
 	$: {
 		fitPatternToPage(fitToPage);
 	}
-	console.debug('tiled pattern config', $patternConfigStore.tiledPatternConfig.config);
 </script>
 
 <section>

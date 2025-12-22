@@ -12,6 +12,7 @@
 
 	// export let projectionPattern: SuperGlobuleProjectionPattern | undefined;
 	export let tubes: TubeCutPattern[] = [];
+	console.debug("CutPatternRenderer", tubes);
 
 	// $: range = $patternConfigStore.patternViewConfig.range;
 	let range: ProjectionRange = {};
@@ -44,7 +45,6 @@
 		tubes: TubeCutPattern[],
 		range: ProjectionRange
 	) => {
-		console.debug('update', { tubes, range });
 		const { showGlobuleTubeGeometry, showProjectionGeometry } = store;
 		const any = showGlobuleTubeGeometry.any || showProjectionGeometry.any;
 		const bands = showGlobuleTubeGeometry.bands || showProjectionGeometry.bands;

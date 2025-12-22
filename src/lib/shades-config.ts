@@ -35,7 +35,7 @@ const defaultSilhouetteConfig = (): SilhouetteConfig => ({
 			type: 'BezierConfig',
 			points: [
 				{ type: 'PointConfig2', x: 0, y: 65 },
-				{ type: 'PointConfig2', x: 85, y: 65},
+				{ type: 'PointConfig2', x: 85, y: 65 },
 				{ type: 'PointConfig2', x: 20, y: -100 },
 				{ type: 'PointConfig2', x: 0, y: -65 }
 			]
@@ -455,7 +455,7 @@ export const tiledPatternConfigs: { [key: string]: TiledPatternConfig } = {
 };
 
 const defaultTiledPatternConfig = (): TiledPatternConfig => {
-	const pattern: TiledPattern = 'tiledHexPattern-1';
+	const pattern: TiledPattern = 'tiledShieldTesselationPattern';
 	return {
 		...tiledPatternConfigs[pattern],
 		labels: {
@@ -582,7 +582,7 @@ export const generateSuperGlobuleConfigWrapper = (globule: GlobuleConfig) => {
 		subGlobuleConfigs: [generateSubGlobuleConfigWrapper(globule)],
 		projectionConfigs: []
 	};
-	console.debug('generatedDefaultSuperGlobuleConfigWrapper', { superGlobuleConfig });
+
 	return superGlobuleConfig;
 };
 
@@ -635,7 +635,7 @@ export const generateDefaultSuperGlobuleConfig = (): SuperGlobuleConfig => {
 		],
 		projectionConfigs: [defaultProjectionConfig]
 	};
-	console.debug('generatedDefaultSuperGlobuleConfig', { superGlobuleConfig });
+
 	return superGlobuleConfig;
 };
 

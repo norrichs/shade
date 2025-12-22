@@ -48,7 +48,6 @@
 		globuleIndex,
 		bandIndex
 	}: BandGeometry) => {
-		console.debug('selectBand', address, subGlobuleConfigId);
 		if ($geometryStore.variant === 'Band') {
 			const subGlobuleConfigIndex =
 				$superConfigStore.subGlobuleConfigs.findIndex(
@@ -144,7 +143,6 @@
 	};
 
 	const handleClick = (event: any, geometry: BandGeometry) => {
-		console.debug('handleClick', { event, geometry });
 		event.stopPropagation();
 
 		if (event.delta > CLICK_DELTA_THRESHOLD) return;
@@ -158,10 +156,8 @@
 		}
 	};
 	const handleProjectionClick = (event: any, address: GlobuleAddress_Facet) => {
-		console.debug('handleProjectionClick', { event, address });
 		event.stopPropagation();
 		$selectedProjection = address;
-		console.debug({ event, address });
 	};
 
 	const indicator: GlobuleGeometry = {

@@ -31,7 +31,6 @@
 	export let shouldUseSVGLabels = true;
 	export let showScalebar: boolean;
 	export let verbose: boolean;
-	
 
 	let {
 		distributionConfig,
@@ -97,7 +96,7 @@
 							}))
 					}))
 			};
-			console.debug({ filtered });
+
 			return filtered;
 		}
 		return pattern;
@@ -113,7 +112,7 @@
 		const pattern = projectionPattern.projectionPanelPattern;
 		const pa = panel.meta.edges[edge].partner;
 		const partner = pattern.tubes[pa.tube].bands[pa.band].panels[pa.facet];
-		console.debug({ partner, pa, pattern });
+
 		return partner;
 	};
 
@@ -132,7 +131,7 @@
 {#if show}
 	{#each pattern.tubes as tube, t (concatAddress_Tube(tube.address))}
 		<g id={`${concatAddress_Tube(tube.address)}`}>
-			<!-- <circle cx={0} cy={0} r={10} fill="red" /> -->
+			<circle cx={0} cy={0} r={10} fill="red" />
 			{#each tube.bands || [] as band, b (concatAddress_Band(band.address))}
 				<BandPanelComponent
 					{band}
@@ -142,15 +141,20 @@
 				>
 					{#each band.panels as panel, p (concatAddress_Facet(panel.address))}
 						<g>
-							<PanelComponent {panel} {patternStyle} {labelSize} {labelStyle} {verbose}/>
+							<PanelComponent {panel} {patternStyle} {labelSize} {labelStyle} {verbose} />
 							{#if showHingePatterns}
 								{#each panel.meta.hingePatterns || [] as hingePattern, h}
 									<g
 										transform={`translate(${hingePattern.bounds.width / 2}, ${
-											-hingePattern.bounds.height - p * 55 - h*40
+											-hingePattern.bounds.height - p * 55 - h * 40
 										})`}
 									>
-										<HingePatternComponent {hingePattern} {panel} showTriangles={true} {patternStyle} />
+										<HingePatternComponent
+											{hingePattern}
+											{panel}
+											showTriangles={true}
+											{patternStyle}
+										/>
 									</g>
 								{/each}
 							{/if}
@@ -177,4 +181,6 @@
 		<Scalebar scale={scaleConfig} />
 		<Scalebar scale={{ ...scaleConfig, unit: 'in', quantity: 0.5 }} origin={{ x: 200, y: 100 }} />
 	{/if}
+{:else}
+ <circle cx={0} cy={0} r={10} fill="red" />
 {/if}

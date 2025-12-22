@@ -5,6 +5,9 @@ import Polyhedra from './editor/Polyhedra.svelte';
 import Surface from './editor/Surface.svelte';
 import PatternView from './editor/PatternView.svelte';
 import Utilities from './editor/Utilities.svelte';
+import Silhouette from './editor/Silhouette.svelte';
+import GlobuleCrossSection from './editor/GlobuleCrossSection.svelte';
+import PatternScale from './editor/PatternScale.svelte';
 
 export type FloaterContent = {
   shortTitle: string;
@@ -33,12 +36,41 @@ export const patternConfigs: SidebarDefinition = new Map([
       title: 'Pattern View',
       content: PatternView
     }
+  ],
+  [
+    'Pattern Scale',
+    {
+      shortTitle: 'PS',
+      title: 'Pattern Scale',
+      content: PatternScale
+    }
   ]
 ]);
+
+export const globuleConfigs: SidebarDefinition = new Map([
+  [
+    'Silhouette',
+    {
+      shortTitle: 'Sl',
+      title: 'Silhouette',
+      content: Silhouette
+    }
+  ],
+  [
+    'Globule Cross Section',
+    {
+      shortTitle: 'GCS',
+      title: 'Globule Cross Section',
+      content: GlobuleCrossSection
+    }
+  ]
+
+])
 
 export const projectionConfigs: SidebarDefinition = new Map([
   ...utilities,
   ...patternConfigs,
+  ...globuleConfigs,
   [
     'Cross Sections',
     {

@@ -7,18 +7,13 @@
 	import type { BezierConfig, PointConfig2 } from '$lib/types';
 	import Button from '../../design-system/Button.svelte';
 	import CurveDefPath from './CurveDefPath.svelte';
-	import {
-		getCanvas,
-		applyLimits,
-		type LimitFunction,
-		type PathEditorConfig
-	} from './path-editor';
+	import { getCanvas, applyLimits, type LimitFunction, type PathEditorConfig } from './path-editor';
 	import DirectionLines from './DirectionLines.svelte';
 	import DraggablePoint from './DraggablePoint.svelte';
 
 	export let curveDef: BezierConfig[];
 	export let config: PathEditorConfig;
-	export let onChangeCurveDef: ((curveDef: BezierConfig[]) => void) | undefined = undefined;
+	export let onChangeCurveDef: (curveDef: BezierConfig[]) => void;
 	export let manualUpdate: boolean = false;
 	export let limits: LimitFunction[] = [];
 
@@ -28,16 +23,25 @@
 		}
 	};
 
+	const handleUpdateCurveDef = (newCurveDef: BezierConfig[]) => {
+		curveDef = newCurveDef;
+		onChangeCurveDef(curveDef);
+	};
+
 	const handleDoubleClick = () => {
 		console.debug('handleDoubleClick');
 	};
 
 	const handleDrag = (newX: number, newY: number, curveIndex: number, pointIndex: number) => {
-		const scaledPoint = { type: 'PointConfig2', x: newX * canv.scale, y: newY * canv.scale } as PointConfig2;
+		const scaledPoint = {
+			type: 'PointConfig2',
+			x: newX * canv.scale,
+			y: newY * canv.scale
+		} as PointConfig2;
 		if (!limits || limits.length === 0) {
-			curveDef[curveIndex].points[pointIndex] = scaledPoint
-			curveDef = curveDef
-			return
+			curveDef[curveIndex].points[pointIndex] = scaledPoint;
+			curveDef = curveDef;
+			return;
 		}
 		curveDef = applyLimits({
 			limits,
@@ -45,7 +49,7 @@
 			curveIndex,
 			pointIndex,
 			newPoint: scaledPoint,
-			oldPoint: {...curveDef[curveIndex].points[pointIndex]}
+			oldPoint: { ...curveDef[curveIndex].points[pointIndex] }
 		});
 	};
 
@@ -54,9 +58,9 @@
 
 <div class="container">
 	<svg width={config.size.width} height={config.size.height} viewBox={canv.viewBox} class="canvas">
-		<CurveDefPath {curveDef} />
+		<CurveDefPath {curveDef} {canv} onChangeCurveDef={handleUpdateCurveDef} />
 		<DirectionLines {curveDef} canvScale={canv.scale} />
-    <slot />
+		<slot />
 	</svg>
 	{#each curveDef as curve, curveIndex}
 		{#each curve.points as point, pointIndex}

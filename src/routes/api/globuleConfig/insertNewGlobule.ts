@@ -31,10 +31,6 @@ export const insertNewGlobuleConfig = async (
 	globuleConfigData: GlobuleConfig,
 	db: ReturnType<typeof tursoClient>
 ): Promise<{ id: number; tempId: Id }> => {
-	console.debug('insertNewGlobuleConfig');
-
-	console.debug('insertNewGlobuleConfig', { globuleConfigData });
-
 	const {
 		silhouetteConfig,
 		depthCurveConfig,
@@ -48,14 +44,11 @@ export const insertNewGlobuleConfig = async (
 		id: globuleConfigTempId
 	} = stripId(globuleConfigData);
 
-	console.debug("stripped", stripId(globuleConfigData))
-
 	const [{ id: globuleConfigId }] = await db
 		.insert(globuleConfigs)
 		.values({ name })
 		.returning({ id: globuleConfigs.id });
 
-	console.debug({ globuleConfigId });
 	await db
 		.insert(silhouetteConfigs)
 		.values(getSilhouetteConfigValues(silhouetteConfig, globuleConfigId));
@@ -68,7 +61,7 @@ export const insertNewGlobuleConfig = async (
 
 	const levelConfigValues = getLevelConfigValues(levelConfig, globuleConfigId);
 	const { id: lcId, ...lcRest } = levelConfigValues;
-	console.debug('insert levelConfigs', levelConfigValues);
+
 	const levelConfigInsertResult = await db
 		.insert(levelConfigs)
 		.values(lcRest)
@@ -76,7 +69,6 @@ export const insertNewGlobuleConfig = async (
 
 	const [{ id: levelConfigId }] = levelConfigInsertResult;
 
-	console.debug({ levelConfigId });
 	await db
 		.insert(levelOffsets)
 		.values(getLevelOffsetsValues(levelConfig.levelOffsets, levelConfigId));

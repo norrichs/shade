@@ -235,7 +235,6 @@ const generateRawLevelsConstantAspect = ({
 		const aspectRatios = getAspectRatiosFromMeridians(meridians);
 		const divergences = aspectRatios.map((ar) => getDivergence(ar));
 		if (divergenceTest(divergences, divergenceLimit, divisionBasis)) {
-			console.debug('______________ constant aspect ratio iterations:', iteration);
 			break;
 		}
 

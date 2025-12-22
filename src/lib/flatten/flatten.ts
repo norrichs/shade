@@ -201,7 +201,6 @@ export function flatten(
 	// matrix.e = dm.e
 	// matrix.f = dm.f
 
-	// console.debug('transformMatrix', transformationMatrix, dm, matrix);
 	// The following code can bake transformations
 	// both normalized and non-normalized data
 	// Coordinates have to be Absolute in the following

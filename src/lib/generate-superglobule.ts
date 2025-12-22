@@ -18,20 +18,39 @@ import type {
 } from './types';
 
 export const generateSuperGlobule = (superConfig: SuperGlobuleConfig): SuperGlobule => {
+	console.debug(
+		0,
+		'*** generateSuperGlobule ***',
+		superConfig.projectionConfigs[0].surfaceConfig.type
+	);
 	// Old Globule Pipeline
 	const subGlobules: SubGlobule[] = recombineSubGlobules(
 		superConfig.subGlobuleConfigs.map((sgc, index) => generateSubGlobule(sgc, index)).flat()
 	);
-
+	console.debug(
+		1,
+		'*** generateSuperGlobule ***',
+		superConfig.projectionConfigs[0].surfaceConfig.type
+	);
 	// New Globule Tube Pipeline
 	const globuleTubes = superConfig.subGlobuleConfigs
 		.map((sgc, index) => generateSubGlobuleTubes(sgc, index))
 		.flat();
-
+	console.debug(
+		2,
+		'*** generateSuperGlobule ***',
+		superConfig.projectionConfigs[0].surfaceConfig.type
+	);
 	// Projection Tube pipeline
-	console.debug('|||||||||||||||||||||||||||| generateSuperGlobule - superConfig.projectionConfigs', superConfig.projectionConfigs);
-	const projections = superConfig.projectionConfigs.map((config, i) =>
-		makeProjection(config, { globule: i })
+
+	const projections = superConfig.projectionConfigs.map((config, i) => {
+		console.debug('generating projection', i, config.surfaceConfig.type);
+		return makeProjection(config, { globule: i });
+	});
+	console.debug(
+		3,
+		'*** generateSuperGlobule ***',
+		superConfig.projectionConfigs[0].surfaceConfig.type
 	);
 
 	const superGlobule: SuperGlobule = {
@@ -45,41 +64,11 @@ export const generateSuperGlobule = (superConfig: SuperGlobuleConfig): SuperGlob
 	return superGlobule;
 };
 
-export const generateSuperGlobuleTubes = (superConfig: SuperGlobuleConfig): SuperGlobule => {
-	// console.debug('*** *** *** GENERATE SUPER GLOBULE TUBES *** *** ***');
-	// console.debug('superConfig', superConfig);
-
-	const globuleTubes = superConfig.subGlobuleConfigs
-		.map((sgc, index) => generateSubGlobuleTubes(sgc, index))
-		.flat();
-
-	// const recombinedSubGlobules: SubGlobule[] = recombineSubGlobules(subGlobules);
-	console.debug(
-		'generateSuperGlobuleTubes - superConfig.projectionConfigs',
-		superConfig.projectionConfigs
-	);
-	const projections = superConfig.projectionConfigs.map((config, i) =>
-		makeProjection(config, { globule: i })
-	);
-
-	const superGlobule: SuperGlobule = {
-		type: 'SuperGlobule',
-		superGlobuleConfigId: superConfig.id,
-		name: superConfig.name,
-		globuleTubes: globuleTubes,
-		subGlobules: [],
-		projections
-	};
-	return superGlobule;
-};
-
 /**
  * @deprecated
  */
 const generateSubGlobule = (subGlobuleConfig: SubGlobuleConfig, sgIndex: number): SubGlobule => {
 	const { transforms, id, name } = subGlobuleConfig;
-
-	console.debug('GENERATE SUBGLOBULE');
 
 	const prototypeGlobule: Globule = {
 		type: 'Globule',
@@ -111,8 +100,6 @@ const generateSubGlobule = (subGlobuleConfig: SubGlobuleConfig, sgIndex: number)
 const generateSubGlobuleTubes = (subGlobuleConfig: SubGlobuleConfig, sgIndex: number): Tube[] => {
 	const { transforms, id, name } = subGlobuleConfig;
 
-	console.debug('*** *** *** GENERATE SUBGLOBULE TUBES *** *** ***');
-
 	// const prototypeGlobule: Globule = {
 	// 	type: 'Globule',
 	// 	coord: { s: sgIndex, t: 0, r: 0 },
@@ -126,10 +113,6 @@ const generateSubGlobuleTubes = (subGlobuleConfig: SubGlobuleConfig, sgIndex: nu
 	// };
 
 	const globuleTube = generateGlobuleTube(subGlobuleConfig.globuleConfig);
-	console.debug(
-		'--------------------------------- prototypeGlobule ---------------------------------',
-		globuleTube
-	);
 
 	// let globules: Globule[];
 	// if (transforms) {
@@ -145,7 +128,6 @@ const generateSubGlobuleTubes = (subGlobuleConfig: SubGlobuleConfig, sgIndex: nu
 	// 	data: globules as Globule[]
 	// };
 
-	console.debug('subGlobule', globuleTube);
 	return [globuleTube];
 };
 

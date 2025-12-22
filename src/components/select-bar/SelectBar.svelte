@@ -16,7 +16,6 @@
 			class:selected={selected === option.name}
 			on:click={() => {
 				selected = option.name;
-				console.debug({ selected, option });
 			}}
 		>
 			{option.name}

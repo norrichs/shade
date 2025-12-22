@@ -36,7 +36,7 @@
 	};
 	const handleSampleChange = (ev: Event) => {
 		const target = ev.target as HTMLSelectElement;
-		console.debug(target.value);
+
 		if (isCurveSampleMethodMethod(target.value)) {
 			$superConfigStore.subGlobuleConfigs[
 				sgIndex

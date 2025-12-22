@@ -10,12 +10,7 @@
 {#if show}
 	<div class="row">
 		<span>{label}</span>
-		<select
-			bind:value
-			on:change={(e) => {
-				console.debug('new value', e, value);
-			}}
-		>
+		<select bind:value on:change={(e) => {}}>
 			{#each options as option}
 				{#if typeof option === 'string'}
 					<option>{option}</option>

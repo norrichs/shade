@@ -278,7 +278,7 @@
 
 	const handleSymmetryTypeChange = (event: any) => {
 		const symmetryType = event?.target?.value || 'radial';
-		console.debug({ symmetryType });
+
 		if (symmetryType === 'radial') {
 			$superConfigStore.subGlobuleConfigs[sgIndex].globuleConfig.shapeConfig =
 				generateDefaultRadialShapeConfig(symmetry, {
@@ -326,7 +326,6 @@
 		pointIndex: number,
 		shouldUpdateStores = false
 	) => {
-		console.debug('updateCurves');
 		curves = onPathPointMove(
 			x,
 			-y,

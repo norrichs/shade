@@ -71,7 +71,7 @@ export const getCubicBezierIntersection = (
 
 export const generateSvgUrl = (id: string) => {
 	const svg = document.getElementById(id);
-	console.debug('*** svg', svg);
+
 	if (svg) {
 		const quads = svg.querySelectorAll('.svg-pattern-quad');
 		quads?.forEach((q) => q.remove());

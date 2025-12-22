@@ -55,7 +55,6 @@
 		geometry={g}
 		material={groupMaterials[i]}
 		on:click={(ev) => {
-			console.debug('mesh', ev);
 			if (onClick) {
 				onClick(ev);
 			}

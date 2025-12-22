@@ -125,7 +125,7 @@
 									handleDragEnd([e, c, p]);
 								}
 							}}
-							on:dblclick={() => console.debug('double click')}
+							on:dblclick={() => console.log('double click')}
 							use:asDraggable={{
 								onDragStart: { x: point.x, y: point.y },
 								// @ts-expect-error

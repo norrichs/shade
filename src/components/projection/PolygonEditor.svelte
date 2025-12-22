@@ -113,7 +113,7 @@
 				$superConfigStore.projectionConfigs,
 				address
 			);
-			console.debug('toggleEditorMode', mode, crossSectionDef);
+
 			const editableCrossSection = editCrossSection.get({
 				config: $superConfigStore.projectionConfigs[projectionIndex],
 				editContext: {
@@ -189,8 +189,6 @@
 			}
 		});
 
-		console.debug('EDITABLE POLYGON', polygon);
-
 		edgeFills = polygon.edges.map((edge) => {
 			const curves = edge.widthCurve.curves.curves.flat() as CubicBezierCurve[];
 			const starter = `M ${edge.vertex1.x} ${edge.vertex1.y} L ${edge.vertex0.x} ${edge.vertex0.y} L ${curves[0].v0.x} ${curves[0].v0.y}`;
@@ -200,7 +198,6 @@
 			}, starter);
 		});
 		widthCurves = polygon.edges.map((edge) => edge.widthCurve.curves);
-		console.debug('update PolygonEditor', { widthCurves });
 	};
 	$: projectionConfig = $superConfigStore.projectionConfigs[projectionIndex];
 	$: update(projectionConfig, polygonIndex);

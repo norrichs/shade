@@ -29,10 +29,6 @@
 	const setupPickBands = (recurrenceIndex: number, geometryAddress: GeometryAddress<undefined>) => {
 		const coord: GlobuleConfigCoordinates = { s: sgIndex, t: tIndex, r: recurrenceIndex };
 		if ($interactionMode.type === 'band-select-partners') {
-			console.debug('setupPickBands', {
-				subGlobule: $superGlobuleStore.subGlobules[sgIndex],
-				sgIndex
-			});
 			const originGlobules = $superGlobuleStore.subGlobules[sgIndex].data.filter((globule) => {
 				const selectorIndex = geometryAddress.g.length - 1;
 				const { g } = globule.address;
@@ -85,7 +81,6 @@
 		recurs[recurrenceIndex].recombines = undefined;
 		$superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex].recurs = recurs;
 		recurs = recurs;
-		console.debug('deleteRecombination recurs', window.structuredClone(recurs));
 	};
 
 	const toggleGhost = (recurrenceIndex: number) => {

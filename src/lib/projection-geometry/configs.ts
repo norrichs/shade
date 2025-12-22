@@ -1,13 +1,11 @@
 import { generateTempId } from '$lib/id-handler';
-import type { BezierConfig, CurveSampleMethod } from '$lib/types';
-import { secondEdgeCurve } from './curve-definitions';
 import cube from './models/cube';
 import doublyTruncatedIcosohedron from './models/doubly-truncated-icosohedron';
 import icosohedron from './models/icosohedron';
 import p60Dodecahedron from './models/p60dodecahedron';
 import tetrahedron from './models/tetrahedron';
-import truncatedDodecahedron from './models/truncated-dodecahedron';
-import { defaultSurfaceConfig } from './surface-definitions';
+
+import { getDefaultSurfaceConfig } from './surface-definitions';
 import type {
 	ProjectorConfig,
 	ProjectionConfig,
@@ -56,7 +54,7 @@ const defaultProjectorConfig = projectorConfigs.cube;
 
 const flattenedDefaultTransform: TransformConfig = {
 	translate: { x: 0, y: 0, z: 0 },
-	scale: { x: 10, y: 10, z: 10 },
+	scale: { x: 1, y: 1, z: 1 },
 	rotate: { x: 0, y: 0, z: 0 }
 };
 
@@ -66,7 +64,7 @@ export const defaultProjectionConfig: ProjectionConfig<
 	CurveIndex,
 	CurveIndex
 > = {
-	surfaceConfig: defaultSurfaceConfig,
+	surfaceConfig: getDefaultSurfaceConfig(),
 	projectorConfig: defaultProjectorConfig,
 	bandConfig: defaultBandConfig,
 	meta: { transform: flattenedDefaultTransform }

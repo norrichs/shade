@@ -87,12 +87,10 @@ export async function PUT({ params, request, cookies }) {
 
 	for (const ct of configTables) {
 		try {
-			console.debug(ct.config.type, ct.config, ct.getter(ct.config, Number.parseInt(params.id)));
 			const result = await db
 				.update(ct.table)
 				.set(ct.getter(ct.config, Number.parseInt(params.id)))
 				.where(eq(ct.table.id, ct.config.id));
-			console.debug('result', result);
 		} catch (err) {
 			console.error(err);
 		}
@@ -102,6 +100,6 @@ export async function PUT({ params, request, cookies }) {
 	// 		.set(getSilhouetteConfigValues(silhouetteConfig, Number.parseInt(params.id)))
 	// 		.where(eq(silhouetteConfigs.id, silhouetteConfig.id));
 	// }
-	console.debug('*****************');
+
 	return new Response(null, { status: 204 });
 }

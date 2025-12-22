@@ -4,7 +4,7 @@ export const viewBox = (canv: { minX: number; minY: number; maxX: number; maxY: 
 	`${canv.minX} ${canv.minY} ${canv.maxX - canv.minX} ${canv.maxY - canv.minY}`;
 
 export const getPathFromCurves = (curvePath: CurvePath<Vector2>): string => {
-	const curves = curvePath.curves as CubicBezierCurve[]
+	const curves = curvePath.curves as CubicBezierCurve[];
 
 	const starter = `M ${curves[0].v0.x} ${curves[0].v0.y}`;
 	const path = curves.reduce(
@@ -21,13 +21,13 @@ export const getPathFromCurves = (curvePath: CurvePath<Vector2>): string => {
 // 	const starter = `M ${curves[0].points[0].x} ${-curves[0].points[0].y}`;
 // 	const path = curves.reduce(
 // 		(path, c) => `
-//     ${path} C 
-//     ${c.points[1].x} ${-c.points[1].y}, 
+//     ${path} C
+//     ${c.points[1].x} ${-c.points[1].y},
 //     ${c.points[2].x} ${-c.points[2].y},
 //     ${c.points[3].x} ${-c.points[3].y} `,
 // 		starter
 // 	);
-// 	console.debug('getPathFromCurves', path);
+
 // 	return path;
 // };
 

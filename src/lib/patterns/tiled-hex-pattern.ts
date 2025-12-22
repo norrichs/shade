@@ -108,18 +108,18 @@ const translateQuad = (quad: Quadrilateral, x: number, y: number): Quadrilateral
 		a: quad.a.clone().add({ x, y, z: 0 } as any),
 		b: quad.b.clone().add({ x, y, z: 0 } as any),
 		c: quad.c.clone().add({ x, y, z: 0 } as any),
-		d: quad.d.clone().add({ x, y, z: 0 } as any),
-	}
-}
+		d: quad.d.clone().add({ x, y, z: 0 } as any)
+	};
+};
 const rotateQuad = (quad: Quadrilateral, angle: number, anchor: Point): Quadrilateral => {
 	const rp = (p: any) => rotatePoint(anchor, { x: p.x, y: p.y }, angle);
 	return {
 		a: { x: rp(quad.a).x, y: rp(quad.a).y, z: quad.a.z } as any,
 		b: { x: rp(quad.b).x, y: rp(quad.b).y, z: quad.b.z } as any,
 		c: { x: rp(quad.c).x, y: rp(quad.c).y, z: quad.c.z } as any,
-		d: { x: rp(quad.d).x, y: rp(quad.d).y, z: quad.d.z } as any,
-	}
-}
+		d: { x: rp(quad.d).x, y: rp(quad.d).y, z: quad.d.z } as any
+	};
+};
 
 export const adjustHexPatternAfterTiling = (
 	patternBand: PathSegment[][],
@@ -132,33 +132,27 @@ export const adjustHexPatternAfterTiling = (
 	let thisFacet: PathSegment[];
 	let thisQuad: Quadrilateral;
 	const finalFacets: PathSegment[][] = [];
-	const finalQuads: Quadrilateral[] = []
+	const finalQuads: Quadrilateral[] = [];
 
 	if (endLooped > 0) {
 		const index = patternBand.length - 1;
-		thisFacet = patternBand[index]
-		thisQuad = quadBand[index]
+		thisFacet = patternBand[index];
+		thisQuad = quadBand[index];
 		const nextQuad = quadBand[0];
 		const tDiff = { x: thisQuad.d.x - nextQuad.a.x, y: thisQuad.d.y - nextQuad.a.y };
 
 		const aDiff = getAngle(thisQuad.d, thisQuad.c) - getAngle(nextQuad.a, nextQuad.b);
 
 		for (let k = 0; k < endLooped; k++) {
-			const translatedQuad = translateQuad(window.structuredClone(quadBand[k]), tDiff.x, tDiff.y)
-			finalQuads.push(rotateQuad(translatedQuad, aDiff, thisQuad.d))
-
+			const translatedQuad = translateQuad(window.structuredClone(quadBand[k]), tDiff.x, tDiff.y);
+			finalQuads.push(rotateQuad(translatedQuad, aDiff, thisQuad.d));
 
 			const translated = translatePS(window.structuredClone(patternBand[k]), tDiff.x, tDiff.y);
 			finalFacets.push(rotatePS(translated, aDiff, thisQuad.d));
 		}
 		patternBand.push(...finalFacets);
-		quadBand.push(...finalQuads)
+		quadBand.push(...finalQuads);
 	}
-
-
-
-
-
 
 	patternBand = patternBand.map((facet, i, facets) => {
 		thisFacet = facet;
@@ -186,9 +180,13 @@ export const adjustHexPatternAfterTiling = (
 			// 		finalFacets.push(rotatePS(translated, aDiff, thisQuad.d));
 			// 	}
 			// }
-			
+
 			nextFacet = endsMatched
-				? rotatePS(translatePS(window.structuredClone(facets[0]), tDiff.x, tDiff.y), aDiff, thisQuad.d)
+				? rotatePS(
+						translatePS(window.structuredClone(facets[0]), tDiff.x, tDiff.y),
+						aDiff,
+						thisQuad.d
+				  )
 				: undefined;
 		} else {
 			prevFacet = facets[i - 1];
@@ -205,7 +203,7 @@ export const adjustHexPatternAfterTiling = (
 	});
 
 	// if (finalFacets.length > 0) {
-	// 	console.debug('pushing final facet');
+
 	// 	patternBand.push(...finalFacets.map((facet) => facet));
 	// }
 

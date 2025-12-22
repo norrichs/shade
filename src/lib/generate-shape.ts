@@ -819,8 +819,6 @@ export const getRenderable = (
 
 			count = count % shapes.length || shapes.length;
 
-			console.debug({ start, count });
-
 			return [...shapes, ...shapes]
 				.slice(start, count ? start + count : shapes.length)
 				.map((shape) => ({
@@ -840,7 +838,6 @@ export const getRenderable = (
  */
 
 export const generateGlobuleData = (configStore: GlobuleConfig): GlobuleData => {
-	console.debug('GENERATE GLOBULE DATA');
 	const config = window.structuredClone(configStore);
 	const rotatedShapePrototype: LevelPrototype | LevelPrototype[] = generateLevelPrototype(
 		config.shapeConfig,
@@ -852,8 +849,6 @@ export const generateGlobuleData = (configStore: GlobuleConfig): GlobuleData => 
 		config.depthCurveConfig,
 		rotatedShapePrototype
 	);
-
-	console.debug('levels', levels);
 
 	const struts = generateStruts(levels, config.strutConfig);
 	const unTabbedBands = generateBandSet(config, levels);
@@ -867,7 +862,6 @@ export const generateGlobuleData = (configStore: GlobuleConfig): GlobuleData => 
 };
 
 export const generateGlobuleTube = (configStore: GlobuleConfig): Tube => {
-	console.debug('*** *** *** GENERATE GLOBULE TUBE *** *** ***');
 	const config = window.structuredClone(configStore);
 	const rotatedShapePrototype: LevelPrototype | LevelPrototype[] = generateLevelPrototype(
 		config.shapeConfig,
@@ -879,8 +873,6 @@ export const generateGlobuleTube = (configStore: GlobuleConfig): Tube => {
 		config.depthCurveConfig,
 		rotatedShapePrototype
 	);
-
-	console.debug('sections', sections);
 
 	const bands = generateProjectionBands(sections, 'axial-right', { globule: 0, tube: 0 });
 
@@ -899,6 +891,6 @@ export const generateGlobuleTube = (configStore: GlobuleConfig): Tube => {
 		orientation: 'axial-right',
 		address: { globule: 0, tube: 0 }
 	};
-	console.debug('tube', tube);
+
 	return tube;
 };

@@ -39,7 +39,6 @@ export const generateSuperGlobulePattern = (
 	superGlobuleConfig: SuperGlobuleConfig,
 	globulePatternConfig: GlobulePatternConfig
 ): SuperGlobuleBandPattern => {
-	console.debug('------------------ generateSuperGlobulePattern ------------------');
 	const patternGlobules: PatternGlobule[] = superGlobule.subGlobules.map(
 		(subGlobule: SubGlobule) => {
 			const config = superGlobuleConfig.subGlobuleConfigs.find(
@@ -87,7 +86,6 @@ export const generateSuperGlobulePattern = (
 		bandPatterns
 	};
 
-	console.debug('superGlobulePattern', result);
 	return result;
 };
 
@@ -111,7 +109,7 @@ export const generateProjectionPattern = (
 	} = globulePatternConfig;
 
 	if (shouldUsePanelPattern(tiledPatternConfig)) {
-		console.debug('SHOULD USE PANEL PATTERN');
+		console.debug('generating panel pattern', { tubes });
 		const projectionPanelPattern = generateProjectionPanelPattern({
 			tubes,
 			range,

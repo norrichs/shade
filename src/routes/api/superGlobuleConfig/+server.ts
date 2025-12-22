@@ -8,7 +8,6 @@ import { insertNewGlobuleConfig, type IdResponse } from '../globuleConfig/insert
 import { deserializeSubGlobuleConfig, deserialzeSuperGlobuleConfig } from '../globuleConfig/utils';
 
 export const POST: RequestHandler = async ({ request }) => {
-	console.debug('superGlobuleConfig POST');
 	const db = tursoClient();
 	const {
 		id: superGlobuleConfigTempId,
@@ -20,8 +19,6 @@ export const POST: RequestHandler = async ({ request }) => {
 		.insert(superGlobuleConfigs)
 		.values({ name })
 		.returning({ id: superGlobuleConfigs.id });
-
-	console.debug({ superGlobuleConfigId });
 
 	const uniqueGlobuleConfigs = Array.from(
 		new Set<GlobuleConfig>(subGlobuleConfigsData.map((sgc) => sgc.globuleConfig))

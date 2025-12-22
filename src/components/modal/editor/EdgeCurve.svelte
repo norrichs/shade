@@ -119,7 +119,6 @@
 							size: { width: 200, height: 200 }
 						}}
 						onChangeCurveDef={(curveDef) => {
-							console.debug('EdgeCurve, onChangeCurveDef', curveDef);
 							edgeCurve.curves = curveDef;
 						}}
 						limits={[endPointsLockedY, endPointsMatchedX, neighborPointMatch]}
@@ -181,7 +180,7 @@
 			</Container>
 		</section>
 	{/each}
-	</Editor>
+</Editor>
 
 <style>
 	:root {

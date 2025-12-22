@@ -219,12 +219,10 @@ type LimitProps = {
 };
 
 const applyLimits = ({ p, x, y, limits }: LimitProps) => {
-	console.debug('isLimited?', { p, x, y, limits });
-
 	if (limits.onLine) {
 		const m = getSlope(...limits.onLine);
 		let newX = Math.min(Math.abs(x), Math.abs(limits.onLine[1].x));
-		console.debug(Math.sign(x), Math.sign(limits.onLine[1].x));
+
 		newX = Math.sign(x) === Math.sign(limits.onLine[1].x) ? newX : 0;
 		newX = Math.sign(x) * newX;
 		return { newX, newY: m * newX };
@@ -250,7 +248,6 @@ export const getLimits = (polygon: EditablePolygon, [e, c, p]: [number, number, 
 				? edge.vertex1
 				: edge.vertex0;
 		limits.onLine = [new Vector2(0, 0), vertex];
-		console.debug('controlPoint is an end point, limit on line segment', limits);
 	}
 
 	return limits;

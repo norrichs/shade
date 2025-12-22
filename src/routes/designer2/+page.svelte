@@ -11,7 +11,6 @@
 	import SuperPathEdit from '../../components/path-edit/SuperPathEdit.svelte';
 	import SuperControl from '../../components/controls/super-control/SuperControl.svelte';
 	import { uiStore, type ViewModeSetting } from '$lib/stores/uiStores';
-	import ProjectionGeometryComponent from '../../components/projection/ProjectionGeometryComponent.svelte';
 	import ProjectionControl from '../../components/projection/ProjectionControl.svelte';
 	import HoverSidebar from '../../components/modal/HoverSidebar.svelte';
 	import { projectionConfigs } from '../../components/modal/sidebar-definitions';

@@ -109,7 +109,7 @@
 {#if $viewControlStore.showProjectionGeometry.any}
 	<T.Group position={[0, 0, 0]}>
 		{#if projectionGeometry.surface}
-			<T is={projectionGeometry.surface} material={materials.selectedVeryLight} />
+			<T is={projectionGeometry.surface} material={materials.selected} />
 		{/if}
 
 		<ColorMapped
@@ -127,7 +127,7 @@
 		{/if}
 
 		{#each projectionGeometry.bands || [] as band}
-			<T.Mesh geometry={band} material={materials.default} />
+			<T.Mesh geometry={band} material={materials.selected} />
 		{/each}
 		{#each projectionGeometry.facets || [] as facet}
 			<T.Mesh

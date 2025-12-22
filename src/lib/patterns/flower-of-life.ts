@@ -658,7 +658,6 @@ export const processFlowerOfLife1PatternTransforms = ({
 		[triangle.b, getMidPoint(triangle.a, triangle.c)],
 		[triangle.c, getMidPoint(triangle.a, triangle.b)]
 	];
-	console.debug('medianLines', medianLines);
 
 	const txArcParams = txArcs.map((arc) => getArcParams(arc));
 
@@ -688,7 +687,6 @@ export const processFlowerOfLife1PatternTransforms = ({
 			);
 		})
 	};
-	console.debug('cLines', cLines);
 
 	const cArcs = txArcParams.map((arc, i) => {
 		const ct = centeringTransforms[i];
@@ -764,7 +762,6 @@ export const processFlowerOfLife1PatternTransforms = ({
 	// 	return prev
 	// })
 	// Calculate intersections
-	console.debug('Get some intersecctions! cLines', cLines);
 
 	const intersections = {
 		inner: recenteredReducedArcs.inner.map((rrArc, i) => {
@@ -828,10 +825,6 @@ export const processFlowerOfLife1PatternTransforms = ({
 	// 	A[A.length - 1] = intersectedArcs[i].p1.y;
 	// 	return [['M', intersectedArcs[i].p0.x, intersectedArcs[i].p0.y], A];
 	// });
-	// console.debug(
-	// 	'intersected',
-	// 	instersectedArcsSegments.flat().map((seg) => roundPathSegments(seg))
-	// );
 
 	// Restore arcs and lines to translated and rotated locations
 
@@ -898,10 +891,6 @@ export const processFlowerOfLife1PatternTransforms = ({
 	integratedSegments[14][6] = newArcs.inner[2][1][6]; // p1.x
 	integratedSegments[14][7] = newArcs.inner[2][1][7]; // p1.y
 
-	console.debug(
-		'  with inset',
-		integratedSegments.map((seg) => roundPathSegments(seg))
-	);
 
 	return integratedSegments;
 };

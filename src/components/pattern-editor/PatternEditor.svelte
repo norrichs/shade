@@ -123,7 +123,6 @@
 				pointLabels: getPointLabels(path)
 			};
 
-			console.debug(mapped);
 			return mapped;
 		}
 
@@ -249,7 +248,6 @@
 				isSamePoint({ x: seg.segment[1], y: seg.segment[2] }, { x: segment[1], y: segment[2] }, 10)
 			);
 		// .filter((seg) => seg.segment[1] === segment[1] && seg.segment[2] === segment[2]);
-		hovered.forEach((point) => console.debug(point.index, point.segment));
 	};
 
 	const generateTiledBands = ({ quadBands, tiledPatternConfig, address }: GenerateTilingProps) => {

@@ -36,6 +36,13 @@
 		showGlobuleTubeGeometry: ShowGlobuleTubeGeometries,
 		showProjectionGeometry: ShowProjectionGeometries
 	) => {
+		console.debug(
+			'collatePatterns',
+			globuleTubePattern,
+			projectionPattern,
+			showGlobuleTubeGeometry,
+			showProjectionGeometry
+		);
 		const hasGlobuleTubePattern =
 			globuleTubePattern &&
 			isSuperGlobuleProjectionCutPattern(globuleTubePattern) &&
@@ -46,17 +53,20 @@
 			projectionPattern.projectionCutPattern.tubes.length > 0;
 
 		collatedPatterns = [
-			...(hasGlobuleTubePattern ? globuleTubePattern.projectionCutPattern.tubes : []),
-			...(hasProjectionPattern ? projectionPattern.projectionCutPattern.tubes : [])
+			...(hasGlobuleTubePattern && showGlobuleTubeGeometry.any
+				? globuleTubePattern.projectionCutPattern.tubes
+				: []),
+			...(hasProjectionPattern && showProjectionGeometry.any
+				? projectionPattern.projectionCutPattern.tubes
+				: [])
 		];
-		console.debug('collatePatterns', { collatedPatterns, hasGlobuleTubePattern, hasProjectionPattern, globuleTubePattern, projectionPattern });
+		console.debug('collatedPatterns', collatedPatterns);
 	};
 
 	type FlattenMode = 'native-replace' | 'recombine'; // WTF is this. Still relevant?
 
 	let flattenedPatternedSVG: { bands: string[] } = { bands: [] };
 
-	console.debug('superGlobulePatternStore', $superGlobulePatternStore);
 	let collatedPatterns: TubeCutPattern[] = [];
 	$: collatePatterns(
 		$superGlobulePatternStore.globuleTubePattern,
@@ -69,17 +79,18 @@
 <div class="container-svg scroll-container" class:showBands>
 	<div class="scroll-container">
 		<CutPatternSvg width={6000} height={6000}>
-			{#if $superGlobulePatternStore.globuleTubePattern}
-				<CutPatternRenderer tubes={collatedPatterns} />
+			<CutPatternRenderer tubes={collatedPatterns} />
+
+			{#if $superGlobulePatternStore.projectionPattern && $viewControlStore.showProjectionGeometry.any}
+				<ProjectionPanelPatterns
+					showSelectedOnly={undefined}
+					range={$patternConfigStore.patternViewConfig.range}
+					patternStyle="view"
+					labelSize={2.15}
+					showScalebar={true}
+					verbose={true}
+				/>
 			{/if}
-			<ProjectionPanelPatterns
-				showSelectedOnly={undefined}
-				range={$patternConfigStore.patternViewConfig.range}
-				patternStyle="view"
-				labelSize={2.15}
-				showScalebar={true}
-				verbose={true}
-			/>
 
 			<!-- {#if $viewControlStore.showGlobuleGeometry.any}
 				{#each $superGlobulePatternStore.superGlobulePattern?.bandPatterns || [] as band, index}

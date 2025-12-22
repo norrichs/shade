@@ -6,15 +6,7 @@
 	export let toggleEditorMode: () => void;
 
 	const [projectionIndex, polygonIndex, edgeIndex] = address;
-	const handleClickRecalculate = () => {
-		console.debug('Recalculate?', { address });
-
-		console.debug(
-			$superConfigStore.projectionConfigs[projectionIndex].projectorConfig.polyhedron.polygons[
-				polygonIndex
-			]
-		);
-	};
+	const handleClickRecalculate = () => {};
 
 	// const getEdge = (address: [number, number, number]) => {
 	// 	return $superConfigStore.projectionConfigs[address[0]].projectorConfig.polyhedron.polygons[
@@ -45,25 +37,13 @@
 		const newIndex =
 			$superConfigStore.projectionConfigs[address[0]].projectorConfig.polyhedron.edgeCurves.length -
 			1;
-		console.debug('copyEdgeCurve', {
-			indexOfCurve,
-			newCurve,
-			newIndex,
-			edgeCurves:
-				$superConfigStore.projectionConfigs[address[0]].projectorConfig.polyhedron.edgeCurves
-		});
 		return newIndex;
 	};
 
 	const handleClickMakeUnique = (address: [number, number, number]) => {
-		console.debug('handleClickMakeUnique', address);
 		$superConfigStore.projectionConfigs[address[0]].projectorConfig.polyhedron.polygons[
 			address[1]
 		].edges[address[2]].widthCurve = copyEdgeCurve(address);
-
-		console.debug({
-			polyhedron: $superConfigStore.projectionConfigs[projectionIndex].projectorConfig.polyhedron
-		});
 	};
 
 	const handleClickEditCrossSection = (address: [number, number, number]) => {
@@ -72,7 +52,6 @@
 			$superConfigStore.projectionConfigs,
 			address
 		);
-		console.debug('crossSection', { crossSectionDef, crossSectionIndex });
 	};
 </script>
 

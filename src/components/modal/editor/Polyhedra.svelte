@@ -7,19 +7,15 @@
 	import Editor from './Editor.svelte';
 	import { polyhedronConfigs } from './polyhedra-configs';
 
-
 	const handleChangePolyhedron = (event: Event) => {
 		const selectedName = (event.target as HTMLSelectElement).value;
 		const newPolyhedron = polyhedronConfigs.find((p) => p.name === selectedName);
-		console.debug('newPolyhedron', { newPolyhedron, selectedName, event });
+
 		if (newPolyhedron) {
 			$superConfigStore.projectionConfigs[0].projectorConfig.polyhedron = newPolyhedron as any;
 			$superConfigStore = $superConfigStore;
 		}
 	};
-
-	console.debug($superConfigStore.projectionConfigs[0].projectorConfig.polyhedron.name);
-
 </script>
 
 <Editor>

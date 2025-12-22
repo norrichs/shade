@@ -16,7 +16,6 @@
 	};
 
 	const handleChange = (event: Event) => {
-		console.debug('handleChange', event);
 		onChange?.(parseInt((event.target as HTMLInputElement).value));
 	};
 
@@ -34,7 +33,15 @@
 	{#if label}
 		<div>{label}</div>
 	{/if}
-	<input type="number" bind:value {min} {step} {max} on:focus={handleFocus} on:change={handleChange} />
+	<input
+		type="number"
+		bind:value
+		{min}
+		{step}
+		{max}
+		on:focus={handleFocus}
+		on:change={handleChange}
+	/>
 	{#if hasButtons}
 		<div>
 			<button on:click={() => click('up')}><Icon size="16" src={FiChevronUp} /></button>

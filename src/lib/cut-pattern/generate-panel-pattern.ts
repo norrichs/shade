@@ -28,7 +28,12 @@ import {
 	printProjectionAddress
 } from '$lib/projection-geometry/generate-projection';
 import { getMidPoint, svgPathStringFromSegments } from '$lib/patterns/utils';
-import { distributePanels, findLineIntersection, getEdgeVector, signedZAxisAngleTo } from '../../components/cut-pattern/distrubute-panels';
+import {
+	distributePanels,
+	findLineIntersection,
+	getEdgeVector,
+	signedZAxisAngleTo
+} from '../../components/cut-pattern/distrubute-panels';
 import {
 	corrected,
 	getBandBasePoints,
@@ -57,8 +62,8 @@ const Z_AXIS = new Vector3(0, 0, 1);
 const edges = ['ab', 'bc', 'ac'] as TriangleEdge[];
 
 const directionToVector = {
-	'positive': new Vector3(1, 0, 0),
-	'negative': new Vector3(-1, 0, 0)
+	positive: new Vector3(1, 0, 0),
+	negative: new Vector3(-1, 0, 0)
 };
 
 const holeUnitConversionFactors: Record<ScaleUnit, Partial<Record<ScaleUnit, number>>> = {
@@ -98,7 +103,6 @@ export const generateProjectionPanelPattern = ({
 		address: { globule: tubes[0].address.globule },
 		tubes: []
 	};
-	console.debug('generateProjectionPanelPattern', { tubes, range });
 
 	const tubeStart = range?.tubes?.start || 0;
 	const tubeEnd = range?.tubes?.end || tubes.length;
@@ -166,12 +170,18 @@ export const generateProjectionPanelPattern = ({
 		pattern.tubes.push(tubePattern);
 	}
 
-	const postProcessedPattern: ProjectionPanelPattern = postProcessPanelPattern(pattern, tiledPatternConfig);
+	const postProcessedPattern: ProjectionPanelPattern = postProcessPanelPattern(
+		pattern,
+		tiledPatternConfig
+	);
 	const hingedPattern = generateHingedPattern(postProcessedPattern, tiledPatternConfig);
 	return hingedPattern;
 };
 
-const generateHingedPattern = (pattern: ProjectionPanelPattern, tiledPatternConfig: TiledPatternConfig): ProjectionPanelPattern => {
+const generateHingedPattern = (
+	pattern: ProjectionPanelPattern,
+	tiledPatternConfig: TiledPatternConfig
+): ProjectionPanelPattern => {
 	const hingedPattern: ProjectionPanelPattern = {
 		...pattern,
 		tubes: pattern.tubes.map((tube, t) => {
@@ -191,7 +201,11 @@ const generateHingedPattern = (pattern: ProjectionPanelPattern, tiledPatternConf
 									(p === 0 && edge === base) ||
 									(p === band.panels.length - 1 && edge === second);
 
-								return getHingedEdgePatternV2(panel as RequiredPanelPattern, getPartnerPanel(panel, pattern.tubes, edge) as RequiredPanelPattern, edge);
+								return getHingedEdgePatternV2(
+									panel as RequiredPanelPattern,
+									getPartnerPanel(panel, pattern.tubes, edge) as RequiredPanelPattern,
+									edge
+								);
 							});
 
 							return {
@@ -210,24 +224,64 @@ const generateHingedPattern = (pattern: ProjectionPanelPattern, tiledPatternConf
 	return hingedPattern;
 };
 
-const getHingedEdgePatternV2 = (panel: RequiredPanelPattern, partnerPanel: RequiredPanelPattern, edge: TriangleEdge) => {
+const getHingedEdgePatternV2 = (
+	panel: RequiredPanelPattern,
+	partnerPanel: RequiredPanelPattern,
+	edge: TriangleEdge
+) => {
 	const partnerEdge = corrected(panel.meta.edges[edge].partner.edge);
-	const zeroedPanel = getZeroedPanel(panel, panel.meta.backFaceRegistrationPoints[edge], edge, 'positive');
+	const zeroedPanel = getZeroedPanel(
+		panel,
+		panel.meta.backFaceRegistrationPoints[edge],
+		edge,
+		'positive'
+	);
 
-	const zeroedPartnerPanel = getZeroedPanel(partnerPanel, partnerPanel.meta.backFaceRegistrationPoints[partnerEdge], partnerEdge, 'negative');
+	const zeroedPartnerPanel = getZeroedPanel(
+		partnerPanel,
+		partnerPanel.meta.backFaceRegistrationPoints[partnerEdge],
+		partnerEdge,
+		'negative'
+	);
 
-	const thisSideHoles = [...(zeroedPanel.meta.edges[edge].holes || []), (zeroedPanel.meta.edges[nextEdge(edge)].holes || [])[0]].filter(Boolean).map((hole) => ({ ...hole, location: hole.location.clone() })) as { location: Vector3; holeDiameter: number; headDiameter: number; nutDiameter: number }[];
-	const partnerSideHoles = [...(zeroedPartnerPanel.meta.edges[partnerEdge].holes || []), (zeroedPartnerPanel.meta.edges[nextEdge(partnerEdge)].holes || [])[0]].filter(Boolean).map((hole) => ({ ...hole, location: hole.location.clone() })) as { location: Vector3; holeDiameter: number; headDiameter: number; nutDiameter: number }[];
+	const thisSideHoles = [
+		...(zeroedPanel.meta.edges[edge].holes || []),
+		(zeroedPanel.meta.edges[nextEdge(edge)].holes || [])[0]
+	]
+		.filter(Boolean)
+		.map((hole) => ({ ...hole, location: hole.location.clone() })) as {
+		location: Vector3;
+		holeDiameter: number;
+		headDiameter: number;
+		nutDiameter: number;
+	}[];
+	const partnerSideHoles = [
+		...(zeroedPartnerPanel.meta.edges[partnerEdge].holes || []),
+		(zeroedPartnerPanel.meta.edges[nextEdge(partnerEdge)].holes || [])[0]
+	]
+		.filter(Boolean)
+		.map((hole) => ({ ...hole, location: hole.location.clone() })) as {
+		location: Vector3;
+		holeDiameter: number;
+		headDiameter: number;
+		nutDiameter: number;
+	}[];
 
 	const thisSide = getHingeOutline(zeroedPanel.meta.backFaceTriangle, thisSideHoles, edge);
-	const partnerSide = getHingeOutline(zeroedPartnerPanel.meta.backFaceTriangle, partnerSideHoles, partnerEdge);
+	const partnerSide = getHingeOutline(
+		zeroedPartnerPanel.meta.backFaceTriangle,
+		partnerSideHoles,
+		partnerEdge
+	);
 	partnerSide.outline = partnerSide.outline.reverse();
 
 	const midPoint = getMidPoint(thisSide.outline[0], thisSide.outline[thisSide.outline.length - 1]);
 	const thisSideDistance0 = midPoint.distanceTo(thisSide.outline[0]);
 	const partnerSideDistance0 = midPoint.distanceTo(partnerSide.outline[0]);
 	const thisSideDistance1 = midPoint.distanceTo(thisSide.outline[thisSide.outline.length - 1]);
-	const partnerSideDistance1 = midPoint.distanceTo(partnerSide.outline[partnerSide.outline.length - 1]);
+	const partnerSideDistance1 = midPoint.distanceTo(
+		partnerSide.outline[partnerSide.outline.length - 1]
+	);
 
 	if (thisSideDistance0 > partnerSideDistance0) {
 		thisSide.outline[0] = partnerSide.outline[0].clone();
@@ -236,16 +290,16 @@ const getHingedEdgePatternV2 = (panel: RequiredPanelPattern, partnerPanel: Requi
 		partnerSide.outline[0] = thisSide.outline[0].clone();
 	}
 	if (thisSideDistance1 > partnerSideDistance1) {
-		thisSide.outline[thisSide.outline.length - 1] = partnerSide.outline[partnerSide.outline.length - 1].clone();
+		thisSide.outline[thisSide.outline.length - 1] =
+			partnerSide.outline[partnerSide.outline.length - 1].clone();
 	}
 	if (partnerSideDistance1 > thisSideDistance1) {
-		partnerSide.outline[partnerSide.outline.length - 1] = thisSide.outline[thisSide.outline.length - 1].clone();
+		partnerSide.outline[partnerSide.outline.length - 1] =
+			thisSide.outline[thisSide.outline.length - 1].clone();
 	}
 
 	const outline = [...thisSide.outline, ...partnerSide.outline.reverse()];
 	const bounds = getBounds(outline);
-
-
 
 	const hingePattern: HingePattern = {
 		edge,
@@ -281,7 +335,12 @@ const getBounds = (vectors: Vector3[]) => {
 	};
 };
 
-const getZeroedPanel = (panel: RequiredPanelPattern, anchor: Vector3, edge: TriangleEdge, direction: 'positive' | 'negative'): RequiredPanelPattern => {
+const getZeroedPanel = (
+	panel: RequiredPanelPattern,
+	anchor: Vector3,
+	edge: TriangleEdge,
+	direction: 'positive' | 'negative'
+): RequiredPanelPattern => {
 	const [p0, p1, p2] = getTrianglePointFromTriangleEdge(edge, 'triangle-order');
 
 	const offsetVector = anchor.clone();
@@ -296,20 +355,47 @@ const getZeroedPanel = (panel: RequiredPanelPattern, anchor: Vector3, edge: Tria
 	);
 
 	const newBackFaceTriangle = new Triangle(
-		panel.meta.backFaceTriangle.a.clone().addScaledVector(offsetVector, -1).applyAxisAngle(Z_AXIS, -angle),
-		panel.meta.backFaceTriangle.b.clone().addScaledVector(offsetVector, -1).applyAxisAngle(Z_AXIS, -angle),
-		panel.meta.backFaceTriangle.c.clone().addScaledVector(offsetVector, -1).applyAxisAngle(Z_AXIS, -angle)
+		panel.meta.backFaceTriangle.a
+			.clone()
+			.addScaledVector(offsetVector, -1)
+			.applyAxisAngle(Z_AXIS, -angle),
+		panel.meta.backFaceTriangle.b
+			.clone()
+			.addScaledVector(offsetVector, -1)
+			.applyAxisAngle(Z_AXIS, -angle),
+		panel.meta.backFaceTriangle.c
+			.clone()
+			.addScaledVector(offsetVector, -1)
+			.applyAxisAngle(Z_AXIS, -angle)
 	);
 
 	const newFrontFaceRegistrationPoints = {
-		ab: panel.meta.frontFaceRegistrationPoints.ab.clone().addScaledVector(offsetVector, -1).applyAxisAngle(Z_AXIS, -angle),
-		bc: panel.meta.frontFaceRegistrationPoints.bc.clone().addScaledVector(offsetVector, -1).applyAxisAngle(Z_AXIS, -angle),
-		ac: panel.meta.frontFaceRegistrationPoints.ac.clone().addScaledVector(offsetVector, -1).applyAxisAngle(Z_AXIS, -angle)
+		ab: panel.meta.frontFaceRegistrationPoints.ab
+			.clone()
+			.addScaledVector(offsetVector, -1)
+			.applyAxisAngle(Z_AXIS, -angle),
+		bc: panel.meta.frontFaceRegistrationPoints.bc
+			.clone()
+			.addScaledVector(offsetVector, -1)
+			.applyAxisAngle(Z_AXIS, -angle),
+		ac: panel.meta.frontFaceRegistrationPoints.ac
+			.clone()
+			.addScaledVector(offsetVector, -1)
+			.applyAxisAngle(Z_AXIS, -angle)
 	};
 	const newBackFaceRegistrationPoints = {
-		ab: panel.meta.backFaceRegistrationPoints.ab.clone().addScaledVector(offsetVector, -1).applyAxisAngle(Z_AXIS, -angle),
-		bc: panel.meta.backFaceRegistrationPoints.bc.clone().addScaledVector(offsetVector, -1).applyAxisAngle(Z_AXIS, -angle),
-		ac: panel.meta.backFaceRegistrationPoints.ac.clone().addScaledVector(offsetVector, -1).applyAxisAngle(Z_AXIS, -angle)
+		ab: panel.meta.backFaceRegistrationPoints.ab
+			.clone()
+			.addScaledVector(offsetVector, -1)
+			.applyAxisAngle(Z_AXIS, -angle),
+		bc: panel.meta.backFaceRegistrationPoints.bc
+			.clone()
+			.addScaledVector(offsetVector, -1)
+			.applyAxisAngle(Z_AXIS, -angle),
+		ac: panel.meta.backFaceRegistrationPoints.ac
+			.clone()
+			.addScaledVector(offsetVector, -1)
+			.applyAxisAngle(Z_AXIS, -angle)
 	};
 
 	const newPanel: RequiredPanelPattern = {
@@ -323,28 +409,71 @@ const getZeroedPanel = (panel: RequiredPanelPattern, anchor: Vector3, edge: Tria
 			backFaceRegistrationPoints: newBackFaceRegistrationPoints,
 			hingePatterns: panel.meta.hingePatterns || [],
 			edges: {
-				ab: { ...panel.meta.edges.ab, holes: panel.meta.edges.ab.holes?.map((hole) => ({ ...hole, location: hole.location.clone().addScaledVector(offsetVector, -1).applyAxisAngle(Z_AXIS, -angle) })) },
-				bc: { ...panel.meta.edges.bc, holes: panel.meta.edges.bc.holes?.map((hole) => ({ ...hole, location: hole.location.clone().addScaledVector(offsetVector, -1).applyAxisAngle(Z_AXIS, -angle) })) },
-				ac: { ...panel.meta.edges.ac, holes: panel.meta.edges.ac.holes?.map((hole) => ({ ...hole, location: hole.location.clone().addScaledVector(offsetVector, -1).applyAxisAngle(Z_AXIS, -angle) })) }
+				ab: {
+					...panel.meta.edges.ab,
+					holes: panel.meta.edges.ab.holes?.map((hole) => ({
+						...hole,
+						location: hole.location
+							.clone()
+							.addScaledVector(offsetVector, -1)
+							.applyAxisAngle(Z_AXIS, -angle)
+					}))
+				},
+				bc: {
+					...panel.meta.edges.bc,
+					holes: panel.meta.edges.bc.holes?.map((hole) => ({
+						...hole,
+						location: hole.location
+							.clone()
+							.addScaledVector(offsetVector, -1)
+							.applyAxisAngle(Z_AXIS, -angle)
+					}))
+				},
+				ac: {
+					...panel.meta.edges.ac,
+					holes: panel.meta.edges.ac.holes?.map((hole) => ({
+						...hole,
+						location: hole.location
+							.clone()
+							.addScaledVector(offsetVector, -1)
+							.applyAxisAngle(Z_AXIS, -angle)
+					}))
+				}
 			}
 		}
 	} as RequiredPanelPattern;
 	return newPanel;
 };
 
-const getPartnerPanel = (panel: PanelPattern, tubes: TubePanelPattern[], edge: TriangleEdge): RequiredPanelPattern => {
+const getPartnerPanel = (
+	panel: PanelPattern,
+	tubes: TubePanelPattern[],
+	edge: TriangleEdge
+): RequiredPanelPattern => {
 	const partnerAddress = panel.meta.edges[edge].partner;
-	const partnerPanel = { ...tubes[partnerAddress.tube].bands[partnerAddress.band].panels[partnerAddress.facet] } as RequiredPanelPattern;
+	const partnerPanel = {
+		...tubes[partnerAddress.tube].bands[partnerAddress.band].panels[partnerAddress.facet]
+	} as RequiredPanelPattern;
 	return partnerPanel;
 };
 
 const HINGE_MARGIN = 8;
 
-const getHingeOutline = (backFaceTriangle: Triangle, holes: { location: Vector3; holeDiameter: number; headDiameter: number; nutDiameter: number }[], edge: TriangleEdge): { outline: Vector3[]; holes: { location: Vector3; holeDiameter: number; headDiameter: number; nutDiameter: number }[] } => {
+const getHingeOutline = (
+	backFaceTriangle: Triangle,
+	holes: { location: Vector3; holeDiameter: number; headDiameter: number; nutDiameter: number }[],
+	edge: TriangleEdge
+): {
+	outline: Vector3[];
+	holes: { location: Vector3; holeDiameter: number; headDiameter: number; nutDiameter: number }[];
+} => {
 	const [p0, p1] = getTrianglePointFromTriangleEdge(edge, 'triangle-order');
 	const p2 = getOtherTrianglePointFromTriangleEdge(edge);
 	const hingeLine = new Line3(backFaceTriangle[p0], backFaceTriangle[p1]);
-	const edgeVector = backFaceTriangle[p1].clone().addScaledVector(backFaceTriangle[p0], -1).normalize();
+	const edgeVector = backFaceTriangle[p1]
+		.clone()
+		.addScaledVector(backFaceTriangle[p0], -1)
+		.normalize();
 	const perpVector = edgeVector.clone().applyAxisAngle(Z_AXIS, Math.PI / 2);
 
 	const corner0 = new Vector3();
@@ -362,13 +491,27 @@ const getHingeOutline = (backFaceTriangle: Triangle, holes: { location: Vector3;
 	const corner2 = corner1.clone().addScaledVector(perpVector, -1 * (backsetLength + HINGE_MARGIN));
 	const corner3 = corner0.clone().addScaledVector(perpVector, -1 * (backsetLength + HINGE_MARGIN));
 
-	const intersection0 = findLineIntersection({ v0: backFaceTriangle[p0], v1: backFaceTriangle[p2] }, { v0: corner2, v1: corner3 });
-	const intersection1 = findLineIntersection({ v0: backFaceTriangle[p1], v1: backFaceTriangle[p2] }, { v0: corner2, v1: corner3 });
+	const intersection0 = findLineIntersection(
+		{ v0: backFaceTriangle[p0], v1: backFaceTriangle[p2] },
+		{ v0: corner2, v1: corner3 }
+	);
+	const intersection1 = findLineIntersection(
+		{ v0: backFaceTriangle[p1], v1: backFaceTriangle[p2] },
+		{ v0: corner2, v1: corner3 }
+	);
 	if (!intersection0 || !intersection1) {
 		throw new Error('intersection is required');
 	}
 
-	return { outline: [backFaceTriangle[p0].clone(), intersection0, intersection1, backFaceTriangle[p1].clone()], holes };
+	return {
+		outline: [
+			backFaceTriangle[p0].clone(),
+			intersection0,
+			intersection1,
+			backFaceTriangle[p1].clone()
+		],
+		holes
+	};
 };
 
 const nextEdge = (edge: TriangleEdge): TriangleEdge => {
@@ -380,12 +523,11 @@ const nextEdge = (edge: TriangleEdge): TriangleEdge => {
 	return sequencedEdges[edge] as TriangleEdge;
 };
 
-const postProcessPanelPattern = (pattern: ProjectionPanelPattern | { tubes: never[] }, tiledPatternConfig: TiledPatternConfig): ProjectionPanelPattern => {
-	let {
-		distributionConfig,
-		panelHoleConfig: holeConfig,
-		scaleConfig
-	} = tiledPatternConfig.config;
+const postProcessPanelPattern = (
+	pattern: ProjectionPanelPattern | { tubes: never[] },
+	tiledPatternConfig: TiledPatternConfig
+): ProjectionPanelPattern => {
+	let { distributionConfig, panelHoleConfig: holeConfig, scaleConfig } = tiledPatternConfig.config;
 
 	if (!holeConfig || !distributionConfig || !scaleConfig) {
 		throw new Error('missing config');
@@ -477,7 +619,10 @@ export const getPanelEdgeMeta = (
 
 	let edgeMeta = Object.fromEntries(
 		(['ab', 'bc', 'ac'] as TriangleEdge[]).map((edge) => {
-			if (!facet.meta || !facet.meta[edge]) throw Error('facet edge missing meta');
+			if (!facet.meta || !facet.meta[edge]) {
+				console.debug({ facet, band, tube, facetAddress:facet.address});
+				throw Error('facet edge missing meta');
+			}
 			const { partner } = facet.meta[edge];
 			const partnerFacet = tubes[partner.tube].bands[partner.band].facets[partner.facet];
 			const { cutAngle, crease } = getCutAngle(
@@ -511,7 +656,11 @@ const getInsetLines = (edge: TriangleEdge, index: number, insets: number[], tria
 	return { v0: insetPoint0, v1: insetPoint1 };
 };
 
-export const applyHolesToEdgeMeta = (meta: PanelPattern['meta'], triangle: Triangle, config: PanelHoleConfig): PanelPattern['meta'] => {
+export const applyHolesToEdgeMeta = (
+	meta: PanelPattern['meta'],
+	triangle: Triangle,
+	config: PanelHoleConfig
+): PanelPattern['meta'] => {
 	const backFaceInsets = edges.map((edge) => {
 		return config.thickness * Math.tan(meta.edges[edge].cutAngle);
 	});
@@ -522,7 +671,9 @@ export const applyHolesToEdgeMeta = (meta: PanelPattern['meta'], triangle: Trian
 	});
 
 	const insetLines = edges.map((edge, index) => getInsetLines(edge, index, insets, triangle));
-	const backFaceLines = edges.map((edge, index) => getInsetLines(edge, index, backFaceInsets, triangle));
+	const backFaceLines = edges.map((edge, index) =>
+		getInsetLines(edge, index, backFaceInsets, triangle)
+	);
 
 	const intersections = [
 		findLineIntersection(insetLines[0], insetLines[2]),
@@ -535,12 +686,11 @@ export const applyHolesToEdgeMeta = (meta: PanelPattern['meta'], triangle: Trian
 		findLineIntersection(backFaceLines[1], backFaceLines[2])
 	];
 
-	if (intersections.every(intersection => intersection !== null) && backFaceIntersections.every(intersection => intersection !== null)) {
-		const insetTriangle = new Triangle(
-			intersections[0],
-			intersections[1],
-			intersections[2]
-		);
+	if (
+		intersections.every((intersection) => intersection !== null) &&
+		backFaceIntersections.every((intersection) => intersection !== null)
+	) {
+		const insetTriangle = new Triangle(intersections[0], intersections[1], intersections[2]);
 		const backFaceTriangle = new Triangle(
 			backFaceIntersections[0],
 			backFaceIntersections[1],
@@ -559,15 +709,24 @@ export const applyHolesToEdgeMeta = (meta: PanelPattern['meta'], triangle: Trian
 			const [p0, p1] = getTrianglePointFromTriangleEdge(edge as TriangleEdge, 'triangle-order');
 
 			const backEdgeLine = new Line3(backFaceTriangle[p0], backFaceTriangle[p1]);
-			backEdgeLine.closestPointToPoint(meta.frontFaceRegistrationPoints[edge], false, meta.backFaceRegistrationPoints[edge]);
+			backEdgeLine.closestPointToPoint(
+				meta.frontFaceRegistrationPoints[edge],
+				false,
+				meta.backFaceRegistrationPoints[edge]
+			);
 
-			const holes: { location: Vector3; holeDiameter: number; headDiameter: number; nutDiameter: number }[] = [];
+			const holes: {
+				location: Vector3;
+				holeDiameter: number;
+				headDiameter: number;
+				nutDiameter: number;
+			}[] = [];
 			if (config.holeDistribution === 'spaced') {
 				holes.push(...getSpacedHoles(triangle, config, edge, insetTriangle));
 			}
 			if (config.holeDistribution === 'vertex') {
 				const edgeHoles = Array.from({ length: config.count }, (_, i) => ({
-					location: insetTriangle[p0].clone().lerp(insetTriangle[p1], i / (config.count)),
+					location: insetTriangle[p0].clone().lerp(insetTriangle[p1], i / config.count),
 					holeDiameter: config.holeDiameter,
 					headDiameter: config.headDiameter,
 					nutDiameter: config.nutDiameter
@@ -582,7 +741,12 @@ export const applyHolesToEdgeMeta = (meta: PanelPattern['meta'], triangle: Trian
 	return meta;
 };
 
-const getSpacedHoles = (triangle: Triangle, config: PanelHoleConfig, edge: TriangleEdge, insetTriangle: Triangle) => {
+const getSpacedHoles = (
+	triangle: Triangle,
+	config: PanelHoleConfig,
+	edge: TriangleEdge,
+	insetTriangle: Triangle
+) => {
 	const [p0, p1] = getTrianglePointFromTriangleEdge(edge as TriangleEdge, 'triangle-order');
 	const edgeVector = getEdgeVector(triangle, [p0, p1]);
 	const alpha = config.vertexInset / edgeVector.length();
@@ -591,8 +755,18 @@ const getSpacedHoles = (triangle: Triangle, config: PanelHoleConfig, edge: Trian
 	hole0.lerpVectors(insetTriangle[p0], insetTriangle[p1], alpha);
 	hole1.lerpVectors(insetTriangle[p1], insetTriangle[p0], alpha);
 	return [
-		{ location: hole0, holeDiameter: config.holeDiameter, headDiameter: config.headDiameter, nutDiameter: config.nutDiameter },
-		{ location: hole1, holeDiameter: config.holeDiameter, headDiameter: config.headDiameter, nutDiameter: config.nutDiameter }
+		{
+			location: hole0,
+			holeDiameter: config.holeDiameter,
+			headDiameter: config.headDiameter,
+			nutDiameter: config.nutDiameter
+		},
+		{
+			location: hole1,
+			holeDiameter: config.holeDiameter,
+			headDiameter: config.headDiameter,
+			nutDiameter: config.nutDiameter
+		}
 	];
 };
 
@@ -660,10 +834,7 @@ const getDihedral = (t0: Triangle, t1: Triangle, edge0: TriangleEdge, edge1: Tri
 	return dihedral;
 };
 
-const getFacet = (
-	tubes: Tube[],
-	address: GlobuleAddress_Facet | GlobuleAddress_FacetEdge
-) => {
+const getFacet = (tubes: Tube[], address: GlobuleAddress_Facet | GlobuleAddress_FacetEdge) => {
 	return tubes[address.tube].bands[address.band].facets[address.facet];
 };
 
@@ -763,10 +934,11 @@ const validateEdgeMeta = ({
 		Math.abs(partnerMeta?.cutAngle - edgeMeta?.cutAngle) < cutAnglePrecision;
 
 	if (!isCreaseMatched || !isCutAngleMatched) {
-
 		throw Error(
-			`partner cut does not match - cutAngle ${partnerMeta?.cutAngle}, ${edgeMeta?.cutAngle
-			} diff ${Math.abs(partnerMeta?.cutAngle - edgeMeta?.cutAngle)} - ${partnerMeta?.crease}, ${edgeMeta?.crease
+			`partner cut does not match - cutAngle ${partnerMeta?.cutAngle}, ${
+				edgeMeta?.cutAngle
+			} diff ${Math.abs(partnerMeta?.cutAngle - edgeMeta?.cutAngle)} - ${partnerMeta?.crease}, ${
+				edgeMeta?.crease
 			}
 this edge ${printProjectionAddress({
 				...panelAddress,
@@ -779,10 +951,7 @@ partner   ${printProjectionAddress(pA)} -> ${printProjectionAddress(
 	}
 };
 
-const facetEdgeAddressMatch = (
-	a0: GlobuleAddress_FacetEdge,
-	a1: GlobuleAddress_FacetEdge
-) => {
+const facetEdgeAddressMatch = (a0: GlobuleAddress_FacetEdge, a1: GlobuleAddress_FacetEdge) => {
 	return (
 		a0.globule === a1.globule &&
 		a0.tube === a1.tube &&
@@ -791,4 +960,3 @@ const facetEdgeAddressMatch = (
 		a0.edge === a1.edge
 	);
 };
-

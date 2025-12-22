@@ -27,7 +27,6 @@ export const spineCurveRibStore = derived(
 
 		const spineCurves = spineCurveConfigs.map((curveConfig) => getCubicBezier(curveConfig));
 
-		console.debug('derived spineCurves', spineCurves, levels);
 		const ribs: { point: Point; anchor: Point; tangent: Point; rib1: Point; rib2: Point }[] = [];
 
 		spineCurveConfigs.forEach((curveConfig) => {

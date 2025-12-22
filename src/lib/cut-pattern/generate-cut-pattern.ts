@@ -63,10 +63,7 @@ import {
 	getBandTriangleEdges,
 	getBandTrianglePoints
 } from '$lib/projection-geometry/generate-projection';
-import type {
-	GlobuleAddress_Band,
-	GlobuleAddress_FacetEdge
-} from '$lib/projection-geometry/types';
+import type { GlobuleAddress_Band, GlobuleAddress_FacetEdge } from '$lib/projection-geometry/types';
 
 export const expandStroke = (rawPathString?: string, strokeWidth?: number) => {
 	if (!rawPathString) {
@@ -274,9 +271,6 @@ export const generateBandPatterns = (
 		const patternedPattern: BandCutPatternPattern = {
 			projectionType: 'patterned',
 			bands: flattenedGeometry.map((flatBand) => {
-				// 				console.debug(`**********************************
-				// ** Patterned Pattern - band: ${i}  **
-				// **********************************`);
 				const edges = getBandTriangleEdges(flatBand.orientation);
 				const startPartner: GlobuleAddress_FacetEdge | undefined =
 					flatBand.facets[0].meta?.[edges[0].base].partner;
@@ -309,7 +303,6 @@ export const generateBandPatterns = (
 				// Convert prototype facets deformed by transforms into new svg paths
 				const transformedFacets: PathSegment[][] = [];
 				bandPattern.facets.forEach((facet) => {
-					// console.debug('', width);
 					transformedFacets.push(
 						processPatternTransforms({
 							svgPath: facet.svgPath || '',
@@ -319,14 +312,12 @@ export const generateBandPatterns = (
 					);
 				});
 
-				// console.debug('  transformed:', transformedFacets[0].map((seg: PathSegment) => roundPathSegments(seg)));
 				bandPattern.svgPath = generateBandPattern(transformedFacets);
-				// console.debug('  bandPattern:', parsePathString(bandPattern.svgPath).map((seg: PathSegment) => roundPathSegments(seg)));
 
 				return bandPattern;
 			})
 		};
-		console.debug('patternedPattern', patternedPattern);
+
 		return patternedPattern;
 	}
 };
@@ -569,15 +560,8 @@ export const getFlatStrip = <T extends Strut | Band>(
 		// 		oldTriangle.b.clone().applyMatrix3(scaleMatrix),
 		// 		oldTriangle.c.clone().applyMatrix3(scaleMatrix)
 		// 	);
-		// 	console.debug(
-		// 		'||| alignedFacet.triangle',
-		// 		scale,
-		// 		oldTriangle.a,
-		// 		'->',
-		// 		alignedFacet.triangle.a
-		// 	);
 		// } else {
-		// 	console.debug('*** alignedFacet.triangle', scale, alignedFacet.triangle.a);
+
 		// }
 
 		if (facet.tab && tabStyle) {
@@ -863,7 +847,6 @@ export const applyStrokeWidth = (
 		minValue = Math.min(...values);
 
 		if (!widthVariesByBand && patternBands[0]) {
-			console.debug('not width varies by band');
 			const strokeWidthPrototypes = patternBands[0].facets.map((facet: CutPattern) => {
 				const ratio = facet.quadWidth ? (facet.quadWidth - minValue) / (maxValue - minValue) : 1;
 				return ratio * (dynamicStrokeMax - dynamicStrokeMin) + dynamicStrokeMin;
@@ -891,7 +874,6 @@ export const applyStrokeWidth = (
 			}));
 		}
 	} else {
-		console.debug({ dynamicStroke });
 	}
 	return patternBands;
 };

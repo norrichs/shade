@@ -159,7 +159,6 @@ export const adjustTriStarPatternAfterMapping = (
 	let thisFacet: PathSegment[];
 	let thisQuad: Quadrilateral;
 	patternBand = patternBand.map((facet, i, facets) => {
-		console.debug('*** adjust triStarPattern');
 		thisFacet = facet;
 		thisQuad = quadBand[i];
 		if (i === 0) {
@@ -172,9 +171,8 @@ export const adjustTriStarPatternAfterMapping = (
 						rDiff
 				  )
 				: undefined;
-			// console.debug({ originalPrevFacet: facets[facets.length - 1], shiftedPrevFacet: prevFacet });
+
 			nextFacet = facets[i + 1];
-			// console.debug('prevFacet', prevFacet, 'quad', quadBand[facets.length - 1]);
 		} else if (i === facets.length - 1) {
 			const nextQuad = quadBand[0];
 			const tDiff = { x: thisQuad.d.x - nextQuad.a.x, y: thisQuad.d.y - nextQuad.a.y };
@@ -241,33 +239,14 @@ const straightenEndSegments = ({
 	const startSegmentIndices = getSegments('start', rows, columns, thisFacet.length);
 	const endSegmentIndices = getSegments('end', rows, columns, thisFacet.length);
 
-	// console.debug('*** straightenEndSegments', {
-	// 	startSegmentIndices,
-	// 	endSegmentIndices,
-	// 	thisFacet,
-	// 	rows,
-	// 	columns,
-	// 	rowLength
-	// });
-
 	const output = window.structuredClone(thisFacet);
 	const altNextFacet = window.structuredClone(nextFacet);
 	const altPrevFacet = window.structuredClone(prevFacet);
-	// console.debug({ thisFacet, output, rowLength, nextFacet });
 
 	let firstStartIndex, secondStartIndex, firstEndIndex, secondEndIndex;
 	for (let i = 0; i < startSegmentIndices.length; i++) {
 		[firstStartIndex, secondStartIndex] = startSegmentIndices[i];
 		[firstEndIndex, secondEndIndex] = endSegmentIndices[i];
-
-		// console.debug({
-		// 	firstStartIndex,
-		// 	secondStartIndex,
-		// 	firstEndIndex,
-		// 	secondEndIndex,
-		// 	altPrevFacet,
-		// 	altNextFacet
-		// });
 
 		if (prevFacet) {
 			output[firstStartIndex][1] = prevFacet[firstEndIndex][1];
@@ -280,7 +259,6 @@ const straightenEndSegments = ({
 		}
 	}
 
-	// console.debug({ thisFacet, output });
 	return output;
 };
 

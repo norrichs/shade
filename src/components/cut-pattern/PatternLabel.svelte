@@ -11,6 +11,7 @@
 	import { get } from 'svelte/store';
 	import { numberPathSegments } from './number-path-segments';
 	import SvgText from './SvgText/SvgText.svelte';
+	import { onMount } from 'svelte';
 
 	export let id: string | undefined = undefined;
 	export let color: string;
@@ -79,23 +80,51 @@
 		return adjusted;
 	};
 
+	let element: SVGGElement;
+
+	onMount(() => {
+		if (portal) {
+			const { target, transform } = portal;
+			const labelTextContainer = document.getElementById(target);
+			if (labelTextContainer && element) {
+				labelTextContainer.appendChild(element);
+			}
+		}
+	});
+
 	$: path = svgPathStringFromSegments(
 		adjust(getLabelPathSegments({ value, r: radius, addressStrings }), anchor, angle, scale)
 	);
 </script>
 
-<!-- <g transform={`translate(${anchor.x}, ${anchor.y}) rotate(${angle}) scale(${-scale}, ${-scale})`}> -->
-<path d={path} fill-rule="evenodd" fill={color} stroke="none" />
-{#if addressStrings}
-	{#each addressStrings as string, i}
-		<SvgText
-			id={`label-text${id ? `-${id}` : ''}`}
-			{string}
-			size={5}
-			anchor={{ ...anchor, y: anchor.y + 7 * (i + 1) }}
-			color="white"
-			{portal}
-		/>
-	{/each}
+{#if portal}
+	<g id={`band-label${id ? `-${id}` : ''}`} transform={portal.transform} bind:this={element}>
+		<path d={path} fill-rule="evenodd" fill={color} stroke="none" />
+		{#if addressStrings}
+			{#each addressStrings as string, i}
+				<SvgText
+					id={`label-text${id ? `-${id}` : ''}`}
+					{string}
+					size={5}
+					anchor={{ ...anchor, y: anchor.y + 7 * (i + 1) }}
+					color="white"
+				/>
+			{/each}
+		{/if}
+	</g>
+{:else}
+	<g id={`band-label${id ? `-${id}` : ''}`}>
+		<path d={path} fill-rule="evenodd" fill={color} stroke="none" />
+		{#if addressStrings}
+			{#each addressStrings as string, i}
+				<SvgText
+					id={`label-text${id ? `-${id}` : ''}`}
+					{string}
+					size={5}
+					anchor={{ ...anchor, y: anchor.y + 7 * (i + 1) }}
+					color="white"
+				/>
+			{/each}
+		{/if}
+	</g>
 {/if}
-<!-- </g> -->

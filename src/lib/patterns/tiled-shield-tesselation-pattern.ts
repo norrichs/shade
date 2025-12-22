@@ -292,7 +292,7 @@ const replaceInPlace = ({
 }) => {
 	if (targetIndices.length !== sourceIndices.length) {
 		console.error('!!!!!!!!!');
-		console.debug(targetIndices, sourceIndices);
+
 		throw new Error('replaceInPlace error');
 	}
 	for (let i = 0; i < targetIndices.length; i++) {

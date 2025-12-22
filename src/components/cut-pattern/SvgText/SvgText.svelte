@@ -71,7 +71,7 @@
 	</g>
 {/if}
 
-<g
+<!-- <g
 	transform={`translate(${anchor.x} ${anchor.y}) rotate(${angle}) scale(${size})`}
 	fill="none"
 	stroke-width={strokeWidth / 10}
@@ -83,4 +83,4 @@
 			<path data-char-id={charId} d={char} transform={`translate(${offset}, 0)`} />
 		{/each}
 	</g>
-</g>
+</g> -->

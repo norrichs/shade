@@ -1,4 +1,4 @@
-import {  getOtherTrianglePointsFromTrianglePoint } from '$lib/cut-pattern/generate-pattern';
+import { getOtherTrianglePointsFromTrianglePoint } from '$lib/cut-pattern/generate-pattern';
 import { getBandTrianglePoints } from '$lib/projection-geometry/generate-projection';
 import type { GlobuleAddress_Facet } from '$lib/projection-geometry/types';
 import type { ProjectionPanelPattern, TrianglePoint, TubePanelPattern } from '$lib/types';
@@ -26,7 +26,6 @@ export const getDistribution = (
 	pattern: ProjectionPanelPattern | { tubes: never[] },
 	config: DistributionConfig
 ): null | ProjectionDistribution => {
-	console.debug('getDistribution', { pattern, config });
 	if (pattern.tubes.length === 0) return null;
 	switch (config.type) {
 		case 'contiguous':
@@ -42,7 +41,7 @@ const getContiguousDistribution = (tubes: TubePanelPattern[]) => {
 		tubes: tubes.map((tube) => ({
 			bands: tube.bands.map((band) => {
 				const bandTrianglePoints = getBandTrianglePoints(band.orientation);
-				console.debug({ band, bandTrianglePoints });
+
 				let leadingEdge: { anchor: Vector3; angle: number } = {
 					anchor: new Vector3(0, 0, 0),
 					angle: 0
@@ -70,12 +69,15 @@ const getContiguousDistribution = (tubes: TubePanelPattern[]) => {
 						const secondVector = t[second.p1].clone().addScaledVector(t[second.p0], -1);
 						const secondAngle = secondVector.angleTo(axis);
 
-						leadingEdge = { anchor: newPanel.triangle[p % 2 === 0 ? second.p1 : second.p0], angle: secondAngle }
+						leadingEdge = {
+							anchor: newPanel.triangle[p % 2 === 0 ? second.p1 : second.p0],
+							angle: secondAngle
+						};
 
-						const xOffset = newPanel.triangle.a.x - panel.triangle.a.x
-						const yOffset = newPanel.triangle.a.y - panel.triangle.a.y
+						const xOffset = newPanel.triangle.a.x - panel.triangle.a.x;
+						const yOffset = newPanel.triangle.a.y - panel.triangle.a.y;
 
-						return {x: xOffset, y: yOffset, angle: radToDeg(diffAngle)};
+						return { x: xOffset, y: yOffset, angle: radToDeg(diffAngle) };
 					})
 				};
 			})
@@ -97,7 +99,7 @@ const transformTriangle = ({
 	// translate all points
 	const { a, b, c } = triangle;
 	const translationVector = anchor.clone().addScaledVector(triangle[point], -1);
-	console.debug({translationVector, angle})
+
 	const newTriangle = new Triangle(
 		a.clone().addScaledVector(translationVector, 1),
 		b.clone().addScaledVector(translationVector, 1),
@@ -106,12 +108,11 @@ const transformTriangle = ({
 
 	//rotate the triangle
 	const otherPoints = getOtherTrianglePointsFromTrianglePoint(point, 'triangle-order');
-	otherPoints.forEach((otherPoint) => { 
+	otherPoints.forEach((otherPoint) => {
 		const edgeVector = triangle[otherPoint].clone().addScaledVector(triangle[point], -1);
 		edgeVector.applyAxisAngle(new Vector3(0, 0, 1), angle);
 		newTriangle[otherPoint] = triangle[point].clone().addScaledVector(edgeVector, 1);
 	});
-
 
 	return newTriangle;
 };

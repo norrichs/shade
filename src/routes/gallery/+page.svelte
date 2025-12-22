@@ -60,7 +60,7 @@
 				superGlobuleStartIndex = Math.max(superGlobuleStartIndex - VIEW_TILE_PAGE_SIZE, 0);
 			}
 		}
-		console.debug('handleRepage', target, action, { globuleStartIndex, superGlobuleStartIndex });
+
 		refreshGeometry(data);
 	};
 
@@ -71,7 +71,6 @@
 		globuleConfigs: GlobuleConfig[];
 		superGlobuleConfigs: TransitionalSuperGlobuleConfig[];
 	}) => {
-		console.debug('refresh Geometry', { globuleConfigs, superGlobuleConfigs });
 		const hydrated = superGlobuleConfigs.map((superGC) => hydrateSuper(superGC, globuleConfigs));
 		refreshSuperGlobules(hydrated);
 		refreshGlobules(globuleConfigs);
@@ -83,7 +82,7 @@
 			superGlobuleStartIndex + VIEW_TILE_PAGE_SIZE
 		);
 		const data = visibleSuperGlobules.map((superGlobuleConfig) =>
-			generateSuperGlobule(superGlobuleConfig)
+			// generateSuperGlobule(superGlobuleConfig)
 		);
 		const geometry = data.map((superGlobule) => generateSuperGlobuleGeometry(superGlobule));
 		superGlobuleGeometries = geometry;
@@ -112,17 +111,8 @@
 			globuleStartIndex,
 			globuleStartIndex + VIEW_TILE_PAGE_SIZE
 		);
-		console.debug('refreshGlobules', globuleStartIndex, VIEW_TILE_PAGE_SIZE, {
-			globuleConfigs,
-			visibleGlobules
-		});
-		console.debug(
-			'globule ids',
-			visibleGlobules.map((cfg) => cfg.id)
-		);
 
 		globuleGeometries = visibleGlobules.map((config, i) => {
-			console.debug('GLOBULE GEOMETRIES', i);
 			const data = generateGlobuleData(config);
 			const geometry = generateGlobuleGeometry({
 				type: 'Globule',
@@ -132,10 +122,9 @@
 				recurrence: 1,
 				data
 			});
-			console.debug(i, 'refreshGlobules', geometry.globuleConfigId);
+
 			return geometry;
 		});
-		console.debug('newGlobuleGeometries', globuleGeometries);
 	};
 
 	const handleDeleteGlobule = async (id: number) => {
@@ -155,7 +144,6 @@
 		return response;
 	};
 	const handleLoadGlobule = (id: Id, addToExisting: boolean) => {
-		console.debug('handleLoadGlobule', { id, addToExisting });
 		const config = data.globuleConfigs.find((cfg) => id === cfg.id);
 
 		if (config && addToExisting) {

@@ -8,7 +8,6 @@ export const load: PageLoad = async ({
 	globuleConfigs: GlobuleConfig[];
 	superGlobuleConfigs: SuperGlobuleConfig[];
 }> => {
-	console.debug("PAGELOAD")
 	const globuleResponse: Response = await fetch('/api/globuleConfig', {
 		method: 'GET',
 		headers: { 'content-type': 'application/json' }
@@ -19,9 +18,9 @@ export const load: PageLoad = async ({
 		method: 'GET',
 		headers: { 'content-type': 'application/json' }
 	});
-	console.debug("superGlobuleResponse", superGlobuleResponse)
+
 	const superGlobuleConfigs = await superGlobuleResponse.json();
-	console.debug('gallery page load', { globuleConfigs, superGlobuleConfigs });
+
 	return {
 		globuleConfigs,
 		superGlobuleConfigs

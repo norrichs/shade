@@ -35,15 +35,15 @@ const defaultViewControls = (): ViewControls => ({
 		polygons: false,
 		projection: false,
 		sections: false,
-		bands: false,
-		facets: true
+		bands: true,
+		facets: false
 	},
 	showGlobuleGeometry: {
 		any: false
 	}, 
 	showGlobuleTubeGeometry: {
 		any: false,
-		bands: false,
+		bands: true,
 		facets: false,
 		sections: false
 	}

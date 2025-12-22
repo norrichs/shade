@@ -2,10 +2,8 @@
 	import type { BezierConfig } from '$lib/types';
 	export let curves;
 	import { spineCurveRibStore as ribs, curveStore } from './spineCurveRibStore';
-	console.debug('curves', curves);
 
 	const update = (c: BezierConfig[]) => {
-		console.debug('update c', c);
 		$curveStore = c;
 	};
 	$: update(curves);

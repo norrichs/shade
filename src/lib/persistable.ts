@@ -30,7 +30,6 @@ export const persistable = <T>(
 	return {
 		subscribe,
 		update: function (value: T) {
-			console.debug('PERSISTABLE UPDATE', { value });
 			update((value) => value);
 			const persistObj = getLocal(key);
 			persistObj[name] = value;

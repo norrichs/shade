@@ -11,7 +11,7 @@ import type {
 } from '$lib/types';
 import { derived } from 'svelte/store';
 import { loadPersistedOrDefault } from '$lib/stores';
-import { generateSuperGlobule, generateSuperGlobuleTubes } from '$lib/generate-superglobule';
+import { generateSuperGlobule } from '$lib/generate-superglobule';
 import {
 	generateSuperGlobuleBandGeometry,
 	generateSuperGlobuleGeometry
@@ -23,6 +23,7 @@ import {
 } from '$lib/cut-pattern/generate-pattern';
 import { patternConfigStore } from './globulePatternStores';
 import { overrideStore } from './overrideStore';
+import { getMetaInfo } from '$lib/projection-geometry/meta-info';
 
 // SUPER CONFIGS
 export const superConfigStore = persistable<SuperGlobuleConfig>(
@@ -40,11 +41,10 @@ export const superConfigStore = persistable<SuperGlobuleConfig>(
 );
 
 export const superGlobuleStore = derived(superConfigStore, ($superConfigStore) => {
+	console.log('SUPER GLOBULE STORE', $superConfigStore);
 	const superGlobule: SuperGlobule = generateSuperGlobule($superConfigStore);
 	return superGlobule;
 });
-
-
 
 export const superGlobuleGeometryStore = derived(superGlobuleStore, ($superGlobuleStore) => {
 	const superGlobuleGeometry = generateSuperGlobuleGeometry($superGlobuleStore);
@@ -61,7 +61,6 @@ export const superGlobuleBandGeometryStore = derived(superGlobuleStore, ($superG
 export const superGlobulePatternStore = derived(
 	[superGlobuleStore, superConfigStore, patternConfigStore, overrideStore],
 	([$superGlobuleStore, $superConfigStore, $patternConfigStore, $overrideStore]) => {
-
 		// const { showGlobuleGeometry, showProjectionGeometry } = $viewControlStore;
 		const showGlobuleGeometry = {
 			any: false
@@ -71,7 +70,7 @@ export const superGlobulePatternStore = derived(
 			bands: true
 		};
 		const showGlobuleTubeGeometry = {
-			any: true,
+			any: false,
 			bands: false,
 			facets: false,
 			sections: false
@@ -84,17 +83,23 @@ export const superGlobulePatternStore = derived(
 		const globuleTubes = $superGlobuleStore.globuleTubes;
 
 
+		console.debug('tubes', {globuleTubes, projectionTubes: projection.tubes, showGlobuleTubeGeometry, showProjectionGeometry});
 		const globuleTubePattern = showGlobuleTubeGeometry.any
 			? generateProjectionPattern(globuleTubes, $superConfigStore.id, $patternConfigStore)
 			: null;
 
 		const projectionPattern =
-			showProjectionGeometry.any && showProjectionGeometry.bands && $patternConfigStore.patternViewConfig.showBands
+			showProjectionGeometry.any &&
+			showProjectionGeometry.bands &&
+			$patternConfigStore.patternViewConfig.showBands
 				? generateProjectionPattern(projection.tubes, $superConfigStore.id, $patternConfigStore)
 				: undefined;
 		// if (isSuperGlobuleProjectionPanelPattern(projectionPattern)) {
 		// 	validateAllPanels(projectionPattern.projectionPanelPattern.tubes);
 		// }
+
+
+		const metaInfo = getMetaInfo(projectionPattern)
 
 		console.log('SUPER GLOBULE PATTERN STORE', {
 			$superGlobuleStore,
@@ -118,15 +123,20 @@ export function isSuperGlobuleBandPattern(
 export function isSuperGlobuleProjectionPanelPattern(
 	pattern: SuperGlobulePattern | undefined
 ): pattern is SuperGlobuleProjectionPanelPattern {
+	console.debug("isSuperGlobuleProjectionPanelPattern", pattern);
 	return (
-		!!pattern && (pattern as SuperGlobuleProjectionPanelPattern).type === 'SuperGlobuleProjectionPanelPattern'
+		!!pattern &&
+		(pattern as SuperGlobuleProjectionPanelPattern).type === 'SuperGlobuleProjectionPanelPattern'
 	);
 }
 
 export function isSuperGlobuleProjectionCutPattern(
 	pattern: SuperGlobulePattern | undefined
 ): pattern is SuperGlobuleProjectionCutPattern {
-	return !!pattern && (pattern as SuperGlobuleProjectionCutPattern).type === 'SuperGlobuleProjectionCutPattern';
+	return (
+		!!pattern &&
+		(pattern as SuperGlobuleProjectionCutPattern).type === 'SuperGlobuleProjectionCutPattern'
+	);
 }
 
 export type SuperGlobuleBandPattern = {

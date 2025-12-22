@@ -9,9 +9,14 @@
 	const colors = ['purple', 'blue', 'green', 'yellow', 'orange', 'red'];
 </script>
 
-
-{#each band.facets as facet, f}
-
+<path
+	d={band.svgPath}
+	fill="none"
+	stroke-width={band.facets[0].strokeWidth}
+	stroke-linecap="round"
+	stroke-linejoin="round"
+/>
+<!-- {#each band.facets as facet, f}
 	<path
 		d={facet.svgPath}
 		fill={FILL_RAINBOW ? colors[f % colors.length] : 'none'}
@@ -20,4 +25,4 @@
 		stroke-width={`${facet.strokeWidth || 1}`}
 		stroke={RAINBOW ? colors[f % colors.length] : undefined}
 	/>
-{/each}
+{/each} -->

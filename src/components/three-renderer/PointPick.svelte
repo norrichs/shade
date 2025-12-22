@@ -39,7 +39,6 @@
 			partnerSelected: { address: partner }
 		} = $mode.data;
 
-		console.debug(`*** setRecombination originSelected ${origin} partnerSelected ${partner}`);
 		const recurrenceIndex = origin.g[origin.g.length - 1];
 
 		const newRecurrences: RecombinatoryRecurrence[] =
@@ -61,30 +60,18 @@
 
 		if (existingMappingIndex >= 0) {
 			const newBandMap = newRecurrences[recurrenceIndex].recombines!.bandMap;
-			console.debug(
-				`  * mapping exists ${existingMappingIndex} newBandMap ${newBandMap.join(', ')}`
-			);
+
 			newBandMap.splice(existingMappingIndex, 1, newBandMapping);
 			newRecurrences[recurrenceIndex].recombines = { bandMap: newBandMap };
-			console.debug(
-				`  * replacing ${formatBandMap(newRecurrences[recurrenceIndex].recombines.bandMap)}`
-			);
 		} else {
 			const newBandMap = newRecurrences[recurrenceIndex].recombines.bandMap;
-			console.debug(`  * mapping doesn't exist ${newBandMap.join(', ')}`);
+
 			newRecurrences[recurrenceIndex].recombines = { bandMap: [...newBandMap, newBandMapping] };
-			console.debug(
-				`  * adding ${formatBandMap(newRecurrences[recurrenceIndex].recombines.bandMap)}`
-			);
 		}
 
 		$superConfigStore.subGlobuleConfigs[origin.s].transforms[origin.g.length - 1].recurs =
 			newRecurrences;
 
-		console.debug('setRecombination', {
-			newRecurs:
-				$superConfigStore.subGlobuleConfigs[origin.s].transforms[origin.g.length - 1].recurs
-		});
 		$mode.data = { ...$mode.data, originSelected: undefined, partnerSelected: undefined };
 	};
 

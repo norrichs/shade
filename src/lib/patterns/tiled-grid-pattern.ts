@@ -118,6 +118,5 @@ export const adjustRectPatternAfterTiling = (
 	quadBand: Quadrilateral[],
 	tiledPatternConfig: TiledPatternConfig
 ): PathSegment[][] => {
-	console.debug('adjustRectPattern stub', { patternBand, quadBand, tiledPatternConfig });
 	return patternBand;
 };

@@ -189,7 +189,6 @@ export const generateSurface = (cfg: SurfaceConfig) => {
 		const capsuleMesh = generateCapsuleMesh(cfg);
 		surface.add(capsuleMesh);
 	} else if (cfg.type === 'GlobuleConfig') {
-		console.debug('generateSurface - globule config', cfg);
 		const globuleMesh = generateGlobuleMesh(cfg);
 		surface.add(globuleMesh);
 	}
@@ -197,6 +196,7 @@ export const generateSurface = (cfg: SurfaceConfig) => {
 	surface.applyMatrix4(transformMatrix);
 	surface.updateMatrixWorld(true);
 
+	console.debug('generateSurface', cfg.type, cfg);
 	return surface;
 };
 
@@ -1010,18 +1010,20 @@ export const isSameVector3 = (v0: Vector3, v1: Vector3, precision = 1 / 10_000) 
 };
 
 export const makeProjection = (projectionConfig: BaseProjectionConfig, address: GlobuleAddress) => {
-	const globuleConfig = generateDefaultGlobuleConfig();
-	projectionConfig.surfaceConfig = {
-		...globuleConfig,
-		type: 'GlobuleConfig',
-		transform: 'inherit'
-	};
-	console.debug('makeProjection - projectionConfig', projectionConfig);
+	console.debug('makeProjection', projectionConfig.surfaceConfig.type);
+
+	
+	// const globuleConfig = generateDefaultGlobuleConfig();
+	// projectionConfig.surfaceConfig = {
+	// 	...globuleConfig,
+	// 	type: 'GlobuleConfig',
+	// 	transform: 'inherit'
+	// };
+
 	const preparedProjectionConfig = prepareProjectionConfig(projectionConfig);
 
 	const { projectorConfig, surfaceConfig } = preparedProjectionConfig;
 
-	console.debug('makeProjection - surfaceConfig', surfaceConfig);
 	const surface = generateSurface(surfaceConfig);
 
 	const polyhedron = generatePolyhedron(projectorConfig);

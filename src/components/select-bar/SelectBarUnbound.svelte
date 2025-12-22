@@ -17,8 +17,7 @@
 			class:selected={selected === option.name}
 			on:click={() => {
 				selected = option.name;
-				onChange(option)
-				console.debug({ selected, option });
+				onChange(option);
 			}}
 		>
 			{option.name}

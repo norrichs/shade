@@ -63,17 +63,22 @@ export const generateTubeCutPattern = ({
 		tubeCutPattern.bands = tiling;
 	}
 
-	tubeCutPattern.bands = tubeCutPattern.bands.map((band) => ({
-		...band,
-		facets: band.facets.map((facet) => {
-			const segments = facet.path;
-			if (facet.addenda) {
-				const addendaSegments = facet.addenda.map((a) => a.path);
-				segments.push(...facet.addenda.map((a) => a.path).flat());
-			}
-			return { ...facet, svgPath: svgPathStringFromSegments([...segments]) };
-		})
-	}));
+	tubeCutPattern.bands = tubeCutPattern.bands.map((band) => {
+		const patternBand = {
+			...band,
+			facets: band.facets.map((facet) => {
+				const segments = facet.path;
+				if (facet.addenda) {
+					const addendaSegments = facet.addenda.map((a) => a.path);
+					segments.push(...facet.addenda.map((a) => a.path).flat());
+				}
+				return { ...facet, svgPath: svgPathStringFromSegments([...segments]) };
+			})
+		};
+		patternBand.svgPath = patternBand.facets.map((facet) => facet.svgPath).join('\n');
+		return patternBand;
+	});
+	console.debug('generateTubeCutPattern', tubeCutPattern);
 	tubeCutPattern.bands = applyStrokeWidth(tubeCutPattern.bands, tiledPatternConfig.config);
 
 	return tubeCutPattern;

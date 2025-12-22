@@ -39,6 +39,7 @@
 		--point-size: 8px;
 	}
 	.point {
+		padding: 0;
 		position: absolute;
 		width: var(--point-size);
 		height: var(--point-size);

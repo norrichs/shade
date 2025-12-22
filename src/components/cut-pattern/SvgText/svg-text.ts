@@ -24,7 +24,6 @@ const getWidth = (path: PathSegment[]) => {
 };
 
 export const processSvg = (rawText: string, rawSvg: string): SVGFontDictionary => {
-	console.debug('----------------------------------');
 	const pathArray = parseSvg(rawSvg);
 	const widthArray = pathArray.map((path) => getWidth(path));
 	const textArray = rawText.split('');
@@ -60,7 +59,7 @@ export const getChars = (str: string, dictionary: SVGFontDictionary | undefined)
 		return { charId: char, char: svgPath, offset: runningOffset - width / 2 };
 	});
 
-	return { chars, totalWidth: runningOffset};
+	return { chars, totalWidth: runningOffset };
 };
 
 const parseSvg = (svgStr: string): PathSegment[][] => {

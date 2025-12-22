@@ -20,10 +20,10 @@
 
 	let downloadUrl: string | undefined = undefined;
 	let showModal = false;
-  const toggleModal = () => {
-    showModal = !showModal;
-  }
-	
+	const toggleModal = () => {
+		showModal = !showModal;
+	};
+
 	const sandBoxOptions = [
 		{ value: '/sandbox-ellipse-intersections', label: 'Ellipse Intersections' },
 		{ value: '/sandbox-line-intersections', label: 'Line Intersections' },
@@ -45,16 +45,8 @@
 	const printRecombinations = () => {
 		const recombinations = $superConfigStore.subGlobuleConfigs.forEach((sgc, sgcIndex) => {
 			if (!sgc.transforms || sgc.transforms.length === 0) {
-				console.debug(`${sgcIndex} | []`);
 			} else {
-				return sgc.transforms.forEach((tx, txIndex) =>
-					tx.recurs.forEach((r, rIndex) => {
-						console.debug(`${sgcIndex} | ${txIndex} | ${rIndex}:`);
-						r.recombines?.bandMap.forEach((bm) =>
-							console.debug(`    ${formatAddress(bm.partnerAddress)}`)
-						);
-					})
-				);
+				return sgc.transforms.forEach((tx, txIndex) => tx.recurs.forEach((r, rIndex) => {}));
 			}
 		});
 	};

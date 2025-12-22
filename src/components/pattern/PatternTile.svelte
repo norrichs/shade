@@ -18,8 +18,8 @@
 	export let rows = 1;
 	export let columns = 1;
 	export let active = false;
-	export let strokeWidth = 2;	
-	
+	export let strokeWidth = 2;
+
 	const getPath = (
 		patternType: string,
 		rows: number,
@@ -41,7 +41,6 @@
 				path = svgPathStringFromSegments(transformPatternByQuad(unitPattern, quad));
 				// path = svgPathStringFromSegments(scalePS(unitPattern, Math.max(width, height)));
 			} else if (tilingBasis === 'triangle') {
-				console.debug('---- TRIANGLE');
 				const { getPattern } = patterns[patternType] as unknown as UnitPatternGenerator;
 				const unitPattern = getPattern(rows, columns);
 				const quad: Quadrilateral = {
