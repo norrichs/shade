@@ -36,13 +36,6 @@
 		showGlobuleTubeGeometry: ShowGlobuleTubeGeometries,
 		showProjectionGeometry: ShowProjectionGeometries
 	) => {
-		console.debug(
-			'collatePatterns',
-			globuleTubePattern,
-			projectionPattern,
-			showGlobuleTubeGeometry,
-			showProjectionGeometry
-		);
 		const hasGlobuleTubePattern =
 			globuleTubePattern &&
 			isSuperGlobuleProjectionCutPattern(globuleTubePattern) &&
@@ -60,7 +53,6 @@
 				? projectionPattern.projectionCutPattern.tubes
 				: [])
 		];
-		console.debug('collatedPatterns', collatedPatterns);
 	};
 
 	type FlattenMode = 'native-replace' | 'recombine'; // WTF is this. Still relevant?

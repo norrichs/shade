@@ -1,7 +1,15 @@
 import { CubicBezierCurve, CurvePath, Triangle, Vector2, Vector3 } from 'three';
 import { Bezier, type Line } from 'bezier-js';
-import type { BezierConfig, Point, Point3 } from '$lib/types';
+import type { BezierConfig, Point, Point3, SuperGlobule } from '$lib/types';
 import type { Intersector } from '$lib/types';
+import type {
+	GlobuleAddress,
+	GlobuleAddress_Facet,
+	GlobuleAddress_FacetEdge,
+	GlobuleAddress_Band,
+	GlobuleAddress_Tube,
+	GlobuleAddress_Globule
+} from './projection-geometry/types';
 
 export const rad = (deg: number): number => (Math.PI / 180) * deg;
 export const deg = (rad: number): number => (180 / Math.PI) * rad;
@@ -176,4 +184,100 @@ c: ${round(t.c.x, decimals)}, ${round(t.c.y, decimals)}, ${round(t.c.z, decimals
 export const formatAngle = (angle: number, precision = 1 / 10) => {
 	const p = 1 / precision;
 	return `${Math.round(((angle * 180) / Math.PI) * p) / p}°`;
+};
+
+export const getFacetByAddress = (
+	sg: SuperGlobule,
+	a: GlobuleAddress_Facet | GlobuleAddress_FacetEdge
+) => {
+	return sg.projections[a.globule].tubes[a.tube].bands[a.band].facets[a.facet];
+};
+
+export const addressIsInArray = (
+	a0: GlobuleAddress_Facet | GlobuleAddress_FacetEdge,
+	arr: (GlobuleAddress_Facet | GlobuleAddress_FacetEdge | undefined)[]
+) => {
+	const a0str = concatAddress_Facet(a0);
+	return arr.some((a) => a && concatAddress_Facet(a) === a0str);
+};
+
+export type AddressFormat = 'gtbf' | 'gtb' | 'gt' | 'tbf' | 'tb' | 't' | 'b' | 'f';
+
+export const isGlobuleAddress_FacetEdge = (a: GlobuleAddress): a is GlobuleAddress_FacetEdge =>
+	isGlobuleAddress_Facet(a) && Object.hasOwn(a, 'edge');
+export const isGlobuleAddress_Facet = (a: GlobuleAddress): a is GlobuleAddress_Facet =>
+	isGlobuleAddress_Band(a) && Object.hasOwn(a, 'facet');
+export const isGlobuleAddress_Band = (a: GlobuleAddress): a is GlobuleAddress_Band =>
+	isGlobuleAddress_Tube(a) && Object.hasOwn(a, 'band');
+export const isGlobuleAddress_Tube = (a: GlobuleAddress): a is GlobuleAddress_Tube =>
+	isGlobuleAddress_Globule(a) && Object.hasOwn(a, 'tube');
+export const isGlobuleAddress_Globule = (a: GlobuleAddress): a is GlobuleAddress_Globule =>
+	Object.hasOwn(a, 'globule');
+
+export const concatAddress_Facet = (a: GlobuleAddress_Facet, format: AddressFormat = 'gtbf') => {
+	switch (format) {
+		case 'tbf':
+			return `t${a.tube}b${a.band}f${a.facet}`;
+		case 'tb':
+			return `t${a.tube}b${a.band}`;
+		case 't':
+			return `t${a.tube}`;
+		case 'b':
+			return `b${a.band}`;
+		case 'f':
+			return `f${a.facet}`;
+		case 'gtbf':
+		default:
+			return `g${a.globule}t${a.tube}b${a.band}f${a.facet}`;
+	}
+};
+export const concatAddress_Band = (a: GlobuleAddress_Band, format: AddressFormat = 'gtb') => {
+	switch (format) {
+		case 'tb':
+			return `t${a.tube}b${a.band}`;
+		case 't':
+			return `t${a.tube}`;
+		case 'b':
+			return `b${a.band}`;
+		case 'gtb':
+		default:
+			return `g${a.globule}t${a.tube}b${a.band}`;
+	}
+};
+export const concatAddress_Tube = (a: GlobuleAddress_Tube, format: AddressFormat = 't') => {
+	switch (format) {
+		case 't':
+			return `t${a.tube}`;
+		case 'gt':
+		default:
+			return `g${a.globule}t${a.tube}`;
+	}
+};
+
+export const concatAddress = (
+	a: GlobuleAddress | undefined,
+	format: AddressFormat = 'gtbf'
+): string => {
+	if (!a) return '';
+	if (isGlobuleAddress_Facet(a)) {
+		return concatAddress_Facet(a, format);
+	}
+	if (isGlobuleAddress_Band(a)) {
+		return concatAddress_Band(a, format);
+	}
+	if (isGlobuleAddress_Tube(a)) {
+		return concatAddress_Tube(a, format);
+	}
+	return '';
+};
+
+export const isSameAddress = (a: GlobuleAddress, b: GlobuleAddress, strict = true) => {
+	if (strict && Object.keys(a).length !== Object.keys(b).length) return false;
+	if (a.globule !== b.globule) return false;
+	if (isGlobuleAddress_Tube(a) && isGlobuleAddress_Tube(b) && a.tube !== b.tube) return false;
+	if (isGlobuleAddress_Band(a) && isGlobuleAddress_Band(b) && a.band !== b.band) return false;
+	if (isGlobuleAddress_Facet(a) && isGlobuleAddress_Facet(b) && a.facet !== b.facet) return false;
+	if (isGlobuleAddress_FacetEdge(a) && isGlobuleAddress_FacetEdge(b) && a.edge !== b.edge)
+		return false;
+	return true;
 };

@@ -1,26 +1,18 @@
 <script lang="ts">
-	import {
-		corrected,
-		getPanelEdgeMeta,
-		getTrianglePointFromTriangleEdge,
-		type PanelHoleConfig
-	} from '$lib/cut-pattern/generate-pattern';
-	import { getLength, svgPathStringFromSegments } from '$lib/patterns/utils';
+	import { corrected, getTrianglePointFromTriangleEdge } from '$lib/cut-pattern/generate-pattern';
+	import { svgPathStringFromSegments } from '$lib/patterns/utils';
 	import { printProjectionAddress } from '$lib/projection-geometry/generate-projection';
-	import type { GlobuleAddress_Facet, TriangleEdge } from '$lib/projection-geometry/types';
+	import type { TriangleEdge } from '$lib/projection-geometry/types';
 	import type { PanelPattern, PathSegment, TrianglePoint } from '$lib/types';
 	import { Vector3, type Triangle } from 'three';
-	import PatternLabel from './PatternLabel.svelte';
 
 	import {
 		superGlobulePatternStore,
-		addressIsInArray,
 		selectedProjection,
 		selectedProjectionGeometry,
-		superGlobuleStore,
 		isSuperGlobuleProjectionPanelPattern
 	} from '$lib/stores';
-	import { formatAngle } from '$lib/util';
+	import { addressIsInArray, formatAngle } from '$lib/util';
 	import SvgText from './SvgText/SvgText.svelte';
 	import RegistrationMark from './RegistrationMark.svelte';
 

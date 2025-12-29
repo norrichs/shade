@@ -3,9 +3,6 @@
 		superGlobulePatternStore,
 		patternConfigStore,
 		selectedProjectionGeometry,
-		concatAddress_Facet,
-		concatAddress_Band,
-		concatAddress_Tube,
 		isSuperGlobuleProjectionPanelPattern
 	} from '$lib/stores';
 	import BandPanelComponent from './BandPanelComponent.svelte';
@@ -23,6 +20,7 @@
 	import HingePatternComponent from './HingePatternComponent.svelte';
 	import { translatePS } from '$lib/patterns/utils';
 	import type { TriangleEdge } from '$lib/projection-geometry/types';
+	import { concatAddress } from '$lib/util';
 
 	export let showSelectedOnly: 'panel' | 'band' | false = false;
 	export let range: ProjectionRange = {};
@@ -129,17 +127,17 @@
 </script>
 
 {#if show}
-	{#each pattern.tubes as tube, t (concatAddress_Tube(tube.address))}
-		<g id={`${concatAddress_Tube(tube.address)}`}>
+	{#each pattern.tubes as tube, t (concatAddress(tube.address))}
+		<g id={`${concatAddress(tube.address)}`}>
 			<circle cx={0} cy={0} r={10} fill="red" />
-			{#each tube.bands || [] as band, b (concatAddress_Band(band.address))}
+			{#each tube.bands || [] as band, b (concatAddress(band.address))}
 				<BandPanelComponent
 					{band}
 					index={t * pattern.tubes[0].bands.length + b}
 					offsetX={cumulativeOffsetX.tubes[t].bands[b].offsetX}
 					offsetY={cumulativeOffsetX.tubes[t].bands[b].offsetY}
 				>
-					{#each band.panels as panel, p (concatAddress_Facet(panel.address))}
+					{#each band.panels as panel, p (concatAddress(panel.address))}
 						<g>
 							<PanelComponent {panel} {patternStyle} {labelSize} {labelStyle} {verbose} />
 							{#if showHingePatterns}
@@ -182,5 +180,5 @@
 		<Scalebar scale={{ ...scaleConfig, unit: 'in', quantity: 0.5 }} origin={{ x: 200, y: 100 }} />
 	{/if}
 {:else}
- <circle cx={0} cy={0} r={10} fill="red" />
+	<circle cx={0} cy={0} r={10} fill="red" />
 {/if}

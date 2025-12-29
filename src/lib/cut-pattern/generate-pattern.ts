@@ -16,7 +16,10 @@ import type {
 import { applyStrokeWidth } from './generate-cut-pattern';
 import { generateTiledBandPattern, generateTubeCutPattern } from './generate-tiled-pattern';
 import { getEdge } from '$lib/projection-geometry/generate-projection';
-import type { SuperGlobuleBandPattern, SuperGlobuleProjectionPattern } from '$lib/stores';
+import type {
+	SuperGlobuleBandPattern,
+	SuperGlobuleProjectionPattern
+} from '$lib/stores/superGlobuleStores';
 import {
 	shouldUsePanelPattern,
 	generateProjectionPanelPattern,

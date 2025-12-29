@@ -302,6 +302,7 @@ export type BandPattern = (
 ) & { meta?: { minLength?: number; maxLength?: number } };
 
 export type BandCutPattern = {
+	sideOrientation?: 'inside' | 'outside' | 'mixed';
 	facets: CutPattern[];
 	svgPath?: string;
 	id: string;
@@ -704,6 +705,8 @@ type BandSelection = string;
 export type Band = {
 	facets: Facet[];
 	orientation: FacetOrientation;
+
+	sideOrientation?: 'inside' | 'outside' | 'mixed';
 	endTab?: FacetTab;
 	selected?: BandSelection;
 	visible?: boolean;

@@ -35,7 +35,7 @@
 		facets?: { address: GlobuleAddress_Facet; geometry: BufferGeometry }[];
 	} = {};
 	export let onClick: (event: any, address: GlobuleAddress_Facet) => void;
-	let showNormals = false;
+	export let showNormals = false;
 
 	type ProjectionData = {
 		projection: Projection;
@@ -55,11 +55,13 @@
 		globuleTubeGeometry = collateGlobuleTubeGeometry(globuleTubes, show);
 	};
 
+	const LENGTH = 25;
 	const getNormalIndicator = (
 		{ address }: { address: GlobuleAddress_Facet },
-		store: typeof $superGlobuleStore
+		store: typeof $superGlobuleStore,
+		config: { length: number }
 	) => {
-		const LENGTH = 25;
+		const length = config?.length ?? LENGTH;
 		const { triangle } =
 			store.projections[address.globule].tubes[address.tube].bands[address.band].facets[
 				address.facet
@@ -70,7 +72,7 @@
 		triangle.getNormal(normal);
 		triangle.getMidpoint(anchor);
 
-		const p2 = anchor.clone().addScaledVector(normal, LENGTH);
+		const p2 = anchor.clone().addScaledVector(normal, length);
 
 		const points = [anchor, p2, p2.clone().applyAxisAngle(ab, Math.PI / 100)];
 		const geometry = new BufferGeometry().setFromPoints(points);
@@ -78,20 +80,28 @@
 		return geometry;
 	};
 
-	const COLOR_BY_BAND = true;
+	const COLOR_BY_BAND = false;
 
 	const getMaterial = (
 		address: GlobuleAddress_Facet,
 		selectedGeometry: typeof $selectedProjectionGeometry
 	) => {
+		if (address.facet <= 1) return materials.numbered[5];
+
 		if (!selectedGeometry?.selected) return materials.default;
 
 		if (selectedGeometry.isSelected(address)) {
 			return materials.selected;
 		} else if (selectedGeometry.isPartner(address)) {
 			return materials.highlightedPrimary;
+		} else if (selectedGeometry.isStartPartner(address)) {
+			return materials.numbered[4];
+		} else if (selectedGeometry.isEndPartner(address)) {
+			return materials.numbered[1];
 		} else if (COLOR_BY_BAND) {
 			return materials.numbered[address.band];
+		} else if (address.facet == 0) {
+			return materials.highlightedPrimary;
 		}
 		return materials.default;
 	};
@@ -107,7 +117,8 @@
 </script>
 
 {#if $viewControlStore.showProjectionGeometry.any}
-	<T.Group position={[0, 0, 0]}>
+	<!-- // use negative y scale to match SVG coordinates -->
+	<T.Group position={[0, 0, 0]} scale={[1, 1, 1]}>
 		{#if projectionGeometry.surface}
 			<T is={projectionGeometry.surface} material={materials.selected} />
 		{/if}
@@ -139,8 +150,8 @@
 		{#if showNormals && projectionGeometry.facets}
 			{#each projectionGeometry.facets as facet}
 				<T.Mesh
-					geometry={getNormalIndicator(facet, $superGlobuleStore)}
-					material={materials.default}
+					geometry={getNormalIndicator(facet, $superGlobuleStore, { length: 80 })}
+					material={materials.highlightedPrimary}
 				/>
 			{/each}
 		{/if}
@@ -155,27 +166,27 @@
 {/if}
 
 {#if $viewControlStore.showGlobuleTubeGeometry.any}
-  <T.Group position={[0, 0, 0]}>
-    {#if globuleTubeGeometry.sections}
-      <T.Mesh geometry={globuleTubeGeometry.sections} material={materials.numbered[4]} />
-    {/if}
-    {#each globuleTubeGeometry.bands || [] as band}
-      <T.Mesh geometry={band} material={materials.default} />
-    {/each}
-    {#each globuleTubeGeometry.facets || [] as facet}
-      <T.Mesh
-        geometry={facet.geometry}
-        material={getMaterial(facet.address, $selectedProjectionGeometry)}
-        on:click={(ev) => onClick(ev, facet.address)}
-      />
-    {/each}
-    {#if showNormals && globuleTubeGeometry.facets}
-      {#each globuleTubeGeometry.facets as facet}
-        <T.Mesh
-          geometry={getNormalIndicator(facet, $superGlobuleStore)}
-          material={materials.default}
-        />
-      {/each}
-    {/if}
-  </T.Group>
+	<T.Group position={[0, 0, 0]}>
+		{#if globuleTubeGeometry.sections}
+			<T.Mesh geometry={globuleTubeGeometry.sections} material={materials.numbered[4]} />
+		{/if}
+		{#each globuleTubeGeometry.bands || [] as band}
+			<T.Mesh geometry={band} material={materials.default} />
+		{/each}
+		{#each globuleTubeGeometry.facets || [] as facet}
+			<T.Mesh
+				geometry={facet.geometry}
+				material={getMaterial(facet.address, $selectedProjectionGeometry)}
+				on:click={(ev) => onClick(ev, facet.address)}
+			/>
+		{/each}
+		{#if showNormals && globuleTubeGeometry.facets}
+			{#each globuleTubeGeometry.facets as facet}
+				<T.Mesh
+					geometry={getNormalIndicator(facet, $superGlobuleStore, { length: 200 })}
+					material={materials.highlightedPrimary}
+				/>
+			{/each}
+		{/if}
+	</T.Group>
 {/if}

@@ -9,7 +9,13 @@ import type {
 	SuperGlobule,
 	GlobuleConfig
 } from '$lib/types';
-import { average, getCubicBezierCurvePath, getIntersectionOfLines, getVector3 } from '$lib/util';
+import {
+	average,
+	concatAddress,
+	getCubicBezierCurvePath,
+	getIntersectionOfLines,
+	getVector3
+} from '$lib/util';
 import {
 	CapsuleGeometry,
 	CurvePath,
@@ -60,7 +66,7 @@ import {
 } from '$lib/cut-pattern/generate-pattern';
 import { generateGlobuleTube } from '$lib/generate-shape';
 import { collateGlobuleTubeGeometry } from './collate-geometry';
-import { generateDefaultGlobuleConfig } from '$lib/shades-config';
+import { auditSides } from './audit';
 
 export const preparePolygonConfig = (
 	polygonConfig: PolygonConfig<undefined, number, number, number>,
@@ -743,6 +749,32 @@ export const generateTubeBands = (
 	} catch (error) {
 		console.error('error matching tube ends or facets', error);
 	}
+
+	const bandAddressesByOrientation: {
+		axialLeft: string[];
+		axialRight: string[];
+		circumferential: string[];
+	} = tubes.reduce(
+		(acc, tube) => {
+			tube.bands.forEach((band) => {
+				switch (band.facets[0].orientation) {
+					case 'axial-left':
+						acc.axialLeft.push(concatAddress(band.address as GlobuleAddress));
+						break;
+					case 'axial-right':
+						acc.axialRight.push(concatAddress(band.address as GlobuleAddress));
+						break;
+					case 'circumferential':
+						acc.circumferential.push(concatAddress(band.address as GlobuleAddress));
+						break;
+				}
+			});
+			return acc;
+		},
+		{ axialLeft: [] as string[], axialRight: [] as string[], circumferential: [] as string[] }
+	);
+	console.debug('bandAddressesByOrientation', bandAddressesByOrientation);
+
 	return { tubes: tubes as Tube[] };
 };
 
@@ -1012,7 +1044,6 @@ export const isSameVector3 = (v0: Vector3, v1: Vector3, precision = 1 / 10_000) 
 export const makeProjection = (projectionConfig: BaseProjectionConfig, address: GlobuleAddress) => {
 	console.debug('makeProjection', projectionConfig.surfaceConfig.type);
 
-	
 	// const globuleConfig = generateDefaultGlobuleConfig();
 	// projectionConfig.surfaceConfig = {
 	// 	...globuleConfig,
@@ -1033,6 +1064,8 @@ export const makeProjection = (projectionConfig: BaseProjectionConfig, address: 
 		projectionConfig: preparedProjectionConfig
 	});
 	const { tubes } = generateTubeBands(projection, projectionConfig, address);
+
+	auditSides(tubes);
 
 	return { projection, polyhedron, tubes, surface };
 };

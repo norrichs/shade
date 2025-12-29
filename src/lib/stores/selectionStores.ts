@@ -10,20 +10,50 @@ import type {
 } from '$lib/types';
 import { derived, writable } from 'svelte/store';
 import {
-	isSuperGlobuleProjectionPanelPattern,
 	superConfigStore,
 	superGlobulePatternStore,
 	superGlobuleStore
 } from './superGlobuleStores';
 import type {
-	GlobuleAddress,
 	GlobuleAddress_Band,
 	GlobuleAddress_Facet,
-	GlobuleAddress_FacetEdge,
-	GlobuleAddress_Globule,
 	GlobuleAddress_Tube
 } from '$lib/projection-geometry/types';
 import { BufferGeometry } from 'three';
+import {
+	concatAddress_Band,
+	concatAddress_Tube,
+	concatAddress,
+	concatAddress_Facet,
+	isGlobuleAddress_Band,
+	isGlobuleAddress_Facet,
+	isGlobuleAddress_Tube
+} from '$lib/util';
+
+/** Union type for address types that can be selected */
+type SelectableAddress = GlobuleAddress_Tube | GlobuleAddress_Band | GlobuleAddress_Facet;
+
+/** Function type for checking if an address is selected */
+type AddressSelector = <T extends SelectableAddress>(a: T) => boolean;
+
+/** Return type for selectedProjectionGeometry store */
+export type SelectedProjectionGeometry = {
+	isSelected: AddressSelector;
+	isPartner: AddressSelector;
+	isSelectedOrPartner: AddressSelector;
+	isStartPartner: AddressSelector;
+	isEndPartner: AddressSelector;
+	geometry: {
+		facet: BufferGeometry;
+		partner: BufferGeometry;
+		startPartner: BufferGeometry;
+		endPartner: BufferGeometry;
+	};
+	selected: (GlobuleAddress_Facet | undefined)[];
+	selectedPartners: (GlobuleAddress_Facet | undefined)[];
+	selectedStartPartners: (GlobuleAddress_Facet | undefined)[];
+	selectedEndPartners: (GlobuleAddress_Facet | undefined)[];
+} | null;
 
 export const selectedGlobule = writable<{
 	address?: GeometryAddress<BandAddressed | GlobuleAddressed>;
@@ -98,7 +128,12 @@ export type SelectionMode = {
 
 export const selectMode = writable<SelectionMode>({
 	sequential: 'replace',
-	includes: { partners: true }
+	includes: {
+		// tube: true,
+		band: true,
+		// facet: true,
+		partners: true
+	}
 });
 
 export const selectedProjection = writable<GlobuleAddress_Facet>({
@@ -108,13 +143,94 @@ export const selectedProjection = writable<GlobuleAddress_Facet>({
 	facet: 0
 });
 
+const getSelectedFacet = (address: GlobuleAddress_Facet, sg: SuperGlobule, mode: SelectionMode) => {
+	const facets = new Set<Facet>([]);
+	if (mode.includes.tube) {
+		sg.projections[address.globule].tubes[address.tube].bands.forEach((band) =>
+			band.facets.forEach((facet) => facets.add(facet))
+		);
+	} else if (mode.includes.band) {
+		sg.projections[address.globule].tubes[address.tube].bands[address.band].facets.forEach(
+			(facet) => facets.add(facet)
+		);
+	} else if (mode.includes.facet) {
+		facets.add(
+			sg.projections[address.globule].tubes[address.tube].bands[address.band].facets[address.facet]
+		);
+	}
+	return Array.from(facets);
+};
+
+const getPartnerFacets = (facets: Facet[], sg: SuperGlobule, mode: SelectionMode) => {
+	if (!mode.includes.partners)
+		return {
+			startPartnerFacets: [] as Facet[],
+			endPartnerFacets: [] as Facet[],
+			partnerFacets: [] as Facet[]
+		};
+	const facetAddresses = new Set(facets.map((facet) => concatAddress(facet.address)));
+	const partners = new Set<Facet>([]);
+	const endPartners = new Set<Facet>([]);
+	const startPartners = new Set<Facet>([]);
+	facets.forEach((facet, facetIndex) => {
+		if (facet.meta) {
+			const partnerAddresses = [
+				facet.meta.ab.partner,
+				facet.meta.ac.partner,
+				facet.meta.bc.partner
+			];
+			partnerAddresses.forEach((a) => {
+				let receiver;
+				if (a.tube !== facet.address?.tube && facetIndex === 0) {
+					receiver = startPartners;
+				} else if (a.tube !== facet.address?.tube && facetIndex === facets.length - 1) {
+					receiver = endPartners;
+				} else {
+					receiver = partners;
+				}
+				const { globule: g, tube: t, band: b, facet: f } = a;
+				if (!facetAddresses.has(concatAddress(a))) {
+					if (mode.includes.tube) {
+						sg.projections[g].tubes[t].bands.forEach((band) => {
+							band.facets.forEach((facet) => receiver.add(facet));
+						});
+					} else if (mode.includes.band) {
+						sg.projections[g].tubes[t].bands[b].facets.forEach((facet) => receiver.add(facet));
+					} else if (mode.includes.facet) {
+						receiver.add(sg.projections[g].tubes[t].bands[b].facets[f]);
+					}
+				}
+			});
+		}
+	});
+	return {
+		startPartnerFacets: Array.from(startPartners),
+		endPartnerFacets: Array.from(endPartners),
+		partnerFacets: Array.from(partners)
+	};
+};
+
 export const selectedProjectionGeometry = derived(
 	[selectedProjection, superGlobuleStore, superGlobulePatternStore, selectMode],
-	([$selectedProjection, $superGlobuleStore, $superGlobulePatternStore, $selectMode]) => {
+	([
+		$selectedProjection,
+		$superGlobuleStore,
+		$superGlobulePatternStore,
+		$selectMode
+	]): SelectedProjectionGeometry => {
 		if (!$selectedProjection) return null;
-		const { globule: p, tube: t, band: b, facet: f } = $selectedProjection;
 
-		const selectedFacets: Facet[] = [$superGlobuleStore.projections[p].tubes[t].bands[b].facets[f]];
+		const selectedFacets: Facet[] = getSelectedFacet(
+			$selectedProjection,
+			$superGlobuleStore,
+			$selectMode
+		);
+
+		const { startPartnerFacets, endPartnerFacets, partnerFacets } = getPartnerFacets(
+			selectedFacets,
+			$superGlobuleStore,
+			$selectMode
+		);
 
 		const facetPoints = selectedFacets
 			.map(({ triangle }) => [triangle.a, triangle.b, triangle.c])
@@ -122,73 +238,55 @@ export const selectedProjectionGeometry = derived(
 		const facetGeometry = new BufferGeometry().setFromPoints(facetPoints);
 		facetGeometry.computeVertexNormals();
 
-		let partnerGeometry;
-		let selectedPartners: GlobuleAddress_Facet[] = [];
-		if ($selectMode.includes.partners) {
-			const partners = new Set<GlobuleAddress_FacetEdge>();
-
-			selectedFacets.forEach((facet) => {
-				const { address: a } = facet;
-				if (!a) return;
-
-				const panel = isSuperGlobuleProjectionPanelPattern(
-					$superGlobulePatternStore.projectionPattern
-				)
-					? $superGlobulePatternStore.projectionPattern.projectionPanelPattern?.tubes[a.tube].bands[
-							a.band
-					  ].panels[a.facet]
-					: undefined;
-
-				if (panel) {
-					const edgesMeta = panel.meta.edges;
-					if (edgesMeta?.ab) {
-						partners.add(edgesMeta.ab.partner);
-					}
-					if (edgesMeta?.bc) {
-						partners.add(edgesMeta.bc.partner);
-					}
-					if (edgesMeta?.ac) {
-						partners.add(edgesMeta.ac.partner);
-					}
-				}
-			});
-
-			const partnerPoints = Array.from(partners)
-				.map((partner) => {
-					const t = getFacetByAddress($superGlobuleStore, partner).triangle;
-					return [t.a, t.b, t.c];
-				})
-				.flat();
-			partnerGeometry = new BufferGeometry().setFromPoints(partnerPoints);
-			partnerGeometry.computeVertexNormals();
-			selectedPartners = Array.from(partners);
-		}
+		const partnerPoints = partnerFacets
+			.map(({ triangle }) => [triangle.a, triangle.b, triangle.c])
+			.flat();
+		const partnerGeometry = new BufferGeometry().setFromPoints(partnerPoints);
+		partnerGeometry.computeVertexNormals();
 
 		const selected = selectedFacets.map((f) => f.address);
+		const selectedPartners = partnerFacets.map((f) => f.address);
+		const selectedStartPartners = startPartnerFacets.map((f) => f.address);
+		const selectedEndPartners = endPartnerFacets.map((f) => f.address);
+
+		const startPartnerPoints = startPartnerFacets
+			.map(({ triangle }) => [triangle.a, triangle.b, triangle.c])
+			.flat();
+		const startPartnerGeometry = new BufferGeometry().setFromPoints(startPartnerPoints);
+		startPartnerGeometry.computeVertexNormals();
+
+		const endPartnerPoints = endPartnerFacets
+			.map(({ triangle }) => [triangle.a, triangle.b, triangle.c])
+			.flat();
+		const endPartnerGeometry = new BufferGeometry().setFromPoints(endPartnerPoints);
+		endPartnerGeometry.computeVertexNormals();
 
 		return {
-			isSelected: <T extends GlobuleAddress_Tube | GlobuleAddress_Band | GlobuleAddress_Facet>(
-				a: T
-			) => isSelected(a, selected),
-			isPartner: <T extends GlobuleAddress_Tube | GlobuleAddress_Band | GlobuleAddress_Facet>(
-				a: T
-			) => isSelected(a, selectedPartners),
-			isSelectedOrPartner: <
-				T extends GlobuleAddress_Tube | GlobuleAddress_Band | GlobuleAddress_Facet
-			>(
-				a: T
-			) => isSelected(a, selectedPartners) || isSelected(a, selected),
-			geometry: { facet: facetGeometry, partner: partnerGeometry },
+			isSelected: ((a) => isSelected(a, selected)) as AddressSelector,
+			isPartner: ((a) => isSelected(a, selectedPartners)) as AddressSelector,
+			isSelectedOrPartner: ((a) =>
+				isSelected(a, [...selectedStartPartners, ...selectedEndPartners, ...selected]) ||
+				isSelected(a, selected)) as AddressSelector,
+			isStartPartner: ((a) => isSelected(a, selectedStartPartners)) as AddressSelector,
+			isEndPartner: ((a) => isSelected(a, selectedEndPartners)) as AddressSelector,
+			geometry: {
+				facet: facetGeometry,
+				partner: partnerGeometry,
+				startPartner: startPartnerGeometry,
+				endPartner: endPartnerGeometry
+			},
 			selected,
-			selectedPartners
+			selectedPartners,
+			selectedStartPartners,
+			selectedEndPartners
 		};
 	}
 );
 
-const isSelected = <T extends GlobuleAddress_Tube | GlobuleAddress_Band | GlobuleAddress_Facet>(
+const isSelected = <T extends SelectableAddress>(
 	a: T,
 	selected: (GlobuleAddress_Facet | undefined)[]
-) => {
+): boolean => {
 	if (isGlobuleAddress_Facet(a)) {
 		const a0 = concatAddress_Facet(a);
 		return selected.some((aX) => aX && concatAddress_Facet(aX) === a0);
@@ -203,87 +301,4 @@ const isSelected = <T extends GlobuleAddress_Tube | GlobuleAddress_Band | Globul
 	}
 
 	return false;
-};
-
-const getFacetByAddress = (
-	sg: SuperGlobule,
-	a: GlobuleAddress_Facet | GlobuleAddress_FacetEdge
-) => {
-	return sg.projections[a.globule].tubes[a.tube].bands[a.band].facets[a.facet];
-};
-
-export const addressIsInArray = (
-	a0: GlobuleAddress_Facet | GlobuleAddress_FacetEdge,
-	arr: (GlobuleAddress_Facet | GlobuleAddress_FacetEdge | undefined)[]
-) => {
-	const a0str = concatAddress_Facet(a0);
-	return arr.some((a) => a && concatAddress_Facet(a) === a0str);
-};
-
-type AddressFormat = 'gtbf' | 'gtb' | 'gt' | 'tbf' | 'tb' | 't' | 'b' | 'f';
-
-const isGlobuleAddress_Facet = (a: GlobuleAddress): a is GlobuleAddress_Facet =>
-	isGlobuleAddress_Band(a) && Object.hasOwn(a, 'facet');
-const isGlobuleAddress_Band = (a: GlobuleAddress): a is GlobuleAddress_Band =>
-	isGlobuleAddress_Tube(a) && Object.hasOwn(a, 'band');
-const isGlobuleAddress_Tube = (a: GlobuleAddress): a is GlobuleAddress_Tube =>
-	isGlobuleAddress_Globule(a) && Object.hasOwn(a, 'tube');
-const isGlobuleAddress_Globule = (a: GlobuleAddress): a is GlobuleAddress_Globule =>
-	Object.hasOwn(a, 'globule');
-
-export const concatAddress_Facet = (a: GlobuleAddress_Facet, format: AddressFormat = 'gtbf') => {
-	switch (format) {
-		case 'tbf':
-			return `t${a.tube}b${a.band}f${a.facet}`;
-		case 'tb':
-			return `t${a.tube}b${a.band}`;
-		case 't':
-			return `t${a.tube}`;
-		case 'b':
-			return `b${a.band}`;
-		case 'f':
-			return `f${a.facet}`;
-		case 'gtbf':
-		default:
-			return `g${a.globule}t${a.tube}b${a.band}f${a.facet}`;
-	}
-};
-export const concatAddress_Band = (a: GlobuleAddress_Band, format: AddressFormat = 'gtb') => {
-	switch (format) {
-		case 'tb':
-			return `t${a.tube}b${a.band}`;
-		case 't':
-			return `t${a.tube}`;
-		case 'b':
-			return `b${a.band}`;
-		case 'gtb':
-		default:
-			return `g${a.globule}t${a.tube}b${a.band}`;
-	}
-};
-export const concatAddress_Tube = (a: GlobuleAddress_Tube, format: AddressFormat = 't') => {
-	switch (format) {
-		case 't':
-			return `t${a.tube}`;
-		case 'gt':
-		default:
-			return `g${a.globule}t${a.tube}`;
-	}
-};
-
-export const concatAddress = (
-	a: GlobuleAddress | undefined,
-	format: AddressFormat = 'gtbf'
-): string => {
-	if (!a) return '';
-	if (isGlobuleAddress_Facet(a)) {
-		return concatAddress_Facet(a, format);
-	}
-	if (isGlobuleAddress_Band(a)) {
-		return concatAddress_Band(a, format);
-	}
-	if (isGlobuleAddress_Tube(a)) {
-		return concatAddress_Tube(a, format);
-	}
-	return '';
 };

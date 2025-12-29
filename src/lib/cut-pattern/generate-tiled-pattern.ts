@@ -78,7 +78,7 @@ export const generateTubeCutPattern = ({
 		patternBand.svgPath = patternBand.facets.map((facet) => facet.svgPath).join('\n');
 		return patternBand;
 	});
-	console.debug('generateTubeCutPattern', tubeCutPattern);
+
 	tubeCutPattern.bands = applyStrokeWidth(tubeCutPattern.bands, tiledPatternConfig.config);
 
 	return tubeCutPattern;
@@ -232,6 +232,7 @@ export const generateTiling = ({
 
 		const result: BandCutPattern = {
 			facets: cuttablePattern,
+			sideOrientation: bands[bandIndex].sideOrientation,
 			svgPath: undefined, //cuttablePattern.map((p) => p.svgPath).join(),
 			id: `${tiledPatternConfig.type}-band-${bandIndex}`,
 			tagAnchorPoint,

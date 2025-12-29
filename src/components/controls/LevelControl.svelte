@@ -1,6 +1,6 @@
 <script lang="ts">
 	import ControlGroup from './ControlGroup.svelte';
-	import { superConfigStore, selectedBand } from '$lib/stores';
+	import { superConfigStore } from '$lib/stores';
 	import { isCurveSampleMethodMethod, type BandAddressed, type GeometryAddress } from '$lib/types';
 
 	let sgIndex = 0;
@@ -45,7 +45,6 @@
 	};
 
 	$: updateStore(rotZ, rotX, rotY);
-	$: update($selectedBand);
 </script>
 
 <section>

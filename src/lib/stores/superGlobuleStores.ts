@@ -10,7 +10,7 @@ import type {
 	ProjectionCutPattern
 } from '$lib/types';
 import { derived } from 'svelte/store';
-import { loadPersistedOrDefault } from '$lib/stores';
+import { loadPersistedOrDefault } from './stores';
 import { generateSuperGlobule } from '$lib/generate-superglobule';
 import {
 	generateSuperGlobuleBandGeometry,
@@ -81,9 +81,6 @@ export const superGlobulePatternStore = derived(
 
 		const projection = $superGlobuleStore.projections[0];
 		const globuleTubes = $superGlobuleStore.globuleTubes;
-
-
-		console.debug('tubes', {globuleTubes, projectionTubes: projection.tubes, showGlobuleTubeGeometry, showProjectionGeometry});
 		const globuleTubePattern = showGlobuleTubeGeometry.any
 			? generateProjectionPattern(globuleTubes, $superConfigStore.id, $patternConfigStore)
 			: null;
@@ -98,8 +95,7 @@ export const superGlobulePatternStore = derived(
 		// 	validateAllPanels(projectionPattern.projectionPanelPattern.tubes);
 		// }
 
-
-		const metaInfo = getMetaInfo(projectionPattern)
+		const metaInfo = getMetaInfo(projectionPattern);
 
 		console.log('SUPER GLOBULE PATTERN STORE', {
 			$superGlobuleStore,
@@ -123,7 +119,6 @@ export function isSuperGlobuleBandPattern(
 export function isSuperGlobuleProjectionPanelPattern(
 	pattern: SuperGlobulePattern | undefined
 ): pattern is SuperGlobuleProjectionPanelPattern {
-	console.debug("isSuperGlobuleProjectionPanelPattern", pattern);
 	return (
 		!!pattern &&
 		(pattern as SuperGlobuleProjectionPanelPattern).type === 'SuperGlobuleProjectionPanelPattern'

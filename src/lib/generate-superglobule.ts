@@ -18,40 +18,21 @@ import type {
 } from './types';
 
 export const generateSuperGlobule = (superConfig: SuperGlobuleConfig): SuperGlobule => {
-	console.debug(
-		0,
-		'*** generateSuperGlobule ***',
-		superConfig.projectionConfigs[0].surfaceConfig.type
-	);
 	// Old Globule Pipeline
 	const subGlobules: SubGlobule[] = recombineSubGlobules(
 		superConfig.subGlobuleConfigs.map((sgc, index) => generateSubGlobule(sgc, index)).flat()
 	);
-	console.debug(
-		1,
-		'*** generateSuperGlobule ***',
-		superConfig.projectionConfigs[0].surfaceConfig.type
-	);
+
 	// New Globule Tube Pipeline
 	const globuleTubes = superConfig.subGlobuleConfigs
 		.map((sgc, index) => generateSubGlobuleTubes(sgc, index))
 		.flat();
-	console.debug(
-		2,
-		'*** generateSuperGlobule ***',
-		superConfig.projectionConfigs[0].surfaceConfig.type
-	);
+
 	// Projection Tube pipeline
 
 	const projections = superConfig.projectionConfigs.map((config, i) => {
-		console.debug('generating projection', i, config.surfaceConfig.type);
 		return makeProjection(config, { globule: i });
 	});
-	console.debug(
-		3,
-		'*** generateSuperGlobule ***',
-		superConfig.projectionConfigs[0].surfaceConfig.type
-	);
 
 	const superGlobule: SuperGlobule = {
 		type: 'SuperGlobule',

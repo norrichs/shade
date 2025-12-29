@@ -10,7 +10,7 @@ export const bootstrapShouldUsePersisted = (): boolean => {
 		return false;
 	}
 	const retrievedUsePersisted = getLocal(USE_PERSISTED_KEY);
-	return retrievedUsePersisted ? retrievedUsePersisted[USE_PERSISTED_KEY] : undefined;
+	return retrievedUsePersisted ? retrievedUsePersisted[USE_PERSISTED_KEY] : false;
 };
 
 export interface Persistable<T> extends Writable<T> {

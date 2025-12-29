@@ -77,7 +77,7 @@
 			{formatAddress($selectedBand)}
 		</div> -->
 
-		{#if $selectedProjectionGeometry}
+		<!-- {#if $selectedProjectionGeometry}
 			<div>
 				<span>
 					{printProjectionAddress($selectedProjectionGeometry.selected[0])}
@@ -86,7 +86,7 @@
 					<span>{`[${printProjectionAddress(partner)}]`}</span>
 				{/each}
 			</div>
-		{/if}
+		{/if} -->
 
 		<div class="button-group">
 			<Button on:click={toggleModal}>Edit</Button>

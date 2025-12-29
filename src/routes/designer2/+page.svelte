@@ -46,7 +46,6 @@
 					{ name: 'Spine', value: 'SpineCurveConfig' },
 					{ name: 'Shape', value: 'ShapeConfig' },
 					{ name: 'Projection' },
-					{ name: '3D' },
 					{ name: 'Levels' },
 					{ name: 'Struts' },
 					{ name: 'Cut' },
@@ -66,8 +65,6 @@
 				<ProjectionControl />
 			{:else if showControl?.name === 'Struts'}
 				<StrutControl />
-			{:else if showControl?.name === '3D'}
-				<ShowControl />
 			{:else if showControl?.name === 'Levels'}
 				<LevelControl />
 				<!-- {:else if showControl?.name === 'Cut'}

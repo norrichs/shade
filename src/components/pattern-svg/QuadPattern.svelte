@@ -23,11 +23,11 @@
 		}) as { label: string; labelPoint: Point; quad: Quadrilateral; triangles?: any }[];
 </script>
 
-{#each facets as facet}
+{#each facets as facet, facetIndex}
 	<g class="svg-pattern-quad">
 		<path
 			d={svgQuad(facet.quad)}
-			class={` ${showQuads ? 'show' : 'hide'}`}
+			class={`${showQuads ? 'show' : 'hide'}${facetIndex % 2 === 1 ? ' odd' : ''}`}
 			stroke="none"
 			fill="none"
 		/>
@@ -55,7 +55,10 @@
 <style>
 	.show {
 		fill: black;
-		opacity: 0.25;
+		opacity: 0.1;
+	}
+	.odd {
+		fill: gray;
 	}
 	.hide {
 		fill: black;

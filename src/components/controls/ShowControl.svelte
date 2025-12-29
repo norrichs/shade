@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { initTabStyle } from '$lib/shades-config';
-	import { superConfigStore, selectedSubGlobuleIndex, selectedBand } from '$lib/stores';
+	import { superConfigStore, selectedBand } from '$lib/stores';
 	import type { TabStyle } from '$lib/types';
 	import ControlGroup from './ControlGroup.svelte';
 

@@ -61,9 +61,11 @@ import { generateUnitFlowerOfLifeTriangle } from '$lib/patterns/unit-pattern/uni
 import outline from 'svg-path-outline';
 import {
 	getBandTriangleEdges,
-	getBandTrianglePoints
+	getBandTrianglePoints,
+	isSameVector3
 } from '$lib/projection-geometry/generate-projection';
 import type { GlobuleAddress_Band, GlobuleAddress_FacetEdge } from '$lib/projection-geometry/types';
+import { concatAddress } from '$lib/util';
 
 export const expandStroke = (rawPathString?: string, strokeWidth?: number) => {
 	if (!rawPathString) {
@@ -745,6 +747,39 @@ export const getFlatStripV2 = <T extends Strut | Band>(
 		}
 		flatStrip.facets.push(alignedFacet);
 	});
+
+	console.debug('original strip side orientation', (flatStrip as Band).sideOrientation);
+	if ((flatStrip as Band).sideOrientation === 'inside') {
+		// Flip the x coordinate of each triangle vertex to mirror the strip
+		// const newFacets: Facet[] = [];
+		// for (let i = 0; i < flatStrip.facets.length; i += 2) {
+		// 	const t0 = flatStrip.facets[i].triangle;
+		// 	const t1 = flatStrip.facets[i + 1].triangle;
+		// 	const newC0 = isSameVector3(t0.c, t1.a) ? t1.b.clone() : t1.a.clone();
+		// 	const newC1 = isSameVector3(t1.c, t0.a) ? t0.b.clone() : t0.a.clone();
+		// 	const newT0 = new Triangle(t0.a.clone(), t0.b.clone(), newC0);
+		// 	const newT1 = new Triangle(t1.a.clone(), t1.b.clone(), newC1);
+		// 	newT0.a.x = -newT0.a.x;
+		// 	newT0.b.x = -newT0.b.x;
+		// 	newT0.c.x = -newT0.c.x;
+		// 	newT1.a.x = -newT1.a.x;
+		// 	newT1.b.x = -newT1.b.x;
+		// 	newT1.c.x = -newT1.c.x;
+		// 	newFacets.push(
+		// 		// { ...flatStrip.facets[i] },
+		// 		// { ...flatStrip.facets[i + 1] }
+		// 		{ ...flatStrip.facets[i], triangle: newT0 },
+		// 		{ ...flatStrip.facets[i + 1], triangle: newT1 }
+		// 	);
+		// }
+		// flatStrip.facets = newFacets;
+		// flatStrip.orientation = flatStrip.orientation === 'axial-right' ? 'axial-left' : 'axial-right';
+		flatStrip.facets.forEach((facet) => {
+			facet.triangle.a.x = -facet.triangle.a.x;
+			facet.triangle.b.x = -facet.triangle.b.x;
+			facet.triangle.c.x = -facet.triangle.c.x;
+		});
+	}
 
 	return flatStrip as T;
 };
