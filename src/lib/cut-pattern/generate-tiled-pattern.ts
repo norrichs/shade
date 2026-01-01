@@ -42,7 +42,6 @@ export const generateTubeCutPattern = ({
 	pixelScale: PixelScale;
 }): TubeCutPattern => {
 	const tubeCutPattern: TubeCutPattern = { projectionType: 'patterned', address, bands: [] };
-	const { adjustAfterTiling } = patterns[tiledPatternConfig.type];
 	// Creates a line pattern without inner and outer elements, appropriate for post processing in Affinity
 	// TODO - see if it's possible to convert the output of this to "expanded path" (e.g. convert stroke widths to paths instead of doing so in Affinity)
 
@@ -56,14 +55,17 @@ export const generateTubeCutPattern = ({
 
 	const tiling = generateTiling({ quadBands, bands: alignedBands, tiledPatternConfig, address });
 
-	if (adjustAfterTiling) {
-		const adjusted = adjustAfterTiling(tiling, tiledPatternConfig);
-		tubeCutPattern.bands = adjusted;
-	} else {
-		tubeCutPattern.bands = tiling;
-	}
+	// Return raw tiling - adjustAfterTiling and post-processing happen in generate-pattern.ts
+	tubeCutPattern.bands = tiling;
 
-	tubeCutPattern.bands = tubeCutPattern.bands.map((band) => {
+	return tubeCutPattern;
+};
+
+export const applyTubePatternPostProcessing = (
+	tubeCutPattern: TubeCutPattern,
+	tiledPatternConfig: TiledPatternConfig
+): TubeCutPattern => {
+	let processedBands = tubeCutPattern.bands.map((band) => {
 		const patternBand = {
 			...band,
 			facets: band.facets.map((facet) => {
@@ -79,9 +81,9 @@ export const generateTubeCutPattern = ({
 		return patternBand;
 	});
 
-	tubeCutPattern.bands = applyStrokeWidth(tubeCutPattern.bands, tiledPatternConfig.config);
+	processedBands = applyStrokeWidth(processedBands, tiledPatternConfig.config);
 
-	return tubeCutPattern;
+	return { ...tubeCutPattern, bands: processedBands };
 };
 
 export const generateTiledBandPattern = ({

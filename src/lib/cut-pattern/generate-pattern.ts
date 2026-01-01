@@ -14,7 +14,12 @@ import type {
 } from '$lib/types';
 
 import { applyStrokeWidth } from './generate-cut-pattern';
-import { generateTiledBandPattern, generateTubeCutPattern } from './generate-tiled-pattern';
+import {
+	generateTiledBandPattern,
+	generateTubeCutPattern,
+	applyTubePatternPostProcessing
+} from './generate-tiled-pattern';
+import { patterns } from '$lib/patterns';
 import { getEdge } from '$lib/projection-geometry/generate-projection';
 import type {
 	SuperGlobuleBandPattern,
@@ -124,7 +129,7 @@ export const generateProjectionPattern = (
 			projectionPanelPattern
 		};
 	} else {
-		const tubePatterns: TubeCutPattern[] = tubes.map(({ bands, address }, t) => {
+		let tubePatterns: TubeCutPattern[] = tubes.map(({ bands, address }, t) => {
 			const tubePattern = generateTubeCutPattern({
 				address,
 				bands,
@@ -133,6 +138,23 @@ export const generateProjectionPattern = (
 			});
 			return tubePattern;
 		});
+
+		const { adjustAfterTiling } = patterns[tiledPatternConfig.type];
+
+		if (adjustAfterTiling) {
+			tubePatterns = tubePatterns.map((tubePattern) => {
+				const adjusted = adjustAfterTiling(tubePattern.bands, tiledPatternConfig);
+				return {
+					...tubePattern,
+					bands: adjusted
+				};
+			});
+		}
+
+		// Apply post-processing (svgPath generation, stroke width) after adjustment
+		tubePatterns = tubePatterns.map((tubePattern) =>
+			applyTubePatternPostProcessing(tubePattern, tiledPatternConfig)
+		);
 
 		return {
 			type: 'SuperGlobuleProjectionCutPattern',
