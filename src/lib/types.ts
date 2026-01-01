@@ -9,7 +9,8 @@ import type {
 	GlobuleAddress_Globule,
 	GlobuleAddress_Tube,
 	TriangleEdge,
-	Tube
+	Tube,
+	TransformConfig
 } from './projection-geometry/types';
 import type { PanelHoleConfig } from './cut-pattern/generate-pattern';
 import type { DistributionConfig } from '../components/cut-pattern/distrubute-panels';
@@ -310,9 +311,18 @@ export type BandCutPattern = {
 	tagAngle?: number;
 	projectionType: 'patterned';
 	address: GlobuleAddress_Band;
+	bounds?: {
+		left: number;
+		top: number;
+		width: number;
+		height: number;
+		center: Vector3;
+	};
 	meta?: {
 		startPartnerBand: GlobuleAddress_Band;
 		endPartnerBand: GlobuleAddress_Band;
+		startPartnerTransform?: TransformConfig;
+		endPartnerTransform?: TransformConfig;
 	};
 };
 

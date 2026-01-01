@@ -1,4 +1,9 @@
-import type { TriangleEdge, TriangleEdgePermissive, Tube } from '$lib/projection-geometry/types';
+import type {
+	TransformConfig,
+	TriangleEdge,
+	TriangleEdgePermissive,
+	Tube
+} from '$lib/projection-geometry/types';
 import type {
 	Globule,
 	GlobulePatternConfig,
@@ -10,7 +15,8 @@ import type {
 	TrianglePoint,
 	FacetOrientation,
 	TubeCutPattern,
-	Band
+	Band,
+	BandCutPattern
 } from '$lib/types';
 
 import { applyStrokeWidth } from './generate-cut-pattern';
@@ -33,6 +39,7 @@ import {
 	applyHolesToEdgeMeta,
 	type PanelHoleConfig
 } from './generate-panel-pattern';
+import { isSameAddress } from '$lib/util';
 
 // Re-export panel functions for backwards compatibility
 export { validateAllPanels, getPanelEdgeMeta, applyHolesToEdgeMeta, type PanelHoleConfig };
@@ -138,6 +145,8 @@ export const generateProjectionPattern = (
 			});
 			return tubePattern;
 		});
+
+		getEndPartnerTrasforms(tubePatterns);
 
 		const { adjustAfterTiling } = patterns[tiledPatternConfig.type];
 
@@ -331,4 +340,97 @@ export const corrected = (s: string): TriangleEdge => {
 	if (s === 'ca') return 'ac';
 	if (s === 'cb') return 'bc';
 	return s as TriangleEdge;
+};
+
+const nullTransform: TransformConfig = {
+	translate: { x: 0, y: 0, z: 0 },
+	scale: { x: 1, y: 1, z: 1 },
+	rotate: { x: 0, y: 0, z: 0 }
+};
+
+export const getEndPartnerTransform = (
+	originBand: BandCutPattern,
+	partnerBand: BandCutPattern
+): TransformConfig => {
+	const isStartOrigin =
+		originBand.meta?.startPartnerBand &&
+		isSameAddress(originBand.meta?.startPartnerBand, partnerBand.address);
+
+	const isStartPartner =
+		partnerBand.meta?.startPartnerBand &&
+		isSameAddress(partnerBand.meta?.startPartnerBand, originBand.address);
+
+	const originPair = isStartOrigin
+		? [originBand.facets[0].quad?.b, originBand.facets[0].quad?.a]
+		: [
+				originBand.facets[originBand.facets.length - 1].quad?.d,
+				originBand.facets[originBand.facets.length - 1].quad?.c
+		  ];
+
+	if (originBand.sideOrientation && originBand.sideOrientation === 'inside') originPair.reverse();
+
+	if (!originPair[0] || !originPair[1]) return nullTransform;
+	const partnerPair = isStartPartner
+		? [partnerBand.facets[0].quad?.a, partnerBand.facets[0].quad?.b]
+		: [
+				partnerBand.facets[partnerBand.facets.length - 1].quad?.d,
+				partnerBand.facets[partnerBand.facets.length - 1].quad?.c
+		  ];
+	if (partnerBand.sideOrientation && partnerBand.sideOrientation === 'inside')
+		partnerPair.reverse();
+	if (!partnerPair[0] || !partnerPair[1]) return nullTransform;
+	console.debug('getEndPartnerTransform', {
+		originIsInside: originBand.sideOrientation && originBand.sideOrientation === 'inside',
+		partnerIsInside: partnerBand.sideOrientation && partnerBand.sideOrientation === 'inside',
+		originPair,
+		partnerPair
+	});
+
+	// Calculate the angle of each edge
+	const originAngle = Math.atan2(
+		originPair[1].y - originPair[0].y,
+		originPair[1].x - originPair[0].x
+	);
+	const partnerAngle =
+		Math.atan2(partnerPair[1].y - partnerPair[0].y, partnerPair[1].x - partnerPair[0].x) +
+		(isStartPartner ? 0 : Math.PI);
+
+	// Rotation needed to align partner edge with origin edge
+	const rotation = originAngle - partnerAngle;
+
+	// Calculate where the partner point ends up after rotation around origin (0,0)
+	// Then translate to align with originPair[0]
+	const cos = Math.cos(rotation);
+	const sin = Math.sin(rotation);
+	const partnerPoint = isStartPartner ? partnerPair[0] : partnerPair[1];
+	const rotatedPartnerX = partnerPoint.x * cos - partnerPoint.y * sin;
+	const rotatedPartnerY = partnerPoint.x * sin + partnerPoint.y * cos;
+
+	const xOffset = originPair[0].x - rotatedPartnerX;
+	const yOffset = originPair[0].y - rotatedPartnerY;
+
+	return {
+		translate: { x: xOffset, y: yOffset, z: 0 },
+		scale: { x: 1, y: 1, z: 1 },
+		rotate: { x: 0, y: 0, z: (rotation * 180) / Math.PI }
+	};
+};
+
+const getEndPartnerTrasforms = (tubePatterns: TubeCutPattern[]) => {
+	tubePatterns.forEach((tubePattern) => {
+		tubePattern.bands.forEach((band) => {
+			if (!band.meta) return;
+			const startPartnerAddress = band.meta.startPartnerBand;
+			const endPartnerAddress = band.meta.endPartnerBand;
+			if (startPartnerAddress && endPartnerAddress) {
+				const startPartnerBand =
+					tubePatterns[startPartnerAddress.tube].bands[startPartnerAddress.band];
+				const endPartnerBand = tubePatterns[endPartnerAddress.tube].bands[endPartnerAddress.band];
+				if (startPartnerBand && endPartnerBand) {
+					band.meta.startPartnerTransform = getEndPartnerTransform(band, startPartnerBand);
+					band.meta.endPartnerTransform = getEndPartnerTransform(band, endPartnerBand);
+				}
+			}
+		});
+	});
 };

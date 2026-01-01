@@ -21,7 +21,8 @@ import { formatAddress } from '$lib/recombination';
 import type {
 	GlobuleAddress_Band,
 	GlobuleAddress_FacetEdge,
-	GlobuleAddress_Tube
+	GlobuleAddress_Tube,
+	TransformConfig
 } from '$lib/projection-geometry/types';
 import {
 	getAllTrianglePoints,
@@ -29,6 +30,7 @@ import {
 } from '../../components/cut-pattern/distrubute-panels';
 import { Triangle, Vector3 } from 'three';
 import { getBandTriangleEdges } from '$lib/projection-geometry/generate-projection';
+import { isSameAddress } from '$lib/util';
 
 export const generateTubeCutPattern = ({
 	address,

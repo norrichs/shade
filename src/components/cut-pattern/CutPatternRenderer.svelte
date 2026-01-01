@@ -36,93 +36,24 @@
 		return origins;
 	};
 
-	const nullTransform: TransformConfig = {
-		translate: { x: 0, y: 0, z: 0 },
-		scale: { x: 1, y: 1, z: 1 },
-		rotate: { x: 0, y: 0, z: 0 }
-	};
-
-	const getEndPartnerTransform = (
-		originBand: BandCutPattern,
-		partnerBand: BandCutPattern
-	): TransformConfig => {
-		const isStartOrigin =
-			originBand.meta?.startPartnerBand &&
-			isSameAddress(originBand.meta?.startPartnerBand, partnerBand.address);
-
-		const isStartPartner =
-			partnerBand.meta?.startPartnerBand &&
-			isSameAddress(partnerBand.meta?.startPartnerBand, originBand.address);
-		const originPair = isStartOrigin
-			? [originBand.facets[0].quad?.b, originBand.facets[0].quad?.a]
-			: [
-					originBand.facets[originBand.facets.length - 1].quad?.d,
-					originBand.facets[originBand.facets.length - 1].quad?.c
-			  ];
-
-		if (originBand.sideOrientation && originBand.sideOrientation === 'inside') originPair.reverse();
-
-		if (!originPair[0] || !originPair[1]) return nullTransform;
-		const partnerPair = isStartPartner
-			? [partnerBand.facets[0].quad?.a, partnerBand.facets[0].quad?.b]
-			: [
-					partnerBand.facets[partnerBand.facets.length - 1].quad?.d,
-					partnerBand.facets[partnerBand.facets.length - 1].quad?.c
-			  ];
-		if (partnerBand.sideOrientation && partnerBand.sideOrientation === 'inside')
-			partnerPair.reverse();
-		if (!partnerPair[0] || !partnerPair[1]) return nullTransform;
-		console.debug('getEndPartnerTransform', {
-			originIsInside: originBand.sideOrientation && originBand.sideOrientation === 'inside',
-			partnerIsInside: partnerBand.sideOrientation && partnerBand.sideOrientation === 'inside',
-			originPair,
-			partnerPair
-		});
-
-		// Calculate the angle of each edge
-		const originAngle = Math.atan2(
-			originPair[1].y - originPair[0].y,
-			originPair[1].x - originPair[0].x
-		);
-		const partnerAngle =
-			Math.atan2(partnerPair[1].y - partnerPair[0].y, partnerPair[1].x - partnerPair[0].x) +
-			(isStartPartner ? 0 : Math.PI);
-
-		// Rotation needed to align partner edge with origin edge
-		const rotation = originAngle - partnerAngle;
-
-		// Calculate where the partner point ends up after rotation around origin (0,0)
-		// Then translate to align with originPair[0]
-		const cos = Math.cos(rotation);
-		const sin = Math.sin(rotation);
-		const partnerPoint = isStartPartner ? partnerPair[0] : partnerPair[1];
-		const rotatedPartnerX = partnerPoint.x * cos - partnerPoint.y * sin;
-		const rotatedPartnerY = partnerPoint.x * sin + partnerPoint.y * cos;
-
-		const xOffset = originPair[0].x - rotatedPartnerX;
-		const yOffset = originPair[0].y - rotatedPartnerY;
-
-		return {
-			translate: { x: xOffset, y: yOffset, z: 0 },
+	const getPartnerBands = (originBand: BandCutPattern, tubes: TubeCutPattern[]) => {
+		const { meta } = originBand;
+		if (!meta) return undefined;
+		const IDENTITY_TRANSFORM: TransformConfig = {
+			translate: { x: 0, y: 0, z: 0 },
 			scale: { x: 1, y: 1, z: 1 },
-			rotate: { x: 0, y: 0, z: (rotation * 180) / Math.PI }
+			rotate: { x: 0, y: 0, z: 0 }
 		};
-	};
-
-	const getPartnerBands = (
-		originBand: BandCutPattern,
-		tubes: TubeCutPattern[],
-		addresses: (GlobuleAddress_Band | undefined)[]
-	): { transform: TransformConfig; band: BandCutPattern }[] => {
-		const partnerBands: BandCutPattern[] = [];
-		addresses.forEach((a) => {
-			if (a) partnerBands.push(tubes[a.tube].bands[a.band]);
-		});
-
-		return partnerBands.map((band) => ({
-			transform: getEndPartnerTransform(originBand, band),
-			band
-		}));
+		return [
+			{
+				band: tubes[meta.startPartnerBand.tube].bands[meta.startPartnerBand.band],
+				transform: meta.startPartnerTransform ?? IDENTITY_TRANSFORM
+			},
+			{
+				band: tubes[meta.endPartnerBand.tube].bands[meta.endPartnerBand.band],
+				transform: meta.endPartnerTransform ?? IDENTITY_TRANSFORM
+			}
+		];
 	};
 
 	const filtered = ({ tubes, range }: { tubes: TubeCutPattern[]; range: ProjectionRange }) => {
@@ -183,10 +114,7 @@
 							{band}
 							renderAsSinglePath={false}
 							highlightFirstFacet
-							partnerBands={getPartnerBands(band, tubes, [
-								band.meta?.endPartnerBand,
-								band.meta?.startPartnerBand
-							])}
+							partnerBands={getPartnerBands(band, tubes)}
 							showQuadLabels
 						/>
 					{/if}
