@@ -85,7 +85,11 @@ export const svgTX = (tx: QuadrilateralTransformMatrix, anchor: Point | Vector3)
 	const anchorPt = { x: anchor.x, y: anchor.y };
 	const seg1 = addScaled(anchorPt, { x: tx.u.x, y: tx.u.y }, 1);
 	const seg2 = addScaled(anchorPt, { x: tx.v.x, y: tx.v.y }, 1);
-	const sum = addScaled(anchorPt, addScaled({ x: tx.u.x, y: tx.u.y }, { x: tx.v.x, y: tx.v.y }, 1), 1);
+	const sum = addScaled(
+		anchorPt,
+		addScaled({ x: tx.u.x, y: tx.u.y }, { x: tx.v.x, y: tx.v.y }, 1),
+		1
+	);
 	const end = addScaled(sum, { x: tx.w.x, y: tx.w.y }, 1);
 	return `
 	M ${anchor.x} ${anchor.y}
@@ -146,7 +150,6 @@ export const transformPatternByQuad = (
 	});
 	return transformedSegments;
 };
-
 
 export const pointFrom = (seg: PathSegment): Point => {
 	if (seg[0] === 'M' || seg[0] === 'L') {
@@ -311,24 +314,29 @@ export const getIntersectionOfLines = (
 	return { x, y };
 };
 
-export const getQuadrilaterals = (band: Band, scale?: number): Quadrilateral[] => {
+export const getQuadrilaterals = (
+	band: Band,
+	scale = 1,
+	sideOrientation: Band['sideOrientation'] = 'inside'
+): Quadrilateral[] => {
 	const facets: Facet[] = band.facets;
 	const quads: Quadrilateral[] = [];
 	facets.forEach((facet, i) => {
 		if (i % 2 === 1) {
-			const quad = band.orientation === 'axial-right'
-				? {
-					a: facets[i - 1].triangle.a.clone(),
-					b: facets[i - 1].triangle.b.clone(),
-					c: facet.triangle.a.clone(),
-					d: facets[i - 1].triangle.c.clone()
-				}
-				: {
-					a: facets[i - 1].triangle.a.clone(),
-					b: facets[i - 1].triangle.b.clone(),
-					c: facets[i - 1].triangle.c.clone(),
-					d: facet.triangle.b.clone(),
-				}
+			let quad =
+				band.orientation === 'axial-right'
+					? {
+							a: facets[i - 1].triangle.a.clone(),
+							b: facets[i - 1].triangle.b.clone(),
+							c: facet.triangle.a.clone(),
+							d: facets[i - 1].triangle.c.clone()
+					  }
+					: {
+							a: facets[i - 1].triangle.a.clone(),
+							b: facets[i - 1].triangle.b.clone(),
+							c: facets[i - 1].triangle.c.clone(),
+							d: facet.triangle.b.clone()
+					  };
 
 			if (scale && scale !== 1) {
 				quad.a.multiplyScalar(scale);
@@ -336,11 +344,19 @@ export const getQuadrilaterals = (band: Band, scale?: number): Quadrilateral[] =
 				quad.c.multiplyScalar(scale);
 				quad.d.multiplyScalar(scale);
 			}
-			quads.push(quad)
+
+			if (sideOrientation === 'inside') {
+				const reflectedQuad = {
+					a: quad.b.clone(),
+					b: quad.a.clone(),
+					c: quad.d.clone(),
+					d: quad.c.clone()
+				};
+				quad = reflectedQuad;
+			}
+			quads.push(quad);
 		}
 	});
-
-
 
 	return quads;
 };

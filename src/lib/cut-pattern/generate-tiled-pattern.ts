@@ -53,7 +53,13 @@ export const generateTubeCutPattern = ({
 	);
 	const alignedBands = alignBands(flatBands);
 
-	const quadBands = alignedBands.map((flatBand) => getQuadrilaterals(flatBand, pixelScale.value));
+	const quadBands = alignedBands.map((flatBand) =>
+		getQuadrilaterals(flatBand, pixelScale.value, flatBand.sideOrientation)
+	);
+	// TODO: see if inverting the quads based on sideOrientation would allow me to avoid any other compensation for sideOrientation
+	quadBands.forEach((quadBand, q) =>
+		console.debug('quadBand', alignedBands[q].sideOrientation, quadBand)
+	);
 
 	const tiling = generateTiling({ quadBands, bands: alignedBands, tiledPatternConfig, address });
 
@@ -146,7 +152,7 @@ export const generateTiling = ({
 	bands,
 	tiledPatternConfig,
 	address
-}: GenerateTilingProps) => {
+}: GenerateTilingProps): BandCutPattern[] => {
 	const tiling: {
 		facets: CutPattern[];
 		svgPath?: string | undefined;
@@ -159,14 +165,21 @@ export const generateTiling = ({
 		let mappedPatternBand: PathSegment[][] | PathSegment[];
 		if (tiledPatternConfig.tiling === 'quadrilateral') {
 			const unitPattern = getPattern(
-				rowCount as 3 | 1 | 2,
-				columnCount as 1 | 2 | 3 | 4 | 5,
+				rowCount || 1,
+				columnCount || 1,
 				undefined,
-				variant
+				variant,
+				bands[bandIndex].sideOrientation
 			);
-			mappedPatternBand = quadBand.map((quad) =>
-				transformPatternByQuad(unitPattern, quad)
-			) as PathSegment[][];
+			// Check if unitPattern is PathSegment[] (not DynamicPathCollection)
+			if (Array.isArray(unitPattern)) {
+				mappedPatternBand = quadBand.map((quad) =>
+					transformPatternByQuad(unitPattern, quad)
+				) as PathSegment[][];
+			} else {
+				// unitPattern is DynamicPathCollection, use as-is
+				mappedPatternBand = [getPattern(1, 1, quadBand)] as PathSegment[][];
+			}
 			// } else if (tiledPatternConfig.tiling === 'triangle') {
 
 			// 	const unitPattern = getPattern(

@@ -146,13 +146,14 @@ export const generateProjectionPattern = (
 			return tubePattern;
 		});
 
-		getEndPartnerTrasforms(tubePatterns);
+		getEndPartnerTransforms(tubePatterns);
 
 		const { adjustAfterTiling } = patterns[tiledPatternConfig.type];
 
 		if (adjustAfterTiling) {
 			tubePatterns = tubePatterns.map((tubePattern) => {
-				const adjusted = adjustAfterTiling(tubePattern.bands, tiledPatternConfig);
+				const adjusted = adjustAfterTiling(tubePattern.bands, tiledPatternConfig, tubePatterns);
+
 				return {
 					...tubePattern,
 					bands: adjusted
@@ -367,7 +368,7 @@ export const getEndPartnerTransform = (
 				originBand.facets[originBand.facets.length - 1].quad?.c
 		  ];
 
-	if (originBand.sideOrientation && originBand.sideOrientation === 'inside') originPair.reverse();
+	// if (originBand.sideOrientation && originBand.sideOrientation === 'inside') originPair.reverse();
 
 	if (!originPair[0] || !originPair[1]) return nullTransform;
 	const partnerPair = isStartPartner
@@ -376,15 +377,9 @@ export const getEndPartnerTransform = (
 				partnerBand.facets[partnerBand.facets.length - 1].quad?.d,
 				partnerBand.facets[partnerBand.facets.length - 1].quad?.c
 		  ];
-	if (partnerBand.sideOrientation && partnerBand.sideOrientation === 'inside')
-		partnerPair.reverse();
+	// if (partnerBand.sideOrientation && partnerBand.sideOrientation === 'inside')
+	// 	partnerPair.reverse();
 	if (!partnerPair[0] || !partnerPair[1]) return nullTransform;
-	console.debug('getEndPartnerTransform', {
-		originIsInside: originBand.sideOrientation && originBand.sideOrientation === 'inside',
-		partnerIsInside: partnerBand.sideOrientation && partnerBand.sideOrientation === 'inside',
-		originPair,
-		partnerPair
-	});
 
 	// Calculate the angle of each edge
 	const originAngle = Math.atan2(
@@ -416,7 +411,7 @@ export const getEndPartnerTransform = (
 	};
 };
 
-const getEndPartnerTrasforms = (tubePatterns: TubeCutPattern[]) => {
+const getEndPartnerTransforms = (tubePatterns: TubeCutPattern[]) => {
 	tubePatterns.forEach((tubePattern) => {
 		tubePattern.bands.forEach((band) => {
 			if (!band.meta) return;

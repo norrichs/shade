@@ -1,18 +1,26 @@
+import type { TransformConfig } from '$lib/projection-geometry/types';
 import type {
 	GridVariant,
 	PathSegment,
 	CutPattern,
 	Point,
 	SkipEdges,
-	TiledPatternConfig
+	TiledPatternConfig,
+	TubeCutPattern,
+	BandCutPattern,
+	Band,
+	MovePathSegment,
+	LinePathSegment
 } from '$lib/types';
-import { getAngle, rotatePS, translatePS } from './utils';
+import { isSameAddress } from '$lib/util';
+import { getAngle, rotatePS, transformPS, transformPSWithConfig, translatePS } from './utils';
 
 type Props = {
 	size: number;
 	rows: number;
 	columns: number;
 	variant: GridVariant;
+	sideOrientation: Band['sideOrientation'];
 };
 
 const START_SEGMENTS = 14;
@@ -22,7 +30,8 @@ const MIDDLE_SEGMENTS = 52;
 const generateUnit = (
 	edge = false,
 	w: number,
-	h: number
+	h: number,
+	invert: boolean
 ): { start: PathSegment[]; middle: PathSegment[]; end: PathSegment[] } => {
 	const unitDef = {
 		start: [
@@ -40,7 +49,7 @@ const generateUnit = (
 			['L', 32 * w, -2 * h],
 			['M', 32 * w, -2 * h],
 			['L', 42 * w, 0 * h] // 13
-		] as PathSegment[],
+		] as (MovePathSegment | LinePathSegment)[],
 		middle: [
 			// verticals 1
 			['M', 0, 0], // 14
@@ -104,7 +113,7 @@ const generateUnit = (
 			['L', 34 * w, 4 * h],
 			['M', 34 * w, 4 * h],
 			['L', 42 * w, 0 * h] // 51
-		] as PathSegment[],
+		] as (MovePathSegment | LinePathSegment)[],
 		end: [
 			['M', 0, 14 * h], // 52 -> 66
 			['L', 10 * w, 16 * h],
@@ -120,16 +129,57 @@ const generateUnit = (
 			['L', 32 * w, 12 * h],
 			['M', 32 * w, 12 * h],
 			['L', 42 * w, 14 * h] // 79
-		] as PathSegment[]
+		] as (MovePathSegment | LinePathSegment)[]
 	};
+
+	if (invert) {
+		const maxX = 1;
+		// Math.max(
+		// 	...unitDef.start.map((seg) => seg[1] || 0),
+		// 	...unitDef.middle.map((seg) => seg[1] || 0),
+		// 	...unitDef.end.map((seg) => seg[1] || 0)
+		// );
+		unitDef.start = unitDef.start
+			.reverse()
+			.map(
+				(seg) =>
+					[seg[0] === 'M' ? 'L' : 'M', maxX - (seg[1] || 0), seg[2]] as
+						| MovePathSegment
+						| LinePathSegment
+			);
+		unitDef.middle = unitDef.middle
+			.reverse()
+			.map(
+				(seg) =>
+					[seg[0] === 'M' ? 'L' : 'M', maxX - (seg[1] || 0), seg[2]] as
+						| MovePathSegment
+						| LinePathSegment
+			);
+		unitDef.end = unitDef.end
+			.reverse()
+			.map(
+				(seg) =>
+					[seg[0] === 'M' ? 'L' : 'M', maxX - (seg[1] || 0), seg[2]] as
+						| MovePathSegment
+						| LinePathSegment
+			);
+	}
 
 	if (unitDef.start.length !== START_SEGMENTS || unitDef.end.length !== END_SEGMENTS) {
 		throw new Error('shield tesselation definition is bad');
 	}
+	console.debug('unitDef', invert, unitDef);
 	return unitDef;
 };
 
-export const generateShieldTesselationTile = ({ size, rows, columns }: Props): PathSegment[] => {
+export const generateShieldTesselationTile = ({
+	size,
+	rows,
+	columns,
+	sideOrientation
+}: Props): PathSegment[] => {
+	const invert = false;
+	// sideOrientation === 'inside';
 	rows = 1;
 	const row = size / rows;
 	const col = size / columns;
@@ -142,7 +192,7 @@ export const generateShieldTesselationTile = ({ size, rows, columns }: Props): P
 
 	for (let c = 0; c < columns; c++) {
 		for (let r = 0; r < rows; r++) {
-			const unit = generateUnit(c === columns - 1, w, h);
+			const unit = generateUnit(c === columns - 1, w, h, invert);
 			if (r > 0 && r < rows - 1) {
 				middleSegments.push(
 					...translatePS(unit.start, col * c, row * r),
@@ -169,11 +219,12 @@ export const generateShieldTesselationTile = ({ size, rows, columns }: Props): P
 };
 
 export const adjustShieldTesselationAfterTiling = (
-	bands: { facets: CutPattern[]; id: string; tagAnchorPoint: Point }[],
-	tiledPatternConfig: TiledPatternConfig
+	bands: BandCutPattern[],
+	tiledPatternConfig: TiledPatternConfig,
+	tubes: TubeCutPattern[]
 ) => {
 	const {
-		config: { endLooped, rowCount: rows = 1, columnCount: columns = 1 }
+		config: { endLooped, endsMatched, rowCount: rows = 1, columnCount: columns = 1 }
 	} = tiledPatternConfig;
 
 	const newBands = structuredClone(bands);
@@ -198,7 +249,23 @@ export const adjustShieldTesselationAfterTiling = (
 		);
 		adjacentPaths.push(prevBandPaths);
 
+		// This for loop needsto be adjusted so that when `endsMatched` is true, the end segments are matched.
+		// - if f === 0
+		//   - get the partner facet using band.meta.startPartnerBand, and transform the path using band.meta.startPartnerTransform
+		// - if f === band.facets.length - 1
+		//   - get the partner facet using band.meta.endPartnerBand, and transform the path using band.meta.endPartnerTransform
+		// - we don't currently source from a `previous` facet.  And we currently only `loop` to the `next` facet when doing the last facet in a band.
+
+		// - we'll need to identify which direction the partner is orientated.  Either it's start is matched to the current facet, or it's end is.  That depends on if it's facet index is 0 or the last.
+		// - depending on the direction, we'll have different indices to replaceInPlace
+		// - sourceIndices will come from the partner facet
+		// - targetIndices will come from the current facet
+		// - examples the actual numerical indices we're using should already be present in the currently specified sourceIndices and targetIndices.
+
 		for (let f = 0; f < band.facets.length; f++) {
+			newBands[b].facets[f].meta = { originalPath: window.structuredClone(band.facets[f].path) };
+
+			// TODO - if `endsMatched`, and  f === band.facets.length - 1 || f === 0 is true, nextPath should be the `endPartnerBand` facet, not the next facet
 			const nextPath = band.facets[(f + 1) % band.facets.length].path;
 
 			const sourceIndices = {
@@ -207,12 +274,49 @@ export const adjustShieldTesselationAfterTiling = (
 				// remove:
 				// left: retarget([36, 36, 29, 53, 29], rows, columns)
 			};
+
 			const targetIndices = {
 				end: retarget([67, 68, 71, 72, 73, 74, 33, 77, 78, 35], rows, columns),
 				right: retarget([22, 38, 15, 39, 40], rows, columns),
 				remove: retarget([22, 23, 38, 39], rows, columns)
 				// right: retarget([22, 38, 15, 39, 40], rows, columns)
 			};
+
+			const doEndMatching = true; //band.address.tube === 0 && band.address.band === 2;
+			// TODO: do both end partners
+			// TODO: fix translation.  The translation config works for SVG transform, but not our translatePS.  They should be 1:1
+			if (doEndMatching && endsMatched && (f === 0 || f === band.facets.length - 1)) {
+				const partner = getTransformedPartnerCutPattern(
+					band as BandCutPattern,
+					f,
+					tubes,
+					tiledPatternConfig.config.endsMatched
+				);
+				if (!partner) throw new Error('missing partner path');
+				newBands[b].meta = {
+					...newBands[b].meta,
+					...(f === 0
+						? { translatedStartPartnerFacet: partner }
+						: { translatedEndPartnerFacet: partner })
+				} as BandCutPattern['meta'];
+
+				replaceInPlace({
+					sourceIndices: retarget(
+						[...(Number(partner.label) === 0 ? [6, 5, 2, 1] : [73, 74, 77, 78])],
+						rows,
+						columns
+					),
+					targetIndices: retarget(
+						[...(f === 0 ? [7, 8, 11, 12] : [72, 71, 68, 67])],
+						rows,
+						columns
+					),
+					target: newBands[b].facets[f].path,
+					source: partner.path
+				});
+			}
+
+			// swap points between adjacent facets in the same band
 			if (f < band.facets.length - 1 || endLooped) {
 				replaceInPlace({
 					targetIndices: [...targetIndices.end],
@@ -221,6 +325,8 @@ export const adjustShieldTesselationAfterTiling = (
 					source: nextPath
 				});
 			}
+			// swap points between adjacent facets in adjacent bands
+			// TODO: we maybe also need to swap a few points betwee target.left and source.right
 
 			replaceInPlace({
 				targetIndices: [...targetIndices.right],
@@ -291,11 +397,12 @@ const replaceInPlace = ({
 	source: PathSegment[];
 }) => {
 	if (targetIndices.length !== sourceIndices.length) {
-		console.error('!!!!!!!!!');
-
+		console.error({ targetIndices, sourceIndices });
 		throw new Error('replaceInPlace error');
 	}
 	for (let i = 0; i < targetIndices.length; i++) {
+		// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+		// @ts-expect-error Intentional: we may write a loosely-typed 3-tuple here; callers only use M/L segments.
 		target[targetIndices[i]] = [
 			target[targetIndices[i]][0],
 			source[sourceIndices[i]][1],
@@ -324,4 +431,83 @@ const removeInPlace = ({ indices, target }: { indices: number[]; target: PathSeg
 	for (const index of indices) {
 		target.splice(index, 1);
 	}
+};
+
+const getTransformedPartnerCutPattern = (
+	band: BandCutPattern,
+	f: number,
+	tubes: TubeCutPattern[],
+	endsMatched: boolean
+): CutPattern | undefined => {
+	if (!endsMatched || !band.meta || (f !== 0 && f !== band.facets.length - 1)) return undefined;
+
+	const partnerAddress = f === 0 ? band.meta.startPartnerBand : band.meta.endPartnerBand;
+	const transform: TransformConfig | undefined =
+		f === 0 ? band.meta.startPartnerTransform : band.meta.endPartnerTransform;
+	const partnerBand = tubes[partnerAddress.tube].bands[partnerAddress.band];
+	if (!partnerBand.meta) return undefined;
+	const partnerFacetIndex = isSameAddress(partnerBand.meta.startPartnerBand, band.address)
+		? 0
+		: partnerBand.facets.length - 1;
+	const partnerFacet: CutPattern = partnerBand.facets[partnerFacetIndex];
+	const partnerPath = window.structuredClone(partnerFacet.path);
+	const transformedPartnerPath = transform ? newTransformPS(partnerPath, transform) : partnerPath;
+
+	return { path: transformedPartnerPath, label: `${partnerFacetIndex}` };
+};
+
+const newTransformPS = (path: PathSegment[], transform: TransformConfig) => {
+	const {
+		translate: { x: translateX, y: translateY },
+		rotate: { z: theta }
+	} = transform;
+	const thetaRad = (theta * Math.PI) / 180;
+	const cos = Math.cos(thetaRad);
+	const sin = Math.sin(thetaRad);
+
+	// Equivalent to SVG: `matrix(cos sin -sin cos translateX translateY)`
+	// which is equivalent to transform-list: `translate(translateX, translateY) rotate(theta)`
+	// (SVG applies transform lists right-to-left).
+	const transformPoint = (x: number, y: number): [number, number] => {
+		const x2 = cos * x - sin * y + translateX;
+		const y2 = sin * x + cos * y + translateY;
+		return [x2, y2];
+	};
+
+	const transformed: PathSegment[] = path.map((seg) => {
+		switch (seg[0]) {
+			case 'M': {
+				const [x, y] = transformPoint(seg[1], seg[2]);
+				return ['M', x, y];
+			}
+			case 'L': {
+				const [x, y] = transformPoint(seg[1], seg[2]);
+				return ['L', x, y];
+			}
+			case 'Q': {
+				const [cx, cy] = transformPoint(seg[1], seg[2]);
+				const [x, y] = transformPoint(seg[3], seg[4]);
+				return ['Q', cx, cy, x, y];
+			}
+			case 'C': {
+				const [c1x, c1y] = transformPoint(seg[1], seg[2]);
+				const [c2x, c2y] = transformPoint(seg[3], seg[4]);
+				const [x, y] = transformPoint(seg[5], seg[6]);
+				return ['C', c1x, c1y, c2x, c2y, x, y];
+			}
+			case 'A': {
+				// Arc radii are unchanged for pure rotation+translation; endpoint is transformed.
+				// Arc x-axis-rotation is expressed in degrees and rotates with the shape.
+				const [x, y] = transformPoint(seg[6], seg[7]);
+				const xAxisRotation = seg[3] + theta;
+				return ['A', seg[1], seg[2], xAxisRotation, seg[4], seg[5], x, y];
+			}
+			case 'Z':
+				return ['Z'];
+			default:
+				return seg;
+		}
+	});
+
+	return transformed;
 };

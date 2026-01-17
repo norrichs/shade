@@ -5,7 +5,8 @@ import type {
 	PatternGenerator,
 	TiledPatternConfig,
 	GridVariant,
-	PanelVariant
+	PanelVariant,
+	Band
 } from '$lib/types';
 import { adjustHexPatternAfterTiling, generateHexPattern } from './tiled-hex-pattern';
 import { adjustCarnation, generateCarnation } from './tiled-carnation-pattern';
@@ -35,18 +36,17 @@ export const patterns: { [key: string]: PatternGenerator } = {
 		adjustAfterMapping: adjustHexPatternAfterTiling
 	},
 	'tiledBoxPattern-0': {
-		getPattern: (rows: 1 | 2 | 3, columns: 1 | 2 | 3 | 4 | 5) =>
+		getPattern: (rows: number, columns: number) =>
 			generateBoxPattern({ size: 1, height: rows, width: columns }),
 		// adjustAfterTiling: (facets: CutPattern) => facets,
 		tagAnchor: { facetIndex: 0, segmentIndex: 5, angle: 0 }
 	},
 	'tiledBowtiePattern-0': {
-		getPattern: (rows: 1 | 2 | 3, columns: 1 | 2 | 3 | 4 | 5) =>
-			generateAuxetic({ size: 1, rows, columns }),
+		getPattern: (rows: number, columns: number) => generateAuxetic({ size: 1, rows, columns }),
 		tagAnchor: { facetIndex: 0, segmentIndex: 7, angle: 0 }
 	},
 	'tiledCarnationPattern-0': {
-		getPattern: (rows: 1 | 2 | 3, columns: 1 | 2 | 3 | 4 | 5) =>
+		getPattern: (rows: number, columns: number) =>
 			generateCarnation({ size: 1, rows, columns, variant: 0 }),
 		tagAnchor: { facetIndex: 0, segmentIndex: 0 },
 		adjustAfterTiling: (tiledBands: { facets: CutPattern[] }[]) => {
@@ -54,7 +54,7 @@ export const patterns: { [key: string]: PatternGenerator } = {
 		}
 	},
 	'tiledCarnationPattern-1': {
-		getPattern: (rows: 1 | 2 | 3, columns: 1 | 2 | 3 | 4 | 5) =>
+		getPattern: (rows: number, columns: number) =>
 			generateCarnation({ size: 1, rows, columns, variant: 1 }),
 		tagAnchor: { facetIndex: 0, segmentIndex: 0 },
 		adjustAfterTiling: (tiledBands: { facets: CutPattern[] }[]) => {
@@ -62,7 +62,7 @@ export const patterns: { [key: string]: PatternGenerator } = {
 		}
 	},
 	'tiledTriStarPattern-1': {
-		getPattern: (rows: 1 | 2 | 3, columns: 1 | 2 | 3 | 4 | 5) => {
+		getPattern: (rows: number, columns: number) => {
 			const unitPattern = generateTriStarPattern({ size: 1, rows, columns });
 			return unitPattern;
 		},
@@ -119,9 +119,10 @@ export const patterns: { [key: string]: PatternGenerator } = {
 			columns: number,
 			// eslint-disable-next-line @typescript-eslint/no-unused-vars
 			quadBand: Quadrilateral[] | undefined = undefined,
-			variant: GridVariant | undefined = 'rect'
+			variant: GridVariant | undefined = 'rect',
+			sideOrientation: Band['sideOrientation']
 		) => {
-			return generateShieldTesselationTile({ size: 1, rows, columns, variant });
+			return generateShieldTesselationTile({ size: 1, rows, columns, variant, sideOrientation });
 		},
 		tagAnchor: { facetIndex: 0, segmentIndex: 3 },
 		adjustAfterTiling: (

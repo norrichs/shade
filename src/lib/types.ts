@@ -65,7 +65,8 @@ export type UnitPatternGenerator = {
 		rows: number,
 		columns: number,
 		quadBand?: Quadrilateral[],
-		variant?: TiledPatternVariant
+		variant?: TiledPatternVariant,
+		sideOrientation?: Band['sideOrientation']
 	) => PathSegment[];
 	tagAnchor?: any;
 	adjustAfterMapping?: (
@@ -190,6 +191,9 @@ export type CutPattern = {
 	tab?: TabPattern;
 	addenda?: Omit<CutPattern, 'addenda'>[];
 	label: string;
+	meta?: {
+		originalPath?: PathSegment[];
+	};
 };
 
 export type FullTabPattern = {
@@ -323,6 +327,8 @@ export type BandCutPattern = {
 		endPartnerBand: GlobuleAddress_Band;
 		startPartnerTransform?: TransformConfig;
 		endPartnerTransform?: TransformConfig;
+		translatedStartPartnerFacet?: CutPattern;
+		translatedEndPartnerFacet?: CutPattern;
 	};
 };
 

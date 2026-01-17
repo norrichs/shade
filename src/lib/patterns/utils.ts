@@ -15,6 +15,7 @@ import {
 } from '$lib/types';
 import { Vector2, Vector3, type Triangle as ThreeTriangle } from 'three';
 import { numberPathSegments } from '../../components/cut-pattern/number-path-segments';
+import type { TransformConfig } from '$lib/projection-geometry/types';
 
 export const generateUnitTriangle = (sideLength: number): Triangle => {
 	const unit = {
@@ -429,6 +430,17 @@ export const rotatePS = (segments: PathSegment[], a = 0, origin = { x: 0, y: 0 }
 	return scaled;
 };
 
+export const transformPSWithConfig = (path: PathSegment[], transformConfig: TransformConfig) => {
+	const config = {
+		origin: { x: 0, y: 0 },
+		scale: transformConfig.scale.x || 1,
+		angle: transformConfig.rotate.z || 0,
+		translateX: transformConfig.translate.x || 0,
+		translateY: transformConfig.translate.y || 0
+	};
+	return transformPS(path, config);
+};
+
 export const transformPS = (
 	path: PathSegment[],
 	config: {
@@ -439,17 +451,18 @@ export const transformPS = (
 		translateY?: number;
 	}
 ) => {
+	console.debug('transformPS', config);
 	const { origin = { x: 0, y: 0 }, scale = 1, angle = 0, translateX = 0, translateY = 0 } = config;
 	let transformed = path.map((seg) => [...seg] as PathSegment);
 	if (scale !== 1) {
 		transformed = scalePS(transformed, scale, origin);
 	}
-	if (angle !== 0) {
-		transformed = rotatePS(transformed, angle, origin);
-	}
-	if (translateX !== 0 || translateY !== 0) {
-		transformed = translatePS(transformed, translateX, translateY);
-	}
+	// if (translateX !== 0 || translateY !== 0) {
+	// 	transformed = translatePS(transformed, translateX, -translateY);
+	// }
+	// if (angle !== 0) {
+	// 	transformed = rotatePS(transformed, angle, origin);
+	// }
 	return transformed;
 };
 

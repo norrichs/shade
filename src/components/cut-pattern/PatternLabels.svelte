@@ -1,5 +1,4 @@
 <script lang="ts">
-
 	export let values: number[] = [];
 	export let offsetBy = { x: 0, y: 0 };
 
@@ -16,7 +15,6 @@
 			d={geLabelPath(value, { r: 10, offset: { x: offsetBy.x * i, y: offsetBy.y * i } })}
 			fill-rule="evenodd"
 		/>
-		<circle cx="0" cy="0" r="10" fill="black" />
 	</g>
 {/each}
 

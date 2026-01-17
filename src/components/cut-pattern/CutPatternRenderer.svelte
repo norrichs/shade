@@ -113,9 +113,14 @@
 						<BandCutPatternComponent
 							{band}
 							renderAsSinglePath={false}
-							highlightFirstFacet
+							highlightFirstFacet={false}
 							partnerBands={getPartnerBands(band, tubes)}
 							showQuadLabels
+							showPathPointIndices
+							partnerFacets={[
+								band.meta?.translatedStartPartnerFacet,
+								band.meta?.translatedEndPartnerFacet
+							].filter((el) => el !== undefined)}
 						/>
 					{/if}
 				</BandComponent>

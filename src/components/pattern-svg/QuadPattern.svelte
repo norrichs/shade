@@ -28,7 +28,8 @@
 		<path
 			d={svgQuad(facet.quad)}
 			class={`${showQuads ? 'show' : 'hide'}${facetIndex % 2 === 1 ? ' odd' : ''}`}
-			stroke="none"
+			stroke="black"
+			stroke-width={1}
 			fill="none"
 		/>
 		{#if showLabels}<text

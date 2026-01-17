@@ -129,7 +129,6 @@
 {#if show}
 	{#each pattern.tubes as tube, t (concatAddress(tube.address))}
 		<g id={`${concatAddress(tube.address)}`}>
-			<circle cx={0} cy={0} r={10} fill="red" />
 			{#each tube.bands || [] as band, b (concatAddress(band.address))}
 				<BandPanelComponent
 					{band}
@@ -179,6 +178,4 @@
 		<Scalebar scale={scaleConfig} />
 		<Scalebar scale={{ ...scaleConfig, unit: 'in', quantity: 0.5 }} origin={{ x: 200, y: 100 }} />
 	{/if}
-{:else}
-	<circle cx={0} cy={0} r={10} fill="red" />
 {/if}
