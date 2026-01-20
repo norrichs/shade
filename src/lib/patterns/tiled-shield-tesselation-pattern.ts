@@ -132,6 +132,105 @@ const generateUnit = (
 		] as (MovePathSegment | LinePathSegment)[]
 	};
 
+	// const unitDefPoints: { start: Point[]; middle: Point[]; end: Point[] } = {
+	// 	start: [
+	// 		{ x: 0, y: 0 }, //0
+	// 		{ x: 10 * w, y: 2 * h },
+	// 		{ x: 10 * w, y: 2 * h },
+	// 		{ x: 14 * w, y: 0 }, // 3
+	// 		{ x: 14 * w, y: 0 },
+	// 		{ x: 19 * w, y: h }, // 5
+	// 		{ x: 19 * w, y: 1 * h },
+	// 		{ x: 23 * w, y: -1 * h },
+	// 		{ x: 23 * w, y: -1 * h },
+	// 		{ x: 28 * w, y: 0 * h },
+	// 		{ x: 28 * w, y: 0 * h },
+	// 		{ x: 32 * w, y: -2 * h },
+	// 		{ x: 32 * w, y: -2 * h },
+	// 		{ x: 42 * w, y: 0 * h } // 13
+	// 	],
+	// 	middle: [
+	// 		// verticals 1
+	// 		{ x: 0, y: 0 }, // 14
+	// 		{ x: 2 * w, y: 6 * h },
+	// 		{ x: 10 * w, y: 2 * h },
+	// 		{ x: 11 * w, y: 5 * h },
+	// 		{ x: 19 * w, y: 1 * h },
+	// 		{ x: 21 * w, y: 7 * h },
+	// 		{ x: 28 * w, y: 0 * h },
+	// 		{ x: 29 * w, y: 3 * h },
+
+	// 		// verticals 2
+	// 		{ x: -2 * w, y: 8 * h }, // 22  (8)
+	// 		{ x: 0 * w, y: 14 * h },
+	// 		{ x: 7 * w, y: 7 * h },
+	// 		{ x: 8 * w, y: 10 * h },
+	// 		{ x: 34 * w, y: 4 * h },
+	// 		{ x: 35 * w, y: 7 * h },
+	// 		{ x: 42 * w, y: 0 * h },
+	// 		{ x: 44 * w, y: 6 * h },
+
+	// 		// verticals 3
+
+	// 		{ x: 13 * w, y: 11 * h },
+	// 		{ x: 14 * w, y: 14 * h }, // 31
+	// 		{ x: 21 * w, y: 7 * h },
+	// 		{ x: 23 * w, y: 13 * h }, // 33
+	// 		{ x: 31 * w, y: 9 * h },
+	// 		{ x: 32 * w, y: 12 * h }, // 35
+	// 		{ x: 40 * w, y: 8 * h },
+	// 		{ x: 42 * w, y: 14 * h }, // 37
+
+	// 		// horizontal 1
+	// 		{ x: -2 * w, y: 8 * h }, // 24
+	// 		{ x: 2 * w, y: 6 * h },
+	// 		{ x: 2 * w, y: 6 * h },
+	// 		{ x: 7 * w, y: 7 * h },
+	// 		{ x: 7 * w, y: 7 * h },
+	// 		{ x: 11 * w, y: 5 * h },
+	// 		{ x: 11 * w, y: 5 * h },
+	// 		{ x: 21 * w, y: 7 * h },
+	// 		{ x: 21 * w, y: 7 * h },
+	// 		{ x: 31 * w, y: 9 * h },
+	// 		{ x: 31 * w, y: 9 * h },
+	// 		{ x: 35 * w, y: 7 * h },
+	// 		{ x: 35 * w, y: 7 * h },
+	// 		{ x: 40 * w, y: 8 * h },
+	// 		{ x: 40 * w, y: 8 * h },
+	// 		{ x: 44 * w, y: 6 * h }, // 39
+
+	// 		// horizontal 2
+	// 		{ x: 0 * w, y: 14 * h }, // 40
+	// 		{ x: 8 * w, y: 10 * h },
+	// 		{ x: 8 * w, y: 10 * h },
+	// 		{ x: 13 * w, y: 11 * h },
+	// 		{ x: 13 * w, y: 11 * h },
+	// 		{ x: 21 * w, y: 7 * h },
+	// 		{ x: 21 * w, y: 7 * h },
+	// 		{ x: 29 * w, y: 3 * h },
+	// 		{ x: 29 * w, y: 3 * h },
+	// 		{ x: 34 * w, y: 4 * h },
+	// 		{ x: 34 * w, y: 4 * h },
+	// 		{ x: 42 * w, y: 0 * h } // 51
+	// 	],
+	// 	end: [
+	// 		{ x: 0, y: 14 * h }, // 52 -> 66
+	// 		{ x: 10 * w, y: 16 * h },
+	// 		{ x: 10 * w, y: 16 * h },
+	// 		{ x: 14 * w, y: 14 * h },
+	// 		{ x: 14 * w, y: 14 * h },
+	// 		{ x: 19 * w, y: 15 * h },
+	// 		{ x: 19 * w, y: 15 * h },
+	// 		{ x: 23 * w, y: 13 * h },
+	// 		{ x: 23 * w, y: 13 * h },
+	// 		{ x: 28 * w, y: 14 * h },
+	// 		{ x: 28 * w, y: 14 * h },
+	// 		{ x: 32 * w, y: 12 * h },
+	// 		{ x: 32 * w, y: 12 * h },
+	// 		{ x: 42 * w, y: 14 * h } // 79
+	// 	]
+	// }
+
 	if (invert) {
 		const maxX = 1;
 		// Math.max(
@@ -168,7 +267,6 @@ const generateUnit = (
 	if (unitDef.start.length !== START_SEGMENTS || unitDef.end.length !== END_SEGMENTS) {
 		throw new Error('shield tesselation definition is bad');
 	}
-	console.debug('unitDef', invert, unitDef);
 	return unitDef;
 };
 
@@ -218,6 +316,8 @@ export const generateShieldTesselationTile = ({
 	return segments;
 };
 
+const DEBUG_METADATA = true;
+
 export const adjustShieldTesselationAfterTiling = (
 	bands: BandCutPattern[],
 	tiledPatternConfig: TiledPatternConfig,
@@ -228,7 +328,6 @@ export const adjustShieldTesselationAfterTiling = (
 	} = tiledPatternConfig;
 
 	const newBands = structuredClone(bands);
-	const adjacentPaths = [];
 	for (let b = 0; b < bands.length; b++) {
 		const band = bands[b];
 
@@ -247,23 +346,17 @@ export const adjustShieldTesselationAfterTiling = (
 				return newPath;
 			}
 		);
-		adjacentPaths.push(prevBandPaths);
 
-		// This for loop needsto be adjusted so that when `endsMatched` is true, the end segments are matched.
-		// - if f === 0
-		//   - get the partner facet using band.meta.startPartnerBand, and transform the path using band.meta.startPartnerTransform
-		// - if f === band.facets.length - 1
-		//   - get the partner facet using band.meta.endPartnerBand, and transform the path using band.meta.endPartnerTransform
-		// - we don't currently source from a `previous` facet.  And we currently only `loop` to the `next` facet when doing the last facet in a band.
-
-		// - we'll need to identify which direction the partner is orientated.  Either it's start is matched to the current facet, or it's end is.  That depends on if it's facet index is 0 or the last.
-		// - depending on the direction, we'll have different indices to replaceInPlace
-		// - sourceIndices will come from the partner facet
-		// - targetIndices will come from the current facet
-		// - examples the actual numerical indices we're using should already be present in the currently specified sourceIndices and targetIndices.
 
 		for (let f = 0; f < band.facets.length; f++) {
-			newBands[b].facets[f].meta = { originalPath: window.structuredClone(band.facets[f].path) };
+			if (DEBUG_METADATA) {
+				newBands[b].facets[f].meta = {
+					originalPath: window.structuredClone(band.facets[f].path),
+					prevBandPath: prevBandPaths[f]
+				};
+				
+
+			}
 
 			// TODO - if `endsMatched`, and  f === band.facets.length - 1 || f === 0 is true, nextPath should be the `endPartnerBand` facet, not the next facet
 			const nextPath = band.facets[(f + 1) % band.facets.length].path;
@@ -346,9 +439,7 @@ export const adjustShieldTesselationAfterTiling = (
 			}
 		}
 	}
-
-	return { bands: newBands, adjacentBands: adjacentPaths };
-	// return newBands
+	return newBands
 };
 
 const retarget = (indices: number[], rows: number, columns: number) => {

@@ -56,10 +56,7 @@ export const generateTubeCutPattern = ({
 	const quadBands = alignedBands.map((flatBand) =>
 		getQuadrilaterals(flatBand, pixelScale.value, flatBand.sideOrientation)
 	);
-	// TODO: see if inverting the quads based on sideOrientation would allow me to avoid any other compensation for sideOrientation
-	quadBands.forEach((quadBand, q) =>
-		console.debug('quadBand', alignedBands[q].sideOrientation, quadBand)
-	);
+
 
 	const tiling = generateTiling({ quadBands, bands: alignedBands, tiledPatternConfig, address });
 

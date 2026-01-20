@@ -135,7 +135,7 @@ export const patterns: { [key: string]: PatternGenerator } = {
 				quadBand,
 				tiledPatternConfig
 			);
-			return adjusted.bands;
+			return adjusted;
 		}
 	},
 

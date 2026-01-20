@@ -193,6 +193,7 @@ export type CutPattern = {
 	label: string;
 	meta?: {
 		originalPath?: PathSegment[];
+		prevBandPath?: PathSegment[];
 	};
 };
 

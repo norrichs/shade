@@ -12,22 +12,47 @@
 	import type { GlobuleAddress_Band, TransformConfig, Tube } from '$lib/projection-geometry/types';
 	import { getTransform } from './distrubute-panels';
 	import { concatAddress, isSameAddress } from '$lib/util';
+	import { PATTERN_PORTAL_ID, LABEL_TEXT_PORTAL_ID, LABEL_TAG_PORTAL_ID } from './constants';
 
 	// export let projectionPattern: SuperGlobuleProjectionPattern | undefined;
 	export let tubes: TubeCutPattern[] = [];
+	const GAP_BETWEEN_BANDS = 20;
+
+	// TODO: filter cumulative origins by range
 
 	$: range = $patternConfigStore.patternViewConfig.range;
 	let filteredTubes: TubeCutPattern[] = [];
 	let origins: { tubes: { bands: Vector3[] }[] } = { tubes: [{ bands: [] }] };
 
-	const getCumulativeOrigins = (tubes: TubeCutPattern[], gap: number = 20) => {
+	const getCumulativeOrigins = (
+		tubes: TubeCutPattern[],
+		gap: number = 20,
+		verticalAlignment: 'top' | 'bottom' | 'center' = 'center'
+	) => {
 		const cumulativeOrigin = new Vector3(0, 0, 0);
 
 		const origins = {
 			tubes: tubes.map((tube) => ({
 				bands: tube.bands.map((band) => {
-					const result = cumulativeOrigin.clone();
-					cumulativeOrigin.set(cumulativeOrigin.x + (band.bounds?.width || 0) + gap, 0, 0);
+					console.debug('band', band.bounds?.height);
+					let y;
+					switch (verticalAlignment) {
+						case 'bottom':
+							y = -(band.bounds?.height || 0);
+							break;
+						case 'center':
+							y = -(band.bounds?.height || 0) / 2;
+							break;
+						case 'top':
+							y = 0;
+						default:
+							y = 0;
+					}
+					const result = new Vector3(cumulativeOrigin.x, y, 0);
+					const x = cumulativeOrigin.x + (band.bounds?.width || 0) + gap;
+
+					console.debug('y', y, verticalAlignment);
+					cumulativeOrigin.set(x, y, 0);
 					return result;
 				})
 			}))
@@ -73,7 +98,8 @@
 		showPattern = any && (bands || facets);
 
 		filteredTubes = filtered({ tubes, range });
-		origins = getCumulativeOrigins(tubes, 20);
+		origins = getCumulativeOrigins(filteredTubes, GAP_BETWEEN_BANDS, 'center');
+		console.debug('origins', origins);
 	};
 
 	let showPattern = false;
@@ -104,7 +130,7 @@
 					index={b}
 					origin={origins.tubes[t].bands[b]}
 					showLabel
-					portal={false}
+					portal={true}
 					tagAnchorPoint={minPoint(band.facets)}
 					tagAngle={band.tagAngle}
 					showBounds={false}
@@ -112,20 +138,25 @@
 					{#if band.projectionType === 'patterned'}
 						<BandCutPatternComponent
 							{band}
-							renderAsSinglePath={false}
+							renderAsSinglePath={true}
 							highlightFirstFacet={false}
 							partnerBands={getPartnerBands(band, tubes)}
-							showQuadLabels
-							showPathPointIndices
+							showQuadLabels={false}
+							showPathPointIndices={false}
 							partnerFacets={[
 								band.meta?.translatedStartPartnerFacet,
 								band.meta?.translatedEndPartnerFacet
 							].filter((el) => el !== undefined)}
+							showPartnerBands={false}
+							showAdjacentFacets={false}
+							showBounds={false}
 						/>
 					{/if}
 				</BandComponent>
 			{/each}
 		</g>
 	{/each}
-	<g id="label-text-container" />
+	<!-- <svg><g id={PATTERN_PORTAL_ID} /></svg> -->
+	<svg id={LABEL_TAG_PORTAL_ID} />
+	<svg id={LABEL_TEXT_PORTAL_ID} />
 {/if}

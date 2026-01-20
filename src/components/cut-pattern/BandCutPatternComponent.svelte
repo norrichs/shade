@@ -4,6 +4,7 @@
 	import { patternConfigStore } from '$lib/stores';
 	import type { BandCutPattern, CutPattern, Quadrilateral } from '$lib/types';
 	import QuadPattern from '../pattern-svg/QuadPattern.svelte';
+	import BoundsPattern from './BoundsPattern.svelte';
 	import PathPointIndices from './PathPointIndices.svelte';
 	import QuadLabels from './QuadLabels.svelte';
 
@@ -16,7 +17,9 @@
 	export let showPartnerFacets = false;
 	export let showQuadLabels = false;
 	export let showPathPointIndices = false;
-	export let showOriginalPath = true;
+	export let showAdjacentFacets = false;
+	export let showOriginalPath = false;
+	export let showBounds = false;
 
 	const postTransformPF = false;
 	const RAINBOW = false;
@@ -67,6 +70,7 @@
 	showQuads={$patternConfigStore.patternViewConfig.showQuads}
 	showLabels={$patternConfigStore.patternViewConfig.showLabels}
 />
+<BoundsPattern {showBounds} bounds={band.bounds} />
 {#if renderAsSinglePath}
 	<path
 		d={band.svgPath}
@@ -84,6 +88,15 @@
 				stroke="black"
 				stroke-width={2}
 				opacity="0.1"
+			/>
+		{/if}
+		{#if showAdjacentFacets && facet.meta?.prevBandPath}
+			<path
+				d={svgPathStringFromSegments(facet.meta?.prevBandPath)}
+				fill="none"
+				stroke="green"
+				stroke-width={2}
+				opacity="0.3"
 			/>
 		{/if}
 		<path

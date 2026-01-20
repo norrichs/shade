@@ -124,7 +124,7 @@ export const generateProjectionPattern = (
 	} = globulePatternConfig;
 
 	if (shouldUsePanelPattern(tiledPatternConfig)) {
-		console.debug('generating panel pattern', { tubes });
+		
 		const projectionPanelPattern = generateProjectionPanelPattern({
 			tubes,
 			range,
@@ -153,6 +153,7 @@ export const generateProjectionPattern = (
 		if (adjustAfterTiling) {
 			tubePatterns = tubePatterns.map((tubePattern) => {
 				const adjusted = adjustAfterTiling(tubePattern.bands, tiledPatternConfig, tubePatterns);
+				
 
 				return {
 					...tubePattern,

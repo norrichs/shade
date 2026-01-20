@@ -522,7 +522,7 @@ export const defaultPatternViewConfig = (): PatternViewConfig => ({
 	showQuads: false,
 	showTriangles: false,
 	showLabels: false,
-	range: { tubes: [8, 9], bands: [3, 4] },
+	range: { tubes: [0, 1], bands: [0, 6] },
 	width: 800,
 	height: 600,
 	zoom: -1.2,

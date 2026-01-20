@@ -323,7 +323,7 @@ export const getQuadrilaterals = (
 	const quads: Quadrilateral[] = [];
 	facets.forEach((facet, i) => {
 		if (i % 2 === 1) {
-			let quad =
+			const quad =
 				band.orientation === 'axial-right'
 					? {
 							a: facets[i - 1].triangle.a.clone(),
@@ -344,20 +344,29 @@ export const getQuadrilaterals = (
 				quad.c.multiplyScalar(scale);
 				quad.d.multiplyScalar(scale);
 			}
-
+// TODO - at the adjustment phase, for inside bands, adjacent bands are either (next) or (need to adjust the quad segments used as reference)
 			if (sideOrientation === 'inside') {
-				const reflectedQuad = {
-					a: quad.b.clone(),
-					b: quad.a.clone(),
-					c: quad.d.clone(),
-					d: quad.c.clone()
-				};
-				quad = reflectedQuad;
+				quad.a.x = -quad.a.x
+				quad.b.x = -quad.b.x
+				quad.c.x = -quad.c.x
+				quad.d.x = -quad.d.x
 			}
 			quads.push(quad);
 		}
 	});
-
+  if (sideOrientation === 'inside') {
+		const allX = quads.map((quad) => [quad.a.x, quad.b.x, quad.c.x, quad.d.x]).flat();
+		const minX = Math.min(...allX);
+		const shiftedQuads = quads.map((quad) => {
+			quad.a.set(quad.a.x - minX, quad.a.y, quad.a.z)
+			quad.b.set(quad.b.x - minX, quad.b.y, quad.b.z)
+			quad.c.set(quad.c.x - minX, quad.c.y, quad.c.z)
+			quad.d.set(quad.d.x - minX, quad.d.y, quad.d.z)
+			return quad		
+		})
+		return shiftedQuads
+	}
+	
 	return quads;
 };
 

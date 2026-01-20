@@ -63,7 +63,7 @@
 	on:blur={() => (isFocused = false)}
 	stroke={color}
 >
-	{#if showBounds}<rect
+	{#if showBounds && band.bounds}<rect
 			x={band.bounds.left}
 			y={band.bounds.top}
 			width={band.bounds.width}
@@ -91,9 +91,7 @@
 					? [` > ${concatAddress(band.meta?.endPartnerBand, 'tb')}`]
 					: [])
 			]}
-			portal={portal
-				? { target: 'label-text-container', transform: `translate(${origin.x} ${origin.y})` }
-				: undefined}
+			portal={portal ? { transform: `translate(${origin.x} ${origin.y})` } : undefined}
 		/>
 	{/if}
 </g>

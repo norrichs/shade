@@ -12,16 +12,18 @@
 	import { numberPathSegments } from './number-path-segments';
 	import SvgText from './SvgText/SvgText.svelte';
 	import { onMount } from 'svelte';
+	import { LABEL_TAG_PORTAL_ID, LABEL_TEXT_PORTAL_ID } from './constants';
+	import LabelText from './LabelText.svelte';
 
 	export let id: string | undefined = undefined;
-	export let color: string;
+	export let color: string = 'black';
 	export let value: number;
 	export let addressStrings: string[] | undefined;
 	export let radius = 10;
 	export let scale: number = 1;
 	export let angle = 0;
 	export let anchor: Point = { x: 0, y: 0 };
-	export let portal: { target: string; transform: string } | undefined = undefined;
+	export let portal: { transform: string } | undefined = undefined;
 
 	const getLabelPathSegments = ({
 		value,
@@ -80,14 +82,18 @@
 		return adjusted;
 	};
 
-	let element: SVGGElement;
+	let tagElement: SVGGElement;
+	let textElement: SVGGElement;
 
 	onMount(() => {
 		if (portal) {
-			const { target, transform } = portal;
-			const labelTextContainer = document.getElementById(target);
-			if (labelTextContainer && element) {
-				labelTextContainer.appendChild(element);
+			const lableTagContainer = document.getElementById(LABEL_TAG_PORTAL_ID);
+			const labelTextContainer = document.getElementById(LABEL_TEXT_PORTAL_ID);
+			if (labelTextContainer && textElement) {
+				labelTextContainer.appendChild(textElement);
+			}
+			if (lableTagContainer && tagElement) {
+				lableTagContainer.appendChild(tagElement);
 			}
 		}
 	});
@@ -98,33 +104,24 @@
 </script>
 
 {#if portal}
-	<g id={`band-label${id ? `-${id}` : ''}`} transform={portal.transform} bind:this={element}>
-		<path d={path} fill-rule="evenodd" fill={color} stroke="none" />
-		{#if addressStrings}
-			{#each addressStrings as string, i}
-				<SvgText
-					id={`label-text${id ? `-${id}` : ''}`}
-					{string}
-					size={5}
-					anchor={{ ...anchor, y: anchor.y + 7 * (i + 1) }}
-					color="white"
-				/>
-			{/each}
-		{/if}
-	</g>
+	<path
+		d={path}
+		fill-rule="evenodd"
+		stroke="none"
+		fill={color}
+		bind:this={tagElement}
+		transform={portal.transform}
+	/>
+	<LabelText
+		lines={addressStrings}
+		{anchor}
+		size={5}
+		bind:element={textElement}
+		transform={portal.transform}
+	/>
 {:else}
 	<g id={`band-label${id ? `-${id}` : ''}`}>
 		<path d={path} fill-rule="evenodd" fill={color} stroke="none" />
-		{#if addressStrings}
-			{#each addressStrings as string, i}
-				<SvgText
-					id={`label-text${id ? `-${id}` : ''}`}
-					{string}
-					size={5}
-					anchor={{ ...anchor, y: anchor.y + 7 * (i + 1) }}
-					color="white"
-				/>
-			{/each}
-		{/if}
+		<LabelText lines={addressStrings} {anchor} size={5} color="black" />
 	</g>
 {/if}
