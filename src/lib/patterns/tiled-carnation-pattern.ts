@@ -69,7 +69,7 @@ export const adjustCarnation = (tiledBands: { facets: CutPattern[] }[], variant:
 	const adjusted = tiledBands.map((band, bandIndex, bands) => ({
 		...band,
 		facets: band.facets.map((facet, facetIndex) => {
-			const addendaFacet0 = window.structuredClone(
+			const addendaFacet0 = structuredClone(
 				bands[(bandIndex + bands.length - 1) % bands.length].facets[facetIndex]
 			);
 

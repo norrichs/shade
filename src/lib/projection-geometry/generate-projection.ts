@@ -779,12 +779,19 @@ export const generateTubeBands = (
 };
 
 const matchFacets = (tubes: Tube[]) => {
-	tubes.forEach((tube) => {
-		tube.bands.forEach((band) => {
-			band.facets.forEach((facet) => {
-				if (!facet.address) throw Error('facet does not have address');
-				const edges = getFacetEdgeMeta(facet.address, tubes);
-				facet.meta = edges;
+	tubes.forEach((tube, tubeIndex) => {
+		tube.bands.forEach((band, bandIndex) => {
+			band.facets.forEach((facet, facetIndex) => {
+				if (!facet.address) {
+					throw Error(`facet does not have address at tube:${tubeIndex}, band:${bandIndex}, facet:${facetIndex}`);
+				}
+				try {
+					const edges = getFacetEdgeMeta(facet.address, tubes);
+					facet.meta = edges;
+				} catch (error) {
+					console.error(`getFacetEdgeMeta failed at tube:${tubeIndex}, band:${bandIndex}, facet:${facetIndex}`, error);
+					throw error;
+				}
 			});
 		});
 	});
@@ -896,12 +903,40 @@ const getFacetEdgeMeta = (address: GlobuleAddress_Facet, tubes: Tube[]): Facet['
 	const pOuter = getEdge('outer', f, partnerBandOrientation);
 
 	if (isFirstFacet) {
-		if (!facet.meta) throw Error('end facet should already have end partner in meta');
+		if (!facet.meta) {
+			throw Error(`end facet should already have end partner in meta at tube:${address.tube}, band:${address.band}, facet:${f}`);
+		}
+		if (!facet.meta[base]) {
+			console.error('First facet meta mismatch:', {
+				address,
+				base,
+				second,
+				outer,
+				orientation,
+				metaKeys: Object.keys(facet.meta),
+				meta: facet.meta
+			});
+			throw Error(`first facet meta missing expected edge '${base}' at tube:${address.tube}, band:${address.band}. Has keys: ${Object.keys(facet.meta).join(', ')}`);
+		}
 		edgeMeta[base].partner = { ...facet.meta[base].partner };
 		edgeMeta[second].partner = { ...address, facet: f + 1, edge: second };
 		edgeMeta[outer].partner = { ...address, band: partnerBand, facet: partnerFacet, edge: pOuter };
 	} else if (isLastFacet) {
-		if (!facet.meta) throw Error('end facet should already have end partner in meta');
+		if (!facet.meta) {
+			throw Error(`end facet should already have end partner in meta at tube:${address.tube}, band:${address.band}, facet:${f}`);
+		}
+		if (!facet.meta[second]) {
+			console.error('Last facet meta mismatch:', {
+				address,
+				base,
+				second,
+				outer,
+				orientation,
+				metaKeys: Object.keys(facet.meta),
+				meta: facet.meta
+			});
+			throw Error(`last facet meta missing expected edge '${second}' at tube:${address.tube}, band:${address.band}. Has keys: ${Object.keys(facet.meta).join(', ')}`);
+		}
 		edgeMeta[second].partner = { ...facet.meta[second].partner };
 		edgeMeta[base].partner = { ...address, facet: f - 1, edge: base };
 		edgeMeta[outer].partner = { ...address, band: partnerBand, facet: partnerFacet, edge: pOuter };
@@ -938,43 +973,61 @@ const matchTubeEnds = (tubes: Tube[]) => {
 			})
 		)
 	);
+
+	console.debug(`matchTubeEnds: ${tubes.length} tubes, ${endFacets.length} end facets to match`);
+
 	tubes.forEach((tube, t) =>
 		tube.bands.forEach((band, b) => {
 			const firstFacet = band.facets[0];
 			const lastFacet = band.facets[band.facets.length - 1];
 
-			if (!firstFacet.address || !lastFacet.address)
-				throw Error('facets without address when they should');
-			if (hasNoPartner(firstFacet)) {
-				const { edge, partnerEdge, partner } = findPartner(
-					firstFacet,
-					endFacets,
-					getEdge('base', 'even', firstFacet.orientation)
-				);
-
-				if (!partner.address) throw Error('facets without address when they should');
-				const newMeta: { [key: string]: FacetEdgeMeta } = {};
-				newMeta[edge] = {
-					// address: { ...firstFacet.address, edge },
-					partner: { ...partner.address, edge: partnerEdge }
-				};
-				// @ts-expect-error: meta property may be missing or have an incompatible type, but we want to assign it here
-				firstFacet.meta = firstFacet.meta ? { ...firstFacet.meta, ...newMeta } : newMeta;
+			if (!firstFacet.address || !lastFacet.address) {
+				throw Error(`facets without address at tube:${t}, band:${b} (first: ${!!firstFacet.address}, last: ${!!lastFacet.address})`);
 			}
+
+			if (hasNoPartner(firstFacet)) {
+				try {
+					const { edge, partnerEdge, partner } = findPartner(
+						firstFacet,
+						endFacets,
+						getEdge('base', 'even', firstFacet.orientation)
+					);
+
+					if (!partner.address) {
+						throw Error(`partner facet without address when matching firstFacet at tube:${t}, band:${b}`);
+					}
+					const newMeta: { [key: string]: FacetEdgeMeta } = {};
+					newMeta[edge] = {
+						partner: { ...partner.address, edge: partnerEdge }
+					};
+					// @ts-expect-error: meta property may be missing or have an incompatible type, but we want to assign it here
+					firstFacet.meta = firstFacet.meta ? { ...firstFacet.meta, ...newMeta } : newMeta;
+				} catch (error) {
+					console.error(`matchTubeEnds failed for firstFacet at tube:${t}, band:${b}`, error);
+					throw error;
+				}
+			}
+
 			if (hasNoPartner(lastFacet)) {
-				const { edge, partnerEdge, partner } = findPartner(
-					lastFacet,
-					endFacets,
-					getEdge('base', 'even', lastFacet.orientation)
-				);
-				if (!partner.address) throw Error('facets without address when they should');
-				const newMeta: { [key: string]: FacetEdgeMeta } = {};
-				newMeta[edge] = {
-					// address: { ...lastFacet.address, edge },
-					partner: { ...partner.address, edge: partnerEdge }
-				};
-				// @ts-expect-error: meta property may be missing or have an incompatible type, but we want to assign it here
-				lastFacet.meta = lastFacet.meta ? { ...lastFacet.meta, ...newMeta } : newMeta;
+				try {
+					const { edge, partnerEdge, partner } = findPartner(
+						lastFacet,
+						endFacets,
+						getEdge('base', 'even', lastFacet.orientation)
+					);
+					if (!partner.address) {
+						throw Error(`partner facet without address when matching lastFacet at tube:${t}, band:${b}`);
+					}
+					const newMeta: { [key: string]: FacetEdgeMeta } = {};
+					newMeta[edge] = {
+						partner: { ...partner.address, edge: partnerEdge }
+					};
+					// @ts-expect-error: meta property may be missing or have an incompatible type, but we want to assign it here
+					lastFacet.meta = lastFacet.meta ? { ...lastFacet.meta, ...newMeta } : newMeta;
+				} catch (error) {
+					console.error(`matchTubeEnds failed for lastFacet at tube:${t}, band:${b}`, error);
+					throw error;
+				}
 			}
 		})
 	);
@@ -991,11 +1044,24 @@ const findPartner = (facet0: Facet, facets: Facet[], edgeToMatch: TriangleEdge) 
 			return { partner: facet, partnerEdge: match.t1, edge: match.t0 };
 		}
 	}
-	throw Error('failed to find partner for facet');
+	const addressStr = facet0.address
+		? `tube:${facet0.address.tube}, band:${facet0.address.band}, facet:${facet0.address.facet}`
+		: 'no address';
+	console.error('findPartner failed:', {
+		facet0Address: addressStr,
+		edgeToMatch,
+		totalEndFacets: facets.length,
+		facet0Triangle: {
+			a: facet0.triangle.a.toArray(),
+			b: facet0.triangle.b.toArray(),
+			c: facet0.triangle.c.toArray()
+		}
+	});
+	throw Error(`failed to find partner for facet at ${addressStr}, edge: ${edgeToMatch}`);
 };
 
 const hasNoPartner = (facet: Facet) =>
-	!facet.meta?.ab.partner && !facet.meta?.ac.partner && !facet.meta?.bc.partner;
+	!facet.meta?.ab?.partner && !facet.meta?.ac?.partner && !facet.meta?.bc?.partner;
 
 const normalizePoints = (points: Vector2[]) => {
 	let xMax = 0;

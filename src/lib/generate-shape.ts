@@ -216,7 +216,7 @@ const normalizeConfigPoints = (
 		| { maxLength?: number; normalizationRatio: number }
 ): ShapeConfig => {
 	const lengths: number[] = [];
-	const normalizedShapeConfig: ShapeConfig = window.structuredClone(shapeConfig);
+	const normalizedShapeConfig: ShapeConfig = structuredClone(shapeConfig);
 	let ratio: number;
 	if (typeof config.maxLength === 'number') {
 		normalizedShapeConfig.curves.forEach((curve) =>
@@ -838,7 +838,7 @@ export const getRenderable = (
  */
 
 export const generateGlobuleData = (configStore: GlobuleConfig): GlobuleData => {
-	const config = window.structuredClone(configStore);
+	const config = structuredClone(configStore);
 	const rotatedShapePrototype: LevelPrototype | LevelPrototype[] = generateLevelPrototype(
 		config.shapeConfig,
 		config.levelConfig
@@ -862,7 +862,7 @@ export const generateGlobuleData = (configStore: GlobuleConfig): GlobuleData => 
 };
 
 export const generateGlobuleTube = (configStore: GlobuleConfig): Tube => {
-	const config = window.structuredClone(configStore);
+	const config = structuredClone(configStore);
 	const rotatedShapePrototype: LevelPrototype | LevelPrototype[] = generateLevelPrototype(
 		config.shapeConfig,
 		config.levelConfig

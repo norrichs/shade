@@ -221,5 +221,6 @@
 		</T.Group>
 	{/each}
 {/if}
-<ProjectionGeometryComponent onClick={handleProjectionClick} showNormals />
+
+<ProjectionGeometryComponent onClick={handleProjectionClick} />
 <GlobuleGeometryComponent {getInteractionMaterial} {handleClick} />

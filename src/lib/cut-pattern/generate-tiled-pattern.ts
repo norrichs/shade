@@ -201,9 +201,9 @@ export const generateTiling = ({
 		const band = bands[bandIndex];
 		const edges = getBandTriangleEdges(band.orientation);
 		const startPartner: GlobuleAddress_FacetEdge | undefined =
-			band.facets[0].meta?.[edges[0].base].partner;
+			band.facets[0].meta?.[edges[0].base]?.partner;
 		const endPartner: GlobuleAddress_FacetEdge | undefined =
-			band.facets[band.facets.length - 1].meta?.[edges[1].second].partner;
+			band.facets[band.facets.length - 1].meta?.[edges[1].second]?.partner;
 		const startPartnerBand: GlobuleAddress_Band | undefined = startPartner
 			? {
 					globule: startPartner.globule,
@@ -216,7 +216,7 @@ export const generateTiling = ({
 			: undefined;
 
 		const cuttablePattern: CutPattern[] = adjustedPatternBand.map((facet, facetIndex) => {
-			const quad = window.structuredClone(quadBand[facetIndex % quadBand.length]);
+			const quad = structuredClone(quadBand[facetIndex % quadBand.length]);
 			const facetPathSegment = facet[(facet.length + tagAnchor.segmentIndex) % facet.length];
 			if (
 				tagAnchor.facetIndex === facetIndex &&

@@ -117,7 +117,7 @@ export const cloneSubGlobuleConfig = (original: SubGlobuleConfig): SubGlobuleCon
 		...original,
 		id: generateTempId('sub'),
 		globuleConfig: cloneGlobuleConfig(original.globuleConfig),
-		transforms: window.structuredClone(original.transforms)
+		transforms: structuredClone(original.transforms)
 	};
 };
 
@@ -125,13 +125,13 @@ export const copySubGlobuleConfig = (original: SubGlobuleConfig): SubGlobuleConf
 	return {
 		...original,
 		id: generateTempId('sub'),
-		transforms: window.structuredClone(original.transforms)
+		transforms: structuredClone(original.transforms)
 	};
 };
 
 export const cloneGlobuleConfig = (original: GlobuleConfig): GlobuleConfig => {
 	return {
-		...window.structuredClone(original),
+		...structuredClone(original),
 		id: generateTempId('glb')
 	};
 };

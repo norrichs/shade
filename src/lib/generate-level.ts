@@ -422,7 +422,7 @@ const countLevels = (levelConfig: LevelConfig, silhouetteConfig: SilhouetteConfi
 const getLevelOffsets = (levelConfig: LevelConfig, levelCount: number) => {
 	const levelOffsets: LevelOffset[] = new Array(levelCount);
 	for (let l = 0; l < levelOffsets.length; l++) {
-		levelOffsets[l] = window.structuredClone(
+		levelOffsets[l] = structuredClone(
 			levelConfig.levelOffsets[l % levelConfig.levelOffsets.length]
 		);
 		const { x, y, rotX, rotY, rotZ, scaleX, scaleY } = levelOffsets[l];

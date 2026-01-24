@@ -4,3 +4,4 @@ export * from '$lib/stores/stores';
 export * from '$lib/stores/selectionStores';
 export * from '$lib/stores/uiStores';
 export * from '$lib/stores/viewControlStore';
+export * from '$lib/stores/workerStore';

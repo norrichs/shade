@@ -167,7 +167,7 @@ export const adjustTriStarPatternAfterMapping = (
 			const rDiff = 0;
 			prevFacet = endsMatched
 				? rotatePS(
-						translatePS(window.structuredClone(facets[facets.length - 1]), tDiff.x, tDiff.y),
+						translatePS(structuredClone(facets[facets.length - 1]), tDiff.x, tDiff.y),
 						rDiff
 				  )
 				: undefined;
@@ -179,7 +179,7 @@ export const adjustTriStarPatternAfterMapping = (
 			const rDiff = 0;
 			prevFacet = facets[i - 1];
 			nextFacet = endsMatched
-				? rotatePS(translatePS(window.structuredClone(facets[0]), tDiff.x, tDiff.y), rDiff)
+				? rotatePS(translatePS(structuredClone(facets[0]), tDiff.x, tDiff.y), rDiff)
 				: undefined;
 		} else {
 			prevFacet = facets[i - 1];
@@ -239,9 +239,9 @@ const straightenEndSegments = ({
 	const startSegmentIndices = getSegments('start', rows, columns, thisFacet.length);
 	const endSegmentIndices = getSegments('end', rows, columns, thisFacet.length);
 
-	const output = window.structuredClone(thisFacet);
-	const altNextFacet = window.structuredClone(nextFacet);
-	const altPrevFacet = window.structuredClone(prevFacet);
+	const output = structuredClone(thisFacet);
+	const altNextFacet = structuredClone(nextFacet);
+	const altPrevFacet = structuredClone(prevFacet);
 
 	let firstStartIndex, secondStartIndex, firstEndIndex, secondEndIndex;
 	for (let i = 0; i < startSegmentIndices.length; i++) {

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { T } from '@threlte/core';
-	import { materials } from '../three-renderer/materials';
+	import { getMaterial, materials } from '../three-renderer/materials';
 	import { BufferGeometry, Object3D, Vector3 } from 'three';
 	import {
 		collateGeometry,
@@ -36,6 +36,8 @@
 	} = {};
 	export let onClick: (event: any, address: GlobuleAddress_Facet) => void;
 	export let showNormals = false;
+	export let colorByBand = false;
+	export let colorEndFacets = true;
 
 	type ProjectionData = {
 		projection: Projection;
@@ -80,31 +82,7 @@
 		return geometry;
 	};
 
-	const COLOR_BY_BAND = false;
-
-	const getMaterial = (
-		address: GlobuleAddress_Facet,
-		selectedGeometry: typeof $selectedProjectionGeometry
-	) => {
-		if (address.facet <= 1) return materials.numbered[5];
-
-		if (!selectedGeometry?.selected) return materials.default;
-
-		if (selectedGeometry.isSelected(address)) {
-			return materials.selected;
-		} else if (selectedGeometry.isPartner(address)) {
-			return materials.highlightedPrimary;
-		} else if (selectedGeometry.isStartPartner(address)) {
-			return materials.numbered[4];
-		} else if (selectedGeometry.isEndPartner(address)) {
-			return materials.numbered[1];
-		} else if (COLOR_BY_BAND) {
-			return materials.numbered[address.band];
-		} else if (address.facet == 0) {
-			return materials.highlightedPrimary;
-		}
-		return materials.default;
-	};
+	
 
 	$: updateProjectionGeometry(
 		$viewControlStore.showProjectionGeometry,
@@ -143,7 +121,7 @@
 		{#each projectionGeometry.facets || [] as facet}
 			<T.Mesh
 				geometry={facet.geometry}
-				material={getMaterial(facet.address, $selectedProjectionGeometry)}
+				material={getMaterial(facet.address, $selectedProjectionGeometry, { colorByBand, colorEndFacets })}
 				on:click={(ev) => onClick(ev, facet.address)}
 			/>
 		{/each}

@@ -10,6 +10,7 @@
 	import Button from '../design-system/Button.svelte';
 	import NewConfigButton from './NewConfigButton.svelte';
 	import SaveConfigButton from './SaveConfigButton.svelte';
+	import WorkingIndicator from './WorkingIndicator.svelte';
 	import { superGlobuleStore, selectedBand } from '$lib/stores';
 	import { formatAddress } from '$lib/recombination';
 	import { downloadSvg } from '$lib/util';
@@ -72,6 +73,8 @@
 			</select>
 			<ViewMenu />
 		</div>
+
+		<WorkingIndicator />
 
 		<!-- <div>
 			{formatAddress($selectedBand)}

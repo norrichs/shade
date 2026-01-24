@@ -9,7 +9,7 @@ import type {
 	TubeCutPattern,
 	ProjectionCutPattern
 } from '$lib/types';
-import { derived } from 'svelte/store';
+import { derived, writable } from 'svelte/store';
 import { loadPersistedOrDefault } from './stores';
 import { generateSuperGlobule } from '$lib/generate-superglobule';
 import {
@@ -24,6 +24,11 @@ import {
 import { patternConfigStore } from './globulePatternStores';
 import { overrideStore } from './overrideStore';
 import { getMetaInfo } from '$lib/projection-geometry/meta-info';
+import { generateSuperGlobuleAsync, isWorking as workerIsWorking } from './workerStore';
+import { browser } from '$app/environment';
+
+// Re-export the isWorking store for external use
+export { workerIsWorking as isGenerating };
 
 // SUPER CONFIGS
 export const superConfigStore = persistable<SuperGlobuleConfig>(
@@ -40,11 +45,72 @@ export const superConfigStore = persistable<SuperGlobuleConfig>(
 	bootstrapShouldUsePersisted()
 );
 
-export const superGlobuleStore = derived(superConfigStore, ($superConfigStore) => {
-	console.log('SUPER GLOBULE STORE', $superConfigStore);
-	const superGlobule: SuperGlobule = generateSuperGlobule($superConfigStore);
-	return superGlobule;
-});
+// Internal writable store for the SuperGlobule result
+const superGlobuleInternal = writable<SuperGlobule | null>(null);
+
+// Track whether we've done the initial generation
+let isInitialized = false;
+
+/**
+ * Triggers async generation of the SuperGlobule
+ * Debounces rapid changes to avoid unnecessary work
+ */
+let debounceTimeout: ReturnType<typeof setTimeout> | null = null;
+
+function triggerAsyncGeneration(config: SuperGlobuleConfig): void {
+	// Clear any pending debounced generation
+	if (debounceTimeout) {
+		clearTimeout(debounceTimeout);
+	}
+
+	// Debounce rapid config changes (e.g., while dragging sliders)
+	debounceTimeout = setTimeout(async () => {
+		console.log('SUPER GLOBULE STORE - Starting async generation');
+
+		try {
+			const result = await generateSuperGlobuleAsync(config);
+			superGlobuleInternal.set(result);
+			console.log('SUPER GLOBULE STORE - Async generation complete');
+		} catch (error) {
+			console.error('SUPER GLOBULE STORE - Async generation failed:', error);
+			// Fall back to synchronous generation on error
+			console.log('SUPER GLOBULE STORE - Falling back to sync generation');
+			const result = generateSuperGlobule(config);
+			superGlobuleInternal.set(result);
+		}
+	}, 50); // 50ms debounce
+}
+
+// Subscribe to config changes and trigger async generation
+if (browser) {
+	superConfigStore.subscribe((config) => {
+		if (!isInitialized) {
+			// Do initial synchronous generation for fast first render
+			console.log('SUPER GLOBULE STORE - Initial sync generation');
+			const result = generateSuperGlobule(config);
+			superGlobuleInternal.set(result);
+			isInitialized = true;
+		} else {
+			// Subsequent changes use async generation
+			triggerAsyncGeneration(config);
+		}
+	});
+}
+
+// Derived store that provides the SuperGlobule (with fallback for SSR)
+export const superGlobuleStore = derived(
+	[superGlobuleInternal, superConfigStore],
+	([$superGlobuleInternal, $superConfigStore]) => {
+		// If we have a result from the worker, use it
+		if ($superGlobuleInternal) {
+			return $superGlobuleInternal;
+		}
+
+		// Fallback: generate synchronously (for SSR or before first result)
+		console.log('SUPER GLOBULE STORE - Sync fallback');
+		return generateSuperGlobule($superConfigStore);
+	}
+);
 
 export const superGlobuleGeometryStore = derived(superGlobuleStore, ($superGlobuleStore) => {
 	const superGlobuleGeometry = generateSuperGlobuleGeometry($superGlobuleStore);

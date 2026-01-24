@@ -32,8 +32,10 @@ export const persistable = <T>(
 		update: function (value: T) {
 			update((value) => value);
 			const persistObj = getLocal(key);
-			persistObj[name] = value;
-			setLocal(key, persistObj);
+			if (persistObj) {
+				persistObj[name] = value;
+				setLocal(key, persistObj);
+			}
 		},
 		set: (value: T) => {
 			const persistObj = getLocal(key) || {};

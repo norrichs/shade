@@ -340,7 +340,7 @@ export const adjustShieldTesselationAfterTiling = (
 				const offset = { x: referenceQuad.a.x - quad.b.x, y: referenceQuad.a.y - quad.b.y };
 				const angle = getAngle(referenceQuad.a, referenceQuad.d) - getAngle(quad.b, quad.c);
 
-				let newPath = translatePS(window.structuredClone(path), offset.x, offset.y);
+				let newPath = translatePS(structuredClone(path), offset.x, offset.y);
 				newPath = rotatePS(newPath, angle, referenceQuad.a);
 
 				return newPath;
@@ -351,7 +351,7 @@ export const adjustShieldTesselationAfterTiling = (
 		for (let f = 0; f < band.facets.length; f++) {
 			if (DEBUG_METADATA) {
 				newBands[b].facets[f].meta = {
-					originalPath: window.structuredClone(band.facets[f].path),
+					originalPath: structuredClone(band.facets[f].path),
 					prevBandPath: prevBandPaths[f]
 				};
 				
@@ -541,7 +541,7 @@ const getTransformedPartnerCutPattern = (
 		? 0
 		: partnerBand.facets.length - 1;
 	const partnerFacet: CutPattern = partnerBand.facets[partnerFacetIndex];
-	const partnerPath = window.structuredClone(partnerFacet.path);
+	const partnerPath = structuredClone(partnerFacet.path);
 	const transformedPartnerPath = transform ? newTransformPS(partnerPath, transform) : partnerPath;
 
 	return { path: transformedPartnerPath, label: `${partnerFacetIndex}` };

@@ -71,11 +71,14 @@ type SVGShapeElement =
 
 const SVG_NAMESPACE_URI = 'http://www.w3.org/2000/svg';
 
-SVGElement.prototype.getTransformToElement =
-	SVGElement.prototype.getTransformToElement ||
-	function (toElement: Element) {
-		return toElement.getScreenCTM().inverse().multiply(this.getScreenCTM());
-	};
+// Guard for web worker context where SVGElement doesn't exist
+if (typeof SVGElement !== 'undefined') {
+	SVGElement.prototype.getTransformToElement =
+		SVGElement.prototype.getTransformToElement ||
+		function (toElement: Element) {
+			return toElement.getScreenCTM().inverse().multiply(this.getScreenCTM());
+		};
+}
 let p2s = /,?([achlmqrstvxz]),?/gi;
 const convertToString = function (arr) {
 	return arr.join(',').replace(p2s, '$1');

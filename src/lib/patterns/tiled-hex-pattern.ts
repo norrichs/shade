@@ -144,10 +144,10 @@ export const adjustHexPatternAfterTiling = (
 		const aDiff = getAngle(thisQuad.d, thisQuad.c) - getAngle(nextQuad.a, nextQuad.b);
 
 		for (let k = 0; k < endLooped; k++) {
-			const translatedQuad = translateQuad(window.structuredClone(quadBand[k]), tDiff.x, tDiff.y);
+			const translatedQuad = translateQuad(structuredClone(quadBand[k]), tDiff.x, tDiff.y);
 			finalQuads.push(rotateQuad(translatedQuad, aDiff, thisQuad.d));
 
-			const translated = translatePS(window.structuredClone(patternBand[k]), tDiff.x, tDiff.y);
+			const translated = translatePS(structuredClone(patternBand[k]), tDiff.x, tDiff.y);
 			finalFacets.push(rotatePS(translated, aDiff, thisQuad.d));
 		}
 		patternBand.push(...finalFacets);
@@ -163,7 +163,7 @@ export const adjustHexPatternAfterTiling = (
 			const rDiff = 0;
 			prevFacet = endsMatched
 				? rotatePS(
-						translatePS(window.structuredClone(facets[facets.length - 1]), tDiff.x, tDiff.y),
+						translatePS(structuredClone(facets[facets.length - 1]), tDiff.x, tDiff.y),
 						rDiff
 				  )
 				: undefined;
@@ -176,14 +176,14 @@ export const adjustHexPatternAfterTiling = (
 
 			// if (endLooped > 0) {
 			// 	for (let k = 0; k < endLooped; k++) {
-			// 		const translated = translatePS(window.structuredClone(facets[k]), tDiff.x, tDiff.y);
+			// 		const translated = translatePS(structuredClone(facets[k]), tDiff.x, tDiff.y);
 			// 		finalFacets.push(rotatePS(translated, aDiff, thisQuad.d));
 			// 	}
 			// }
 
 			nextFacet = endsMatched
 				? rotatePS(
-						translatePS(window.structuredClone(facets[0]), tDiff.x, tDiff.y),
+						translatePS(structuredClone(facets[0]), tDiff.x, tDiff.y),
 						aDiff,
 						thisQuad.d
 				  )
@@ -244,7 +244,7 @@ export const straightenEndSegments = ({
 	const startSegmentIndices = hexSegments('start', rows, columns, thisFacet.length);
 	const endSegmentIndices = hexSegments('end', rows, columns, thisFacet.length);
 
-	const output = window.structuredClone(thisFacet);
+	const output = structuredClone(thisFacet);
 
 	let firstStartIndex, secondStartIndex, firstEndIndex, secondEndIndex;
 	for (let i = 0; i < startSegmentIndices.length; i++) {

@@ -149,8 +149,9 @@ export const generateProjectionPattern = (
 		getEndPartnerTransforms(tubePatterns);
 
 		const { adjustAfterTiling } = patterns[tiledPatternConfig.type];
-
-		if (adjustAfterTiling) {
+ 
+		const doAdjustAfterTiling = !!adjustAfterTiling && tubePatterns[0].bands[0].meta?.startPartnerBand
+		if (doAdjustAfterTiling) {
 			tubePatterns = tubePatterns.map((tubePattern) => {
 				const adjusted = adjustAfterTiling(tubePattern.bands, tiledPatternConfig, tubePatterns);
 				
