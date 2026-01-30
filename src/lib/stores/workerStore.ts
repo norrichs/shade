@@ -12,7 +12,7 @@ export const workerError = writable<string | null>(null);
 // Internal state for request tracking
 let requestIdCounter = 0;
 let worker: Worker | null = null;
-let pendingResolvers: Map<
+const pendingResolvers: Map<
 	number,
 	{
 		resolve: (value: SuperGlobule) => void;
