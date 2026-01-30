@@ -24,8 +24,13 @@ import {
 import { patternConfigStore } from './globulePatternStores';
 import { overrideStore } from './overrideStore';
 import { getMetaInfo } from '$lib/projection-geometry/meta-info';
-import { generateSuperGlobuleAsync, isWorking as workerIsWorking } from './workerStore';
+import {
+	generateSuperGlobuleAsync,
+	isWorking as workerIsWorking,
+	workerError
+} from './workerStore';
 import { browser } from '$app/environment';
+import { toastStore } from './toastStore';
 
 // Re-export the isWorking store for external use
 export { workerIsWorking as isGenerating };
@@ -51,6 +56,9 @@ const superGlobuleInternal = writable<SuperGlobule | null>(null);
 // Track whether we've done the initial generation
 let isInitialized = false;
 
+// Track last valid result for error recovery
+let lastValidResult: SuperGlobule | null = null;
+
 /**
  * Triggers async generation of the SuperGlobule
  * Debounces rapid changes to avoid unnecessary work
@@ -65,18 +73,26 @@ function triggerAsyncGeneration(config: SuperGlobuleConfig): void {
 
 	// Debounce rapid config changes (e.g., while dragging sliders)
 	debounceTimeout = setTimeout(async () => {
+		// Clear previous error when attempting new generation
+		workerError.set(null);
+
 		console.log('SUPER GLOBULE STORE - Starting async generation');
 
 		try {
 			const result = await generateSuperGlobuleAsync(config);
+			lastValidResult = result; // Store successful result
 			superGlobuleInternal.set(result);
 			console.log('SUPER GLOBULE STORE - Async generation complete');
 		} catch (error) {
 			console.error('SUPER GLOBULE STORE - Async generation failed:', error);
-			// Fall back to synchronous generation on error
-			console.log('SUPER GLOBULE STORE - Falling back to sync generation');
-			const result = generateSuperGlobule(config);
-			superGlobuleInternal.set(result);
+			// Keep last valid result displayed
+			if (lastValidResult) {
+				console.log('SUPER GLOBULE STORE - Using last valid result');
+				// Don't update superGlobuleInternal - keep showing last valid state
+			} else {
+				console.warn('SUPER GLOBULE STORE - No valid result available');
+				// No previous valid result - error will be shown via toast
+			}
 		}
 	}, 50); // 50ms debounce
 }
@@ -87,12 +103,31 @@ if (browser) {
 		if (!isInitialized) {
 			// Do initial synchronous generation for fast first render
 			console.log('SUPER GLOBULE STORE - Initial sync generation');
-			const result = generateSuperGlobule(config);
-			superGlobuleInternal.set(result);
-			isInitialized = true;
+			try {
+				const result = generateSuperGlobule(config);
+				lastValidResult = result; // Store initial result
+				superGlobuleInternal.set(result);
+				isInitialized = true;
+			} catch (error) {
+				console.error('SUPER GLOBULE STORE - Initial generation failed:', error);
+				// Error will be shown via toast subscription below
+				isInitialized = true;
+			}
 		} else {
 			// Subsequent changes use async generation
 			triggerAsyncGeneration(config);
+		}
+	});
+
+	// Subscribe to worker errors and show toast notifications
+	workerError.subscribe((error) => {
+		if (error) {
+			toastStore.add({
+				type: 'error',
+				message: `Projection generation failed: ${error}. Adjust your geometry and the system will retry automatically.`,
+				duration: 10000, // 10 seconds
+				dismissible: true
+			});
 		}
 	});
 }

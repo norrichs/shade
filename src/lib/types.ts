@@ -15,6 +15,7 @@ import type {
 import type { PanelHoleConfig } from './cut-pattern/generate-pattern';
 import type { DistributionConfig } from '../components/cut-pattern/distrubute-panels';
 import type { ProjectionRange } from './projection-geometry/filters';
+import type { EndCapConfig, EndCapGeometry } from './geometry/end-caps';
 
 export type PatternViewConfig = {
 	showBands: boolean;
@@ -921,6 +922,10 @@ export type GlobuleData = {
 	levels: Level[];
 	bands: Band[];
 	struts?: Strut[];
+	endCaps?: {
+		topCap: EndCapGeometry | null;
+		bottomCap: EndCapGeometry | null;
+	};
 };
 
 export type GlobuleGeometry = {
@@ -1009,6 +1014,7 @@ export type GlobuleConfig = {
 		| BandConfig
 		| StrutConfig
 		| RenderConfig
+		| EndCapConfig
 		| string
 		| number
 		| boolean
@@ -1026,6 +1032,7 @@ export type GlobuleConfig = {
 	bandConfig: BandConfig;
 	strutConfig: StrutConfig;
 	renderConfig: RenderConfig;
+	endCaps?: EndCapConfig;
 };
 
 export type GlobulePatternConfig = {

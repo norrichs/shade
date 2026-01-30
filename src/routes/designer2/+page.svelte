@@ -14,6 +14,7 @@
 	import ProjectionControl from '../../components/projection/ProjectionControl.svelte';
 	import HoverSidebar from '../../components/modal/HoverSidebar.svelte';
 	import { projectionConfigs } from '../../components/modal/sidebar-definitions';
+	import Toast from '../../components/Toast.svelte';
 
 	let viewMode: ViewModeSetting = $uiStore.designer.viewMode;
 	let showControl: { name: string; value?: unknown } = { name: 'None' };
@@ -28,6 +29,7 @@
 </script>
 
 <main>
+	<Toast />
 	<section class={`container ${viewMode === 'three' ? 'primary' : 'secondary'}`}>
 		<ThreeRenderer>
 			<Scene />

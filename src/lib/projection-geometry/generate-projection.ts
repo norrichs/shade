@@ -64,7 +64,7 @@ import {
 	getTrianglePointAsKVFromTriangleEdge,
 	getTrianglePointFromTriangleEdge
 } from '$lib/cut-pattern/generate-pattern';
-import { generateGlobuleTube } from '$lib/generate-shape';
+import { generateGlobuleTube, generateGlobuleData } from '$lib/generate-shape';
 import { collateGlobuleTubeGeometry } from './collate-geometry';
 import { auditSides } from './audit';
 
@@ -197,6 +197,17 @@ export const generateSurface = (cfg: SurfaceConfig) => {
 	} else if (cfg.type === 'GlobuleConfig') {
 		const globuleMesh = generateGlobuleMesh(cfg);
 		surface.add(globuleMesh);
+
+		// Add end cap meshes if present
+		const globuleData = generateGlobuleData(cfg);
+		if (globuleData.endCaps) {
+			if (globuleData.endCaps.topCap) {
+				surface.add(globuleData.endCaps.topCap.mesh);
+			}
+			if (globuleData.endCaps.bottomCap) {
+				surface.add(globuleData.endCaps.bottomCap.mesh);
+			}
+		}
 	}
 	const transformMatrix = getMatrix4(cfg.transform);
 	surface.applyMatrix4(transformMatrix);
@@ -453,14 +464,28 @@ export const generateProjection = ({
 						const curveIntersections = curveRaycaster.intersectObject(surface, true);
 
 						if (!edgeIntersections[0] || !curveIntersections[0]) {
+							const missingInfo = [];
+							if (!edgeIntersections[0]) missingInfo.push('edge intersection');
+							if (!curveIntersections[0]) missingInfo.push('curve intersection');
+
 							console.error('missing intersections', {
+								missing: missingInfo,
 								edgeIntersections,
 								curveIntersections,
-								i,
+								pointIndex: i,
+								polygonIndex: p,
+								edgeIndex: e,
+								totalEdgePoints: edge.edgePoints.length,
 								edgePoints: edge.edgePoints,
 								curvePoints: edge.curvePoints
 							});
-							throw new Error('no intersection found');
+
+							throw new Error(
+								`No intersection found at polygon ${p}, edge ${e}, point ${i}/${edge.edgePoints.length}. ` +
+									`Missing: ${missingInfo.join(', ')}. ` +
+									`This usually indicates gaps in the surface geometry (typically at start/end of globule). ` +
+									`Try adjusting silhouette curves or enabling end caps.`
+							);
 						}
 
 						int.edge = edgeIntersections[0].point.clone();

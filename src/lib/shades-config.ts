@@ -21,12 +21,20 @@ import type {
 	TiledPattern,
 	PatternScale
 } from '$lib/types';
+import type { EndCapConfig } from './geometry/end-caps';
 import { rad } from './util';
 import { GENERAL_CONFIG, generateTempId, GLOBULE_CONFIG, SUPER_GLOBULE_CONFIG } from './id-handler';
 import { degToRad, mmFromInches } from './patterns/utils';
 import { defaultProjectionConfig } from './projection-geometry/configs';
 import type { PanelHoleConfig } from './cut-pattern/generate-pattern';
 import type { DistributionConfig } from '../components/cut-pattern/distrubute-panels';
+
+const defaultEndCapConfig = (): EndCapConfig => ({
+	enabled: true,
+	topCap: true,
+	bottomCap: true,
+	capOffset: 0
+});
 
 const defaultSilhouetteConfig = (): SilhouetteConfig => ({
 	type: 'SilhouetteConfig',
@@ -548,7 +556,8 @@ export const generateDefaultGlobuleConfig = (): GlobuleConfig => {
 		spineCurveConfigs: [defaultSpineCurveConfig()],
 		bandConfig: defaultBandConfig(),
 		strutConfig: defaultStrutConfig(),
-		renderConfig: defaultRenderConfig()
+		renderConfig: defaultRenderConfig(),
+		endCaps: defaultEndCapConfig()
 	};
 	config.levelConfig.levelCount = getLevels(
 		config.levelConfig.silhouetteSampleMethod,

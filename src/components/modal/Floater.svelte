@@ -6,10 +6,26 @@
 	export let title: string | string[] | undefined;
 	export let showFloater: boolean;
 	export let content: ComponentType<SvelteComponent> | undefined;
+
+	function clickOutside(node: HTMLElement) {
+		const handleClick = (event: MouseEvent) => {
+			if (node && !node.contains(event.target as Node) && !event.defaultPrevented) {
+				onClose();
+			}
+		};
+
+		document.addEventListener('click', handleClick, true);
+
+		return {
+			destroy() {
+				document.removeEventListener('click', handleClick, true);
+			}
+		};
+	}
 </script>
 
 {#if showFloater}
-	<main>
+	<main use:clickOutside>
 		<header>
 			<span>{title}</span>
 			<Button on:click={() => onClose()}>X</Button>

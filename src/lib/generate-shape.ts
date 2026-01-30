@@ -1,4 +1,5 @@
 import { CurvePath, Vector2, Vector3, CubicBezierCurve, Triangle, LineCurve } from 'three';
+import { generateGlobuleEndCaps } from './geometry/end-caps';
 import type {
 	TrianglePoint,
 	TriangleSide,
@@ -858,7 +859,12 @@ export const generateGlobuleData = (configStore: GlobuleConfig): GlobuleData => 
 
 	const filteredBands = getRenderable(config.renderConfig, bands) as Band[];
 
-	return { levels, bands: filteredBands, struts };
+	// Generate end caps if enabled
+	const endCaps = config.endCaps?.enabled
+		? generateGlobuleEndCaps(levels, config.endCaps)
+		: undefined;
+
+	return { levels, bands: filteredBands, struts, endCaps };
 };
 
 export const generateGlobuleTube = (configStore: GlobuleConfig): Tube => {
