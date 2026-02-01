@@ -25,3 +25,7 @@ export const computationMode = persistable<ComputationMode>(
 // Flag to pause pattern updates (for manual control)
 import { writable } from 'svelte/store';
 export const pausePatternUpdates = writable(false);
+
+// Track camera interaction for LOD (Level of Detail) optimization
+// When camera is moving, we show simplified geometry for better performance
+export const isCameraInteracting = writable(false);

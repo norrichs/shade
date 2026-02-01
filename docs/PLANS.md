@@ -8,10 +8,33 @@ When you ask Claude to "list my saved plans", this file will be referenced. Each
 
 ## Active Plans
 
-### 1. Performance Optimization: Pattern Generation Caching
+### 1. Quick Win: BVH Ray Tracing Acceleration
+**File:** [threejs-optimization-analysis.md](./threejs-optimization-analysis.md)
+**Status:** Ready to Implement
+**Priority:** Critical (blocks complex geometries)
+**Created:** 2026-02-01
+**Estimated Time:** 2-4 hours
+**Expected Impact:** 5-7x speedup (15 seconds → 2-4 seconds), up to 10-15x with collision mesh optimization
+
+**Summary:** Add `three-mesh-bvh` library for spatial acceleration of ray-mesh intersection tests. Current implementation has no BVH, testing every triangle (O(n) per ray). Drop-in replacement for existing raycasting.
+
+**Key Changes:**
+- Install `three-mesh-bvh` package
+- Add BVH computation to surface generation (one function)
+- Optional: simplified collision mesh for additional 2-3x speedup
+
+**Why This First:**
+- Addresses actual bottleneck (22.4M ray tests)
+- Quick implementation (2-4 hours vs 4-8 weeks for WASM)
+- 100% browser support (pure JavaScript)
+- No changes to core logic
+
+---
+
+### 2. Performance Optimization: Pattern Generation Caching
 **File:** [performance-optimization-plan.md](./performance-optimization-plan.md)
-**Status:** Planned (Not Started)
-**Priority:** High
+**Status:** Planned (Lower Priority)
+**Priority:** Medium
 **Created:** 2026-02-01
 **Estimated Time:** 4 hours
 **Expected Impact:** 50% reduction in pattern generation time (200ms → 80-100ms)
@@ -23,6 +46,8 @@ When you ask Claude to "list my saved plans", this file will be referenced. Each
 - Separate geometry-dependent flattening from config-dependent pattern mapping
 - Optimize clone operations in pattern generation
 
+**Note:** Pattern generation (200ms) is minor compared to ray tracing bottleneck (15s). Implement BVH first.
+
 ---
 
 ## Completed Plans
@@ -33,7 +58,25 @@ _No completed plans yet_
 
 ## On Hold / Future Plans
 
-_No plans on hold_
+### 3. WASM Implementation: Projection Generation Rewrite
+**File:** [wasm-implementation-analysis.md](./wasm-implementation-analysis.md)
+**Status:** Research/Exploration
+**Priority:** High (for complex geometries)
+**Created:** 2026-02-01
+**Expected Impact:** 10-18x speedup (15 seconds → <1 second) for complex polyhedra
+
+**Summary:** Rewrite projection generation ray tracing in Rust compiled to WASM. Eliminates GC pressure from 358k Vector3 allocations and leverages SIMD for vector operations.
+
+**Key Benefits:**
+- Stack-allocated vectors (no GC)
+- Custom BVH ray tracing
+- SIMD batch operations
+- <1 second for doubly truncated icosahedron at sample rate 10
+
+**Trade-offs:**
+- 4-8 weeks implementation effort
+- Increased build complexity (Rust toolchain)
+- ~500KB-2MB binary size increase
 
 ---
 

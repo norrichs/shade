@@ -28,6 +28,7 @@ import {
 	Vector2,
 	Vector3
 } from 'three';
+import { acceleratedRaycast, computeBoundsTree, disposeBoundsTree } from 'three-mesh-bvh';
 import type {
 	BaseProjectionConfig,
 	CapsuleConfig,
@@ -182,6 +183,43 @@ export const generateCapsuleMesh = ({
 	return capsuleMesh;
 };
 
+/**
+ * Applies BVH (Bounding Volume Hierarchy) acceleration to all meshes in an Object3D.
+ * This dramatically speeds up ray-mesh intersection tests by using spatial acceleration.
+ *
+ * @param object - The Object3D to optimize (can contain nested meshes)
+ */
+const optimizeSurfaceForRaycasting = (object: Object3D): void => {
+	let meshCount = 0;
+	let totalVertices = 0;
+
+	object.traverse((child) => {
+		if (child instanceof Mesh && child.geometry) {
+			// Check if BVH is already computed
+			if (!(child.geometry as any).boundsTree) {
+				try {
+					// Compute BVH for this geometry
+					(child.geometry as any).computeBoundsTree = computeBoundsTree.bind(child.geometry);
+					(child.geometry as any).disposeBoundsTree = disposeBoundsTree.bind(child.geometry);
+					(child.geometry as any).computeBoundsTree();
+
+					// Replace raycast method with accelerated version
+					child.raycast = acceleratedRaycast;
+
+					meshCount++;
+					totalVertices += child.geometry.attributes.position?.count || 0;
+				} catch (error) {
+					console.warn('Failed to compute BVH for mesh:', error);
+				}
+			}
+		}
+	});
+
+	if (meshCount > 0) {
+		console.debug(`BVH optimization applied to ${meshCount} mesh(es) with ${totalVertices} total vertices`);
+	}
+};
+
 export const generateSurface = (cfg: SurfaceConfig) => {
 	if (cfg.transform === 'inherit') {
 		throw new Error('generateSurface - surface transform should not be "inherit"');
@@ -212,6 +250,9 @@ export const generateSurface = (cfg: SurfaceConfig) => {
 	const transformMatrix = getMatrix4(cfg.transform);
 	surface.applyMatrix4(transformMatrix);
 	surface.updateMatrixWorld(true);
+
+	// Apply BVH acceleration for fast ray tracing
+	optimizeSurfaceForRaycasting(surface);
 
 	console.debug('generateSurface', cfg.type, cfg);
 	return surface;
