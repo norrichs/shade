@@ -29,3 +29,14 @@ export const pausePatternUpdates = writable(false);
 // Track camera interaction for LOD (Level of Detail) optimization
 // When camera is moving, we show simplified geometry for better performance
 export const isCameraInteracting = writable(false);
+
+// Manual mode: prevents auto-updates, requires explicit trigger via "Regenerate" button
+export const isManualMode = persistable<boolean>(
+	false,
+	'ManualMode',
+	AUTO_PERSIST_KEY,
+	true
+);
+
+// Track whether config has changed since last regeneration (ephemeral - doesn't persist)
+export const hasPendingChanges = writable<boolean>(false);

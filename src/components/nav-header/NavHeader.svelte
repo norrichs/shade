@@ -7,11 +7,15 @@
 		uiStore,
 		selectedProjectionGeometry
 	} from '$lib/stores';
+	import { isManualMode, hasPendingChanges } from '$lib/stores/uiStores';
+	import { triggerManualRegeneration, isGenerating } from '$lib/stores/superGlobuleStores';
 	import Button from '../design-system/Button.svelte';
 	import NewConfigButton from './NewConfigButton.svelte';
 	import SaveConfigButton from './SaveConfigButton.svelte';
 	import WorkingIndicator from './WorkingIndicator.svelte';
 	import { superGlobuleStore, selectedBand } from '$lib/stores';
+
+	$: regenerateDisabled = !$isManualMode || $isGenerating || !$hasPendingChanges;
 	import { formatAddress } from '$lib/recombination';
 	import { downloadSvg } from '$lib/util';
 	import { interactionMode } from '../three-renderer/interaction-mode';
@@ -93,6 +97,23 @@
 
 		<div class="button-group">
 			<Button on:click={toggleModal}>Edit</Button>
+
+			{#if $isManualMode}
+				<Button
+					on:click={triggerManualRegeneration}
+					disabled={regenerateDisabled}
+					class={$hasPendingChanges && !$isGenerating ? 'pending' : ''}
+				>
+					{#if $isGenerating}
+						Regenerating...
+					{:else if $hasPendingChanges}
+						Regenerate ⚠
+					{:else}
+						Regenerate
+					{/if}
+				</Button>
+			{/if}
+
 			<Button
 				on:click={() => {
 					$interactionMode = { type: 'band-select-multiple', data: { bands: [] } };
@@ -151,5 +172,24 @@
 		display: flex;
 		flex-direction: row;
 		gap: 12px;
+	}
+
+	:global(button.pending) {
+		background-color: #ff9800;
+		animation: pulse-button 2s ease-in-out infinite;
+	}
+
+	:global(button:disabled) {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	@keyframes pulse-button {
+		0%, 100% {
+			box-shadow: 2px 2px 10px 0px var(--color-shaded-dark);
+		}
+		50% {
+			box-shadow: 0 0 15px 3px rgba(255, 152, 0, 0.6);
+		}
 	}
 </style>

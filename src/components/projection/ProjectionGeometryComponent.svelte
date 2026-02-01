@@ -34,6 +34,7 @@
 		bands?: BufferGeometry[];
 		facets?: { address: GlobuleAddress_Facet; geometry: BufferGeometry }[];
 	} = {};
+
 	export let onClick: (event: any, address: GlobuleAddress_Facet) => void;
 	export let showNormals = false;
 	export let colorByBand = false;
@@ -82,8 +83,6 @@
 		return geometry;
 	};
 
-	
-
 	$: updateProjectionGeometry(
 		$viewControlStore.showProjectionGeometry,
 		$superGlobuleStore.projections
@@ -121,7 +120,10 @@
 		{#each projectionGeometry.facets || [] as facet}
 			<T.Mesh
 				geometry={facet.geometry}
-				material={getMaterial(facet.address, $selectedProjectionGeometry, { colorByBand, colorEndFacets })}
+				material={getMaterial(facet.address, $selectedProjectionGeometry, {
+					colorByBand,
+					colorEndFacets
+				})}
 				on:click={(ev) => onClick(ev, facet.address)}
 			/>
 		{/each}

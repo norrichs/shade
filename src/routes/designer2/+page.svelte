@@ -14,13 +14,15 @@
 		uiStore,
 		type ViewModeSetting,
 		computationMode,
-		pausePatternUpdates
+		pausePatternUpdates,
+		isManualMode,
+		hasPendingChanges
 	} from '$lib/stores/uiStores';
 	import ProjectionControl from '../../components/projection/ProjectionControl.svelte';
 	import HoverSidebar from '../../components/modal/HoverSidebar.svelte';
 	import { projectionConfigs } from '../../components/modal/sidebar-definitions';
 	import Toast from '../../components/Toast.svelte';
-	import { superGlobulePatternStore } from '$lib/stores/superGlobuleStores';
+	import { superGlobulePatternStore, triggerManualRegeneration } from '$lib/stores/superGlobuleStores';
 
 	let viewMode: ViewModeSetting = $uiStore.designer.viewMode;
 
@@ -76,6 +78,15 @@
 					<option value="3d-only">3D Only</option>
 					<option value="2d-only">2D Only</option>
 				</select>
+			</div>
+			<div class="manual-mode-control">
+				<label>
+					<input type="checkbox" bind:checked={$isManualMode} />
+					Manual Mode
+				</label>
+				{#if $isManualMode && $hasPendingChanges}
+					<span class="pending-indicator">⚠ Changes pending</span>
+				{/if}
 			</div>
 			<div class="pattern-control">
 				<label>
@@ -175,6 +186,33 @@
 		border-radius: 4px;
 		background: white;
 		font-size: 0.875rem;
+	}
+
+	.manual-mode-control {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		font-size: 0.875rem;
+	}
+
+	.manual-mode-control label {
+		display: flex;
+		align-items: center;
+		gap: 0.25rem;
+		font-weight: 500;
+		cursor: pointer;
+	}
+
+	.pending-indicator {
+		color: #ff9800;
+		font-size: 0.75rem;
+		font-weight: 600;
+		animation: pulse 1.5s ease-in-out infinite;
+	}
+
+	@keyframes pulse {
+		0%, 100% { opacity: 1; }
+		50% { opacity: 0.5; }
 	}
 
 	.pattern-control {

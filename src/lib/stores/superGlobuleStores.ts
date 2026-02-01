@@ -28,7 +28,7 @@ import {
 import { patternConfigStore } from './globulePatternStores';
 import { overrideStore } from './overrideStore';
 import { getMetaInfo } from '$lib/projection-geometry/meta-info';
-import { computationMode, pausePatternUpdates } from './uiStores';
+import { computationMode, pausePatternUpdates, isManualMode, hasPendingChanges } from './uiStores';
 import {
 	generateSuperGlobuleAsync,
 	isWorking as workerIsWorking,
@@ -40,6 +40,48 @@ import { Box3, Vector3 } from 'three';
 
 // Re-export the isWorking store for external use
 export { workerIsWorking as isGenerating };
+
+/**
+ * Manual trigger for regenerating geometry/patterns when in manual mode
+ * Checks worker state and respects current computation mode
+ */
+export function triggerManualRegeneration(): void {
+	const config = get(superConfigStore);
+	const mode = get(computationMode);
+	const manual = get(isManualMode);
+	const working = get(workerIsWorking);
+
+	if (!manual) {
+		console.warn('triggerManualRegeneration called but not in manual mode');
+		return;
+	}
+
+	// Don't trigger if worker is already busy
+	if (working) {
+		console.warn('triggerManualRegeneration: Worker already busy, skipping');
+		toastStore.add({
+			type: 'warning',
+			message: 'Generation already in progress, please wait...',
+			duration: 3000
+		});
+		return;
+	}
+
+	// Clear pending changes flag
+	hasPendingChanges.set(false);
+
+	// Reset pause flag (for 2d-only mode)
+	pausePatternUpdates.set(false);
+
+	// Trigger 3D regeneration (unless in 2d-only mode)
+	if (mode !== '2d-only') {
+		console.log('MANUAL TRIGGER: Regenerating 3D geometry');
+		triggerAsyncGeneration(config);
+	} else {
+		// In 2d-only mode, unsetting pausePatternUpdates triggers pattern update
+		console.log('MANUAL TRIGGER: Regenerating patterns only');
+	}
+}
 
 /**
  * Extracts minimal mesh data from SuperGlobule for lightweight 3D rendering
@@ -170,6 +212,7 @@ if (browser) {
 	superConfigStore.subscribe((config) => {
 		// Check if we're in 2d-only mode - if so, switch back to continuous
 		const currentMode = get(computationMode);
+		const manual = get(isManualMode);
 
 		if (currentMode === '2d-only' && isInitialized) {
 			console.log(
@@ -177,6 +220,13 @@ if (browser) {
 			);
 			computationMode.set('continuous');
 			// The mode transition handler will trigger regeneration
+			return;
+		}
+
+		// MANUAL MODE: Don't auto-generate, just mark pending
+		if (manual && isInitialized) {
+			console.log('MANUAL MODE: Config changed, marking pending (not auto-generating)');
+			hasPendingChanges.set(true);
 			return;
 		}
 
@@ -194,7 +244,7 @@ if (browser) {
 				isInitialized = true;
 			}
 		} else {
-			// Subsequent changes use async generation
+			// Subsequent changes use async generation (only if NOT manual)
 			triggerAsyncGeneration(config);
 		}
 	});
@@ -220,6 +270,7 @@ if (browser) {
 			return;
 		}
 
+		const manual = get(isManualMode);
 		const enteringTwoDOnly = $mode === '2d-only' && previousMode !== '2d-only';
 		const leavingTwoDOnly = $mode !== '2d-only' && previousMode === '2d-only';
 
@@ -232,12 +283,51 @@ if (browser) {
 			// Leaving 2d-only mode: trigger regeneration
 			console.log('MODE TRANSITION: Leaving 2d-only mode, triggering regeneration');
 
-			// Trigger regeneration with current config
-			const config = get(superConfigStore);
-			triggerAsyncGeneration(config);
+			// MANUAL MODE: Don't auto-trigger, just mark pending
+			if (manual) {
+				console.log('MODE TRANSITION: Manual mode active, marking pending instead');
+				hasPendingChanges.set(true);
+			} else {
+				// Trigger regeneration with current config
+				const config = get(superConfigStore);
+				triggerAsyncGeneration(config);
+			}
 		}
 
 		previousMode = $mode;
+	});
+
+	// Handle manual mode transitions
+	let previousManualMode: boolean | null = null;
+	isManualMode.subscribe(($isManual) => {
+		// Skip initial subscription
+		if (previousManualMode === null) {
+			previousManualMode = $isManual;
+			return;
+		}
+
+		const turningOffManual = !$isManual && previousManualMode;
+
+		if (turningOffManual) {
+			// Turning off manual mode: auto-regenerate if there are pending changes
+			const pending = get(hasPendingChanges);
+			if (pending) {
+				console.log('MANUAL MODE: Disabled with pending changes, auto-regenerating');
+				const config = get(superConfigStore);
+				const mode = get(computationMode);
+
+				hasPendingChanges.set(false);
+
+				if (mode !== '2d-only') {
+					triggerAsyncGeneration(config);
+				}
+
+				// Pattern will update automatically via derived store
+				pausePatternUpdates.set(false);
+			}
+		}
+
+		previousManualMode = $isManual;
 	});
 }
 
@@ -276,7 +366,9 @@ const superGlobulePatternStoreInternal = derived(
 		patternConfigStore,
 		overrideStore,
 		computationMode,
-		pausePatternUpdates
+		pausePatternUpdates,
+		isManualMode,
+		hasPendingChanges
 	],
 	([
 		$superGlobuleStore,
@@ -284,11 +376,19 @@ const superGlobulePatternStoreInternal = derived(
 		$patternConfigStore,
 		$overrideStore,
 		$computationMode,
-		$pausePatternUpdates
+		$pausePatternUpdates,
+		$isManualMode,
+		$hasPendingChanges
 	]): { superGlobulePattern: any; projectionPattern: any; globuleTubePattern: any } | 'paused' => {
 		// Skip pattern generation if paused - return 'paused' marker
 		if ($pausePatternUpdates) {
 			console.log('PATTERN STORE: Updates paused');
+			return 'paused' as const;
+		}
+
+		// MANUAL MODE: Pause patterns when pending changes exist
+		if ($isManualMode && $hasPendingChanges) {
+			console.log('PATTERN STORE: Manual mode with pending changes, returning cached');
 			return 'paused' as const;
 		}
 
