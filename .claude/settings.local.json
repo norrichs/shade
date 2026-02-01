@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(tree:*)",
-      "Bash(wc:*)",
-      "Bash(git commit:*)"
-    ]
-  }
-}
