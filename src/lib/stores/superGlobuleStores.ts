@@ -7,9 +7,13 @@ import type {
 	SuperGlobule,
 	SuperGlobuleConfig,
 	TubeCutPattern,
-	ProjectionCutPattern
+	ProjectionCutPattern,
+	SuperGlobuleMesh,
+	BandGeometry,
+	SuperGlobuleGeometry
 } from '$lib/types';
-import { derived, writable } from 'svelte/store';
+import type { GlobuleAddress_Facet } from '$lib/projection-geometry/types';
+import { derived, writable, get } from 'svelte/store';
 import { loadPersistedOrDefault } from './stores';
 import { generateSuperGlobule } from '$lib/generate-superglobule';
 import {
@@ -24,6 +28,7 @@ import {
 import { patternConfigStore } from './globulePatternStores';
 import { overrideStore } from './overrideStore';
 import { getMetaInfo } from '$lib/projection-geometry/meta-info';
+import { computationMode, pausePatternUpdates } from './uiStores';
 import {
 	generateSuperGlobuleAsync,
 	isWorking as workerIsWorking,
@@ -31,9 +36,54 @@ import {
 } from './workerStore';
 import { browser } from '$app/environment';
 import { toastStore } from './toastStore';
+import { Box3, Vector3 } from 'three';
 
 // Re-export the isWorking store for external use
 export { workerIsWorking as isGenerating };
+
+/**
+ * Extracts minimal mesh data from SuperGlobule for lightweight 3D rendering
+ * Used in 2d-only mode to preserve 3D visualization while freeing memory
+ */
+export function extractMeshData(superGlobule: SuperGlobule): SuperGlobuleMesh {
+	// Extract band geometry for 3D rendering
+	const geometryResult: SuperGlobuleGeometry = generateSuperGlobuleBandGeometry(superGlobule);
+	const bandGeometry: BandGeometry[] =
+		geometryResult.variant === 'Band' ? geometryResult.subGlobules.flat() : [];
+
+	// Extract projection addresses for selection mapping
+	const projectionAddresses: GlobuleAddress_Facet[] = [];
+	superGlobule.projections.forEach((proj, globuleIdx) => {
+		proj.tubes.forEach((tube, tubeIdx) => {
+			tube.bands.forEach((band, bandIdx) => {
+				band.facets.forEach((facet, facetIdx) => {
+					projectionAddresses.push({
+						globule: globuleIdx,
+						tube: tubeIdx,
+						band: bandIdx,
+						facet: facetIdx
+					});
+				});
+			});
+		});
+	});
+
+	// Compute bounds from all band geometry points
+	const bounds = new Box3();
+	bandGeometry.forEach((bg) => {
+		bg.points.forEach((point) => {
+			bounds.expandByPoint(point);
+		});
+	});
+
+	return {
+		type: 'SuperGlobuleMesh',
+		superGlobuleConfigId: superGlobule.superGlobuleConfigId,
+		bandGeometry,
+		projectionAddresses,
+		bounds
+	};
+}
 
 // SUPER CONFIGS
 export const superConfigStore = persistable<SuperGlobuleConfig>(
@@ -53,6 +103,16 @@ export const superConfigStore = persistable<SuperGlobuleConfig>(
 // Internal writable store for the SuperGlobule result
 const superGlobuleInternal = writable<SuperGlobule | null>(null);
 
+// Frozen mesh store for 2d-only mode (lightweight 3D representation)
+export const frozenMeshStore = writable<SuperGlobuleMesh | null>(null);
+
+// Persisted pattern store for 2d-only mode (maintains patterns when 3D is cleared)
+export const persistedPatternStore = writable<{
+	superGlobulePattern: any;
+	projectionPattern: any;
+	globuleTubePattern: any;
+} | null>(null);
+
 // Track whether we've done the initial generation
 let isInitialized = false;
 
@@ -66,6 +126,14 @@ let lastValidResult: SuperGlobule | null = null;
 let debounceTimeout: ReturnType<typeof setTimeout> | null = null;
 
 function triggerAsyncGeneration(config: SuperGlobuleConfig): void {
+	// Check if we're in 2d-only mode - if so, skip generation
+	const currentMode = get(computationMode);
+
+	if (currentMode === '2d-only') {
+		console.log('SUPER GLOBULE STORE - Skipping generation in 2d-only mode');
+		return;
+	}
+
 	// Clear any pending debounced generation
 	if (debounceTimeout) {
 		clearTimeout(debounceTimeout);
@@ -100,6 +168,18 @@ function triggerAsyncGeneration(config: SuperGlobuleConfig): void {
 // Subscribe to config changes and trigger async generation
 if (browser) {
 	superConfigStore.subscribe((config) => {
+		// Check if we're in 2d-only mode - if so, switch back to continuous
+		const currentMode = get(computationMode);
+
+		if (currentMode === '2d-only' && isInitialized) {
+			console.log(
+				'MODE TRANSITION: Geometry config changed in 2d-only mode, switching to continuous'
+			);
+			computationMode.set('continuous');
+			// The mode transition handler will trigger regeneration
+			return;
+		}
+
 		if (!isInitialized) {
 			// Do initial synchronous generation for fast first render
 			console.log('SUPER GLOBULE STORE - Initial sync generation');
@@ -130,6 +210,35 @@ if (browser) {
 			});
 		}
 	});
+
+	// Handle computation mode transitions
+	let previousMode: string | null = null;
+	computationMode.subscribe(($mode) => {
+		// Skip initial subscription call
+		if (previousMode === null) {
+			previousMode = $mode;
+			return;
+		}
+
+		const enteringTwoDOnly = $mode === '2d-only' && previousMode !== '2d-only';
+		const leavingTwoDOnly = $mode !== '2d-only' && previousMode === '2d-only';
+
+		if (enteringTwoDOnly) {
+			// Entering 2d-only mode: geometry stays frozen, pattern generation continues
+			console.log('MODE TRANSITION: Entering 2d-only mode (3D frozen, pattern updates enabled)');
+		}
+
+		if (leavingTwoDOnly) {
+			// Leaving 2d-only mode: trigger regeneration
+			console.log('MODE TRANSITION: Leaving 2d-only mode, triggering regeneration');
+
+			// Trigger regeneration with current config
+			const config = get(superConfigStore);
+			triggerAsyncGeneration(config);
+		}
+
+		previousMode = $mode;
+	});
 }
 
 // Derived store that provides the SuperGlobule (with fallback for SSR)
@@ -159,23 +268,41 @@ export const superGlobuleBandGeometryStore = derived(superGlobuleStore, ($superG
 	return superGlobuleGeometry;
 });
 
-export const superGlobulePatternStore = derived(
-	[superGlobuleStore, superConfigStore, patternConfigStore, overrideStore],
-	([$superGlobuleStore, $superConfigStore, $patternConfigStore, $overrideStore]) => {
-		// const { showGlobuleGeometry, showProjectionGeometry } = $viewControlStore;
-		const showGlobuleGeometry = {
-			any: false
-		};
-		const showProjectionGeometry = {
-			any: true,
-			bands: true
-		};
-		const showGlobuleTubeGeometry = {
-			any: false,
-			bands: false,
-			facets: false,
-			sections: false
-		};
+// Internal pattern store (non-debounced)
+const superGlobulePatternStoreInternal = derived(
+	[
+		superGlobuleStore,
+		superConfigStore,
+		patternConfigStore,
+		overrideStore,
+		computationMode,
+		pausePatternUpdates
+	],
+	([
+		$superGlobuleStore,
+		$superConfigStore,
+		$patternConfigStore,
+		$overrideStore,
+		$computationMode,
+		$pausePatternUpdates
+	]): { superGlobulePattern: any; projectionPattern: any; globuleTubePattern: any } | 'paused' => {
+		// Skip pattern generation if paused - return 'paused' marker
+		if ($pausePatternUpdates) {
+			console.log('PATTERN STORE: Updates paused');
+			return 'paused' as const;
+		}
+
+		// Skip pattern generation in 3d-only mode
+		if ($computationMode === '3d-only') {
+			return { superGlobulePattern: null, projectionPattern: undefined, globuleTubePattern: null };
+		}
+
+		console.time('PATTERN_GENERATION');
+
+		const showGlobuleGeometry = { any: false };
+		const showProjectionGeometry = { any: true, bands: true };
+		const showGlobuleTubeGeometry = { any: false, bands: false, facets: false, sections: false };
+
 		const superGlobulePattern = showGlobuleGeometry.any
 			? generateSuperGlobulePattern($superGlobuleStore, $superConfigStore, $patternConfigStore)
 			: null;
@@ -192,12 +319,10 @@ export const superGlobulePatternStore = derived(
 			$patternConfigStore.patternViewConfig.showBands
 				? generateProjectionPattern(projection.tubes, $superConfigStore.id, $patternConfigStore)
 				: undefined;
-		// if (isSuperGlobuleProjectionPanelPattern(projectionPattern)) {
-		// 	validateAllPanels(projectionPattern.projectionPanelPattern.tubes);
-		// }
 
 		const metaInfo = getMetaInfo(projectionPattern);
 
+		console.timeEnd('PATTERN_GENERATION');
 		console.log('SUPER GLOBULE PATTERN STORE', {
 			$superGlobuleStore,
 			$patternConfigStore,
@@ -207,6 +332,42 @@ export const superGlobulePatternStore = derived(
 		});
 		return { superGlobulePattern, projectionPattern, globuleTubePattern };
 	}
+);
+
+// Debounced pattern store (exposed publicly)
+let patternDebounceTimeout: ReturnType<typeof setTimeout> | null = null;
+let lastPatternResult: any = {
+	superGlobulePattern: null,
+	projectionPattern: undefined,
+	globuleTubePattern: null
+};
+
+export const superGlobulePatternStore = derived(
+	[superGlobulePatternStoreInternal],
+	([$internal], set) => {
+		// Clear any pending debounced update
+		if (patternDebounceTimeout) {
+			clearTimeout(patternDebounceTimeout);
+		}
+
+		// If paused, return last result immediately
+		if ($internal === 'paused') {
+			console.log('PATTERN STORE: Returning cached result (paused)');
+			return lastPatternResult;
+		}
+
+		// Debounce pattern updates (300ms)
+		patternDebounceTimeout = setTimeout(() => {
+			if ($internal && typeof $internal !== 'string') {
+				lastPatternResult = $internal;
+				set($internal);
+			}
+		}, 300);
+
+		// Return last result while debouncing, or current result if available
+		return lastPatternResult;
+	},
+	{ superGlobulePattern: null, projectionPattern: undefined, globuleTubePattern: null }
 );
 
 export type SuperGlobulePattern = SuperGlobuleBandPattern | SuperGlobuleProjectionPattern;

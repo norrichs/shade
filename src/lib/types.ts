@@ -1,4 +1,4 @@
-import type { Vector2, Vector3, Triangle as ThreeTriangle, Object3D } from 'three';
+import type { Vector2, Vector3, Triangle as ThreeTriangle, Object3D, Box3 } from 'three';
 import type {
 	BaseProjectionConfig,
 	Polyhedron,
@@ -860,6 +860,14 @@ export type SuperGlobule = {
 		tubes: Tube[];
 		surface: Object3D;
 	}[];
+};
+
+export type SuperGlobuleMesh = {
+	type: 'SuperGlobuleMesh';
+	superGlobuleConfigId: Id;
+	bandGeometry: BandGeometry[];
+	projectionAddresses: GlobuleAddress_Facet[];
+	bounds: Box3;
 };
 
 export type SuperGlobuleGeometry =

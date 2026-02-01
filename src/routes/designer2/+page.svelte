@@ -10,13 +10,25 @@
 
 	import SuperPathEdit from '../../components/path-edit/SuperPathEdit.svelte';
 	import SuperControl from '../../components/controls/super-control/SuperControl.svelte';
-	import { uiStore, type ViewModeSetting } from '$lib/stores/uiStores';
+	import {
+		uiStore,
+		type ViewModeSetting,
+		computationMode,
+		pausePatternUpdates
+	} from '$lib/stores/uiStores';
 	import ProjectionControl from '../../components/projection/ProjectionControl.svelte';
 	import HoverSidebar from '../../components/modal/HoverSidebar.svelte';
 	import { projectionConfigs } from '../../components/modal/sidebar-definitions';
 	import Toast from '../../components/Toast.svelte';
+	import { superGlobulePatternStore } from '$lib/stores/superGlobuleStores';
 
 	let viewMode: ViewModeSetting = $uiStore.designer.viewMode;
+
+	function refreshPatterns() {
+		pausePatternUpdates.set(false);
+		// Force re-subscription to trigger update
+		superGlobulePatternStore.subscribe(() => {})();
+	}
 	let showControl: { name: string; value?: unknown } = { name: 'None' };
 	type ShowControlCurveValue = 'ShapeConfig' | 'DepthCurveConfig' | 'SilhouetteConfig';
 	const isShowControlCurveValue = (value: unknown): value is ShowControlCurveValue => {
@@ -35,9 +47,11 @@
 			<Scene />
 		</ThreeRenderer>
 	</section>
-	<section class={`container ${viewMode === 'pattern' ? 'primary' : 'secondary'}`}>
-		<PatternViewer />
-	</section>
+	{#if $computationMode !== '3d-only'}
+		<section class={`container ${viewMode === 'pattern' ? 'primary' : 'secondary'}`}>
+			<PatternViewer />
+		</section>
+	{/if}
 	<section class="container controls">
 		<header>
 			<SelectBar
@@ -55,6 +69,23 @@
 					{ name: 'Super' }
 				]}
 			/>
+			<div class="mode-control">
+				<label for="computation-mode">Mode:</label>
+				<select id="computation-mode" bind:value={$computationMode}>
+					<option value="continuous">Continuous</option>
+					<option value="3d-only">3D Only</option>
+					<option value="2d-only">2D Only</option>
+				</select>
+			</div>
+			<div class="pattern-control">
+				<label>
+					<input type="checkbox" bind:checked={$pausePatternUpdates} />
+					Pause Pattern Updates
+				</label>
+				{#if $pausePatternUpdates}
+					<button on:click={refreshPatterns} class="refresh-btn">Refresh</button>
+				{/if}
+			</div>
 		</header>
 		<div class="group">
 			{#if ['Silhouette', 'Shape', 'DepthCurve', 'Spine'].includes(showControl?.name)}
@@ -122,7 +153,58 @@
 		display: flex;
 		flex-direction: row;
 		justify-content: center;
+		align-items: center;
+		gap: 1rem;
 		width: 100%;
+	}
+
+	.mode-control {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		font-size: 0.875rem;
+	}
+
+	.mode-control label {
+		font-weight: 500;
+	}
+
+	.mode-control select {
+		padding: 0.25rem 0.5rem;
+		border: 1px solid #ccc;
+		border-radius: 4px;
+		background: white;
+		font-size: 0.875rem;
+	}
+
+	.pattern-control {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		font-size: 0.875rem;
+	}
+
+	.pattern-control label {
+		display: flex;
+		align-items: center;
+		gap: 0.25rem;
+		font-weight: 500;
+		cursor: pointer;
+	}
+
+	.refresh-btn {
+		padding: 0.25rem 0.75rem;
+		border: 1px solid #4caf50;
+		border-radius: 4px;
+		background: #4caf50;
+		color: white;
+		font-size: 0.875rem;
+		cursor: pointer;
+		transition: background 0.2s;
+	}
+
+	.refresh-btn:hover {
+		background: #45a049;
 	}
 	.container.controls .group {
 		width: 100%;
