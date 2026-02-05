@@ -81,11 +81,11 @@
 			superGlobuleStartIndex,
 			superGlobuleStartIndex + VIEW_TILE_PAGE_SIZE
 		);
-		const data = visibleSuperGlobules.map((superGlobuleConfig) =>
-			// generateSuperGlobule(superGlobuleConfig)
-		);
-		const geometry = data.map((superGlobule) => generateSuperGlobuleGeometry(superGlobule));
-		superGlobuleGeometries = geometry;
+		// const data = visibleSuperGlobules.map((superGlobuleConfig) =>
+		// 	generateSuperGlobule(superGlobuleConfig)
+		// );
+		// const geometry = data.map((superGlobule) => generateSuperGlobuleGeometry(superGlobule));
+		// superGlobuleGeometries = geometry;
 	};
 
 	const hydrateSuper = (

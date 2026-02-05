@@ -3,7 +3,7 @@
 		EdgeCurveConfig,
 		ProjectionCurveSampleMethod
 	} from '$lib/projection-geometry/types';
-	import { superConfigStore, superGlobuleStore } from '$lib/stores';
+	import { superConfigStore } from '$lib/stores';
 	import NumberInput from '../../controls/super-control/NumberInput.svelte';
 	import Button from '../../design-system/Button.svelte';
 	import Container from './Container.svelte';
@@ -18,6 +18,8 @@
 		neighborPointMatch
 	} from './path-editor';
 	import PathEditor from './PathEditor.svelte';
+	import { generatePolygonFromConfig } from '$lib/projection-geometry/preview-utils';
+	import { preparePolygonConfig } from '$lib/projection-geometry/generate-projection';
 
 	const handleChangeSampleMethod = (event: Event, config: EdgeCurveConfig) => {
 		const newMethod = (event.target as HTMLSelectElement)
@@ -66,10 +68,40 @@
 
 	let polygonIndex = 0;
 
-	$: flattenedPolygon = flattenPolygon(
-		$superGlobuleStore.projections[0].polyhedron.polygons[polygonIndex]
-	);
-	$: polygonPaths = getPolygonPaths(flattenedPolygon);
+	// Generate preview from config (no dependency on $superGlobuleStore)
+	// REUSES: preparePolygonConfig, generatePolygonFromConfig, flattenPolygon, getPolygonPaths
+	$: flattenedPolygon = (() => {
+		const projectionConfig = $superConfigStore.projectionConfigs[0];
+		if (!projectionConfig) return null;
+
+		const rawPolygonConfig =
+			projectionConfig.projectorConfig.polyhedron.polygons[polygonIndex];
+		if (!rawPolygonConfig) return null;
+
+		try {
+			// Prepare config (backfill vertices, edge curves, cross-sections)
+			const preparedPolygonConfig = preparePolygonConfig(
+				rawPolygonConfig,
+				projectionConfig.projectorConfig.polyhedron.vertices,
+				projectionConfig.projectorConfig.polyhedron.edgeCurves,
+				projectionConfig.projectorConfig.polyhedron.crossSectionCurves
+			);
+
+			// Generate minimal Polygon from config
+			const polygon = generatePolygonFromConfig(
+				preparedPolygonConfig,
+				projectionConfig.meta.transform
+			);
+
+			// REUSE existing flattenPolygon() - no algorithm duplication!
+			return flattenPolygon(polygon);
+		} catch (error) {
+			console.error('Failed to generate polygon preview:', error);
+			return null;
+		}
+	})();
+
+	$: polygonPaths = flattenedPolygon ? getPolygonPaths(flattenedPolygon) : [];
 </script>
 
 <Editor>
@@ -82,7 +114,8 @@
 						<NumberInput
 							bind:value={polygonIndex}
 							min={0}
-							max={$superGlobuleStore.projections[0].polyhedron.polygons.length}
+							max={$superConfigStore.projectionConfigs[0]?.projectorConfig.polyhedron.polygons
+								.length || 0}
 							step={1}
 							hasButtons
 						/>
@@ -91,7 +124,8 @@
 						{#each polygonPaths as polygonPath}
 							<path d={polygonPath} class="polygon-path" />
 						{/each}
-						{#each flattenedPolygon.edges as edge}
+						{#if flattenedPolygon}
+							{#each flattenedPolygon.edges as edge}
 							{#each edge.edgePoints as edgePoint, edgePointIndex}
 								<circle
 									cx={edgePoint.x}
@@ -109,6 +143,7 @@
 								/>
 							{/each}
 						{/each}
+						{/if}
 					</svg>
 					<PathEditor
 						curveDef={edgeCurve.curves}
@@ -120,6 +155,8 @@
 						}}
 						onChangeCurveDef={(curveDef) => {
 							edgeCurve.curves = curveDef;
+							// Trigger reactivity to update preview in real-time
+							$superConfigStore = $superConfigStore;
 						}}
 						limits={[endPointsLockedY, endPointsMatchedX, neighborPointMatch]}
 					>
@@ -132,6 +169,8 @@
 								x: 0.5,
 								y: 0.5
 							});
+							// Trigger reactivity to update preview
+							$superConfigStore = $superConfigStore;
 						}}>Insert Point</Button
 					>
 				</Container>

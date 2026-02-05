@@ -130,7 +130,7 @@ export const prepareProjectionConfig = (
 	return { ...config, projectorConfig };
 };
 
-const getMatrix4 = (
+export const getMatrix4 = (
 	{
 		scale: s = { x: 1, y: 1, z: 1 },
 		// rotate: r = { x: 0, y: 0, z: 0 }

@@ -4,7 +4,8 @@
 		CrossSectionConfig,
 		ProjectionCurveSampleMethod
 	} from '$lib/projection-geometry/types';
-	import { superConfigStore, superGlobuleStore } from '$lib/stores';
+	import { superConfigStore } from '$lib/stores';
+	import { generateCrossSectionPath } from '$lib/projection-geometry/preview-utils';
 	import NumberInput from '../../controls/super-control/NumberInput.svelte';
 	import Button from '../../design-system/Button.svelte';
 	import LabeledControl from './LabeledControl.svelte';
@@ -60,13 +61,6 @@
 		}
 		$superConfigStore = $superConfigStore;
 	};
-
-
-	$: crossSectionPath = getCrossSectionPath(
-		{ globule: 0, tube: 0 },
-		$superGlobuleStore.projections,
-		sectionIndex
-	);
 </script>
 
 <Editor>
@@ -83,7 +77,7 @@
 					</LabeledControl>
 					<svg width="200" height="200" viewBox="-500 -500 1000 1000">
 						<path
-							d={crossSectionPath}
+							d={generateCrossSectionPath(crossSection)}
 							transform="scale(1 -1)"
 							fill="rgba(0,0,50,0.2)"
 							stroke="black"
@@ -101,13 +95,17 @@
 							}}
 							onChangeCurveDef={(curveDef) => {
 								crossSection.curves = curveDef;
+								// Trigger reactivity to update preview in real-time
+								$superConfigStore = $superConfigStore;
 							}}
 							limits={[endPointsZeroX, endPointsInRange, neighborPointMatch]}
 						>
 							<rect x="0" y="0" width="1" height="1"  fill="rgba(0,0,0,0.1)"/>
 						</PathEditor>
 						<Button on:click={() => {
-							crossSection.curves = insertPoint(0, crossSection.curves, { type: 'PointConfig2', x: 0.5, y: 0.5 })
+							crossSection.curves = insertPoint(0, crossSection.curves, { type: 'PointConfig2', x: 0.5, y: 0.5 });
+							// Trigger reactivity to update preview
+							$superConfigStore = $superConfigStore;
 							}}>Insert Point</Button>
 					{/if}
 				</Container>
