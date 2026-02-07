@@ -12,9 +12,11 @@ export const db = drizzle(client);
 
 async function main() {
 	try {
+		await client.execute('PRAGMA foreign_keys=off');
 		await migrate(db, {
 			migrationsFolder: 'drizzle/migrations'
 		});
+		await client.execute('PRAGMA foreign_keys=on');
 		console.log('Tables migrated!');
 		process.exit(0);
 	} catch (error) {
