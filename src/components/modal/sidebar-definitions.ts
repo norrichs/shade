@@ -9,6 +9,7 @@ import Silhouette from './editor/Silhouette.svelte';
 import GlobuleCrossSection from './editor/GlobuleCrossSection.svelte';
 import PatternScale from './editor/PatternScale.svelte';
 import Selection from './editor/Selection.svelte';
+import ConfigManager from './editor/ConfigManager.svelte';
 
 export type FloaterContent = {
 	shortTitle: string;
@@ -33,6 +34,14 @@ export const utilities: SidebarDefinition = new Map([
 			shortTitle: 'SL',
 			title: 'Selection',
 			content: Selection
+		}
+	],
+	[
+		'Configs',
+		{
+			shortTitle: 'CF',
+			title: 'Configs',
+			content: ConfigManager
 		}
 	]
 ]);
