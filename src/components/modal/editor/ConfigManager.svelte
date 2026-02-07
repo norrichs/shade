@@ -1,5 +1,8 @@
 <script lang="ts">
 	import { superConfigStore } from '$lib/stores';
+	import { triggerManualRegeneration } from '$lib/stores/superGlobuleStores';
+	import { isManualMode } from '$lib/stores/uiStores';
+	import { get } from 'svelte/store';
 	import Button from '../../design-system/Button.svelte';
 	import Container from './Container.svelte';
 	import Editor from './Editor.svelte';
@@ -64,6 +67,9 @@
 			const data = await res.json();
 			const parsed = JSON.parse(data.configJson);
 			superConfigStore.set(parsed);
+			if (get(isManualMode)) {
+				triggerManualRegeneration();
+			}
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'Failed to load config';
 		}
