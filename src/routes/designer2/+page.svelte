@@ -117,10 +117,6 @@
 				<TilingControl />
 			{:else if showControl?.name === 'Super'}
 				<SuperControl />
-				<!-- {:else if showControl?.name === 'Save'}
-				<SaveControl show={showControl?.name === 'Save'} config={$superConfigStore} /> -->
-				<!-- {:else if showControl?.name === 'Data'}
-				<DataControl /> -->
 			{/if}
 		</div>
 	</section>

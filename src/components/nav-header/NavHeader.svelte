@@ -1,80 +1,26 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
-
-	import {
-		shouldUsePersisted,
-		superConfigStore,
-		uiStore,
-		selectedProjectionGeometry
-	} from '$lib/stores';
+	import { shouldUsePersisted, uiStore } from '$lib/stores';
 	import { isManualMode, hasPendingChanges } from '$lib/stores/uiStores';
 	import { triggerManualRegeneration, isGenerating } from '$lib/stores/superGlobuleStores';
 	import Button from '../design-system/Button.svelte';
-	import NewConfigButton from './NewConfigButton.svelte';
-	import SaveConfigButton from './SaveConfigButton.svelte';
 	import WorkingIndicator from './WorkingIndicator.svelte';
-	import { superGlobuleStore, selectedBand } from '$lib/stores';
+	import { superGlobuleStore } from '$lib/stores';
 
 	$: regenerateDisabled = !$isManualMode || $isGenerating || !$hasPendingChanges;
-	import { formatAddress } from '$lib/recombination';
 	import { downloadSvg } from '$lib/util';
 	import { interactionMode } from '../three-renderer/interaction-mode';
 	import ViewMenu from './ViewMenu.svelte';
-	import { printProjectionAddress } from '$lib/projection-geometry/generate-projection';
-	import Floater from '../modal/Floater.svelte';
 
-	let downloadUrl: string | undefined = undefined;
 	let showModal = false;
 	const toggleModal = () => {
 		showModal = !showModal;
-	};
-
-	const sandBoxOptions = [
-		{ value: '/sandbox-ellipse-intersections', label: 'Ellipse Intersections' },
-		{ value: '/sandbox-line-intersections', label: 'Line Intersections' },
-		{ value: '/sandbox-box-pattern', label: 'Box Pattern' },
-		{ value: '/sandbox-bezier-intersections', label: 'Bezier Intersections' },
-		{ value: '/sandbox-patterns', label: 'Patterns' },
-		{ value: '/sandbox-svg-display', label: 'SVG Display' },
-		{ value: '/sandbox-server-test', label: 'Server Test' },
-		{ value: '/sandbox-pattern-test', label: 'Pattern test' }
-	];
-
-	const printGlobuleCoords = () => {
-		const coords = $superGlobuleStore.subGlobules.map((sg) => sg.data.map((g) => g.coord));
-		const coordStacks = $superGlobuleStore.subGlobules.map((sg) =>
-			sg.data.map((g) => g.coordStack)
-		);
-	};
-
-	const printRecombinations = () => {
-		const recombinations = $superConfigStore.subGlobuleConfigs.forEach((sgc, sgcIndex) => {
-			if (!sgc.transforms || sgc.transforms.length === 0) {
-			} else {
-				return sgc.transforms.forEach((tx, txIndex) => tx.recurs.forEach((r, rIndex) => {}));
-			}
-		});
 	};
 </script>
 
 <header>
 	<nav>
 		<div>
-			<a href="/gallery">Gallery</a>
-			<!-- <a href="/designer">Designer</a> -->
 			<a href="/designer2">Designer</a>
-			<select
-				on:change={(ev) => {
-					if (ev?.currentTarget?.value) {
-						goto(ev.currentTarget.value);
-					}
-				}}
-			>
-				<option value="">Experiments</option>
-				{#each sandBoxOptions as option}
-					<option value={option.value}>{option.label}</option>
-				{/each}
-			</select>
 			<ViewMenu />
 		</div>
 
@@ -130,11 +76,6 @@
 						$uiStore.designer.viewMode === 'pattern' ? 'three' : 'pattern')}
 				>{`Main: ${$uiStore.designer.viewMode}`}</Button
 			>
-			<NewConfigButton />
-			<SaveConfigButton />
-			<!-- <Button on:click={() => console.log({ $superConfigStore })}>Print super</Button>
-			<Button on:click={printRecombinations}>Print recombinations</Button>
-			<Button>Settings</Button> -->
 			<label for="use-persisted-checkbox">persist settings?</label>
 			<input type="checkbox" bind:checked={$shouldUsePersisted} />
 
