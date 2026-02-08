@@ -17,7 +17,7 @@
 		{#each $geometryStore.subGlobules as glob}
 			{#each glob as bandGeometry}
 				{#if typeof bandGeometry !== 'undefined'}
-					<T.Group position={[0, 0, 0]} on:click={(ev) => handleClick(ev, bandGeometry)}>
+					<T.Group position={[0, 0, 0]} onclick={(ev) => handleClick(ev, bandGeometry)}>
 						<GlobuleMesh
 							geometry={bandGeometry}
 							material={getInteractionMaterial(bandGeometry, $interactionMode, $selectedBand)}

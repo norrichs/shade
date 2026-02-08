@@ -124,7 +124,7 @@
 					colorByBand,
 					colorEndFacets
 				})}
-				on:click={(ev) => onClick(ev, facet.address)}
+				onclick={(ev) => onClick(ev, facet.address)}
 			/>
 		{/each}
 		{#if showNormals && projectionGeometry.facets}
@@ -157,7 +157,7 @@
 			<T.Mesh
 				geometry={facet.geometry}
 				material={getMaterial(facet.address, $selectedProjectionGeometry)}
-				on:click={(ev) => onClick(ev, facet.address)}
+				onclick={(ev) => onClick(ev, facet.address)}
 			/>
 		{/each}
 		{#if showNormals && globuleTubeGeometry.facets}

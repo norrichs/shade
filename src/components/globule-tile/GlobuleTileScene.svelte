@@ -26,6 +26,6 @@
 
 <DesignerCamera />
 <DesignerLighting />
-<T.Group position={[0, 0, 0]} on:click={(ev) => handleClick(ev)}>
+<T.Group position={[0, 0, 0]} onclick={(ev) => handleClick(ev)}>
 	<GlobuleMesh geometry={globuleGeometry} material={selected ? 'selected' : 'default'} />
 </T.Group>

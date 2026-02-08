@@ -54,7 +54,7 @@
 	<T.Mesh
 		geometry={g}
 		material={groupMaterials[i]}
-		on:click={(ev) => {
+		onclick={(ev) => {
 			if (onClick) {
 				onClick(ev);
 			}

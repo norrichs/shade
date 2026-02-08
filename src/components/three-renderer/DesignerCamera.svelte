@@ -61,7 +61,7 @@
 		maxPolarAngle={degToRad(160)}
 		enableZoom={true}
 		target={[0, 0.5, 0]}
-		on:start={handleInteractionStart}
-		on:end={handleInteractionEnd}
+		onstart={handleInteractionStart}
+		onend={handleInteractionEnd}
 	/>
 </T.PerspectiveCamera>
