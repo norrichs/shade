@@ -97,7 +97,7 @@
 			<LabeledControl label="Name">
 				<input type="text" bind:value={configName} placeholder="Config name" />
 			</LabeledControl>
-			<Button on:click={saveConfig} disabled={saving || !configName.trim()}>
+			<Button onclick={saveConfig} disabled={saving || !configName.trim()}>
 				{saving ? 'Saving...' : 'Save'}
 			</Button>
 		</Container>
@@ -118,12 +118,12 @@
 					<div class="config-row">
 						<span class="config-name">{config.name}</span>
 						<div class="config-actions">
-							<Button on:click={() => loadConfig(config.id)}>Load</Button>
+							<Button onclick={() => loadConfig(config.id)}>Load</Button>
 							{#if confirmDeleteId === config.id}
-								<Button on:click={() => deleteConfig(config.id)}>Confirm</Button>
-								<Button on:click={() => (confirmDeleteId = null)}>Cancel</Button>
+								<Button onclick={() => deleteConfig(config.id)}>Confirm</Button>
+								<Button onclick={() => (confirmDeleteId = null)}>Cancel</Button>
 							{:else}
-								<Button on:click={() => (confirmDeleteId = config.id)}>Delete</Button>
+								<Button onclick={() => (confirmDeleteId = config.id)}>Delete</Button>
 							{/if}
 						</div>
 					</div>

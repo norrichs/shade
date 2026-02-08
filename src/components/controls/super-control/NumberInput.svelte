@@ -3,13 +3,23 @@
 	import { Icon } from 'svelte-icons-pack';
 	import { FiChevronUp, FiChevronDown } from 'svelte-icons-pack/fi';
 
-	export let value: number;
-	export let step = 1;
-	export let min = 0;
-	export let max = 100;
-	export let hasButtons = false;
-	export let label = '';
-	export let onChange: ((newValue: number) => void) | undefined = undefined;
+	let {
+		value = $bindable(),
+		step = 1,
+		min = 0,
+		max = 100,
+		hasButtons = false,
+		label = '',
+		onChange = undefined
+	}: {
+		value: number;
+		step?: number;
+		min?: number;
+		max?: number;
+		hasButtons?: boolean;
+		label?: string;
+		onChange?: ((newValue: number) => void) | undefined;
+	} = $props();
 
 	const handleFocus = (event: FocusEvent) => {
 		(event.target as HTMLInputElement).select();
@@ -39,13 +49,13 @@
 		{min}
 		{step}
 		{max}
-		on:focus={handleFocus}
-		on:change={handleChange}
+		onfocus={handleFocus}
+		onchange={handleChange}
 	/>
 	{#if hasButtons}
 		<div>
-			<button on:click={() => click('up')}><Icon size="16" src={FiChevronUp} /></button>
-			<button on:click={() => click('down')}><Icon size="16" src={FiChevronDown} /></button>
+			<button onclick={() => click('up')}><Icon size="16" src={FiChevronUp} /></button>
+			<button onclick={() => click('down')}><Icon size="16" src={FiChevronDown} /></button>
 		</div>
 	{/if}
 </div>

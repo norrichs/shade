@@ -3,9 +3,15 @@
 	import { interactionMode, type InteractionMode } from '../../three-renderer/interaction-mode';
 	import { BiSolidEyedropper } from 'svelte-icons-pack/bi';
 
-	export let mode: InteractionMode;
-	export let label = '';
-	export let onClick: (() => void) | undefined = undefined;
+	let {
+		mode,
+		label = '',
+		onClick = undefined
+	}: {
+		mode: InteractionMode;
+		label?: string;
+		onClick?: (() => void) | undefined;
+	} = $props();
 
 	const pickPointsMode = () => {
 		$interactionMode = mode;
@@ -15,7 +21,7 @@
 	};
 </script>
 
-<button on:click={pickPointsMode}><Icon size={20} src={BiSolidEyedropper} />{label}</button>
+<button onclick={pickPointsMode}><Icon size={20} src={BiSolidEyedropper} />{label}</button>
 
 <style>
 	button {

@@ -1,8 +1,15 @@
 <script lang="ts">
-	export let onClick: () => void;
-	export let color: string = 'aliceblue';
-	export let shortTitle: string;
-	export let mainTitle: string | string[];
+	let {
+		onClick,
+		color = 'aliceblue',
+		shortTitle,
+		mainTitle
+	}: {
+		onClick: () => void;
+		color?: string;
+		shortTitle: string;
+		mainTitle: string | string[];
+	} = $props();
 
 	const getSplitTitle = (title: string | string[]) => {
 		const words = Array.isArray(title) ? title : title.split(' ');
@@ -10,10 +17,10 @@
 		return mappedWords;
 	};
 
-	$: words = getSplitTitle(mainTitle);
+	let words = $derived(getSplitTitle(mainTitle));
 </script>
 
-<button on:click={onClick} style={`--color: ${color}`}>
+<button onclick={onClick} style={`--color: ${color}`}>
 	<div class="title-container">
 		{#each words as word}
 			<div class="word">

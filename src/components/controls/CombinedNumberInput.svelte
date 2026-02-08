@@ -1,10 +1,19 @@
 <script lang="ts">
-	export let show = true;
-	export let value: number;
-	export let label: string;
-	export let min = 0;
-	export let max = 1;
-	export let step = 0.1;
+	let {
+		show = true,
+		value = $bindable(),
+		label,
+		min = 0,
+		max = 1,
+		step = 0.1
+	}: {
+		show?: boolean;
+		value: number;
+		label: string;
+		min?: number;
+		max?: number;
+		step?: number;
+	} = $props();
 </script>
 
 {#if show}

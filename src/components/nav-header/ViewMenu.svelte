@@ -1,5 +1,4 @@
 <script lang="ts">
-	import Button from '../design-system/Button.svelte';
 	import { viewControlStore } from '$lib/stores';
 	import CheckboxInput from '../controls/CheckboxInput.svelte';
 	import PopoverMenu from '../design-system/PopoverMenu.svelte';

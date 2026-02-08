@@ -79,7 +79,7 @@
 
 	<div class="controls">
 		{#if manualUpdate && onChangeCurveDef}
-			<Button on:click={() => onChangeCurveDef(curveDef)}>Update</Button>
+			<Button onclick={() => onChangeCurveDef(curveDef)}>Update</Button>
 		{/if}
 	</div>
 </div>

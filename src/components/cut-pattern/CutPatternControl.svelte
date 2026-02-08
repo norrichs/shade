@@ -4,7 +4,6 @@
 	import { isClose } from '$lib/util';
 	import CheckboxInput from '../controls/CheckboxInput.svelte';
 	import NumberInput from '../controls/super-control/NumberInput.svelte';
-	import Button from '../design-system/Button.svelte';
 	import PanControl from './PanControl.svelte';
 
 	let labelScale = 0.1;

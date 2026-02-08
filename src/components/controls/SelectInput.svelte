@@ -1,16 +1,23 @@
 <script lang="ts">
-	export let show = true;
-	export let value: unknown;
-	export let label: string;
-	export let options: (string | OptionObject)[];
-
 	type OptionObject = { [key: string]: any };
+
+	let {
+		show = true,
+		value = $bindable(),
+		label,
+		options
+	}: {
+		show?: boolean;
+		value: unknown;
+		label: string;
+		options: (string | OptionObject)[];
+	} = $props();
 </script>
 
 {#if show}
 	<div class="row">
 		<span>{label}</span>
-		<select bind:value on:change={(e) => {}}>
+		<select bind:value onchange={(e) => {}}>
 			{#each options as option}
 				{#if typeof option === 'string'}
 					<option>{option}</option>

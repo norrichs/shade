@@ -1,7 +1,5 @@
 <script lang="ts">
-	export let show = true;
-	export let value: boolean;
-	export let label: string;
+	let { show = true, value = $bindable(), label }: { show?: boolean; value: boolean; label: string } = $props();
 </script>
 
 {#if show}

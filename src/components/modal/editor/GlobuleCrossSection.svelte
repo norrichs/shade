@@ -25,7 +25,7 @@
 <Editor>
 	<section>
 		<header>Silhouette</header>
-		<Button on:click={() => console.log(crossSection)}>Print Silhouette</Button>
+		<Button onclick={() => console.log(crossSection)}>Print Silhouette</Button>
 		<Container direction="row">
 			<PathEditor
 				curveDef={curves}

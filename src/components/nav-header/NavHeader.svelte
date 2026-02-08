@@ -42,11 +42,11 @@
 		{/if} -->
 
 		<div class="button-group">
-			<Button on:click={toggleModal}>Edit</Button>
+			<Button onclick={toggleModal}>Edit</Button>
 
 			{#if $isManualMode}
 				<Button
-					on:click={triggerManualRegeneration}
+					onclick={triggerManualRegeneration}
 					disabled={regenerateDisabled}
 					class={$hasPendingChanges && !$isGenerating ? 'pending' : ''}
 				>
@@ -61,17 +61,17 @@
 			{/if}
 
 			<Button
-				on:click={() => {
+				onclick={() => {
 					$interactionMode = { type: 'band-select-multiple', data: { bands: [] } };
 				}}>Select Bands</Button
 			>
 			<Button
-				on:click={() =>
+				onclick={() =>
 					downloadSvg('pattern-svg', `globule-pattern ${$superGlobuleStore.name}.svg`)}
 				>Download SVG</Button
 			>
 			<Button
-				on:click={() =>
+				onclick={() =>
 					($uiStore.designer.viewMode =
 						$uiStore.designer.viewMode === 'pattern' ? 'three' : 'pattern')}
 				>{`Main: ${$uiStore.designer.viewMode}`}</Button

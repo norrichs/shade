@@ -29,7 +29,7 @@
 
 <nav class={showMode === 'onHover' ? 'show-on-hover' : 'show-always'}>
 	<div class="hover-button-container">
-		<Button on:click={() => (showMode = showMode === 'onHover' ? 'always' : 'onHover')}
+		<Button onclick={() => (showMode = showMode === 'onHover' ? 'always' : 'onHover')}
 			>{showMode}</Button
 		>
 		{#each sidebarDefinition as [title, floater]}

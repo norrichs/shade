@@ -103,14 +103,14 @@
 		{#if $mode.type === 'band-select-partners' && $mode.data.originSelected && $mode.data.partnerSelected}
 			<div>
 				{`Origin: ${$mode.data.originSelected.address.g} ${$mode.data.originSelected.address.b}`}
-				<Button on:click={() => (originJoin = toggle(originJoin))}>{originJoin}</Button>
+				<Button onclick={() => (originJoin = toggle(originJoin))}>{originJoin}</Button>
 			</div>
 			<div>
 				{`Partner: ${$mode.data.partnerSelected.address.g}, ${$mode.data.partnerSelected.address.b}`}
-				<Button on:click={() => (partnerJoin = toggle(partnerJoin))}>{partnerJoin}</Button>
+				<Button onclick={() => (partnerJoin = toggle(partnerJoin))}>{partnerJoin}</Button>
 			</div>
 			<div>
-				<Button on:click={setRecombination}>OK</Button>
+				<Button onclick={setRecombination}>OK</Button>
 				<Button>Cancel</Button>
 			</div>
 		{/if}

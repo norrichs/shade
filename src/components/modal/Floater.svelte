@@ -28,7 +28,7 @@
 	<main use:clickOutside>
 		<header>
 			<span>{title}</span>
-			<Button on:click={() => onClose()}>X</Button>
+			<Button onclick={() => onClose()}>X</Button>
 		</header>
 		<svelte:component this={content} />
 	</main>

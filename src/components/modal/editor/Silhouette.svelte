@@ -23,7 +23,7 @@
 		<header>Silhouette</header>
 		<Container direction="row">
 			<Container direction="column">
-				<Button on:click={() => console.log(silhouette)}>Print Silhouette</Button>
+				<Button onclick={() => console.log(silhouette)}>Print Silhouette</Button>
 				<PathEditor
 					curveDef={silhouette.curves}
 					onChangeCurveDef={(curveDef) => {

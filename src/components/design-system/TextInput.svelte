@@ -1,6 +1,6 @@
 <script lang="ts">
-	export let value: string | undefined;
-	let localValue = value;
+	let { value = $bindable() }: { value: string | undefined } = $props();
+	let localValue = $state(value);
 
 	const handleKeydown = (ev: KeyboardEvent) => {
 		if (ev.key === 'Enter') {
@@ -13,7 +13,7 @@
 	};
 </script>
 
-<input type="text" bind:value={localValue} on:keydown={handleKeydown} on:blur={updateValue} />
+<input type="text" bind:value={localValue} onkeydown={handleKeydown} onblur={updateValue} />
 
 <style>
 	input {

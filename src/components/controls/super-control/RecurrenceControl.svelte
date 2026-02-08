@@ -153,7 +153,7 @@
 									</div>
 									<div>
 										<Button
-											on:click={() => {
+											onclick={() => {
 												const newEnd = mapping.partnerJoin === 'end' ? 'start' : 'end';
 												if (
 													$superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex].recurs[i]
@@ -170,7 +170,7 @@
 									</div>
 									<div>
 										<Button
-											on:click={() => {
+											onclick={() => {
 												const newEnd = mapping.originJoin === 'end' ? 'start' : 'end';
 												if (
 													$superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex].recurs[i]

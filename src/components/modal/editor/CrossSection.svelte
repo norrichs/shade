@@ -102,7 +102,7 @@
 							<rect x="0" y="0" width="1" height="1" fill="rgba(0,0,0,0.1)" />
 						</PathEditor>
 						<Button
-							on:click={() => {
+							onclick={() => {
 								crossSection.curves = insertPoint(0, crossSection.curves, {
 									type: 'PointConfig2',
 									x: 0.5,

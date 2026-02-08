@@ -1,14 +1,23 @@
 <script lang="ts">
-	export let variant: 'standard' | 'link' = 'standard';
-	export let disabled: boolean = false;
+	import type { Snippet } from 'svelte';
+	import type { HTMLButtonAttributes } from 'svelte/elements';
 
-	// Accept class prop from parent
-	let className = '';
-	export { className as class };
+	let {
+		variant = 'standard',
+		class: className = '',
+		disabled = false,
+		children,
+		...restProps
+	}: HTMLButtonAttributes & {
+		variant?: 'standard' | 'link';
+		children?: Snippet;
+	} = $props();
 </script>
 
-<button on:click on:mousedown on:mouseup class="{variant} {className}" {disabled} class:disabled>
-	<slot />
+<button {...restProps} class="{variant} {className}" {disabled} class:disabled>
+	{#if children}
+		{@render children()}
+	{/if}
 </button>
 
 <style>
