@@ -10,10 +10,10 @@
 		return Array.from(new Set(selected.map((address) => concatAddress(address, 'tb'))));
 	};
 
-	$: selectedBands = getUniqueAddresses($selectedProjectionGeometry?.selected);
-	$: selectedPartners = getUniqueAddresses($selectedProjectionGeometry?.selectedPartners);
-	$: selectedStartPartners = getUniqueAddresses($selectedProjectionGeometry?.selectedStartPartners);
-	$: selectedEndPartners = getUniqueAddresses($selectedProjectionGeometry?.selectedEndPartners);
+	let selectedBands = $derived(getUniqueAddresses($selectedProjectionGeometry?.selected));
+	let selectedPartners = $derived(getUniqueAddresses($selectedProjectionGeometry?.selectedPartners));
+	let selectedStartPartners = $derived(getUniqueAddresses($selectedProjectionGeometry?.selectedStartPartners));
+	let selectedEndPartners = $derived(getUniqueAddresses($selectedProjectionGeometry?.selectedEndPartners));
 </script>
 
 <Editor>

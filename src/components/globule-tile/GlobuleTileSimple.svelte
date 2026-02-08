@@ -1,10 +1,12 @@
 <script lang="ts">
 	import { Canvas } from '@threlte/core';
-	export let size: number = 200;
+	import type { Snippet } from 'svelte';
+
+	let { size = 200, children }: { size?: number; children: Snippet } = $props();
 </script>
 
 <div>
 	<Canvas size={{ width: size, height: size }}>
-		<slot />
+		{@render children()}
 	</Canvas>
 </div>

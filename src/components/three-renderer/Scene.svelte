@@ -7,6 +7,7 @@
 		superConfigStore,
 		type BandSelection
 	} from '$lib/stores';
+	import { get } from 'svelte/store';
 	import GlobuleMesh from '../globuleMesh/GlobuleMesh.svelte';
 	import type { BandAddressed, BandGeometry, GeometryAddress, GlobuleGeometry } from '$lib/types';
 	import DesignerCamera from './DesignerCamera.svelte';
@@ -48,14 +49,13 @@
 		globuleIndex,
 		bandIndex
 	}: BandGeometry) => {
-		if ($geometryStore.variant === 'Band') {
+		const geometryStoreValue = get(geometryStore);
+		if (geometryStoreValue.variant === 'Band') {
+			const config = get(superConfigStore);
 			const subGlobuleConfigIndex =
-				$superConfigStore.subGlobuleConfigs.findIndex(
+				config.subGlobuleConfigs.findIndex(
 					(subGlobuleConfig) => subGlobuleConfig.id === subGlobuleConfigId
 				) || 0;
-			// const subGlobuleGeometryIndex = $geometryStore.subGlobules.findIndex(
-			// 	(glob) => glob[0].subGlobuleConfigId === subGlobuleConfigId && glob[0].coord.r === coord.r
-			// );
 			const newSelection: BandSelection = {
 				subGlobuleConfigIndex,
 				selection: ['active'],
@@ -68,42 +68,47 @@
 				bandIndex
 			};
 
+			const mode = get(interactionMode);
 			if (
-				isBandSelectInteractionMode($interactionMode) &&
-				$interactionMode.type === 'band-select'
+				isBandSelectInteractionMode(mode) &&
+				mode.type === 'band-select'
 			) {
-				const { pick, bands } = $interactionMode.data;
+				const { pick, bands } = mode.data;
 				if (bands.length < pick) {
-					$interactionMode.data.bands = [...bands, newSelection];
+					mode.data.bands = [...bands, newSelection];
 				} else {
-					$interactionMode.data.bands = [bands[bands.length - 1], newSelection];
+					mode.data.bands = [bands[bands.length - 1], newSelection];
 				}
-			} else if ($interactionMode.type === 'band-select-partners') {
+				interactionMode.set(mode);
+			} else if (mode.type === 'band-select-partners') {
 				const { pick, originHighlight, originSelected, partnerHighlight, partnerSelected } =
-					$interactionMode.data;
+					mode.data;
 				if (!originSelected) {
 					if (isInOrigin(originHighlight, newSelection)) {
-						$interactionMode.data.originSelected = newSelection;
+						mode.data.originSelected = newSelection;
 					}
 				} else if (!partnerSelected && !isInOrigin(originHighlight, newSelection)) {
-					$interactionMode.data.partnerSelected = newSelection;
+					mode.data.partnerSelected = newSelection;
 				}
-			} else if ($interactionMode.type === 'band-select-multiple') {
+				interactionMode.set(mode);
+			} else if (mode.type === 'band-select-multiple') {
 				const newSelectedBand: BandSelection = {
 					selection: ['highlighted'],
 					address,
 					subGlobuleConfigIndex,
 					coord
 				};
-				const alreadySelectedIndex = $interactionMode.data.bands.findIndex((bandSelection) =>
+				const alreadySelectedIndex = mode.data.bands.findIndex((bandSelection) =>
 					isSameBand(bandSelection.address, newSelectedBand.address)
 				);
 				if (alreadySelectedIndex === -1) {
-					$interactionMode.data.bands = [newSelectedBand, ...$interactionMode.data.bands];
+					mode.data.bands = [newSelectedBand, ...mode.data.bands];
+					interactionMode.set(mode);
 					return;
 				}
-				$interactionMode.data.bands.splice(alreadySelectedIndex, 1);
-				$interactionMode.data.bands = [...$interactionMode.data.bands];
+				mode.data.bands.splice(alreadySelectedIndex, 1);
+				mode.data.bands = [...mode.data.bands];
+				interactionMode.set(mode);
 			}
 		}
 	};
@@ -128,18 +133,20 @@
 	};
 
 	const standardSelect = (geometry: BandGeometry) => {
-		$selectedBand = geometry.address;
+		selectedBand.set(geometry.address);
 	};
 
 	const selectPoint = (event: any, geometry: BandGeometry) => {
-		if (!isPointSelectInteractionMode($interactionMode)) return;
+		const mode = get(interactionMode);
+		if (!isPointSelectInteractionMode(mode)) return;
 
-		const { pick, points } = $interactionMode.data;
+		const { pick, points } = mode.data;
 		const point = getNearestPoint(event.point, geometry);
 
 		points.unshift(point);
 		const newPoints = points.slice(0, pick);
-		$interactionMode.data.points = [...newPoints];
+		mode.data.points = [...newPoints];
+		interactionMode.set(mode);
 	};
 
 	const handleClick = (event: any, geometry: BandGeometry) => {
@@ -147,17 +154,18 @@
 
 		if (event.delta > CLICK_DELTA_THRESHOLD) return;
 
-		if ($interactionMode.type === 'standard') {
+		const mode = get(interactionMode);
+		if (mode.type === 'standard') {
 			standardSelect(geometry);
-		} else if (isBandSelectInteractionMode($interactionMode)) {
+		} else if (isBandSelectInteractionMode(mode)) {
 			selectBand(geometry);
-		} else if (isPointSelectInteractionMode($interactionMode)) {
+		} else if (isPointSelectInteractionMode(mode)) {
 			selectPoint(event, geometry);
 		}
 	};
 	const handleProjectionClick = (event: any, address: GlobuleAddress_Facet) => {
 		event.stopPropagation();
-		$selectedProjection = address;
+		selectedProjection.set(address);
 	};
 
 	const indicator: GlobuleGeometry = {
@@ -179,7 +187,7 @@
 	const getInteractionMaterial = (
 		band: BandGeometry,
 		mode: InteractionMode,
-		selectedBand: GeometryAddress<BandAddressed>
+		selectedBandValue: GeometryAddress<BandAddressed>
 	): Material => {
 		if (mode.type === 'band-select-partners') {
 			const { originSelected, partnerSelected, originHighlight } = mode.data;
@@ -197,9 +205,9 @@
 				return 'default';
 			}
 		} else if (mode.type === 'standard') {
-			if (selectedBand && isSameBand(selectedBand, band.address)) return 'selected';
-			if (selectedBand && isSameGlobule(selectedBand, band.address)) return 'selectedLight';
-			if (selectedBand && selectedBand.s === band.address.s) return 'selectedVeryLight';
+			if (selectedBandValue && isSameBand(selectedBandValue, band.address)) return 'selected';
+			if (selectedBandValue && isSameGlobule(selectedBandValue, band.address)) return 'selectedLight';
+			if (selectedBandValue && selectedBandValue.s === band.address.s) return 'selectedVeryLight';
 		} else if (mode.type === 'band-select-multiple') {
 			if (includesBandAddress(mode.data.bands, band.address)) {
 				return 'highlightedPrimary';

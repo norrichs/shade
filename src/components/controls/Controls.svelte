@@ -5,7 +5,7 @@
 	import TilingControl from './TilingControl.svelte';
 	import ShowControl from './ShowControl.svelte';
 
-	export let showControl: string;
+	let { showControl }: { showControl: string } = $props();
 </script>
 
 {#if showControl === 'Struts'}

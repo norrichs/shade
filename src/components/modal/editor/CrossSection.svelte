@@ -5,6 +5,7 @@
 		ProjectionCurveSampleMethod
 	} from '$lib/projection-geometry/types';
 	import { superConfigStore } from '$lib/stores';
+	import { get } from 'svelte/store';
 	import { generateCrossSectionPath } from '$lib/projection-geometry/preview-utils';
 	import NumberInput from '../../controls/super-control/NumberInput.svelte';
 	import Button from '../../design-system/Button.svelte';
@@ -14,8 +15,7 @@
 	import Container from './Container.svelte';
 	import Editor from './Editor.svelte';
 
-	export let editCurve = true;
-	export let sectionIndex = 0;
+	let { editCurve = true, sectionIndex = 0 }: { editCurve?: boolean; sectionIndex?: number } = $props();
 
 	const handleChangeSampleMethod = (event: Event, crossSection: CrossSectionConfig) => {
 		const newMethod = (event.target as HTMLSelectElement)
@@ -33,7 +33,7 @@
 						divisionsArray: Array.from({ length: divisions - 1 }, (_, i) => (i + 1) / divisions)
 					};
 		crossSection.sampleMethod = newSampleMethod as ProjectionCurveSampleMethod;
-		$superConfigStore = $superConfigStore;
+		superConfigStore.set(get(superConfigStore));
 	};
 
 	const handleChangeDivisions = (newDivisions: number, crossSection: CrossSectionConfig) => {
@@ -58,7 +58,7 @@
 			console.log('newDivisions', newDivisions);
 			crossSection.sampleMethod.divisions = newDivisions;
 		}
-		$superConfigStore = $superConfigStore;
+		superConfigStore.set(get(superConfigStore));
 	};
 </script>
 
@@ -94,8 +94,7 @@
 							}}
 							onChangeCurveDef={(curveDef) => {
 								crossSection.curves = curveDef;
-								// Trigger reactivity to update preview in real-time
-								$superConfigStore = $superConfigStore;
+								superConfigStore.set(get(superConfigStore));
 							}}
 							limits={[endPointsZeroX, endPointsInRange, neighborPointMatch]}
 						>
@@ -108,8 +107,7 @@
 									x: 0.5,
 									y: 0.5
 								});
-								// Trigger reactivity to update preview
-								$superConfigStore = $superConfigStore;
+								superConfigStore.set(get(superConfigStore));
 							}}>Insert Point</Button
 						>
 					{/if}
@@ -129,7 +127,7 @@
 					<LabeledControl label="Method:">
 						<select
 							value={crossSection.sampleMethod.method}
-							on:change={(event) => handleChangeSampleMethod(event, crossSection)}
+							onchange={(event) => handleChangeSampleMethod(event, crossSection)}
 						>
 							<option value="manualDivisions">Manual</option>
 							<option value="divideCurvePath">Divide Curve</option>

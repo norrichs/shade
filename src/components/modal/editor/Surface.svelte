@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { superConfigStore } from '$lib/stores';
+	import { get } from 'svelte/store';
 	import LabeledControl from './LabeledControl.svelte';
 	import Container from './Container.svelte';
 	import Editor from './Editor.svelte';
@@ -14,6 +15,7 @@
 	const handleChangeSurfaceType = (event: Event) => {
 		const selectedType = (event.target as HTMLSelectElement).value;
 		console.debug('handleChangeSurfaceType', selectedType);
+		const config = get(superConfigStore);
 		let newSurfaceConfig: SurfaceConfig;
 		switch (selectedType) {
 			case 'sphere':
@@ -25,7 +27,7 @@
 			case 'globule':
 			default:
 				newSurfaceConfig = {
-					...$superConfigStore.subGlobuleConfigs[0].globuleConfig,
+					...config.subGlobuleConfigs[0].globuleConfig,
 					transform: {
 						translate: { x: 0, y: 0, z: 0 },
 						scale: { x: 1, y: 1, z: 1 },
@@ -35,12 +37,13 @@
 				break;
 		}
 		console.debug('newSurfaceConfig', newSurfaceConfig);
-		$superConfigStore.projectionConfigs[0].surfaceConfig = { ...newSurfaceConfig };
-		$superConfigStore = $superConfigStore;
-		console.debug('superConfigStore', $superConfigStore.projectionConfigs[0].surfaceConfig);
+		config.projectionConfigs[0].surfaceConfig = { ...newSurfaceConfig };
+		superConfigStore.set(config);
+		console.debug('superConfigStore', get(superConfigStore).projectionConfigs[0].surfaceConfig);
 	};
 
-	$: surfaceConfig = $superConfigStore.projectionConfigs[0].surfaceConfig as SurfaceConfig;
+	let surfaceConfig = $derived($superConfigStore.projectionConfigs[0].surfaceConfig as SurfaceConfig);
+	let surfaceTypeValue = $derived(surfaceConfig.type.replace('Config', '').toLowerCase());
 </script>
 
 <Editor>
@@ -50,7 +53,7 @@
 		</header>
 		<Container direction="column">
 			<LabeledControl label="Surface Type">
-				<select on:change={handleChangeSurfaceType}>
+				<select value={surfaceTypeValue} onchange={handleChangeSurfaceType}>
 					<option value="sphere">Sphere</option>
 					<option value="capsule">Capsule</option>
 					<option value="globule">Globule</option>
@@ -74,10 +77,18 @@
 
 			{#if surfaceConfig.type === 'SphereConfig' && 'radius' in surfaceConfig}
 				<LabeledControl label="Sphere Radius">
-					<NumberInput bind:value={surfaceConfig.radius} hasButtons />
+					<NumberInput
+						value={surfaceConfig.radius}
+						hasButtons
+						onChange={(v) => {
+							const config = get(superConfigStore);
+							(config.projectionConfigs[0].surfaceConfig as any).radius = v;
+							superConfigStore.set(config);
+						}}
+					/>
 				</LabeledControl>
 				<LabeledControl label="Sphere Center">
-					<PointInput bind:value={surfaceConfig.center} />
+					<PointInput bind:value={$superConfigStore.projectionConfigs[0].surfaceConfig.center} />
 				</LabeledControl>
 			{/if}
 
@@ -87,10 +98,10 @@
 						<input
 							type="checkbox"
 							checked={surfaceConfig.endCaps.enabled}
-							on:change={(e) => {
+							onchange={(e) => {
 								if (surfaceConfig.type === 'GlobuleConfig' && surfaceConfig.endCaps) {
 									surfaceConfig.endCaps.enabled = e.currentTarget.checked;
-									$superConfigStore = $superConfigStore;
+									superConfigStore.set(get(superConfigStore));
 								}
 							}}
 						/>
@@ -103,10 +114,10 @@
 						<input
 							type="checkbox"
 							checked={surfaceConfig.endCaps.topCap}
-							on:change={(e) => {
+							onchange={(e) => {
 								if (surfaceConfig.type === 'GlobuleConfig' && surfaceConfig.endCaps) {
 									surfaceConfig.endCaps.topCap = e.currentTarget.checked;
-									$superConfigStore = $superConfigStore;
+									superConfigStore.set(get(superConfigStore));
 								}
 							}}
 						/>
@@ -116,10 +127,10 @@
 						<input
 							type="checkbox"
 							checked={surfaceConfig.endCaps.bottomCap}
-							on:change={(e) => {
+							onchange={(e) => {
 								if (surfaceConfig.type === 'GlobuleConfig' && surfaceConfig.endCaps) {
 									surfaceConfig.endCaps.bottomCap = e.currentTarget.checked;
-									$superConfigStore = $superConfigStore;
+									superConfigStore.set(get(superConfigStore));
 								}
 							}}
 						/>
@@ -128,10 +139,10 @@
 					<LabeledControl label="Cap Offset">
 						<NumberInput
 							value={surfaceConfig.endCaps.capOffset ?? 0}
-							on:change={(e) => {
+							onChange={(newValue) => {
 								if (surfaceConfig.type === 'GlobuleConfig' && surfaceConfig.endCaps) {
-									surfaceConfig.endCaps.capOffset = e.detail;
-									$superConfigStore = $superConfigStore;
+									surfaceConfig.endCaps.capOffset = newValue;
+									superConfigStore.set(get(superConfigStore));
 								}
 							}}
 							step={0.1}

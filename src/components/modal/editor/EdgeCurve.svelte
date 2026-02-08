@@ -4,6 +4,7 @@
 		ProjectionCurveSampleMethod
 	} from '$lib/projection-geometry/types';
 	import { superConfigStore } from '$lib/stores';
+	import { get } from 'svelte/store';
 	import NumberInput from '../../controls/super-control/NumberInput.svelte';
 	import Button from '../../design-system/Button.svelte';
 	import Container from './Container.svelte';
@@ -37,11 +38,10 @@
 						divisionsArray: Array.from({ length: divisions - 1 }, (_, i) => (i + 1) / divisions)
 					};
 		config.sampleMethod = newSampleMethod as EdgeCurveConfig['sampleMethod'];
-		$superConfigStore = $superConfigStore;
+		superConfigStore.set(get(superConfigStore));
 	};
 
 	const handleChangeDivisions = (newDivisions: number, config: EdgeCurveConfig) => {
-		// const newDivisions = parseInt((event.target as HTMLInputElement).value);
 		const oldDivisions = config.sampleMethod.divisions;
 		if (config.sampleMethod.method === 'manualDivisions') {
 			const oldDivisionsArray = config.sampleMethod.divisionsArray;
@@ -63,14 +63,12 @@
 			console.log('newDivisions', newDivisions);
 			config.sampleMethod.divisions = newDivisions;
 		}
-		$superConfigStore = $superConfigStore;
+		superConfigStore.set(get(superConfigStore));
 	};
 
-	let polygonIndex = 0;
+	let polygonIndex = $state(0);
 
-	// Generate preview from config (no dependency on $superGlobuleStore)
-	// REUSES: preparePolygonConfig, generatePolygonFromConfig, flattenPolygon, getPolygonPaths
-	$: flattenedPolygon = (() => {
+	let flattenedPolygon = $derived((() => {
 		const projectionConfig = $superConfigStore.projectionConfigs[0];
 		if (!projectionConfig) return null;
 
@@ -78,7 +76,6 @@
 		if (!rawPolygonConfig) return null;
 
 		try {
-			// Prepare config (backfill vertices, edge curves, cross-sections)
 			const preparedPolygonConfig = preparePolygonConfig(
 				rawPolygonConfig,
 				projectionConfig.projectorConfig.polyhedron.vertices,
@@ -86,21 +83,19 @@
 				projectionConfig.projectorConfig.polyhedron.crossSectionCurves
 			);
 
-			// Generate minimal Polygon from config
 			const polygon = generatePolygonFromConfig(
 				preparedPolygonConfig,
 				projectionConfig.meta.transform
 			);
 
-			// REUSE existing flattenPolygon() - no algorithm duplication!
 			return flattenPolygon(polygon);
 		} catch (error) {
 			console.error('Failed to generate polygon preview:', error);
 			return null;
 		}
-	})();
+	})());
 
-	$: polygonPaths = flattenedPolygon ? getPolygonPaths(flattenedPolygon) : [];
+	let polygonPaths = $derived(flattenedPolygon ? getPolygonPaths(flattenedPolygon) : []);
 </script>
 
 <Editor>
@@ -154,8 +149,7 @@
 						}}
 						onChangeCurveDef={(curveDef) => {
 							edgeCurve.curves = curveDef;
-							// Trigger reactivity to update preview in real-time
-							$superConfigStore = $superConfigStore;
+							superConfigStore.set(get(superConfigStore));
 						}}
 						limits={[endPointsLockedY, endPointsMatchedX, neighborPointMatch]}
 					>
@@ -168,8 +162,7 @@
 								x: 0.5,
 								y: 0.5
 							});
-							// Trigger reactivity to update preview
-							$superConfigStore = $superConfigStore;
+							superConfigStore.set(get(superConfigStore));
 						}}>Insert Point</Button
 					>
 				</Container>
@@ -189,7 +182,7 @@
 					<LabeledControl label="Method:">
 						<select
 							value={edgeCurve.sampleMethod.method}
-							on:change={(event) => handleChangeSampleMethod(event, edgeCurve)}
+							onchange={(event) => handleChangeSampleMethod(event, edgeCurve)}
 						>
 							<option value="manualDivisions">Manual</option>
 							<option value="divideCurvePath">Divide Curve</option>

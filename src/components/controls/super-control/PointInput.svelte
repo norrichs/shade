@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import type { Point3 } from '$lib/types';
 	import { Vector3 } from 'three';
 	import NumberInput from './NumberInput.svelte';
@@ -15,12 +16,19 @@
 	let y = $state(value.y);
 	let z = $state(value.z);
 
+	// Sync prop → local only when the PROP changes (parent pushed a new value).
+	// Reading x/y/z inside untrack() prevents this effect from re-running
+	// when local state changes, which would revert user input.
 	$effect.pre(() => {
-		if (value.x !== x) x = value.x;
-		if (value.y !== y) y = value.y;
-		if (value.z !== z) z = value.z;
+		const vx = value.x, vy = value.y, vz = value.z;
+		untrack(() => {
+			if (vx !== x) x = vx;
+			if (vy !== y) y = vy;
+			if (vz !== z) z = vz;
+		});
 	});
 
+	// Sync local → prop when user edits x/y/z
 	$effect(() => {
 		if (value.x !== x || value.y !== y || value.z !== z) {
 			if (constraint?.length) {

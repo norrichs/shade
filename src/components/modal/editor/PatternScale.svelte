@@ -2,20 +2,23 @@
 	import Container from './Container.svelte';
 	import Editor from './Editor.svelte';
 	import { patternConfigStore } from '$lib/stores';
+	import { get } from 'svelte/store';
 	import LabeledControl from './LabeledControl.svelte';
 	import type { ScaleUnit } from '$lib/types';
 	import NumberInput from '../../controls/super-control/NumberInput.svelte';
 
 	const handleChangeUnit = (event: Event) => {
 		const target = event.target as HTMLSelectElement;
-		$patternConfigStore.tiledPatternConfig.config.scaleConfig.unit = target.value as ScaleUnit;
+		const config = get(patternConfigStore);
+		config.tiledPatternConfig.config.scaleConfig.unit = target.value as ScaleUnit;
+		patternConfigStore.set(config);
 	};
 
 	const handleChangeQuantity = (newValue: number) => {
 		console.debug('handleChangeQuantity', newValue);
-
-		$patternConfigStore.tiledPatternConfig.config.scaleConfig.quantity = newValue;
-		$patternConfigStore.tiledPatternConfig.config.scaleConfig.unitPerSvgUnit;
+		const config = get(patternConfigStore);
+		config.tiledPatternConfig.config.scaleConfig.quantity = newValue;
+		patternConfigStore.set(config);
 	};
 </script>
 
@@ -25,7 +28,7 @@
 		<Container direction="column">
 			<LabeledControl label="Unit">
 				<select
-					on:change={handleChangeUnit}
+					onchange={handleChangeUnit}
 					value={$patternConfigStore.tiledPatternConfig.config.scaleConfig.unit}
 				>
 					<option value="mm">mm</option>

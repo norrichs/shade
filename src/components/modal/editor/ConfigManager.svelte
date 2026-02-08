@@ -15,12 +15,12 @@
 		updatedAt: string;
 	};
 
-	let configName = '';
-	let configs: ConfigEntry[] = [];
-	let loading = false;
-	let saving = false;
-	let error = '';
-	let confirmDeleteId: number | null = null;
+	let configName = $state('');
+	let configs: ConfigEntry[] = $state([]);
+	let loading = $state(false);
+	let saving = $state(false);
+	let error = $state('');
+	let confirmDeleteId: number | null = $state(null);
 
 	async function fetchConfigs() {
 		loading = true;
@@ -46,7 +46,7 @@
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
 					name: configName.trim(),
-					configJson: JSON.stringify($superConfigStore)
+					configJson: JSON.stringify(get(superConfigStore))
 				})
 			});
 			if (!res.ok) throw new Error('Failed to save config');

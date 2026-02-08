@@ -2,6 +2,7 @@
 	import { getCrossSectionPath } from '$lib/projection-geometry/generate-projection';
 
 	import { superConfigStore, superGlobuleStore } from '$lib/stores';
+	import { get } from 'svelte/store';
 	import LabeledControl from './LabeledControl.svelte';
 	import Container from './Container.svelte';
 	import Editor from './Editor.svelte';
@@ -12,8 +13,9 @@
 		const newPolyhedron = polyhedronConfigs.find((p) => p.name === selectedName);
 
 		if (newPolyhedron) {
-			$superConfigStore.projectionConfigs[0].projectorConfig.polyhedron = newPolyhedron as any;
-			$superConfigStore = $superConfigStore;
+			const config = get(superConfigStore);
+			config.projectionConfigs[0].projectorConfig.polyhedron = newPolyhedron as any;
+			superConfigStore.set(config);
 		}
 	};
 </script>
@@ -27,7 +29,7 @@
 			<LabeledControl label="Polyhedron:">
 				<select
 					value={$superConfigStore.projectionConfigs[0].projectorConfig.polyhedron.name}
-					on:change={handleChangePolyhedron}
+					onchange={handleChangePolyhedron}
 				>
 					{#each polyhedronConfigs as polyhedron}
 						<option value={polyhedron.name}>{polyhedron.name}</option>

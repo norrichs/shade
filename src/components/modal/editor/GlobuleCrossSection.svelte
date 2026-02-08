@@ -5,6 +5,7 @@
 		ProjectionCurveSampleMethod
 	} from '$lib/projection-geometry/types';
 	import { superConfigStore, superGlobuleStore } from '$lib/stores';
+	import { get } from 'svelte/store';
 	import NumberInput from '../../controls/super-control/NumberInput.svelte';
 	import Button from '../../design-system/Button.svelte';
 	import LabeledControl from './LabeledControl.svelte';
@@ -18,8 +19,8 @@
 		console.debug('getCurves', crossSection);
 		return crossSection.curves;
 	};
-	let crossSection: ShapeConfig = $superConfigStore.subGlobuleConfigs[0].globuleConfig.shapeConfig;
-	$: curves = getCurves(crossSection);
+	let crossSection: ShapeConfig = $state($superConfigStore.subGlobuleConfigs[0].globuleConfig.shapeConfig);
+	let curves = $derived(getCurves(crossSection));
 </script>
 
 <Editor>
@@ -30,8 +31,10 @@
 			<PathEditor
 				curveDef={curves}
 				onChangeCurveDef={(curveDef) => {
-					$superConfigStore.subGlobuleConfigs[0].globuleConfig.shapeConfig.curves = curveDef;
-					crossSection = $superConfigStore.subGlobuleConfigs[0].globuleConfig.shapeConfig;
+					const config = get(superConfigStore);
+					config.subGlobuleConfigs[0].globuleConfig.shapeConfig.curves = curveDef;
+					superConfigStore.set(config);
+					crossSection = config.subGlobuleConfigs[0].globuleConfig.shapeConfig;
 				}}
 				config={{
 					gutter: 300,
@@ -46,9 +49,11 @@
 				<LabeledControl label="Symmetry">
 					<NumberInput
 						onChange={(value) => {
-							$superConfigStore.subGlobuleConfigs[0].globuleConfig.shapeConfig.symmetryNumber =
+							const config = get(superConfigStore);
+							config.subGlobuleConfigs[0].globuleConfig.shapeConfig.symmetryNumber =
 								value;
-							crossSection = $superConfigStore.subGlobuleConfigs[0].globuleConfig.shapeConfig;
+							superConfigStore.set(config);
+							crossSection = config.subGlobuleConfigs[0].globuleConfig.shapeConfig;
 						}}
 						value={crossSection.symmetryNumber}
 						min={1}

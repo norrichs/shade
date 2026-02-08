@@ -1,12 +1,15 @@
 <script lang="ts">
 	import { Canvas } from '@threlte/core';
 	import PointPick from './PointPick.svelte';
+	import type { Snippet } from 'svelte';
+
+	let { children }: { children: Snippet } = $props();
 </script>
 
 <div class="container">
 	<PointPick />
 	<Canvas>
-		<slot />
+		{@render children()}
 	</Canvas>
 </div>
 

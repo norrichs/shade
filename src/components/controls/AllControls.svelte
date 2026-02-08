@@ -1,7 +1,9 @@
 <script lang="ts">
-	export let settingStore;
-	let selectedSettings = $settingStore;
-	let path: (string | number)[] = [];
+	import { get } from 'svelte/store';
+
+	let { settingStore }: { settingStore: any } = $props();
+	let selectedSettings = $state($settingStore);
+	let path: (string | number)[] = $state([]);
 
 	type Setting =
 		| {
@@ -87,51 +89,61 @@
 	};
 
 	const updateStore = () => {
+		const storeValue: any = get(settingStore);
 		if (path.length === 0) {
-			$settingStore = selectedSettings;
+			settingStore.set(selectedSettings);
 		} else if (path.length === 1) {
-			$settingStore[path[0]] = selectedSettings;
+			storeValue[path[0]] = selectedSettings;
+			settingStore.set(storeValue);
 		} else if (path.length === 2) {
-			$settingStore[path[0]][path[1]] = selectedSettings;
+			storeValue[path[0]][path[1]] = selectedSettings;
+			settingStore.set(storeValue);
 		} else if (path.length === 3) {
-			$settingStore[path[0]][path[1]][path[2]] = selectedSettings;
+			storeValue[path[0]][path[1]][path[2]] = selectedSettings;
+			settingStore.set(storeValue);
 		} else if (path.length === 4) {
-			$settingStore[path[0]][path[1]][path[2]][path[3]] = selectedSettings;
+			storeValue[path[0]][path[1]][path[2]][path[3]] = selectedSettings;
+			settingStore.set(storeValue);
 		} else if (path.length === 5) {
-			$settingStore[path[0]][path[1]][path[2]][path[3]][path[4]] = selectedSettings;
+			storeValue[path[0]][path[1]][path[2]][path[3]][path[4]] = selectedSettings;
+			settingStore.set(storeValue);
 		} else if (path.length === 6) {
-			$settingStore[path[0]][path[1]][path[2]][path[3]][path[4]][path[5]] = selectedSettings;
+			storeValue[path[0]][path[1]][path[2]][path[3]][path[4]][path[5]] = selectedSettings;
+			settingStore.set(storeValue);
 		} else if (path.length === 7) {
-			$settingStore[path[0]][path[1]][path[2]][path[3]][path[4]][path[5]][path[6]] =
+			storeValue[path[0]][path[1]][path[2]][path[3]][path[4]][path[5]][path[6]] =
 				selectedSettings;
+			settingStore.set(storeValue);
 		} else if (path.length === 8) {
-			$settingStore[path[0]][path[1]][path[2]][path[3]][path[4]][path[5]][path[6]][path[7]] =
+			storeValue[path[0]][path[1]][path[2]][path[3]][path[4]][path[5]][path[6]][path[7]] =
 				selectedSettings;
+			settingStore.set(storeValue);
 		}
 	};
 
 	const gotoBreadcrumb = (crumb: string, index: number) => {
 		path = path.slice(0, index);
+		const storeValue: any = get(settingStore);
 		if (path.length === 0) {
-			selectedSettings = $settingStore;
+			selectedSettings = storeValue;
 		} else if (path.length === 1) {
-			selectedSettings = $settingStore[path[0]];
+			selectedSettings = storeValue[path[0]];
 		} else if (path.length === 2) {
-			selectedSettings = $settingStore[path[0]][path[1]];
+			selectedSettings = storeValue[path[0]][path[1]];
 		} else if (path.length === 3) {
-			selectedSettings = $settingStore[path[0]][path[1]][path[2]];
+			selectedSettings = storeValue[path[0]][path[1]][path[2]];
 		} else if (path.length === 4) {
-			selectedSettings = $settingStore[path[0]][path[1]][path[2]][path[3]];
+			selectedSettings = storeValue[path[0]][path[1]][path[2]][path[3]];
 		}
 	};
 
-	$: allSettings = getSettingsArray(selectedSettings);
+	let allSettings = $derived(getSettingsArray(selectedSettings));
 </script>
 
 <div class="control-object">
 	<nav class="breadcrumb">
 		{#each ['config', ...path] as p, index}
-			<button on:click={() => gotoBreadcrumb(`${p}`, index)}>{p}</button>
+			<button onclick={() => gotoBreadcrumb(`${p}`, index)}>{p}</button>
 		{/each}
 	</nav>
 	{#each allSettings as s}
@@ -139,14 +151,14 @@
 			<div class={`label ${['array', 'hash'].includes(s.type) ? 'openable' : ''}`}>{s.key}</div>
 			<div class="value">
 				{#if s.type === 'hash'}
-					<button class="go-button" on:click={() => selectSettings(s.key)}>Go</button>
+					<button class="go-button" onclick={() => selectSettings(s.key)}>Go</button>
 				{:else if s.type === 'number'}
-					<input type="number" bind:value={selectedSettings[s.key]} on:change={updateStore} />
+					<input type="number" bind:value={selectedSettings[s.key]} onchange={updateStore} />
 				{:else if s.type === 'boolean'}
-					<input type="checkbox" bind:checked={selectedSettings[s.key]} on:change={updateStore} />
+					<input type="checkbox" bind:checked={selectedSettings[s.key]} onchange={updateStore} />
 				{:else if s.type === 'enum'}
 					{#if Array.isArray(s.options)}
-						<select bind:value={selectedSettings[s.key]} on:change={updateStore}>
+						<select bind:value={selectedSettings[s.key]} onchange={updateStore}>
 							{#each s.options as op}
 								<option>{op}</option>
 							{/each}
@@ -159,7 +171,7 @@
 						{#each s.value as elem, index}
 							<div class="row">
 								<span>{`${index}`}</span>
-								<button class="go-button" on:click={() => selectSettings(s.key, index)}>Go</button>
+								<button class="go-button" onclick={() => selectSettings(s.key, index)}>Go</button>
 							</div>
 						{/each}
 					</div>

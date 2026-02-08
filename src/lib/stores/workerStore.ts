@@ -2,6 +2,7 @@ import { writable, derived, type Readable } from 'svelte/store';
 import type { SuperGlobuleConfig, SuperGlobule } from '$lib/types';
 import type { WorkerMessage, WorkerResponse } from '$lib/workers/super-globule.worker';
 import { Vector3, Triangle } from 'three';
+import { generateSurface, prepareProjectionConfig } from '$lib/projection-geometry/generate-projection';
 
 // Store to track if the worker is currently processing
 export const isWorking = writable<boolean>(false);
@@ -17,6 +18,7 @@ const pendingResolvers: Map<
 	{
 		resolve: (value: SuperGlobule) => void;
 		reject: (reason: Error) => void;
+		config: SuperGlobuleConfig;
 	}
 > = new Map();
 
@@ -168,6 +170,15 @@ function getWorker(): Worker {
 			if (type === 'result') {
 				workerError.set(null);
 				const rehydrated = rehydrateSuperGlobule(event.data.payload);
+
+				// Regenerate surfaces on main thread (Object3D can't be serialized through worker)
+				resolver.config.projectionConfigs.forEach((projConfig, i) => {
+					if (rehydrated.projections[i]) {
+						const prepared = prepareProjectionConfig(structuredClone(projConfig));
+						rehydrated.projections[i].surface = generateSurface(prepared.surfaceConfig);
+					}
+				});
+
 				resolver.resolve(rehydrated);
 			} else if (type === 'error') {
 				workerError.set(event.data.error);
@@ -199,7 +210,7 @@ export function generateSuperGlobuleAsync(config: SuperGlobuleConfig): Promise<S
 	return new Promise((resolve, reject) => {
 		const requestId = ++requestIdCounter;
 
-		pendingResolvers.set(requestId, { resolve, reject });
+		pendingResolvers.set(requestId, { resolve, reject, config });
 		isWorking.set(true);
 		workerError.set(null);
 

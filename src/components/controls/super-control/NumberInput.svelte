@@ -21,21 +21,39 @@
 		onChange?: ((newValue: number) => void) | undefined;
 	} = $props();
 
+	// Local state so the input is always editable, even when the parent
+	// passes value={expr} without bind:  (Svelte 5 runes treat unbound
+	// props as parent-owned, overwriting local mutations on re-render).
+	let internalValue = $state(value);
+
+	$effect(() => {
+		internalValue = value;
+	});
+
+	const propagate = (v: number) => {
+		value = v;
+		onChange?.(v);
+	};
+
 	const handleFocus = (event: FocusEvent) => {
 		(event.target as HTMLInputElement).select();
 	};
 
 	const handleChange = (event: Event) => {
-		onChange?.(parseInt((event.target as HTMLInputElement).value));
+		const v = parseFloat((event.target as HTMLInputElement).value);
+		if (!isNaN(v)) {
+			internalValue = v;
+			propagate(v);
+		}
 	};
 
 	const click = (direction: 'up' | 'down') => {
-		if (direction === 'up' && value < max - step) {
-			value = round(value + step, 2);
-		} else if (value > min + step) {
-			value = round(value - step, 2);
+		if (direction === 'up' && internalValue < max - step) {
+			internalValue = round(internalValue + step, 2);
+		} else if (internalValue > min + step) {
+			internalValue = round(internalValue - step, 2);
 		}
-		onChange?.(value);
+		propagate(internalValue);
 	};
 </script>
 
@@ -45,7 +63,7 @@
 	{/if}
 	<input
 		type="number"
-		bind:value
+		bind:value={internalValue}
 		{min}
 		{step}
 		{max}

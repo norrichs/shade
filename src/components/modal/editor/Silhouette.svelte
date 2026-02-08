@@ -5,6 +5,7 @@
 		ProjectionCurveSampleMethod
 	} from '$lib/projection-geometry/types';
 	import { superConfigStore, superGlobuleStore } from '$lib/stores';
+	import { get } from 'svelte/store';
 	import NumberInput from '../../controls/super-control/NumberInput.svelte';
 	import Button from '../../design-system/Button.svelte';
 	import LabeledControl from './LabeledControl.svelte';
@@ -28,9 +29,11 @@
 					curveDef={silhouette.curves}
 					onChangeCurveDef={(curveDef) => {
 						console.debug('onChangeCurveDef', curveDef);
-						$superConfigStore.subGlobuleConfigs[0].globuleConfig.silhouetteConfig.curves = curveDef;
+						const config = get(superConfigStore);
+						config.subGlobuleConfigs[0].globuleConfig.silhouetteConfig.curves = curveDef;
+						superConfigStore.set(config);
 						console.debug('silhouette', silhouette);
-						console.debug($superConfigStore.subGlobuleConfigs[0].globuleConfig.silhouetteConfig);
+						console.debug(get(superConfigStore).subGlobuleConfigs[0].globuleConfig.silhouetteConfig);
 					}}
 					config={{
 						gutter: 300,

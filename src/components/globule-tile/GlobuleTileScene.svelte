@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { generateGlobuleGeometry } from '$lib/generate-globulegeometry';
 	import { selectedGlobule } from '$lib/stores';
+	import { get } from 'svelte/store';
 	import type { GlobuleConfig } from '$lib/types';
 	import { T } from '@threlte/core';
 	import GlobuleMesh from '../globuleMesh/GlobuleMesh.svelte';
@@ -10,18 +11,16 @@
 
 	interactivity();
 
-	export let globuleConfig: GlobuleConfig;
-	export let sgIndex: number;
-	export let selected = false;
+	let { globuleConfig, sgIndex, selected = false }: { globuleConfig: GlobuleConfig; sgIndex: number; selected?: boolean } = $props();
 	const CLICK_DELTA_THRESHOLD = 10;
 
 	const handleClick = (event: any) => {
 		event.stopPropagation();
 		if (event.delta > CLICK_DELTA_THRESHOLD) return;
-		$selectedGlobule = { subGlobuleConfigIndex: sgIndex, globuleId: globuleConfig.id };
+		selectedGlobule.set({ subGlobuleConfigIndex: sgIndex, globuleId: globuleConfig.id });
 	};
 
-	$: globuleGeometry = generateGlobuleGeometry(globuleConfig);
+	let globuleGeometry = $derived(generateGlobuleGeometry(globuleConfig));
 </script>
 
 <DesignerCamera />
