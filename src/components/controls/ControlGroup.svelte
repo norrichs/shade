@@ -1,8 +1,10 @@
 <script lang="ts">
-	export let show = true;
+	import type { Snippet } from 'svelte';
+
+	let { show = true, children }: { show?: boolean; children: Snippet } = $props();
 </script>
 
-<div class="control-group" style={`display: ${show ? 'grid' : 'none'};`}><slot /></div>
+<div class="control-group" style={`display: ${show ? 'grid' : 'none'};`}>{@render children()}</div>
 
 <style>
 	.control-group {

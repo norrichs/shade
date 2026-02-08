@@ -1,13 +1,15 @@
 <script lang="ts">
-	import type { DynamicPath, DynamicPathCollection } from '$lib/patterns/patterns';
+	import type { DynamicPath } from '$lib/patterns/patterns';
 	// @ts-expect-error
 	import outline from 'svg-path-outline';
 
-	// export let paths: DynamicPathCollection;
-	export let branches: DynamicPath;
-	export let outlined: boolean;
-	export let bandIndex = 0;
-	export let fillColor = 'red';
+	let {
+		branches,
+		outlined,
+		bandIndex = 0,
+		fillColor = 'red'
+	}: { branches: DynamicPath; outlined: boolean; bandIndex?: number; fillColor?: string } =
+		$props();
 </script>
 
 <g stroke-linecap="round" stroke-linejoin="round" fill="red" stroke="none">

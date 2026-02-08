@@ -1,9 +1,11 @@
 <script lang="ts">
-	export let menuName: string;
+	import type { Snippet } from 'svelte';
+
+	let { menuName, children }: { menuName: string; children: Snippet } = $props();
 </script>
 
 <div popover="auto" id={menuName} class="popover-menu">
-	<slot />
+	{@render children()}
 </div>
 
 <style>

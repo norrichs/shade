@@ -11,14 +11,25 @@
 	} from '$lib/types';
 	import { Vector3 } from 'three';
 
-	export let patternType: string;
-	export let tilingBasis: TilingBasis;
-	export let width = 100;
-	export let height = 100;
-	export let rows = 1;
-	export let columns = 1;
-	export let active = false;
-	export let strokeWidth = 2;
+	let {
+		patternType,
+		tilingBasis,
+		width = 100,
+		height = 100,
+		rows = 1,
+		columns = 1,
+		active = false,
+		strokeWidth = 2
+	}: {
+		patternType: string;
+		tilingBasis: TilingBasis;
+		width?: number;
+		height?: number;
+		rows?: number;
+		columns?: number;
+		active?: boolean;
+		strokeWidth?: number;
+	} = $props();
 
 	const getPath = (
 		patternType: string,
@@ -104,7 +115,7 @@
 		return path;
 	};
 
-	$: tilePath = getPath(patternType, rows, columns, width, height);
+	let tilePath = $derived(getPath(patternType, rows, columns, width, height));
 </script>
 
 <div class:active>

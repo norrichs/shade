@@ -5,10 +5,13 @@
 	import { Vector3, type Triangle } from 'three';
 	import { getEdgeVector } from './distrubute-panels';
 
-	export let edge: TriangleEdge;
-	export let triangle: Triangle;
-	export let style: 'tick' | 'check' = 'tick';
-	export let length: number = 5;
+	let {
+		edge,
+		triangle,
+		style = 'tick',
+		length = 5
+	}: { edge: TriangleEdge; triangle: Triangle; style?: 'tick' | 'check'; length?: number } =
+		$props();
 
 	const getMarkPath = (edge: TriangleEdge, triangle: Triangle, style: 'tick' | 'check') => {
 		const [p0, p1] = getTrianglePointFromTriangleEdge(edge, 'triangle-order');
@@ -22,7 +25,7 @@
 		}
 	};
 
-	$: markPath = getMarkPath(edge, triangle, style);
+	let markPath = $derived(getMarkPath(edge, triangle, style));
 </script>
 
 <path d={markPath} stroke="black" stroke-width={0.25} />

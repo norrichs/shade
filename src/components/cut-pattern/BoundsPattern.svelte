@@ -1,8 +1,8 @@
 <script lang="ts">
-	import type { Band, BandCutPattern } from '$lib/types';
+	import type { BandCutPattern } from '$lib/types';
 
-	export let bounds: BandCutPattern['bounds'];
-	export let showBounds = false;
+	let { bounds, showBounds = false }: { bounds: BandCutPattern['bounds']; showBounds?: boolean } =
+		$props();
 </script>
 
 {#if showBounds && bounds}

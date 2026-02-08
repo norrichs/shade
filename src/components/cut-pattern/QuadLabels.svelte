@@ -3,8 +3,8 @@
 	import type { BandCutPattern } from '$lib/types';
 	import { concatAddress } from '$lib/util';
 
-	export let showQuadLabels = false;
-	export let band: BandCutPattern;
+	let { showQuadLabels = false, band }: { showQuadLabels?: boolean; band: BandCutPattern } =
+		$props();
 
 	const getQuadLabels = (band: BandCutPattern) => {
 		if (!showQuadLabels) return undefined;
@@ -39,8 +39,8 @@
 		};
 	};
 
-	$: quadLabels = getQuadLabels(band);
-	$: bandLabels = getBandLabels(band);
+	let quadLabels = $derived(getQuadLabels(band));
+	let bandLabels = $derived(getBandLabels(band));
 </script>
 
 {#if quadLabels && showQuadLabels}

@@ -2,9 +2,14 @@
 	import { getMidPoint } from '$lib/patterns/utils';
 	import type { BandCutPattern, PathSegment, Point } from '$lib/types';
 
-	export let showPathPointIndices = false;
-	export let band: BandCutPattern;
-	export let facetRange: [number, number] = [0, band.facets.length];
+	let {
+		showPathPointIndices = false,
+		band,
+		facetRange
+	}: { showPathPointIndices?: boolean; band: BandCutPattern; facetRange?: [number, number] } =
+		$props();
+
+	let effectiveFacetRange = $derived(facetRange ?? [0, band.facets.length]);
 
 	const getPathPointIndices = (band: BandCutPattern, showPathPointIndices: boolean) => {
 		if (!showPathPointIndices) return [];
@@ -56,12 +61,12 @@
 		});
 	};
 
-	$: pathPointIndices = getPathPointIndices(band, showPathPointIndices);
+	let pathPointIndices = $derived(getPathPointIndices(band, showPathPointIndices));
 </script>
 
 {#if showPathPointIndices}
 	<g stroke="none" text-anchor="middle">
-		{#each pathPointIndices.slice(facetRange[0], facetRange[1]) as facet, f}
+		{#each pathPointIndices.slice(effectiveFacetRange[0], effectiveFacetRange[1]) as facet, f}
 			{#each facet as point}
 				{#if point}
 					<rect

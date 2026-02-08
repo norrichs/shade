@@ -1,14 +1,21 @@
 <script lang="ts">
-	import type { DynamicPath, DynamicPathCollection } from '$lib/patterns/patterns';
+	import type { DynamicPath } from '$lib/patterns/patterns';
 	// @ts-expect-error
 	import outline from 'svg-path-outline';
 
-	// export let paths: DynamicPathCollection;
-	export let outlineSegments: DynamicPath;
-	export let outlineShape: DynamicPath;
-	export let outlined: boolean;
-	export let bandIndex = 0;
-	export let fillColor = 'red';
+	let {
+		outlineSegments,
+		outlineShape,
+		outlined,
+		bandIndex = 0,
+		fillColor = 'red'
+	}: {
+		outlineSegments: DynamicPath;
+		outlineShape: DynamicPath;
+		outlined: boolean;
+		bandIndex?: number;
+		fillColor?: string;
+	} = $props();
 </script>
 
 {#if outlineSegments && outlineShape}

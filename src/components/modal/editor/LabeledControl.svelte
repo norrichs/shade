@@ -1,12 +1,14 @@
 <script lang="ts">
-	export let label: string;
-	export let show = true;
+	import type { Snippet } from 'svelte';
+
+	let { label, show = true, children }: { label: string; show?: boolean; children: Snippet } =
+		$props();
 </script>
 
 {#if show}
 	<div class="labeled-control">
 		<div>{label}</div>
-		<slot />
+		{@render children()}
 	</div>
 {/if}
 

@@ -1,8 +1,7 @@
 <script lang="ts">
 	import type { BezierConfig } from '$lib/types';
 
-	export let curveDef: BezierConfig[];
-	export let canvScale: number;
+	let { curveDef, canvScale }: { curveDef: BezierConfig[]; canvScale: number } = $props();
 </script>
 
 {#each curveDef as curve}

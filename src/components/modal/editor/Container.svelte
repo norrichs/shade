@@ -1,9 +1,12 @@
 <script lang="ts">
-	export let direction: 'row' | 'column' = 'row';
+	import type { Snippet } from 'svelte';
+
+	let { direction = 'row', children }: { direction?: 'row' | 'column'; children: Snippet } =
+		$props();
 </script>
 
 <div class={direction === 'row' ? 'rows' : 'columns'}>
-	<slot />
+	{@render children()}
 </div>
 
 <style>

@@ -1,8 +1,7 @@
 <script lang="ts">
 	import type { PatternScale, Point } from '$lib/types';
 
-	export let scale: PatternScale;
-	export let origin: Point = { x: 100, y: 100 };
+	let { scale, origin = { x: 100, y: 100 } }: { scale: PatternScale; origin?: Point } = $props();
 
 	const getScaleBarPath = ({ unit, unitPerSvgUnit, quantity }: PatternScale) => {
 		const unitConversionFactor = unit === 'in' ? 25.4 : 1;
@@ -10,7 +9,7 @@
 		return `M 0 0 l 20 0 m -20 0 l 0 ${height} l 20 0`;
 	};
 
-	$: scaleBarPath = getScaleBarPath(scale);
+	let scaleBarPath = $derived(getScaleBarPath(scale));
 </script>
 
 <g fill="none" stroke="black" stroke-width="1">
