@@ -1,12 +1,12 @@
 <script lang="ts">
 	import type { BezierConfig } from '$lib/types';
-	export let curves;
 	import { spineCurveRibStore as ribs, curveStore } from './spineCurveRibStore';
 
-	const update = (c: BezierConfig[]) => {
-		$curveStore = c;
-	};
-	$: update(curves);
+	let { curves }: { curves: BezierConfig[] } = $props();
+
+	$effect(() => {
+		curveStore.set(curves);
+	});
 </script>
 
 <g>

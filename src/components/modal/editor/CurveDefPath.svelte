@@ -2,12 +2,19 @@
 	import type { BezierConfig } from '$lib/types';
 	import { addControlPoint, type PathEditorCanvas } from './path-editor';
 
-	export let curveDef: BezierConfig[];
-	export let onChangeCurveDef: (curveDef: BezierConfig[]) => void;
-	export let id: string | undefined = undefined;
-	export let canv: PathEditorCanvas;
+	let {
+		curveDef,
+		onChangeCurveDef,
+		id = undefined,
+		canv
+	}: {
+		curveDef: BezierConfig[];
+		onChangeCurveDef: (curveDef: BezierConfig[]) => void;
+		id?: string | undefined;
+		canv: PathEditorCanvas;
+	} = $props();
 
-	let hover = false;
+	let hover = $state(false);
 
 	const handleCurveOnClick = (event: MouseEvent) => {
 		console.debug('handleCurveOnClick', event, canv, event.offsetX, event.offsetY);
@@ -25,20 +32,20 @@
 			);
 		}, `M ${curveDef[0].points[0].x} ${curveDef[0].points[0].y}`);
 	};
-	$: pathString = getPathString(curveDef);
+	let pathString = $derived(getPathString(curveDef));
 </script>
 
 <g fill="none">
-	<!-- svelte-ignore a11y-no-static-element-interactions -->
-	<!-- svelte-ignore a11y-click-events-have-key-events -->
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<path
 		class="hover-path"
 		d={pathString}
 		stroke-width={10 * canv.scale}
 		stroke="transparent"
-		on:click={handleCurveOnClick}
-		on:mouseenter={() => (hover = true)}
-		on:mouseleave={() => (hover = false)}
+		onclick={handleCurveOnClick}
+		onmouseenter={() => (hover = true)}
+		onmouseleave={() => (hover = false)}
 	/>
 	<path {id} d={pathString} stroke-width={1 * canv.scale} stroke="black" />
 </g>

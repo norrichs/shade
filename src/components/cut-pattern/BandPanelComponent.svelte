@@ -1,13 +1,25 @@
 <script lang="ts">
+	import type { Snippet } from 'svelte';
 	import type { BandPanelPattern } from '$lib/types';
 	import { printProjectionAddress } from '$lib/projection-geometry/generate-projection';
 
-	export let band: BandPanelPattern;
-	export let index: number;
-	export let offsetX: number;
-	export let offsetY: number;
-	export let correctAngle = true;
-	export let showBounds = false;
+	let {
+		band,
+		index,
+		offsetX,
+		offsetY,
+		correctAngle = true,
+		showBounds = false,
+		children
+	}: {
+		band: BandPanelPattern;
+		index: number;
+		offsetX: number;
+		offsetY: number;
+		correctAngle?: boolean;
+		showBounds?: boolean;
+		children?: Snippet;
+	} = $props();
 
 	let colors = {
 		default: 'orange',
@@ -37,5 +49,5 @@
 			stroke-width={0.1}
 		/>
 	{/if}
-	<slot />
+	{@render children?.()}
 </g>

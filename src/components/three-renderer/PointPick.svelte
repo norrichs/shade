@@ -17,6 +17,7 @@
 		isBandSelectInteractionMode
 	} from '../../components/three-renderer/interaction-mode';
 	import Button from '../design-system/Button.svelte';
+	import { get } from 'svelte/store';
 
 	const dynamicOverlay = (mode: InteractionMode) => {
 		if (mode.type === 'point-select-translate') {
@@ -24,25 +25,27 @@
 			return `Pick point ${points.length + 1} of ${pick}`;
 		}
 	};
-	let interaction: Interaction;
+	let interaction: Interaction = $state(interactions[$mode.type]);
 
 	const setRecombination = () => {
+		const modeValue = get(mode);
 		if (
-			$mode.type !== 'band-select-partners' ||
-			$mode.data.originSelected?.address.b === undefined ||
-			$mode.data.partnerSelected?.address.b === undefined
+			modeValue.type !== 'band-select-partners' ||
+			modeValue.data.originSelected?.address.b === undefined ||
+			modeValue.data.partnerSelected?.address.b === undefined
 		) {
 			return;
 		}
 		const {
 			originSelected: { address: origin },
 			partnerSelected: { address: partner }
-		} = $mode.data;
+		} = modeValue.data;
 
 		const recurrenceIndex = origin.g[origin.g.length - 1];
 
+		const config = get(superConfigStore);
 		const newRecurrences: RecombinatoryRecurrence[] =
-			$superConfigStore.subGlobuleConfigs[origin.s].transforms[origin.g.length - 1].recurs;
+			config.subGlobuleConfigs[origin.s].transforms[origin.g.length - 1].recurs;
 
 		const newBandMapping = {
 			originJoin: originJoin,
@@ -69,19 +72,28 @@
 			newRecurrences[recurrenceIndex].recombines = { bandMap: [...newBandMap, newBandMapping] };
 		}
 
-		$superConfigStore.subGlobuleConfigs[origin.s].transforms[origin.g.length - 1].recurs =
+		config.subGlobuleConfigs[origin.s].transforms[origin.g.length - 1].recurs =
 			newRecurrences;
+		superConfigStore.set(config);
 
-		$mode.data = { ...$mode.data, originSelected: undefined, partnerSelected: undefined };
+		const modeUpdate = get(mode);
+		if (modeUpdate.type === 'band-select-partners') {
+			mode.set({
+				...modeUpdate,
+				data: { ...modeUpdate.data, originSelected: undefined, partnerSelected: undefined }
+			});
+		}
 	};
 
 	const toggle = (bandEnd: BandEnd) => {
 		return bandEnd === 'end' ? 'start' : 'end';
 	};
-	let partnerJoin: BandEnd = 'end';
-	let originJoin: BandEnd = 'end';
+	let partnerJoin: BandEnd = $state('end');
+	let originJoin: BandEnd = $state('end');
 
-	$: interaction = interactions[$mode.type];
+	$effect(() => {
+		interaction = interactions[$mode.type];
+	});
 </script>
 
 <div class={`overlay ${$mode.type === 'standard' ? 'hide' : 'show'}`}>
@@ -93,7 +105,7 @@
 				<div>{`(${round(point.x, 2)}, ${round(point.y)}, ${round(point.z)})`}</div>
 			{/each}
 		</div>
-		<button on:click={$mode.onSelectPoint} disabled={$mode.data.points.length < $mode.data.pick}
+		<button onclick={$mode.onSelectPoint} disabled={$mode.data.points.length < $mode.data.pick}
 			>{$mode.data.points.length < $mode.data.pick
 				? interaction.buttonPrompt
 				: interaction.buttonReady}</button
@@ -114,18 +126,6 @@
 				<Button>Cancel</Button>
 			</div>
 		{/if}
-
-		<!-- <div>{$mode.data.bands.length}</div>
-		<div>
-			{#each $mode.data.bands as band, i}
-				<div>band {i}</div>
-			{/each}
-		</div>
-		<button on:click={$mode.onSelectBands} disabled={$mode.data.bands.length < $mode.data.pick}>
-			{$mode.data.bands.length < $mode.data.pick
-				? interaction.buttonPrompt
-				: interaction.buttonReady}
-		</button> -->
 	{/if}
 </div>
 

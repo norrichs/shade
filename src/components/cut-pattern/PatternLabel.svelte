@@ -15,15 +15,27 @@
 	import { LABEL_TAG_PORTAL_ID, LABEL_TEXT_PORTAL_ID } from './constants';
 	import LabelText from './LabelText.svelte';
 
-	export let id: string | undefined = undefined;
-	export let color: string = 'black';
-	export let value: number;
-	export let addressStrings: string[] | undefined;
-	export let radius = 10;
-	export let scale: number = 1;
-	export let angle = 0;
-	export let anchor: Point = { x: 0, y: 0 };
-	export let portal: { transform: string } | undefined = undefined;
+	let {
+		id = undefined,
+		color = 'black',
+		value,
+		addressStrings = undefined,
+		radius = 10,
+		scale = 1,
+		angle = 0,
+		anchor = { x: 0, y: 0 },
+		portal = undefined
+	}: {
+		id?: string | undefined;
+		color?: string;
+		value: number;
+		addressStrings?: string[] | undefined;
+		radius?: number;
+		scale?: number;
+		angle?: number;
+		anchor?: Point;
+		portal?: { transform: string } | undefined;
+	} = $props();
 
 	const getLabelPathSegments = ({
 		value,
@@ -98,9 +110,9 @@
 		}
 	});
 
-	$: path = svgPathStringFromSegments(
+	let path = $derived(svgPathStringFromSegments(
 		adjust(getLabelPathSegments({ value, r: radius, addressStrings }), anchor, angle, scale)
-	);
+	));
 </script>
 
 {#if portal}

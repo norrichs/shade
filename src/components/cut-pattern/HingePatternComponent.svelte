@@ -4,10 +4,17 @@
 	import { Vector3 } from 'three';
 	import SvgText from './SvgText/SvgText.svelte';
 
-	export let hingePattern: HingePattern;
-	export let panel: PanelPattern;
-	export let showTriangles = false;
-	export let patternStyle: 'view' | 'cut';
+	let {
+		hingePattern,
+		panel,
+		showTriangles = false,
+		patternStyle
+	}: {
+		hingePattern: HingePattern;
+		panel: PanelPattern;
+		showTriangles?: boolean;
+		patternStyle: 'view' | 'cut';
+	} = $props();
 
 	const getOutlinePath = (outline: HingePattern['pattern']['outline']) => {
 		const path = outline.reduce((path, point, index) => {
@@ -54,7 +61,7 @@
 		ac: 'rgba(0, 200, 69, .1)'
 	};
 
-	$: outlinePath = getOutlinePath(hingePattern.pattern.outline);
+	let outlinePath = $derived(getOutlinePath(hingePattern.pattern.outline));
 </script>
 
 {#if patternStyle === 'cut'}
@@ -114,14 +121,6 @@
 				stroke-width="1"
 			/>
 		{/if}
-		<!-- {#if panel.meta.backFaceTriangle}
-		<path
-			d={`M ${panel.meta.backFaceTriangle.a.x} ${panel.meta.backFaceTriangle.a.y} L ${panel.meta.backFaceTriangle.b.x} ${panel.meta.backFaceTriangle.b.y} L ${panel.meta.backFaceTriangle.c.x} ${panel.meta.backFaceTriangle.c.y} Z`}
-			stroke="black"
-			fill="none"
-			stroke-width="2"
-		/>
-	{/if} -->
 	{/if}
 
 	{#if hingePattern.pattern.hinge}

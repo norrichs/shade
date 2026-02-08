@@ -4,19 +4,22 @@
 	import { BufferGeometry } from 'three';
 	import { materials, type Material } from '../../components/three-renderer/materials';
 
-	export let geometry: GlobuleGeometry | BandGeometry;
-	export let material: Material = 'default';
+	let {
+		geometry,
+		material = 'default'
+	}: {
+		geometry: GlobuleGeometry | BandGeometry;
+		material?: Material;
+	} = $props();
 
-	let bufferGeometry: BufferGeometry;
+	let bufferGeometry: BufferGeometry | undefined = $state(undefined);
 
-	const update = (geometry: GlobuleGeometry | BandGeometry) => {
+	$effect(() => {
 		if (!!geometry?.points) {
-			bufferGeometry = new BufferGeometry().setFromPoints(geometry?.points);
+			bufferGeometry = new BufferGeometry().setFromPoints(geometry.points);
 			bufferGeometry.computeVertexNormals();
 		}
-	};
-
-	$: update(geometry);
+	});
 </script>
 
 <T.Group>

@@ -14,15 +14,18 @@
 	import { concatAddress, isSameAddress } from '$lib/util';
 	import { PATTERN_PORTAL_ID, LABEL_TEXT_PORTAL_ID, LABEL_TAG_PORTAL_ID } from './constants';
 
-	// export let projectionPattern: SuperGlobuleProjectionPattern | undefined;
-	export let tubes: TubeCutPattern[] = [];
+	let {
+		tubes = []
+	}: {
+		tubes?: TubeCutPattern[];
+	} = $props();
+
 	const GAP_BETWEEN_BANDS = 20;
 
-	// TODO: filter cumulative origins by range
-
-	$: range = $patternConfigStore.patternViewConfig.range;
-	let filteredTubes: TubeCutPattern[] = [];
-	let origins: { tubes: { bands: Vector3[] }[] } = { tubes: [{ bands: [] }] };
+	let range = $derived($patternConfigStore.patternViewConfig.range);
+	let filteredTubes: TubeCutPattern[] = $state([]);
+	let origins: { tubes: { bands: Vector3[] }[] } = $state({ tubes: [{ bands: [] }] });
+	let showPattern = $state(false);
 
 	const getCumulativeOrigins = (
 		tubes: TubeCutPattern[],
@@ -102,8 +105,6 @@
 		console.debug('origins', origins);
 	};
 
-	let showPattern = false;
-
 	const minPoint = (facets: CutPattern[]) => {
 		let maxY: number = 0;
 		let X: number = 0;
@@ -118,7 +119,9 @@
 		return { x: X, y: maxY };
 	};
 
-	$: update($viewControlStore, tubes, range);
+	$effect(() => {
+		update($viewControlStore, tubes, range);
+	});
 </script>
 
 {#if showPattern}

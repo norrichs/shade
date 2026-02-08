@@ -21,6 +21,18 @@
 	import ColorMapped from './ColorMapped.svelte';
 	import { selectedProjectionGeometry } from '$lib/stores';
 
+	let {
+		onClick,
+		showNormals = false,
+		colorByBand = false,
+		colorEndFacets = true
+	}: {
+		onClick: (event: any, address: GlobuleAddress_Facet) => void;
+		showNormals?: boolean;
+		colorByBand?: boolean;
+		colorEndFacets?: boolean;
+	} = $props();
+
 	let projectionGeometry: {
 		surface?: Object3D;
 		polygons?: BufferGeometry[];
@@ -28,17 +40,12 @@
 		sections?: BufferGeometry;
 		bands?: BufferGeometry[];
 		facets?: { address: GlobuleAddress_Facet; geometry: BufferGeometry }[];
-	} = {};
+	} = $state({});
 	let globuleTubeGeometry: {
 		sections?: BufferGeometry;
 		bands?: BufferGeometry[];
 		facets?: { address: GlobuleAddress_Facet; geometry: BufferGeometry }[];
-	} = {};
-
-	export let onClick: (event: any, address: GlobuleAddress_Facet) => void;
-	export let showNormals = false;
-	export let colorByBand = false;
-	export let colorEndFacets = true;
+	} = $state({});
 
 	type ProjectionData = {
 		projection: Projection;
@@ -83,14 +90,18 @@
 		return geometry;
 	};
 
-	$: updateProjectionGeometry(
-		$viewControlStore.showProjectionGeometry,
-		$superGlobuleStore.projections
-	);
-	$: updateGlobuleTubeGeometry(
-		$viewControlStore.showGlobuleTubeGeometry,
-		$superGlobuleStore.globuleTubes
-	);
+	$effect(() => {
+		updateProjectionGeometry(
+			$viewControlStore.showProjectionGeometry,
+			$superGlobuleStore.projections
+		);
+	});
+	$effect(() => {
+		updateGlobuleTubeGeometry(
+			$viewControlStore.showGlobuleTubeGeometry,
+			$superGlobuleStore.globuleTubes
+		);
+	});
 </script>
 
 {#if $viewControlStore.showProjectionGeometry.any}
@@ -135,13 +146,6 @@
 				/>
 			{/each}
 		{/if}
-		<!-- <ColorMapped
-			geometry={geometry.bands}
-			groupSizeMap={[10]}
-			materials={materials.numbered}
-			onClick={(ev) => onClick(ev, getFacet())}
-		/> -->
-		<!-- <Highlight /> -->
 	</T.Group>
 {/if}
 

@@ -2,10 +2,17 @@
 	import { T } from '@threlte/core';
 	import type { BufferGeometry, MeshPhysicalMaterial } from 'three';
 
-	export let geometry: BufferGeometry[] | undefined;
-	export let groupSizeMap: number | number[] | undefined = undefined; // array of the sizes of groups to map materials to
-	export let materials: MeshPhysicalMaterial | MeshPhysicalMaterial[];
-	export let onClick: ((ev: any) => void) | undefined;
+	let {
+		geometry,
+		groupSizeMap = undefined,
+		materials,
+		onClick
+	}: {
+		geometry: BufferGeometry[] | undefined;
+		groupSizeMap?: number | number[] | undefined;
+		materials: MeshPhysicalMaterial | MeshPhysicalMaterial[];
+		onClick: ((ev: any) => void) | undefined;
+	} = $props();
 
 	const getEffectiveGroupSizeMap = (map: undefined | number | number[]) => {
 		if (Array.isArray(map)) return map;
@@ -45,9 +52,9 @@
 
 		return shapeMaterialIndices.map((i) => mats[i % mats.length]);
 	};
-	$: effectiveGroupSizeMap = getEffectiveGroupSizeMap(groupSizeMap);
-	$: effectiveMaterials = Array.isArray(materials) ? materials : [materials];
-	$: groupMaterials = getRowMaterials(effectiveGroupSizeMap, effectiveMaterials, geometry);
+	let effectiveGroupSizeMap = $derived(getEffectiveGroupSizeMap(groupSizeMap));
+	let effectiveMaterials = $derived(Array.isArray(materials) ? materials : [materials]);
+	let groupMaterials = $derived(getRowMaterials(effectiveGroupSizeMap, effectiveMaterials, geometry));
 </script>
 
 {#each geometry || [] as g, i}

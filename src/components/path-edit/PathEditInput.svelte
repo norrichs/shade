@@ -1,14 +1,20 @@
 <script lang="ts">
-	export let point: any;
-	// export let curveIndex: number;
-	// export let pointIndex: number;
-	export let canv: { minX: number; minY: number; maxX: number; maxY: number };
-	export let offsetDirection: { type: 'radial' | 'lateral' | 'absolute'; value: number };
-	export let onUpdate: (x: number, y: number, dx: number, dy: number) => void | undefined;
-	export let showPointInputsInline = false;
+	let {
+		point,
+		canv,
+		offsetDirection,
+		onUpdate,
+		showPointInputsInline = false
+	}: {
+		point: any;
+		canv: { minX: number; minY: number; maxX: number; maxY: number };
+		offsetDirection: { type: 'radial' | 'lateral' | 'absolute'; value: number };
+		onUpdate: (x: number, y: number, dx: number, dy: number) => void | undefined;
+		showPointInputsInline?: boolean;
+	} = $props();
 
-	let offsetX = 0;
-	let offsetY = 0;
+	let offsetX = $state(0);
+	let offsetY = $state(0);
 
 	const updateOffset = (
 		x: number,
@@ -40,9 +46,9 @@
 		onUpdate(point.x, -point.y, dx, -dy);
 	};
 
-	$: {
+	$effect(() => {
 		updateOffset(point.x, point.y, offsetDirection.type, offsetDirection.value);
-	}
+	});
 </script>
 
 <div
@@ -55,8 +61,8 @@
 			} * 50%) + ${offsetX}px), calc(-50% + ${offsetY}px)`
 		: ''}
 >
-	<input type="number" value={point.x} on:change={(event) => updatePoint(event, 'x')} />
-	<input type="number" value={point.y} on:change={(event) => updatePoint(event, 'y')} />
+	<input type="number" value={point.x} onchange={(event) => updatePoint(event, 'x')} />
+	<input type="number" value={point.y} onchange={(event) => updatePoint(event, 'y')} />
 </div>
 
 <style>

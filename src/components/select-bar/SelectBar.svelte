@@ -1,20 +1,26 @@
 <script lang="ts">
 	import type { SelectBarOption } from '$lib/types';
 
-	export let options: SelectBarOption[];
-	let selected: string;
-	export let value: unknown;
+	let {
+		options,
+		value = $bindable()
+	}: {
+		options: SelectBarOption[];
+		value: unknown;
+	} = $props();
 
-	$: {
+	let selected: string = $state('');
+
+	$effect(() => {
 		value = options.find((option) => option.name === selected);
-	}
+	});
 </script>
 
 <div class="multi-button">
 	{#each options as option}
 		<button
 			class:selected={selected === option.name}
-			on:click={() => {
+			onclick={() => {
 				selected = option.name;
 			}}
 		>

@@ -4,23 +4,32 @@
 	import { getMidPoint } from '$lib/patterns/utils';
 	import type { BandCutPattern, CutPattern, Point, Quadrilateral } from '$lib/types';
 
-	export let band: BandCutPattern;
-	export let showQuads = false;
-	export let showLabels = true;
-	export let showTriangles = false;
+	let {
+		band,
+		showQuads = false,
+		showLabels = true,
+		showTriangles = false
+	}: {
+		band: BandCutPattern;
+		showQuads?: boolean;
+		showLabels?: boolean;
+		showTriangles?: boolean;
+	} = $props();
 
-	$: facets = band.facets
-		.filter((facet) => !!facet.quad)
-		.map((facet: CutPattern, i) => {
-			const labelPoint =
-				facet.quad === undefined ? { x: 0, y: 0 } : getMidPoint(facet.quad.a, facet.quad.c);
-			return {
-				label: facet.label,
-				labelPoint,
-				quad: facet.quad,
-				triangles: facet.triangles
-			};
-		}) as { label: string; labelPoint: Point; quad: Quadrilateral; triangles?: any }[];
+	let facets = $derived(
+		band.facets
+			.filter((facet) => !!facet.quad)
+			.map((facet: CutPattern, i) => {
+				const labelPoint =
+					facet.quad === undefined ? { x: 0, y: 0 } : getMidPoint(facet.quad.a, facet.quad.c);
+				return {
+					label: facet.label,
+					labelPoint,
+					quad: facet.quad,
+					triangles: facet.triangles
+				};
+			}) as { label: string; labelPoint: Point; quad: Quadrilateral; triangles?: any }[]
+	);
 </script>
 
 {#each facets as facet, facetIndex}

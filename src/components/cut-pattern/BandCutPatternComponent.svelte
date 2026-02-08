@@ -8,18 +8,33 @@
 	import PathPointIndices from './PathPointIndices.svelte';
 	import QuadLabels from './QuadLabels.svelte';
 
-	export let band: BandCutPattern;
-	export let renderAsSinglePath = false;
-	export let highlightFirstFacet = false;
-	export let partnerBands: { band: BandCutPattern; transform: TransformConfig }[] = [];
-	export let showPartnerBands = false;
-	export let partnerFacets: CutPattern[] = [];
-	export let showPartnerFacets = false;
-	export let showQuadLabels = false;
-	export let showPathPointIndices = false;
-	export let showAdjacentFacets = false;
-	export let showOriginalPath = false;
-	export let showBounds = false;
+	let {
+		band,
+		renderAsSinglePath = false,
+		highlightFirstFacet = false,
+		partnerBands = [],
+		showPartnerBands = false,
+		partnerFacets = [],
+		showPartnerFacets = false,
+		showQuadLabels = false,
+		showPathPointIndices = false,
+		showAdjacentFacets = false,
+		showOriginalPath = false,
+		showBounds = false
+	}: {
+		band: BandCutPattern;
+		renderAsSinglePath?: boolean;
+		highlightFirstFacet?: boolean;
+		partnerBands?: { band: BandCutPattern; transform: TransformConfig }[];
+		showPartnerBands?: boolean;
+		partnerFacets?: CutPattern[];
+		showPartnerFacets?: boolean;
+		showQuadLabels?: boolean;
+		showPathPointIndices?: boolean;
+		showAdjacentFacets?: boolean;
+		showOriginalPath?: boolean;
+		showBounds?: boolean;
+	} = $props();
 
 	const postTransformPF = false;
 	const RAINBOW = false;
@@ -47,20 +62,6 @@
 		const sin = Math.sin(thetaRad);
 		return `matrix(${cos} ${sin} ${-sin} ${cos} ${translateX} ${translateY + PARTNER_OFFSET})`;
 	};
-
-	// const getTransformMatrix = (transform: TransformConfig) => {
-	// 	const {
-	// 		translate: { x, y },
-	// 		rotate: { z: rotZ }
-	// 	} = transform;
-	// 	const theta = (rotZ * Math.PI) / 180;
-	// 	const cosTheta = Math.cos(theta);
-	// 	const sinTheta = Math.sin(theta);
-	// 	return `matrix(
-	// 	${cosTheta} ${sinTheta} ${-sinTheta} ${cosTheta} ${x * cosTheta - y * sinTheta} ${
-	// 		x * sinTheta + y * cosTheta
-	// 	})`;
-	// };
 
 	const colors = ['purple', 'blue', 'green', 'yellow', 'orange', 'red'];
 </script>

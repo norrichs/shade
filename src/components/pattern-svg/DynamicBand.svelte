@@ -7,20 +7,29 @@
 	import Outline from './Outline.svelte';
 	import Branches from './Branches.svelte';
 
-	export let band: BandCutPattern;
-	export let minWidth: number;
-	export let maxWidth: number;
-	export let variant: number;
-	export let bandIndex: number;
-	export let outlined: boolean;
+	let {
+		band,
+		minWidth,
+		maxWidth,
+		variant,
+		bandIndex,
+		outlined
+	}: {
+		band: BandCutPattern;
+		minWidth: number;
+		maxWidth: number;
+		variant: number;
+		bandIndex: number;
+		outlined: boolean;
+	} = $props();
 
-	$: pathObject = generateBranched(band.facets.map((f) => f.quad) as Quadrilateral[], {
+	let pathObject = $derived(generateBranched(band.facets.map((f) => f.quad) as Quadrilateral[], {
 		rows: 1,
 		columns: 1,
 		variant,
 		minWidth,
 		maxWidth
-	});
+	}));
 </script>
 
 <g>

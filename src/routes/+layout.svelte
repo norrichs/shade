@@ -1,10 +1,13 @@
 <script lang="ts">
+	import type { Snippet } from 'svelte';
 	import NavHeader from '../components/nav-header/NavHeader.svelte';
 	import './theme.css';
+
+	let { children }: { children: Snippet } = $props();
 </script>
 
 <NavHeader />
-<slot />
+{@render children()}
 
 <style>
 	:global(body) {

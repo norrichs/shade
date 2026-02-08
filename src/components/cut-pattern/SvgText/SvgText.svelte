@@ -5,16 +5,27 @@
 	import { svgTextDictionary } from './svg-text-store';
 	import { onMount } from 'svelte';
 
-	export let id: string | undefined = undefined;
-	export let fontName: keyof typeof Fonts = 'reliefSingleLine';
-	export let string: string;
-	export let angle: number = 0;
-	export let size: number = 20;
-	export let color: string = 'black';
-	export let anchor: Point = { x: 0, y: 0 };
-	export let offset: { x: number | 'center'; y: number | 'center' } = { x: 'center', y: 0 };
-	export let strokeWidth: number = 1;
-	// export let portal: { target: string; transform: string } | undefined = undefined;
+	let {
+		id = undefined,
+		fontName = 'reliefSingleLine',
+		string,
+		angle = 0,
+		size = 20,
+		color = 'black',
+		anchor = { x: 0, y: 0 },
+		offset = { x: 'center', y: 0 },
+		strokeWidth = 1
+	}: {
+		id?: string | undefined;
+		fontName?: keyof typeof Fonts;
+		string: string;
+		angle?: number;
+		size?: number;
+		color?: string;
+		anchor?: Point;
+		offset?: { x: number | 'center'; y: number | 'center' };
+		strokeWidth?: number;
+	} = $props();
 
 	let dict = $svgTextDictionary;
 	if (!dict) {
@@ -24,9 +35,9 @@
 
 	console.debug('id', id);
 
-	$: xOffset = offset.x === 'center' ? -characterPaths.totalWidth / 2 : offset.x;
-	$: yOffset = offset.y === 'center' ? -0.5 : offset.y;
-	$: characterPaths = getChars(string, dict);
+	let characterPaths = $derived(getChars(string, dict));
+	let xOffset = $derived(offset.x === 'center' ? -characterPaths.totalWidth / 2 : offset.x);
+	let yOffset = $derived(offset.y === 'center' ? -0.5 : offset.y);
 </script>
 
 <g

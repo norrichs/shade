@@ -5,7 +5,7 @@
 	import PolygonEditor from './PolygonEditor.svelte';
 	import PolyhedronEditor from './PolyhedronEditor.svelte';
 
-	let showing: SelectBarOption = { name: 'Polygon' };
+	let showing: SelectBarOption = $state({ name: 'Polygon' });
 	const options: SelectBarOption[] = [
 		{ name: 'Surface' },
 		{ name: 'Polyhedron' },

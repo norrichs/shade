@@ -2,22 +2,26 @@
 	import type { Level } from '$lib/types';
 	import { T } from '@threlte/core';
 	import { Edges } from '@threlte/extras';
-	import { DoubleSide, CurvePath, BufferGeometry, MeshNormalMaterial } from 'three';
+	import { DoubleSide, BufferGeometry, MeshNormalMaterial } from 'three';
 
-	export let level: Level;
+	let { level }: { level: Level } = $props();
 
-	$: points = level.vertices
-		.map((vertex, i, vertices) => {
-			return [vertex, level.center, vertices[(i + 1) % vertices.length]];
-		})
-		.flat(1);
+	let points = $derived(
+		level.vertices
+			.map((vertex, i, vertices) => {
+				return [vertex, level.center, vertices[(i + 1) % vertices.length]];
+			})
+			.flat(1)
+	);
 
-	$: geometry = new BufferGeometry();
-	$: geometry.setFromPoints(points);
-	$: geometry.computeVertexNormals();
+	let geometry = $derived.by(() => {
+		const g = new BufferGeometry();
+		g.setFromPoints(points);
+		g.computeVertexNormals();
+		return g;
+	});
 
-	const material = new MeshNormalMaterial();
-	$: material.side = DoubleSide;
+	const material = new MeshNormalMaterial({ side: DoubleSide });
 </script>
 
 <T.Mesh args={[geometry, material]}>

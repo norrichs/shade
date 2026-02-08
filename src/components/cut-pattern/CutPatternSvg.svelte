@@ -1,12 +1,20 @@
 <script lang="ts">
+	import type { Snippet } from 'svelte';
 	import { patternConfigStore } from '$lib/stores';
 	import type { PatternViewConfig } from '$lib/types';
 
-	export let width = 4000;
-	export let height = 2000;
+	let {
+		width = 4000,
+		height = 2000,
+		children
+	}: {
+		width?: number;
+		height?: number;
+		children?: Snippet;
+	} = $props();
 
 	const getViewBox = (config: PatternViewConfig) => {
-		const { width, height, zoom, centerOffset } = config;
+		const { zoom, centerOffset } = config;
 		const minX = 0;
 		const minY = 0;
 		const logZoom = 1 / Math.pow(10, zoom);
@@ -16,7 +24,7 @@
 		return viewBox;
 	};
 
-	$: viewBoxValue = getViewBox($patternConfigStore.patternViewConfig);
+	let viewBoxValue = $derived(getViewBox($patternConfigStore.patternViewConfig));
 </script>
 
 <svg id="outer-svg" viewBox={viewBoxValue}>
@@ -28,6 +36,6 @@
 			$patternConfigStore.patternViewConfig.centerOffset.y
 		} ${width} ${height}`}
 	>
-		<slot />
+		{@render children?.()}
 	</svg>
 </svg>

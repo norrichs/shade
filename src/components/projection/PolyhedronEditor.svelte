@@ -1,10 +1,14 @@
 <script lang="ts">
 	import { superConfigStore } from '$lib/stores';
+	import { get } from 'svelte/store';
 
 	const PROJECTION_INDEX = 0;
 
-	export let polyhedronConfig =
-		$superConfigStore.projectionConfigs[PROJECTION_INDEX].projectorConfig.polyhedron;
+	let { projectionIndex = PROJECTION_INDEX }: { projectionIndex?: number } = $props();
+
+	let polyhedronConfig = $derived(
+		get(superConfigStore).projectionConfigs[projectionIndex].projectorConfig.polyhedron
+	);
 </script>
 
 <section>

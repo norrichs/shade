@@ -1,65 +1,61 @@
 <script lang="ts">
 	import { getCrossSection, getEdge } from '$lib/projection-geometry/functions';
 	import { superConfigStore } from '$lib/stores';
+	import { get } from 'svelte/store';
 	type PathEditorMode = 'edit' | 'view' | 'mini';
-	export let address;
-	export let toggleEditorMode: () => void;
+
+	let {
+		address,
+		toggleEditorMode
+	}: {
+		address: [number, number, number];
+		toggleEditorMode: () => void;
+	} = $props();
 
 	const [projectionIndex, polygonIndex, edgeIndex] = address;
 	const handleClickRecalculate = () => {};
 
-	// const getEdge = (address: [number, number, number]) => {
-	// 	return $superConfigStore.projectionConfigs[address[0]].projectorConfig.polyhedron.polygons[
-	// 		address[1]
-	// 	].edges[address[2]];
-	// };
-	// const getCrossSection = (address: [number, number, number]) => {
-	// 	const index = getEdge(address).crossSectionCurve;
-
-	// 	return {
-	// 		crossSectionDef:
-	// 			$superConfigStore.projectionConfigs[address[0]].projectorConfig.polyhedron
-	// 				.crossSectionCurves[index],
-	// 		crossSectionIndex: index
-	// 	};
-	// };
-
 	const copyEdgeCurve = (address: [number, number, number]): number => {
-		const indexOfCurve = getEdge($superConfigStore.projectionConfigs, address).widthCurve;
+		const config = get(superConfigStore);
+		const indexOfCurve = getEdge(config.projectionConfigs, address).widthCurve;
 		const newCurve = window.structuredClone(
-			$superConfigStore.projectionConfigs[address[0]].projectorConfig.polyhedron.edgeCurves[
+			config.projectionConfigs[address[0]].projectorConfig.polyhedron.edgeCurves[
 				indexOfCurve
 			]
 		);
-		$superConfigStore.projectionConfigs[address[0]].projectorConfig.polyhedron.edgeCurves.push(
+		config.projectionConfigs[address[0]].projectorConfig.polyhedron.edgeCurves.push(
 			newCurve
 		);
 		const newIndex =
-			$superConfigStore.projectionConfigs[address[0]].projectorConfig.polyhedron.edgeCurves.length -
+			config.projectionConfigs[address[0]].projectorConfig.polyhedron.edgeCurves.length -
 			1;
+		superConfigStore.set(config);
 		return newIndex;
 	};
 
 	const handleClickMakeUnique = (address: [number, number, number]) => {
-		$superConfigStore.projectionConfigs[address[0]].projectorConfig.polyhedron.polygons[
+		const config = get(superConfigStore);
+		config.projectionConfigs[address[0]].projectorConfig.polyhedron.polygons[
 			address[1]
 		].edges[address[2]].widthCurve = copyEdgeCurve(address);
+		superConfigStore.set(config);
 	};
 
 	const handleClickEditCrossSection = (address: [number, number, number]) => {
 		toggleEditorMode();
+		const config = get(superConfigStore);
 		const { crossSectionDef, crossSectionIndex } = getCrossSection(
-			$superConfigStore.projectionConfigs,
+			config.projectionConfigs,
 			address
 		);
 	};
 </script>
 
 <div>
-	<button on:click={handleClickRecalculate}> Recalculate Model </button>
+	<button onclick={handleClickRecalculate}> Recalculate Model </button>
 	{#if address[2] !== undefined}
-		<button on:click={() => handleClickMakeUnique(address)}>Make Unique</button>
-		<button on:click={() => handleClickEditCrossSection(address)}>Edit Cross Section</button>
+		<button onclick={() => handleClickMakeUnique(address)}>Make Unique</button>
+		<button onclick={() => handleClickEditCrossSection(address)}>Edit Cross Section</button>
 	{/if}
 	<div>
 		{`${address[0]} ${address[1]} ${address[2]}`}

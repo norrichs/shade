@@ -4,6 +4,7 @@
 </script>
 
 <script lang="ts">
+	import type { Snippet } from 'svelte';
 	import type { BezierConfig, PointConfig2 } from '$lib/types';
 	import Button from '../../design-system/Button.svelte';
 	import CurveDefPath from './CurveDefPath.svelte';
@@ -11,11 +12,21 @@
 	import DirectionLines from './DirectionLines.svelte';
 	import DraggablePoint from './DraggablePoint.svelte';
 
-	export let curveDef: BezierConfig[];
-	export let config: PathEditorConfig;
-	export let onChangeCurveDef: (curveDef: BezierConfig[]) => void;
-	export let manualUpdate: boolean = false;
-	export let limits: LimitFunction[] = [];
+	let {
+		curveDef,
+		config,
+		onChangeCurveDef,
+		manualUpdate = false,
+		limits = [],
+		children
+	}: {
+		curveDef: BezierConfig[];
+		config: PathEditorConfig;
+		onChangeCurveDef: (curveDef: BezierConfig[]) => void;
+		manualUpdate?: boolean;
+		limits?: LimitFunction[];
+		children?: Snippet;
+	} = $props();
 
 	const handleDragEnd = () => {
 		if (onChangeCurveDef && !manualUpdate) {
@@ -53,14 +64,14 @@
 		});
 	};
 
-	$: canv = getCanvas(config);
+	let canv = $derived(getCanvas(config));
 </script>
 
 <div class="container">
 	<svg width={config.size.width} height={config.size.height} viewBox={canv.viewBox} class="canvas">
 		<CurveDefPath {curveDef} {canv} onChangeCurveDef={handleUpdateCurveDef} />
 		<DirectionLines {curveDef} canvScale={canv.scale} />
-		<slot />
+		{@render children?.()}
 	</svg>
 	{#each curveDef as curve, curveIndex}
 		{#each curve.points as point, pointIndex}

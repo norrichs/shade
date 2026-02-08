@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Band, Facet } from '$lib/types';
+	import type { Band } from '$lib/types';
 	import { T } from '@threlte/core';
 	import {
 		DoubleSide,
@@ -9,50 +9,42 @@
 		MeshPhysicalMaterial
 	} from 'three';
 
-	export let band: Band;
-	export let showTabs: boolean = true;
-	export let material: MeshPhysicalMaterial;
+	let {
+		band,
+		showTabs = true,
+		material
+	}: {
+		band: Band;
+		showTabs?: boolean;
+		material: MeshPhysicalMaterial;
+	} = $props();
 
-	$: bandPoints = band.facets
-		.map((facet) => [facet.triangle.a, facet.triangle.b, facet.triangle.c])
-		.flat(1);
+	let bandPoints = $derived(
+		band.facets
+			.map((facet) => [facet.triangle.a, facet.triangle.b, facet.triangle.c])
+			.flat(1)
+	);
 
-	$: tabPoints = !showTabs
-		? []
-		: band.facets
-				.map((facet) => {
-					if (facet.tab && facet.tab.style === 'full') {
-						const { a, b, c } = facet.tab.outer;
-						return [a, b, c];
-					} else if (
-						facet.tab &&
-						['trapezoid', 'multi-facet-full', 'multi-facet-trap'].includes(facet.tab.style)
-					) {
-						const { a, b, c, d } = facet.tab.outer;
-						return [a, b, c, a, c, d];
-					}
-					return [];
-				})
-				.flat(1);
-	// $: tabPoints2 = !showTabs
-	// 	? []
-	// 	: band.facets
-	// 			.map((facet) => {
-	// 				if (facet.tab?.style === "full") {
-	// 					return [
-	// 						facet.tab.footprint.triangle.a,
-	// 						facet.tab.footprint.triangle.b,
-	// 						facet.tab.footprint.triangle.c
-	// 					];
-	// 				}
-	// 				return [];
-	// 			})
-	// 			.flat(1);
+	let tabPoints = $derived(
+		!showTabs
+			? []
+			: band.facets
+					.map((facet) => {
+						if (facet.tab && facet.tab.style === 'full') {
+							const { a, b, c } = facet.tab.outer;
+							return [a, b, c];
+						} else if (
+							facet.tab &&
+							['trapezoid', 'multi-facet-full', 'multi-facet-trap'].includes(facet.tab.style)
+						) {
+							const { a, b, c, d } = facet.tab.outer;
+							return [a, b, c, a, c, d];
+						}
+						return [];
+					})
+					.flat(1)
+	);
 
-	let edgeColor = 'magenta';
-	let bandGeometry: BufferGeometry;
-	let tabGeometry: BufferGeometry;
-	let edges: EdgesGeometry;
 	const bandMaterial = new MeshPhysicalMaterial({
 		color: 'orange',
 		transparent: true,
@@ -72,17 +64,20 @@
 
 	const lineMaterial = new LineBasicMaterial({ color: 'lightgrey' });
 
-	$: {
-		edgeColor = 'black';
+	let bandGeometry: BufferGeometry = $state(new BufferGeometry());
+	let edges: EdgesGeometry = $state(new EdgesGeometry());
+	let tabGeometry: BufferGeometry = $state(new BufferGeometry());
+
+	$effect(() => {
 		bandGeometry = new BufferGeometry().setFromPoints(bandPoints);
 		bandGeometry.computeVertexNormals();
 		edges = new EdgesGeometry(bandGeometry.clone().scale(1, 1, 1), 1);
-	}
+	});
 
-	$: {
+	$effect(() => {
 		tabGeometry = new BufferGeometry().setFromPoints(tabPoints);
 		tabGeometry.computeVertexNormals();
-	}
+	});
 </script>
 
 <T.Group>

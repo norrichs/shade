@@ -5,15 +5,21 @@
 	import { patterns } from '$lib/patterns';
 	import type { TilingBasis } from '$lib/types';
 
-	export let patternType: string;
-	export let tilingBasis: TilingBasis;
-	export let size = 50;
+	let {
+		patternType,
+		tilingBasis,
+		size = 50
+	}: {
+		patternType: string;
+		tilingBasis: TilingBasis;
+		size?: number;
+	} = $props();
 
-	$: strokeWidth = size >= 50 ? 2 : 0.5;
+	let strokeWidth = $derived(size >= 50 ? 2 : 0.5);
 </script>
 
 <button
-	on:click={() => {
+	onclick={() => {
 		if (patterns[patternType]) {
 			$patternConfigStore.tiledPatternConfig = tiledPatternConfigs[patternType];
 		}

@@ -6,9 +6,10 @@
 	import { BufferGeometry, Vector3 } from 'three';
 	import type { GlobuleTransformRotate, SuperGlobuleConfig } from '$lib/types';
 	import { isGlobuleTransformRotate } from '$lib/transform-globule';
+	import { get } from 'svelte/store';
 
-	let baseGeometry: BufferGeometry | null;
-	let rotatedGeometry: BufferGeometry | null;
+	let baseGeometry: BufferGeometry | null = $state(null);
+	let rotatedGeometry: BufferGeometry | null = $state(null);
 
 	const rotateDisplayPoints = (
 		{ rotate: { anchor, axis, angle } }: GlobuleTransformRotate,
@@ -43,7 +44,8 @@
 			rotatedGeometry = null;
 		} else {
 			const { sgIndex, tIndex } = control;
-			const transform = $superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex];
+			const configValue = get(superConfigStore);
+			const transform = configValue.subGlobuleConfigs[sgIndex].transforms[tIndex];
 			if (isGlobuleTransformRotate(transform)) {
 				const points = rotateDisplayPoints(transform);
 				baseGeometry = new BufferGeometry().setFromPoints(points.base);
@@ -54,7 +56,9 @@
 		}
 	};
 
-	$: updateGeometry($activeControl, $superConfigStore);
+	$effect(() => {
+		updateGeometry($activeControl, $superConfigStore);
+	});
 </script>
 
 {#if baseGeometry && rotatedGeometry}

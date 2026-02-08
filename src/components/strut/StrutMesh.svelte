@@ -9,34 +9,39 @@
 	} from 'three';
 	import type { Strut } from '$lib/types';
 
-	export let strut: Strut;
-	export let showTabs: boolean = false;
+	let {
+		strut,
+		showTabs = false
+	}: {
+		strut: Strut;
+		showTabs?: boolean;
+	} = $props();
 
-	$: bandPoints = strut.facets
-		.map((facet) => [facet.triangle.a, facet.triangle.b, facet.triangle.c])
-		.flat(1);
+	let bandPoints = $derived(
+		strut.facets
+			.map((facet) => [facet.triangle.a, facet.triangle.b, facet.triangle.c])
+			.flat(1)
+	);
 
-	$: tabPoints = !showTabs
-		? []
-		: strut.facets
-				.map((facet) => {
-					if (facet.tab) {
-						if (facet.tab.style === 'trapezoid') {
-							const { a, b, c, d } = facet.tab.outer;
-							return [a, b, d, b, c, d];
-						} else if (facet.tab.style === 'full') {
-							const { a, b, c } = facet.tab.outer;
-							return [a, b, c];
+	let tabPoints = $derived(
+		!showTabs
+			? []
+			: strut.facets
+					.map((facet) => {
+						if (facet.tab) {
+							if (facet.tab.style === 'trapezoid') {
+								const { a, b, c, d } = facet.tab.outer;
+								return [a, b, d, b, c, d];
+							} else if (facet.tab.style === 'full') {
+								const { a, b, c } = facet.tab.outer;
+								return [a, b, c];
+							}
 						}
-					}
-					return [];
-				})
-				.flat(1);
+						return [];
+					})
+					.flat(1)
+	);
 
-	let edgeColor = 'black';
-	let strutGeometry: BufferGeometry; // = new BufferGeometry()
-	let tabGeometry: BufferGeometry;
-	let edges: EdgesGeometry; // = new EdgesGeometry()
 	const strutMaterial = new MeshPhysicalMaterial({
 		color: 'orangered',
 		transparent: true,
@@ -56,17 +61,20 @@
 
 	const lineMaterial = new LineBasicMaterial({ color: 'black' });
 
-	$: {
-		edgeColor = 'black';
+	let strutGeometry: BufferGeometry = $state(new BufferGeometry());
+	let edges: EdgesGeometry = $state(new EdgesGeometry());
+	let tabGeometry: BufferGeometry = $state(new BufferGeometry());
+
+	$effect(() => {
 		strutGeometry = new BufferGeometry().setFromPoints(bandPoints);
 		strutGeometry.computeVertexNormals();
 		edges = new EdgesGeometry(strutGeometry.clone().scale(1, 1, 1), 1);
-	}
+	});
 
-	$: {
+	$effect(() => {
 		tabGeometry = new BufferGeometry().setFromPoints(tabPoints);
 		tabGeometry.computeVertexNormals();
-	}
+	});
 </script>
 
 <T.Group>
