@@ -25,7 +25,7 @@
 								inside: true,
 								outside: false,
 								tagName: 'path'
-						  })
+							})
 						: path.svgPath}
 					stroke={outlined ? 'none' : fillColor}
 					stroke-width={outlined ? 0 : outlineShape[0].width}
@@ -43,7 +43,7 @@
 						inside: true,
 						outside: true,
 						tagName: 'path'
-				  })
+					})
 				: outlineShape[0].svgPath}
 			fill-rule="evenodd"
 			stroke={outlined ? 'none' : fillColor}

@@ -401,11 +401,11 @@ export const svgEllipse = (
 	}
 	return `M ${location.p1.x} ${location.p1.y} 
               A ${e.r0} ${e.r1} ${e.rotation + (adjustment || 0)} 0 1 ${location.p2.x} ${
-		location.p2.y
-	} 
+								location.p2.y
+							} 
               A ${e.r0} ${e.r1} ${e.rotation + (adjustment || 0)} 1 1 ${location.p1.x} ${
-		location.p1.y
-	} z`;
+								location.p1.y
+							} z`;
 };
 
 export const svgArcTriangle = (
@@ -890,7 +890,6 @@ export const processFlowerOfLife1PatternTransforms = ({
 	integratedSegments[14][2] = newArcs.inner[2][1][2]; // r1
 	integratedSegments[14][6] = newArcs.inner[2][1][6]; // p1.x
 	integratedSegments[14][7] = newArcs.inner[2][1][7]; // p1.y
-
 
 	return integratedSegments;
 };

@@ -122,9 +122,7 @@ export function generateGlobuleEndCaps(
 		return { topCap: null, bottomCap: null };
 	}
 
-	const topCap = config.topCap
-		? generateEndCap(levels[0], 'top', config.capOffset ?? 0)
-		: null;
+	const topCap = config.topCap ? generateEndCap(levels[0], 'top', config.capOffset ?? 0) : null;
 
 	const bottomCap = config.bottomCap
 		? generateEndCap(levels[levels.length - 1], 'bottom', config.capOffset ?? 0)

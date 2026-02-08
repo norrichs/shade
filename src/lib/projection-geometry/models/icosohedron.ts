@@ -1,6 +1,10 @@
-import { generateTempId } from "$lib/id-handler";
-import { defaultCrossSection, defaultEdgeConfig, secondEdgeCurveConfig } from "../curve-definitions";
-import type { VerticesConfig, PolyhedronConfig, VertexIndex, CurveIndex } from "../types";
+import { generateTempId } from '$lib/id-handler';
+import {
+	defaultCrossSection,
+	defaultEdgeConfig,
+	secondEdgeCurveConfig
+} from '../curve-definitions';
+import type { VerticesConfig, PolyhedronConfig, VertexIndex, CurveIndex } from '../types';
 
 const pIcosohedron: VerticesConfig = [
 	{ x: 0, y: 0, z: 95.10565 }, // top vertex
@@ -208,4 +212,4 @@ const icosohedron: PolyhedronConfig<undefined, VertexIndex, CurveIndex, CurveInd
 	]
 };
 
-export default icosohedron
+export default icosohedron;

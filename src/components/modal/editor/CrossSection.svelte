@@ -14,7 +14,6 @@
 	import Container from './Container.svelte';
 	import Editor from './Editor.svelte';
 
-
 	export let editCurve = true;
 	export let sectionIndex = 0;
 
@@ -27,12 +26,12 @@
 				? {
 						method: newMethod,
 						divisions
-				  }
+					}
 				: {
 						method: newMethod,
 						divisions,
 						divisionsArray: Array.from({ length: divisions - 1 }, (_, i) => (i + 1) / divisions)
-				  };
+					};
 		crossSection.sampleMethod = newSampleMethod as ProjectionCurveSampleMethod;
 		$superConfigStore = $superConfigStore;
 	};
@@ -68,7 +67,7 @@
 		<section class="cross-section-container">
 			<header>{crossSectionIndex}</header>
 			<Container>
-				<Container direction='column'>
+				<Container direction="column">
 					<LabeledControl label="Edit Curve:">
 						<input type="checkbox" bind:checked={editCurve} />
 					</LabeledControl>
@@ -100,16 +99,22 @@
 							}}
 							limits={[endPointsZeroX, endPointsInRange, neighborPointMatch]}
 						>
-							<rect x="0" y="0" width="1" height="1"  fill="rgba(0,0,0,0.1)"/>
+							<rect x="0" y="0" width="1" height="1" fill="rgba(0,0,0,0.1)" />
 						</PathEditor>
-						<Button on:click={() => {
-							crossSection.curves = insertPoint(0, crossSection.curves, { type: 'PointConfig2', x: 0.5, y: 0.5 });
-							// Trigger reactivity to update preview
-							$superConfigStore = $superConfigStore;
-							}}>Insert Point</Button>
+						<Button
+							on:click={() => {
+								crossSection.curves = insertPoint(0, crossSection.curves, {
+									type: 'PointConfig2',
+									x: 0.5,
+									y: 0.5
+								});
+								// Trigger reactivity to update preview
+								$superConfigStore = $superConfigStore;
+							}}>Insert Point</Button
+						>
 					{/if}
 				</Container>
-				<Container direction='column'>
+				<Container direction="column">
 					<LabeledControl label="Divisions:">
 						<NumberInput
 							value={crossSection.sampleMethod.divisions}
@@ -177,5 +182,4 @@
 </Editor>
 
 <style>
-
 </style>

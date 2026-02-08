@@ -2,8 +2,9 @@ import { generateTempId } from '$lib/id-handler';
 import { defaultCrossSection, secondEdgeCurveConfig } from '../curve-definitions';
 import {
 	convertXYZtoVertices,
+	computeMixedPolygonMap,
 	generatePolygonConfigs,
-	type PolygonMapRow
+	type FaceSpec
 } from '../generate-polyhedra';
 import type { PolyhedronConfig_Initial } from '../types';
 
@@ -72,103 +73,42 @@ const fullereneXYZString = `-2.43201065 0 -2.60264564
 
 const vertices = convertXYZtoVertices(fullereneXYZString, FULLERENE_SCALE_FACTOR);
 
-const polygonMap: PolygonMapRow[] = [
-	{
-		polygonType: 'pentagon', // purple
-		count: 1,
-		sequence: [
-			[0, 0],
-			[0, 1],
-			[0, 2],
-			[0, 3],
-			[0, 4]
-		]
-	},
-	{
-		polygonType: 'hexagon', // blue
-		count: 5,
-		sequence: [
-			[0, 0],
-			[0, 1],
-			[1, 1],
-			[2, 1],
-			[2, 0],
-			[1, 0]
-		]
-	},
-	{
-		polygonType: 'pentagon', //teal
-		count: 5,
-		sequence: [
-			[1, 0],
-			[2, 0],
-			[3, 0],
-			[3, -1],
-			[2, -1]
-		]
-	},
-
-	{
-		polygonType: 'hexagon', // green
-		count: 5,
-		sequence: [
-			[2, 0],
-			[2, 1],
-			[3, 1],
-			[4, 1],
-			[4, 0],
-			[3, 0]
-		]
-	},
-	{
-		polygonType: 'hexagon', // yellow
-		count: 5,
-		sequence: [
-			[3, 0],
-			[4, 0],
-			[5, 0],
-			[5, -1],
-			[4, -1],
-			[3, -1]
-		]
-	},
-	{
-		polygonType: 'pentagon', // orange
-		count: 5,
-		sequence: [
-			[4, 0],
-			[4, 1],
-			[5, 1],
-			[6, 0],
-			[5, 0]
-		]
-	},
-	{
-		polygonType: 'hexagon', // red
-		count: 5,
-		sequence: [
-			[5, 0],
-			[6, 0],
-			[7, 0],
-			[7, -1],
-			[6, -1],
-			[5, -1]
-		]
-	},
-	{
-		polygonType: 'pentagon', // dark red
-		count: 1,
-		sequence: [
-			[7, 0],
-			[7, 1],
-			[7, 2],
-			[7, 3],
-			[7, 4]
-		]
-	}
+const faces: FaceSpec[] = [
+	{ type: 'pentagon', vertices: [0, 3, 4, 2, 1] },
+	{ type: 'hexagon', vertices: [0, 3, 9, 14, 15, 5] },
+	{ type: 'hexagon', vertices: [3, 4, 8, 16, 19, 9] },
+	{ type: 'hexagon', vertices: [4, 2, 7, 18, 17, 8] },
+	{ type: 'hexagon', vertices: [2, 1, 6, 12, 13, 7] },
+	{ type: 'hexagon', vertices: [1, 0, 5, 11, 10, 6] },
+	{ type: 'pentagon', vertices: [5, 15, 24, 20, 11] },
+	{ type: 'pentagon', vertices: [9, 19, 23, 22, 14] },
+	{ type: 'pentagon', vertices: [8, 17, 28, 27, 16] },
+	{ type: 'pentagon', vertices: [7, 13, 26, 25, 18] },
+	{ type: 'pentagon', vertices: [6, 10, 21, 29, 12] },
+	{ type: 'hexagon', vertices: [15, 14, 22, 33, 34, 24] },
+	{ type: 'hexagon', vertices: [19, 16, 27, 39, 32, 23] },
+	{ type: 'hexagon', vertices: [17, 18, 25, 35, 38, 28] },
+	{ type: 'hexagon', vertices: [13, 12, 29, 37, 36, 26] },
+	{ type: 'hexagon', vertices: [10, 11, 20, 30, 31, 21] },
+	{ type: 'hexagon', vertices: [24, 34, 44, 46, 30, 20] },
+	{ type: 'hexagon', vertices: [23, 32, 41, 40, 33, 22] },
+	{ type: 'hexagon', vertices: [28, 38, 49, 48, 39, 27] },
+	{ type: 'hexagon', vertices: [26, 36, 43, 42, 35, 25] },
+	{ type: 'hexagon', vertices: [21, 31, 47, 45, 37, 29] },
+	{ type: 'pentagon', vertices: [34, 33, 40, 50, 44] },
+	{ type: 'pentagon', vertices: [32, 39, 48, 54, 41] },
+	{ type: 'pentagon', vertices: [38, 35, 42, 53, 49] },
+	{ type: 'pentagon', vertices: [36, 37, 45, 51, 43] },
+	{ type: 'pentagon', vertices: [31, 30, 46, 52, 47] },
+	{ type: 'hexagon', vertices: [44, 50, 56, 55, 52, 46] },
+	{ type: 'hexagon', vertices: [41, 54, 59, 56, 50, 40] },
+	{ type: 'hexagon', vertices: [49, 53, 57, 59, 54, 48] },
+	{ type: 'hexagon', vertices: [43, 51, 58, 57, 53, 42] },
+	{ type: 'hexagon', vertices: [47, 52, 55, 58, 51, 45] },
+	{ type: 'pentagon', vertices: [56, 59, 57, 58, 55] }
 ];
-const levelStartIndices = [0, 5, 10, 20, 30, 40, 50, 55];
-const levelCounts = [5, 5, 10, 10, 10, 10, 5, 5];
+
+const polygonMap = computeMixedPolygonMap({ vertices, faces, radialSymmetry: 5 });
 
 const fullerene: PolyhedronConfig_Initial = {
 	name: 'Fullerene',

@@ -25,7 +25,7 @@
 						inside: true,
 						outside: false,
 						tagName: 'path'
-				  })
+					})
 				: path.svgPath}
 			stroke-width={outlined ? 0 : path.width}
 		/>

@@ -126,7 +126,8 @@
 	}
 
 	@keyframes pulse-button {
-		0%, 100% {
+		0%,
+		100% {
 			box-shadow: 2px 2px 10px 0px var(--color-shaded-dark);
 		}
 		50% {

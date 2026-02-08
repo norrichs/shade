@@ -57,11 +57,11 @@ const unitTriangle = (
 			? ([
 					['M', 0, 0],
 					['L', w, h]
-			  ] as PathSegment[])
+				] as PathSegment[])
 			: ([
 					['M', 0, h],
 					['L', w, 0]
-			  ] as PathSegment[]);
+				] as PathSegment[]);
 
 	return {
 		start: [

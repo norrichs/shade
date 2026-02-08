@@ -15,5 +15,3 @@ export const patternConfigStore = persistable<GlobulePatternConfig>(
 	AUTO_PERSIST_KEY,
 	bootstrapShouldUsePersisted()
 );
-
-

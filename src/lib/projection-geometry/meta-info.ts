@@ -2,7 +2,13 @@ import {
 	isSuperGlobuleProjectionCutPattern,
 	type SuperGlobuleProjectionPattern
 } from '$lib/stores';
-import type { BandCutPattern, CutPattern, PathSegment, ProjectionCutPattern, SuperGlobuleConfig } from '$lib/types';
+import type {
+	BandCutPattern,
+	CutPattern,
+	PathSegment,
+	ProjectionCutPattern,
+	SuperGlobuleConfig
+} from '$lib/types';
 import {
 	isArcPathSegment,
 	isCubicBezierPathSegment,
@@ -21,13 +27,18 @@ export const getMetaInfo = (projectionPattern: SuperGlobuleProjectionPattern | u
 			projectionPattern.projectionCutPattern
 		);
 	}
-  console.debug('META INFO', metaInfo);
-  const perTube = metaInfo.projectionCutPattern?.tubes.map(tube => tube.bands.reduce((acc, band) => acc + band.segmentLength, 0))
-  console.debug('PER TUBE', perTube);
+	console.debug('META INFO', metaInfo);
+	const perTube = metaInfo.projectionCutPattern?.tubes.map((tube) =>
+		tube.bands.reduce((acc, band) => acc + band.segmentLength, 0)
+	);
+	console.debug('PER TUBE', perTube);
 	return metaInfo;
 };
 
-const getProjectionCutPatternMeta = (projectionCutPattern: ProjectionCutPattern, config: SuperGlobuleConfig) => {
+const getProjectionCutPatternMeta = (
+	projectionCutPattern: ProjectionCutPattern,
+	config: SuperGlobuleConfig
+) => {
 	return {
 		tubes: projectionCutPattern.tubes.map((tube) => {
 			return {

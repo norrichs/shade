@@ -11,7 +11,6 @@ export const onPathPointMove = (
 	limitAngle = 0,
 	isEndLocked = false
 ): BezierConfig[] => {
-	
 	// if (limitAngle && curveIndex === 0 && pointIndex === 0) {
 	// 	if (Math.atan(y / x) < 0) return curves
 	// } else if (limitAngle && curveIndex === curves.length - 1 && pointIndex === 3) {

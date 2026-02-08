@@ -14,11 +14,10 @@
 	import Editor from './Editor.svelte';
 	import type { ShapeConfig } from '$lib/types';
 
-
 	const getCurves = (crossSection: ShapeConfig) => {
 		console.debug('getCurves', crossSection);
 		return crossSection.curves;
-	}
+	};
 	let crossSection: ShapeConfig = $superConfigStore.subGlobuleConfigs[0].globuleConfig.shapeConfig;
 	$: curves = getCurves(crossSection);
 </script>

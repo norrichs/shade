@@ -685,13 +685,13 @@ export const generateMultiFacetFullTab = (
 					b: footprint[1].triangle[edgeConfig.lead].clone(),
 					c: footprint[0].triangle[footprint[0].free].clone(),
 					d: footprint[0].triangle[edgeConfig.lead].clone()
-			  }
+				}
 			: {
 					a: footprint[0].triangle[edgeConfig.lead].clone(),
 					b: footprint[1].triangle[edgeConfig.follow].clone(),
 					c: footprint[0].triangle[footprint[0].free].clone(),
 					d: footprint[0].triangle[edgeConfig.follow].clone()
-			  };
+				};
 	return {
 		style: 'multi-facet-full',
 		direction: tabStyle.direction,

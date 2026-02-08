@@ -74,10 +74,7 @@
 
 			{#if surfaceConfig.type === 'SphereConfig' && 'radius' in surfaceConfig}
 				<LabeledControl label="Sphere Radius">
-					<NumberInput
-						bind:value={surfaceConfig.radius}
-						hasButtons
-					/>
+					<NumberInput bind:value={surfaceConfig.radius} hasButtons />
 				</LabeledControl>
 				<LabeledControl label="Sphere Center">
 					<PointInput bind:value={surfaceConfig.center} />

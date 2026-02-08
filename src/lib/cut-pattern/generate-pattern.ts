@@ -124,7 +124,6 @@ export const generateProjectionPattern = (
 	} = globulePatternConfig;
 
 	if (shouldUsePanelPattern(tiledPatternConfig)) {
-		
 		const projectionPanelPattern = generateProjectionPanelPattern({
 			tubes,
 			range,
@@ -149,12 +148,12 @@ export const generateProjectionPattern = (
 		getEndPartnerTransforms(tubePatterns);
 
 		const { adjustAfterTiling } = patterns[tiledPatternConfig.type];
- 
-		const doAdjustAfterTiling = !!adjustAfterTiling && tubePatterns[0].bands[0].meta?.startPartnerBand
+
+		const doAdjustAfterTiling =
+			!!adjustAfterTiling && tubePatterns[0].bands[0].meta?.startPartnerBand;
 		if (doAdjustAfterTiling) {
 			tubePatterns = tubePatterns.map((tubePattern) => {
 				const adjusted = adjustAfterTiling(tubePattern.bands, tiledPatternConfig, tubePatterns);
-				
 
 				return {
 					...tubePattern,
@@ -368,7 +367,7 @@ export const getEndPartnerTransform = (
 		: [
 				originBand.facets[originBand.facets.length - 1].quad?.d,
 				originBand.facets[originBand.facets.length - 1].quad?.c
-		  ];
+			];
 
 	// if (originBand.sideOrientation && originBand.sideOrientation === 'inside') originPair.reverse();
 
@@ -378,7 +377,7 @@ export const getEndPartnerTransform = (
 		: [
 				partnerBand.facets[partnerBand.facets.length - 1].quad?.d,
 				partnerBand.facets[partnerBand.facets.length - 1].quad?.c
-		  ];
+			];
 	// if (partnerBand.sideOrientation && partnerBand.sideOrientation === 'inside')
 	// 	partnerPair.reverse();
 	if (!partnerPair[0] || !partnerPair[1]) return nullTransform;

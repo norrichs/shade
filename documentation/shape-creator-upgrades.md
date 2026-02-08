@@ -10,7 +10,8 @@
 
 fix PathEdit component so that shape edits don't cause focus to be lost
 
-Fix Globule selection system 
+Fix Globule selection system
+
 - a particular globule selectable from the `Super` control menu, or by clicking on a globule in the three renderer
 - clicking on three render (in standard interaction mode), should do the following
   - select globule (standard selection color)
@@ -21,11 +22,9 @@ Fix Globule selection system
     - names
     - all should be editable
 
-
 New Contstraints component
 
 - side length
-
   - if the shape is radially symmetrical, place endpoints at a radius giving a set distance between endpoints
 
   ```javascript
@@ -37,8 +36,9 @@ New Contstraints component
 
   endpoint_1 = (0, r)
   endpoint_2 = (
-    r * Math.cos(2*alpha), 
+    r * Math.cos(2*alpha),
     r * Math.sin(2*alpha)
   )
   ```
-- 
+
+-

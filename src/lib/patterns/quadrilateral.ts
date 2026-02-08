@@ -228,8 +228,8 @@ const getOffsetLine = (
 	const extraLinearPoint: Point = isSamePoint(p0, partner.p0)
 		? partner.p1
 		: isSamePoint(p0, partner.p1)
-		? partner.p0
-		: partner.p1;
+			? partner.p0
+			: partner.p1;
 	const m = getSlope(p0, p1);
 	const b = p0.y - m * p0.x;
 
@@ -330,13 +330,13 @@ export const getQuadrilaterals = (
 							b: facets[i - 1].triangle.b.clone(),
 							c: facet.triangle.a.clone(),
 							d: facets[i - 1].triangle.c.clone()
-					  }
+						}
 					: {
 							a: facets[i - 1].triangle.a.clone(),
 							b: facets[i - 1].triangle.b.clone(),
 							c: facets[i - 1].triangle.c.clone(),
 							d: facet.triangle.b.clone()
-					  };
+						};
 
 			if (scale && scale !== 1) {
 				quad.a.multiplyScalar(scale);
@@ -344,29 +344,29 @@ export const getQuadrilaterals = (
 				quad.c.multiplyScalar(scale);
 				quad.d.multiplyScalar(scale);
 			}
-// TODO - at the adjustment phase, for inside bands, adjacent bands are either (next) or (need to adjust the quad segments used as reference)
+			// TODO - at the adjustment phase, for inside bands, adjacent bands are either (next) or (need to adjust the quad segments used as reference)
 			if (sideOrientation === 'inside') {
-				quad.a.x = -quad.a.x
-				quad.b.x = -quad.b.x
-				quad.c.x = -quad.c.x
-				quad.d.x = -quad.d.x
+				quad.a.x = -quad.a.x;
+				quad.b.x = -quad.b.x;
+				quad.c.x = -quad.c.x;
+				quad.d.x = -quad.d.x;
 			}
 			quads.push(quad);
 		}
 	});
-  if (sideOrientation === 'inside') {
+	if (sideOrientation === 'inside') {
 		const allX = quads.map((quad) => [quad.a.x, quad.b.x, quad.c.x, quad.d.x]).flat();
 		const minX = Math.min(...allX);
 		const shiftedQuads = quads.map((quad) => {
-			quad.a.set(quad.a.x - minX, quad.a.y, quad.a.z)
-			quad.b.set(quad.b.x - minX, quad.b.y, quad.b.z)
-			quad.c.set(quad.c.x - minX, quad.c.y, quad.c.z)
-			quad.d.set(quad.d.x - minX, quad.d.y, quad.d.z)
-			return quad		
-		})
-		return shiftedQuads
+			quad.a.set(quad.a.x - minX, quad.a.y, quad.a.z);
+			quad.b.set(quad.b.x - minX, quad.b.y, quad.b.z);
+			quad.c.set(quad.c.x - minX, quad.c.y, quad.c.z);
+			quad.d.set(quad.d.x - minX, quad.d.y, quad.d.z);
+			return quad;
+		});
+		return shiftedQuads;
 	}
-	
+
 	return quads;
 };
 
@@ -585,10 +585,10 @@ export const traceCombinedOutline = (
 	const tracedOutline: PathSegment[] = tabs?.appendTab
 		? retraced.map((p, i) => {
 				return [i === 0 ? 'M' : 'L', p.x, p.y] as MovePathSegment | LinePathSegment;
-		  })
+			})
 		: traced.map((p, i) => {
 				return [i === 0 ? 'M' : 'L', p.x, p.y] as MovePathSegment | LinePathSegment;
-		  });
+			});
 	tracedOutline.push(['Z']);
 
 	return { holes: innerHoles, outline: tracedOutline };

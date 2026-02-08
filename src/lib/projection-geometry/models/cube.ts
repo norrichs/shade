@@ -1,5 +1,9 @@
 import { generateTempId } from '$lib/id-handler';
-import { defaultCrossSection, defaultEdgeConfig, secondEdgeCurveConfig } from '../curve-definitions';
+import {
+	defaultCrossSection,
+	defaultEdgeConfig,
+	secondEdgeCurveConfig
+} from '../curve-definitions';
 
 import type { PolyhedronConfig, VertexIndex, CurveIndex, VerticesConfig } from '../types';
 

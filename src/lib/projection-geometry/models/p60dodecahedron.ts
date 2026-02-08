@@ -1,6 +1,11 @@
-import { generateTempId } from "$lib/id-handler";
-import { defaultCrossSection, defaultEdgeCurveConfig, secondEdgeCurveConfig, defaultEdgeConfig } from "../curve-definitions";
-import type { CurveIndex, PolyhedronConfig, VertexIndex, VerticesConfig } from "../types";
+import { generateTempId } from '$lib/id-handler';
+import {
+	defaultCrossSection,
+	defaultEdgeCurveConfig,
+	secondEdgeCurveConfig,
+	defaultEdgeConfig
+} from '../curve-definitions';
+import type { CurveIndex, PolyhedronConfig, VertexIndex, VerticesConfig } from '../types';
 
 const p60Dodeca: VerticesConfig = [
 	{ x: 0, y: 0, z: 140.12585 },
@@ -559,6 +564,6 @@ const p60Dodecahedron: PolyhedronConfig<undefined, VertexIndex, CurveIndex, Curv
 			]
 		}
 	]
-}
+};
 
-export default p60Dodecahedron
+export default p60Dodecahedron;

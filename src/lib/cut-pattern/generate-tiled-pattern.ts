@@ -57,7 +57,6 @@ export const generateTubeCutPattern = ({
 		getQuadrilaterals(flatBand, pixelScale.value, flatBand.sideOrientation)
 	);
 
-
 	const tiling = generateTiling({ quadBands, bands: alignedBands, tiledPatternConfig, address });
 
 	// Return raw tiling - adjustAfterTiling and post-processing happen in generate-pattern.ts
@@ -209,7 +208,7 @@ export const generateTiling = ({
 					globule: startPartner.globule,
 					tube: startPartner.tube,
 					band: startPartner.band
-			  }
+				}
 			: undefined;
 		const endPartnerBand: GlobuleAddress_Band | undefined = endPartner
 			? { globule: endPartner.globule, tube: endPartner.tube, band: endPartner.band }

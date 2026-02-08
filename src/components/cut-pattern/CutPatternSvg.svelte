@@ -24,12 +24,10 @@
 		id="pattern-svg"
 		height={`${height}${$patternConfigStore.patternConfig.page.unit}`}
 		width={`${width}${$patternConfigStore.patternConfig.page.unit}`}
-		viewBox={`${
-			$patternConfigStore.patternViewConfig.centerOffset.x
-		} ${
+		viewBox={`${$patternConfigStore.patternViewConfig.centerOffset.x} ${
 			$patternConfigStore.patternViewConfig.centerOffset.y
 		} ${width} ${height}`}
-	>	
+	>
 		<slot />
 	</svg>
 </svg>

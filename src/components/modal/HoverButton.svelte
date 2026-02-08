@@ -58,12 +58,12 @@
 	}
 	button:hover .title-container {
 		gap: 4px;
-		transition: gap .3s ease-in;
+		transition: gap 0.3s ease-in;
 		margin-right: 8px;
-		transition: margin-right .3s ease-in;
+		transition: margin-right 0.3s ease-in;
 	}
 	button:hover .word-rest {
-	  max-width: 70px;
-		transition: max-width .3s ease-in;
+		max-width: 70px;
+		transition: max-width 0.3s ease-in;
 	}
 </style>

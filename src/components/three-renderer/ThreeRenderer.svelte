@@ -5,7 +5,7 @@
 
 <div class="container">
 	<PointPick />
-	<Canvas >
+	<Canvas>
 		<slot />
 	</Canvas>
 </div>
@@ -17,5 +17,4 @@
 		background-color: beige;
 		height: 100%;
 	}
-
 </style>

@@ -53,7 +53,10 @@
 	};
 </script>
 
-<div class="sub-globule container card-container" style={`--left-border-color: ${active ? 'blue' : 'red'};`}>
+<div
+	class="sub-globule container card-container"
+	style={`--left-border-color: ${active ? 'blue' : 'red'};`}
+>
 	<header class="card-header">
 		<TextInput bind:value={$store.subGlobuleConfigs[sgIndex].name} />
 
@@ -118,8 +121,8 @@
 		grid-template-rows: auto auto;
 		grid-template-columns: 400px auto;
 		grid-template-areas:
-		'a a'
-		'b c';
+			'a a'
+			'b c';
 	}
 	.card-header {
 		padding: 4px;

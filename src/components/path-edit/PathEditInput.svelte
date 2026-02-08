@@ -43,7 +43,6 @@
 	$: {
 		updateOffset(point.x, point.y, offsetDirection.type, offsetDirection.value);
 	}
-
 </script>
 
 <div
@@ -51,9 +50,9 @@
 	style={!showPointInputsInline
 		? `left:${point.x - canv.minX}px; top:${
 				-point.y - canv.minY
-		  }px; transform: translate(calc(-50% + (${
+			}px; transform: translate(calc(-50% + (${
 				Math.sign(offsetX) === 0 ? 1 : Math.sign(offsetX)
-		  } * 50%) + ${offsetX}px), calc(-50% + ${offsetY}px)`
+			} * 50%) + ${offsetX}px), calc(-50% + ${offsetY}px)`
 		: ''}
 >
 	<input type="number" value={point.x} on:change={(event) => updatePoint(event, 'x')} />

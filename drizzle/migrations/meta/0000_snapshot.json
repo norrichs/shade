@@ -1,823 +1,777 @@
 {
-  "version": "6",
-  "dialect": "sqlite",
-  "id": "3069916d-1201-4f09-8646-1abee8105d5c",
-  "prevId": "00000000-0000-0000-0000-000000000000",
-  "tables": {
-    "bands": {
-      "name": "bands",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "integer",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "globule_id": {
-          "name": "globule_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "bands_globule_id_globules_id_fk": {
-          "name": "bands_globule_id_globules_id_fk",
-          "tableFrom": "bands",
-          "tableTo": "globules",
-          "columnsFrom": [
-            "globule_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
-    },
-    "facets": {
-      "name": "facets",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "integer",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "band_id": {
-          "name": "band_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "triangle": {
-          "name": "triangle",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "tab": {
-          "name": "tab",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "facets_band_id_bands_id_fk": {
-          "name": "facets_band_id_bands_id_fk",
-          "tableFrom": "facets",
-          "tableTo": "bands",
-          "columnsFrom": [
-            "band_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
-    },
-    "globules": {
-      "name": "globules",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "integer",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        }
-      },
-      "indexes": {
-        "nameIdx": {
-          "name": "nameIdx",
-          "columns": [
-            "name"
-          ],
-          "isUnique": true
-        }
-      },
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
-    },
-    "bandConfigs": {
-      "name": "bandConfigs",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "integer",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "globuleConfigId": {
-          "name": "globuleConfigId",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "bandStyle": {
-          "name": "bandStyle",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "offsetBy": {
-          "name": "offsetBy",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "tabStyle": {
-          "name": "tabStyle",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "bandConfigs_globuleConfigId_globuleConfigs_id_fk": {
-          "name": "bandConfigs_globuleConfigId_globuleConfigs_id_fk",
-          "tableFrom": "bandConfigs",
-          "tableTo": "globuleConfigs",
-          "columnsFrom": [
-            "globuleConfigId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
-    },
-    "depthCurveConfigs": {
-      "name": "depthCurveConfigs",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "integer",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "depthCurveBaseline": {
-          "name": "depthCurveBaseline",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "curves": {
-          "name": "curves",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "globuleConfigId": {
-          "name": "globuleConfigId",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "depthCurveConfigs_globuleConfigId_globuleConfigs_id_fk": {
-          "name": "depthCurveConfigs_globuleConfigId_globuleConfigs_id_fk",
-          "tableFrom": "depthCurveConfigs",
-          "tableTo": "globuleConfigs",
-          "columnsFrom": [
-            "globuleConfigId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
-    },
-    "globuleConfigs": {
-      "name": "globuleConfigs",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "integer",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
-    },
-    "levelConfigs": {
-      "name": "levelConfigs",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "integer",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "silhouetteSampleMethod": {
-          "name": "silhouetteSampleMethod",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "silhouetteSampleMethodDivisions": {
-          "name": "silhouetteSampleMethodDivisions",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "levelPrototypeSampleMethod": {
-          "name": "levelPrototypeSampleMethod",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "globuleConfigId": {
-          "name": "globuleConfigId",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "levelConfigs_globuleConfigId_globuleConfigs_id_fk": {
-          "name": "levelConfigs_globuleConfigId_globuleConfigs_id_fk",
-          "tableFrom": "levelConfigs",
-          "tableTo": "globuleConfigs",
-          "columnsFrom": [
-            "globuleConfigId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
-    },
-    "levelOffsets": {
-      "name": "levelOffsets",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "integer",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "x": {
-          "name": "x",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "y": {
-          "name": "y",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "z": {
-          "name": "z",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "rotX": {
-          "name": "rotX",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "rotY": {
-          "name": "rotY",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "rotZ": {
-          "name": "rotZ",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "scaleX": {
-          "name": "scaleX",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "scaleY": {
-          "name": "scaleY",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "depth": {
-          "name": "depth",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "levelConfigId": {
-          "name": "levelConfigId",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "levelOffsets_levelConfigId_levelConfigs_id_fk": {
-          "name": "levelOffsets_levelConfigId_levelConfigs_id_fk",
-          "tableFrom": "levelOffsets",
-          "tableTo": "levelConfigs",
-          "columnsFrom": [
-            "levelConfigId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
-    },
-    "renderConfigs": {
-      "name": "renderConfigs",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "integer",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "globuleConfigId": {
-          "name": "globuleConfigId",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "rangeStyle": {
-          "name": "rangeStyle",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "bandStart": {
-          "name": "bandStart",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "bandCount": {
-          "name": "bandCount",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "facetStart": {
-          "name": "facetStart",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "facetCount": {
-          "name": "facetCount",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "levelStart": {
-          "name": "levelStart",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "levelCount": {
-          "name": "levelCount",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "strutStart": {
-          "name": "strutStart",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "strutCount": {
-          "name": "strutCount",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "tabs": {
-          "name": "tabs",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "levels": {
-          "name": "levels",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "bands": {
-          "name": "bands",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "edges": {
-          "name": "edges",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "patterns": {
-          "name": "patterns",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "struts": {
-          "name": "struts",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "renderConfigs_globuleConfigId_globuleConfigs_id_fk": {
-          "name": "renderConfigs_globuleConfigId_globuleConfigs_id_fk",
-          "tableFrom": "renderConfigs",
-          "tableTo": "globuleConfigs",
-          "columnsFrom": [
-            "globuleConfigId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
-    },
-    "shapeConfigs": {
-      "name": "shapeConfigs",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "integer",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "symmetry": {
-          "name": "symmetry",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "symmetryNumber": {
-          "name": "symmetryNumber",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "sampleMethod": {
-          "name": "sampleMethod",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "sampleMethodDivisions": {
-          "name": "sampleMethodDivisions",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "curves": {
-          "name": "curves",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "globuleConfigId": {
-          "name": "globuleConfigId",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "shapeConfigs_globuleConfigId_globuleConfigs_id_fk": {
-          "name": "shapeConfigs_globuleConfigId_globuleConfigs_id_fk",
-          "tableFrom": "shapeConfigs",
-          "tableTo": "globuleConfigs",
-          "columnsFrom": [
-            "globuleConfigId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
-    },
-    "silhouetteConfigs": {
-      "name": "silhouetteConfigs",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "integer",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "curves": {
-          "name": "curves",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "globuleConfigId": {
-          "name": "globuleConfigId",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "silhouetteConfigs_globuleConfigId_globuleConfigs_id_fk": {
-          "name": "silhouetteConfigs_globuleConfigId_globuleConfigs_id_fk",
-          "tableFrom": "silhouetteConfigs",
-          "tableTo": "globuleConfigs",
-          "columnsFrom": [
-            "globuleConfigId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
-    },
-    "spineCurveConfigs": {
-      "name": "spineCurveConfigs",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "integer",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "curves": {
-          "name": "curves",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "globuleConfigId": {
-          "name": "globuleConfigId",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "spineCurveConfigs_globuleConfigId_globuleConfigs_id_fk": {
-          "name": "spineCurveConfigs_globuleConfigId_globuleConfigs_id_fk",
-          "tableFrom": "spineCurveConfigs",
-          "tableTo": "globuleConfigs",
-          "columnsFrom": [
-            "globuleConfigId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
-    },
-    "strutConfigs": {
-      "name": "strutConfigs",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "integer",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "globuleConfigId": {
-          "name": "globuleConfigId",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "tiling": {
-          "name": "tiling",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "orientation": {
-          "name": "orientation",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "radiate": {
-          "name": "radiate",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "width": {
-          "name": "width",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "strutConfigs_globuleConfigId_globuleConfigs_id_fk": {
-          "name": "strutConfigs_globuleConfigId_globuleConfigs_id_fk",
-          "tableFrom": "strutConfigs",
-          "tableTo": "globuleConfigs",
-          "columnsFrom": [
-            "globuleConfigId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
-    },
-    "users": {
-      "name": "users",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "integer",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
-    }
-  },
-  "enums": {},
-  "_meta": {
-    "schemas": {},
-    "tables": {},
-    "columns": {}
-  },
-  "internal": {
-    "indexes": {}
-  }
+	"version": "6",
+	"dialect": "sqlite",
+	"id": "3069916d-1201-4f09-8646-1abee8105d5c",
+	"prevId": "00000000-0000-0000-0000-000000000000",
+	"tables": {
+		"bands": {
+			"name": "bands",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "integer",
+					"primaryKey": true,
+					"notNull": true,
+					"autoincrement": false
+				},
+				"name": {
+					"name": "name",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"globule_id": {
+					"name": "globule_id",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				}
+			},
+			"indexes": {},
+			"foreignKeys": {
+				"bands_globule_id_globules_id_fk": {
+					"name": "bands_globule_id_globules_id_fk",
+					"tableFrom": "bands",
+					"tableTo": "globules",
+					"columnsFrom": ["globule_id"],
+					"columnsTo": ["id"],
+					"onDelete": "no action",
+					"onUpdate": "no action"
+				}
+			},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {}
+		},
+		"facets": {
+			"name": "facets",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "integer",
+					"primaryKey": true,
+					"notNull": true,
+					"autoincrement": false
+				},
+				"band_id": {
+					"name": "band_id",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"triangle": {
+					"name": "triangle",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"tab": {
+					"name": "tab",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				}
+			},
+			"indexes": {},
+			"foreignKeys": {
+				"facets_band_id_bands_id_fk": {
+					"name": "facets_band_id_bands_id_fk",
+					"tableFrom": "facets",
+					"tableTo": "bands",
+					"columnsFrom": ["band_id"],
+					"columnsTo": ["id"],
+					"onDelete": "no action",
+					"onUpdate": "no action"
+				}
+			},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {}
+		},
+		"globules": {
+			"name": "globules",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "integer",
+					"primaryKey": true,
+					"notNull": true,
+					"autoincrement": false
+				},
+				"name": {
+					"name": "name",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				}
+			},
+			"indexes": {
+				"nameIdx": {
+					"name": "nameIdx",
+					"columns": ["name"],
+					"isUnique": true
+				}
+			},
+			"foreignKeys": {},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {}
+		},
+		"bandConfigs": {
+			"name": "bandConfigs",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "integer",
+					"primaryKey": true,
+					"notNull": true,
+					"autoincrement": false
+				},
+				"globuleConfigId": {
+					"name": "globuleConfigId",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"bandStyle": {
+					"name": "bandStyle",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"offsetBy": {
+					"name": "offsetBy",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"tabStyle": {
+					"name": "tabStyle",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				}
+			},
+			"indexes": {},
+			"foreignKeys": {
+				"bandConfigs_globuleConfigId_globuleConfigs_id_fk": {
+					"name": "bandConfigs_globuleConfigId_globuleConfigs_id_fk",
+					"tableFrom": "bandConfigs",
+					"tableTo": "globuleConfigs",
+					"columnsFrom": ["globuleConfigId"],
+					"columnsTo": ["id"],
+					"onDelete": "cascade",
+					"onUpdate": "no action"
+				}
+			},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {}
+		},
+		"depthCurveConfigs": {
+			"name": "depthCurveConfigs",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "integer",
+					"primaryKey": true,
+					"notNull": true,
+					"autoincrement": false
+				},
+				"depthCurveBaseline": {
+					"name": "depthCurveBaseline",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"curves": {
+					"name": "curves",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"globuleConfigId": {
+					"name": "globuleConfigId",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				}
+			},
+			"indexes": {},
+			"foreignKeys": {
+				"depthCurveConfigs_globuleConfigId_globuleConfigs_id_fk": {
+					"name": "depthCurveConfigs_globuleConfigId_globuleConfigs_id_fk",
+					"tableFrom": "depthCurveConfigs",
+					"tableTo": "globuleConfigs",
+					"columnsFrom": ["globuleConfigId"],
+					"columnsTo": ["id"],
+					"onDelete": "cascade",
+					"onUpdate": "no action"
+				}
+			},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {}
+		},
+		"globuleConfigs": {
+			"name": "globuleConfigs",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "integer",
+					"primaryKey": true,
+					"notNull": true,
+					"autoincrement": false
+				},
+				"name": {
+					"name": "name",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				}
+			},
+			"indexes": {},
+			"foreignKeys": {},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {}
+		},
+		"levelConfigs": {
+			"name": "levelConfigs",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "integer",
+					"primaryKey": true,
+					"notNull": true,
+					"autoincrement": false
+				},
+				"silhouetteSampleMethod": {
+					"name": "silhouetteSampleMethod",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"silhouetteSampleMethodDivisions": {
+					"name": "silhouetteSampleMethodDivisions",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"levelPrototypeSampleMethod": {
+					"name": "levelPrototypeSampleMethod",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"globuleConfigId": {
+					"name": "globuleConfigId",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				}
+			},
+			"indexes": {},
+			"foreignKeys": {
+				"levelConfigs_globuleConfigId_globuleConfigs_id_fk": {
+					"name": "levelConfigs_globuleConfigId_globuleConfigs_id_fk",
+					"tableFrom": "levelConfigs",
+					"tableTo": "globuleConfigs",
+					"columnsFrom": ["globuleConfigId"],
+					"columnsTo": ["id"],
+					"onDelete": "cascade",
+					"onUpdate": "no action"
+				}
+			},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {}
+		},
+		"levelOffsets": {
+			"name": "levelOffsets",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "integer",
+					"primaryKey": true,
+					"notNull": true,
+					"autoincrement": false
+				},
+				"x": {
+					"name": "x",
+					"type": "real",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"y": {
+					"name": "y",
+					"type": "real",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"z": {
+					"name": "z",
+					"type": "real",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"rotX": {
+					"name": "rotX",
+					"type": "real",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"rotY": {
+					"name": "rotY",
+					"type": "real",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"rotZ": {
+					"name": "rotZ",
+					"type": "real",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"scaleX": {
+					"name": "scaleX",
+					"type": "real",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"scaleY": {
+					"name": "scaleY",
+					"type": "real",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"depth": {
+					"name": "depth",
+					"type": "real",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"levelConfigId": {
+					"name": "levelConfigId",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				}
+			},
+			"indexes": {},
+			"foreignKeys": {
+				"levelOffsets_levelConfigId_levelConfigs_id_fk": {
+					"name": "levelOffsets_levelConfigId_levelConfigs_id_fk",
+					"tableFrom": "levelOffsets",
+					"tableTo": "levelConfigs",
+					"columnsFrom": ["levelConfigId"],
+					"columnsTo": ["id"],
+					"onDelete": "cascade",
+					"onUpdate": "no action"
+				}
+			},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {}
+		},
+		"renderConfigs": {
+			"name": "renderConfigs",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "integer",
+					"primaryKey": true,
+					"notNull": true,
+					"autoincrement": false
+				},
+				"globuleConfigId": {
+					"name": "globuleConfigId",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"rangeStyle": {
+					"name": "rangeStyle",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"bandStart": {
+					"name": "bandStart",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"bandCount": {
+					"name": "bandCount",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"facetStart": {
+					"name": "facetStart",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"facetCount": {
+					"name": "facetCount",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"levelStart": {
+					"name": "levelStart",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"levelCount": {
+					"name": "levelCount",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"strutStart": {
+					"name": "strutStart",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"strutCount": {
+					"name": "strutCount",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"tabs": {
+					"name": "tabs",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"levels": {
+					"name": "levels",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"bands": {
+					"name": "bands",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"edges": {
+					"name": "edges",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"patterns": {
+					"name": "patterns",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"struts": {
+					"name": "struts",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				}
+			},
+			"indexes": {},
+			"foreignKeys": {
+				"renderConfigs_globuleConfigId_globuleConfigs_id_fk": {
+					"name": "renderConfigs_globuleConfigId_globuleConfigs_id_fk",
+					"tableFrom": "renderConfigs",
+					"tableTo": "globuleConfigs",
+					"columnsFrom": ["globuleConfigId"],
+					"columnsTo": ["id"],
+					"onDelete": "cascade",
+					"onUpdate": "no action"
+				}
+			},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {}
+		},
+		"shapeConfigs": {
+			"name": "shapeConfigs",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "integer",
+					"primaryKey": true,
+					"notNull": true,
+					"autoincrement": false
+				},
+				"symmetry": {
+					"name": "symmetry",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"symmetryNumber": {
+					"name": "symmetryNumber",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"sampleMethod": {
+					"name": "sampleMethod",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"sampleMethodDivisions": {
+					"name": "sampleMethodDivisions",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"curves": {
+					"name": "curves",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"globuleConfigId": {
+					"name": "globuleConfigId",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				}
+			},
+			"indexes": {},
+			"foreignKeys": {
+				"shapeConfigs_globuleConfigId_globuleConfigs_id_fk": {
+					"name": "shapeConfigs_globuleConfigId_globuleConfigs_id_fk",
+					"tableFrom": "shapeConfigs",
+					"tableTo": "globuleConfigs",
+					"columnsFrom": ["globuleConfigId"],
+					"columnsTo": ["id"],
+					"onDelete": "cascade",
+					"onUpdate": "no action"
+				}
+			},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {}
+		},
+		"silhouetteConfigs": {
+			"name": "silhouetteConfigs",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "integer",
+					"primaryKey": true,
+					"notNull": true,
+					"autoincrement": false
+				},
+				"curves": {
+					"name": "curves",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"globuleConfigId": {
+					"name": "globuleConfigId",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				}
+			},
+			"indexes": {},
+			"foreignKeys": {
+				"silhouetteConfigs_globuleConfigId_globuleConfigs_id_fk": {
+					"name": "silhouetteConfigs_globuleConfigId_globuleConfigs_id_fk",
+					"tableFrom": "silhouetteConfigs",
+					"tableTo": "globuleConfigs",
+					"columnsFrom": ["globuleConfigId"],
+					"columnsTo": ["id"],
+					"onDelete": "cascade",
+					"onUpdate": "no action"
+				}
+			},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {}
+		},
+		"spineCurveConfigs": {
+			"name": "spineCurveConfigs",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "integer",
+					"primaryKey": true,
+					"notNull": true,
+					"autoincrement": false
+				},
+				"curves": {
+					"name": "curves",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"globuleConfigId": {
+					"name": "globuleConfigId",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				}
+			},
+			"indexes": {},
+			"foreignKeys": {
+				"spineCurveConfigs_globuleConfigId_globuleConfigs_id_fk": {
+					"name": "spineCurveConfigs_globuleConfigId_globuleConfigs_id_fk",
+					"tableFrom": "spineCurveConfigs",
+					"tableTo": "globuleConfigs",
+					"columnsFrom": ["globuleConfigId"],
+					"columnsTo": ["id"],
+					"onDelete": "cascade",
+					"onUpdate": "no action"
+				}
+			},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {}
+		},
+		"strutConfigs": {
+			"name": "strutConfigs",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "integer",
+					"primaryKey": true,
+					"notNull": true,
+					"autoincrement": false
+				},
+				"globuleConfigId": {
+					"name": "globuleConfigId",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"tiling": {
+					"name": "tiling",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"orientation": {
+					"name": "orientation",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"radiate": {
+					"name": "radiate",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"width": {
+					"name": "width",
+					"type": "real",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				}
+			},
+			"indexes": {},
+			"foreignKeys": {
+				"strutConfigs_globuleConfigId_globuleConfigs_id_fk": {
+					"name": "strutConfigs_globuleConfigId_globuleConfigs_id_fk",
+					"tableFrom": "strutConfigs",
+					"tableTo": "globuleConfigs",
+					"columnsFrom": ["globuleConfigId"],
+					"columnsTo": ["id"],
+					"onDelete": "cascade",
+					"onUpdate": "no action"
+				}
+			},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {}
+		},
+		"users": {
+			"name": "users",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "integer",
+					"primaryKey": true,
+					"notNull": true,
+					"autoincrement": false
+				},
+				"name": {
+					"name": "name",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				}
+			},
+			"indexes": {},
+			"foreignKeys": {},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {}
+		}
+	},
+	"enums": {},
+	"_meta": {
+		"schemas": {},
+		"tables": {},
+		"columns": {}
+	},
+	"internal": {
+		"indexes": {}
+	}
 }

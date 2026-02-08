@@ -30,7 +30,7 @@
 		: {
 				anchor: { x: 0, y: 0, z: 0 },
 				normal: { x: 0, y: 0, z: 1 }
-		  };
+			};
 
 	const activate = () => {
 		$selectedBand = { ...generateGenericSelection(sgIndex, tIndex + 1), t: tIndex };

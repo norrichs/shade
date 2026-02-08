@@ -9,7 +9,7 @@
 
 	let labelScale = 0.1;
 	let labelAngle = $patternConfigStore.tiledPatternConfig.labels?.angle ?? 0;
-	
+
 	let rangeTubes: ProjectionRange['tubes'] = $patternConfigStore.patternViewConfig.range?.tubes;
 	let rangeBands: ProjectionRange['bands'] = $patternConfigStore.patternViewConfig.range?.bands;
 	let rangeFacets: ProjectionRange['facets'] = $patternConfigStore.patternViewConfig.range?.facets;
@@ -21,13 +21,11 @@
 		rangeBands?: ProjectionRange['bands'] | undefined,
 		rangeFacets?: ProjectionRange['facets'] | undefined
 	) => {
-		
 		$patternConfigStore.patternViewConfig.range = {
 			tubes: rangeTubes,
 			bands: rangeBands,
 			facets: rangeFacets
 		};
-
 
 		if (!$patternConfigStore.tiledPatternConfig.labels) {
 			$patternConfigStore.tiledPatternConfig.labels = { scale: labelScale, angle: labelAngle };
@@ -84,7 +82,7 @@
 						<NumberInput label="tubes" min={0} max={1} step={1} bind:value={rangeTubes[0]} />
 						<NumberInput min={0} max={1} step={1} bind:value={rangeTubes[1]} />
 					{:else}
-						<button on:click={() => rangeTubes = [0, 1]}>SetTubes</button>
+						<button on:click={() => (rangeTubes = [0, 1])}>SetTubes</button>
 					{/if}
 				</div>
 				<div class="range-inputs">
@@ -92,7 +90,7 @@
 						<NumberInput label="bands" min={0} max={1} step={1} bind:value={rangeBands[0]} />
 						<NumberInput min={0} max={1} step={1} bind:value={rangeBands[1]} />
 					{:else}
-						<button on:click={() => rangeBands = [0, 1]}>SetBands</button>
+						<button on:click={() => (rangeBands = [0, 1])}>SetBands</button>
 					{/if}
 				</div>
 				<div class="range-inputs">
@@ -100,7 +98,7 @@
 						<NumberInput label="facets" min={0} max={1} step={1} bind:value={rangeFacets[0]} />
 						<NumberInput min={0} max={1} step={1} bind:value={rangeFacets[1]} />
 					{:else}
-						<button on:click={() => rangeFacets = [0, 1]}>SetFacets</button>
+						<button on:click={() => (rangeFacets = [0, 1])}>SetFacets</button>
 					{/if}
 				</div>
 			</div>

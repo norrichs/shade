@@ -12,7 +12,6 @@
 		{ name: 'Polygon' },
 		{ name: 'Height' }
 	];
-
 </script>
 
 <section>

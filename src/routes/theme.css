@@ -1,20 +1,20 @@
 :root {
-  --color-highlight: lightskyblue;
-  --color-active: cornflowerblue;
-  
-  --color-dark: dimgrey;
-  --color-black: black;
-  --color-light: lightgrey;
-  --color-white: white;
+	--color-highlight: lightskyblue;
+	--color-active: cornflowerblue;
 
-  --color-shaded-light: rgba(0,0,0,0.1);
-  --color-shaded-medium: rgba(0,0,0,0.3);
-  --color-shaded-dark: rgba(0,0,0,0.7);
+	--color-dark: dimgrey;
+	--color-black: black;
+	--color-light: lightgrey;
+	--color-white: white;
 
-  --color-link: var(--color-highlight);
+	--color-shaded-light: rgba(0, 0, 0, 0.1);
+	--color-shaded-medium: rgba(0, 0, 0, 0.3);
+	--color-shaded-dark: rgba(0, 0, 0, 0.7);
 
-  --size-tile-small: 100px;
-  --size-tile-medium: 200px;
-  --size-tile-large: 400px;
-  --nav-header-height: 48px;
+	--color-link: var(--color-highlight);
+
+	--size-tile-small: 100px;
+	--size-tile-medium: 200px;
+	--size-tile-large: 400px;
+	--nav-header-height: 48px;
 }

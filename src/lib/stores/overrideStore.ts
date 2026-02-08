@@ -43,11 +43,11 @@ const overrideTubes: Tube[] = [
 				],
 				orientation: 0
 			}
-	],
-	sections: [],
-	orientation: 0,
-	address: { globule: 0, tube: 0 }
-}
+		],
+		sections: [],
+		orientation: 0,
+		address: { globule: 0, tube: 0 }
+	}
 ];
 
 export const overrideStore = writable({

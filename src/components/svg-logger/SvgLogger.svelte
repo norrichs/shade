@@ -8,14 +8,13 @@
 	const loggerColor = (index: number) =>
 		$logger.config.colors[index % $logger.config.colors.length];
 
-
 	const getTransformFor = (db: SVGDebug) => {
 		if (isSVGLoggerDirectionalLine(db) && db.directionalLine.for) {
-			const elem = document.querySelector(`#${db.directionalLine.for}`)
-			const transform = elem?.getAttribute("transform")
-			return transform
+			const elem = document.querySelector(`#${db.directionalLine.for}`);
+			const transform = elem?.getAttribute('transform');
+			return transform;
 		}
-	}
+	};
 </script>
 
 {#each $logger.debug as db, i}

@@ -32,11 +32,7 @@
 			<span class="toast-icon">{getIcon(toast.type)}</span>
 			<span class="toast-message">{toast.message}</span>
 			{#if toast.dismissible !== false}
-				<button
-					class="toast-dismiss"
-					on:click={() => handleDismiss(toast.id)}
-					aria-label="Dismiss"
-				>
+				<button class="toast-dismiss" on:click={() => handleDismiss(toast.id)} aria-label="Dismiss">
 					×
 				</button>
 			{/if}

@@ -20,11 +20,13 @@ Current JavaScript implementation of projection generation takes 15+ seconds and
 ```
 
 **Operation breakdown:**
+
 - Ray tracing: 448 million CPU cycles (~80% of time)
 - Vector transformations: 1.68 billion operations (~15% of time)
 - Band generation + facet matching: 300 million cycles (~5% of time)
 
 **Memory pressure:**
+
 - 358,400 Vector3 object allocations per generation
 - Each Vector3: ~48 bytes (3 floats + property overhead)
 - Total: ~17.2 MB per generation
@@ -51,11 +53,13 @@ Current JavaScript implementation of projection generation takes 15+ seconds and
 #### Priority 1: Ray-Mesh Intersection (80% of time)
 
 **Current bottleneck:**
+
 ```typescript
-edgeRaycaster.intersectObject(surface, true)  // 22.4M calls
+edgeRaycaster.intersectObject(surface, true); // 22.4M calls
 ```
 
 **Rust/WASM opportunity:**
+
 - Custom BVH-accelerated ray tracing with SIMD
 - Stack-allocated ray/vector structs
 - Potential speedup: **5-10x** (448M cycles → 45-90M cycles)
@@ -63,11 +67,13 @@ edgeRaycaster.intersectObject(surface, true)  // 22.4M calls
 #### Priority 2: Vector3 Transformations (15% of time)
 
 **Current bottleneck:**
+
 ```typescript
 int.edge.clone().addScaledVector(...).addScaledVector(...)  // 358k allocations
 ```
 
 **Rust/WASM opportunity:**
+
 - Stack-allocated vectors (no GC)
 - SIMD batch processing for vector operations
 - Potential speedup: **3-5x**
@@ -75,11 +81,13 @@ int.edge.clone().addScaledVector(...).addScaledVector(...)  // 358k allocations
 #### Priority 3: Facet Matching (5% of time)
 
 **Current bottleneck:**
+
 ```typescript
-getEdgeMatchedTriangles(f0.triangle, f1.triangle)  // O(n²) comparisons
+getEdgeMatchedTriangles(f0.triangle, f1.triangle); // O(n²) comparisons
 ```
 
 **Rust/WASM opportunity:**
+
 - Parallel triangle comparison
 - Hash-based facet lookup instead of linear iteration
 - Potential speedup: **2-3x**
@@ -125,11 +133,13 @@ JavaScript (rehydrate Three.js objects)
 ## Expected Results
 
 **Before WASM:**
+
 - Doubly truncated icosahedron (SR 10): 15+ seconds, browser crash
 - Simple geometries (SR 5): 1-2 seconds
 - Memory: 358k Vector3 allocations per generation
 
 **After WASM:**
+
 - Doubly truncated icosahedron (SR 10): <1 second, stable
 - Simple geometries (SR 5): <0.1 second
 - Memory: Minimal JS allocations (WASM handles vectors)
@@ -137,21 +147,25 @@ JavaScript (rehydrate Three.js objects)
 ## Implementation Roadmap (High-Level)
 
 ### Phase 1: Proof of Concept (1-2 weeks)
+
 - Basic ray-triangle intersection in Rust
 - WASM compilation and JS integration
 - Performance benchmark vs JavaScript
 
 ### Phase 2: Core Ray Tracing (2-3 weeks)
+
 - BVH acceleration structure
 - Full projection generation algorithm
 - Parallel ray casting
 
 ### Phase 3: Integration (1-2 weeks)
+
 - Worker integration
 - Three.js object rehydration
 - Error handling and fallbacks
 
 ### Phase 4: Optimization (1 week)
+
 - SIMD vectorization
 - Memory layout optimization
 - Threading tuning
@@ -159,16 +173,19 @@ JavaScript (rehydrate Three.js objects)
 ## Alternative Approaches Considered
 
 ### Backend Service (Go/Rust)
+
 - **Pros:** Could use multiple CPU cores, more powerful machines
 - **Cons:** Network latency, server infrastructure, deployment complexity
 - **Verdict:** Less practical than WASM for this use case
 
 ### JavaScript Optimizations Only
+
 - **Pros:** No new toolchain, easier to maintain
 - **Cons:** Limited by V8 performance, GC pressure unavoidable
 - **Verdict:** Can provide 2-3x improvement, but not enough for complex geometries
 
 ### WebGPU Compute Shaders
+
 - **Pros:** Massive parallelism, GPU acceleration
 - **Cons:** Browser support limited, complex shader programming, data transfer overhead
 - **Verdict:** Worth exploring as complement to WASM (see separate analysis)
@@ -182,14 +199,14 @@ JavaScript (rehydrate Three.js objects)
 
 ## Key Findings Summary
 
-| Finding | Impact | Severity |
-|---------|--------|----------|
-| 22.4M ray intersection tests for complex polyhedra | 15+ second delay | Critical |
-| 358k Vector3 allocations causing GC storms | Memory exhaustion | Critical |
-| O(n²) facet matching in matchTubeEnds | Quadratic scaling | High |
-| No spatial caching between ray tests | Redundant calculations | High |
-| Synchronous execution blocking worker | No parallelism | Medium |
-| Sample rate scaling: SR 10 = ~8x time vs SR 5 | Exponential growth | High |
+| Finding                                            | Impact                 | Severity |
+| -------------------------------------------------- | ---------------------- | -------- |
+| 22.4M ray intersection tests for complex polyhedra | 15+ second delay       | Critical |
+| 358k Vector3 allocations causing GC storms         | Memory exhaustion      | Critical |
+| O(n²) facet matching in matchTubeEnds              | Quadratic scaling      | High     |
+| No spatial caching between ray tests               | Redundant calculations | High     |
+| Synchronous execution blocking worker              | No parallelism         | Medium   |
+| Sample rate scaling: SR 10 = ~8x time vs SR 5      | Exponential growth     | High     |
 
 ## Next Steps
 

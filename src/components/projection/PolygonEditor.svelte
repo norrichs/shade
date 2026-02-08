@@ -276,8 +276,11 @@
 		<span>Edge divisions</span>
 		<input
 			type="number"
-			bind:value={$superConfigStore.projectionConfigs[projectionIndex].projectorConfig.polyhedron
-				.edgeCurves[polygonConfig.edges[0].widthCurve].sampleMethod.divisions}
+			bind:value={
+				$superConfigStore.projectionConfigs[projectionIndex].projectorConfig.polyhedron.edgeCurves[
+					polygonConfig.edges[0].widthCurve
+				].sampleMethod.divisions
+			}
 			min={0}
 			step={1}
 		/>
@@ -286,8 +289,10 @@
 		<span>Cross section divisions</span>
 		<input
 			type="number"
-			bind:value={$superConfigStore.projectionConfigs[projectionIndex].projectorConfig.polyhedron
-				.crossSectionCurves[polygonConfig.edges[0].crossSectionCurve].sampleMethod.divisions}
+			bind:value={
+				$superConfigStore.projectionConfigs[projectionIndex].projectorConfig.polyhedron
+					.crossSectionCurves[polygonConfig.edges[0].crossSectionCurve].sampleMethod.divisions
+			}
 			min={0}
 			step={1}
 		/>

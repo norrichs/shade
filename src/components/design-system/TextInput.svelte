@@ -4,7 +4,7 @@
 
 	const handleKeydown = (ev: KeyboardEvent) => {
 		if (ev.key === 'Enter') {
-			updateValue()
+			updateValue();
 		}
 	};
 
@@ -13,7 +13,7 @@
 	};
 </script>
 
-<input type="text" bind:value={localValue} on:keydown={handleKeydown} on:blur={updateValue}/>
+<input type="text" bind:value={localValue} on:keydown={handleKeydown} on:blur={updateValue} />
 
 <style>
 	input {
@@ -23,14 +23,13 @@
 		color: var(--color-link);
 		padding: 5px;
 		border: none;
-    
 	}
 	input:focus-visible {
 		background-color: var(--color-highlight);
 		color: black;
 	}
-  input::selection {
-    padding: 4px;
-    background-color: rgba(200, 100, 100, 0.4);
-  }
+	input::selection {
+		padding: 4px;
+		background-color: rgba(200, 100, 100, 0.4);
+	}
 </style>

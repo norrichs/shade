@@ -1,4 +1,4 @@
-export type ThreeColor = typeof colorsAll[number]
+export type ThreeColor = (typeof colorsAll)[number];
 
 export const colorsAll = [
 	'aliceblue',

@@ -126,7 +126,7 @@ export const generateProjectionPanelPattern = ({
 							globule: band.facets[0].address?.globule,
 							tube: band.facets[0].address?.tube,
 							band: band.facets[0].address?.band
-					  } as GlobuleAddress_Band),
+						} as GlobuleAddress_Band),
 				panels: []
 			};
 			for (let p = panelStart; p < panelEnd; p++) {
@@ -620,7 +620,7 @@ export const getPanelEdgeMeta = (
 	let edgeMeta = Object.fromEntries(
 		(['ab', 'bc', 'ac'] as TriangleEdge[]).map((edge) => {
 			if (!facet.meta || !facet.meta[edge]) {
-				console.debug({ facet, band, tube, facetAddress:facet.address});
+				console.debug({ facet, band, tube, facetAddress: facet.address });
 				throw Error('facet edge missing meta');
 			}
 			const { partner } = facet.meta[edge];

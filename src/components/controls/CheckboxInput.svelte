@@ -7,13 +7,13 @@
 {#if show}
 	<div>
 		<span>{label}</span>
-		<input type="checkbox"  bind:checked={value} />
+		<input type="checkbox" bind:checked={value} />
 	</div>
 {/if}
 
 <style>
 	.row {
-		width:300px;
+		width: 300px;
 		display: flex;
 		flex-direction: row;
 		gap: 10px;

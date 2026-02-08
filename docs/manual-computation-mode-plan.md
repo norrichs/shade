@@ -10,6 +10,7 @@
 Add a "manual" computation mode that prevents automatic regeneration of 3D geometry and patterns when configs change. Users must explicitly click a "Regenerate" button to apply changes.
 
 **Key Behaviors:**
+
 - Manual mode is **orthogonal** to existing computation modes (continuous, 3d-only, 2d-only)
 - Controls **when** computation happens, not **what** gets computed
 - Works in combination: "manual + 3d-only" = manual trigger, only generates 3D
@@ -17,6 +18,7 @@ Add a "manual" computation mode that prevents automatic regeneration of 3D geome
 ## User Experience
 
 **Interaction Matrix:**
+
 ```
                     Manual OFF              Manual ON
 continuous      Auto 3D + Auto Pattern   Manual 3D + Manual Pattern
@@ -25,6 +27,7 @@ continuous      Auto 3D + Auto Pattern   Manual 3D + Manual Pattern
 ```
 
 **UI Elements:**
+
 1. Checkbox in designer header to toggle manual mode on/off
 2. "Regenerate" button in NavBar (next to "Edit" button)
 3. Pending indicator ("⚠ Changes pending") when config changes but hasn't regenerated
@@ -40,6 +43,7 @@ continuous      Auto 3D + Auto Pattern   Manual 3D + Manual Pattern
 ### State Management
 
 **New Stores (in `src/lib/stores/uiStores.ts`):**
+
 ```typescript
 // Manual mode toggle (persists to localStorage)
 export const isManualMode = persistable<boolean>(false, 'ManualMode', ...);
@@ -49,27 +53,31 @@ export const hasPendingChanges = writable<boolean>(false);
 ```
 
 **Manual Trigger Function (in `src/lib/stores/superGlobuleStores.ts`):**
+
 ```typescript
 export function triggerManualRegeneration(): void {
-  // Check manual mode, worker state
-  // Clear pending flag
-  // Trigger 3D/pattern based on computation mode
+	// Check manual mode, worker state
+	// Clear pending flag
+	// Trigger 3D/pattern based on computation mode
 }
 ```
 
 ### Auto-Update Prevention Strategy
 
 **Current Auto-Update Points:**
+
 1. `superConfigStore.subscribe()` → `triggerAsyncGeneration()` (3D)
 2. Derived pattern store auto-computes when geometry changes
 
 **Manual Mode Prevention:**
+
 - Add `isManualMode` check in config subscription
 - Set `hasPendingChanges = true` when config changes in manual mode
 - Return early without triggering generation
 - Pattern store checks `hasPendingChanges` and returns cached result
 
 **Data Flow:**
+
 ```
 superConfigStore (config changes)
     ↓
@@ -95,12 +103,7 @@ superGlobulePatternStore ← NEW: pauses if manual + pending
 
 ```typescript
 // Manual mode: prevents auto-updates, requires explicit trigger
-export const isManualMode = persistable<boolean>(
-	false,
-	'ManualMode',
-	AUTO_PERSIST_KEY,
-	true
-);
+export const isManualMode = persistable<boolean>(false, 'ManualMode', AUTO_PERSIST_KEY, true);
 
 // Track whether config has changed since last regeneration
 export const hasPendingChanges = writable<boolean>(false);
@@ -116,12 +119,14 @@ export const hasPendingChanges = writable<boolean>(false);
 **Location:** After line 42 (after `isGenerating` export)
 
 **Add imports:**
+
 ```typescript
 import { isManualMode, hasPendingChanges } from './uiStores';
 import { toastStore } from './toastStore';
 ```
 
 **Add function:**
+
 ```typescript
 /**
  * Manual trigger for regenerating geometry/patterns when in manual mode
@@ -178,6 +183,7 @@ export function triggerManualRegeneration(): void {
 **Location:** Lines 169-200 (config subscription)
 
 **Change:**
+
 ```typescript
 if (browser) {
 	superConfigStore.subscribe((config) => {
@@ -230,6 +236,7 @@ if (browser) {
 **Location:** Lines 272-295 (pattern store)
 
 **Change:**
+
 ```typescript
 const superGlobulePatternStoreInternal = derived(
 	[
@@ -282,6 +289,7 @@ const superGlobulePatternStoreInternal = derived(
 **Location:** Lines 214-242 (mode transition handler)
 
 **Change:**
+
 ```typescript
 // Handle computation mode transitions
 let previousMode: string | null = null;
@@ -291,7 +299,7 @@ computationMode.subscribe(($mode) => {
 		return;
 	}
 
-	const manual = get(isManualMode);  // NEW
+	const manual = get(isManualMode); // NEW
 	const enteringTwoDOnly = $mode === '2d-only' && previousMode !== '2d-only';
 	const leavingTwoDOnly = $mode !== '2d-only' && previousMode === '2d-only';
 
@@ -328,61 +336,69 @@ computationMode.subscribe(($mode) => {
 **Location:** After line 79 (after computation mode select)
 
 **Add imports:**
+
 ```typescript
 import { isManualMode, hasPendingChanges } from '$lib/stores/uiStores';
 import { triggerManualRegeneration } from '$lib/stores/superGlobuleStores';
 ```
 
 **Add HTML:**
+
 ```svelte
 <div class="mode-control">
-  <label for="computation-mode">Mode:</label>
-  <select id="computation-mode" bind:value={$computationMode}>
-    <option value="continuous">Continuous</option>
-    <option value="3d-only">3D Only</option>
-    <option value="2d-only">2D Only</option>
-  </select>
+	<label for="computation-mode">Mode:</label>
+	<select id="computation-mode" bind:value={$computationMode}>
+		<option value="continuous">Continuous</option>
+		<option value="3d-only">3D Only</option>
+		<option value="2d-only">2D Only</option>
+	</select>
 </div>
 
 <!-- NEW SECTION -->
 <div class="manual-mode-control">
-  <label>
-    <input type="checkbox" bind:checked={$isManualMode} />
-    Manual Mode
-  </label>
-  {#if $isManualMode && $hasPendingChanges}
-    <span class="pending-indicator">⚠ Changes pending</span>
-  {/if}
+	<label>
+		<input type="checkbox" bind:checked={$isManualMode} />
+		Manual Mode
+	</label>
+	{#if $isManualMode && $hasPendingChanges}
+		<span class="pending-indicator">⚠ Changes pending</span>
+	{/if}
 </div>
 ```
 
 **Add CSS:**
+
 ```css
 .manual-mode-control {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.875rem;
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	font-size: 0.875rem;
 }
 
 .manual-mode-control label {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  font-weight: 500;
-  cursor: pointer;
+	display: flex;
+	align-items: center;
+	gap: 0.25rem;
+	font-weight: 500;
+	cursor: pointer;
 }
 
 .pending-indicator {
-  color: #ff9800;
-  font-size: 0.75rem;
-  font-weight: 600;
-  animation: pulse 1.5s ease-in-out infinite;
+	color: #ff9800;
+	font-size: 0.75rem;
+	font-weight: 600;
+	animation: pulse 1.5s ease-in-out infinite;
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+	0%,
+	100% {
+		opacity: 1;
+	}
+	50% {
+		opacity: 0.5;
+	}
 }
 ```
 
@@ -396,6 +412,7 @@ import { triggerManualRegeneration } from '$lib/stores/superGlobuleStores';
 **Location:** After line 95 (after "Edit" button)
 
 **Add imports:**
+
 ```typescript
 import { isManualMode, hasPendingChanges } from '$lib/stores/uiStores';
 import { triggerManualRegeneration, isGenerating } from '$lib/stores/superGlobuleStores';
@@ -404,46 +421,53 @@ $: regenerateDisabled = !$isManualMode || $isGenerating || !$hasPendingChanges;
 ```
 
 **Add button:**
+
 ```svelte
 <div class="button-group">
-  <Button on:click={toggleModal}>Edit</Button>
+	<Button on:click={toggleModal}>Edit</Button>
 
-  <!-- NEW: Regenerate button (only visible in manual mode) -->
-  {#if $isManualMode}
-    <Button
-      on:click={triggerManualRegeneration}
-      disabled={regenerateDisabled}
-      class:pending={$hasPendingChanges}
-    >
-      {#if $isGenerating}
-        Regenerating...
-      {:else if $hasPendingChanges}
-        Regenerate ⚠
-      {:else}
-        Regenerate
-      {/if}
-    </Button>
-  {/if}
+	<!-- NEW: Regenerate button (only visible in manual mode) -->
+	{#if $isManualMode}
+		<Button
+			on:click={triggerManualRegeneration}
+			disabled={regenerateDisabled}
+			class:pending={$hasPendingChanges}
+		>
+			{#if $isGenerating}
+				Regenerating...
+			{:else if $hasPendingChanges}
+				Regenerate ⚠
+			{:else}
+				Regenerate
+			{/if}
+		</Button>
+	{/if}
 
-  <!-- rest of buttons -->
+	<!-- rest of buttons -->
 </div>
 ```
 
 **Add CSS:**
+
 ```css
 :global(button.pending) {
-  background-color: #ff9800;
-  animation: pulse-button 2s ease-in-out infinite;
+	background-color: #ff9800;
+	animation: pulse-button 2s ease-in-out infinite;
 }
 
 :global(button:disabled) {
-  opacity: 0.5;
-  cursor: not-allowed;
+	opacity: 0.5;
+	cursor: not-allowed;
 }
 
 @keyframes pulse-button {
-  0%, 100% { box-shadow: 2px 2px 10px 0px var(--color-shaded-dark); }
-  50% { box-shadow: 0 0 15px 3px rgba(255, 152, 0, 0.6); }
+	0%,
+	100% {
+		box-shadow: 2px 2px 10px 0px var(--color-shaded-dark);
+	}
+	50% {
+		box-shadow: 0 0 15px 3px rgba(255, 152, 0, 0.6);
+	}
 }
 ```
 
@@ -456,31 +480,27 @@ $: regenerateDisabled = !$isManualMode || $isGenerating || !$hasPendingChanges;
 **File:** `src/components/design-system/Button.svelte`
 
 **Add prop:**
+
 ```typescript
 export let disabled: boolean = false;
 ```
 
 **Update button:**
+
 ```svelte
-<button
-  on:click
-  on:mousedown
-  on:mouseup
-  class={variant}
-  {disabled}
-  class:disabled
->
-  <slot />
+<button on:click on:mousedown on:mouseup class={variant} {disabled} class:disabled>
+	<slot />
 </button>
 ```
 
 **Add CSS:**
+
 ```css
 .standard:disabled,
 .standard.disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  pointer-events: none;
+	opacity: 0.5;
+	cursor: not-allowed;
+	pointer-events: none;
 }
 ```
 
@@ -538,26 +558,31 @@ if (browser) {
 ## Edge Cases Handled
 
 ### Case 1: Switching Modes While Manual Active
+
 - Pending flag stays true
 - Mode transition doesn't auto-trigger
 - User must regenerate manually
 
 ### Case 2: Disabling Manual with Pending Changes
+
 - Auto-regenerate immediately
 - Clear pending flag
 - Resume normal auto-update behavior
 
 ### Case 3: Worker Already Running
+
 - Check `workerIsWorking` store
 - Show toast warning
 - Ignore click, keep pending flag
 
 ### Case 4: Manual Mode Persistence
+
 - `isManualMode` persists to localStorage
 - `hasPendingChanges` does NOT persist (ephemeral)
 - On reload: manual mode enabled, no pending (geometry already generated)
 
 ### Case 5: Manual + 2d-Only Mode
+
 - Pattern updates paused when pending
 - Click "Regenerate": only patterns update
 - 3D stays frozen
@@ -593,19 +618,23 @@ if (browser) {
 ## Risk Assessment
 
 **High Risk:**
+
 - Config subscription modification (affects initial render, auto-update logic)
 - Pattern store dependencies (affects pattern rendering)
 
 **Mitigation:**
+
 - Manual check comes AFTER `isInitialized` check
 - Extensive logging for debugging
 - Return `'paused'` marker (same as existing pause logic)
 
 **Medium Risk:**
+
 - Mode transition handler
 - Manual trigger function
 
 **Low Risk:**
+
 - UI components (isolated changes)
 - Store additions (new stores don't affect existing logic)
 
@@ -616,6 +645,7 @@ if (browser) {
 ### If Auto-Updates Still Happening
 
 Comment out manual check in config subscription:
+
 ```typescript
 /*
 if (manual && isInitialized) {
@@ -658,6 +688,7 @@ git checkout main -- src/components/design-system/Button.svelte
 **Total Estimated Time:** 2.5 hours
 
 **Sequence:**
+
 1. Phase 1 - Store infrastructure (30 min)
 2. Phase 2 - Auto-update prevention (45 min)
 3. Phase 3 - UI components (60 min)
@@ -665,6 +696,7 @@ git checkout main -- src/components/design-system/Button.svelte
 5. Testing - Comprehensive testing (45 min)
 
 **Parallel Development Possible:**
+
 - Developer A: Phase 1 + 2 (backend/stores)
 - Developer B: Phase 3 (UI components)
 - Total: 1.5 hours (parallel)

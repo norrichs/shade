@@ -30,12 +30,12 @@
 				? {
 						method: newMethod,
 						divisions
-				  }
+					}
 				: {
 						method: newMethod,
 						divisions,
 						divisionsArray: Array.from({ length: divisions - 1 }, (_, i) => (i + 1) / divisions)
-				  };
+					};
 		config.sampleMethod = newSampleMethod as EdgeCurveConfig['sampleMethod'];
 		$superConfigStore = $superConfigStore;
 	};
@@ -74,8 +74,7 @@
 		const projectionConfig = $superConfigStore.projectionConfigs[0];
 		if (!projectionConfig) return null;
 
-		const rawPolygonConfig =
-			projectionConfig.projectorConfig.polyhedron.polygons[polygonIndex];
+		const rawPolygonConfig = projectionConfig.projectorConfig.polyhedron.polygons[polygonIndex];
 		if (!rawPolygonConfig) return null;
 
 		try {
@@ -126,23 +125,23 @@
 						{/each}
 						{#if flattenedPolygon}
 							{#each flattenedPolygon.edges as edge}
-							{#each edge.edgePoints as edgePoint, edgePointIndex}
-								<circle
-									cx={edgePoint.x}
-									cy={edgePoint.y}
-									r="3"
-									fill={`rgba(255, 0, 0, ${edgePointIndex / edge.edgePoints.length})`}
-								/>
+								{#each edge.edgePoints as edgePoint, edgePointIndex}
+									<circle
+										cx={edgePoint.x}
+										cy={edgePoint.y}
+										r="3"
+										fill={`rgba(255, 0, 0, ${edgePointIndex / edge.edgePoints.length})`}
+									/>
+								{/each}
+								{#each edge.curvePoints as curvePoint, curvePointIndex}
+									<circle
+										cx={curvePoint.x}
+										cy={curvePoint.y}
+										r="3"
+										fill={`rgba(0, 0, 255, ${curvePointIndex / edge.curvePoints.length})`}
+									/>
+								{/each}
 							{/each}
-							{#each edge.curvePoints as curvePoint, curvePointIndex}
-								<circle
-									cx={curvePoint.x}
-									cy={curvePoint.y}
-									r="3"
-									fill={`rgba(0, 0, 255, ${curvePointIndex / edge.curvePoints.length})`}
-								/>
-							{/each}
-						{/each}
 						{/if}
 					</svg>
 					<PathEditor

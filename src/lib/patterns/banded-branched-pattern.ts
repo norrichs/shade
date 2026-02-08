@@ -1,156 +1,169 @@
-import { isLinePathSegment, type Quadrilateral, type DynamicPathCollection, type DynamicPath, type PathSegment, isMovePathSegment } from "$lib/types";
-import type { Point } from "bezier-js";
-import { getDirection, getLength, getMidPoint, getQuadWidth, svgPathStringFromSegments } from "./utils";
+import {
+	isLinePathSegment,
+	type Quadrilateral,
+	type DynamicPathCollection,
+	type DynamicPath,
+	type PathSegment,
+	isMovePathSegment
+} from '$lib/types';
+import type { Point } from 'bezier-js';
+import {
+	getDirection,
+	getLength,
+	getMidPoint,
+	getQuadWidth,
+	svgPathStringFromSegments
+} from './utils';
 
 export const generateBranched = (
-  quadBand: Quadrilateral[],
-  config: { rows: number; columns: number; variant: number; minWidth?: number; maxWidth?: number }
+	quadBand: Quadrilateral[],
+	config: { rows: number; columns: number; variant: number; minWidth?: number; maxWidth?: number }
 ): DynamicPathCollection => {
-  const { rows, columns, variant } = config;
-  const minWidth = config.maxWidth || 1;
-  const maxWidth = config.maxWidth || 2;
-  const outlineWidth = maxWidth;
+	const { rows, columns, variant } = config;
+	const minWidth = config.maxWidth || 1;
+	const maxWidth = config.maxWidth || 2;
+	const outlineWidth = maxWidth;
 
-  const getOutline = (): DynamicPath => {
-    const left: PathSegment[][] = [];
-    const right: PathSegment[][] = [];
+	const getOutline = (): DynamicPath => {
+		const left: PathSegment[][] = [];
+		const right: PathSegment[][] = [];
 
-    quadBand.forEach((quad, i) => {
-      if (i === 0) {
-        left.push([
-          ['M', quad.c.x, quad.c.y],
-          ['L', quad.b.x, quad.b.y],
-          ['L', quad.a.x, quad.a.y],
-          ['L', quad.d.x, quad.d.y]
-        ]);
-      } else if (i === quadBand.length - 1) {
-        right.push([
-          ['M', quad.a.x, quad.a.y],
-          ['L', quad.d.x, quad.d.y],
-          ['L', quad.c.x, quad.c.y],
-          ['L', quad.b.x, quad.b.y]
-        ]);
-      } else {
-        left.push([
-          ['M', quad.a.x, quad.a.y],
-          ['L', quad.d.x, quad.d.y]
-        ]);
-        right.push([
-          ['M', quad.c.x, quad.c.y],
-          ['L', quad.b.x, quad.b.y]
-        ]);
-      }
-    });
-    return [...left, ...right.reverse()].map((path) => {
-      return { path, svgPath: '', width: maxWidth };
-    });
-  };
+		quadBand.forEach((quad, i) => {
+			if (i === 0) {
+				left.push([
+					['M', quad.c.x, quad.c.y],
+					['L', quad.b.x, quad.b.y],
+					['L', quad.a.x, quad.a.y],
+					['L', quad.d.x, quad.d.y]
+				]);
+			} else if (i === quadBand.length - 1) {
+				right.push([
+					['M', quad.a.x, quad.a.y],
+					['L', quad.d.x, quad.d.y],
+					['L', quad.c.x, quad.c.y],
+					['L', quad.b.x, quad.b.y]
+				]);
+			} else {
+				left.push([
+					['M', quad.a.x, quad.a.y],
+					['L', quad.d.x, quad.d.y]
+				]);
+				right.push([
+					['M', quad.c.x, quad.c.y],
+					['L', quad.b.x, quad.b.y]
+				]);
+			}
+		});
+		return [...left, ...right.reverse()].map((path) => {
+			return { path, svgPath: '', width: maxWidth };
+		});
+	};
 
-  const outline: DynamicPath = getOutline();
+	const outline: DynamicPath = getOutline();
 
-  const stubbyOutline = outline.map((section, i) => {
-    if (
-      section.path.length === 2 &&
-      isMovePathSegment(section.path[0]) &&
-      isLinePathSegment(section.path[1])
-    ) {
-      const { p0, p1 } = shortenLine(
-        { x: section.path[0][1], y: section.path[0][2] },
-        { x: section.path[1][1], y: section.path[1][2] },
-        section.width / 2
-      );
-      const path: PathSegment[] = [
-        ['M', p0.x, p0.y],
-        ['L', p1.x, p1.y]
-      ];
-      return {
-        ...section,
-        path,
-        svgPath: svgPathStringFromSegments(path)
-      };
-    } else if (
-      section.path.length === 4 &&
-      isMovePathSegment(section.path[0]) &&
-      isLinePathSegment(section.path[1]) &&
-      isLinePathSegment(section.path[2]) &&
-      isLinePathSegment(section.path[3])
-    ) {
-      const sec0 = shortenLine(
-        { x: section.path[0][1], y: section.path[0][2] },
-        { x: section.path[1][1], y: section.path[1][2] },
-        section.width / 2
-      );
-      const sec1 = shortenLine(
-        { x: section.path[2][1], y: section.path[2][2] },
-        { x: section.path[3][1], y: section.path[3][2] },
-        section.width / 2
-      );
-      const path: PathSegment[] = [
-        ['M', sec0.p0.x, sec0.p0.y],
-        section.path[1],
-        section.path[2],
-        ['L', sec1.p1.x, sec1.p1.y]
-      ];
-      return { ...section, path, svgPath: svgPathStringFromSegments(path) };
-    }
-    return { ...section, svgPath: svgPathStringFromSegments(section.path) };
-  });
-  const outlineShape: DynamicPath = [
-    {
-      width: outline[0].width,
-      path: [],
-      svgPath: ''
-    }
-  ];
-  outline.forEach((dPath, i) => {
-    if (i === 0) {
-      outlineShape[0].path.push(...dPath.path);
-    } else {
-      outlineShape[0].path.push(...dPath.path.slice(1));
-    }
-    outlineShape[0].svgPath = svgPathStringFromSegments(outlineShape[0].path);
-  });
-  const midPoints: { point: Point; quadWidth: number }[] = [];
-  quadBand.forEach((quad, i) => {
-    if (i === 0) {
-      midPoints.push({ point: getMidPoint(quad.a, quad.b), quadWidth: 0 });
-    }
-    midPoints.push({ point: getMidPoint(quad.c, quad.d), quadWidth: getQuadWidth(quad) });
-  });
-  const minQuadWidth = Math.min(...midPoints.map((mp) => mp.quadWidth));
-  const maxQuadWidth = Math.max(...midPoints.map((mp) => mp.quadWidth));
-  const midLine: DynamicPath = [];
-  midPoints.forEach((facet, i, facets) => {
-    if (i > 0) {
-      midLine.push({
-        path: [
-          ['M', facets[i - 1].point.x, facets[i - 1].point.y],
-          ['L', facet.point.x, facet.point.y]
-        ],
-        width:
-          ((facet.quadWidth - minQuadWidth) / (maxQuadWidth - minQuadWidth)) * maxWidth + minWidth,
-        svgPath: svgPathStringFromSegments([
-          ['M', facets[i - 1].point.x, facets[i - 1].point.y],
-          ['L', facet.point.x, facet.point.y]
-        ])
-      });
-    }
-  });
+	const stubbyOutline = outline.map((section, i) => {
+		if (
+			section.path.length === 2 &&
+			isMovePathSegment(section.path[0]) &&
+			isLinePathSegment(section.path[1])
+		) {
+			const { p0, p1 } = shortenLine(
+				{ x: section.path[0][1], y: section.path[0][2] },
+				{ x: section.path[1][1], y: section.path[1][2] },
+				section.width / 2
+			);
+			const path: PathSegment[] = [
+				['M', p0.x, p0.y],
+				['L', p1.x, p1.y]
+			];
+			return {
+				...section,
+				path,
+				svgPath: svgPathStringFromSegments(path)
+			};
+		} else if (
+			section.path.length === 4 &&
+			isMovePathSegment(section.path[0]) &&
+			isLinePathSegment(section.path[1]) &&
+			isLinePathSegment(section.path[2]) &&
+			isLinePathSegment(section.path[3])
+		) {
+			const sec0 = shortenLine(
+				{ x: section.path[0][1], y: section.path[0][2] },
+				{ x: section.path[1][1], y: section.path[1][2] },
+				section.width / 2
+			);
+			const sec1 = shortenLine(
+				{ x: section.path[2][1], y: section.path[2][2] },
+				{ x: section.path[3][1], y: section.path[3][2] },
+				section.width / 2
+			);
+			const path: PathSegment[] = [
+				['M', sec0.p0.x, sec0.p0.y],
+				section.path[1],
+				section.path[2],
+				['L', sec1.p1.x, sec1.p1.y]
+			];
+			return { ...section, path, svgPath: svgPathStringFromSegments(path) };
+		}
+		return { ...section, svgPath: svgPathStringFromSegments(section.path) };
+	});
+	const outlineShape: DynamicPath = [
+		{
+			width: outline[0].width,
+			path: [],
+			svgPath: ''
+		}
+	];
+	outline.forEach((dPath, i) => {
+		if (i === 0) {
+			outlineShape[0].path.push(...dPath.path);
+		} else {
+			outlineShape[0].path.push(...dPath.path.slice(1));
+		}
+		outlineShape[0].svgPath = svgPathStringFromSegments(outlineShape[0].path);
+	});
+	const midPoints: { point: Point; quadWidth: number }[] = [];
+	quadBand.forEach((quad, i) => {
+		if (i === 0) {
+			midPoints.push({ point: getMidPoint(quad.a, quad.b), quadWidth: 0 });
+		}
+		midPoints.push({ point: getMidPoint(quad.c, quad.d), quadWidth: getQuadWidth(quad) });
+	});
+	const minQuadWidth = Math.min(...midPoints.map((mp) => mp.quadWidth));
+	const maxQuadWidth = Math.max(...midPoints.map((mp) => mp.quadWidth));
+	const midLine: DynamicPath = [];
+	midPoints.forEach((facet, i, facets) => {
+		if (i > 0) {
+			midLine.push({
+				path: [
+					['M', facets[i - 1].point.x, facets[i - 1].point.y],
+					['L', facet.point.x, facet.point.y]
+				],
+				width:
+					((facet.quadWidth - minQuadWidth) / (maxQuadWidth - minQuadWidth)) * maxWidth + minWidth,
+				svgPath: svgPathStringFromSegments([
+					['M', facets[i - 1].point.x, facets[i - 1].point.y],
+					['L', facet.point.x, facet.point.y]
+				])
+			});
+		}
+	});
 
-  const branches = midLine.map((midlineSegment, i) => {
-    const branch = { ...midlineSegment };
-    branch.path = [
-      branch.path[0],
-      ['L', quadBand[i].d.x, quadBand[i].d.y],
-      branch.path[0],
-      ['L', quadBand[i].c.x, quadBand[i].c.y]
-    ];
-    branch.svgPath = svgPathStringFromSegments(branch.path);
-    branch.width = branch.width / 4;
-    return branch;
-  });
+	const branches = midLine.map((midlineSegment, i) => {
+		const branch = { ...midlineSegment };
+		branch.path = [
+			branch.path[0],
+			['L', quadBand[i].d.x, quadBand[i].d.y],
+			branch.path[0],
+			['L', quadBand[i].c.x, quadBand[i].c.y]
+		];
+		branch.svgPath = svgPathStringFromSegments(branch.path);
+		branch.width = branch.width / 4;
+		return branch;
+	});
 
-  return { outline: stubbyOutline, outlineShape, midLine, branches };
+	return { outline: stubbyOutline, outlineShape, midLine, branches };
 };
 
 const shortenLine = (p0: Point, p1: Point, remove: number): { p0: Point; p1: Point } => {

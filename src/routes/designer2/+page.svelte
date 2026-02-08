@@ -22,7 +22,10 @@
 	import HoverSidebar from '../../components/modal/HoverSidebar.svelte';
 	import { projectionConfigs } from '../../components/modal/sidebar-definitions';
 	import Toast from '../../components/Toast.svelte';
-	import { superGlobulePatternStore, triggerManualRegeneration } from '$lib/stores/superGlobuleStores';
+	import {
+		superGlobulePatternStore,
+		triggerManualRegeneration
+	} from '$lib/stores/superGlobuleStores';
 
 	let viewMode: ViewModeSetting = $uiStore.designer.viewMode;
 
@@ -207,8 +210,13 @@
 	}
 
 	@keyframes pulse {
-		0%, 100% { opacity: 1; }
-		50% { opacity: 0.5; }
+		0%,
+		100% {
+			opacity: 1;
+		}
+		50% {
+			opacity: 0.5;
+		}
 	}
 
 	.pattern-control {

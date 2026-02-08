@@ -7,14 +7,7 @@
 	export { className as class };
 </script>
 
-<button
-	on:click
-	on:mousedown
-	on:mouseup
-	class="{variant} {className}"
-	{disabled}
-	class:disabled
->
+<button on:click on:mousedown on:mouseup class="{variant} {className}" {disabled} class:disabled>
 	<slot />
 </button>
 

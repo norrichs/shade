@@ -28,8 +28,11 @@
 				<input
 					id={rangeKey}
 					type="number"
-					bind:value={$superConfigStore.subGlobuleConfigs[$selectedBand.s].globuleConfig
-						.renderConfig.ranges[rangeKey]}
+					bind:value={
+						$superConfigStore.subGlobuleConfigs[$selectedBand.s].globuleConfig.renderConfig.ranges[
+							rangeKey
+						]
+					}
 				/>
 			{/each}
 
@@ -40,8 +43,11 @@
 					<input
 						id={`show-${key}`}
 						type="checkbox"
-						bind:checked={$superConfigStore.subGlobuleConfigs[$selectedBand.s].globuleConfig
-							.renderConfig.show[key]}
+						bind:checked={
+							$superConfigStore.subGlobuleConfigs[$selectedBand.s].globuleConfig.renderConfig.show[
+								key
+							]
+						}
 					/>
 				{/each}
 			{/if}
@@ -51,8 +57,9 @@
 		<label for="band-style">Band Style</label>
 		<select
 			id="band-style"
-			bind:value={$superConfigStore.subGlobuleConfigs[$selectedBand.s].globuleConfig.bandConfig
-				.bandStyle}
+			bind:value={
+				$superConfigStore.subGlobuleConfigs[$selectedBand.s].globuleConfig.bandConfig.bandStyle
+			}
 		>
 			<option>circumference</option>
 			<option>helical-right</option>
@@ -63,9 +70,8 @@
 			id="tab-style"
 			bind:value={tabStyle.style}
 			on:change={() =>
-				($superConfigStore.subGlobuleConfigs[
-					$selectedBand.s
-				].globuleConfig.renderConfig.show.tabs = true)}
+				($superConfigStore.subGlobuleConfigs[$selectedBand.s].globuleConfig.renderConfig.show.tabs =
+					true)}
 		>
 			<option>none</option>
 			<option>full</option>
@@ -78,9 +84,8 @@
 			id="tab-direction"
 			bind:value={tabStyle.direction}
 			on:change={() =>
-				($superConfigStore.subGlobuleConfigs[
-					$selectedBand.s
-				].globuleConfig.renderConfig.show.tabs = true)}
+				($superConfigStore.subGlobuleConfigs[$selectedBand.s].globuleConfig.renderConfig.show.tabs =
+					true)}
 		>
 			<option>greater</option>
 			<option>lesser</option>

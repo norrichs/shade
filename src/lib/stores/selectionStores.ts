@@ -101,7 +101,7 @@ export const selectedSubGlobuleIndex = derived(
 		const index = $selectedGlobule.globuleId
 			? $superConfigStore.subGlobuleConfigs.findIndex(
 					(subGlobuleConfig) => subGlobuleConfig.globuleConfig.id === $selectedGlobule.globuleId
-			  )
+				)
 			: 0;
 
 		return index;

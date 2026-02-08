@@ -283,7 +283,7 @@ export const generateBandPatterns = (
 							globule: startPartner.globule,
 							tube: startPartner.tube,
 							band: startPartner.band
-					  }
+						}
 					: undefined;
 				const endPartnerBand: GlobuleAddress_Band | undefined = endPartner
 					? { globule: endPartner.globule, tube: endPartner.tube, band: endPartner.band }

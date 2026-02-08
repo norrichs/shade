@@ -26,11 +26,11 @@
 	{/each}
 	<header>Show Globule Tubes:</header>
 	{#each Object.keys($viewControlStore.showGlobuleTubeGeometry) as key}
-	<div class="entry">
-		<input type="checkbox" bind:checked={$viewControlStore.showGlobuleTubeGeometry[key]} />
-		<span>{key}</span>
-	</div>
-{/each}
+		<div class="entry">
+			<input type="checkbox" bind:checked={$viewControlStore.showGlobuleTubeGeometry[key]} />
+			<span>{key}</span>
+		</div>
+	{/each}
 </PopoverMenu>
 
 <style>
@@ -43,5 +43,4 @@
 		box-shadow: 2px 2px 10px 0px var(--color-shaded-dark);
 		position: relative;
 	}
-
 </style>

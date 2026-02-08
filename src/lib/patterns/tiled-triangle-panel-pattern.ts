@@ -31,11 +31,11 @@ const unitTriangle = (
 		? {
 				start: [['M', 0, 0], ['L', 0, h], ['L', w, h], ['Z']],
 				end: [['M', 0, 0], ['L', w, h], ['L', w, 0], ['Z']]
-		  }
+			}
 		: {
 				start: [['M', 0, 0], ['L', 0, h], ['L', w, 0], ['Z']],
 				end: [['M', 0, w], ['L', 0, h], ['L', w, h], ['Z']]
-		  };
+			};
 };
 
 export const generatePanelPattern = ({ size, variant }: Props): PathSegment[] => {

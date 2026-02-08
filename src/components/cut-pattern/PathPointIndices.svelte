@@ -9,12 +9,15 @@
 	const getPathPointIndices = (band: BandCutPattern, showPathPointIndices: boolean) => {
 		if (!showPathPointIndices) return [];
 		return band.facets.map((facet) => {
-			const segmentPairs = facet.path.reduce((pairs, segment, index) => {
-				if (index % 2 === 0 && index + 1 < facet.path.length) {
-					pairs.push([segment, facet.path[index + 1]]);
-				}
-				return pairs;
-			}, [] as [PathSegment, PathSegment][]);
+			const segmentPairs = facet.path.reduce(
+				(pairs, segment, index) => {
+					if (index % 2 === 0 && index + 1 < facet.path.length) {
+						pairs.push([segment, facet.path[index + 1]]);
+					}
+					return pairs;
+				},
+				[] as [PathSegment, PathSegment][]
+			);
 
 			return facet.path.map((segment: PathSegment, index: number) => {
 				let p: Point;
@@ -28,7 +31,7 @@
 										{ x: segment[1], y: segment[2] },
 										{ x: otherSegment[1], y: otherSegment[2] },
 										0.2
-								  )
+									)
 								: { x: segment[1], y: segment[2] };
 						return { ...p, index };
 					case 'L':
@@ -39,7 +42,7 @@
 										{ x: otherSegment[1], y: otherSegment[2] },
 										{ x: segment[1], y: segment[2] },
 										0.8
-								  )
+									)
 								: { x: segment[1], y: segment[2] };
 						return { ...p, index };
 					case 'C':

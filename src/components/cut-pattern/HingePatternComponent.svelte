@@ -59,7 +59,7 @@
 
 {#if patternStyle === 'cut'}
 	<g stroke="black" stroke-width="0.2" fill="none">
-		<path d={outlinePath}/>
+		<path d={outlinePath} />
 		<path d={getHingeMarks(hingePattern.pattern.hinge)} />
 		<path
 			d={getRegistrationMarks(hingePattern.pattern.registrationPoint, hingePattern.pattern.hinge)}
@@ -90,7 +90,9 @@
 		/>
 		{#each hingePattern.pattern.holes as hole}
 			<circle cx={hole.location.x} cy={hole.location.y} r={hole.holeDiameter / 2} />
-			<path d={`M ${hole.location.x} ${hole.location.y -hole.nutDiameter / 2} v ${hole.nutDiameter} m ${-hole.nutDiameter / 2} ${-hole.nutDiameter / 2} h ${hole.nutDiameter}`} />
+			<path
+				d={`M ${hole.location.x} ${hole.location.y - hole.nutDiameter / 2} v ${hole.nutDiameter} m ${-hole.nutDiameter / 2} ${-hole.nutDiameter / 2} h ${hole.nutDiameter}`}
+			/>
 		{/each}
 	</g>
 {:else}

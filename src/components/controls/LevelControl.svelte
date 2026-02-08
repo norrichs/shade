@@ -71,8 +71,10 @@
 					id="silhouette-divisions"
 					type="number"
 					min="1"
-					bind:value={$superConfigStore.subGlobuleConfigs[sgIndex].globuleConfig.levelConfig
-						.silhouetteSampleMethod.divisions}
+					bind:value={
+						$superConfigStore.subGlobuleConfigs[sgIndex].globuleConfig.levelConfig
+							.silhouetteSampleMethod.divisions
+					}
 				/>
 			{/if}
 
@@ -80,22 +82,25 @@
 			<input
 				id="x_offset"
 				type="number"
-				bind:value={$superConfigStore.subGlobuleConfigs[sgIndex].globuleConfig.levelConfig
-					.levelOffsets[0].x}
+				bind:value={
+					$superConfigStore.subGlobuleConfigs[sgIndex].globuleConfig.levelConfig.levelOffsets[0].x
+				}
 			/>
 			<label for="y_offset">Y</label>
 			<input
 				id="y_offset"
 				type="number"
-				bind:value={$superConfigStore.subGlobuleConfigs[sgIndex].globuleConfig.levelConfig
-					.levelOffsets[0].y}
+				bind:value={
+					$superConfigStore.subGlobuleConfigs[sgIndex].globuleConfig.levelConfig.levelOffsets[0].y
+				}
 			/>
 			<label for="z_offset">Z</label>
 			<input
 				id="z_offset"
 				type="number"
-				bind:value={$superConfigStore.subGlobuleConfigs[sgIndex].globuleConfig.levelConfig
-					.levelOffsets[0].z}
+				bind:value={
+					$superConfigStore.subGlobuleConfigs[sgIndex].globuleConfig.levelConfig.levelOffsets[0].z
+				}
 			/>
 			<label for="rotx_offset">rotion X</label>
 			<input id="rotx_offset" type="number" min={-360} max={360} bind:value={rotX} />

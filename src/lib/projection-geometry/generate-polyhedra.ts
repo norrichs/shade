@@ -1085,6 +1085,411 @@ export function convertXYZtoVertices(
 	return vertices;
 }
 
+export function groupIntoLevels(
+	polarVertices: PolarVertex[],
+	zTolerance: number = 0.0000001
+): PolarVertex[][] {
+	const levels: PolarVertex[][] = [];
+	polarVertices.forEach((vertex) => {
+		const existingLevel = levels.find(
+			(level) => level.length > 0 && Math.abs(level[0].z - vertex.z) < zTolerance
+		);
+		if (existingLevel) {
+			existingLevel.push(vertex);
+		} else {
+			levels.push([vertex]);
+		}
+	});
+	return levels;
+}
+
+// --- Shared helpers for polygon map computation ---
+
+function buildVertexToLevelMap(levels: PolarVertex[][]): Map<number, [LevelIndex, PointIndex]> {
+	const vertexToLevel = new Map<number, [LevelIndex, PointIndex]>();
+	levels.forEach((level, levelIndex) => {
+		level.forEach((v, pointIndex) => {
+			vertexToLevel.set(v.vertexIndex, [levelIndex, pointIndex]);
+		});
+	});
+	return vertexToLevel;
+}
+
+function buildAdjacencyGraph(polarVertices: PolarVertex[]): {
+	adjacency: Map<number, Set<number>>;
+	edgeThreshold: number;
+} {
+	const distances: number[] = [];
+	for (let i = 0; i < polarVertices.length; i++) {
+		for (let j = i + 1; j < polarVertices.length; j++) {
+			const a = polarVertices[i];
+			const b = polarVertices[j];
+			const d = Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2 + (a.z - b.z) ** 2);
+			distances.push(d);
+		}
+	}
+	distances.sort((a, b) => a - b);
+
+	const edgeThreshold = findEdgeThreshold(distances);
+
+	const adjacency = new Map<number, Set<number>>();
+	for (const pv of polarVertices) {
+		adjacency.set(pv.vertexIndex, new Set());
+	}
+	for (let i = 0; i < polarVertices.length; i++) {
+		for (let j = i + 1; j < polarVertices.length; j++) {
+			const a = polarVertices[i];
+			const b = polarVertices[j];
+			const d = Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2 + (a.z - b.z) ** 2);
+			if (d <= edgeThreshold) {
+				adjacency.get(a.vertexIndex)!.add(b.vertexIndex);
+				adjacency.get(b.vertexIndex)!.add(a.vertexIndex);
+			}
+		}
+	}
+
+	return { adjacency, edgeThreshold };
+}
+
+/**
+ * Tries rotational symmetry counts for a face's [level, point] sequence.
+ * Returns the best count and marks rotated copies as grouped.
+ *
+ * @param sequence - The face's vertex sequence as [levelIndex, pointIndex] pairs
+ * @param levels - All levels of the polyhedron
+ * @param allFaceVertexSets - Set of sorted vertex-index strings for all faces
+ * @param allFaces - Array of all faces as vertex index arrays (for finding indices to mark grouped)
+ * @param radialSymmetry - The base radial symmetry to try
+ * @param grouped - Set of face indices already grouped (mutated)
+ * @returns The symmetry count found
+ */
+function groupByRotationalSymmetry({
+	sequence,
+	levels,
+	allFaceVertexSets,
+	allFaces,
+	radialSymmetry,
+	grouped
+}: {
+	sequence: [LevelIndex, PointIndex][];
+	levels: PolarVertex[][];
+	allFaceVertexSets: Set<string>;
+	allFaces: number[][];
+	radialSymmetry: number;
+	grouped: Set<number>;
+}): number {
+	const countsToTry = [radialSymmetry, radialSymmetry * 2];
+	let bestCount = 1;
+
+	for (const count of countsToTry) {
+		const allDivisible = sequence.every(([levelIndex]) => levels[levelIndex].length % count === 0);
+		if (!allDivisible) continue;
+
+		// Collect all rotated copy keys (including k=0) and check they all exist
+		const rotatedKeys: string[] = [];
+		let allExist = true;
+		for (let k = 0; k < count; k++) {
+			const rotatedVertexIndices: number[] = [];
+			for (const [levelIndex, pointIndex] of sequence) {
+				const levelSize = levels[levelIndex].length;
+				const step = levelSize / count;
+				let rotatedPointIndex = pointIndex + k * step;
+				rotatedPointIndex =
+					rotatedPointIndex < 0 ? levelSize + rotatedPointIndex : rotatedPointIndex % levelSize;
+				rotatedVertexIndices.push(levels[levelIndex][rotatedPointIndex].vertexIndex);
+			}
+			const key = [...rotatedVertexIndices].sort((a, b) => a - b).join(',');
+			if (!allFaceVertexSets.has(key)) {
+				allExist = false;
+				break;
+			}
+			rotatedKeys.push(key);
+		}
+		if (!allExist) continue;
+
+		// Count distinct rotated copies — if a face is invariant under rotation,
+		// all copies map to the same vertex set, so the true count is fewer
+		const distinctKeys = new Set(rotatedKeys);
+		const distinctCount = distinctKeys.size;
+
+		if (distinctCount > 1) {
+			bestCount = distinctCount;
+			break;
+		}
+	}
+
+	// Mark all rotated copies as grouped
+	for (let k = 0; k < bestCount; k++) {
+		const rotatedVertexIndices: number[] = [];
+		for (const [levelIndex, pointIndex] of sequence) {
+			const levelSize = levels[levelIndex].length;
+			const step = levelSize / bestCount;
+			let rotatedPointIndex = pointIndex + k * step;
+			rotatedPointIndex =
+				rotatedPointIndex < 0 ? levelSize + rotatedPointIndex : rotatedPointIndex % levelSize;
+			rotatedVertexIndices.push(levels[levelIndex][rotatedPointIndex].vertexIndex);
+		}
+		const key = [...rotatedVertexIndices].sort((a, b) => a - b).join(',');
+		for (let fj = 0; fj < allFaces.length; fj++) {
+			const fjKey = [...allFaces[fj]].sort((a, b) => a - b).join(',');
+			if (fjKey === key) {
+				grouped.add(fj);
+				break;
+			}
+		}
+	}
+
+	return bestCount;
+}
+
+function sortPolygonMapRows(rows: PolygonMapRow[]): PolygonMapRow[] {
+	return rows.sort((a, b) => {
+		const aMinLevel = Math.min(...a.sequence.map(([l]) => l));
+		const bMinLevel = Math.min(...b.sequence.map(([l]) => l));
+		if (aMinLevel !== bMinLevel) return aMinLevel - bMinLevel;
+
+		const aMaxLevel = Math.max(...a.sequence.map(([l]) => l));
+		const bMaxLevel = Math.max(...b.sequence.map(([l]) => l));
+		if (aMaxLevel !== bMaxLevel) return aMaxLevel - bMaxLevel;
+
+		return a.sequence[0][1] - b.sequence[0][1];
+	});
+}
+
+// --- End shared helpers ---
+
+/**
+ * Automatically computes a PolygonMapRow[] for all-triangle polyhedra.
+ * Only handles polyhedra where every face is a triangle (e.g. geodesic spheres, icosahedra).
+ * Mixed-polygon models (fullerene, truncated icosahedra) need computeMixedPolygonMap instead.
+ */
+export function computeTrianglePolygonMap({
+	vertices,
+	radialSymmetry = 5
+}: {
+	vertices: VerticesConfig;
+	radialSymmetry?: number;
+}): PolygonMapRow[] {
+	const polarVertices = getPolarVertices(vertices);
+	const levels = groupIntoLevels(polarVertices);
+	const vertexToLevel = buildVertexToLevelMap(levels);
+	const { adjacency } = buildAdjacencyGraph(polarVertices);
+
+	// Find all triangles: for each edge (vi, vj), find common neighbors vk
+	const sortedVertexIndices = [...adjacency.keys()].sort((a, b) => a - b);
+	const triangleSet = new Set<string>();
+	const triangles: [number, number, number][] = [];
+
+	for (const vi of sortedVertexIndices) {
+		const neighborsI = adjacency.get(vi)!;
+		for (const vj of neighborsI) {
+			if (vj <= vi) continue;
+			const neighborsJ = adjacency.get(vj)!;
+			for (const vk of neighborsJ) {
+				if (vk <= vj) continue;
+				if (neighborsI.has(vk)) {
+					const key = `${vi},${vj},${vk}`;
+					if (!triangleSet.has(key)) {
+						triangleSet.add(key);
+						triangles.push([vi, vj, vk]);
+					}
+				}
+			}
+		}
+	}
+
+	// Validate triangle count using Euler formula: F = 2V - 4 for genus-0 all-triangle
+	const expectedTriangles = 2 * vertices.length - 4;
+	if (triangles.length !== expectedTriangles) {
+		throw new Error(
+			`computeTrianglePolygonMap: expected ${expectedTriangles} triangles but found ${triangles.length}`
+		);
+	}
+
+	// Convert triangles from vertexIndex to [levelIndex, pointIndex]
+	type LevelPoint = [number, number]; // [levelIndex, pointIndex]
+	const trianglesAsLevelPoints: [LevelPoint, LevelPoint, LevelPoint][] = triangles.map(
+		([vi, vj, vk]) => {
+			return [vertexToLevel.get(vi)!, vertexToLevel.get(vj)!, vertexToLevel.get(vk)!];
+		}
+	);
+
+	// Build a set of all triangles by their resolved vertex indices for symmetry verification
+	const allFaceVertexSets = new Set<string>();
+	for (const tri of triangles) {
+		allFaceVertexSets.add([...tri].sort((a, b) => a - b).join(','));
+	}
+
+	// Group by rotational symmetry
+	const grouped = new Set<number>();
+	const rows: PolygonMapRow[] = [];
+
+	for (let ti = 0; ti < trianglesAsLevelPoints.length; ti++) {
+		if (grouped.has(ti)) continue;
+
+		const sequence: [LevelIndex, PointIndex][] = trianglesAsLevelPoints[ti].map(
+			([levelIndex, pointIndex]) => [levelIndex, pointIndex]
+		);
+
+		const bestCount = groupByRotationalSymmetry({
+			sequence,
+			levels,
+			allFaceVertexSets,
+			allFaces: triangles,
+			radialSymmetry,
+			grouped
+		});
+
+		rows.push({
+			polygonType: 'triangle',
+			count: bestCount,
+			sequence
+		});
+	}
+
+	sortPolygonMapRows(rows);
+
+	// Validate all triangles are accounted for
+	const totalTriangles = rows.reduce((sum, row) => sum + row.count, 0);
+	if (totalTriangles !== expectedTriangles) {
+		throw new Error(
+			`computeTrianglePolygonMap: grouped ${totalTriangles} triangles but expected ${expectedTriangles}`
+		);
+	}
+
+	return rows;
+}
+
+export type FaceSpec = {
+	type: PolygonType;
+	vertices: number[];
+};
+
+/**
+ * Computes a PolygonMapRow[] for polyhedra with mixed polygon types (e.g. pentagons + hexagons).
+ * Requires an explicit face list since face structure is ambiguous from vertices alone.
+ *
+ * @param vertices - The VerticesConfig (sorted by Z, as produced by convertXYZtoVertices)
+ * @param faces - Array of FaceSpec, each listing polygon type and vertex indices into the vertices array
+ * @param radialSymmetry - The base radial symmetry of the polyhedron (default 5)
+ */
+export function computeMixedPolygonMap({
+	vertices,
+	faces,
+	radialSymmetry = 5
+}: {
+	vertices: VerticesConfig;
+	faces: FaceSpec[];
+	radialSymmetry?: number;
+}): PolygonMapRow[] {
+	const polarVertices = getPolarVertices(vertices);
+	const levels = groupIntoLevels(polarVertices);
+	const vertexToLevel = buildVertexToLevelMap(levels);
+
+	// Convert faces to [level, pointIndex] sequences and validate vertex indices
+	const facesAsLevelPoints: [LevelIndex, PointIndex][][] = [];
+	const facesAsVertexIndices: number[][] = [];
+
+	for (let fi = 0; fi < faces.length; fi++) {
+		const face = faces[fi];
+		const levelPointSeq: [LevelIndex, PointIndex][] = [];
+
+		for (const vi of face.vertices) {
+			const lp = vertexToLevel.get(vi);
+			if (!lp) {
+				throw new Error(
+					`computeMixedPolygonMap: face ${fi} references vertex index ${vi} which is not in the vertex-to-level map`
+				);
+			}
+			levelPointSeq.push(lp);
+		}
+
+		facesAsLevelPoints.push(levelPointSeq);
+		facesAsVertexIndices.push([...face.vertices]);
+	}
+
+	// Build face vertex set for symmetry checking
+	const allFaceVertexSets = new Set<string>();
+	for (const faceVerts of facesAsVertexIndices) {
+		allFaceVertexSets.add([...faceVerts].sort((a, b) => a - b).join(','));
+	}
+
+	// Group by rotational symmetry
+	const grouped = new Set<number>();
+	const rows: PolygonMapRow[] = [];
+
+	for (let fi = 0; fi < faces.length; fi++) {
+		if (grouped.has(fi)) continue;
+
+		const sequence = facesAsLevelPoints[fi];
+
+		const bestCount = groupByRotationalSymmetry({
+			sequence,
+			levels,
+			allFaceVertexSets,
+			allFaces: facesAsVertexIndices,
+			radialSymmetry,
+			grouped
+		});
+
+		rows.push({
+			polygonType: faces[fi].type,
+			count: bestCount,
+			sequence
+		});
+	}
+
+	sortPolygonMapRows(rows);
+
+	// Validate total face count
+	const totalFaces = rows.reduce((sum, row) => sum + row.count, 0);
+	if (totalFaces !== faces.length) {
+		throw new Error(
+			`computeMixedPolygonMap: grouped ${totalFaces} faces but expected ${faces.length}`
+		);
+	}
+
+	// Validate Euler's formula: V - E + F = 2 for genus-0
+	const edgeSet = new Set<string>();
+	for (const face of faces) {
+		for (let ei = 0; ei < face.vertices.length; ei++) {
+			const v0 = face.vertices[ei];
+			const v1 = face.vertices[(ei + 1) % face.vertices.length];
+			edgeSet.add([Math.min(v0, v1), Math.max(v0, v1)].join(','));
+		}
+	}
+	const V = vertices.length;
+	const E = edgeSet.size;
+	const F = faces.length;
+	const euler = V - E + F;
+	if (euler !== 2) {
+		throw new Error(
+			`computeMixedPolygonMap: Euler formula check failed: V(${V}) - E(${E}) + F(${F}) = ${euler}, expected 2`
+		);
+	}
+
+	return rows;
+}
+
+function findEdgeThreshold(sortedDistances: number[]): number {
+	// Find the largest gap in the first portion of sorted pairwise distances.
+	// For polyhedra, edge distances cluster tightly, then there's a large gap
+	// to the next-nearest non-edge distances. We find that largest gap.
+	let maxGap = 0;
+	let maxGapIndex = 0;
+	const searchLimit = Math.min(sortedDistances.length, 500);
+	for (let i = 1; i < searchLimit; i++) {
+		const gap = sortedDistances[i] - sortedDistances[i - 1];
+		if (gap > maxGap) {
+			maxGap = gap;
+			maxGapIndex = i;
+		}
+	}
+
+	// Threshold is midpoint between last edge distance and first non-edge distance
+	return (sortedDistances[maxGapIndex - 1] + sortedDistances[maxGapIndex]) / 2;
+}
+
 export const generatePolygonConfigs = ({
 	vertices,
 	polygonMap,
@@ -1108,24 +1513,7 @@ export const generatePolygonConfigs = ({
 			return sliced;
 		});
 	} else {
-		// Group vertices by z value (within tolerance)
-		levels = [];
-		const Z_TOLERANCE = 0.0000001;
-
-		polarVertices.forEach((vertex) => {
-			// Find an existing level with a similar z value
-			const existingLevel = levels.find(
-				(level) => level.length > 0 && Math.abs(level[0].z - vertex.z) < Z_TOLERANCE
-			);
-
-			if (existingLevel) {
-				// Add to existing level
-				existingLevel.push(vertex);
-			} else {
-				// Create a new level
-				levels.push([vertex]);
-			}
-		});
+		levels = groupIntoLevels(polarVertices);
 	}
 
 	let polygons: PolygonConfig<undefined, VertexIndex, CurveIndex, CurveIndex>[] = [];

@@ -33,11 +33,7 @@ function rehydrateTriangle(obj: {
 	b: { x: number; y: number; z: number };
 	c: { x: number; y: number; z: number };
 }): Triangle {
-	return new Triangle(
-		rehydrateVector3(obj.a),
-		rehydrateVector3(obj.b),
-		rehydrateVector3(obj.c)
-	);
+	return new Triangle(rehydrateVector3(obj.a), rehydrateVector3(obj.b), rehydrateVector3(obj.c));
 }
 
 /**
@@ -82,7 +78,9 @@ function rehydrateSuperGlobule(result: SuperGlobule): SuperGlobule {
 				...band,
 				facets: band.facets.map((facet) => ({
 					...facet,
-					triangle: rehydrateTriangle(facet.triangle as unknown as Parameters<typeof rehydrateTriangle>[0])
+					triangle: rehydrateTriangle(
+						facet.triangle as unknown as Parameters<typeof rehydrateTriangle>[0]
+					)
 				}))
 			}))
 		}))
@@ -98,7 +96,9 @@ function rehydrateSuperGlobule(result: SuperGlobule): SuperGlobule {
 			...band,
 			facets: band.facets.map((facet) => ({
 				...facet,
-				triangle: rehydrateTriangle(facet.triangle as unknown as Parameters<typeof rehydrateTriangle>[0])
+				triangle: rehydrateTriangle(
+					facet.triangle as unknown as Parameters<typeof rehydrateTriangle>[0]
+				)
 			}))
 		}))
 	}));
@@ -110,16 +110,21 @@ function rehydrateSuperGlobule(result: SuperGlobule): SuperGlobule {
 			...globule,
 			data: {
 				...globule.data,
-				levels: globule.data.levels?.map((level) => ({
-					...level,
-					center: rehydrateVector3(level.center as unknown as Parameters<typeof rehydrateVector3>[0]),
-					vertices: level.vertices.map(rehydrateVector3 as unknown as (v: Vector3) => Vector3)
-				})) ?? [],
+				levels:
+					globule.data.levels?.map((level) => ({
+						...level,
+						center: rehydrateVector3(
+							level.center as unknown as Parameters<typeof rehydrateVector3>[0]
+						),
+						vertices: level.vertices.map(rehydrateVector3 as unknown as (v: Vector3) => Vector3)
+					})) ?? [],
 				bands: globule.data.bands.map((band) => ({
 					...band,
 					facets: band.facets.map((facet) => ({
 						...facet,
-						triangle: rehydrateTriangle(facet.triangle as unknown as Parameters<typeof rehydrateTriangle>[0])
+						triangle: rehydrateTriangle(
+							facet.triangle as unknown as Parameters<typeof rehydrateTriangle>[0]
+						)
 					}))
 				}))
 			}

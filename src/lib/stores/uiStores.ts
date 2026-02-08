@@ -31,12 +31,7 @@ export const pausePatternUpdates = writable(false);
 export const isCameraInteracting = writable(false);
 
 // Manual mode: prevents auto-updates, requires explicit trigger via "Regenerate" button
-export const isManualMode = persistable<boolean>(
-	false,
-	'ManualMode',
-	AUTO_PERSIST_KEY,
-	true
-);
+export const isManualMode = persistable<boolean>(false, 'ManualMode', AUTO_PERSIST_KEY, true);
 
 // Track whether config has changed since last regeneration (ephemeral - doesn't persist)
 export const hasPendingChanges = writable<boolean>(false);

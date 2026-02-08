@@ -1,7 +1,11 @@
-import { generateTempId } from "$lib/id-handler";
-import { defaultCrossSection, secondEdgeCurveConfig, defaultEdgeConfig } from "../curve-definitions";
+import { generateTempId } from '$lib/id-handler';
+import {
+	defaultCrossSection,
+	secondEdgeCurveConfig,
+	defaultEdgeConfig
+} from '../curve-definitions';
 
-import type { VerticesConfig, PolyhedronConfig, VertexIndex, CurveIndex } from "../types";
+import type { VerticesConfig, PolyhedronConfig, VertexIndex, CurveIndex } from '../types';
 
 const pTetrahedron: VerticesConfig = [
 	{ x: 0, y: 0, z: 100 },
@@ -55,7 +59,6 @@ const tetrahedron: PolyhedronConfig<undefined, VertexIndex, CurveIndex, CurveInd
 			]
 		}
 	]
-	
 };
 
-export default tetrahedron
+export default tetrahedron;

@@ -1,39 +1,45 @@
 <script lang="ts">
-	import Container from "./Container.svelte";
-	import Editor from "./Editor.svelte";
-  import { patternConfigStore } from "$lib/stores";
-	import LabeledControl from "./LabeledControl.svelte";
-	import type { ScaleUnit } from "$lib/types";
-	import NumberInput from "../../controls/super-control/NumberInput.svelte";
+	import Container from './Container.svelte';
+	import Editor from './Editor.svelte';
+	import { patternConfigStore } from '$lib/stores';
+	import LabeledControl from './LabeledControl.svelte';
+	import type { ScaleUnit } from '$lib/types';
+	import NumberInput from '../../controls/super-control/NumberInput.svelte';
 
-  const handleChangeUnit = (event: Event) => {
-    const target = event.target as HTMLSelectElement;
-    $patternConfigStore.tiledPatternConfig.config.scaleConfig.unit = target.value as ScaleUnit;
-  };
+	const handleChangeUnit = (event: Event) => {
+		const target = event.target as HTMLSelectElement;
+		$patternConfigStore.tiledPatternConfig.config.scaleConfig.unit = target.value as ScaleUnit;
+	};
 
-  const handleChangeQuantity = (newValue: number) => {
-    console.debug('handleChangeQuantity', newValue);
-  
-    $patternConfigStore.tiledPatternConfig.config.scaleConfig.quantity = newValue
-    $patternConfigStore.tiledPatternConfig.config.scaleConfig.unitPerSvgUnit
-  };
+	const handleChangeQuantity = (newValue: number) => {
+		console.debug('handleChangeQuantity', newValue);
+
+		$patternConfigStore.tiledPatternConfig.config.scaleConfig.quantity = newValue;
+		$patternConfigStore.tiledPatternConfig.config.scaleConfig.unitPerSvgUnit;
+	};
 </script>
 
 <Editor>
-  <section>
-    <header>Pattern Scale</header>
-    <Container direction="column">
-      <LabeledControl label="Unit">
-        <select on:change={handleChangeUnit} value={$patternConfigStore.tiledPatternConfig.config.scaleConfig.unit}>
-          <option value="mm">mm</option>
-          <option value="cm">cm</option>
-          <option value="in">in</option>
-        </select>
-      </LabeledControl>
-      <LabeledControl label="Quantity">
-        <NumberInput hasButtons onChange={handleChangeQuantity} value={$patternConfigStore.tiledPatternConfig.config.scaleConfig.quantity} />
-      </LabeledControl>
-
-    </Container>
-  </section>
+	<section>
+		<header>Pattern Scale</header>
+		<Container direction="column">
+			<LabeledControl label="Unit">
+				<select
+					on:change={handleChangeUnit}
+					value={$patternConfigStore.tiledPatternConfig.config.scaleConfig.unit}
+				>
+					<option value="mm">mm</option>
+					<option value="cm">cm</option>
+					<option value="in">in</option>
+				</select>
+			</LabeledControl>
+			<LabeledControl label="Quantity">
+				<NumberInput
+					hasButtons
+					onChange={handleChangeQuantity}
+					value={$patternConfigStore.tiledPatternConfig.config.scaleConfig.quantity}
+				/>
+			</LabeledControl>
+		</Container>
+	</section>
 </Editor>

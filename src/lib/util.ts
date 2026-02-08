@@ -22,10 +22,10 @@ export const getPolar = (x: number, y: number, cx = 0, cy = 0): { r: number; the
 		sinx >= 0 && cosy >= 0
 			? Math.asin(sinx)
 			: sinx >= 0 && cosy < 0
-			? Math.PI - Math.asin(sinx)
-			: sinx < 0 && cosy < 0
-			? Math.PI + Math.asin(sinx)
-			: Math.PI * 2 + Math.asin(sinx);
+				? Math.PI - Math.asin(sinx)
+				: sinx < 0 && cosy < 0
+					? Math.PI + Math.asin(sinx)
+					: Math.PI * 2 + Math.asin(sinx);
 	return { r, theta };
 };
 

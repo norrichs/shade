@@ -162,10 +162,7 @@ export const adjustHexPatternAfterTiling = (
 			const tDiff = { x: thisQuad.a.x - prevQuad.d.x, y: thisQuad.a.y - prevQuad.d.y };
 			const rDiff = 0;
 			prevFacet = endsMatched
-				? rotatePS(
-						translatePS(structuredClone(facets[facets.length - 1]), tDiff.x, tDiff.y),
-						rDiff
-				  )
+				? rotatePS(translatePS(structuredClone(facets[facets.length - 1]), tDiff.x, tDiff.y), rDiff)
 				: undefined;
 			nextFacet = facets[i + 1];
 		} else if (i === facets.length - 1) {
@@ -182,11 +179,7 @@ export const adjustHexPatternAfterTiling = (
 			// }
 
 			nextFacet = endsMatched
-				? rotatePS(
-						translatePS(structuredClone(facets[0]), tDiff.x, tDiff.y),
-						aDiff,
-						thisQuad.d
-				  )
+				? rotatePS(translatePS(structuredClone(facets[0]), tDiff.x, tDiff.y), aDiff, thisQuad.d)
 				: undefined;
 		} else {
 			prevFacet = facets[i - 1];

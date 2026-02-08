@@ -7,9 +7,8 @@
 
 	export let label: string = '';
 	export let constraint: VectorConstraint = undefined;
-		
-	export let value: Point3;
 
+	export let value: Point3;
 
 	let { x, y, z } = value;
 

@@ -22,7 +22,7 @@
 						inside: true,
 						outside: false,
 						tagName: 'path'
-				  })
+					})
 				: branch.svgPath}
 			stroke={outlined ? 'none' : fillColor}
 			stroke-width={outlined ? 0 : branch.width}

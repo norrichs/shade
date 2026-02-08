@@ -347,15 +347,12 @@ export const adjustShieldTesselationAfterTiling = (
 			}
 		);
 
-
 		for (let f = 0; f < band.facets.length; f++) {
 			if (DEBUG_METADATA) {
 				newBands[b].facets[f].meta = {
 					originalPath: structuredClone(band.facets[f].path),
 					prevBandPath: prevBandPaths[f]
 				};
-				
-
 			}
 
 			// TODO - if `endsMatched`, and  f === band.facets.length - 1 || f === 0 is true, nextPath should be the `endPartnerBand` facet, not the next facet
@@ -439,7 +436,7 @@ export const adjustShieldTesselationAfterTiling = (
 			}
 		}
 	}
-	return newBands
+	return newBands;
 };
 
 const retarget = (indices: number[], rows: number, columns: number) => {

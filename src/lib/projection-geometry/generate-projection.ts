@@ -216,7 +216,9 @@ const optimizeSurfaceForRaycasting = (object: Object3D): void => {
 	});
 
 	if (meshCount > 0) {
-		console.debug(`BVH optimization applied to ${meshCount} mesh(es) with ${totalVertices} total vertices`);
+		console.debug(
+			`BVH optimization applied to ${meshCount} mesh(es) with ${totalVertices} total vertices`
+		);
 	}
 };
 
@@ -347,7 +349,7 @@ export const mapPointsFromTriangle = (
 					x: getLength(int, point) / getLength(int, c),
 					y: getLength(a, int) / getLength(a, b)
 				};
-		  })
+			})
 		: points.map((point) => {
 				const int = getIntersectionOfLines({ p0: c, p1: point }, { p0: a, p1: b });
 				if (!int) {
@@ -357,7 +359,7 @@ export const mapPointsFromTriangle = (
 					x: getLength(int, point) / getLength(int, c),
 					y: getLength(a, b) / getLength(a, int)
 				};
-		  });
+			});
 	return mappedPoints;
 };
 
@@ -375,7 +377,7 @@ export const mapPointsToTriangle = <V extends Vector2 | Vector3>(
 				const pointOnLeg1 = b.clone().lerp(c, point.x);
 				// @ts-expect-error ts cant' figure out that lerp works for vector2 or vector3
 				return pointOnLeg0.clone().lerp(pointOnLeg1, point.y);
-		  }) as V[])
+			}) as V[])
 		: (points.reverse().map((point) => {
 				// @ts-expect-error ts cant' figure out that lerp works for vector2 or vector3
 				const pointOnLeg0 = b.clone().lerp(c, point.x);
@@ -383,7 +385,7 @@ export const mapPointsToTriangle = <V extends Vector2 | Vector3>(
 				const pointOnLeg1 = a.clone().lerp(c, point.x);
 				// @ts-expect-error ts cant' figure out that lerp works for vector2 or vector3
 				return pointOnLeg0.clone().lerp(pointOnLeg1, point.y);
-		  }) as V[]);
+			}) as V[]);
 	return mappedPoints;
 };
 
@@ -849,13 +851,18 @@ const matchFacets = (tubes: Tube[]) => {
 		tube.bands.forEach((band, bandIndex) => {
 			band.facets.forEach((facet, facetIndex) => {
 				if (!facet.address) {
-					throw Error(`facet does not have address at tube:${tubeIndex}, band:${bandIndex}, facet:${facetIndex}`);
+					throw Error(
+						`facet does not have address at tube:${tubeIndex}, band:${bandIndex}, facet:${facetIndex}`
+					);
 				}
 				try {
 					const edges = getFacetEdgeMeta(facet.address, tubes);
 					facet.meta = edges;
 				} catch (error) {
-					console.error(`getFacetEdgeMeta failed at tube:${tubeIndex}, band:${bandIndex}, facet:${facetIndex}`, error);
+					console.error(
+						`getFacetEdgeMeta failed at tube:${tubeIndex}, band:${bandIndex}, facet:${facetIndex}`,
+						error
+					);
 					throw error;
 				}
 			});
@@ -970,7 +977,9 @@ const getFacetEdgeMeta = (address: GlobuleAddress_Facet, tubes: Tube[]): Facet['
 
 	if (isFirstFacet) {
 		if (!facet.meta) {
-			throw Error(`end facet should already have end partner in meta at tube:${address.tube}, band:${address.band}, facet:${f}`);
+			throw Error(
+				`end facet should already have end partner in meta at tube:${address.tube}, band:${address.band}, facet:${f}`
+			);
 		}
 		if (!facet.meta[base]) {
 			console.error('First facet meta mismatch:', {
@@ -982,14 +991,18 @@ const getFacetEdgeMeta = (address: GlobuleAddress_Facet, tubes: Tube[]): Facet['
 				metaKeys: Object.keys(facet.meta),
 				meta: facet.meta
 			});
-			throw Error(`first facet meta missing expected edge '${base}' at tube:${address.tube}, band:${address.band}. Has keys: ${Object.keys(facet.meta).join(', ')}`);
+			throw Error(
+				`first facet meta missing expected edge '${base}' at tube:${address.tube}, band:${address.band}. Has keys: ${Object.keys(facet.meta).join(', ')}`
+			);
 		}
 		edgeMeta[base].partner = { ...facet.meta[base].partner };
 		edgeMeta[second].partner = { ...address, facet: f + 1, edge: second };
 		edgeMeta[outer].partner = { ...address, band: partnerBand, facet: partnerFacet, edge: pOuter };
 	} else if (isLastFacet) {
 		if (!facet.meta) {
-			throw Error(`end facet should already have end partner in meta at tube:${address.tube}, band:${address.band}, facet:${f}`);
+			throw Error(
+				`end facet should already have end partner in meta at tube:${address.tube}, band:${address.band}, facet:${f}`
+			);
 		}
 		if (!facet.meta[second]) {
 			console.error('Last facet meta mismatch:', {
@@ -1001,7 +1014,9 @@ const getFacetEdgeMeta = (address: GlobuleAddress_Facet, tubes: Tube[]): Facet['
 				metaKeys: Object.keys(facet.meta),
 				meta: facet.meta
 			});
-			throw Error(`last facet meta missing expected edge '${second}' at tube:${address.tube}, band:${address.band}. Has keys: ${Object.keys(facet.meta).join(', ')}`);
+			throw Error(
+				`last facet meta missing expected edge '${second}' at tube:${address.tube}, band:${address.band}. Has keys: ${Object.keys(facet.meta).join(', ')}`
+			);
 		}
 		edgeMeta[second].partner = { ...facet.meta[second].partner };
 		edgeMeta[base].partner = { ...address, facet: f - 1, edge: base };
@@ -1048,7 +1063,9 @@ const matchTubeEnds = (tubes: Tube[]) => {
 			const lastFacet = band.facets[band.facets.length - 1];
 
 			if (!firstFacet.address || !lastFacet.address) {
-				throw Error(`facets without address at tube:${t}, band:${b} (first: ${!!firstFacet.address}, last: ${!!lastFacet.address})`);
+				throw Error(
+					`facets without address at tube:${t}, band:${b} (first: ${!!firstFacet.address}, last: ${!!lastFacet.address})`
+				);
 			}
 
 			if (hasNoPartner(firstFacet)) {
@@ -1060,7 +1077,9 @@ const matchTubeEnds = (tubes: Tube[]) => {
 					);
 
 					if (!partner.address) {
-						throw Error(`partner facet without address when matching firstFacet at tube:${t}, band:${b}`);
+						throw Error(
+							`partner facet without address when matching firstFacet at tube:${t}, band:${b}`
+						);
 					}
 					const newMeta: { [key: string]: FacetEdgeMeta } = {};
 					newMeta[edge] = {
@@ -1082,7 +1101,9 @@ const matchTubeEnds = (tubes: Tube[]) => {
 						getEdge('base', 'even', lastFacet.orientation)
 					);
 					if (!partner.address) {
-						throw Error(`partner facet without address when matching lastFacet at tube:${t}, band:${b}`);
+						throw Error(
+							`partner facet without address when matching lastFacet at tube:${t}, band:${b}`
+						);
 					}
 					const newMeta: { [key: string]: FacetEdgeMeta } = {};
 					newMeta[edge] = {

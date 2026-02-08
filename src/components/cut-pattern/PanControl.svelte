@@ -72,7 +72,6 @@
 		padding: 0;
 		border: none;
 		background-color: transparent;
-
 	}
 	.pan-control.u {
 		grid-area: u;

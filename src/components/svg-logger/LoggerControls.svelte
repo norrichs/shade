@@ -1,5 +1,5 @@
 <script lang="ts">
-  import {logger} from "./logger"
+	import { logger } from './logger';
 </script>
 
 {#if $logger}

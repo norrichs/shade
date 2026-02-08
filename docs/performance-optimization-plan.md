@@ -12,6 +12,7 @@ Pattern generation in 2D-only mode takes 200ms with complex geometries (100+ fac
 ## Solution Overview
 
 **Two-Phase Optimization:**
+
 1. **Cache Flattened Bands** - Separate flattening (geometry-dependent) from pattern mapping (config-dependent)
 2. **Remove structuredClone Calls** - Eliminate ~3,000 unnecessary deep clones (~50-100ms overhead)
 
@@ -20,6 +21,7 @@ Pattern generation in 2D-only mode takes 200ms with complex geometries (100+ fac
 ### Architecture Change
 
 **Current Flow:**
+
 ```
 superGlobuleStore (3D geometry)
     ↓
@@ -29,6 +31,7 @@ getFlatStripV2() [~30ms] + Pattern Mapping [~170ms]
 ```
 
 **Optimized Flow:**
+
 ```
 superGlobuleStore (3D geometry)
     ↓
@@ -47,14 +50,14 @@ Pattern Mapping [~100ms - reduced by removing clones]
 
 ```typescript
 export type FlattenedBandsCache = {
-  superGlobuleConfigId: Id;
-  projectionTubes: FlattenedTube[];
-  globuleTubes: FlattenedTube[];
+	superGlobuleConfigId: Id;
+	projectionTubes: FlattenedTube[];
+	globuleTubes: FlattenedTube[];
 };
 
 export type FlattenedTube = {
-  address: GlobuleAddress_Tube;
-  bands: Band[];  // Already flattened to 2D
+	address: GlobuleAddress_Tube;
+	bands: Band[]; // Already flattened to 2D
 };
 ```
 
@@ -71,40 +74,38 @@ export type FlattenedTube = {
  * Provides pre-flattened bands to pattern generation to avoid redundant flattening
  */
 export const flattenedBandsStore = derived(
-  superGlobuleStore,
-  ($superGlobuleStore): FlattenedBandsCache => {
-    console.time('FLATTEN_BANDS_CACHE');
+	superGlobuleStore,
+	($superGlobuleStore): FlattenedBandsCache => {
+		console.time('FLATTEN_BANDS_CACHE');
 
-    const pixelScale = { value: 1, unit: 'cm' as const };
+		const pixelScale = { value: 1, unit: 'cm' as const };
 
-    // Flatten projection tubes
-    const projectionTubes: FlattenedTube[] = $superGlobuleStore.projections[0]?.tubes.map(
-      (tube, tubeIdx) => ({
-        address: tube.address,
-        bands: tube.bands.map((band) =>
-          getFlatStripV2(band, { bandStyle: 'helical-right', pixelScale })
-        )
-      })
-    ) || [];
+		// Flatten projection tubes
+		const projectionTubes: FlattenedTube[] =
+			$superGlobuleStore.projections[0]?.tubes.map((tube, tubeIdx) => ({
+				address: tube.address,
+				bands: tube.bands.map((band) =>
+					getFlatStripV2(band, { bandStyle: 'helical-right', pixelScale })
+				)
+			})) || [];
 
-    // Flatten globule tubes (if any)
-    const globuleTubes: FlattenedTube[] = $superGlobuleStore.globuleTubes?.map(
-      (tube, tubeIdx) => ({
-        address: tube.address,
-        bands: tube.bands.map((band) =>
-          getFlatStripV2(band, { bandStyle: 'helical-right', pixelScale })
-        )
-      })
-    ) || [];
+		// Flatten globule tubes (if any)
+		const globuleTubes: FlattenedTube[] =
+			$superGlobuleStore.globuleTubes?.map((tube, tubeIdx) => ({
+				address: tube.address,
+				bands: tube.bands.map((band) =>
+					getFlatStripV2(band, { bandStyle: 'helical-right', pixelScale })
+				)
+			})) || [];
 
-    console.timeEnd('FLATTEN_BANDS_CACHE');
+		console.timeEnd('FLATTEN_BANDS_CACHE');
 
-    return {
-      superGlobuleConfigId: $superGlobuleStore.superGlobuleConfigId,
-      projectionTubes,
-      globuleTubes
-    };
-  }
+		return {
+			superGlobuleConfigId: $superGlobuleStore.superGlobuleConfigId,
+			projectionTubes,
+			globuleTubes
+		};
+	}
 );
 ```
 
@@ -130,25 +131,39 @@ Add `generateTubeCutPatternFromFlatBands()` - skips flattening step since bands 
 **File:** `src/lib/stores/superGlobuleStores.ts` (lines 270-271)
 
 **Change dependencies:**
+
 ```typescript
 // OLD:
-[superGlobuleStore, superConfigStore, patternConfigStore, overrideStore, computationMode, pausePatternUpdates]
-
-// NEW:
-[flattenedBandsStore, superConfigStore, patternConfigStore, overrideStore, computationMode, pausePatternUpdates]
+[
+	superGlobuleStore,
+	superConfigStore,
+	patternConfigStore,
+	overrideStore,
+	computationMode,
+	pausePatternUpdates
+][
+	// NEW:
+	(flattenedBandsStore,
+	superConfigStore,
+	patternConfigStore,
+	overrideStore,
+	computationMode,
+	pausePatternUpdates)
+];
 ```
 
 **Change function call:**
+
 ```typescript
 // OLD:
-generateProjectionPattern(projection.tubes, $superConfigStore.id, $patternConfigStore)
+generateProjectionPattern(projection.tubes, $superConfigStore.id, $patternConfigStore);
 
 // NEW:
 generateProjectionPatternFromFlatBands(
-  $flattenedBandsCache.projectionTubes,
-  $superConfigStore.id,
-  $patternConfigStore
-)
+	$flattenedBandsCache.projectionTubes,
+	$superConfigStore.id,
+	$patternConfigStore
+);
 ```
 
 **Risk:** High - affects entire pattern pipeline, test thoroughly
@@ -158,11 +173,13 @@ generateProjectionPatternFromFlatBands(
 ### Analysis of Clone Usage
 
 **Safe to Remove (read-only access):**
+
 - `generate-tiled-pattern.ts:219` - Quad cloning for pattern mapping
 - `tiled-hex-pattern.ts:147, 150, 166, 186` - Pattern transformation calls
 - `tiled-tristar-pattern.ts:170, 182, 242-244` - Pattern adjustment calls
 
 **Need Shallow Clone:**
+
 - `tiled-shield-tesselation-pattern.ts:330, 343, 354` - Band/path mutation
 - Pattern files where `adjustAfterTiling` mutates arrays
 
@@ -197,12 +214,12 @@ Similar pattern - remove clones before `translatePS()` and `rotatePS()` calls si
 const newBands = structuredClone(bands);
 
 // CHANGE TO (only clone what's mutated):
-const newBands = bands.map(band => ({
-  ...band,
-  facets: band.facets.map(facet => ({
-    ...facet,
-    path: [...facet.path]  // Only clone the path array being mutated
-  }))
+const newBands = bands.map((band) => ({
+	...band,
+	facets: band.facets.map((facet) => ({
+		...facet,
+		path: [...facet.path] // Only clone the path array being mutated
+	}))
 }));
 ```
 
@@ -280,18 +297,21 @@ const newBands = bands.map(band => ({
 ## Expected Results
 
 **Before Optimization:**
+
 - Total: ~200ms
 - Flattening: ~30ms × N pattern config changes (wasted)
 - Pattern Mapping: ~170ms
 - structuredClone overhead: ~50-100ms
 
 **After Optimization:**
+
 - Total: ~80-100ms (50% reduction)
 - Flattening: ~30ms (only on geometry change, cached)
 - Pattern Mapping: ~70-90ms (reduced by removing clones)
 - structuredClone overhead: ~0-10ms (only where needed)
 
 **Key Wins:**
+
 1. 50% reduction in pattern generation time
 2. Eliminated redundant flattening on pattern config changes
 3. Reduced memory allocation from unnecessary deep clones

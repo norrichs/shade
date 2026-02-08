@@ -532,7 +532,7 @@ function convertToPath(
 		case 'rect':
 			rx = +oldElem.getAttribute('rx');
 			ry = +oldElem.getAttribute('ry');
-			(b = oldElem.getBBox()), (x = b.x), (y = b.y), (w = b.width), (h = b.height);
+			((b = oldElem.getBBox()), (x = b.x), (y = b.y), (w = b.width), (h = b.height));
 
 			// Validity checks from http://www.w3.org/TR/SVG/shapes.html#RectElement:
 			// If neither ‘rx’ nor ‘ry’ are properly specified, then set both rx and ry to 0. (This will result in square corners.)
@@ -1078,7 +1078,7 @@ const l2c = function (x1, y1, x2, y2) {
 			y2 = xy.y;
 			const cos = Math.cos((PI / 180) * angle);
 			const sin = Math.sin((PI / 180) * angle);
-			(x = (x1 - x2) / 2), (y = (y1 - y2) / 2);
+			((x = (x1 - x2) / 2), (y = (y1 - y2) / 2));
 			let h = (x * x) / (rx * rx) + (y * y) / (ry * ry);
 			if (h > 1) {
 				h = Math.sqrt(h);

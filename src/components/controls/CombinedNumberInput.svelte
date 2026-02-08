@@ -17,7 +17,7 @@
 
 <style>
 	.row {
-		width:300px;
+		width: 300px;
 		display: flex;
 		flex-direction: row;
 		gap: 10px;

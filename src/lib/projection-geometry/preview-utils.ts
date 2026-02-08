@@ -18,11 +18,7 @@ import type {
 	Edge
 } from './types';
 import type { Point3 } from '$lib/types';
-import {
-	getPoints,
-	getMatrix4,
-	mapPointsToTriangle
-} from './generate-projection';
+import { getPoints, getMatrix4, mapPointsToTriangle } from './generate-projection';
 import { getVector3 } from '$lib/util';
 
 /**
@@ -115,7 +111,7 @@ export function generateCrossSectionPath(crossSectionConfig: CrossSectionConfig)
 	// Apply scaling
 	const { width, height } = crossSectionConfig.scaling;
 	const xScale = typeof width === 'number' ? width : 50;
-	const yScale = typeof height === 'number' ? height : (typeof height === 'string' ? xScale : height);
+	const yScale = typeof height === 'number' ? height : typeof height === 'string' ? xScale : height;
 
 	// Convert to SVG path with scaling applied
 	const scaledPoints = points.map((p) => ({

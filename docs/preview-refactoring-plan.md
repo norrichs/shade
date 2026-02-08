@@ -5,6 +5,7 @@
 **Reuse existing algorithms, don't duplicate them.**
 
 Instead of creating parallel "preview" functions, we:
+
 1. Extract minimal data structures from config
 2. Pass them to existing functions
 3. Refactor existing functions only when necessary to accept both config and generated geometry
@@ -18,12 +19,13 @@ Instead of creating parallel "preview" functions, we:
 Create a `Polygon` object directly from config, then pass to existing `flattenPolygon()`.
 
 **Key Insight:** `flattenPolygon()` doesn't care WHERE the polygon came from - it just needs:
+
 ```typescript
 {
-  edges: Array<{
-    edgePoints: Vector3[],
-    curvePoints: Vector3[]
-  }>
+	edges: Array<{
+		edgePoints: Vector3[];
+		curvePoints: Vector3[];
+	}>;
 }
 ```
 
@@ -42,19 +44,19 @@ This file contains ONLY the minimal glue code to convert config → minimal geom
 ```typescript
 import { Vector3 } from 'three';
 import type {
-  PolygonConfig,
-  EdgeConfig,
-  EdgeCurveConfig,
-  CrossSectionConfig,
-  TransformConfig,
-  Point3,
-  Polygon,
-  Edge
+	PolygonConfig,
+	EdgeConfig,
+	EdgeCurveConfig,
+	CrossSectionConfig,
+	TransformConfig,
+	Point3,
+	Polygon,
+	Edge
 } from './types';
 import {
-  getPoints,           // Already exists - line 402
-  getMatrix4,          // Check if exists
-  getVector3           // Check if exists
+	getPoints, // Already exists - line 402
+	getMatrix4, // Check if exists
+	getVector3 // Check if exists
 } from './generate-projection';
 
 /**
@@ -69,48 +71,48 @@ import {
  * CALLS: flattenPolygon() from path-editor.ts (caller's responsibility)
  */
 export function generatePolygonFromConfig(
-  polygonConfig: PolygonConfig<Point3, Point3, EdgeCurveConfig, CrossSectionConfig>,
-  transformConfig: TransformConfig
+	polygonConfig: PolygonConfig<Point3, Point3, EdgeCurveConfig, CrossSectionConfig>,
+	transformConfig: TransformConfig
 ): Polygon {
-  const transformMatrix = getMatrix4(transformConfig);
+	const transformMatrix = getMatrix4(transformConfig);
 
-  const edges: Edge[] = polygonConfig.edges.map((edgeConfig) => {
-    const { vertex0, vertex1, widthCurve } = edgeConfig;
-    const { divisions } = widthCurve.sampleMethod;
+	const edges: Edge[] = polygonConfig.edges.map((edgeConfig) => {
+		const { vertex0, vertex1, widthCurve } = edgeConfig;
+		const { divisions } = widthCurve.sampleMethod;
 
-    // Apply transform to vertices
-    const [v0, v1] = getVector3([vertex0, vertex1]) as Vector3[];
-    v0.applyMatrix4(transformMatrix);
-    v1.applyMatrix4(transformMatrix);
+		// Apply transform to vertices
+		const [v0, v1] = getVector3([vertex0, vertex1]) as Vector3[];
+		v0.applyMatrix4(transformMatrix);
+		v1.applyMatrix4(transformMatrix);
 
-    // Generate edge points (straight line)
-    const edgePoints: Vector3[] = [];
-    for (let i = 0; i <= divisions; i++) {
-      edgePoints.push(v0.clone().lerp(v1, i / divisions));
-    }
+		// Generate edge points (straight line)
+		const edgePoints: Vector3[] = [];
+		for (let i = 0; i <= divisions; i++) {
+			edgePoints.push(v0.clone().lerp(v1, i / divisions));
+		}
 
-    // Generate curve points (sample bezier) - REUSES getPoints()
-    const definitionPoints = getPoints(widthCurve.curves, widthCurve.sampleMethod);
+		// Generate curve points (sample bezier) - REUSES getPoints()
+		const definitionPoints = getPoints(widthCurve.curves, widthCurve.sampleMethod);
 
-    // Convert 2D curve points to 3D in triangle (v0, v1, center)
-    // For preview, center can be a simple midpoint
-    const center = v0.clone().add(v1).multiplyScalar(0.5);
-    const curvePoints = definitionPoints.map(point => {
-      // Map 2D point (x, y) to 3D triangle
-      // This is simplified - full logic is in mapPointsToTriangle()
-      const pointOnLeg0 = v0.clone().lerp(center, point.x);
-      const pointOnLeg1 = v1.clone().lerp(center, point.x);
-      return pointOnLeg0.lerp(pointOnLeg1, point.y);
-    });
+		// Convert 2D curve points to 3D in triangle (v0, v1, center)
+		// For preview, center can be a simple midpoint
+		const center = v0.clone().add(v1).multiplyScalar(0.5);
+		const curvePoints = definitionPoints.map((point) => {
+			// Map 2D point (x, y) to 3D triangle
+			// This is simplified - full logic is in mapPointsToTriangle()
+			const pointOnLeg0 = v0.clone().lerp(center, point.x);
+			const pointOnLeg1 = v1.clone().lerp(center, point.x);
+			return pointOnLeg0.lerp(pointOnLeg1, point.y);
+		});
 
-    return {
-      config: edgeConfig,
-      edgePoints,
-      curvePoints
-    };
-  });
+		return {
+			config: edgeConfig,
+			edgePoints,
+			curvePoints
+		};
+	});
 
-  return { edges };
+	return { edges };
 }
 
 /**
@@ -119,41 +121,37 @@ export function generatePolygonFromConfig(
  * REUSES: getPoints() from generate-projection.ts
  * EXTRACTS: Path string generation logic (currently in getCrossSectionPath)
  */
-export function generateCrossSectionPath(
-  crossSectionConfig: CrossSectionConfig
-): string {
-  // Sample the curve - REUSES getPoints()
-  const points = getPoints(
-    crossSectionConfig.curves,
-    crossSectionConfig.sampleMethod
-  );
+export function generateCrossSectionPath(crossSectionConfig: CrossSectionConfig): string {
+	// Sample the curve - REUSES getPoints()
+	const points = getPoints(crossSectionConfig.curves, crossSectionConfig.sampleMethod);
 
-  // Apply scaling
-  const { width, height } = crossSectionConfig.scaling;
-  const xScale = typeof width === 'number' ? width : 50;
-  const yScale = typeof height === 'number' ? height : xScale;
+	// Apply scaling
+	const { width, height } = crossSectionConfig.scaling;
+	const xScale = typeof width === 'number' ? width : 50;
+	const yScale = typeof height === 'number' ? height : xScale;
 
-  // Convert to SVG path
-  if (points.length === 0) return '';
+	// Convert to SVG path
+	if (points.length === 0) return '';
 
-  const scaledPoints = points.map(p => ({
-    x: p.x * xScale,
-    y: p.y * yScale
-  }));
+	const scaledPoints = points.map((p) => ({
+		x: p.x * xScale,
+		y: p.y * yScale
+	}));
 
-  // Center based on config
-  const centerOffset = crossSectionConfig.center || { x: 0, y: 0 };
-  const pathString = scaledPoints.reduce((path, p, i) => {
-    const x = p.x - centerOffset.x;
-    const y = p.y - centerOffset.y;
-    return i === 0 ? `M ${x} ${y}` : `${path} L ${x} ${y}`;
-  }, '');
+	// Center based on config
+	const centerOffset = crossSectionConfig.center || { x: 0, y: 0 };
+	const pathString = scaledPoints.reduce((path, p, i) => {
+		const x = p.x - centerOffset.x;
+		const y = p.y - centerOffset.y;
+		return i === 0 ? `M ${x} ${y}` : `${path} L ${x} ${y}`;
+	}, '');
 
-  return `${pathString} Z`;
+	return `${pathString} Z`;
 }
 ```
 
 **Key Points:**
+
 - ✅ `getPoints()` is reused (not duplicated)
 - ✅ Result can be passed to `flattenPolygon()` directly
 - ✅ Cross-section uses same bezier sampling
@@ -166,10 +164,11 @@ export function generateCrossSectionPath(
 Currently `flattenPolygon()` is already pure - it just takes a `Polygon` and returns `FlattenedPolygon`. No changes needed here!
 
 **Analysis:**
+
 ```typescript
 export const flattenPolygon = (polygon: Polygon): FlattenedPolygon => {
-  // Works with ANY Polygon, doesn't care if it came from worker or config
-}
+	// Works with ANY Polygon, doesn't care if it came from worker or config
+};
 ```
 
 ✅ No refactoring needed - already reusable!
@@ -179,6 +178,7 @@ export const flattenPolygon = (polygon: Polygon): FlattenedPolygon => {
 ### 3. Refactor `generate-projection.ts` (extract utilities)
 
 Check if these helper functions are already exported:
+
 - `getMatrix4()` - for transform application
 - `getVector3()` - for vertex conversion
 - `mapPointsToTriangle()` - for curve point mapping
@@ -215,40 +215,38 @@ import { preparePolygonConfig } from '$lib/projection-geometry/generate-projecti
 
 // BEFORE (lines 69-72):
 $: flattenedPolygon = flattenPolygon(
-  $superGlobuleStore.projections[0].polyhedron.polygons[polygonIndex]
+	$superGlobuleStore.projections[0].polyhedron.polygons[polygonIndex]
 );
 $: polygonPaths = getPolygonPaths(flattenedPolygon);
 
 // AFTER:
 $: previewPolygon = (() => {
-  const projectionConfig = $superConfigStore.projectionConfigs[0];
-  if (!projectionConfig) return null;
+	const projectionConfig = $superConfigStore.projectionConfigs[0];
+	if (!projectionConfig) return null;
 
-  const rawPolygonConfig = projectionConfig.projectorConfig.polyhedron.polygons[polygonIndex];
-  if (!rawPolygonConfig) return null;
+	const rawPolygonConfig = projectionConfig.projectorConfig.polyhedron.polygons[polygonIndex];
+	if (!rawPolygonConfig) return null;
 
-  // Prepare config (backfill vertices, edge curves, cross-sections)
-  const preparedPolygonConfig = preparePolygonConfig(
-    rawPolygonConfig,
-    projectionConfig.projectorConfig.polyhedron.vertices,
-    projectionConfig.projectorConfig.polyhedron.edgeCurves,
-    projectionConfig.projectorConfig.polyhedron.crossSectionCurves
-  );
+	// Prepare config (backfill vertices, edge curves, cross-sections)
+	const preparedPolygonConfig = preparePolygonConfig(
+		rawPolygonConfig,
+		projectionConfig.projectorConfig.polyhedron.vertices,
+		projectionConfig.projectorConfig.polyhedron.edgeCurves,
+		projectionConfig.projectorConfig.polyhedron.crossSectionCurves
+	);
 
-  // Generate minimal Polygon from config
-  const polygon = generatePolygonFromConfig(
-    preparedPolygonConfig,
-    projectionConfig.meta.transform
-  );
+	// Generate minimal Polygon from config
+	const polygon = generatePolygonFromConfig(preparedPolygonConfig, projectionConfig.meta.transform);
 
-  // REUSE existing flattenPolygon()
-  return flattenPolygon(polygon);
+	// REUSE existing flattenPolygon()
+	return flattenPolygon(polygon);
 })();
 
 $: polygonPaths = previewPolygon ? getPolygonPaths(previewPolygon) : [];
 ```
 
 **Code Reuse:**
+
 - ✅ `preparePolygonConfig()` - existing function
 - ✅ `flattenPolygon()` - existing function
 - ✅ `getPolygonPaths()` - existing function
@@ -266,27 +264,28 @@ import { generateCrossSectionPath } from '$lib/projection-geometry/preview-utils
 
 // BEFORE (lines 65-69):
 $: crossSectionPath = getCrossSectionPath(
-  { globule: 0, tube: 0 },
-  $superGlobuleStore.projections,
-  sectionIndex
+	{ globule: 0, tube: 0 },
+	$superGlobuleStore.projections,
+	sectionIndex
 );
 
 // AFTER:
 $: crossSectionPath = (() => {
-  const projectionConfig = $superConfigStore.projectionConfigs[0];
-  if (!projectionConfig) return '';
+	const projectionConfig = $superConfigStore.projectionConfigs[0];
+	if (!projectionConfig) return '';
 
-  // Note: crossSectionIndex from component iteration (line 73)
-  const crossSectionConfig =
-    projectionConfig.projectorConfig.polyhedron.crossSectionCurves[crossSectionIndex];
-  if (!crossSectionConfig) return '';
+	// Note: crossSectionIndex from component iteration (line 73)
+	const crossSectionConfig =
+		projectionConfig.projectorConfig.polyhedron.crossSectionCurves[crossSectionIndex];
+	if (!crossSectionConfig) return '';
 
-  // REUSE: getPoints() is called inside generateCrossSectionPath
-  return generateCrossSectionPath(crossSectionConfig);
+	// REUSE: getPoints() is called inside generateCrossSectionPath
+	return generateCrossSectionPath(crossSectionConfig);
 })();
 ```
 
 **Code Reuse:**
+
 - ✅ `getPoints()` - called internally
 - ✅ Only NEW code: path string generation (extracted from `getCrossSectionPath`)
 
@@ -352,17 +351,18 @@ This is optional but recommended for consistency.
 
 ## Code Reuse Summary
 
-| Function | Status | Reused From |
-|----------|--------|-------------|
-| `flattenPolygon()` | ✅ Direct reuse | path-editor.ts:78 |
-| `getPolygonPaths()` | ✅ Direct reuse | path-editor.ts:128 |
-| `getPoints()` | ✅ Direct reuse | generate-projection.ts:402 |
-| `preparePolygonConfig()` | ✅ Direct reuse | generate-projection.ts:72 |
-| `getMatrix4()` | ⚠️ Check export | generate-projection.ts |
-| `getVector3()` | ⚠️ Check export | generate-projection.ts |
-| `mapPointsToTriangle()` | ✅ Already exported | generate-projection.ts:364 |
+| Function                 | Status              | Reused From                |
+| ------------------------ | ------------------- | -------------------------- |
+| `flattenPolygon()`       | ✅ Direct reuse     | path-editor.ts:78          |
+| `getPolygonPaths()`      | ✅ Direct reuse     | path-editor.ts:128         |
+| `getPoints()`            | ✅ Direct reuse     | generate-projection.ts:402 |
+| `preparePolygonConfig()` | ✅ Direct reuse     | generate-projection.ts:72  |
+| `getMatrix4()`           | ⚠️ Check export     | generate-projection.ts     |
+| `getVector3()`           | ⚠️ Check export     | generate-projection.ts     |
+| `mapPointsToTriangle()`  | ✅ Already exported | generate-projection.ts:364 |
 
 **New Code Needed:**
+
 1. `generatePolygonFromConfig()` - ~40 lines (minimal glue code)
 2. `generateCrossSectionPath()` - ~30 lines (path string generation)
 3. Component reactive statements - ~20 lines each
@@ -377,6 +377,7 @@ This is optional but recommended for consistency.
 ### Validation Tests
 
 1. **Polygon Preview Accuracy:**
+
    ```typescript
    // Test that config-based polygon matches generated polygon
    const configPolygon = generatePolygonFromConfig(polygonConfig, transform);
@@ -389,6 +390,7 @@ This is optional but recommended for consistency.
    ```
 
 2. **Flattening Equivalence:**
+
    ```typescript
    // Test that flattenPolygon produces same output regardless of input source
    const flattenedFromConfig = flattenPolygon(configPolygon);
@@ -398,13 +400,14 @@ This is optional but recommended for consistency.
    ```
 
 3. **Cross-Section Path:**
+
    ```typescript
    // Test that preview path is valid SVG
    const path = generateCrossSectionPath(crossSectionConfig);
    expect(path).toMatch(/^M .+ L .+ Z$/);
 
    // Test that scaling is applied correctly
-   const scaledConfig = { ...crossSectionConfig, scaling: { width: 100, height: 200 }};
+   const scaledConfig = { ...crossSectionConfig, scaling: { width: 100, height: 200 } };
    const scaledPath = generateCrossSectionPath(scaledConfig);
    // Verify path coordinates reflect scaling
    ```
@@ -457,6 +460,7 @@ This is optional but recommended for consistency.
 **After:** Editing curves → config update → instant preview (1-5ms) → eventual worker regeneration (when user clicks Regenerate)
 
 **Code Quality:**
+
 - ✅ Zero duplication of flattening algorithm
 - ✅ Zero duplication of bezier sampling
 - ✅ Minimal new code (~110 lines)

@@ -9,6 +9,7 @@ When you ask Claude to "list my saved plans", this file will be referenced. Each
 ## Active Plans
 
 ### 1. Manual Computation Mode
+
 **File:** [manual-computation-mode-plan.md](./manual-computation-mode-plan.md)
 **Status:** Planned (Not Started)
 **Priority:** Medium
@@ -19,12 +20,14 @@ When you ask Claude to "list my saved plans", this file will be referenced. Each
 **Summary:** Add "manual" computation mode that prevents auto-updates when configs change. Users must explicitly click "Regenerate" button to apply changes. Works alongside existing modes (continuous, 3d-only, 2d-only).
 
 **Key Features:**
+
 - Manual mode toggle (checkbox)
 - Regenerate button in NavBar (next to Edit)
 - Pending changes indicator
 - Respects computation mode (3d-only, 2d-only, etc.)
 
 **Use Cases:**
+
 - Batch multiple config changes before regenerating
 - Prevent lag from auto-updates during rapid config adjustments
 - Save CPU/battery when experimenting with configs
@@ -32,6 +35,7 @@ When you ask Claude to "list my saved plans", this file will be referenced. Each
 ---
 
 ### 2. Quick Win: BVH Ray Tracing Acceleration
+
 **File:** [threejs-optimization-analysis.md](./threejs-optimization-analysis.md)
 **Status:** Ready to Implement
 **Priority:** Critical (blocks complex geometries)
@@ -42,11 +46,13 @@ When you ask Claude to "list my saved plans", this file will be referenced. Each
 **Summary:** Add `three-mesh-bvh` library for spatial acceleration of ray-mesh intersection tests. Current implementation has no BVH, testing every triangle (O(n) per ray). Drop-in replacement for existing raycasting.
 
 **Key Changes:**
+
 - Install `three-mesh-bvh` package
 - Add BVH computation to surface generation (one function)
 - Optional: simplified collision mesh for additional 2-3x speedup
 
 **Why This First:**
+
 - Addresses actual bottleneck (22.4M ray tests)
 - Quick implementation (2-4 hours vs 4-8 weeks for WASM)
 - 100% browser support (pure JavaScript)
@@ -55,6 +61,7 @@ When you ask Claude to "list my saved plans", this file will be referenced. Each
 ---
 
 ### 3. Performance Optimization: Pattern Generation Caching
+
 **File:** [performance-optimization-plan.md](./performance-optimization-plan.md)
 **Status:** Planned (Lower Priority)
 **Priority:** Medium
@@ -65,6 +72,7 @@ When you ask Claude to "list my saved plans", this file will be referenced. Each
 **Summary:** Cache flattened 2D bands to avoid redundant 3D→2D conversion on every pattern config change. Remove unnecessary `structuredClone()` calls (~3,000 per update).
 
 **Key Changes:**
+
 - Add `flattenedBandsStore` derived store
 - Separate geometry-dependent flattening from config-dependent pattern mapping
 - Optimize clone operations in pattern generation
@@ -76,6 +84,7 @@ When you ask Claude to "list my saved plans", this file will be referenced. Each
 ## Completed Plans
 
 ### ✅ 3D Rendering Performance Optimizations
+
 **File:** [threejs-optimization-analysis.md](./threejs-optimization-analysis.md)
 **Status:** Completed
 **Priority:** Critical
@@ -86,6 +95,7 @@ When you ask Claude to "list my saved plans", this file will be referenced. Each
 **Summary:** Implemented BVH ray tracing acceleration, material optimization, and camera interaction LOD to eliminate lag when viewing/rotating complex polyhedra.
 
 **Delivered:**
+
 - BVH acceleration: 15+ seconds → 2-4 seconds generation time
 - Material swap: 5-8% faster rendering (MeshStandard for non-selected)
 - Camera LOD: Smooth 60fps rotation (hide facets during interaction)
@@ -97,6 +107,7 @@ When you ask Claude to "list my saved plans", this file will be referenced. Each
 ## On Hold / Future Plans
 
 ### 4. WASM Implementation: Projection Generation Rewrite
+
 **File:** [wasm-implementation-analysis.md](./wasm-implementation-analysis.md)
 **Status:** Research/Exploration
 **Priority:** High (for complex geometries)
@@ -106,12 +117,14 @@ When you ask Claude to "list my saved plans", this file will be referenced. Each
 **Summary:** Rewrite projection generation ray tracing in Rust compiled to WASM. Eliminates GC pressure from 358k Vector3 allocations and leverages SIMD for vector operations.
 
 **Key Benefits:**
+
 - Stack-allocated vectors (no GC)
 - Custom BVH ray tracing
 - SIMD batch operations
 - <1 second for doubly truncated icosahedron at sample rate 10
 
 **Trade-offs:**
+
 - 4-8 weeks implementation effort
 - Increased build complexity (Rust toolchain)
 - ~500KB-2MB binary size increase
@@ -124,6 +137,7 @@ When creating new plans, use this structure:
 
 ```markdown
 ### [Number]. [Plan Title]
+
 **File:** [plan-filename.md](./plan-filename.md)
 **Status:** [Planned | In Progress | Completed | On Hold]
 **Priority:** [High | Medium | Low]
@@ -134,6 +148,7 @@ When creating new plans, use this structure:
 **Summary:** [1-2 sentence overview]
 
 **Key Changes:**
+
 - [Bullet point 1]
 - [Bullet point 2]
 ```

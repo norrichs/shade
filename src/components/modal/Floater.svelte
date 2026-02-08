@@ -36,7 +36,7 @@
 
 <style>
 	header {
-		display: flex;	
+		display: flex;
 		flex-direction: row;
 		justify-content: space-between;
 		gap: 100px;

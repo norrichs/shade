@@ -166,10 +166,7 @@ export const adjustTriStarPatternAfterMapping = (
 			const tDiff = { x: thisQuad.a.x - prevQuad.d.x, y: thisQuad.a.y - prevQuad.d.y };
 			const rDiff = 0;
 			prevFacet = endsMatched
-				? rotatePS(
-						translatePS(structuredClone(facets[facets.length - 1]), tDiff.x, tDiff.y),
-						rDiff
-				  )
+				? rotatePS(translatePS(structuredClone(facets[facets.length - 1]), tDiff.x, tDiff.y), rDiff)
 				: undefined;
 
 			nextFacet = facets[i + 1];

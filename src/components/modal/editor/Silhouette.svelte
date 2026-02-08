@@ -46,7 +46,9 @@
 				<LabeledControl label="Levels">
 					{#if $superConfigStore.subGlobuleConfigs[0].globuleConfig.levelConfig.levelCount !== undefined}
 						<NumberInput
-							bind:value={$superConfigStore.subGlobuleConfigs[0].globuleConfig.levelConfig.levelCount}
+							bind:value={
+								$superConfigStore.subGlobuleConfigs[0].globuleConfig.levelConfig.levelCount
+							}
 							hasButtons
 						/>
 					{/if}

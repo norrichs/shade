@@ -65,13 +65,13 @@
 							depth,
 							type,
 							options: optionsFor(`${entry[0]}`)
-					  }
+						}
 					: {
 							key: entry[0],
 							value: entry[1],
 							depth,
 							type
-					  };
+						};
 			arr.push(setting);
 		});
 		return arr;
