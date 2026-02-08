@@ -4,11 +4,11 @@
 	import type { FloaterContent, SidebarDefinition } from './sidebar-definitions';
 	import Button from '../design-system/Button.svelte';
 
-	export let sidebarDefinition: SidebarDefinition;
+	let { sidebarDefinition }: { sidebarDefinition: SidebarDefinition } = $props();
 
-	let showFloater = false;
-	let currentFloater: FloaterContent | undefined = undefined;
-	let showMode: 'onHover' | 'always' = 'always';
+	let showFloater = $state(false);
+	let currentFloater: FloaterContent | undefined = $state(undefined);
+	let showMode: 'onHover' | 'always' = $state('always');
 
 	const toggleFloater = (floater?: FloaterContent['title']) => {
 		if (!floater) {

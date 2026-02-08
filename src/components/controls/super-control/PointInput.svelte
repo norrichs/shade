@@ -5,14 +5,23 @@
 
 	type VectorConstraint = { length: number } | undefined; //| { direction: Point3 };
 
-	export let label: string = '';
-	export let constraint: VectorConstraint = undefined;
+	let { label = '', constraint = undefined, value = $bindable() }: {
+		label?: string;
+		constraint?: VectorConstraint;
+		value: Point3;
+	} = $props();
 
-	export let value: Point3;
+	let x = $state(value.x);
+	let y = $state(value.y);
+	let z = $state(value.z);
 
-	let { x, y, z } = value;
+	$effect.pre(() => {
+		if (value.x !== x) x = value.x;
+		if (value.y !== y) y = value.y;
+		if (value.z !== z) z = value.z;
+	});
 
-	const updateValue = (x: number, y: number, z: number) => {
+	$effect(() => {
 		if (value.x !== x || value.y !== y || value.z !== z) {
 			if (constraint?.length) {
 				const newVector = new Vector3(x, y, z);
@@ -25,9 +34,7 @@
 				value = { x, y, z };
 			}
 		}
-	};
-
-	$: updateValue(x, y, z);
+	});
 </script>
 
 <div class="container">

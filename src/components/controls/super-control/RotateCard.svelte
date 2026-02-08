@@ -18,27 +18,38 @@
 	import { interactionMode } from '../../three-renderer/interaction-mode';
 	import { Vector3 } from 'three';
 	import { isClose } from '$lib/util';
+	import { get } from 'svelte/store';
 
-	export let sgIndex = 0;
-	export let tIndex = 0;
-	export let active = false;
+	let { sgIndex = 0, tIndex = 0, active = false }: {
+		sgIndex?: number;
+		tIndex?: number;
+		active?: boolean;
+	} = $props();
 
-	let angle = isGlobuleTransformRotate(
-		$superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex]
-	)
-		? radToDeg($superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex].rotate.angle)
-		: 0;
-	let { axis, anchor } = isGlobuleTransformRotate(
-		$superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex]
-	)
-		? $superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex].rotate
-		: { axis: { x: 0, y: 0, z: 1 }, anchor: { x: 0, y: 0, z: 0 } };
+	let initConfig = get(superConfigStore);
+	let initTransform = initConfig.subGlobuleConfigs[sgIndex].transforms[tIndex];
 
-	let recurs = $superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex].recurs;
+	let angle = $state(
+		isGlobuleTransformRotate(initTransform)
+			? radToDeg(initTransform.rotate.angle)
+			: 0
+	);
+	let axis: Point3 = $state(
+		isGlobuleTransformRotate(initTransform)
+			? { ...initTransform.rotate.axis }
+			: { x: 0, y: 0, z: 1 }
+	);
+	let anchor: Point3 = $state(
+		isGlobuleTransformRotate(initTransform)
+			? { ...initTransform.rotate.anchor }
+			: { x: 0, y: 0, z: 0 }
+	);
+	let recurs: RecombinatoryRecurrence[] = $state(initTransform.recurs);
 
 	const activate = () => {
-		$selectedBand = { ...generateGenericSelection(sgIndex, tIndex + 1), t: tIndex };
-		const transform = $superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex];
+		selectedBand.set({ ...generateGenericSelection(sgIndex, tIndex + 1), t: tIndex });
+		const config = get(superConfigStore);
+		const transform = config.subGlobuleConfigs[sgIndex].transforms[tIndex];
 		if (isGlobuleTransformRotate(transform)) {
 			angle = radToDeg(transform.rotate.angle);
 			axis = { ...transform.rotate.axis };
@@ -86,55 +97,71 @@
 		anchor: Point3,
 		recurs: RecombinatoryRecurrence[]
 	) => {
-		if (isUpdatableRotation($superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex])) {
-			$superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex].rotate.angle =
-				degToRad(angle);
+		const config = get(superConfigStore);
+		const tx = config.subGlobuleConfigs[sgIndex].transforms[tIndex];
+		let changed = false;
+		if (isUpdatableRotation(tx)) {
+			tx.rotate.angle = degToRad(angle);
+			changed = true;
 		}
-		if (isUpdatableRecurs($superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex])) {
-			$superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex].recurs = recurs;
+		if (isUpdatableRecurs(tx)) {
+			tx.recurs = recurs;
+			changed = true;
 		}
-		if (isUpdatableAxis($superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex])) {
-			$superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex].rotate.axis = axis;
+		if (isUpdatableAxis(tx)) {
+			tx.rotate.axis = axis;
+			changed = true;
 		}
-		if (isUpdatableAnchor($superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex])) {
-			$superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex].rotate.anchor = anchor;
+		if (isUpdatableAnchor(tx)) {
+			tx.rotate.anchor = anchor;
+			changed = true;
+		}
+		if (changed) {
+			superConfigStore.set(config);
 		}
 	};
 
 	const onSelectPoint = () => {
+		const config = get(superConfigStore);
 		if (
-			!isGlobuleTransformRotate($superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex])
+			!isGlobuleTransformRotate(config.subGlobuleConfigs[sgIndex].transforms[tIndex])
 		) {
-			($interactionMode as any).type = 'standard';
+			interactionMode.set({ type: 'standard' });
 			return;
 		}
 
-		if ($interactionMode.type === 'point-select-rotate') {
-			const [p0, p1] = $interactionMode.data.points;
+		const mode = get(interactionMode);
+		if (mode.type === 'point-select-rotate') {
+			const [p0, p1] = mode.data.points;
 
 			anchor = p0;
 
 			const normalizedAxis = new Vector3(p1.x - p0.x, p1.y - p0.y, p1.z - p0.z).setLength(1);
 			axis = { x: normalizedAxis.x, y: normalizedAxis.y, z: normalizedAxis.z };
-			$superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex].rotate = {
+			config.subGlobuleConfigs[sgIndex].transforms[tIndex].rotate = {
 				anchor,
 				axis,
 				angle
 			};
-		} else if ($interactionMode.type === 'point-select-anchor') {
-			[anchor] = $interactionMode.data.points;
-			$superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex].rotate.anchor = anchor;
-		} else if ($interactionMode.type === 'point-select-axis') {
-			const [p0, p1] = $interactionMode.data.points;
+			superConfigStore.set(config);
+		} else if (mode.type === 'point-select-anchor') {
+			[anchor] = mode.data.points;
+			config.subGlobuleConfigs[sgIndex].transforms[tIndex].rotate.anchor = anchor;
+			superConfigStore.set(config);
+		} else if (mode.type === 'point-select-axis') {
+			const [p0, p1] = mode.data.points;
 			const normalizedAxis = new Vector3(p1.x - p0.x, p1.y - p0.y, p1.z - p0.z).setLength(1);
 			axis = { x: normalizedAxis.x, y: normalizedAxis.y, z: normalizedAxis.z };
-			$superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex].rotate.axis = axis;
+			config.subGlobuleConfigs[sgIndex].transforms[tIndex].rotate.axis = axis;
+			superConfigStore.set(config);
 		}
 
-		($interactionMode as any).type = 'standard';
+		interactionMode.set({ type: 'standard' });
 	};
 
-	$: updateStore(angle, axis, anchor, recurs);
+	$effect(() => {
+		updateStore(angle, axis, anchor, recurs);
+	});
 </script>
 
 <div class="rotate-card">
@@ -161,7 +188,7 @@
 			{/if}
 		</div>
 	{:else}
-		<button class="display" on:click={activate}>
+		<button class="display" onclick={activate}>
 			<div class="recurrence-display">
 				<span>Recurs: </span>
 				{#each recurs as r, i}

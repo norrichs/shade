@@ -14,21 +14,27 @@
 	import PointInput from './PointInput.svelte';
 	import { round } from '$lib/util';
 	import { interactionMode } from '../../three-renderer/interaction-mode';
+	import { get } from 'svelte/store';
 
-	export let sgIndex = 0;
-	export let tIndex = 0;
-	export let active = false;
+	let { sgIndex = 0, tIndex = 0, active = false }: {
+		sgIndex?: number;
+		tIndex?: number;
+		active?: boolean;
+	} = $props();
 
-	let delta = isGlobuleTransformTranslate(
-		$superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex]
-	)
-		? $superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex].translate
-		: { x: 0, y: 0, z: 0 };
+	let initConfig = get(superConfigStore);
+	let initTransform = initConfig.subGlobuleConfigs[sgIndex].transforms[tIndex];
 
-	let recurs = $superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex].recurs;
+	let delta: Point3 = $state(
+		isGlobuleTransformTranslate(initTransform)
+			? { ...initTransform.translate }
+			: { x: 0, y: 0, z: 0 }
+	);
+
+	let recurs: RecombinatoryRecurrence[] = $state(initTransform.recurs);
 
 	const activate = () => {
-		$selectedBand = { ...generateGenericSelection(sgIndex, tIndex + 1), t: tIndex };
+		selectedBand.set({ ...generateGenericSelection(sgIndex, tIndex + 1), t: tIndex });
 	};
 
 	const isUpdatableTranslation = (tx: GlobuleTransform): tx is GlobuleTransformTranslate => {
@@ -50,27 +56,37 @@
 	};
 
 	const onSelectPoint = () => {
+		const config = get(superConfigStore);
+		const mode = get(interactionMode);
 		if (
-			$interactionMode.type === 'point-select-translate' &&
-			// $interactionMode.data.points.length === $interactionMode.data.pick &&
-			isGlobuleTransformTranslate($superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex])
+			mode.type === 'point-select-translate' &&
+			isGlobuleTransformTranslate(config.subGlobuleConfigs[sgIndex].transforms[tIndex])
 		) {
-			const [p0, p1] = $interactionMode.data.points;
-			$superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex].translate = {
+			const [p0, p1] = mode.data.points;
+			config.subGlobuleConfigs[sgIndex].transforms[tIndex].translate = {
 				x: p1.x - p0.x,
 				y: p1.y - p0.y,
 				z: p1.z - p0.z
 			};
-			($interactionMode as any).type = 'standard';
-			updateLocal($superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex]);
+			superConfigStore.set(config);
+			interactionMode.set({ type: 'standard' });
+			updateLocal(config.subGlobuleConfigs[sgIndex].transforms[tIndex]);
 		}
 	};
 	const updateStore = (delta: Point3, recurs: RecombinatoryRecurrence[]) => {
-		if (isUpdatableTranslation($superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex])) {
-			$superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex].translate = { ...delta };
+		const config = get(superConfigStore);
+		const tx = config.subGlobuleConfigs[sgIndex].transforms[tIndex];
+		let changed = false;
+		if (isUpdatableTranslation(tx)) {
+			tx.translate = { ...delta };
+			changed = true;
 		}
-		if (isUpdatableRecurs($superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex])) {
-			$superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex].recurs = recurs;
+		if (isUpdatableRecurs(tx)) {
+			tx.recurs = recurs;
+			changed = true;
+		}
+		if (changed) {
+			superConfigStore.set(config);
 		}
 	};
 	const updateLocal = (transform: GlobuleTransform) => {
@@ -79,9 +95,14 @@
 		}
 	};
 
-	$: updateLocal($superConfigStore.subGlobuleConfigs[sgIndex].transforms[tIndex]);
+	$effect(() => {
+		const config = get(superConfigStore);
+		updateLocal(config.subGlobuleConfigs[sgIndex].transforms[tIndex]);
+	});
 
-	$: updateStore(delta, recurs);
+	$effect(() => {
+		updateStore(delta, recurs);
+	});
 </script>
 
 <div class="rotate-card">
@@ -98,7 +119,7 @@
 			{/if}
 		</div>
 	{:else}
-		<button class="display" on:click={activate}>
+		<button class="display" onclick={activate}>
 			<div class="recurrence-display">
 				<span>Recurs: </span>
 				{#each recurs as r, i}

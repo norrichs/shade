@@ -1,4 +1,4 @@
-import type { ComponentType, SvelteComponent } from 'svelte';
+import type { Component } from 'svelte';
 import CrossSection from './editor/CrossSection.svelte';
 import EdgeCurve from './editor/EdgeCurve.svelte';
 import Polyhedra from './editor/Polyhedra.svelte';
@@ -14,7 +14,7 @@ import ConfigManager from './editor/ConfigManager.svelte';
 export type FloaterContent = {
 	shortTitle: string;
 	title: string | string[];
-	content: ComponentType<SvelteComponent>;
+	content: Component;
 };
 
 export type SidebarDefinition = Map<FloaterContent['title'], FloaterContent>;

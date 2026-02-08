@@ -17,24 +17,33 @@
 	import { interactionMode } from '../../three-renderer/interaction-mode';
 	import { Vector3, Triangle } from 'three';
 	import { isSameRecombination } from '$lib/matchers';
+	import { get } from 'svelte/store';
 
-	export let sgIndex = 0;
-	export let tIndex = 0;
-	export let active = false;
+	let { sgIndex = 0, tIndex = 0, active = false }: {
+		sgIndex?: number;
+		tIndex?: number;
+		active?: boolean;
+	} = $props();
 
-	let recurs = $store.subGlobuleConfigs[sgIndex].transforms[tIndex].recurs;
-	let { anchor, normal } = isGlobuleTransformReflect(
-		$store.subGlobuleConfigs[sgIndex].transforms[tIndex]
-	)
-		? $store.subGlobuleConfigs[sgIndex].transforms[tIndex].reflect
-		: {
-				anchor: { x: 0, y: 0, z: 0 },
-				normal: { x: 0, y: 0, z: 1 }
-			};
+	let initConfig = get(store);
+	let initTransform = initConfig.subGlobuleConfigs[sgIndex].transforms[tIndex];
+
+	let recurs: RecombinatoryRecurrence[] = $state(initTransform.recurs);
+	let anchor: Point3 = $state(
+		isGlobuleTransformReflect(initTransform)
+			? { ...initTransform.reflect.anchor }
+			: { x: 0, y: 0, z: 0 }
+	);
+	let normal: Point3 = $state(
+		isGlobuleTransformReflect(initTransform)
+			? { ...initTransform.reflect.normal }
+			: { x: 0, y: 0, z: 1 }
+	);
 
 	const activate = () => {
-		$selectedBand = { ...generateGenericSelection(sgIndex, tIndex + 1), t: tIndex };
-		const transform = $store.subGlobuleConfigs[sgIndex].transforms[tIndex];
+		selectedBand.set({ ...generateGenericSelection(sgIndex, tIndex + 1), t: tIndex });
+		const config = get(store);
+		const transform = config.subGlobuleConfigs[sgIndex].transforms[tIndex];
 		if (isGlobuleTransformReflect(transform)) {
 			normal = { ...transform.reflect.normal };
 			anchor = { ...transform.reflect.anchor };
@@ -81,20 +90,24 @@
 	};
 
 	const onSelectPoint = () => {
-		if (!isGlobuleTransformReflect($store.subGlobuleConfigs[sgIndex].transforms[tIndex])) {
-			($interactionMode as any).type = 'standard';
+		const config = get(store);
+		if (!isGlobuleTransformReflect(config.subGlobuleConfigs[sgIndex].transforms[tIndex])) {
+			interactionMode.set({ type: 'standard' });
 			return;
 		}
-		if ($interactionMode.type === 'point-select-anchor') {
-			[anchor] = $interactionMode.data.points;
-			$store.subGlobuleConfigs[sgIndex].transforms[tIndex].reflect.anchor = anchor;
-		} else if ($interactionMode.type === 'point-select-axis') {
-			const [p0, p1] = $interactionMode.data.points;
+		const mode = get(interactionMode);
+		if (mode.type === 'point-select-anchor') {
+			[anchor] = mode.data.points;
+			config.subGlobuleConfigs[sgIndex].transforms[tIndex].reflect.anchor = anchor;
+			store.set(config);
+		} else if (mode.type === 'point-select-axis') {
+			const [p0, p1] = mode.data.points;
 			const normalizedAxis = new Vector3(p1.x - p0.x, p1.y - p0.y, p1.z - p0.z).setLength(1);
 			normal = { x: normalizedAxis.x, y: normalizedAxis.y, z: normalizedAxis.z };
-			$store.subGlobuleConfigs[sgIndex].transforms[tIndex].reflect.normal = normal;
-		} else if ($interactionMode.type === 'point-select-plane') {
-			const [p0, p1, p2] = $interactionMode.data.points;
+			config.subGlobuleConfigs[sgIndex].transforms[tIndex].reflect.normal = normal;
+			store.set(config);
+		} else if (mode.type === 'point-select-plane') {
+			const [p0, p1, p2] = mode.data.points;
 			anchor = p0;
 			const normalVector = new Vector3();
 			new Triangle(
@@ -103,25 +116,37 @@
 				new Vector3(p2.x, p2.y, p2.z)
 			).getNormal(normalVector);
 			normal = { x: normalVector.x, y: normalVector.y, z: normalVector.z };
-			$store.subGlobuleConfigs[sgIndex].transforms[tIndex].reflect = { anchor, normal };
+			config.subGlobuleConfigs[sgIndex].transforms[tIndex].reflect = { anchor, normal };
+			store.set(config);
 		}
 
-		($interactionMode as any).type = 'standard';
+		interactionMode.set({ type: 'standard' });
 	};
 
 	const updateStore = (normal: Point3, anchor: Point3, recurs: RecombinatoryRecurrence[]) => {
-		if (isUpdatableRecurs($store.subGlobuleConfigs[sgIndex].transforms[tIndex])) {
-			$store.subGlobuleConfigs[sgIndex].transforms[tIndex].recurs = recurs;
+		const config = get(store);
+		const tx = config.subGlobuleConfigs[sgIndex].transforms[tIndex];
+		let changed = false;
+		if (isUpdatableRecurs(tx)) {
+			tx.recurs = recurs;
+			changed = true;
 		}
-		if (isUpdatableAnchor($store.subGlobuleConfigs[sgIndex].transforms[tIndex])) {
-			$store.subGlobuleConfigs[sgIndex].transforms[tIndex].reflect.anchor = anchor;
+		if (isUpdatableAnchor(tx)) {
+			tx.reflect.anchor = anchor;
+			changed = true;
 		}
-		if (isUpdatableNormal($store.subGlobuleConfigs[sgIndex].transforms[tIndex])) {
-			$store.subGlobuleConfigs[sgIndex].transforms[tIndex].reflect.normal = normal;
+		if (isUpdatableNormal(tx)) {
+			tx.reflect.normal = normal;
+			changed = true;
+		}
+		if (changed) {
+			store.set(config);
 		}
 	};
 
-	$: updateStore(normal, anchor, recurs);
+	$effect(() => {
+		updateStore(normal, anchor, recurs);
+	});
 </script>
 
 <div class="reflect-card">
@@ -150,7 +175,7 @@
 			{/if}
 		</div>
 	{:else}
-		<button class="display" on:click={activate}>
+		<button class="display" onclick={activate}>
 			<div class="recurrence-display">
 				<span>Recurs: </span>
 				{#each recurs as r, i}

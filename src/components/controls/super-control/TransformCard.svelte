@@ -1,10 +1,9 @@
 <script lang="ts">
+	import type { Snippet } from 'svelte';
 	import type { GlobuleTransform } from '$lib/types';
-	import { getConstants, getDefaultTransform } from '$lib/transform-globule';
+	import { getConstants } from '$lib/transform-globule';
 	import { Icon } from 'svelte-icons-pack';
 	import {
-		FiMinusSquare,
-		FiPlusSquare,
 		FiChevronUp,
 		FiChevronDown,
 		FiXCircle
@@ -12,23 +11,31 @@
 	import { interactionMode } from '../../three-renderer/interaction-mode';
 	import AddRemoveTransform from './AddRemoveTransform.svelte';
 	import { selectedBand, superConfigStore as store } from '$lib/stores';
+	import { get } from 'svelte/store';
 
-	export let transform: GlobuleTransform;
-	export let sgIndex: number;
-	export let tIndex: number;
+	let { transform, sgIndex, tIndex, children }: {
+		transform: GlobuleTransform;
+		sgIndex: number;
+		tIndex: number;
+		children: Snippet;
+	} = $props();
+
+	let tx = $derived(getConstants(transform));
 
 	const closeCard = () => {
-		$selectedBand.t = undefined;
-		$interactionMode = { type: 'standard' };
+		const band = get(selectedBand);
+		selectedBand.set({ ...band, t: undefined });
+		interactionMode.set({ type: 'standard' });
 	};
 
 	const shiftOrder = (direction: 'up' | 'down') => {
+		const config = get(store);
 		let swapStart: number;
 		if (direction === 'up' && tIndex > 0) {
 			swapStart = tIndex - 1;
 		} else if (
 			direction === 'down' &&
-			tIndex < $store.subGlobuleConfigs[sgIndex].transforms.length - 1
+			tIndex < config.subGlobuleConfigs[sgIndex].transforms.length - 1
 		) {
 			swapStart = tIndex;
 		} else {
@@ -38,26 +45,25 @@
 		if (swapStart === -1) return;
 
 		const swap = window.structuredClone(
-			$store.subGlobuleConfigs[sgIndex].transforms.splice(swapStart, 2)
+			config.subGlobuleConfigs[sgIndex].transforms.splice(swapStart, 2)
 		);
-		$store.subGlobuleConfigs[sgIndex].transforms.splice(swapStart, 0, ...[swap[1], swap[0]]);
-		$store.subGlobuleConfigs[sgIndex].transforms = $store.subGlobuleConfigs[sgIndex].transforms;
+		config.subGlobuleConfigs[sgIndex].transforms.splice(swapStart, 0, ...[swap[1], swap[0]]);
+		config.subGlobuleConfigs[sgIndex].transforms = config.subGlobuleConfigs[sgIndex].transforms;
+		store.set(config);
 	};
-
-	$: tx = getConstants(transform);
 </script>
 
 <div class="card-container">
 	<header class="card-header">
 		<div>{tx.title}</div>
 		<div>
-			<button on:click={() => shiftOrder('up')}><Icon size={20} src={FiChevronUp} /></button>
-			<button on:click={() => shiftOrder('down')}><Icon size={20} src={FiChevronDown} /></button>
-			<button on:click={closeCard}><Icon size={20} src={FiXCircle} /></button>
+			<button onclick={() => shiftOrder('up')}><Icon size={20} src={FiChevronUp} /></button>
+			<button onclick={() => shiftOrder('down')}><Icon size={20} src={FiChevronDown} /></button>
+			<button onclick={closeCard}><Icon size={20} src={FiXCircle} /></button>
 		</div>
 	</header>
 	<div class="card-content">
-		<slot />
+		{@render children()}
 	</div>
 	<div class="card-sidebar">
 		<AddRemoveTransform {sgIndex} {tIndex} />

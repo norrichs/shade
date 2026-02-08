@@ -17,24 +17,33 @@
 	import NumberInput from '../NumberInput.svelte';
 	import { selectedBand } from '$lib/stores';
 	import PickPointsButton from './PickPointsButton.svelte';
+	import { get } from 'svelte/store';
 
-	export let sgIndex = 0;
-	export let tIndex = 0;
-	export let active = false;
+	let { sgIndex = 0, tIndex = 0, active = false }: {
+		sgIndex?: number;
+		tIndex?: number;
+		active?: boolean;
+	} = $props();
 
-	let recurs = $store.subGlobuleConfigs[sgIndex].transforms[tIndex].recurs;
-	let { anchor, scaleValue } = isGlobuleTransformScale(
-		$store.subGlobuleConfigs[sgIndex].transforms[tIndex]
-	)
-		? $store.subGlobuleConfigs[sgIndex].transforms[tIndex].scale
-		: {
-				anchor: { x: 0, y: 0, z: 0 },
-				scaleValue: 1
-			};
+	let initConfig = get(store);
+	let initTransform = initConfig.subGlobuleConfigs[sgIndex].transforms[tIndex];
+
+	let recurs: RecombinatoryRecurrence[] = $state(initTransform.recurs);
+	let anchor: Point3 = $state(
+		isGlobuleTransformScale(initTransform)
+			? { ...initTransform.scale.anchor }
+			: { x: 0, y: 0, z: 0 }
+	);
+	let scaleValue = $state(
+		isGlobuleTransformScale(initTransform)
+			? initTransform.scale.scaleValue
+			: 1
+	);
 
 	const activate = () => {
-		$selectedBand = { ...generateGenericSelection(sgIndex, tIndex + 1), t: tIndex };
-		const transform = $store.subGlobuleConfigs[sgIndex].transforms[tIndex];
+		selectedBand.set({ ...generateGenericSelection(sgIndex, tIndex + 1), t: tIndex });
+		const config = get(store);
+		const transform = config.subGlobuleConfigs[sgIndex].transforms[tIndex];
 		if (isGlobuleTransformScale(transform)) {
 			scaleValue = transform.scale.scaleValue;
 			anchor = { ...transform.scale.anchor };
@@ -68,37 +77,51 @@
 	};
 
 	const onSelectPoint = () => {
-		if (!isGlobuleTransformScale($store.subGlobuleConfigs[sgIndex].transforms[tIndex])) {
-			($interactionMode as any).type = 'standard';
+		const config = get(store);
+		if (!isGlobuleTransformScale(config.subGlobuleConfigs[sgIndex].transforms[tIndex])) {
+			interactionMode.set({ type: 'standard' });
 			return;
 		}
-		if ($interactionMode.type === 'point-select-anchor') {
-			[anchor] = $interactionMode.data.points;
-			$store.subGlobuleConfigs[sgIndex].transforms[tIndex].scale.anchor = anchor;
+		const mode = get(interactionMode);
+		if (mode.type === 'point-select-anchor') {
+			[anchor] = mode.data.points;
+			config.subGlobuleConfigs[sgIndex].transforms[tIndex].scale.anchor = anchor;
+			store.set(config);
 		}
 
-		($interactionMode as any).type = 'standard';
+		interactionMode.set({ type: 'standard' });
 	};
 
 	const updateStore = (scaleValue: number, anchor: Point3, recurs: RecombinatoryRecurrence[]) => {
-		if (isUpdatableRecurs($store.subGlobuleConfigs[sgIndex].transforms[tIndex])) {
-			$store.subGlobuleConfigs[sgIndex].transforms[tIndex].recurs = recurs;
+		const config = get(store);
+		const tx = config.subGlobuleConfigs[sgIndex].transforms[tIndex];
+		let changed = false;
+		if (isUpdatableRecurs(tx)) {
+			tx.recurs = recurs;
+			changed = true;
 		}
-		if (isUpdatableAnchor($store.subGlobuleConfigs[sgIndex].transforms[tIndex])) {
-			$store.subGlobuleConfigs[sgIndex].transforms[tIndex].scale.anchor = anchor;
+		if (isUpdatableAnchor(tx)) {
+			tx.scale.anchor = anchor;
+			changed = true;
 		}
-		if (isUpdatableScaleValue($store.subGlobuleConfigs[sgIndex].transforms[tIndex])) {
-			$store.subGlobuleConfigs[sgIndex].transforms[tIndex].scale.scaleValue = scaleValue;
+		if (isUpdatableScaleValue(tx)) {
+			tx.scale.scaleValue = scaleValue;
+			changed = true;
+		}
+		if (changed) {
+			store.set(config);
 		}
 	};
 
-	$: updateStore(scaleValue, anchor, recurs);
+	$effect(() => {
+		updateStore(scaleValue, anchor, recurs);
+	});
 </script>
 
 <div class="scale-card">
 	{#if active}
 		<div>
-			<RecurrenceControl bind:recurs sgIndex tIndex />
+			<RecurrenceControl bind:recurs {sgIndex} {tIndex} />
 			{#if isGlobuleTransformScale($store.subGlobuleConfigs[sgIndex].transforms[tIndex])}
 				<div>
 					<PointInput label="Anchor" bind:value={anchor} />
@@ -112,7 +135,7 @@
 			{/if}
 		</div>
 	{:else}
-		<button class="display" on:click={activate}>
+		<button class="display" onclick={activate}>
 			<div class="recurrence-display">
 				<span>Recurs: </span>
 				{#each recurs as r, i}

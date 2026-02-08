@@ -1,11 +1,13 @@
 <script lang="ts">
-	import type { ComponentType, SvelteComponent } from 'svelte';
+	import type { Component } from 'svelte';
 	import Button from '../design-system/Button.svelte';
 
-	export let onClose: () => void;
-	export let title: string | string[] | undefined;
-	export let showFloater: boolean;
-	export let content: ComponentType<SvelteComponent> | undefined;
+	let { onClose, title, showFloater, content: Content }: {
+		onClose: () => void;
+		title: string | string[] | undefined;
+		showFloater: boolean;
+		content: Component | undefined;
+	} = $props();
 
 	function clickOutside(node: HTMLElement) {
 		const handleClick = (event: MouseEvent) => {
@@ -30,7 +32,7 @@
 			<span>{title}</span>
 			<Button onclick={() => onClose()}>X</Button>
 		</header>
-		<svelte:component this={content} />
+		{#if Content}<Content />{/if}
 	</main>
 {/if}
 
