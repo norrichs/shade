@@ -18,7 +18,7 @@ export default {
 	moduleNameMapper: {
 		'^\\$lib/(.*)$': '<rootDir>/src/lib/$1',
 		'^\\$app/(.*)$': '<rootDir>/src/app/$1',
-		'^svelte/store$': '<rootDir>/node_modules/svelte/store/index.js',
-		'^svelte$': '<rootDir>/node_modules/svelte/index.js'
+		'^svelte/store$': '<rootDir>/node_modules/svelte/src/store/index-server.js',
+		'^svelte$': '<rootDir>/node_modules/svelte/src/index-server.js'
 	}
 };

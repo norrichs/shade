@@ -215,7 +215,7 @@ export function flatten(
 	let x = 0;
 	let y = 0;
 	let point;
-	const newcoords = [];
+	let newcoords = [];
 	const newcoords_orig = [];
 	const pt = svgDOM.createSVGPoint();
 	const subpath_start: { x: null | number; y: null | number } = { x: null, y: null };
@@ -871,24 +871,24 @@ export const parsePathString = function (pathString) {
 	const pth = paths(pathString);
 	if (pth.arr) return pathClone(pth.arr);
 	const paramCounts = {
-			a: 7,
-			c: 6,
-			h: 1,
-			l: 2,
-			m: 2,
-			r: 4,
-			q: 4,
-			s: 4,
-			t: 2,
-			v: 1,
-			z: 0
-		},
-		data = [];
+		a: 7,
+		c: 6,
+		h: 1,
+		l: 2,
+		m: 2,
+		r: 4,
+		q: 4,
+		s: 4,
+		t: 2,
+		v: 1,
+		z: 0
+	};
+	let data = [];
 	if (R.is(pathString, array) && R.is(pathString[0], array)) data = pathClone(pathString);
 	if (!data.length) {
 		Str(pathString).replace(pathCommand, function (a, b, c) {
-			const params = [],
-				name = b.toLowerCase();
+			const params = [];
+			let name = b.toLowerCase();
 			c.replace(pathValues, function (a, b) {
 				b && params.push(+b);
 			});
@@ -1059,7 +1059,7 @@ const l2c = function (x1, y1, x2, y2) {
 	a2c = cacher(function (x1, y1, rx, ry, angle, large_arc_flag, sweep_flag, x2, y2, recursive) {
 		const _120 = (PI * 120) / 180;
 		const rad = (PI / 180) * (+angle || 0);
-		const res = [];
+		let res = [];
 		let xy;
 		const rotate = cacher(function (x, y, rad) {
 			const X = x * Math.cos(rad) - y * Math.sin(rad),
@@ -1256,8 +1256,8 @@ const path2curve = cacher(
 		};
 		const pcoms1 = [];
 		const pcoms2 = [];
-		const pfirst = '';
-		const pcom = '';
+		let pfirst = '';
+		let pcom = '';
 		for (let i = 0, ii = Math.max(p.length, (p2 && p2.length) || 0); i < ii; i++) {
 			p[i] && (pfirst = p[i][0]);
 			if (pfirst != 'C') {

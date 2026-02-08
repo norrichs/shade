@@ -197,9 +197,9 @@
 				return 'default';
 			}
 		} else if (mode.type === 'standard') {
-			if ($selectedBand && isSameBand($selectedBand, band.address)) return 'selected';
-			if ($selectedBand && isSameGlobule($selectedBand, band.address)) return 'selectedLight';
-			if ($selectedBand && $selectedBand.s === band.address.s) return 'selectedVeryLight';
+			if (selectedBand && isSameBand(selectedBand, band.address)) return 'selected';
+			if (selectedBand && isSameGlobule(selectedBand, band.address)) return 'selectedLight';
+			if (selectedBand && selectedBand.s === band.address.s) return 'selectedVeryLight';
 		} else if (mode.type === 'band-select-multiple') {
 			if (includesBandAddress(mode.data.bands, band.address)) {
 				return 'highlightedPrimary';
