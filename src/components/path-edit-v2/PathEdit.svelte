@@ -42,7 +42,7 @@
 		);
 	};
 
-	export let curveStoreType: ShowControlCurveValue;
+	let { curveStoreType }: { curveStoreType: ShowControlCurveValue } = $props();
 
 	const curveConfigByType = {
 		SilhouetteConfig: 'silhouetteConfig',
@@ -51,31 +51,32 @@
 		SpineCurveConfig: 'spineCurveConfig'
 	};
 
-	let curveStore: CurveConfig;
-	let thisConfig;
+	let curveStore: CurveConfig = $state(undefined as any);
+	let thisConfig = $state(undefined as any);
 
 	const reverseUpdate = () => {
-		thisConfig = $configStore0[curveConfigByType[curveStoreType]];
-		curveStore = isCurveConfig(thisConfig) ? thisConfig : $configStore0.silhouetteConfig;
+		const tc = $configStore0[curveConfigByType[curveStoreType]];
+		thisConfig = tc;
+		curveStore = isCurveConfig(tc) ? tc : $configStore0.silhouetteConfig;
 	};
 
-	$: {
-		thisConfig = $configStore0[curveConfigByType[curveStoreType]];
-		curveStore = isCurveConfig(thisConfig) ? thisConfig : $configStore0.silhouetteConfig;
-	}
+	$effect(() => {
+		const tc = $configStore0[curveConfigByType[curveStoreType]];
+		thisConfig = tc;
+		curveStore = isCurveConfig(tc) ? tc : $configStore0.silhouetteConfig;
+	});
 
-	let symmetry = 1;
-	let reflect = true;
+	let symmetry = $state(1);
+	let reflect = $state(true);
 	let fill = true;
-	let showPointInputs = false;
-	let showPointInputsInline = false;
-	let curvePoints = getCurvePoints(
-		$configStore0[curveConfigByType[curveStoreType]]! as SilhouetteConfig,
-		$configStore0.levelConfig.silhouetteSampleMethod
-		// curveStoreType === 'SpineCurveConfig'
+	let showPointInputs = $state(false);
+	let showPointInputsInline = $state(false);
+	let curvePoints = $state(
+		getCurvePoints(
+			$configStore0[curveConfigByType[curveStoreType]]! as SilhouetteConfig,
+			$configStore0.levelConfig.silhouetteSampleMethod
+		)
 	);
-	// let levelLines =
-	// 	curveStoreType === 'SpineCurveConfig' ? getLevelLines(curvePoints, $configStore0) : undefined;
 
 	const canv = {
 		minX: -200,
@@ -84,22 +85,27 @@
 		maxY: 200
 	};
 
-	$: curves = curveStore.curves;
-	$: limitAngle = getLimitAngle(curveStore);
+	let curves: BezierConfig[] = $state(undefined as any);
+	$effect(() => {
+		if (curveStore) curves = curveStore.curves;
+	});
+	let limitAngle = $derived(getLimitAngle(curveStore));
 
-	$: {
-		symmetry = curveStore.type === 'ShapeConfig' ? curveStore.symmetryNumber : 1;
-		reflect =
-			curveStore.type === 'ShapeConfig'
-				? curveStore.symmetry === 'lateral' || curveStore.symmetry === 'radial-lateral'
-				: true;
-	}
+	$effect(() => {
+		if (curveStore) {
+			symmetry = curveStore.type === 'ShapeConfig' ? curveStore.symmetryNumber : 1;
+			reflect =
+				curveStore.type === 'ShapeConfig'
+					? curveStore.symmetry === 'lateral' || curveStore.symmetry === 'radial-lateral'
+					: true;
+		}
+	});
 
 	const transform = (
 		curves: BezierConfig[],
 		config: { reflect: boolean; radialSymmetry: number }
 	) => {
-		let transformed: BezierConfig[] = window.structuredClone(curves);
+		let transformed: BezierConfig[] = $state.snapshot(curves);
 		if (config.reflect) {
 			transformed = transformed.map((curve) => {
 				const reflectedCurve: BezierConfig = {
@@ -122,8 +128,8 @@
 		const starter = `M ${curves[0].points[0].x} ${-curves[0].points[0].y}`;
 		return curves.reduce(
 			(path, c) => `
-			${path} C 
-			${c.points[1].x} ${-c.points[1].y}, 
+			${path} C
+			${c.points[1].x} ${-c.points[1].y},
 			${c.points[2].x} ${-c.points[2].y},
 			${c.points[3].x} ${-c.points[3].y} `,
 			starter
@@ -136,8 +142,8 @@
 		return (
 			curves.reduce(
 				(path, c) => `
-			${path} C 
-			${c.points[1].x} ${-c.points[1].y}, 
+			${path} C
+			${c.points[1].x} ${-c.points[1].y},
 			${c.points[2].x} ${-c.points[2].y},
 			${c.points[3].x} ${-c.points[3].y} `,
 				starter
@@ -150,7 +156,7 @@
 		return curves.reduce(
 			(path, c) => `
 			${path} C
-			${-c.points[1].x} ${c.points[1].y}, 
+			${-c.points[1].x} ${c.points[1].y},
 			${-c.points[2].x} ${c.points[2].y},
 			${-c.points[3].x} ${c.points[3].y}
 		`,
@@ -173,7 +179,7 @@
 	};
 
 	const rotateCurvesAroundOrigin = (curves: BezierConfig[], angle: number): BezierConfig[] => {
-		const localCurves: BezierConfig[] = window.structuredClone(curves);
+		const localCurves: BezierConfig[] = $state.snapshot(curves);
 		return localCurves.map((curve) => ({
 			...curve,
 			points: curve.points.map((point) => {
@@ -191,13 +197,13 @@
 		if (config.type === 'SilhouetteConfig') {
 			return curves;
 		}
-		const localCurves: BezierConfig[] = window.structuredClone(curves);
+		const localCurves: BezierConfig[] = $state.snapshot(curves);
 		const isReflected = config.symmetry === 'lateral' || config.symmetry === 'radial-lateral';
 		const isRadial = config.symmetry === 'radial' || config.symmetry === 'radial-lateral';
 
 		if (isRadial) {
 			let resultCurves: BezierConfig[] = [];
-			let unitCurves: BezierConfig[] = window.structuredClone(localCurves);
+			let unitCurves: BezierConfig[] = $state.snapshot(localCurves);
 			const angle = (Math.PI * 2) / config.symmetryNumber;
 			if (isReflected) {
 				unitCurves.push(...reflectCurvesAroundX(localCurves));
@@ -215,7 +221,7 @@
 		config: ShapeConfig | SilhouetteConfig | DepthCurveConfig | SpineCurveConfig
 	): number | null => {
 		if (
-			config.type === 'ShapeConfig' &&
+			config?.type === 'ShapeConfig' &&
 			(config.symmetry === 'radial' || config.symmetry === 'radial-lateral')
 		) {
 			return (Math.PI * 2) / config.symmetryNumber;
@@ -268,7 +274,6 @@
 		curvePoints = getCurvePoints(
 			$configStore0[curveConfigByType[curveStoreType]]! as SilhouetteConfig,
 			$configStore0.levelConfig.silhouetteSampleMethod
-			// curveStoreType === 'SpineCurveConfig'
 		);
 		if (curveStoreType === 'SpineCurveConfig') {
 			// levelLines = getLevelLines(curvePoints, $configStore0);
@@ -288,25 +293,25 @@
 					class="data-grid-number"
 					type="number"
 					bind:value={curveStore.curves[i].points[0].x}
-					on:input={updateStores}
+					oninput={updateStores}
 				/>
 				<input
 					class="data-grid-number"
 					type="number"
 					bind:value={curveStore.curves[i].points[0].y}
-					on:input={updateStores}
+					oninput={updateStores}
 				/>
 				<input
 					class="data-grid-number"
 					type="number"
 					bind:value={curveStore.curves[i].points[3].x}
-					on:input={updateStores}
+					oninput={updateStores}
 				/>
 				<input
 					class="data-grid-number"
 					type="number"
 					bind:value={curveStore.curves[i].points[3].y}
-					on:input={updateStores}
+					oninput={updateStores}
 				/>
 			{/each}
 		</div>
@@ -316,7 +321,7 @@
 		style="overflow:visible"
 	>
 		<circle cx="0" cy="0" r="4" fill="none" stroke="black" stroke-width="0.5" />
-		{#if curveStore.type === 'SilhouetteConfig'}
+		{#if curveStore?.type === 'SilhouetteConfig' && curves}
 			<path
 				d={getFillFromCurves(curves)}
 				stroke="none"
@@ -328,37 +333,39 @@
 				fill="rgba(255,0,0,0.5)"
 			/>
 		{/if}
-		{#if curveStore.type === 'ShapeConfig'}
+		{#if curveStore?.type === 'ShapeConfig' && curves}
 			<path
 				d={getShapeFillFromCurves(radializeCurves(curves, curveStore))}
 				stroke="black"
 				fill="rgba(255,90,0,0.6)"
 			/>
 		{/if}
-		<path
-			d={getPathFromCurves(curves)}
-			stroke="rgba(0,0,255,0.5)"
-			stroke-width="5"
-			fill="transparent"
-		/>
-		{#each curves as c}
-			<line
-				x1={c.points[0].x}
-				y1={-c.points[0].y}
-				x2={c.points[1].x}
-				y2={-c.points[1].y}
-				stroke="gray"
-				stroke-width=".5"
+		{#if curves}
+			<path
+				d={getPathFromCurves(curves)}
+				stroke="rgba(0,0,255,0.5)"
+				stroke-width="5"
+				fill="transparent"
 			/>
-			<line
-				x1={c.points[2].x}
-				y1={-c.points[2].y}
-				x2={c.points[3].x}
-				y2={-c.points[3].y}
-				stroke="gray"
-				stroke-width="1"
-			/>
-		{/each}
+			{#each curves as c}
+				<line
+					x1={c.points[0].x}
+					y1={-c.points[0].y}
+					x2={c.points[1].x}
+					y2={-c.points[1].y}
+					stroke="gray"
+					stroke-width=".5"
+				/>
+				<line
+					x1={c.points[2].x}
+					y1={-c.points[2].y}
+					x2={c.points[3].x}
+					y2={-c.points[3].y}
+					stroke="gray"
+					stroke-width="1"
+				/>
+			{/each}
+		{/if}
 		<g id="path-edit-curve-points" fill="rgba(0,0,0,0.5)">
 			{#each curvePoints.points as point}
 				<circle cx={point.x} cy={-point.y} r={2} />
@@ -366,39 +373,41 @@
 		</g>
 	</svg>
 
-	{#each curves as curve, curveIndex}
-		{#each curve.points as point, p}
-			<div
-				class={`${p === 1 || p === 2 ? 'Handle' : 'Point'} ${
-					point.pointType === 'angled' ? 'angled' : 'smooth'
-				}`}
-				style="left:{point.x - canv.minX}px; top:{-point.y - canv.minY}px"
-				on:dragend={() => updateStores()}
-				on:dblclick={() => togglePointType(p, curveIndex, curves, updateStores)}
-				use:asDraggable={{
-					onDragStart: { x: point.x, y: -point.y },
-					onDragMove: (x, y, dx, dy) => updateCurves(x, y, dx, dy, curveIndex, p),
-					minX: canv.minX,
-					minY: canv.minY,
-					maxX: canv.maxX,
-					maxY: canv.maxY
-				}}
-			/>
+	{#if curves}
+		{#each curves as curve, curveIndex}
+			{#each curve.points as point, p}
+				<div
+					class={`${p === 1 || p === 2 ? 'Handle' : 'Point'} ${
+						point.pointType === 'angled' ? 'angled' : 'smooth'
+					}`}
+					style="left:{point.x - canv.minX}px; top:{-point.y - canv.minY}px"
+					ondragend={() => updateStores()}
+					ondblclick={() => togglePointType(p, curveIndex, curves, updateStores)}
+					use:asDraggable={{
+						onDragStart: { x: point.x, y: -point.y },
+						onDragMove: (x, y, dx, dy) => updateCurves(x, y, dx, dy, curveIndex, p),
+						minX: canv.minX,
+						minY: canv.minY,
+						maxX: canv.maxX,
+						maxY: canv.maxY
+					}}
+				/>
+			{/each}
 		{/each}
-	{/each}
+	{/if}
 	<div>
 		<div class="control-overlay row">
 			<CheckBoxInput show={true} bind:value={showPointInputs} label="show point inputs" />
 			<CheckboxInput show={showPointInputs} bind:value={showPointInputsInline} label="inline?" />
 		</div>
-		{#if showPointInputs}
+		{#if showPointInputs && curves}
 			<div class={`point-input-container ${showPointInputsInline ? 'overlay' : 'outrigger'}`}>
 				{#each curves as curve, curveIndex}
 					{#each curve.points as point, p}
 						<!-- {#if (curveIndex === 0 && p === 0) || p === 3} -->
 						<PathEditInput
 							{canv}
-							bind:point
+							bind:point={curves[curveIndex].points[p]}
 							showPointInputsInline
 							offsetDirection={{ type: 'lateral', value: 20 }}
 							onUpdate={(x, y, dx, dy) => {
@@ -414,25 +423,25 @@
 
 	<div class="controls">
 		<button
-			on:click={() => {
+			onclick={() => {
 				curves = addCurve(curves);
 				updateStores();
 			}}>+</button
 		>
 		<button
-			on:click={() => {
+			onclick={() => {
 				curves = splitCurves(curves);
 				updateStores();
 			}}>sp</button
 		>
 		<button
-			on:click={() => {
+			onclick={() => {
 				curves = removeCurve(curves);
 				updateStores();
 			}}>-</button
 		>
 
-		{#if curveStore.type === 'ShapeConfig'}
+		{#if curveStore?.type === 'ShapeConfig'}
 			<label for="input-symmetry-number">Symmetry</label>
 			<input
 				id="input-symmetry-number"
@@ -440,10 +449,10 @@
 				min="1"
 				max="99"
 				bind:value={curveStore.symmetryNumber}
-				on:change={handleSymmetryChange}
+				onchange={handleSymmetryChange}
 			/>
 			<label for="select-sample-method">Sample Method</label>
-			<select bind:value={curveStore.sampleMethod.method} on:change={updateStores}>
+			<select bind:value={curveStore.sampleMethod.method} onchange={updateStores}>
 				<option value="divideCurvePath">Whole</option>
 				<option value="divideCurve">Curve</option>
 			</select>
@@ -454,7 +463,7 @@
 				min="0"
 				max="99"
 				bind:value={curveStore.sampleMethod.divisions}
-				on:input={() => {
+				oninput={() => {
 					updateStores();
 				}}
 			/>

@@ -4,6 +4,7 @@
 </script>
 
 <script lang="ts">
+	import type { Snippet } from 'svelte';
 	import type { EditablePolygon } from '$lib/projection-geometry/edit-projection';
 	import type { CubicBezierCurve, CurvePath, Vector2 } from 'three';
 	import { getPathFromCurves, viewBox } from './path-edit';
@@ -13,21 +14,34 @@
 
 	type PathEditorMode = 'edit' | 'view' | 'mini';
 
-	export let polygon: EditablePolygon;
-	export let curves: CurvePath<Vector2>[];
-	export let onChangeCurves: (props: {
-		changed: CurvePath<Vector2>[];
-		edge: { vertex0: Vector2; vertex1: Vector2 };
-		indices: { edge: number; curve: number };
-		reversed: boolean;
-		final: boolean;
-	}) => void;
-	export let mode: PathEditorMode;
+	let {
+		polygon,
+		curves,
+		onChangeCurves,
+		mode,
+		canv,
+		polygonFill,
+		polygonBorder
+	}: {
+		polygon: EditablePolygon;
+		curves: CurvePath<Vector2>[];
+		onChangeCurves: (props: {
+			changed: CurvePath<Vector2>[];
+			edge: { vertex0: Vector2; vertex1: Vector2 };
+			indices: { edge: number; curve: number };
+			reversed: boolean;
+			final: boolean;
+		}) => void;
+		mode: PathEditorMode;
+		canv: any;
+		polygonFill?: Snippet;
+		polygonBorder?: Snippet;
+	} = $props();
 
-	let curvePaths: string[] = [];
-	let handleLines: string[] = [];
-	let controlPoints: [Vector2, Vector2, Vector2, Vector2][][];
-	let canvScale = 1;
+	let curvePaths: string[] = $state([]);
+	let handleLines: string[] = $state([]);
+	let controlPoints: [Vector2, Vector2, Vector2, Vector2][][] = $state([]);
+	let canvScale = $derived(mode === 'mini' ? 0.25 : 1);
 
 	const handleDragEnd = ([edgeIndex, curveIndex, pointIndex]: [number, number, number]) => {
 		const changedCurve = curves;
@@ -57,28 +71,15 @@
 		});
 	};
 
-	const updateMode = (mode: PathEditorMode) => {
-		switch (mode) {
-			case 'edit':
-				canvScale = 1;
-				break;
-			case 'mini':
-				canvScale = 0.25;
-				break;
-			case 'view':
-				canvScale = 1;
-				break;
-		}
-	};
-
 	const update = (c: CurvePath<Vector2>[]) => {
 		curvePaths = c.map((edgeCurvePath) => getPathFromCurves(edgeCurvePath));
-		controlPoints = c.map((edgeCurvePath) =>
+		const cp = c.map((edgeCurvePath) =>
 			(edgeCurvePath.curves as CubicBezierCurve[]).map(
 				(bez) => [bez.v0, bez.v1, bez.v2, bez.v3] as [Vector2, Vector2, Vector2, Vector2]
 			)
 		);
-		handleLines = controlPoints
+		controlPoints = cp;
+		handleLines = cp
 			.flat(1)
 			.map(([v0, v1, v2, v3]) => [
 				`M ${v0.x} ${v0.y} L ${v1.x} ${v1.y}`,
@@ -87,9 +88,9 @@
 			.flat();
 	};
 
-	export let canv;
-	$: updateMode(mode);
-	$: update(curves);
+	$effect(() => {
+		update(curves);
+	});
 </script>
 
 <div
@@ -99,8 +100,8 @@
 	}px`}
 >
 	<svg viewBox={viewBox(canv)}>
-		<slot name="polygon-fill" />
-		<slot name="polygon-border" />
+		{@render polygonFill?.()}
+		{@render polygonBorder?.()}
 		<circle cx="0" cy="0" r="3" class="center-circle" />
 		{#each curvePaths as path}
 			<path d={path} stroke="rgba(0,0,200,.75)" stroke-width={0.5} fill="none" />
@@ -120,12 +121,12 @@
 							class={`${p === 1 || p === 2 ? 'Handle' : 'Point'} `}
 							style="left:{(point.x - canv.minX) * canvScale}px; top:{(point.y - canv.minY) *
 								canvScale}px"
-							on:dragend={() => {
+							ondragend={() => {
 								if (RECALCULATE_MODEL_ON_DROP) {
 									handleDragEnd([e, c, p]);
 								}
 							}}
-							on:dblclick={() => console.log('double click')}
+							ondblclick={() => console.log('double click')}
 							use:asDraggable={{
 								onDragStart: { x: point.x, y: point.y },
 								// @ts-expect-error

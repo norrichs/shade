@@ -161,7 +161,7 @@ const getMidpoint = (p0: PointConfig2, p1: PointConfig2): PointConfig2 => {
 };
 
 export const splitCurves = (curves: BezierConfig[]): BezierConfig[] => {
-	const newCurves: BezierConfig[] = window.structuredClone(curves);
+	const newCurves: BezierConfig[] = JSON.parse(JSON.stringify(curves));
 	const insertIndex = Math.ceil((curves.length - 1) / 2);
 	const p = newCurves[insertIndex].points;
 	const m0 = getMidpoint(p[0], p[1]);
@@ -184,7 +184,7 @@ export const splitCurves = (curves: BezierConfig[]): BezierConfig[] => {
 };
 
 export const addCurve = (curves: BezierConfig[]): BezierConfig[] => {
-	const newCurves = window.structuredClone(curves);
+	const newCurves = JSON.parse(JSON.stringify(curves));
 	const lastPoint = newCurves[curves.length - 1].points[3];
 	lastPoint.pointType = 'angled';
 	const newCurve: BezierConfig = {
@@ -201,7 +201,7 @@ export const addCurve = (curves: BezierConfig[]): BezierConfig[] => {
 };
 
 export const removeCurve = (curves: BezierConfig[]): BezierConfig[] => {
-	const newCurves = window.structuredClone(curves);
+	const newCurves = JSON.parse(JSON.stringify(curves));
 	newCurves.pop();
 	return newCurves;
 };

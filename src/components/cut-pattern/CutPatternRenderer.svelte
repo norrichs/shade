@@ -22,11 +22,6 @@
 
 	const GAP_BETWEEN_BANDS = 20;
 
-	let range = $derived($patternConfigStore.patternViewConfig.range);
-	let filteredTubes: TubeCutPattern[] = $state([]);
-	let origins: { tubes: { bands: Vector3[] }[] } = $state({ tubes: [{ bands: [] }] });
-	let showPattern = $state(false);
-
 	const getCumulativeOrigins = (
 		tubes: TubeCutPattern[],
 		gap: number = 20,
@@ -37,7 +32,6 @@
 		const origins = {
 			tubes: tubes.map((tube) => ({
 				bands: tube.bands.map((band) => {
-					console.debug('band', band.bounds?.height);
 					let y;
 					switch (verticalAlignment) {
 						case 'bottom':
@@ -54,7 +48,6 @@
 					const result = new Vector3(cumulativeOrigin.x, y, 0);
 					const x = cumulativeOrigin.x + (band.bounds?.width || 0) + gap;
 
-					console.debug('y', y, verticalAlignment);
 					cumulativeOrigin.set(x, y, 0);
 					return result;
 				})
@@ -89,22 +82,6 @@
 		return sliced;
 	};
 
-	const update = (
-		store: typeof $viewControlStore,
-		tubes: TubeCutPattern[],
-		range: ProjectionRange
-	) => {
-		const { showGlobuleTubeGeometry, showProjectionGeometry } = store;
-		const any = showGlobuleTubeGeometry.any || showProjectionGeometry.any;
-		const bands = showGlobuleTubeGeometry.bands || showProjectionGeometry.bands;
-		const facets = showGlobuleTubeGeometry.facets || showProjectionGeometry.facets;
-		showPattern = any && (bands || facets);
-
-		filteredTubes = filtered({ tubes, range });
-		origins = getCumulativeOrigins(filteredTubes, GAP_BETWEEN_BANDS, 'center');
-		console.debug('origins', origins);
-	};
-
 	const minPoint = (facets: CutPattern[]) => {
 		let maxY: number = 0;
 		let X: number = 0;
@@ -119,9 +96,18 @@
 		return { x: X, y: maxY };
 	};
 
-	$effect(() => {
-		update($viewControlStore, tubes, range);
+	let range = $derived($patternConfigStore.patternViewConfig.range);
+
+	let showPattern = $derived.by(() => {
+		const { showGlobuleTubeGeometry, showProjectionGeometry } = $viewControlStore;
+		const any = showGlobuleTubeGeometry.any || showProjectionGeometry.any;
+		const bands = showGlobuleTubeGeometry.bands || showProjectionGeometry.bands;
+		const facets = showGlobuleTubeGeometry.facets || showProjectionGeometry.facets;
+		return any && (bands || facets);
 	});
+
+	let filteredTubes = $derived(filtered({ tubes, range }));
+	let origins = $derived(getCumulativeOrigins(filteredTubes, GAP_BETWEEN_BANDS, 'center'));
 </script>
 
 {#if showPattern}

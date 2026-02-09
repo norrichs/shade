@@ -22,13 +22,23 @@
 	import type { TriangleEdge } from '$lib/projection-geometry/types';
 	import { concatAddress } from '$lib/util';
 
-	export let showSelectedOnly: 'panel' | 'band' | false = false;
-	export let range: ProjectionRange = {};
-	export let patternStyle: 'view' | 'cut';
-	export let labelSize: number;
-	export let shouldUseSVGLabels = true;
-	export let showScalebar: boolean;
-	export let verbose: boolean;
+	let {
+		showSelectedOnly = false,
+		range = {},
+		patternStyle,
+		labelSize,
+		shouldUseSVGLabels = true,
+		showScalebar,
+		verbose
+	}: {
+		showSelectedOnly?: 'panel' | 'band' | false;
+		range?: ProjectionRange;
+		patternStyle: 'view' | 'cut';
+		labelSize: number;
+		shouldUseSVGLabels?: boolean;
+		showScalebar: boolean;
+		verbose: boolean;
+	} = $props();
 
 	let {
 		distributionConfig,
@@ -114,15 +124,23 @@
 		return partner;
 	};
 
-	$: updateLabels(shouldUseSVGLabels);
-	$: labelStyle = shouldUseSVGLabels
-		? ('svgLabels' as 'svgLabels' | 'textLabels')
-		: ('textLabels' as 'svgLabels' | 'textLabels');
-	$: show = isSuperGlobuleProjectionPanelPattern($superGlobulePatternStore.projectionPattern);
-	$: pattern = filtered($superGlobulePatternStore, $selectedProjectionGeometry, range) || {
-		tubes: []
-	};
-	$: cumulativeOffsetX = getCumulativeOffsetX(pattern.tubes);
+	$effect(() => {
+		updateLabels(shouldUseSVGLabels);
+	});
+	let labelStyle = $derived(
+		shouldUseSVGLabels
+			? ('svgLabels' as 'svgLabels' | 'textLabels')
+			: ('textLabels' as 'svgLabels' | 'textLabels')
+	);
+	let show = $derived(
+		isSuperGlobuleProjectionPanelPattern($superGlobulePatternStore.projectionPattern)
+	);
+	let pattern = $derived(
+		filtered($superGlobulePatternStore, $selectedProjectionGeometry, range) || {
+			tubes: []
+		}
+	);
+	let cumulativeOffsetX = $derived(getCumulativeOffsetX(pattern.tubes));
 	const showHingePatterns = true;
 </script>
 

@@ -25,7 +25,7 @@
 			return `Pick point ${points.length + 1} of ${pick}`;
 		}
 	};
-	let interaction: Interaction = $state(interactions[$mode.type]);
+	let interaction: Interaction = $derived(interactions[$mode.type]);
 
 	const setRecombination = () => {
 		const modeValue = get(mode);
@@ -91,9 +91,6 @@
 	let partnerJoin: BandEnd = $state('end');
 	let originJoin: BandEnd = $state('end');
 
-	$effect(() => {
-		interaction = interactions[$mode.type];
-	});
 </script>
 
 <div class={`overlay ${$mode.type === 'standard' ? 'hide' : 'show'}`}>

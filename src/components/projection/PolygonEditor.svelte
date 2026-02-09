@@ -18,14 +18,14 @@
 
 	type PolygonEditorMode = 'widthCurve' | 'crossSectionCurve';
 
-	export let projectionIndex;
-	let polygonIndex: number = 0;
-	let widthCurves: CurvePath<Vector2>[] = [];
-	let crossSectionCurve: CurvePath<Vector2>;
+	let { projectionIndex }: { projectionIndex: any } = $props();
+	let polygonIndex: number = $state(0);
+	let widthCurves: CurvePath<Vector2>[] = $state([]);
+	let crossSectionCurve: CurvePath<Vector2> = $state(undefined as any);
 
-	let edgeFills: string[] = [];
-	let selectedEdgeIndex: number | undefined = undefined;
-	let mode: PolygonEditorMode = 'widthCurve';
+	let edgeFills: string[] = $state([]);
+	let selectedEdgeIndex: number | undefined = $state(undefined);
+	let mode: PolygonEditorMode = $state('widthCurve');
 
 	const PADDING = 30;
 	const canv = {
@@ -37,15 +37,17 @@
 
 	let polyhedronConfig =
 		$superConfigStore.projectionConfigs[projectionIndex].projectorConfig.polyhedron;
-	let polygonConfig = polyhedronConfig.polygons[polygonIndex];
-	let polygon = editPolygon.get({
-		config: $superConfigStore.projectionConfigs[projectionIndex],
-		polygonIndex,
-		editContext: {
-			canvas: canv,
-			padding: PADDING
-		}
-	});
+	let polygonConfig = $state(polyhedronConfig.polygons[polygonIndex]);
+	let polygon = $state(
+		editPolygon.get({
+			config: $superConfigStore.projectionConfigs[projectionIndex],
+			polygonIndex,
+			editContext: {
+				canvas: canv,
+				padding: PADDING
+			}
+		})
+	);
 
 	const onChangeWidthCurves = ({
 		changed,
@@ -180,7 +182,7 @@
 				pIndex
 			];
 
-		polygon = editPolygon.get({
+		const p = editPolygon.get({
 			config,
 			polygonIndex: pIndex,
 			editContext: {
@@ -188,8 +190,9 @@
 				padding: PADDING
 			}
 		});
+		polygon = p;
 
-		edgeFills = polygon.edges.map((edge) => {
+		edgeFills = p.edges.map((edge) => {
 			const curves = edge.widthCurve.curves.curves.flat() as CubicBezierCurve[];
 			const starter = `M ${edge.vertex1.x} ${edge.vertex1.y} L ${edge.vertex0.x} ${edge.vertex0.y} L ${curves[0].v0.x} ${curves[0].v0.y}`;
 
@@ -197,62 +200,66 @@
 				return `${path} C ${v1.x} ${v1.y} ${v2.x} ${v2.y} ${v3.x} ${v3.y}`;
 			}, starter);
 		});
-		widthCurves = polygon.edges.map((edge) => edge.widthCurve.curves);
+		widthCurves = p.edges.map((edge) => edge.widthCurve.curves);
 	};
-	$: projectionConfig = $superConfigStore.projectionConfigs[projectionIndex];
-	$: update(projectionConfig, polygonIndex);
+	let projectionConfig = $derived($superConfigStore.projectionConfigs[projectionIndex]);
+	$effect(() => {
+		update(projectionConfig, polygonIndex);
+	});
 </script>
 
 <section>
-	<PathEditor
-		{polygon}
-		{canv}
-		mode={mode === 'widthCurve' ? 'edit' : 'mini'}
-		curves={widthCurves}
-		onChangeCurves={onChangeWidthCurves}
-	>
-		<g slot="polygon-border">
-			<g class="polygon-border" stroke-width={2}>
-				{#each polygon.edges as e}
-					<path
-						d={`M ${e.vertex0.x} ${e.vertex0.y} L ${e.vertex1.x} ${e.vertex1.y}`}
-						stroke={e.isDirectionMatched ? 'black' : 'red'}
-						class="polygon-edge"
-					/>
-				{/each}
-			</g>
-		</g>
-
-		<g slot="polygon-fill">
-			{#each edgeFills as edgePath, edgeIndex}
+	{#snippet polygonBorderSnippet()}
+		<g class="polygon-border" stroke-width={2}>
+			{#each polygon.edges as e}
 				<path
-					d={edgePath}
-					stroke="none"
-					class={`polygon-fill ${edgeIndex === selectedEdgeIndex ? 'selected' : ''}`}
-					on:click={() => {
+					d={`M ${e.vertex0.x} ${e.vertex0.y} L ${e.vertex1.x} ${e.vertex1.y}`}
+					stroke={e.isDirectionMatched ? 'black' : 'red'}
+					class="polygon-edge"
+				/>
+			{/each}
+		</g>
+	{/snippet}
+
+	{#snippet polygonFillSnippet()}
+		{#each edgeFills as edgePath, edgeIndex}
+			<path
+				d={edgePath}
+				stroke="none"
+				class={`polygon-fill ${edgeIndex === selectedEdgeIndex ? 'selected' : ''}`}
+				onclick={() => {
+					if (selectedEdgeIndex === edgeIndex) {
+						selectedEdgeIndex = undefined;
+						mode = 'widthCurve';
+						return;
+					}
+					selectedEdgeIndex = edgeIndex;
+				}}
+				role="button"
+				tabindex="0"
+				onkeydown={(e) => {
+					if (e.key === 'Enter' || e.key === ' ') {
 						if (selectedEdgeIndex === edgeIndex) {
 							selectedEdgeIndex = undefined;
 							mode = 'widthCurve';
 							return;
 						}
 						selectedEdgeIndex = edgeIndex;
-					}}
-					role="button"
-					tabindex="0"
-					on:keydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							if (selectedEdgeIndex === edgeIndex) {
-								selectedEdgeIndex = undefined;
-								mode = 'widthCurve';
-								return;
-							}
-							selectedEdgeIndex = edgeIndex;
-						}
-					}}
-				/>
-			{/each}
-		</g>
-	</PathEditor>
+					}
+				}}
+			/>
+		{/each}
+	{/snippet}
+
+	<PathEditor
+		{polygon}
+		{canv}
+		mode={mode === 'widthCurve' ? 'edit' : 'mini'}
+		curves={widthCurves}
+		onChangeCurves={onChangeWidthCurves}
+		polygonFill={polygonFillSnippet}
+		polygonBorder={polygonBorderSnippet}
+	/>
 	{#if mode === 'crossSectionCurve'}
 		<PathEditor
 			{polygon}

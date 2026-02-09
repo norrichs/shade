@@ -13,23 +13,15 @@
 		showPointInputsInline?: boolean;
 	} = $props();
 
-	let offsetX = $state(0);
-	let offsetY = $state(0);
-
-	const updateOffset = (
-		x: number,
-		y: number,
-		type: 'radial' | 'lateral' | 'absolute',
-		value: number
-	) => {
-		if (!showPointInputsInline) {
-			return;
-		}
-		if (type === 'lateral') {
-			offsetX = x >= 0 ? value : -value;
-			offsetY = 0;
-		}
-	};
+	let offsetX = $derived.by(() => {
+		if (!showPointInputsInline) return 0;
+		if (offsetDirection.type === 'lateral') return point.x >= 0 ? offsetDirection.value : -offsetDirection.value;
+		return 0;
+	});
+	let offsetY = $derived.by(() => {
+		if (!showPointInputsInline) return 0;
+		return 0;
+	});
 
 	const updatePoint = (event: Event, pointName: 'x' | 'y') => {
 		const currentTarget = event.currentTarget as HTMLInputElement;
@@ -45,10 +37,6 @@
 
 		onUpdate(point.x, -point.y, dx, -dy);
 	};
-
-	$effect(() => {
-		updateOffset(point.x, point.y, offsetDirection.type, offsetDirection.value);
-	});
 </script>
 
 <div

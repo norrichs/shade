@@ -1,4 +1,7 @@
+import type { EditablePolygon } from '$lib/projection-geometry/edit-projection';
 import type { BezierConfig, PointConfig2 } from '$lib/types';
+import { getSlope } from '$lib/util';
+import { Vector2 } from 'three';
 
 export const onPathPointMove = (
 	x: number,
@@ -158,7 +161,7 @@ const getMidpoint = (p0: PointConfig2, p1: PointConfig2): PointConfig2 => {
 };
 
 export const splitCurves = (curves: BezierConfig[]): BezierConfig[] => {
-	const newCurves: BezierConfig[] = window.structuredClone(curves);
+	const newCurves: BezierConfig[] = JSON.parse(JSON.stringify(curves));
 	const insertIndex = Math.ceil((curves.length - 1) / 2);
 	const p = newCurves[insertIndex].points;
 	const m0 = getMidpoint(p[0], p[1]);
@@ -181,7 +184,7 @@ export const splitCurves = (curves: BezierConfig[]): BezierConfig[] => {
 };
 
 export const addCurve = (curves: BezierConfig[]): BezierConfig[] => {
-	const newCurves = window.structuredClone(curves);
+	const newCurves = JSON.parse(JSON.stringify(curves));
 	const lastPoint = newCurves[curves.length - 1].points[3];
 	lastPoint.pointType = 'angled';
 	const newCurve: BezierConfig = {
@@ -198,7 +201,54 @@ export const addCurve = (curves: BezierConfig[]): BezierConfig[] => {
 };
 
 export const removeCurve = (curves: BezierConfig[]): BezierConfig[] => {
-	const newCurves = window.structuredClone(curves);
+	const newCurves = JSON.parse(JSON.stringify(curves));
 	newCurves.pop();
 	return newCurves;
+};
+export type ControlPointLimit = {
+	onLine?: [Vector2, Vector2];
+	fixed?: Vector2;
+	unLimited?: boolean;
+};
+
+type LimitProps = {
+	p: Vector2;
+	x: number;
+	y: number;
+	limits: ControlPointLimit;
+};
+
+const applyLimits = ({ p, x, y, limits }: LimitProps) => {
+	if (limits.onLine) {
+		const m = getSlope(...limits.onLine);
+		let newX = Math.min(Math.abs(x), Math.abs(limits.onLine[1].x));
+
+		newX = Math.sign(x) === Math.sign(limits.onLine[1].x) ? newX : 0;
+		newX = Math.sign(x) * newX;
+		return { newX, newY: m * newX };
+	}
+	return { newX: x, newY: y };
+};
+
+export const setPoint = ({ p, x, y, limits }: LimitProps) => {
+	const { newX, newY } = limits.unLimited ? { newX: x, newY: y } : applyLimits({ p, x, y, limits });
+	p.set(newX, newY);
+};
+
+export const getLimits = (polygon: EditablePolygon, [e, c, p]: [number, number, number]) => {
+	const limits: ControlPointLimit = {};
+	const edge = polygon.edges[e];
+	const lastCurve = edge.widthCurve.curves.curves.length - 1;
+	if (p == 1 || p == 2) {
+		limits.unLimited = true;
+	}
+	if ((c === 0 && p === 0) || (c === lastCurve && p === 3)) {
+		const vertex =
+			(edge.isDirectionMatched && c === 0) || (!edge.isDirectionMatched && c === lastCurve)
+				? edge.vertex1
+				: edge.vertex0;
+		limits.onLine = [new Vector2(0, 0), vertex];
+	}
+
+	return limits;
 };

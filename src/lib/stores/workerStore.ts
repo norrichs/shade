@@ -174,7 +174,7 @@ function getWorker(): Worker {
 				// Regenerate surfaces on main thread (Object3D can't be serialized through worker)
 				resolver.config.projectionConfigs.forEach((projConfig, i) => {
 					if (rehydrated.projections[i]) {
-						const prepared = prepareProjectionConfig(structuredClone(projConfig));
+						const prepared = prepareProjectionConfig(JSON.parse(JSON.stringify(projConfig)));
 						rehydrated.projections[i].surface = generateSurface(prepared.surfaceConfig);
 					}
 				});
@@ -222,7 +222,9 @@ export function generateSuperGlobuleAsync(config: SuperGlobuleConfig): Promise<S
 
 		try {
 			const w = getWorker();
-			w.postMessage(message);
+			// Deep clone to strip any Svelte 5 $state proxy objects
+			// which cannot be transferred via postMessage
+			w.postMessage(JSON.parse(JSON.stringify(message)));
 		} catch (error) {
 			pendingResolvers.delete(requestId);
 			isWorking.set(false);

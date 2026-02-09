@@ -1,66 +1,69 @@
 <script lang="ts">
 	import type { BandCutPattern, Point } from '$lib/types';
+	import type { Snippet } from 'svelte';
 	import PatternLabel from './PatternLabel.svelte';
 	import { patternConfigStore, selectedProjection } from '$lib/stores';
 	import type { Vector3 } from 'three';
 	import type { GlobuleAddress_Band } from '$lib/projection-geometry/types';
 	import { concatAddress } from '$lib/util';
-	export let band: BandCutPattern;
-	export let index: number;
-	export let origin: Vector3;
-	export let showLabel = false;
-	export let showBounds = false;
-	export let portal = false;
-	export let tagAnchorPoint: Point;
-	export let tagAngle: number | undefined;
+
+	let {
+		band,
+		index,
+		origin,
+		showLabel = false,
+		showBounds = false,
+		portal = false,
+		tagAnchorPoint,
+		tagAngle,
+		children
+	}: {
+		band: BandCutPattern;
+		index: number;
+		origin: Vector3;
+		showLabel?: boolean;
+		showBounds?: boolean;
+		portal?: boolean;
+		tagAnchorPoint: Point;
+		tagAngle: number | undefined;
+		children?: Snippet;
+	} = $props();
+
 	let colors = {
 		default: 'orange',
 		hovered: 'blue',
 		focused: 'rebeccapurple'
 	};
 
-	let color = colors.default;
-	let isFocused = false;
-	let isHovered = false;
-
-	const update = (isHovered: boolean, isFocused: boolean) => {
-		if (isHovered) {
-			color = colors.hovered;
-		} else {
-			color = isFocused ? colors.focused : colors.default;
-		}
-	};
+	let isFocused = $state(false);
+	let isHovered = $state(false);
+	let color = $derived(isHovered ? colors.hovered : isFocused ? colors.focused : colors.default);
 
 	const handleMouseOver = (address: GlobuleAddress_Band) => {
 		isHovered = true;
-
-		// $selectedBand = { ...address, g: [...address.g] };
 	};
 	const handleMouseOut = (address: GlobuleAddress_Band) => {
 		isHovered = false;
-		// $selectedBand = { ...address, g: [...address.g] };
 	};
 
 	const handleClick = (address: GlobuleAddress_Band) => {
 		console.debug('handleClick', address);
 		$selectedProjection = { ...address, facet: 0 };
 	};
-
-	$: update(isHovered, isFocused);
 </script>
 
 <g
 	transform={`translate(${origin.x} ${origin.y})`}
 	id={`band-${band.id}`}
 	role="group"
-	on:mouseover={() => handleMouseOver(band.address)}
-	on:mouseout={() => handleMouseOut(band.address)}
-	on:focus={() => {
+	onmouseover={() => handleMouseOver(band.address)}
+	onmouseout={() => handleMouseOut(band.address)}
+	onfocus={() => {
 		console.debug('onFocus');
 		handleClick(band.address);
 		isFocused = true;
 	}}
-	on:blur={() => (isFocused = false)}
+	onblur={() => (isFocused = false)}
 	stroke={color}
 >
 	{#if showBounds && band.bounds}<rect
@@ -72,7 +75,7 @@
 			stroke="red"
 			stroke-width={0.1}
 		/>{/if}
-	<slot />
+	{@render children?.()}
 	{#if showLabel}
 		<PatternLabel
 			id={`band-${band.id}`}
