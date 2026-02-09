@@ -451,7 +451,6 @@ export const transformPS = (
 		translateY?: number;
 	}
 ) => {
-	console.debug('transformPS', config);
 	const { origin = { x: 0, y: 0 }, scale = 1, angle = 0, translateX = 0, translateY = 0 } = config;
 	let transformed = path.map((seg) => [...seg] as PathSegment);
 	if (scale !== 1) {

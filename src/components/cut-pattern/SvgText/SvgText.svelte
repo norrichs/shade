@@ -33,7 +33,6 @@
 		dict = $svgTextDictionary;
 	}
 
-	console.debug('id', id);
 
 	let characterPaths = $derived(getChars(string, dict));
 	let xOffset = $derived(offset.x === 'center' ? -characterPaths.totalWidth / 2 : offset.x);

@@ -28,12 +28,9 @@
 				<PathEditor
 					curveDef={silhouette.curves}
 					onChangeCurveDef={(curveDef) => {
-						console.debug('onChangeCurveDef', curveDef);
 						const config = get(superConfigStore);
 						config.subGlobuleConfigs[0].globuleConfig.silhouetteConfig.curves = curveDef;
 						superConfigStore.set(config);
-						console.debug('silhouette', silhouette);
-						console.debug(get(superConfigStore).subGlobuleConfigs[0].globuleConfig.silhouetteConfig);
 					}}
 					config={{
 						gutter: 300,

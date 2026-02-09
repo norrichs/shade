@@ -216,9 +216,6 @@ const optimizeSurfaceForRaycasting = (object: Object3D): void => {
 	});
 
 	if (meshCount > 0) {
-		console.debug(
-			`BVH optimization applied to ${meshCount} mesh(es) with ${totalVertices} total vertices`
-		);
 	}
 };
 
@@ -256,7 +253,6 @@ export const generateSurface = (cfg: SurfaceConfig) => {
 	// Apply BVH acceleration for fast ray tracing
 	optimizeSurfaceForRaycasting(surface);
 
-	console.debug('generateSurface', cfg.type, cfg);
 	return surface;
 };
 
@@ -841,7 +837,6 @@ export const generateTubeBands = (
 		},
 		{ axialLeft: [] as string[], axialRight: [] as string[], circumferential: [] as string[] }
 	);
-	console.debug('bandAddressesByOrientation', bandAddressesByOrientation);
 
 	return { tubes: tubes as Tube[] };
 };
@@ -1055,7 +1050,6 @@ const matchTubeEnds = (tubes: Tube[]) => {
 		)
 	);
 
-	console.debug(`matchTubeEnds: ${tubes.length} tubes, ${endFacets.length} end facets to match`);
 
 	tubes.forEach((tube, t) =>
 		tube.bands.forEach((band, b) => {
@@ -1195,7 +1189,6 @@ export const isSameVector3 = (v0: Vector3, v1: Vector3, precision = 1 / 10_000) 
 };
 
 export const makeProjection = (projectionConfig: BaseProjectionConfig, address: GlobuleAddress) => {
-	console.debug('makeProjection', projectionConfig.surfaceConfig.type);
 
 	// const globuleConfig = generateDefaultGlobuleConfig();
 	// projectionConfig.surfaceConfig = {

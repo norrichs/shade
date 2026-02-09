@@ -17,7 +17,6 @@ export const defaultCapsuleConfig: CapsuleConfig = {
 };
 
 export const getDefaultSurfaceConfig = (): SurfaceConfig => {
-	console.debug('getDefaultSurfaceConfig', defaultCapsuleConfig);
 	return {
 		...defaultSphereConfig,
 		transform: 'inherit'

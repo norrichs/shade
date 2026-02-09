@@ -17,7 +17,6 @@
 	let hover = $state(false);
 
 	const handleCurveOnClick = (event: MouseEvent) => {
-		console.debug('handleCurveOnClick', event, canv, event.offsetX, event.offsetY);
 		const x = canv.viewBoxData.left + event.offsetX;
 		const y = canv.viewBoxData.top + event.offsetY;
 		const newCurveDef = addControlPoint(curveDef, x, y);

@@ -14,7 +14,6 @@
 
 	const handleChangeSurfaceType = (event: Event) => {
 		const selectedType = (event.target as HTMLSelectElement).value;
-		console.debug('handleChangeSurfaceType', selectedType);
 		const config = get(superConfigStore);
 		let newSurfaceConfig: SurfaceConfig;
 		switch (selectedType) {
@@ -36,10 +35,8 @@
 				} as SurfaceConfig;
 				break;
 		}
-		console.debug('newSurfaceConfig', newSurfaceConfig);
 		config.projectionConfigs[0].surfaceConfig = { ...newSurfaceConfig };
 		superConfigStore.set(config);
-		console.debug('superConfigStore', get(superConfigStore).projectionConfigs[0].surfaceConfig);
 	};
 
 	let surfaceConfig = $derived($superConfigStore.projectionConfigs[0].surfaceConfig as SurfaceConfig);

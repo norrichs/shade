@@ -46,7 +46,6 @@
 			translate: { x, y },
 			rotate: { z: rotZ }
 		} = transform;
-		console.debug('BandCutPattern partner transform', transform);
 		return `translate(${x}, ${y}) rotate(${rotZ})`;
 	};
 

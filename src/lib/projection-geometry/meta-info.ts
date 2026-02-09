@@ -27,11 +27,9 @@ export const getMetaInfo = (projectionPattern: SuperGlobuleProjectionPattern | u
 			projectionPattern.projectionCutPattern
 		);
 	}
-	console.debug('META INFO', metaInfo);
 	const perTube = metaInfo.projectionCutPattern?.tubes.map((tube) =>
 		tube.bands.reduce((acc, band) => acc + band.segmentLength, 0)
 	);
-	console.debug('PER TUBE', perTube);
 	return metaInfo;
 };
 

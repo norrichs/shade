@@ -15,7 +15,6 @@
 	};
 
 	const handleChangeQuantity = (newValue: number) => {
-		console.debug('handleChangeQuantity', newValue);
 		const config = get(patternConfigStore);
 		config.tiledPatternConfig.config.scaleConfig.quantity = newValue;
 		patternConfigStore.set(config);

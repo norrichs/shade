@@ -16,7 +16,6 @@
 	import type { ShapeConfig } from '$lib/types';
 
 	const getCurves = (crossSection: ShapeConfig) => {
-		console.debug('getCurves', crossSection);
 		return crossSection.curves;
 	};
 	let crossSection: ShapeConfig = $state($superConfigStore.subGlobuleConfigs[0].globuleConfig.shapeConfig);

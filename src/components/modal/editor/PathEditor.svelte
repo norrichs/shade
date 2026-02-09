@@ -40,7 +40,6 @@
 	};
 
 	const handleDoubleClick = () => {
-		console.debug('handleDoubleClick');
 	};
 
 	const handleDrag = (newX: number, newY: number, curveIndex: number, pointIndex: number) => {

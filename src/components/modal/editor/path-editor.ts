@@ -153,7 +153,6 @@ export type LimitFunction = (props: LimitProps) => BezierConfig[];
 // }
 
 export const addControlPoint = (curveDef: BezierConfig[], x: number, y: number): BezierConfig[] => {
-	console.debug('addControlPoint', x, y, curveDef);
 	const newCurveDef = insertPoint(curveDef.length - 1, curveDef, { type: 'PointConfig2', x, y });
 
 	return newCurveDef;

@@ -47,7 +47,6 @@
 	};
 
 	const handleClick = (address: GlobuleAddress_Band) => {
-		console.debug('handleClick', address);
 		$selectedProjection = { ...address, facet: 0 };
 	};
 </script>
@@ -59,7 +58,6 @@
 	onmouseover={() => handleMouseOver(band.address)}
 	onmouseout={() => handleMouseOut(band.address)}
 	onfocus={() => {
-		console.debug('onFocus');
 		handleClick(band.address);
 		isFocused = true;
 	}}
