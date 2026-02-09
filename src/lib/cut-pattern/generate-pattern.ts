@@ -1,4 +1,5 @@
 import type {
+	GlobuleAddress_Band,
 	TransformConfig,
 	TriangleEdge,
 	TriangleEdgePermissive,
@@ -40,6 +41,7 @@ import {
 	type PanelHoleConfig
 } from './generate-panel-pattern';
 import { isSameAddress } from '$lib/util';
+import { resolveRangeIndices, type ProjectionRange } from '$lib/projection-geometry/filters';
 
 // Re-export panel functions for backwards compatibility
 export { validateAllPanels, getPanelEdgeMeta, applyHolesToEdgeMeta, type PanelHoleConfig };
@@ -104,19 +106,13 @@ export const generateSuperGlobulePattern = (
 	return result;
 };
 
-// TODO: Refactor this to accept range and existing pattern arguments, so that
-//       it is possible to do granular updates
 // TODO: Refactor so that this accepts globules as tubes
 
 export const generateProjectionPattern = (
 	tubes: Tube[],
 	id: SuperGlobuleConfig['id'],
 	globulePatternConfig: GlobulePatternConfig,
-	range?: {
-		tubes: { start: number; end: number };
-		bands: { start: number; end: number };
-		panels: { start: number; end: number };
-	}
+	projectionRange?: ProjectionRange
 ): SuperGlobuleProjectionPattern => {
 	const {
 		tiledPatternConfig,
@@ -126,7 +122,7 @@ export const generateProjectionPattern = (
 	if (shouldUsePanelPattern(tiledPatternConfig)) {
 		const projectionPanelPattern = generateProjectionPanelPattern({
 			tubes,
-			range,
+			range: projectionRange as any,
 			tiledPatternConfig
 		});
 		return {
@@ -135,44 +131,110 @@ export const generateProjectionPattern = (
 			projectionPanelPattern
 		};
 	} else {
-		let tubePatterns: TubeCutPattern[] = tubes.map(({ bands, address }, t) => {
+		const { adjustAfterTiling } = patterns[tiledPatternConfig.type];
+		const hasAdjustAfterTiling = !!adjustAfterTiling;
+
+		// Resolve tube range
+		const [tubeStart, tubeEnd] = resolveRangeIndices(projectionRange?.tubes, tubes.length);
+
+		// Resolve band range — expand by 1 on each side if adjustAfterTiling needs neighbors
+		const bandExpand = hasAdjustAfterTiling ? 1 : 0;
+
+		// Generate tube patterns, but only for in-range tubes
+		// Use a sparse array so that adjustAfterTiling index lookups still work
+		let tubePatterns: (TubeCutPattern | undefined)[] = new Array(tubes.length);
+
+		for (let t = tubeStart; t < tubeEnd; t++) {
+			const { bands, address } = tubes[t];
+			const totalBands = bands.filter((b) => b.visible).length;
+			const [bandStart, bandEnd] = resolveRangeIndices(projectionRange?.bands, totalBands, bandExpand);
+
 			const tubePattern = generateTubeCutPattern({
 				address,
 				bands,
 				tiledPatternConfig,
-				pixelScale
+				pixelScale,
+				bandRange: { start: bandStart, end: bandEnd }
 			});
-			return tubePattern;
-		});
-
-		getEndPartnerTransforms(tubePatterns);
-
-		const { adjustAfterTiling } = patterns[tiledPatternConfig.type];
-
-		const doAdjustAfterTiling =
-			!!adjustAfterTiling && tubePatterns[0].bands[0].meta?.startPartnerBand;
-		if (doAdjustAfterTiling) {
-			tubePatterns = tubePatterns.map((tubePattern) => {
-				const adjusted = adjustAfterTiling(tubePattern.bands, tiledPatternConfig, tubePatterns);
-
-				return {
-					...tubePattern,
-					bands: adjusted
-				};
-			});
+			tubePatterns[t] = tubePattern;
 		}
 
-		// Apply post-processing (svgPath generation, stroke width) after adjustment
-		tubePatterns = tubePatterns.map((tubePattern) =>
-			applyTubePatternPostProcessing(tubePattern, tiledPatternConfig)
-		);
+		// getEndPartnerTransforms needs all referenced tubes to exist.
+		// Partner bands may reference out-of-range tubes, so we generate
+		// minimal stubs for those if needed.
+		const referencedTubeIndices = new Set<number>();
+		for (let t = tubeStart; t < tubeEnd; t++) {
+			const tp = tubePatterns[t];
+			if (!tp) continue;
+			for (const band of tp.bands) {
+				if (band.meta?.startPartnerBand) referencedTubeIndices.add(band.meta.startPartnerBand.tube);
+				if (band.meta?.endPartnerBand) referencedTubeIndices.add(band.meta.endPartnerBand.tube);
+			}
+		}
+
+		// Generate any referenced tubes that weren't already generated
+		for (const t of referencedTubeIndices) {
+			if (t >= 0 && t < tubes.length && tubePatterns[t] === undefined) {
+				const { bands, address } = tubes[t];
+				tubePatterns[t] = generateTubeCutPattern({
+					address,
+					bands,
+					tiledPatternConfig,
+					pixelScale
+				});
+			}
+		}
+
+		// getEndPartnerTransforms indexes by tube number, so pass the sparse array
+		// which preserves original tube indices
+		getEndPartnerTransforms(tubePatterns as TubeCutPattern[]);
+
+		const firstInRange = tubePatterns[tubeStart];
+		const doAdjustAfterTiling =
+			hasAdjustAfterTiling && firstInRange?.bands[0]?.meta?.startPartnerBand;
+		if (doAdjustAfterTiling) {
+			for (let t = tubeStart; t < tubeEnd; t++) {
+				const tp = tubePatterns[t];
+				if (!tp) continue;
+				// adjustAfterTiling indexes by tube number, pass the sparse array
+				const adjusted = adjustAfterTiling(tp.bands, tiledPatternConfig, tubePatterns as TubeCutPattern[]);
+				tubePatterns[t] = { ...tp, bands: adjusted };
+			}
+		}
+
+		// After adjustment, trim bands back to the exact requested range (remove expanded neighbors)
+		if (projectionRange?.bands !== undefined && bandExpand > 0) {
+			for (let t = tubeStart; t < tubeEnd; t++) {
+				const tp = tubePatterns[t];
+				if (!tp) continue;
+				const totalVisibleBands = tubes[t].bands.filter((b) => b.visible).length;
+				const [exactStart, exactEnd] = resolveRangeIndices(projectionRange.bands, totalVisibleBands);
+				// Bands were generated with expanded range; now trim to exact
+				tubePatterns[t] = {
+					...tp,
+					bands: tp.bands.filter((band) => {
+						const b = band.address.band;
+						return b >= exactStart && b < exactEnd;
+					})
+				};
+			}
+		}
+
+		// Collect only in-range tube patterns for output
+		const outputTubePatterns: TubeCutPattern[] = [];
+		for (let t = tubeStart; t < tubeEnd; t++) {
+			const tp = tubePatterns[t];
+			if (tp) {
+				outputTubePatterns.push(applyTubePatternPostProcessing(tp, tiledPatternConfig));
+			}
+		}
 
 		return {
 			type: 'SuperGlobuleProjectionCutPattern',
 			superGlobuleConfigId: id,
 			projectionCutPattern: {
 				address: { globule: tubes[0].address.globule },
-				tubes: tubePatterns
+				tubes: outputTubePatterns
 			}
 		};
 	}
@@ -412,16 +474,23 @@ export const getEndPartnerTransform = (
 	};
 };
 
+const findBandByAddress = (tubePatterns: TubeCutPattern[], address: GlobuleAddress_Band): BandCutPattern | undefined => {
+	const tube = tubePatterns[address.tube];
+	if (!tube) return undefined;
+	// Look up by address.band matching since bands may be a sparse subset
+	return tube.bands.find((b) => b.address.band === address.band);
+};
+
 const getEndPartnerTransforms = (tubePatterns: TubeCutPattern[]) => {
 	tubePatterns.forEach((tubePattern) => {
+		if (!tubePattern) return;
 		tubePattern.bands.forEach((band) => {
 			if (!band.meta) return;
 			const startPartnerAddress = band.meta.startPartnerBand;
 			const endPartnerAddress = band.meta.endPartnerBand;
 			if (startPartnerAddress && endPartnerAddress) {
-				const startPartnerBand =
-					tubePatterns[startPartnerAddress.tube].bands[startPartnerAddress.band];
-				const endPartnerBand = tubePatterns[endPartnerAddress.tube].bands[endPartnerAddress.band];
+				const startPartnerBand = findBandByAddress(tubePatterns, startPartnerAddress);
+				const endPartnerBand = findBandByAddress(tubePatterns, endPartnerAddress);
 				if (startPartnerBand && endPartnerBand) {
 					band.meta.startPartnerTransform = getEndPartnerTransform(band, startPartnerBand);
 					band.meta.endPartnerTransform = getEndPartnerTransform(band, endPartnerBand);

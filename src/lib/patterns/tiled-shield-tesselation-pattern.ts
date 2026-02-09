@@ -382,7 +382,7 @@ export const adjustShieldTesselationAfterTiling = (
 					tubes,
 					tiledPatternConfig.config.endsMatched
 				);
-				if (!partner) throw new Error('missing partner path');
+				if (partner) {
 				newBands[b].meta = {
 					...newBands[b].meta,
 					...(f === 0
@@ -404,6 +404,7 @@ export const adjustShieldTesselationAfterTiling = (
 					target: newBands[b].facets[f].path,
 					source: partner.path
 				});
+				}
 			}
 
 			// swap points between adjacent facets in the same band
@@ -532,8 +533,12 @@ const getTransformedPartnerCutPattern = (
 	const partnerAddress = f === 0 ? band.meta.startPartnerBand : band.meta.endPartnerBand;
 	const transform: TransformConfig | undefined =
 		f === 0 ? band.meta.startPartnerTransform : band.meta.endPartnerTransform;
-	const partnerBand = tubes[partnerAddress.tube].bands[partnerAddress.band];
-	if (!partnerBand.meta) return undefined;
+	const partnerTube = tubes[partnerAddress.tube];
+	if (!partnerTube) return undefined;
+	// Look up band by address since bands may be a subset (range-filtered)
+	const partnerBand = partnerTube.bands.find((b) => b.address.band === partnerAddress.band)
+		?? partnerTube.bands[partnerAddress.band];
+	if (!partnerBand?.meta) return undefined;
 	const partnerFacetIndex = isSameAddress(partnerBand.meta.startPartnerBand, band.address)
 		? 0
 		: partnerBand.facets.length - 1;

@@ -36,19 +36,25 @@ export const generateTubeCutPattern = ({
 	address,
 	bands,
 	tiledPatternConfig,
-	pixelScale
+	pixelScale,
+	bandRange
 }: {
 	address: GlobuleAddress_Tube;
 	bands: Band[];
 	tiledPatternConfig: TiledPatternConfig;
 	pixelScale: PixelScale;
+	bandRange?: { start: number; end: number };
 }): TubeCutPattern => {
 	const tubeCutPattern: TubeCutPattern = { projectionType: 'patterned', address, bands: [] };
-	// Creates a line pattern without inner and outer elements, appropriate for post processing in Affinity
-	// TODO - see if it's possible to convert the output of this to "expanded path" (e.g. convert stroke widths to paths instead of doing so in Affinity)
 
 	const visibleBands = bands.filter((b) => b.visible);
-	const flatBands = visibleBands.map((band) =>
+
+	// Apply band range filtering if provided
+	const rangeStart = bandRange?.start ?? 0;
+	const rangeEnd = bandRange?.end ?? visibleBands.length;
+	const selectedBands = visibleBands.slice(rangeStart, rangeEnd);
+
+	const flatBands = selectedBands.map((band) =>
 		getFlatStripV2(band, { bandStyle: 'helical-right', pixelScale })
 	);
 	const alignedBands = alignBands(flatBands);
@@ -57,7 +63,13 @@ export const generateTubeCutPattern = ({
 		getQuadrilaterals(flatBand, pixelScale.value, flatBand.sideOrientation)
 	);
 
-	const tiling = generateTiling({ quadBands, bands: alignedBands, tiledPatternConfig, address });
+	const tiling = generateTiling({
+		quadBands,
+		bands: alignedBands,
+		tiledPatternConfig,
+		address,
+		bandIndexOffset: rangeStart
+	});
 
 	// Return raw tiling - adjustAfterTiling and post-processing happen in generate-pattern.ts
 	tubeCutPattern.bands = tiling;
@@ -141,13 +153,15 @@ export type GenerateTilingProps = {
 	bands: Band[];
 	tiledPatternConfig: TiledPatternConfig;
 	address: GlobuleAddress_Tube | GeometryAddress<BandAddressed>;
+	bandIndexOffset?: number;
 };
 
 export const generateTiling = ({
 	quadBands,
 	bands,
 	tiledPatternConfig,
-	address
+	address,
+	bandIndexOffset = 0
 }: GenerateTilingProps): BandCutPattern[] => {
 	const tiling: {
 		facets: CutPattern[];
@@ -243,15 +257,16 @@ export const generateTiling = ({
 			return cuttable;
 		});
 
+		const globalBandIndex = bandIndex + bandIndexOffset;
 		const result: BandCutPattern = {
 			facets: cuttablePattern,
 			sideOrientation: bands[bandIndex].sideOrientation,
 			svgPath: undefined, //cuttablePattern.map((p) => p.svgPath).join(),
-			id: `${tiledPatternConfig.type}-band-${bandIndex}`,
+			id: `${tiledPatternConfig.type}-band-${globalBandIndex}`,
 			tagAnchorPoint,
 			tagAngle: tiledPatternConfig.labels?.angle ?? tagAnchor.angle ?? 0,
 			projectionType: 'patterned',
-			address: { ...address, band: bandIndex },
+			address: { ...address, band: globalBandIndex },
 			bounds: bands[bandIndex].bounds,
 			meta: startPartnerBand && endPartnerBand ? { startPartnerBand, endPartnerBand } : undefined
 		};

@@ -65,13 +65,19 @@
 			scale: { x: 1, y: 1, z: 1 },
 			rotate: { x: 0, y: 0, z: 0 }
 		};
+		const startTube = tubes[meta.startPartnerBand.tube];
+		const endTube = tubes[meta.endPartnerBand.tube];
+		if (!startTube || !endTube) return undefined;
+		const startBand = startTube.bands[meta.startPartnerBand.band];
+		const endBand = endTube.bands[meta.endPartnerBand.band];
+		if (!startBand || !endBand) return undefined;
 		return [
 			{
-				band: tubes[meta.startPartnerBand.tube].bands[meta.startPartnerBand.band],
+				band: startBand,
 				transform: meta.startPartnerTransform ?? IDENTITY_TRANSFORM
 			},
 			{
-				band: tubes[meta.endPartnerBand.tube].bands[meta.endPartnerBand.band],
+				band: endBand,
 				transform: meta.endPartnerTransform ?? IDENTITY_TRANSFORM
 			}
 		];

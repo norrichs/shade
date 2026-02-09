@@ -56,6 +56,33 @@ export const sliceProjectionCutPattern = (
 	return slicedTubes;
 };
 
+/**
+ * Resolve a ProjectionRange dimension into concrete [start, end) indices.
+ * Expands the range by `expand` on each side (clamped to [0, total]).
+ */
+export const resolveRangeIndices = (
+	range: ProjectionRange['tubes'],
+	total: number,
+	expand: number = 0
+): [number, number] => {
+	let start: number;
+	let end: number;
+	if (range === undefined) {
+		start = 0;
+		end = total;
+	} else if (typeof range === 'number') {
+		start = range;
+		end = range + 1;
+	} else if (range.length === 1) {
+		start = range[0];
+		end = total;
+	} else {
+		start = range[0];
+		end = range[1];
+	}
+	return [Math.max(0, start - expand), Math.min(total, end + expand)];
+};
+
 // export const filterProjection = (
 // 	projectionPanelPattern: ProjectionPanelPattern,
 // 	{ projections, tubes, bands, facets }: ProjectionRange
