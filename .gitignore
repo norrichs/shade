@@ -14,3 +14,7 @@ vite.config.ts.timestamp-*
 
 .vscode/
 .claude/
+
+# Dolt database files (added by bd init)
+.dolt/
+*.db
