@@ -7,6 +7,7 @@ export type ShowProjectionGeometries = {
 	surface: boolean;
 	polygons: boolean;
 	projection: boolean;
+	surfaceProjection: boolean;
 	sections: boolean;
 	bands: boolean;
 };
@@ -35,6 +36,7 @@ const defaultViewControls = (): ViewControls => ({
 		surface: false,
 		polygons: false,
 		projection: false,
+		surfaceProjection: false,
 		sections: false,
 		bands: false,
 		facets: true

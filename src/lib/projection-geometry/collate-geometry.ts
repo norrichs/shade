@@ -34,6 +34,9 @@ export const collateGeometry = (
 		projection: show.projection
 			? collateProjectionGeometry(projection, new Vector3(0, 0, 0))
 			: undefined,
+		surfaceProjection: show.surfaceProjection
+			? collateSurfaceProjectionGeometry(projection)
+			: undefined,
 		polygons: show.polygons ? polyhedron.polygons.map((p) => collatePolygonGeometry(p)) : undefined,
 		sections: show.sections
 			? collateSectionGeometry(tubes.map((tube) => tube.sections).flat(1))
@@ -76,6 +79,25 @@ export const collateProjectionGeometry = (projection: Projection, center: Vector
 	projectionGeometry.computeVertexNormals();
 
 	return projectionGeometry;
+};
+
+export const collateSurfaceProjectionGeometry = (projection: Projection) => {
+	const points: Vector3[] = [];
+
+	projection.polygons.forEach((polygon) => {
+		polygon.edges.forEach((edge) => {
+			for (let i = 0; i < edge.sections.length - 1; i++) {
+				const { edge: e0, curve: c0 } = edge.sections[i].intersections;
+				const { edge: e1, curve: c1 } = edge.sections[i + 1].intersections;
+				points.push(e0, c0, e1);
+				points.push(c0, c1, e1);
+			}
+		});
+	});
+
+	const geometry = new BufferGeometry().setFromPoints(points);
+	geometry.computeVertexNormals();
+	return geometry;
 };
 
 export const collateEdgePoints = (edgePoints: Vector3[], curvePoints: Vector3[]) => {

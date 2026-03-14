@@ -37,6 +37,7 @@
 		surface?: Object3D;
 		polygons?: BufferGeometry[];
 		projection?: BufferGeometry;
+		surfaceProjection?: BufferGeometry;
 		sections?: BufferGeometry;
 		bands?: BufferGeometry[];
 		facets?: { address: GlobuleAddress_Facet; geometry: BufferGeometry }[];
@@ -120,6 +121,9 @@
 
 		{#if projectionGeometry.projection}
 			<T.Mesh geometry={projectionGeometry.projection} material={materials.highlightedSecondary} />
+		{/if}
+		{#if projectionGeometry.surfaceProjection}
+			<T.Mesh geometry={projectionGeometry.surfaceProjection} material={materials.highlightedSecondary} />
 		{/if}
 		{#if projectionGeometry.sections}
 			<T.Mesh geometry={projectionGeometry.sections} material={materials.numbered[4]} />
