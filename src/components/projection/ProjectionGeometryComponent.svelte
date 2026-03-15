@@ -37,7 +37,7 @@
 		surface?: Object3D;
 		polygons?: BufferGeometry[];
 		projection?: BufferGeometry;
-		surfaceProjection?: BufferGeometry;
+		surfaceProjection?: BufferGeometry | BufferGeometry[];
 		sections?: BufferGeometry;
 		bands?: BufferGeometry[];
 		facets?: { address: GlobuleAddress_Facet; geometry: BufferGeometry }[];
@@ -52,6 +52,7 @@
 		projection: Projection;
 		polyhedron: Polyhedron;
 		tubes: Tube[];
+		surfaceProjectionTubes: Tube[];
 		surface: Object3D;
 	};
 
@@ -67,16 +68,7 @@
 	};
 
 	const LENGTH = 25;
-	const getNormalIndicator = (
-		{ address }: { address: GlobuleAddress_Facet },
-		store: typeof $superGlobuleStore,
-		config: { length: number }
-	) => {
-		const length = config?.length ?? LENGTH;
-		const { triangle } =
-			store.projections[address.globule].tubes[address.tube].bands[address.band].facets[
-				address.facet
-			];
+	const buildNormalGeometry = (triangle: { a: Vector3; b: Vector3; c: Vector3; getNormal: (target: Vector3) => Vector3; getMidpoint: (target: Vector3) => Vector3 }, length: number) => {
 		const normal = new Vector3();
 		const anchor = new Vector3();
 		const ab = triangle.b.clone().addScaledVector(triangle.a, -1).normalize();
@@ -89,6 +81,36 @@
 		const geometry = new BufferGeometry().setFromPoints(points);
 		geometry.computeVertexNormals();
 		return geometry;
+	};
+
+	const getNormalIndicator = (
+		{ address }: { address: GlobuleAddress_Facet },
+		store: typeof $superGlobuleStore,
+		config: { length: number }
+	) => {
+		const length = config?.length ?? LENGTH;
+		const { triangle } =
+			store.projections[address.globule].tubes[address.tube].bands[address.band].facets[
+				address.facet
+			];
+		return buildNormalGeometry(triangle, length);
+	};
+
+	const getSurfaceProjectionNormals = (
+		store: typeof $superGlobuleStore,
+		length: number
+	): BufferGeometry[] => {
+		const geometries: BufferGeometry[] = [];
+		store.projections.forEach((projection) => {
+			projection.surfaceProjectionTubes?.forEach((tube) => {
+				tube.bands.forEach((band) => {
+					band.facets.forEach((facet) => {
+						geometries.push(buildNormalGeometry(facet.triangle, length));
+					});
+				});
+			});
+		});
+		return geometries;
 	};
 
 	$effect(() => {
@@ -123,7 +145,18 @@
 			<T.Mesh geometry={projectionGeometry.projection} material={materials.highlightedSecondary} />
 		{/if}
 		{#if projectionGeometry.surfaceProjection}
-			<T.Mesh geometry={projectionGeometry.surfaceProjection} material={materials.highlightedSecondary} />
+			{#if Array.isArray(projectionGeometry.surfaceProjection)}
+				{#each projectionGeometry.surfaceProjection as band, i}
+					<T.Mesh geometry={band} material={materials.numbered[i % materials.numbered.length]} />
+				{/each}
+			{:else}
+				<T.Mesh geometry={projectionGeometry.surfaceProjection} material={materials.highlightedSecondary} />
+			{/if}
+			{#if showNormals && Array.isArray(projectionGeometry.surfaceProjection)}
+				{#each getSurfaceProjectionNormals($superGlobuleStore, 80) as normalGeometry}
+					<T.Mesh geometry={normalGeometry} material={materials.highlightedPrimary} />
+				{/each}
+			{/if}
 		{/if}
 		{#if projectionGeometry.sections}
 			<T.Mesh geometry={projectionGeometry.sections} material={materials.numbered[4]} />

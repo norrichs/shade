@@ -130,3 +130,50 @@ export const auditSides = (tubes: Tube[]): void => {
 		(mesh.material as MeshPhysicalMaterial).dispose();
 	});
 };
+
+/**
+ * Audit side orientation for flat surface-projection tubes using the projection center.
+ * Unlike auditSides (which raycasts against the tube's own closed mesh), this uses
+ * the dot product of the facet normal with the center-to-centroid vector.
+ * Positive dot = normal points outward; negative = inward.
+ */
+export const auditSurfaceProjectionSides = (tubes: Tube[], center: Vector3): void => {
+	const centroid = new Vector3();
+	const normal = new Vector3();
+	const toFacet = new Vector3();
+
+	tubes.forEach((tube) => {
+		tube.bands.forEach((band) => {
+			const facetCount = band.facets.length;
+			const middleIndex = Math.floor(facetCount / 2);
+			const sampleIndices =
+				facetCount >= 2 ? [middleIndex - 1, middleIndex] : facetCount === 1 ? [0] : [];
+
+			let insideCount = 0;
+			let outsideCount = 0;
+
+			sampleIndices.forEach((i) => {
+				const facet = band.facets[i];
+				if (!facet) return;
+
+				facet.triangle.getMidpoint(centroid);
+				facet.triangle.getNormal(normal);
+				toFacet.subVectors(centroid, center);
+
+				if (normal.dot(toFacet) >= 0) {
+					outsideCount++;
+				} else {
+					insideCount++;
+				}
+			});
+
+			if (insideCount === 0) {
+				band.sideOrientation = 'outside';
+			} else if (outsideCount === 0) {
+				band.sideOrientation = 'inside';
+			} else {
+				band.sideOrientation = 'mixed';
+			}
+		});
+	});
+};

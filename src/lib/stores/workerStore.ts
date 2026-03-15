@@ -85,6 +85,21 @@ function rehydrateSuperGlobule(result: SuperGlobule): SuperGlobule {
 					)
 				}))
 			}))
+		})),
+		surfaceProjectionTubes: (projection.surfaceProjectionTubes || []).map((tube) => ({
+			...tube,
+			sections: tube.sections.map((section) => ({
+				points: section.points.map(rehydrateVector3)
+			})),
+			bands: tube.bands.map((band) => ({
+				...band,
+				facets: band.facets.map((facet) => ({
+					...facet,
+					triangle: rehydrateTriangle(
+						facet.triangle as unknown as Parameters<typeof rehydrateTriangle>[0]
+					)
+				}))
+			}))
 		}))
 	}));
 

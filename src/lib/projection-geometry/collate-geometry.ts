@@ -19,11 +19,13 @@ export const collateGeometry = (
 		projection,
 		polyhedron,
 		tubes,
+		surfaceProjectionTubes,
 		surface
 	}: {
 		projection: Projection;
 		polyhedron: Polyhedron;
 		tubes: Tube[];
+		surfaceProjectionTubes?: Tube[];
 		surface: Object3D;
 	},
 	show: ShowProjectionGeometries
@@ -34,9 +36,11 @@ export const collateGeometry = (
 		projection: show.projection
 			? collateProjectionGeometry(projection, new Vector3(0, 0, 0))
 			: undefined,
-		surfaceProjection: show.surfaceProjection
-			? collateSurfaceProjectionGeometry(projection)
-			: undefined,
+		surfaceProjection: show.surfaceProjection && surfaceProjectionTubes?.length
+			? collateBandGeometry(surfaceProjectionTubes.map((tube) => tube.bands).flat())
+			: show.surfaceProjection
+				? collateSurfaceProjectionGeometry(projection)
+				: undefined,
 		polygons: show.polygons ? polyhedron.polygons.map((p) => collatePolygonGeometry(p)) : undefined,
 		sections: show.sections
 			? collateSectionGeometry(tubes.map((tube) => tube.sections).flat(1))

@@ -858,6 +858,7 @@ export type SuperGlobule = {
 		projection: Projection;
 		polyhedron: Polyhedron;
 		tubes: Tube[];
+		surfaceProjectionTubes: Tube[];
 		surface: Object3D;
 	}[];
 };
