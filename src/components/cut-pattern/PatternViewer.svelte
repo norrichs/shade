@@ -33,6 +33,7 @@
 	const collatePatterns = (
 		globuleTubePattern: SuperGlobuleProjectionPattern | null,
 		projectionPattern: SuperGlobuleProjectionPattern | undefined,
+		surfaceProjectionPattern: SuperGlobuleProjectionPattern | undefined,
 		showGlobuleTubeGeometry: ShowGlobuleTubeGeometries,
 		showProjectionGeometry: ShowProjectionGeometries
 	) => {
@@ -44,6 +45,10 @@
 			projectionPattern &&
 			isSuperGlobuleProjectionCutPattern(projectionPattern) &&
 			projectionPattern.projectionCutPattern.tubes.length > 0;
+		const hasSurfaceProjectionPattern =
+			surfaceProjectionPattern &&
+			isSuperGlobuleProjectionCutPattern(surfaceProjectionPattern) &&
+			surfaceProjectionPattern.projectionCutPattern.tubes.length > 0;
 
 		collatedPatterns = [
 			...(hasGlobuleTubePattern && showGlobuleTubeGeometry.any
@@ -51,6 +56,9 @@
 				: []),
 			...(hasProjectionPattern && showProjectionGeometry.any
 				? projectionPattern.projectionCutPattern.tubes
+				: []),
+			...(hasSurfaceProjectionPattern && showProjectionGeometry.any
+				? surfaceProjectionPattern.projectionCutPattern.tubes
 				: [])
 		];
 	};
@@ -63,6 +71,7 @@
 	$: collatePatterns(
 		$superGlobulePatternStore.globuleTubePattern,
 		$superGlobulePatternStore.projectionPattern,
+		$superGlobulePatternStore.surfaceProjectionPattern,
 		$viewControlStore.showGlobuleTubeGeometry,
 		$viewControlStore.showProjectionGeometry
 	);

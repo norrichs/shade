@@ -397,7 +397,7 @@ const superGlobulePatternStoreInternal = derived(
 
 		// Skip pattern generation in 3d-only mode
 		if ($computationMode === '3d-only') {
-			return { superGlobulePattern: null, projectionPattern: undefined, globuleTubePattern: null };
+			return { superGlobulePattern: null, projectionPattern: undefined, globuleTubePattern: null, surfaceProjectionPattern: undefined };
 		}
 
 		console.time('PATTERN_GENERATION');
@@ -434,6 +434,13 @@ const superGlobulePatternStoreInternal = derived(
 				? generateProjectionPattern(projection.tubes, $superConfigStore.id, patternConfigForGeneration, $genConfig.range)
 				: undefined;
 
+		const surfaceProjectionPattern =
+			showProjectionGeometry.any &&
+			$genConfig.showBands &&
+			projection.surfaceProjectionTubes?.length
+				? generateProjectionPattern(projection.surfaceProjectionTubes, $superConfigStore.id, patternConfigForGeneration, $genConfig.range)
+				: undefined;
+
 		const metaInfo = getMetaInfo(projectionPattern);
 
 		console.timeEnd('PATTERN_GENERATION');
@@ -442,9 +449,10 @@ const superGlobulePatternStoreInternal = derived(
 			$genConfig,
 			$overrideStore,
 			superGlobulePattern,
-			projectionPattern
+			projectionPattern,
+			surfaceProjectionPattern
 		});
-		return { superGlobulePattern, projectionPattern, globuleTubePattern };
+		return { superGlobulePattern, projectionPattern, globuleTubePattern, surfaceProjectionPattern };
 	}
 );
 
@@ -453,7 +461,8 @@ let patternDebounceTimeout: ReturnType<typeof setTimeout> | null = null;
 let lastPatternResult: any = {
 	superGlobulePattern: null,
 	projectionPattern: undefined,
-	globuleTubePattern: null
+	globuleTubePattern: null,
+	surfaceProjectionPattern: undefined
 };
 
 export const superGlobulePatternStore = derived(
@@ -481,7 +490,7 @@ export const superGlobulePatternStore = derived(
 		// Return last result while debouncing, or current result if available
 		return lastPatternResult;
 	},
-	{ superGlobulePattern: null, projectionPattern: undefined, globuleTubePattern: null }
+	{ superGlobulePattern: null, projectionPattern: undefined, globuleTubePattern: null, surfaceProjectionPattern: undefined }
 );
 
 export type SuperGlobulePattern = SuperGlobuleBandPattern | SuperGlobuleProjectionPattern;
