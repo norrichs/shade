@@ -1340,6 +1340,9 @@ const matchCrossEdgePartners = (
  * Match end facets at polygon vertices where adjacent edges meet.
  * At a polygon vertex, the last section of edge e shares the edge intersection
  * point with the first section of edge (e+1) % edges.length.
+ *
+ * These triangles share only a single vertex (not an edge), so we use
+ * single-vertex proximity matching instead of getEdgeMatchedTriangles.
  */
 const matchSurfaceProjectionTubeEnds = (
 	tubes: Tube[],
@@ -1359,7 +1362,6 @@ const matchSurfaceProjectionTubeEnds = (
 			const nextTube = tubes[nextTubeIdx];
 			if (!tube || !nextTube) continue;
 
-			// Get end facets of current tube and start facets of next tube
 			const band = tube.bands[0];
 			const nextBand = nextTube.bands[0];
 			if (!band || !nextBand || band.facets.length === 0 || nextBand.facets.length === 0) continue;
@@ -1372,14 +1374,29 @@ const matchSurfaceProjectionTubeEnds = (
 				if (!endFacet.address) continue;
 				for (const startFacet of startFacets) {
 					if (!startFacet.address) continue;
-					const match = getEdgeMatchedTriangles(endFacet.triangle, startFacet.triangle);
-					if (match) {
+
+					// Try edge matching first (two shared vertices)
+					const edgeMatch = getEdgeMatchedTriangles(endFacet.triangle, startFacet.triangle);
+					if (edgeMatch) {
 						const newMeta0: { [key: string]: FacetEdgeMeta } = {};
-						newMeta0[match.t0] = { partner: { ...startFacet.address, edge: match.t1 } };
+						newMeta0[edgeMatch.t0] = { partner: { ...startFacet.address, edge: edgeMatch.t1 } };
 						endFacet.meta = endFacet.meta ? { ...endFacet.meta, ...newMeta0 } : newMeta0;
 
 						const newMeta1: { [key: string]: FacetEdgeMeta } = {};
-						newMeta1[match.t1] = { partner: { ...endFacet.address, edge: match.t0 } };
+						newMeta1[edgeMatch.t1] = { partner: { ...endFacet.address, edge: edgeMatch.t0 } };
+						startFacet.meta = startFacet.meta ? { ...startFacet.meta, ...newMeta1 } : newMeta1;
+						break;
+					}
+
+					// Fall back to single-vertex matching (polygon vertices share one point)
+					const vertexMatch = getVertexMatchedTriangles(endFacet.triangle, startFacet.triangle);
+					if (vertexMatch) {
+						const newMeta0: { [key: string]: FacetEdgeMeta } = {};
+						newMeta0[vertexMatch.t0] = { partner: { ...startFacet.address, edge: vertexMatch.t1 } };
+						endFacet.meta = endFacet.meta ? { ...endFacet.meta, ...newMeta0 } : newMeta0;
+
+						const newMeta1: { [key: string]: FacetEdgeMeta } = {};
+						newMeta1[vertexMatch.t1] = { partner: { ...endFacet.address, edge: vertexMatch.t0 } };
 						startFacet.meta = startFacet.meta ? { ...startFacet.meta, ...newMeta1 } : newMeta1;
 						break;
 					}
@@ -1387,6 +1404,38 @@ const matchSurfaceProjectionTubeEnds = (
 			}
 		}
 	});
+};
+
+/**
+ * Find a single shared vertex between two triangles.
+ * Returns the edges containing that vertex for both triangles.
+ * Used for polygon-vertex matching where adjacent edges share only one point.
+ */
+const getVertexMatchedTriangles = (
+	t0: Triangle,
+	t1: Triangle,
+	precision = 1 / 10_000
+): { t0: TriangleEdge; t1: TriangleEdge } | false => {
+	const t0Points = ['a', 'b', 'c'] as TrianglePoint[];
+	const t1Points = ['a', 'b', 'c'] as TrianglePoint[];
+
+	for (const p0 of t0Points) {
+		for (const p1 of t1Points) {
+			if (isSameVector3(t0[p0], t1[p1], precision)) {
+				// Found shared vertex. Return an edge containing this vertex for each triangle.
+				// Pick the edge where this vertex is first (e.g., 'a' → 'ab', 'b' → 'bc', 'c' → 'ac')
+				const edgeFor = (p: TrianglePoint): TriangleEdge => {
+					switch (p) {
+						case 'a': return 'ab';
+						case 'b': return 'bc';
+						case 'c': return 'ac';
+					}
+				};
+				return { t0: edgeFor(p0), t1: edgeFor(p1) };
+			}
+		}
+	}
+	return false;
 };
 
 /**

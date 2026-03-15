@@ -154,6 +154,7 @@
 						colorEndFacets
 					})}
 					onclick={(ev) => {
+						ev.stopPropagation();
 						$selectedSurfaceProjection = facet.address;
 					}}
 				/>

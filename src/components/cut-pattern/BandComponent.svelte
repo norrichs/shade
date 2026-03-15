@@ -2,7 +2,7 @@
 	import type { BandCutPattern, Point } from '$lib/types';
 	import type { Snippet } from 'svelte';
 	import PatternLabel from './PatternLabel.svelte';
-	import { patternConfigStore, selectedProjection } from '$lib/stores';
+	import { patternConfigStore, selectedProjection, selectedSurfaceProjection } from '$lib/stores';
 	import type { Vector3 } from 'three';
 	import type { GlobuleAddress_Band } from '$lib/projection-geometry/types';
 	import { concatAddress } from '$lib/util';
@@ -16,6 +16,7 @@
 		portal = false,
 		tagAnchorPoint,
 		tagAngle,
+		selectionTarget = 'projection',
 		children
 	}: {
 		band: BandCutPattern;
@@ -26,6 +27,7 @@
 		portal?: boolean;
 		tagAnchorPoint: Point;
 		tagAngle: number | undefined;
+		selectionTarget?: 'projection' | 'surfaceProjection';
 		children?: Snippet;
 	} = $props();
 
@@ -47,7 +49,11 @@
 	};
 
 	const handleClick = (address: GlobuleAddress_Band) => {
-		$selectedProjection = { ...address, facet: 0 };
+		if (selectionTarget === 'surfaceProjection') {
+			$selectedSurfaceProjection = { ...address, facet: 0 };
+		} else {
+			$selectedProjection = { ...address, facet: 0 };
+		}
 	};
 </script>
 

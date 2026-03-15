@@ -80,7 +80,7 @@
 <div class="container-svg scroll-container" class:showBands>
 	<div class="scroll-container">
 		<CutPatternSvg width={6000} height={6000}>
-			<CutPatternRenderer tubes={collatedPatterns} />
+			<CutPatternRenderer tubes={collatedPatterns} selectionTarget={$patternConfigStore.patternViewConfig.patternSource ?? 'projection'} />
 
 			{#if $superGlobulePatternStore.projectionPattern && $viewControlStore.showProjectionGeometry.any}
 				<ProjectionPanelPatterns

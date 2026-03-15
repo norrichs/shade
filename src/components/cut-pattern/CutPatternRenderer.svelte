@@ -15,9 +15,11 @@
 	import { PATTERN_PORTAL_ID, LABEL_TEXT_PORTAL_ID, LABEL_TAG_PORTAL_ID } from './constants';
 
 	let {
-		tubes = []
+		tubes = [],
+		selectionTarget = 'projection'
 	}: {
 		tubes?: TubeCutPattern[];
+		selectionTarget?: 'projection' | 'surfaceProjection';
 	} = $props();
 
 	const GAP_BETWEEN_BANDS = 20;
@@ -129,6 +131,7 @@
 					tagAnchorPoint={minPoint(band.facets)}
 					tagAngle={band.tagAngle}
 					showBounds={false}
+					{selectionTarget}
 				>
 					{#if band.projectionType === 'patterned'}
 						<BandCutPatternComponent
