@@ -283,6 +283,150 @@ export const selectedProjectionGeometry = derived(
 	}
 );
 
+// Surface Projection Selection
+export const selectedSurfaceProjection = writable<GlobuleAddress_Facet | null>(null);
+
+const getSurfaceProjectionSelectedFacet = (address: GlobuleAddress_Facet, sg: SuperGlobule, mode: SelectionMode) => {
+	const facets = new Set<Facet>([]);
+	const spTubes = sg.projections[address.globule]?.surfaceProjectionTubes;
+	if (!spTubes?.[address.tube]?.bands?.[address.band]) return [];
+	if (mode.includes.tube) {
+		spTubes[address.tube].bands.forEach((band) =>
+			band.facets.forEach((facet) => facets.add(facet))
+		);
+	} else if (mode.includes.band) {
+		spTubes[address.tube].bands[address.band].facets.forEach(
+			(facet) => facets.add(facet)
+		);
+	} else if (mode.includes.facet) {
+		facets.add(spTubes[address.tube].bands[address.band].facets[address.facet]);
+	}
+	return Array.from(facets);
+};
+
+const getSurfaceProjectionPartnerFacets = (facets: Facet[], sg: SuperGlobule, mode: SelectionMode) => {
+	if (!mode.includes.partners)
+		return { startPartnerFacets: [] as Facet[], endPartnerFacets: [] as Facet[], partnerFacets: [] as Facet[] };
+
+	const spTubes = sg.projections[0]?.surfaceProjectionTubes;
+	if (!spTubes) return { startPartnerFacets: [] as Facet[], endPartnerFacets: [] as Facet[], partnerFacets: [] as Facet[] };
+
+	const facetAddresses = new Set(facets.map((facet) => concatAddress(facet.address)));
+	const partners = new Set<Facet>([]);
+	const endPartners = new Set<Facet>([]);
+	const startPartners = new Set<Facet>([]);
+	facets.forEach((facet, facetIndex) => {
+		if (facet.meta) {
+			const partnerAddresses = [
+				facet.meta.ab?.partner,
+				facet.meta.ac?.partner,
+				facet.meta.bc?.partner
+			].filter(Boolean);
+			partnerAddresses.forEach((a) => {
+				if (!a) return;
+				let receiver;
+				if (a.tube !== facet.address?.tube && facetIndex === 0) {
+					receiver = startPartners;
+				} else if (a.tube !== facet.address?.tube && facetIndex === facets.length - 1) {
+					receiver = endPartners;
+				} else {
+					receiver = partners;
+				}
+				const { tube: t, band: b, facet: f } = a;
+				if (!facetAddresses.has(concatAddress(a))) {
+					if (!spTubes[t]?.bands?.[b]) return;
+					if (mode.includes.tube) {
+						spTubes[t].bands.forEach((band) => {
+							band.facets.forEach((facet) => receiver.add(facet));
+						});
+					} else if (mode.includes.band) {
+						spTubes[t].bands[b].facets.forEach((facet) => receiver.add(facet));
+					} else if (mode.includes.facet) {
+						receiver.add(spTubes[t].bands[b].facets[f]);
+					}
+				}
+			});
+		}
+	});
+	return {
+		startPartnerFacets: Array.from(startPartners),
+		endPartnerFacets: Array.from(endPartners),
+		partnerFacets: Array.from(partners)
+	};
+};
+
+export const selectedSurfaceProjectionGeometry = derived(
+	[selectedSurfaceProjection, superGlobuleStore, selectMode],
+	([
+		$selectedSurfaceProjection,
+		$superGlobuleStore,
+		$selectMode
+	]): SelectedProjectionGeometry => {
+		if (!$selectedSurfaceProjection) return null;
+
+		const selectedFacets: Facet[] = getSurfaceProjectionSelectedFacet(
+			$selectedSurfaceProjection,
+			$superGlobuleStore,
+			$selectMode
+		);
+
+		const { startPartnerFacets, endPartnerFacets, partnerFacets } = getSurfaceProjectionPartnerFacets(
+			selectedFacets,
+			$superGlobuleStore,
+			$selectMode
+		);
+
+		const facetPoints = selectedFacets
+			.map(({ triangle }) => [triangle.a, triangle.b, triangle.c])
+			.flat();
+		const facetGeometry = new BufferGeometry().setFromPoints(facetPoints);
+		facetGeometry.computeVertexNormals();
+
+		const partnerPoints = partnerFacets
+			.map(({ triangle }) => [triangle.a, triangle.b, triangle.c])
+			.flat();
+		const partnerGeometry = new BufferGeometry().setFromPoints(partnerPoints);
+		partnerGeometry.computeVertexNormals();
+
+		const selected = selectedFacets.map((f) => f.address);
+		const selectedPartners = partnerFacets.map((f) => f.address);
+		const selectedStartPartners = startPartnerFacets.map((f) => f.address);
+		const selectedEndPartners = endPartnerFacets.map((f) => f.address);
+
+		const startPartnerPoints = startPartnerFacets
+			.map(({ triangle }) => [triangle.a, triangle.b, triangle.c])
+			.flat();
+		const startPartnerGeometry = new BufferGeometry().setFromPoints(startPartnerPoints);
+		startPartnerGeometry.computeVertexNormals();
+
+		const endPartnerPoints = endPartnerFacets
+			.map(({ triangle }) => [triangle.a, triangle.b, triangle.c])
+			.flat();
+		const endPartnerGeometry = new BufferGeometry().setFromPoints(endPartnerPoints);
+		endPartnerGeometry.computeVertexNormals();
+
+		return {
+			isSelected: ((a) => isSelected(a, selected)) as AddressSelector,
+			isPartner: ((a) => isSelected(a, selectedPartners)) as AddressSelector,
+			isSelectedOrPartner: ((a) =>
+				isSelected(a, [...selectedStartPartners, ...selectedEndPartners, ...selected]) ||
+				isSelected(a, selected)) as AddressSelector,
+			isStartPartner: ((a) => isSelected(a, selectedStartPartners)) as AddressSelector,
+			isEndPartner: ((a) => isSelected(a, selectedEndPartners)) as AddressSelector,
+			geometry: {
+				facet: facetGeometry,
+				partner: partnerGeometry,
+				startPartner: startPartnerGeometry,
+				endPartner: endPartnerGeometry
+			},
+			selected,
+			selectedPartners,
+			selectedStartPartners,
+			selectedEndPartners
+		};
+	}
+);
+
 const isSelected = <T extends SelectableAddress>(
 	a: T,
 	selected: (GlobuleAddress_Facet | undefined)[]

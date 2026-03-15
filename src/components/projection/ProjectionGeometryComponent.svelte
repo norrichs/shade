@@ -19,7 +19,7 @@
 		Tube
 	} from '$lib/projection-geometry/types';
 	import ColorMapped from './ColorMapped.svelte';
-	import { selectedProjectionGeometry } from '$lib/stores';
+	import { selectedProjectionGeometry, selectedSurfaceProjection, selectedSurfaceProjectionGeometry } from '$lib/stores';
 
 	let {
 		onClick,
@@ -38,6 +38,7 @@
 		polygons?: BufferGeometry[];
 		projection?: BufferGeometry;
 		surfaceProjection?: BufferGeometry | BufferGeometry[];
+		surfaceProjectionFacets?: { address: GlobuleAddress_Facet; geometry: BufferGeometry }[];
 		sections?: BufferGeometry;
 		bands?: BufferGeometry[];
 		facets?: { address: GlobuleAddress_Facet; geometry: BufferGeometry }[];
@@ -144,7 +145,20 @@
 		{#if projectionGeometry.projection}
 			<T.Mesh geometry={projectionGeometry.projection} material={materials.highlightedSecondary} />
 		{/if}
-		{#if projectionGeometry.surfaceProjection}
+		{#if projectionGeometry.surfaceProjectionFacets}
+			{#each projectionGeometry.surfaceProjectionFacets as facet}
+				<T.Mesh
+					geometry={facet.geometry}
+					material={getMaterial(facet.address, $selectedSurfaceProjectionGeometry, {
+						colorByBand,
+						colorEndFacets
+					})}
+					onclick={(ev) => {
+						$selectedSurfaceProjection = facet.address;
+					}}
+				/>
+			{/each}
+		{:else if projectionGeometry.surfaceProjection}
 			{#if Array.isArray(projectionGeometry.surfaceProjection)}
 				{#each projectionGeometry.surfaceProjection as band, i}
 					<T.Mesh geometry={band} material={materials.numbered[i % materials.numbered.length]} />
@@ -152,11 +166,11 @@
 			{:else}
 				<T.Mesh geometry={projectionGeometry.surfaceProjection} material={materials.highlightedSecondary} />
 			{/if}
-			{#if showNormals && Array.isArray(projectionGeometry.surfaceProjection)}
-				{#each getSurfaceProjectionNormals($superGlobuleStore, 80) as normalGeometry}
-					<T.Mesh geometry={normalGeometry} material={materials.highlightedPrimary} />
-				{/each}
-			{/if}
+		{/if}
+		{#if showNormals && projectionGeometry.surfaceProjectionFacets}
+			{#each getSurfaceProjectionNormals($superGlobuleStore, 80) as normalGeometry}
+				<T.Mesh geometry={normalGeometry} material={materials.highlightedPrimary} />
+			{/each}
 		{/if}
 		{#if projectionGeometry.sections}
 			<T.Mesh geometry={projectionGeometry.sections} material={materials.numbered[4]} />
