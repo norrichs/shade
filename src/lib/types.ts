@@ -17,6 +17,7 @@ import type { DistributionConfig } from '../components/cut-pattern/distrubute-pa
 import type { ProjectionRange } from './projection-geometry/filters';
 import type { EndCapConfig, EndCapGeometry } from './geometry/end-caps';
 
+export type PatternSource = 'projection' | 'surfaceProjection';
 export type PatternViewConfig = {
 	showBands: boolean;
 	showQuads: boolean;
@@ -30,6 +31,7 @@ export type PatternViewConfig = {
 		y: number;
 	};
 	range: ProjectionRange;
+	patternSource: PatternSource;
 };
 export type PatternStyle = 'faceted' | 'outlined' | 'patterned' | 'none' | 'layered';
 

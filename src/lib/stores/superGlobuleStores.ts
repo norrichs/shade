@@ -427,7 +427,10 @@ const superGlobulePatternStoreInternal = derived(
 			? generateProjectionPattern(globuleTubes, $superConfigStore.id, patternConfigForGeneration, $genConfig.range)
 			: null;
 
+		const patternSource = $genConfig.patternSource ?? 'projection';
+
 		const projectionPattern =
+			patternSource === 'projection' &&
 			showProjectionGeometry.any &&
 			showProjectionGeometry.bands &&
 			$genConfig.showBands
@@ -435,6 +438,7 @@ const superGlobulePatternStoreInternal = derived(
 				: undefined;
 
 		const surfaceProjectionPattern =
+			patternSource === 'surfaceProjection' &&
 			showProjectionGeometry.any &&
 			$genConfig.showBands &&
 			projection.surfaceProjectionTubes?.length

@@ -102,6 +102,12 @@
 				</div>
 			</div>
 		</div>
+		<div>
+			<select bind:value={$patternConfigStore.patternViewConfig.patternSource}>
+				<option value="projection">Projection</option>
+				<option value="surfaceProjection">Surface</option>
+			</select>
+		</div>
 	</div>
 	<label for="svg-width">width</label>
 	<input

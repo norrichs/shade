@@ -534,7 +534,8 @@ export const defaultPatternViewConfig = (): PatternViewConfig => ({
 	width: 800,
 	height: 600,
 	zoom: -1.2,
-	centerOffset: { x: 0, y: 0 }
+	centerOffset: { x: 0, y: 0 },
+	patternSource: 'projection'
 });
 
 export const getLevels = (sampleMethod: CurveSampleMethod, curveCount: number) => {
