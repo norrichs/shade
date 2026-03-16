@@ -1175,9 +1175,14 @@ export const getEdgeMatchedTriangles = (
 		});
 	});
 
-	return matched[0].length === 2 && matched[1].length === 2
-		? { t0: matched[0] as TriangleEdge, t1: matched[1] as TriangleEdge }
-		: false;
+	if (matched[0].length !== 2 || matched[1].length !== 2) return false;
+
+	// Normalize edge names to canonical form (ab, ac, bc) — earlier letter first
+	const normalize = (edge: string): TriangleEdge => {
+		const [a, b] = edge.split('');
+		return (a < b ? edge : b + a) as TriangleEdge;
+	};
+	return { t0: normalize(matched[0]), t1: normalize(matched[1]) };
 };
 
 export const isSameVector3 = (v0: Vector3, v1: Vector3, precision = 1 / 10_000) => {
@@ -1189,8 +1194,12 @@ export const isSameVector3 = (v0: Vector3, v1: Vector3, precision = 1 / 10_000) 
 };
 
 /**
- * Generate bands from the surface projection geometry (edge + curve intersection points).
- * Each polyhedron edge produces one band (one tube with one band).
+ * Generate bands from the surface projection geometry using paired-edge tubes.
+ * Uses sortEdges to pair edges sharing the same polyhedron edge (from different polygons)
+ * into a single Tube with 2 bands. Each sorted pair produces 3-point sections:
+ * [edge0.curve, shared_edge_point, edge1.curve] → 2 bands per tube.
+ *
+ * Icosahedron: 30 tubes × 2 bands = 60 bands (was 60 tubes × 1 band).
  */
 export const generateSurfaceProjectionBands = (
 	projection: Projection,
@@ -1198,9 +1207,8 @@ export const generateSurfaceProjectionBands = (
 	projectionAddress: GlobuleAddress
 ): { tubes: Tube[] } => {
 	const tubes: Tube[] = [];
-	let tubeCounter = 0;
 
-	// Build edge map for cross-edge partner matching
+	// Build sorted edge map (same logic as sortEdges) but retain polygon/edge indices
 	const { polygons } = projectionConfig.projectorConfig.polyhedron;
 	const edgeMap: { polygonIndex: number; edgeIndex: number; vertices: [number, number] }[] = [];
 	polygons.forEach((p, polygonIndex) =>
@@ -1211,8 +1219,12 @@ export const generateSurfaceProjectionBands = (
 			edgeMap.push({ polygonIndex, edgeIndex, vertices });
 		})
 	);
+	edgeMap.sort(({ vertices: a }, { vertices: b }) => {
+		if (a[0] !== b[0]) return a[0] - b[0];
+		return a[1] - b[1];
+	});
 
-	// Map from (polygonIndex, edgeIndex) to tube index for partner matching
+	// Map from (polygonIndex, edgeIndex) to tube index for tube-end matching
 	const edgeToTubeIndex = new Map<string, number>();
 
 	// Derive projection center for winding check
@@ -1220,57 +1232,85 @@ export const generateSurfaceProjectionBands = (
 		? new Vector3(0, 0, 0)
 		: getVector3(projectionConfig.surfaceConfig.center) as Vector3;
 
-	projection.polygons.forEach((polygon, polygonIndex) => {
-		polygon.edges.forEach((edge, edgeIndex) => {
-			if (edge.sections.length < 2) return;
+	for (let i = 0; i < edgeMap.length; i += 2) {
+		const em0 = edgeMap[i];
+		const em1 = edgeMap[i + 1];
+		const edge0 = projection.polygons[em0.polygonIndex].edges[em0.edgeIndex];
+		const edge1 = projection.polygons[em1.polygonIndex].edges[em1.edgeIndex];
 
-			const tubeAddress: GlobuleAddress_Tube = { ...projectionAddress, tube: tubeCounter };
+		if (edge0.sections.length < 2 || edge1.sections.length < 2) continue;
 
-			// Determine point order by checking if default [edge, curve] produces outward-facing triangles.
-			// The first even facet (axial-right) is: (s0.p0, s0.p1, s1.p0) = (edge0, curve0, edge1).
-			// Its normal = (curve0 - edge0) × (edge1 - edge0). If this points away from center, keep order.
-			const e0 = edge.sections[0].intersections.edge;
-			const c0 = edge.sections[0].intersections.curve;
-			const e1 = edge.sections[1].intersections.edge;
-			const v1 = new Vector3().subVectors(c0, e0);
-			const v2 = new Vector3().subVectors(e1, e0);
-			const testNormal = new Vector3().crossVectors(v1, v2);
-			const centroid = new Vector3().addVectors(e0, c0).add(e1).divideScalar(3);
-			const toFacet = new Vector3().subVectors(centroid, projCenter);
-			const shouldSwap = testNormal.dot(toFacet) < 0;
+		const tubeIndex = tubes.length;
+		const tubeAddress: GlobuleAddress_Tube = { ...projectionAddress, tube: tubeIndex };
 
-			// Build sections with corrected point order
-			const sections: Section[] = edge.sections.map((section) => ({
-				points: shouldSwap
-					? [section.intersections.curve.clone(), section.intersections.edge.clone()]
-					: [section.intersections.edge.clone(), section.intersections.curve.clone()]
-			}));
+		// Track which polygon edges map to this tube
+		edgeToTubeIndex.set(`${em0.polygonIndex}-${em0.edgeIndex}`, tubeIndex);
+		edgeToTubeIndex.set(`${em1.polygonIndex}-${em1.edgeIndex}`, tubeIndex);
 
-			// Generate bands (2 points per section = 1 band)
-			const bands = generateProjectionBands(sections, 'axial-right', tubeAddress);
+		// Direction check: ensure edge0 and edge1 sections run in the same direction.
+		// Compare edge0's first edge-intersection to edge1's first vs last.
+		const e0First = edge0.sections[0].intersections.edge;
+		const e1First = edge1.sections[0].intersections.edge;
+		const e1Last = edge1.sections[edge1.sections.length - 1].intersections.edge;
+		const shouldReverseEdge1 = e0First.distanceToSquared(e1Last) < e0First.distanceToSquared(e1First);
+		const edge1Sections = shouldReverseEdge1
+			? [...edge1.sections].reverse()
+			: edge1.sections;
 
-			const tube: Tube = {
-				bands,
-				sections,
-				orientation: 'axial-right',
-				address: tubeAddress
+		// Build combined sections: [edge0.curve, shared_edge, edge1.curve]
+		// shared_edge ≈ edge0.intersections.edge ≈ edge1.intersections.edge
+		const sections: Section[] = edge0.sections.map((s0, idx): Section => {
+			const s1 = edge1Sections[idx];
+			return {
+				points: [
+					s0.intersections.curve.clone(),
+					s0.intersections.edge.clone(),
+					s1.intersections.curve.clone()
+				]
 			};
-
-			edgeToTubeIndex.set(`${polygonIndex}-${edgeIndex}`, tubeCounter);
-			tubes[tubeCounter] = tube;
-			tubeCounter++;
 		});
-	});
 
+		// Winding check: first even facet (axial-right, band 0) triangle is
+		// (s0.points[0], s0.points[1], s1.points[0]). Check its normal points outward.
+		const p0 = sections[0].points[0];
+		const p1 = sections[0].points[1];
+		const p2 = sections[1].points[0];
+		const testV1 = new Vector3().subVectors(p1, p0);
+		const testV2 = new Vector3().subVectors(p2, p0);
+		const testNormal = new Vector3().crossVectors(testV1, testV2);
+		const centroid = new Vector3().addVectors(p0, p1).add(p2).divideScalar(3);
+		const toFacet = new Vector3().subVectors(centroid, projCenter);
+
+		if (testNormal.dot(toFacet) < 0) {
+			// Reverse point order in each section to fix winding
+			sections.forEach((s) => s.points.reverse());
+		}
+
+		// Generate bands (3 points per section = 2 bands)
+		const bands = generateProjectionBands(sections, 'axial-right', tubeAddress);
+
+		const tube: Tube = {
+			bands,
+			sections,
+			orientation: 'axial-right',
+			address: tubeAddress
+		};
+
+		tubes.push(tube);
+	}
+
+	// Partner matching for flat surface projection geometry.
+	// Cannot use standard matchFacets/getFacetEdgeMeta — the "outer" edge formula
+	// assumes tube geometry where bands wrap around, which doesn't hold here.
+	// Instead use 3-step geometric matching:
 	try {
-		// Step 1: Cross-polyhedron-edge partners (outer edges of paired edges)
-		matchCrossEdgePartners(tubes, edgeMap, edgeToTubeIndex, projection);
+		// Step 1: Cross-band partners within same tube (shared middle edge)
+		matchSurfaceProjectionCrossBandPartners(tubes);
 
-		// Step 2: Polygon-vertex partners (tube ends at polygon vertices)
-		matchSurfaceProjectionTubeEnds(tubes, projection, edgeToTubeIndex);
-
-		// Step 3: Within-band sequential partners (base/second edges)
-		matchSurfaceProjectionFacets(tubes);
+		// Step 2: Tube-end partners across tubes (global end-facet matching)
+		matchSurfaceProjectionTubeEnds(tubes);
+		// Step 3: Sequential partners (base/second), preserving pre-populated meta
+		matchSurfaceProjectionSequentialPartners(tubes);
 	} catch (error) {
 		console.error('error matching surface projection partners', error);
 	}
@@ -1279,131 +1319,134 @@ export const generateSurfaceProjectionBands = (
 };
 
 /**
- * Match facets across paired polyhedron edges (they share the 'edge' intersection points).
- * Pre-populates the outer edge (ac) meta on matching facets.
+ * Match facets across bands within the same tube using geometric edge matching.
+ * In the flat surface projection layout [curve0, shared_edge, curve1], band 0
+ * and band 1 share the middle edge. Only odd facets of one band share a full
+ * edge with even facets of the other band.
  */
-const matchCrossEdgePartners = (
-	tubes: Tube[],
-	edgeMap: { polygonIndex: number; edgeIndex: number; vertices: [number, number] }[],
-	edgeToTubeIndex: Map<string, number>,
-	projection: Projection
-) => {
-	// Sort edge map to find pairs (consecutive entries with same vertices)
-	const sorted = [...edgeMap].sort(({ vertices: a }, { vertices: b }) => {
-		if (a[0] !== b[0]) return a[0] - b[0];
-		return a[1] - b[1];
-	});
+const matchSurfaceProjectionCrossBandPartners = (tubes: Tube[]) => {
+	tubes.forEach((tube) => {
+		if (tube.bands.length < 2) return;
+		// Match every facet in band i against every facet in band j (i≠j)
+		for (let i = 0; i < tube.bands.length; i++) {
+			for (let j = i + 1; j < tube.bands.length; j++) {
+				const bandA = tube.bands[i];
+				const bandB = tube.bands[j];
+				for (const facetA of bandA.facets) {
+					if (!facetA.address) continue;
+					for (const facetB of bandB.facets) {
+						if (!facetB.address) continue;
+						const match = getEdgeMatchedTriangles(facetA.triangle, facetB.triangle);
+						if (match) {
+							const newMetaA: { [key: string]: FacetEdgeMeta } = {};
+							newMetaA[match.t0] = { partner: { ...facetB.address, edge: match.t1 } };
+							// @ts-expect-error: partial meta assignment
+							facetA.meta = facetA.meta ? { ...facetA.meta, ...newMetaA } : newMetaA;
 
-	for (let i = 0; i < sorted.length - 1; i += 2) {
-		const e0 = sorted[i];
-		const e1 = sorted[i + 1];
-		if (e0.vertices[0] !== e1.vertices[0] || e0.vertices[1] !== e1.vertices[1]) {
-			continue; // not a pair
-		}
-
-		const tubeIdx0 = edgeToTubeIndex.get(`${e0.polygonIndex}-${e0.edgeIndex}`);
-		const tubeIdx1 = edgeToTubeIndex.get(`${e1.polygonIndex}-${e1.edgeIndex}`);
-		if (tubeIdx0 === undefined || tubeIdx1 === undefined) continue;
-
-		const tube0 = tubes[tubeIdx0];
-		const tube1 = tubes[tubeIdx1];
-		if (!tube0 || !tube1) continue;
-
-		// Each tube has exactly 1 band. Match facets by shared edge-side vertices.
-		const band0 = tube0.bands[0];
-		const band1 = tube1.bands[0];
-		if (!band0 || !band1) continue;
-
-		// For axial-right with [edge, curve] sections:
-		// The 'ac' edge (outer) connects edge-side vertices between consecutive sections
-		// Paired edges share the same edge intersection points, so their ac edges should match
-		for (const facet0 of band0.facets) {
-			for (const facet1 of band1.facets) {
-				if (!facet0.address || !facet1.address) continue;
-				const match = getEdgeMatchedTriangles(facet0.triangle, facet1.triangle, 'ac');
-				if (match) {
-					const newMeta0: { [key: string]: FacetEdgeMeta } = {};
-					newMeta0[match.t0] = { partner: { ...facet1.address, edge: match.t1 } };
-					facet0.meta = facet0.meta ? { ...facet0.meta, ...newMeta0 } : newMeta0;
-
-					const newMeta1: { [key: string]: FacetEdgeMeta } = {};
-					newMeta1[match.t1] = { partner: { ...facet0.address, edge: match.t0 } };
-					facet1.meta = facet1.meta ? { ...facet1.meta, ...newMeta1 } : newMeta1;
-					break;
+							const newMetaB: { [key: string]: FacetEdgeMeta } = {};
+							newMetaB[match.t1] = { partner: { ...facetA.address, edge: match.t0 } };
+							// @ts-expect-error: partial meta assignment
+							facetB.meta = facetB.meta ? { ...facetB.meta, ...newMetaB } : newMetaB;
+						}
+					}
 				}
 			}
 		}
-	}
+	});
 };
 
 /**
- * Match end facets at polygon vertices where adjacent edges meet.
- * At a polygon vertex, the last section of edge e shares the edge intersection
- * point with the first section of edge (e+1) % edges.length.
- *
- * These triangles share only a single vertex (not an edge), so we use
- * single-vertex proximity matching instead of getEdgeMatchedTriangles.
+ * Fill in sequential within-band partners (base/second edges).
+ * Preserves any pre-populated meta (from cross-band or tube-end matching).
+ * Uses geometric edge matching for sequential neighbors instead of the
+ * EDGE_MAP formula (which assumes tube geometry).
  */
-const matchSurfaceProjectionTubeEnds = (
-	tubes: Tube[],
-	projection: Projection,
-	edgeToTubeIndex: Map<string, number>
-) => {
-	projection.polygons.forEach((polygon, polygonIndex) => {
-		const edgeCount = polygon.edges.length;
-		for (let edgeIndex = 0; edgeIndex < edgeCount; edgeIndex++) {
-			const nextEdgeIndex = (edgeIndex + 1) % edgeCount;
+const matchSurfaceProjectionSequentialPartners = (tubes: Tube[]) => {
+	tubes.forEach((tube) => {
+		tube.bands.forEach((band) => {
+			band.facets.forEach((facet, f) => {
+				if (!facet.address) return;
 
-			const tubeIdx = edgeToTubeIndex.get(`${polygonIndex}-${edgeIndex}`);
-			const nextTubeIdx = edgeToTubeIndex.get(`${polygonIndex}-${nextEdgeIndex}`);
-			if (tubeIdx === undefined || nextTubeIdx === undefined) continue;
+				const edgeMeta = { ab: {}, bc: {}, ac: {} } as Facet['meta'];
+				if (!edgeMeta) return;
 
-			const tube = tubes[tubeIdx];
-			const nextTube = tubes[nextTubeIdx];
-			if (!tube || !nextTube) continue;
-
-			const band = tube.bands[0];
-			const nextBand = nextTube.bands[0];
-			if (!band || !nextBand || band.facets.length === 0 || nextBand.facets.length === 0) continue;
-
-			// Last facet(s) of current edge, first facet(s) of next edge
-			const endFacets = [band.facets[band.facets.length - 1], band.facets[band.facets.length - 2]].filter(Boolean);
-			const startFacets = [nextBand.facets[0], nextBand.facets[1]].filter(Boolean);
-
-			for (const endFacet of endFacets) {
-				if (!endFacet.address) continue;
-				for (const startFacet of startFacets) {
-					if (!startFacet.address) continue;
-
-					// Try edge matching first (two shared vertices)
-					const edgeMatch = getEdgeMatchedTriangles(endFacet.triangle, startFacet.triangle);
-					if (edgeMatch) {
-						const newMeta0: { [key: string]: FacetEdgeMeta } = {};
-						newMeta0[edgeMatch.t0] = { partner: { ...startFacet.address, edge: edgeMatch.t1 } };
-						endFacet.meta = endFacet.meta ? { ...endFacet.meta, ...newMeta0 } : newMeta0;
-
-						const newMeta1: { [key: string]: FacetEdgeMeta } = {};
-						newMeta1[edgeMatch.t1] = { partner: { ...endFacet.address, edge: edgeMatch.t0 } };
-						startFacet.meta = startFacet.meta ? { ...startFacet.meta, ...newMeta1 } : newMeta1;
-						break;
-					}
-
-					// Fall back to single-vertex matching (polygon vertices share one point)
-					const vertexMatch = getVertexMatchedTriangles(endFacet.triangle, startFacet.triangle);
-					if (vertexMatch) {
-						const newMeta0: { [key: string]: FacetEdgeMeta } = {};
-						newMeta0[vertexMatch.t0] = { partner: { ...startFacet.address, edge: vertexMatch.t1 } };
-						endFacet.meta = endFacet.meta ? { ...endFacet.meta, ...newMeta0 } : newMeta0;
-
-						const newMeta1: { [key: string]: FacetEdgeMeta } = {};
-						newMeta1[vertexMatch.t1] = { partner: { ...endFacet.address, edge: vertexMatch.t0 } };
-						startFacet.meta = startFacet.meta ? { ...startFacet.meta, ...newMeta1 } : newMeta1;
-						break;
+				// Preserve pre-populated meta from cross-band and tube-end matching
+				for (const edge of ['ab', 'bc', 'ac'] as const) {
+					if (facet.meta?.[edge]?.partner) {
+						edgeMeta[edge].partner = { ...facet.meta[edge].partner };
 					}
 				}
+
+				// Fill in sequential partners by geometric matching with neighbors
+				if (f > 0) {
+					const prev = band.facets[f - 1];
+					if (prev.address) {
+						const match = getEdgeMatchedTriangles(facet.triangle, prev.triangle);
+						if (match && !edgeMeta[match.t0].partner) {
+							edgeMeta[match.t0].partner = { ...prev.address, edge: match.t1 };
+						}
+					}
+				}
+				if (f < band.facets.length - 1) {
+					const next = band.facets[f + 1];
+					if (next.address) {
+						const match = getEdgeMatchedTriangles(facet.triangle, next.triangle);
+						if (match && !edgeMeta[match.t0].partner) {
+							edgeMeta[match.t0].partner = { ...next.address, edge: match.t1 };
+						}
+					}
+				}
+
+				facet.meta = edgeMeta;
+			});
+		});
+	});
+};
+
+/**
+ * Match end facets between bands of different tubes.
+ *
+ * For each band, only the first facet (f0) and last facet (fLast) are candidates.
+ * A match requires 2 shared vertices (getEdgeMatchedTriangles) between end facets
+ * of bands from different tubes.
+ *
+ * This is done globally across all tubes (not restricted to polygon-adjacent tubes)
+ * to handle all vertex-sharing topologies.
+ */
+const matchSurfaceProjectionTubeEnds = (tubes: Tube[]) => {
+	// Collect all end facets: { facet, tubeIdx, bandIdx, position: 'first'|'last' }
+	const endFacets: { facet: Facet; tube: number; band: number; pos: 'first' | 'last' }[] = [];
+	tubes.forEach((tube, t) => {
+		tube.bands.forEach((band, b) => {
+			const fc = band.facets.length;
+			if (fc > 0) endFacets.push({ facet: band.facets[0], tube: t, band: b, pos: 'first' });
+			if (fc > 0) endFacets.push({ facet: band.facets[fc - 1], tube: t, band: b, pos: 'last' });
+		});
+	});
+
+	// Match every pair from different tubes
+	for (let i = 0; i < endFacets.length; i++) {
+		const a = endFacets[i];
+		if (!a.facet.address) continue;
+		for (let j = i + 1; j < endFacets.length; j++) {
+			const b = endFacets[j];
+			if (!b.facet.address) continue;
+			if (a.tube === b.tube) continue; // same tube — skip
+
+			const match = getEdgeMatchedTriangles(a.facet.triangle, b.facet.triangle);
+			if (match) {
+				const newMetaA: { [key: string]: FacetEdgeMeta } = {};
+				newMetaA[match.t0] = { partner: { ...b.facet.address, edge: match.t1 } };
+				// @ts-expect-error: partial meta assignment
+				a.facet.meta = a.facet.meta ? { ...a.facet.meta, ...newMetaA } : newMetaA;
+
+				const newMetaB: { [key: string]: FacetEdgeMeta } = {};
+				newMetaB[match.t1] = { partner: { ...a.facet.address, edge: match.t0 } };
+				// @ts-expect-error: partial meta assignment
+				b.facet.meta = b.facet.meta ? { ...b.facet.meta, ...newMetaB } : newMetaB;
 			}
 		}
-	});
+	}
 };
 
 /**
@@ -1422,8 +1465,6 @@ const getVertexMatchedTriangles = (
 	for (const p0 of t0Points) {
 		for (const p1 of t1Points) {
 			if (isSameVector3(t0[p0], t1[p1], precision)) {
-				// Found shared vertex. Return an edge containing this vertex for each triangle.
-				// Pick the edge where this vertex is first (e.g., 'a' → 'ab', 'b' → 'bc', 'c' → 'ac')
 				const edgeFor = (p: TrianglePoint): TriangleEdge => {
 					switch (p) {
 						case 'a': return 'ab';
@@ -1436,59 +1477,6 @@ const getVertexMatchedTriangles = (
 		}
 	}
 	return false;
-};
-
-/**
- * Fill in sequential within-band partners (base/second edges).
- * Preserves any pre-populated meta (from cross-edge or tube-end matching).
- * Unlike getFacetEdgeMeta, this doesn't compute outer-edge partners
- * (which would self-reference with bandCount=1).
- */
-const matchSurfaceProjectionFacets = (tubes: Tube[]) => {
-	tubes.forEach((tube) => {
-		tube.bands.forEach((band) => {
-			const facetCount = band.facets.length;
-			band.facets.forEach((facet, f) => {
-				if (!facet.address) return;
-
-				const address = facet.address;
-				const { orientation } = facet;
-				const base = getEdge('base', f, orientation);
-				const second = getEdge('second', f, orientation);
-				const outer = getEdge('outer', f, orientation);
-
-				const edgeMeta = { ab: {}, bc: {}, ac: {} } as Facet['meta'];
-				if (!edgeMeta) return;
-
-				const isFirstFacet = f === 0;
-				const isLastFacet = f === facetCount - 1;
-
-				if (isFirstFacet) {
-					// base partner comes from pre-populated meta (tube ends)
-					if (facet.meta?.[base]?.partner) {
-						edgeMeta[base].partner = { ...facet.meta[base].partner };
-					}
-					edgeMeta[second].partner = { ...address, facet: f + 1, edge: second };
-				} else if (isLastFacet) {
-					edgeMeta[base].partner = { ...address, facet: f - 1, edge: base };
-					// second partner comes from pre-populated meta (tube ends)
-					if (facet.meta?.[second]?.partner) {
-						edgeMeta[second].partner = { ...facet.meta[second].partner };
-					}
-				} else {
-					edgeMeta[base].partner = { ...address, facet: f - 1, edge: base };
-					edgeMeta[second].partner = { ...address, facet: f + 1, edge: second };
-				}
-
-				// outer partner comes from pre-populated meta (cross-edge matching)
-				if (facet.meta?.[outer]?.partner) {
-					edgeMeta[outer].partner = { ...facet.meta[outer].partner };
-				}
-
-				facet.meta = edgeMeta;
-			});
-		});
-	});
 };
 
 export const makeProjection = (projectionConfig: BaseProjectionConfig, address: GlobuleAddress) => {

@@ -34,6 +34,7 @@
 	import GlobuleGeometryComponent from './GlobuleGeometryComponent.svelte';
 	import type { GlobuleAddress_Facet } from '$lib/projection-geometry/types';
 	import { selectedProjection } from '$lib/stores';
+	import { cameraDirection } from '$lib/stores/selectionStores';
 	import type { Material } from './materials';
 
 	interactivity();
@@ -218,8 +219,9 @@
 </script>
 
 <div>{formatAddress($selectedBand)}</div>
-<DesignerCamera />
+<DesignerCamera direction={$cameraDirection ?? undefined} />
 <DesignerLighting />
+
 
 <TransformDisplay />
 {#if isPointSelectInteractionMode($interactionMode)}
@@ -230,5 +232,5 @@
 	{/each}
 {/if}
 
-<ProjectionGeometryComponent onClick={handleProjectionClick} showNormals/>
+<ProjectionGeometryComponent onClick={handleProjectionClick} showNormals={false}/>
 <GlobuleGeometryComponent {getInteractionMaterial} {handleClick} />

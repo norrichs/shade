@@ -8,7 +8,7 @@ import type {
 	Facet,
 	SuperGlobule
 } from '$lib/types';
-import { derived, writable } from 'svelte/store';
+import { derived, get, writable } from 'svelte/store';
 import {
 	superConfigStore,
 	superGlobulePatternStore,
@@ -364,6 +364,7 @@ export const selectedSurfaceProjectionGeometry = derived(
 	]): SelectedProjectionGeometry => {
 		if (!$selectedSurfaceProjection) return null;
 
+
 		const selectedFacets: Facet[] = getSurfaceProjectionSelectedFacet(
 			$selectedSurfaceProjection,
 			$superGlobuleStore,
@@ -426,6 +427,30 @@ export const selectedSurfaceProjectionGeometry = derived(
 		};
 	}
 );
+
+// Camera direction store for "Rotate to selection"
+export const cameraDirection = writable<{ x: number; y: number; z: number } | null>(null);
+
+export const rotateToSelection = () => {
+	const address = get(selectedSurfaceProjection);
+	if (!address) return;
+
+	const sg = get(superGlobuleStore);
+	const spTubes = sg.projections[address.globule]?.surfaceProjectionTubes;
+	if (!spTubes?.[address.tube]?.bands?.[address.band]) return;
+
+	const band = spTubes[address.tube].bands[address.band];
+	const midIdx = Math.floor(band.facets.length / 2);
+	const facet = band.facets[midIdx];
+	if (!facet?.triangle) return;
+
+	// Use triangle vertex 'a' as the direction point
+	const { x, y, z } = facet.triangle.a;
+	const len = Math.sqrt(x * x + y * y + z * z);
+	if (len === 0) return;
+
+	cameraDirection.set({ x: x / len, y: y / len, z: z / len });
+};
 
 const isSelected = <T extends SelectableAddress>(
 	a: T,

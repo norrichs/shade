@@ -154,6 +154,8 @@
 						colorEndFacets
 					})}
 					onclick={(ev) => {
+						// Only process nearest intersection (front facet, not back)
+						if (ev.intersections?.[0]?.object !== ev.object) return;
 						ev.stopPropagation();
 						$selectedSurfaceProjection = facet.address;
 					}}

@@ -10,11 +10,44 @@
 	import { downloadSvg } from '$lib/util';
 	import { interactionMode } from '../three-renderer/interaction-mode';
 	import ViewMenu from './ViewMenu.svelte';
+	import { selectedSurfaceProjection, rotateToSelection } from '$lib/stores/selectionStores';
 
 	let showModal = false;
 	const toggleModal = () => {
 		showModal = !showModal;
 	};
+
+	// Build band options from surfaceProjectionTubes
+	$: bandOptions = (() => {
+		const spTubes = $superGlobuleStore.projections?.[0]?.surfaceProjectionTubes;
+		if (!spTubes) return [];
+		const opts: { label: string; value: { globule: number; tube: number; band: number; facet: number } }[] = [];
+		spTubes.forEach((tube, t) => {
+			tube.bands.forEach((_, b) => {
+				opts.push({
+					label: `t${t}b${b}`,
+					value: { globule: 0, tube: t, band: b, facet: 0 }
+				});
+			});
+		});
+		return opts;
+	})();
+
+	$: selectedBandLabel = $selectedSurfaceProjection
+		? `t${$selectedSurfaceProjection.tube}b${$selectedSurfaceProjection.band}`
+		: '';
+
+	function handleBandSelect(event: Event) {
+		const target = event.target as HTMLSelectElement;
+		const val = target.value;
+		if (!val) { $selectedSurfaceProjection = null; return; }
+		const opt = bandOptions.find(o => o.label === val);
+		if (opt) {
+			$selectedSurfaceProjection = opt.value;
+			// Use tick to ensure store update propagates before rotating
+			setTimeout(rotateToSelection, 0);
+		}
+	}
 </script>
 
 <header>
@@ -42,6 +75,13 @@
 		{/if} -->
 
 		<div class="button-group">
+			<select class="band-select" value={selectedBandLabel} onchange={handleBandSelect}>
+				<option value="">-- band --</option>
+				{#each bandOptions as opt}
+					<option value={opt.label}>{opt.label}</option>
+				{/each}
+			</select>
+			<Button onclick={rotateToSelection}>Rotate to selection</Button>
 			<Button onclick={toggleModal}>Edit</Button>
 
 			{#if $isManualMode}
@@ -113,6 +153,12 @@
 		display: flex;
 		flex-direction: row;
 		gap: 12px;
+		align-items: center;
+	}
+	.band-select {
+		font-size: 0.9rem;
+		padding: 2px 4px;
+		max-height: 28px;
 	}
 
 	:global(button.pending) {

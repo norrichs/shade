@@ -1,66 +1,72 @@
 <script lang="ts">
-	import { T } from '@threlte/core';
+	import { T, useThrelte } from '@threlte/core';
 	import { OrbitControls } from '@threlte/extras';
 	import { degToRad } from '$lib/patterns/utils';
 	import { isCameraInteracting } from '$lib/stores/uiStores';
 	import { viewControlStore } from '$lib/stores';
+	import { Vector3 } from 'three';
+
+	let {
+		distance = 2000,
+		direction = { x: 0, y: 1, z: -0.0025 }
+	}: {
+		distance?: number;
+		direction?: { x: number; y: number; z: number };
+	} = $props();
+
+	const DEFAULT_POSITION: [number, number, number] = [0, 2000, -5];
+
+	// Calculate camera position from direction and distance
+	let cameraPosition: [number, number, number] = $derived.by(() => {
+		const positionVector = new Vector3(direction.x, direction.y, direction.z).setLength(distance);
+		return [positionVector.x, positionVector.y, positionVector.z];
+	});
+
+	const { camera, invalidate } = useThrelte();
+	let controls: any = $state(null);
+
+	// When cameraPosition changes, update the actual camera position
+	$effect(() => {
+		const [x, y, z] = cameraPosition;
+		$camera.position.set(x, y, z);
+		$camera.lookAt(0, 0, 0);
+		if (controls) controls.update();
+		invalidate();
+	});
 
 	let debounceTimeout: ReturnType<typeof setTimeout> | null = null;
-	let savedFacetsState = true; // Remember user's facets preference
+	let savedFacetsState = true;
 
-	/**
-	 * Camera interaction started (user is rotating/panning/zooming)
-	 * Hide facets for better performance during interaction (only if they're currently visible)
-	 */
 	function handleInteractionStart() {
 		isCameraInteracting.set(true);
-
-		// Clear any pending debounce
 		if (debounceTimeout) {
 			clearTimeout(debounceTimeout);
 			debounceTimeout = null;
 		}
-
-		// Save current facets state
 		savedFacetsState = $viewControlStore.showProjectionGeometry.facets;
-
-		// Only optimize if facets are currently visible
 		if (savedFacetsState) {
-			console.log('🎥 Camera interaction START - hiding facets for performance');
 			$viewControlStore.showProjectionGeometry.facets = false;
 			$viewControlStore.showProjectionGeometry.bands = true;
-		} else {
-			console.log('🎥 Camera interaction START - facets already hidden, no optimization needed');
 		}
 	}
 
-	/**
-	 * Camera interaction ended (user stopped moving camera)
-	 * Wait 100ms before restoring full detail (debounce)
-	 */
 	function handleInteractionEnd() {
-		// Debounce: wait 100ms after user stops moving before showing full detail
 		debounceTimeout = setTimeout(() => {
 			isCameraInteracting.set(false);
-
-			// Only restore facets if they were originally visible
 			if (savedFacetsState) {
-				console.log('🎥 Camera interaction END - restoring facets');
 				$viewControlStore.showProjectionGeometry.facets = true;
-			} else {
-				console.log('🎥 Camera interaction END - keeping facets hidden');
 			}
-
 			debounceTimeout = null;
 		}, 100);
 	}
 </script>
 
-<T.PerspectiveCamera makeDefault position={[0, 2000, -5]} fov={30} near={1} far={10000}>
+<T.PerspectiveCamera makeDefault position={DEFAULT_POSITION} fov={30} near={1} far={10000}>
 	<OrbitControls
+		bind:ref={controls}
 		maxPolarAngle={degToRad(160)}
 		enableZoom={true}
-		target={[0, 0.5, 0]}
+		target={[0, 0, 0]}
 		onstart={handleInteractionStart}
 		onend={handleInteractionEnd}
 	/>

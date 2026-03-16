@@ -6,7 +6,7 @@ import type { SelectedProjectionGeometry } from '$lib/stores/selectionStores';
 const theme = {
 	colorSelected: 'rgb(0,150,255)',
 	colorSecondarySelected: 'rgba(100, 200, 255)',
-	colorDefault: 'khaki',
+	colorDefault: 'white',
 	colorHighlightedPrimary: 'black',
 	colorHighlightedSecondary: 'cornflowerblue'
 };
@@ -130,8 +130,6 @@ export const getMaterial = (
 	config: MaterialSelectionConfig = defaultMaterialSelectionConfig
 ) => {
 	const { colorByBand, colorEndFacets } = config;
-
-	if (address.facet <= 1 && colorEndFacets) return materialByColor('springgreen');
 
 	if (!selectedGeometry?.selected) return materials.default;
 
