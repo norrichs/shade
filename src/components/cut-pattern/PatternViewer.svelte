@@ -50,14 +50,15 @@
 			isSuperGlobuleProjectionCutPattern(surfaceProjectionPattern) &&
 			surfaceProjectionPattern.projectionCutPattern.tubes.length > 0;
 
+		const patternSource = $patternConfigStore.patternViewConfig.patternSource ?? 'projection';
 		collatedPatterns = [
 			...(hasGlobuleTubePattern && showGlobuleTubeGeometry.any
 				? globuleTubePattern.projectionCutPattern.tubes
 				: []),
-			...(hasProjectionPattern && showProjectionGeometry.any
+			...(hasProjectionPattern && showProjectionGeometry.any && patternSource === 'projection'
 				? projectionPattern.projectionCutPattern.tubes
 				: []),
-			...(hasSurfaceProjectionPattern && showProjectionGeometry.any
+			...(hasSurfaceProjectionPattern && showProjectionGeometry.any && patternSource === 'surfaceProjection'
 				? surfaceProjectionPattern.projectionCutPattern.tubes
 				: [])
 		];

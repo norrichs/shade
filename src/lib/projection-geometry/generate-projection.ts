@@ -1224,9 +1224,6 @@ export const generateSurfaceProjectionBands = (
 		return a[1] - b[1];
 	});
 
-	// Map from (polygonIndex, edgeIndex) to tube index for tube-end matching
-	const edgeToTubeIndex = new Map<string, number>();
-
 	// Derive projection center for winding check
 	const projCenter = projectionConfig.surfaceConfig.type === 'GlobuleConfig'
 		? new Vector3(0, 0, 0)
@@ -1242,10 +1239,6 @@ export const generateSurfaceProjectionBands = (
 
 		const tubeIndex = tubes.length;
 		const tubeAddress: GlobuleAddress_Tube = { ...projectionAddress, tube: tubeIndex };
-
-		// Track which polygon edges map to this tube
-		edgeToTubeIndex.set(`${em0.polygonIndex}-${em0.edgeIndex}`, tubeIndex);
-		edgeToTubeIndex.set(`${em1.polygonIndex}-${em1.edgeIndex}`, tubeIndex);
 
 		// Direction check: ensure edge0 and edge1 sections run in the same direction.
 		// Compare edge0's first edge-intersection to edge1's first vs last.
@@ -1278,6 +1271,9 @@ export const generateSurfaceProjectionBands = (
 		const testV1 = new Vector3().subVectors(p1, p0);
 		const testV2 = new Vector3().subVectors(p2, p0);
 		const testNormal = new Vector3().crossVectors(testV1, testV2);
+		if (testNormal.lengthSq() < 1e-10) {
+			console.warn(`Degenerate winding triangle at tube ${tubeIndex} — collinear section points`);
+		}
 		const centroid = new Vector3().addVectors(p0, p1).add(p2).divideScalar(3);
 		const toFacet = new Vector3().subVectors(centroid, projCenter);
 
@@ -1367,8 +1363,7 @@ const matchSurfaceProjectionSequentialPartners = (tubes: Tube[]) => {
 			band.facets.forEach((facet, f) => {
 				if (!facet.address) return;
 
-				const edgeMeta = { ab: {}, bc: {}, ac: {} } as Facet['meta'];
-				if (!edgeMeta) return;
+				const edgeMeta = { ab: {}, bc: {}, ac: {} } as NonNullable<Facet['meta']>;
 
 				// Preserve pre-populated meta from cross-band and tube-end matching
 				for (const edge of ['ab', 'bc', 'ac'] as const) {
@@ -1412,6 +1407,10 @@ const matchSurfaceProjectionSequentialPartners = (tubes: Tube[]) => {
  *
  * This is done globally across all tubes (not restricted to polygon-adjacent tubes)
  * to handle all vertex-sharing topologies.
+ *
+ * Performance: O(n²) where n = total end facets (2 per band × 2 bands × tubes).
+ * For icosahedron: 120 end facets → ~7K pair comparisons. Acceptable for current
+ * polyhedra but may need spatial indexing for denser meshes.
  */
 const matchSurfaceProjectionTubeEnds = (tubes: Tube[]) => {
 	// Collect all end facets: { facet, tubeIdx, bandIdx, position: 'first'|'last' }
@@ -1447,36 +1446,6 @@ const matchSurfaceProjectionTubeEnds = (tubes: Tube[]) => {
 			}
 		}
 	}
-};
-
-/**
- * Find a single shared vertex between two triangles.
- * Returns the edges containing that vertex for both triangles.
- * Used for polygon-vertex matching where adjacent edges share only one point.
- */
-const getVertexMatchedTriangles = (
-	t0: Triangle,
-	t1: Triangle,
-	precision = 1 / 10_000
-): { t0: TriangleEdge; t1: TriangleEdge } | false => {
-	const t0Points = ['a', 'b', 'c'] as TrianglePoint[];
-	const t1Points = ['a', 'b', 'c'] as TrianglePoint[];
-
-	for (const p0 of t0Points) {
-		for (const p1 of t1Points) {
-			if (isSameVector3(t0[p0], t1[p1], precision)) {
-				const edgeFor = (p: TrianglePoint): TriangleEdge => {
-					switch (p) {
-						case 'a': return 'ab';
-						case 'b': return 'bc';
-						case 'c': return 'ac';
-					}
-				};
-				return { t0: edgeFor(p0), t1: edgeFor(p1) };
-			}
-		}
-	}
-	return false;
 };
 
 export const makeProjection = (projectionConfig: BaseProjectionConfig, address: GlobuleAddress) => {

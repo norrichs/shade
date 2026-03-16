@@ -116,12 +116,10 @@ export type Material = keyof typeof materials;
 
 export type MaterialSelectionConfig = {
 	colorByBand?: boolean;
-	colorEndFacets?: boolean;
 };
 
 const defaultMaterialSelectionConfig: MaterialSelectionConfig = {
-	colorByBand: false,
-	colorEndFacets: false
+	colorByBand: false
 };
 
 export const getMaterial = (
@@ -129,7 +127,7 @@ export const getMaterial = (
 	selectedGeometry: SelectedProjectionGeometry,
 	config: MaterialSelectionConfig = defaultMaterialSelectionConfig
 ) => {
-	const { colorByBand, colorEndFacets } = config;
+	const { colorByBand } = config;
 
 	if (!selectedGeometry?.selected) return materials.default;
 

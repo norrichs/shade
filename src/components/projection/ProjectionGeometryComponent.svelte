@@ -24,13 +24,11 @@
 	let {
 		onClick,
 		showNormals = false,
-		colorByBand = false,
-		colorEndFacets = true
+		colorByBand = false
 	}: {
 		onClick: (event: any, address: GlobuleAddress_Facet) => void;
 		showNormals?: boolean;
 		colorByBand?: boolean;
-		colorEndFacets?: boolean;
 	} = $props();
 
 	let projectionGeometry: {
@@ -150,8 +148,7 @@
 				<T.Mesh
 					geometry={facet.geometry}
 					material={getMaterial(facet.address, $selectedSurfaceProjectionGeometry, {
-						colorByBand,
-						colorEndFacets
+						colorByBand
 					})}
 					onclick={(ev) => {
 						// Only process nearest intersection (front facet, not back)

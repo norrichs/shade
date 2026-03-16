@@ -232,5 +232,5 @@
 	{/each}
 {/if}
 
-<ProjectionGeometryComponent onClick={handleProjectionClick} showNormals={false}/>
+<ProjectionGeometryComponent onClick={handleProjectionClick} />
 <GlobuleGeometryComponent {getInteractionMaterial} {handleClick} />

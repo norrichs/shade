@@ -265,8 +265,7 @@ export const selectedProjectionGeometry = derived(
 			isSelected: ((a) => isSelected(a, selected)) as AddressSelector,
 			isPartner: ((a) => isSelected(a, selectedPartners)) as AddressSelector,
 			isSelectedOrPartner: ((a) =>
-				isSelected(a, [...selectedStartPartners, ...selectedEndPartners, ...selected]) ||
-				isSelected(a, selected)) as AddressSelector,
+				isSelected(a, [...selectedStartPartners, ...selectedEndPartners, ...selected])) as AddressSelector,
 			isStartPartner: ((a) => isSelected(a, selectedStartPartners)) as AddressSelector,
 			isEndPartner: ((a) => isSelected(a, selectedEndPartners)) as AddressSelector,
 			geometry: {
@@ -308,7 +307,8 @@ const getSurfaceProjectionPartnerFacets = (facets: Facet[], sg: SuperGlobule, mo
 	if (!mode.includes.partners)
 		return { startPartnerFacets: [] as Facet[], endPartnerFacets: [] as Facet[], partnerFacets: [] as Facet[] };
 
-	const spTubes = sg.projections[0]?.surfaceProjectionTubes;
+	const globuleIdx = facets[0]?.address?.globule ?? 0;
+	const spTubes = sg.projections[globuleIdx]?.surfaceProjectionTubes;
 	if (!spTubes) return { startPartnerFacets: [] as Facet[], endPartnerFacets: [] as Facet[], partnerFacets: [] as Facet[] };
 
 	const facetAddresses = new Set(facets.map((facet) => concatAddress(facet.address)));
@@ -364,7 +364,6 @@ export const selectedSurfaceProjectionGeometry = derived(
 	]): SelectedProjectionGeometry => {
 		if (!$selectedSurfaceProjection) return null;
 
-
 		const selectedFacets: Facet[] = getSurfaceProjectionSelectedFacet(
 			$selectedSurfaceProjection,
 			$superGlobuleStore,
@@ -410,8 +409,7 @@ export const selectedSurfaceProjectionGeometry = derived(
 			isSelected: ((a) => isSelected(a, selected)) as AddressSelector,
 			isPartner: ((a) => isSelected(a, selectedPartners)) as AddressSelector,
 			isSelectedOrPartner: ((a) =>
-				isSelected(a, [...selectedStartPartners, ...selectedEndPartners, ...selected]) ||
-				isSelected(a, selected)) as AddressSelector,
+				isSelected(a, [...selectedStartPartners, ...selectedEndPartners, ...selected])) as AddressSelector,
 			isStartPartner: ((a) => isSelected(a, selectedStartPartners)) as AddressSelector,
 			isEndPartner: ((a) => isSelected(a, selectedEndPartners)) as AddressSelector,
 			geometry: {
@@ -444,8 +442,11 @@ export const rotateToSelection = () => {
 	const facet = band.facets[midIdx];
 	if (!facet?.triangle) return;
 
-	// Use triangle vertex 'a' as the direction point
-	const { x, y, z } = facet.triangle.a;
+	// Use triangle centroid as the direction point (more stable than a single vertex)
+	const { a, b, c } = facet.triangle;
+	const x = (a.x + b.x + c.x) / 3;
+	const y = (a.y + b.y + c.y) / 3;
+	const z = (a.z + b.z + c.z) / 3;
 	const len = Math.sqrt(x * x + y * y + z * z);
 	if (len === 0) return;
 

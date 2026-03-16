@@ -1,16 +1,15 @@
 <script lang="ts">
-	import { shouldUsePersisted, uiStore } from '$lib/stores';
+	import { shouldUsePersisted, uiStore, superGlobuleStore } from '$lib/stores';
 	import { isManualMode, hasPendingChanges } from '$lib/stores/uiStores';
 	import { triggerManualRegeneration, isGenerating } from '$lib/stores/superGlobuleStores';
-	import Button from '../design-system/Button.svelte';
-	import WorkingIndicator from './WorkingIndicator.svelte';
-	import { superGlobuleStore } from '$lib/stores';
-
-	$: regenerateDisabled = !$isManualMode || $isGenerating || !$hasPendingChanges;
+	import { selectedSurfaceProjection, rotateToSelection } from '$lib/stores/selectionStores';
 	import { downloadSvg } from '$lib/util';
 	import { interactionMode } from '../three-renderer/interaction-mode';
+	import Button from '../design-system/Button.svelte';
+	import WorkingIndicator from './WorkingIndicator.svelte';
 	import ViewMenu from './ViewMenu.svelte';
-	import { selectedSurfaceProjection, rotateToSelection } from '$lib/stores/selectionStores';
+
+	$: regenerateDisabled = !$isManualMode || $isGenerating || !$hasPendingChanges;
 
 	let showModal = false;
 	const toggleModal = () => {

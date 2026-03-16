@@ -6,29 +6,24 @@
 	import { viewControlStore } from '$lib/stores';
 	import { Vector3 } from 'three';
 
+	const INITIAL_POSITION: [number, number, number] = [0, 2000, -5];
+
 	let {
 		distance = 2000,
-		direction = { x: 0, y: 1, z: -0.0025 }
+		direction
 	}: {
 		distance?: number;
 		direction?: { x: number; y: number; z: number };
 	} = $props();
 
-	const DEFAULT_POSITION: [number, number, number] = [0, 2000, -5];
-
-	// Calculate camera position from direction and distance
-	let cameraPosition: [number, number, number] = $derived.by(() => {
-		const positionVector = new Vector3(direction.x, direction.y, direction.z).setLength(distance);
-		return [positionVector.x, positionVector.y, positionVector.z];
-	});
-
 	const { camera, invalidate } = useThrelte();
 	let controls: any = $state(null);
 
-	// When cameraPosition changes, update the actual camera position
+	// Only reposition camera when direction is explicitly set (not on mount)
 	$effect(() => {
-		const [x, y, z] = cameraPosition;
-		$camera.position.set(x, y, z);
+		if (!direction) return;
+		const positionVector = new Vector3(direction.x, direction.y, direction.z).setLength(distance);
+		$camera.position.set(positionVector.x, positionVector.y, positionVector.z);
 		$camera.lookAt(0, 0, 0);
 		if (controls) controls.update();
 		invalidate();
@@ -61,7 +56,7 @@
 	}
 </script>
 
-<T.PerspectiveCamera makeDefault position={DEFAULT_POSITION} fov={30} near={1} far={10000}>
+<T.PerspectiveCamera makeDefault position={INITIAL_POSITION} fov={30} near={1} far={10000}>
 	<OrbitControls
 		bind:ref={controls}
 		maxPolarAngle={degToRad(160)}
