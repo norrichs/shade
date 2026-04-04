@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Shades** is a 3D parametric design tool for creating complex geometric structures ("globules") and generating 2D cut patterns for manufacturing. Built with SvelteKit, Three.js, and TypeScript.
 
+This project is used exclusively by the developer.
+
 **Stack:** SvelteKit + Three.js (via Threlte) + TypeScript + Turso (SQLite) + Drizzle ORM, deployed on Vercel.
 
 ## Development Commands

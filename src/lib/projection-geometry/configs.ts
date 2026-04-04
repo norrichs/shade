@@ -50,7 +50,7 @@ const defaultBandConfig: ProjectionBandConfig = {
 	tubeSymmetry: 'lateral'
 };
 
-const defaultProjectorConfig = projectorConfigs.cube;
+const defaultProjectorConfig = projectorConfigs.icosohedron;
 
 const flattenedDefaultTransform: TransformConfig = {
 	translate: { x: 0, y: 0, z: 0 },

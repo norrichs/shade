@@ -3,6 +3,9 @@ import type { UserConfig } from 'vite';
 
 const config: UserConfig = {
 	plugins: [sveltekit()],
+	server: {
+		port: 9775
+	},
 	ssr: {
 		noExternal: ['three', 'troika-three-text']
 	}
