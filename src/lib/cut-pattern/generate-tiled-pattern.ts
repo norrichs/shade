@@ -8,7 +8,6 @@ import type {
 	PixelScale,
 	Point,
 	Quadrilateral,
-	TiledPattern,
 	TubeCutPattern,
 	Facet
 } from '$lib/types';
@@ -17,12 +16,10 @@ import type { BandCutPatternPattern, TiledPatternConfig } from '$lib/types';
 import { applyStrokeWidth, getFlatStripV2 } from './generate-cut-pattern';
 import { patterns } from '$lib/patterns';
 import { getQuadWidth, svgPathStringFromSegments } from '$lib/patterns/utils';
-import { formatAddress } from '$lib/recombination';
 import type {
 	GlobuleAddress_Band,
 	GlobuleAddress_FacetEdge,
 	GlobuleAddress_Tube,
-	TransformConfig
 } from '$lib/projection-geometry/types';
 import {
 	getAllTrianglePoints,
@@ -30,7 +27,7 @@ import {
 } from '../../components/cut-pattern/distrubute-panels';
 import { Triangle, Vector3 } from 'three';
 import { getBandTriangleEdges } from '$lib/projection-geometry/generate-projection';
-import { isSameAddress } from '$lib/util';
+
 
 export const generateTubeCutPattern = ({
 	address,
@@ -275,7 +272,7 @@ export const generateTiling = ({
 	return tiling;
 };
 
-const alignBands = (bands: Band[]) => {
+export const alignBands = (bands: Band[]) => {
 	return bands.map((originalBand, bandIndex) => {
 		const points = getAllTrianglePoints(originalBand);
 		const bounds = getMinimalBoundingBoxAndRotationAngle(points);

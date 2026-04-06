@@ -40,11 +40,14 @@
 		verbose: boolean;
 	} = $props();
 
+	const tiledConfig = 'config' in $patternConfigStore.patternTypeConfig
+		? $patternConfigStore.patternTypeConfig.config
+		: undefined;
 	let {
 		distributionConfig,
 		panelHoleConfig: holeConfig,
 		scaleConfig
-	} = $patternConfigStore.tiledPatternConfig.config;
+	} = tiledConfig ?? {} as any;
 
 	const FONT_NAME = 'reliefSingleLine';
 	const updateLabels = (shouldUseSVGLabels: boolean) => {

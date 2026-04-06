@@ -3,18 +3,30 @@
 	import SelectInput from './SelectInput.svelte';
 	import { patternConfigStore } from '$lib/stores';
 	import ControlGroup from './ControlGroup.svelte';
-	import { tiledPatternConfigs } from '$lib/shades-config';
+	import { tiledPatternConfigs, defaultOutlinedPatternConfig } from '$lib/shades-config';
 	import PatternTileButton from '../pattern/PatternTileButton.svelte';
 	import CheckboxInput from './CheckboxInput.svelte';
 	import NumberInput from './super-control/NumberInput.svelte';
-	import type { GridVariant, TiledPatternConfig } from '$lib/types';
+	import type { GridVariant, TiledPatternConfig, TabShape, TabEdgeOption } from '$lib/types';
+	import { isTiledPatternConfig, isOutlinedPatternConfig } from '$lib/types';
 
 	let fitToPage = false;
+
+	$: isOutlined = isOutlinedPatternConfig($patternConfigStore.patternTypeConfig);
+	$: isTiled = isTiledPatternConfig($patternConfigStore.patternTypeConfig);
+
+	const switchToOutlined = () => {
+		$patternConfigStore.patternTypeConfig = defaultOutlinedPatternConfig();
+	};
+
+	const switchToTiled = () => {
+		$patternConfigStore.patternTypeConfig = tiledPatternConfigs['tiledShieldTesselationPattern'];
+	};
 
 	const handleVariantChange = (e: Event) => {
 		const target = e.target;
 		if (target instanceof HTMLSelectElement) {
-			$patternConfigStore.tiledPatternConfig.config.variant = (target.value ||
+			$patternConfigStore.patternTypeConfig.config.variant = (target.value ||
 				'rect') as GridVariant;
 		}
 	};
@@ -50,37 +62,123 @@
 </script>
 
 <section>
-	<section class="tiles">
-		<div class="option-tile-group">
-			{#each getTiles(tiledPatternConfigs) as config}
-				<PatternTileButton size={45} patternType={config.type} tilingBasis={config.tiling} />
-			{/each}
-		</div>
-	</section>
-
 	<ControlGroup>
 		<div>
-			{#if $patternConfigStore.tiledPatternConfig.config.variant}
+			<button on:click={switchToTiled} class:active={isTiled}>Tiled</button>
+			<button on:click={switchToOutlined} class:active={isOutlined}>Outlined</button>
+		</div>
+	</ControlGroup>
+
+	{#if isOutlined && isOutlinedPatternConfig($patternConfigStore.patternTypeConfig)}
+		<ControlGroup>
+			<div>
+				<div>
+					<span>Enable Tabs</span>
+					<input
+						type="checkbox"
+						checked={!!$patternConfigStore.patternTypeConfig.tabConfig}
+						on:change={(e) => {
+							if (e.target.checked) {
+								$patternConfigStore.patternTypeConfig = {
+									...$patternConfigStore.patternTypeConfig,
+									tabConfig: { bandEdge: 'before', shape: 'rectangle', tabWidth: 5 }
+								};
+							} else {
+								$patternConfigStore.patternTypeConfig = {
+									...$patternConfigStore.patternTypeConfig,
+									tabConfig: undefined
+								};
+							}
+						}}
+					/>
+				</div>
+				{#if $patternConfigStore.patternTypeConfig.tabConfig}
+					<SelectInput
+						label="Tab Shape"
+						bind:value={$patternConfigStore.patternTypeConfig.tabConfig.shape}
+						options={['rectangle', 'rounded', 'inset', 'partner', 'partner-inset']}
+					/>
+					<NumberInput
+						label="Tab Width"
+						bind:value={$patternConfigStore.patternTypeConfig.tabConfig.tabWidth}
+					/>
+					{#if $patternConfigStore.patternTypeConfig.tabConfig.shape === 'inset' || $patternConfigStore.patternTypeConfig.tabConfig.shape === 'partner-inset'}
+						<NumberInput
+							label="Inset"
+							bind:value={$patternConfigStore.patternTypeConfig.tabConfig.inset}
+						/>
+					{/if}
+					<div class="row">
+						<span>Band Edge Tabs</span>
+						<select
+							value={$patternConfigStore.patternTypeConfig.tabConfig.bandEdge ?? 'none'}
+							on:change={(e) => {
+								const val = e.target.value;
+								$patternConfigStore.patternTypeConfig.tabConfig.bandEdge = val === 'none' ? undefined : val;
+								$patternConfigStore = $patternConfigStore;
+							}}
+						>
+							<option value="none">none</option>
+							<option value="before">before</option>
+							<option value="after">after</option>
+							<option value="beforeAndAfter">beforeAndAfter</option>
+						</select>
+					</div>
+					<div class="row">
+						<span>Band End Tabs</span>
+						<select
+							value={$patternConfigStore.patternTypeConfig.tabConfig.bandEnd ?? 'none'}
+							on:change={(e) => {
+								const val = e.target.value;
+								$patternConfigStore.patternTypeConfig.tabConfig.bandEnd = val === 'none' ? undefined : val;
+								$patternConfigStore = $patternConfigStore;
+							}}
+						>
+							<option value="none">none</option>
+							<option value="before">before</option>
+							<option value="after">after</option>
+							<option value="beforeAndAfter">beforeAndAfter</option>
+						</select>
+					</div>
+				{/if}
+			</div>
+		</ControlGroup>
+	{/if}
+
+	{#if isTiled}
+		<section class="tiles">
+			<div class="option-tile-group">
+				{#each getTiles(tiledPatternConfigs) as config}
+					<PatternTileButton size={45} patternType={config.type} tilingBasis={config.tiling} />
+				{/each}
+			</div>
+		</section>
+	{/if}
+
+	{#if isTiled}
+	<ControlGroup>
+		<div>
+			{#if $patternConfigStore.patternTypeConfig.config.variant}
 				<select
 					on:change={handleVariantChange}
-					bind:value={$patternConfigStore.tiledPatternConfig.config.variant}
+					bind:value={$patternConfigStore.patternTypeConfig.config.variant}
 				>
 					{#each ['rect', 'triangle-0', 'triangle-1'] as option}
 						<option>{option}</option>
 					{/each}
 				</select>
 			{/if}
-			{#if $patternConfigStore.tiledPatternConfig.config.rowCount && $patternConfigStore.tiledPatternConfig.config.columnCount}
+			{#if $patternConfigStore.patternTypeConfig.config.rowCount && $patternConfigStore.patternTypeConfig.config.columnCount}
 				<CombinedNumberInput
 					label="Rows"
-					bind:value={$patternConfigStore.tiledPatternConfig.config.rowCount}
+					bind:value={$patternConfigStore.patternTypeConfig.config.rowCount}
 					min={1}
 					max={5}
 					step={1}
 				/>
 				<CombinedNumberInput
 					label="Columns"
-					bind:value={$patternConfigStore.tiledPatternConfig.config.columnCount}
+					bind:value={$patternConfigStore.patternTypeConfig.config.columnCount}
 					min={1}
 					max={5}
 					step={1}
@@ -88,41 +186,41 @@
 			{/if}
 			<SelectInput
 				label="Dynamic Stroke"
-				bind:value={$patternConfigStore.tiledPatternConfig.config.dynamicStroke}
+				bind:value={$patternConfigStore.patternTypeConfig.config.dynamicStroke}
 				options={['quadWidth', 'quadHeight']}
 			/>
 			<CombinedNumberInput
 				label="Stroke minimum"
-				bind:value={$patternConfigStore.tiledPatternConfig.config.dynamicStrokeMin}
+				bind:value={$patternConfigStore.patternTypeConfig.config.dynamicStrokeMin}
 				min={0.1}
-				max={Math.min($patternConfigStore.tiledPatternConfig.config.dynamicStrokeMax, 20)}
+				max={Math.min($patternConfigStore.patternTypeConfig.config.dynamicStrokeMax, 20)}
 				step={0.1}
 			/>
 			<CombinedNumberInput
 				label="Stroke maximum"
-				bind:value={$patternConfigStore.tiledPatternConfig.config.dynamicStrokeMax}
-				min={Math.max($patternConfigStore.tiledPatternConfig.config.dynamicStrokeMin, 0.1)}
+				bind:value={$patternConfigStore.patternTypeConfig.config.dynamicStrokeMax}
+				min={Math.max($patternConfigStore.patternTypeConfig.config.dynamicStrokeMin, 0.1)}
 				max={20}
 				step={0.1}
 			/>
-			{#if $patternConfigStore.tiledPatternConfig.config.skipEdges}
+			{#if $patternConfigStore.patternTypeConfig.config.skipEdges}
 				<SelectInput
 					label="Skip Edges"
-					bind:value={$patternConfigStore.tiledPatternConfig.config.skipEdges}
+					bind:value={$patternConfigStore.patternTypeConfig.config.skipEdges}
 					options={['all', 'none', 'not-first', 'not-last', 'not-both']}
 				/>
 			{/if}
 			<CheckboxInput
 				label="Match End Segments"
-				bind:value={$patternConfigStore.tiledPatternConfig.config.endsMatched}
+				bind:value={$patternConfigStore.patternTypeConfig.config.endsMatched}
 			/>
 			<CheckboxInput
 				label="Remove End Segments"
-				bind:value={$patternConfigStore.tiledPatternConfig.config.endsTrimmed}
+				bind:value={$patternConfigStore.patternTypeConfig.config.endsTrimmed}
 			/>
 			<NumberInput
 				label="Loop Ends"
-				bind:value={$patternConfigStore.tiledPatternConfig.config.endLooped}
+				bind:value={$patternConfigStore.patternTypeConfig.config.endLooped}
 			/>
 			<div>
 				<div>
@@ -143,6 +241,7 @@
 			<CheckboxInput label="Fit to page" bind:value={fitToPage} />
 		</div>
 	</ControlGroup>
+	{/if}
 </section>
 
 <style>
@@ -150,6 +249,10 @@
 		display: flex;
 		flex-direction: column;
 		width: var(--secondary-width);
+	}
+	button.active {
+		font-weight: bold;
+		text-decoration: underline;
 	}
 	.option-tile-group {
 		display: flex;

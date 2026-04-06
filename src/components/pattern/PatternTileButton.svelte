@@ -21,7 +21,7 @@
 <button
 	onclick={() => {
 		if (patterns[patternType]) {
-			$patternConfigStore.tiledPatternConfig = tiledPatternConfigs[patternType];
+			$patternConfigStore.patternTypeConfig = tiledPatternConfigs[patternType];
 		}
 	}}
 >
@@ -31,7 +31,7 @@
 		columns={2}
 		width={size}
 		height={size}
-		active={patternType === $patternConfigStore.tiledPatternConfig.type}
+		active={patternType === $patternConfigStore.patternTypeConfig.type}
 		{tilingBasis}
 		{strokeWidth}
 	/>

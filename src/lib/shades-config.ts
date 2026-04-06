@@ -17,6 +17,7 @@ import type {
 	SuperGlobuleConfig,
 	SubGlobuleConfig,
 	GlobulePatternConfig,
+	OutlinedPatternConfig,
 	RecombinatoryRecurrence,
 	TiledPattern,
 	PatternScale
@@ -473,6 +474,15 @@ const defaultTiledPatternConfig = (): TiledPatternConfig => {
 	};
 };
 
+export const defaultOutlinedPatternConfig = (): OutlinedPatternConfig => ({
+	type: 'outlined',
+	tabConfig: {
+		tabWidth: 20,
+		shape: 'partner',
+		bandEdge: 'after',
+	}
+});
+
 const defaultCutoutConfig = (): CutoutConfig[] => [
 	{
 		tilePattern: { type: 'each-facet' },
@@ -657,7 +667,7 @@ export const generateDefaultGlobulePatternConfig = (): GlobulePatternConfig => {
 		cutoutConfig: defaultCutoutConfig()[1],
 		patternConfig: defaultPatternConfig(),
 		patternViewConfig: defaultPatternViewConfig(),
-		tiledPatternConfig: defaultTiledPatternConfig()
+		patternTypeConfig: defaultOutlinedPatternConfig()
 	};
 	return globulePatternConfig;
 };

@@ -19,6 +19,7 @@ import type {
 	Band,
 	BandCutPattern
 } from '$lib/types';
+import { isTiledPatternConfig, isOutlinedPatternConfig } from '$lib/types';
 
 import { applyStrokeWidth } from './generate-cut-pattern';
 import {
@@ -27,6 +28,7 @@ import {
 	applyTubePatternPostProcessing
 } from './generate-tiled-pattern';
 import { patterns } from '$lib/patterns';
+import { generateOutlinedProjectionPattern } from './generate-outlined-pattern';
 import { getEdge } from '$lib/projection-geometry/generate-projection';
 import type {
 	SuperGlobuleBandPattern,
@@ -73,20 +75,23 @@ export const generateSuperGlobulePattern = (
 			const bandPatterns = globules.map(({ data: { bands }, address }, bandIndex) => {
 				let pattern: BandCutPatternPattern;
 				const {
-					tiledPatternConfig,
+					patternTypeConfig,
 					patternConfig: { pixelScale }
 				} = globulePatternConfig;
+				if (!isTiledPatternConfig(patternTypeConfig)) {
+					throw new Error('generateSuperGlobulePattern requires a TiledPatternConfig');
+				}
 				pattern = generateTiledBandPattern({
 					address: { ...address, b: bandIndex },
 					bands: bands.filter((b) => b.visible),
-					tiledPatternConfig,
+					tiledPatternConfig: patternTypeConfig,
 					pixelScale
 				});
 				pattern = {
 					...pattern,
 					bands: pattern.bands.map((band) => ({ ...band, projectionType: pattern.projectionType }))
 				};
-				pattern.bands = applyStrokeWidth(pattern.bands, tiledPatternConfig.config);
+				pattern.bands = applyStrokeWidth(pattern.bands, patternTypeConfig.config);
 				return pattern;
 			});
 			return bandPatterns;
@@ -115,15 +120,17 @@ export const generateProjectionPattern = (
 	projectionRange?: ProjectionRange
 ): SuperGlobuleProjectionPattern => {
 	const {
-		tiledPatternConfig,
+		patternTypeConfig,
 		patternConfig: { pixelScale }
 	} = globulePatternConfig;
 
-	if (shouldUsePanelPattern(tiledPatternConfig)) {
+	if (isOutlinedPatternConfig(patternTypeConfig)) {
+		return generateOutlinedProjectionPattern(tubes, id, patternTypeConfig, pixelScale, projectionRange);
+	} else if (shouldUsePanelPattern(patternTypeConfig)) {
 		const projectionPanelPattern = generateProjectionPanelPattern({
 			tubes,
 			range: projectionRange as any,
-			tiledPatternConfig
+			tiledPatternConfig: patternTypeConfig
 		});
 		return {
 			type: 'SuperGlobuleProjectionPanelPattern',
@@ -131,6 +138,7 @@ export const generateProjectionPattern = (
 			projectionPanelPattern
 		};
 	} else {
+		const tiledPatternConfig = patternTypeConfig;
 		const { adjustAfterTiling } = patterns[tiledPatternConfig.type];
 		const hasAdjustAfterTiling = !!adjustAfterTiling;
 

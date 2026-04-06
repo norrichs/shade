@@ -414,7 +414,7 @@ const superGlobulePatternStoreInternal = derived(
 			cutoutConfig: {} as any,
 			patternConfig: { pixelScale: $genConfig.pixelScale } as any,
 			patternViewConfig: { showBands: $genConfig.showBands, range: $genConfig.range } as any,
-			tiledPatternConfig: $genConfig.tiledPatternConfig
+			patternTypeConfig: $genConfig.patternTypeConfig
 		};
 
 		const superGlobulePattern = showGlobuleGeometry.any

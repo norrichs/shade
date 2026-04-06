@@ -80,7 +80,7 @@
 		stroke-linejoin="round"
 	/>
 {:else}
-	{#each band.facets as facet, f}
+	{#each band.facets as facet, f (f)}
 		{#if showOriginalPath && facet.meta?.originalPath}
 			<path
 				d={svgPathStringFromSegments(facet.meta?.originalPath)}
@@ -116,14 +116,14 @@
 <PathPointIndices {band} {showPathPointIndices} />
 
 {#if showPartnerBands && partnerBands?.length}
-	{#each partnerBands as { band, transform }, b}
+	{#each partnerBands as { band, transform }, b (b)}
 		<g transform={getTransformMatrix(transform)} class="partner-band">
 			<QuadPattern
 				{band}
 				showQuads={$patternConfigStore.patternViewConfig.showQuads}
 				showLabels={$patternConfigStore.patternViewConfig.showLabels}
 			/>
-			{#each band.facets as facet, f}
+			{#each band.facets as facet, f (f)}
 				<path
 					class={highlightFirstFacet && f === 0 ? 'highlighted-partner' : undefined}
 					d={facet.svgPath}
@@ -142,7 +142,7 @@
 {/if}
 
 {#if showPartnerFacets}
-	{#each partnerFacets as facet, f}
+	{#each partnerFacets as facet, f (f)}
 		<path
 			transform={postTransformPF ? getTransformMatrix(partnerBands[f].transform) : undefined}
 			class="partner-facet"

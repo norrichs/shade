@@ -4,6 +4,7 @@
 	import LabeledControl from './LabeledControl.svelte';
 	import Container from './Container.svelte';
 	import { tiledPatternConfigs } from '$lib/shades-config';
+	import type { TiledPatternConfig } from '$lib/types';
 	import PatternTileButton from '../../pattern/PatternTileButton.svelte';
 
 	const getTiles = (configs: { [key: string]: TiledPatternConfig }) => {

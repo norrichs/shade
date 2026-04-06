@@ -86,8 +86,8 @@
 			{color}
 			value={index}
 			radius={20}
-			scale={$patternConfigStore.tiledPatternConfig.labels?.scale || 0.1}
-			angle={$patternConfigStore.tiledPatternConfig.labels?.angle ?? band.tagAngle ?? 0}
+			scale={$patternConfigStore.patternTypeConfig.labels?.scale || 0.1}
+			angle={$patternConfigStore.patternTypeConfig.labels?.angle ?? band.tagAngle ?? 0}
 			anchor={tagAnchorPoint || { x: -50, y: -50 }}
 			addressStrings={[
 				concatAddress(band.address, 'tb'),

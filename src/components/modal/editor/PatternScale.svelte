@@ -10,13 +10,13 @@
 	const handleChangeUnit = (event: Event) => {
 		const target = event.target as HTMLSelectElement;
 		const config = get(patternConfigStore);
-		config.tiledPatternConfig.config.scaleConfig.unit = target.value as ScaleUnit;
+		config.patternTypeConfig.config.scaleConfig.unit = target.value as ScaleUnit;
 		patternConfigStore.set(config);
 	};
 
 	const handleChangeQuantity = (newValue: number) => {
 		const config = get(patternConfigStore);
-		config.tiledPatternConfig.config.scaleConfig.quantity = newValue;
+		config.patternTypeConfig.config.scaleConfig.quantity = newValue;
 		patternConfigStore.set(config);
 	};
 </script>
@@ -28,7 +28,7 @@
 			<LabeledControl label="Unit">
 				<select
 					onchange={handleChangeUnit}
-					value={$patternConfigStore.tiledPatternConfig.config.scaleConfig.unit}
+					value={$patternConfigStore.patternTypeConfig.config.scaleConfig.unit}
 				>
 					<option value="mm">mm</option>
 					<option value="cm">cm</option>
@@ -39,7 +39,7 @@
 				<NumberInput
 					hasButtons
 					onChange={handleChangeQuantity}
-					value={$patternConfigStore.tiledPatternConfig.config.scaleConfig.quantity}
+					value={$patternConfigStore.patternTypeConfig.config.scaleConfig.quantity}
 				/>
 			</LabeledControl>
 		</Container>

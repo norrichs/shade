@@ -579,6 +579,29 @@ export type TiledPatternConfig = {
 	};
 };
 
+export type TabShape = 'partner' | 'partner-inset' | 'rectangle' | 'rounded' | 'inset';
+export type TabEdgeOption = 'before' | 'after' | 'beforeAndAfter';
+
+export type OutlinedTabConfig = {
+	bandEdge?: TabEdgeOption;
+	bandEnd?: TabEdgeOption;
+	shape: TabShape;
+	tabWidth: number;
+	inset?: number;
+};
+
+export type OutlinedPatternConfig = {
+	type: 'outlined';
+	tabConfig?: OutlinedTabConfig;
+};
+
+export type PatternTypeConfig = TiledPatternConfig | OutlinedPatternConfig;
+
+export const isTiledPatternConfig = (c: PatternTypeConfig): c is TiledPatternConfig =>
+	c.type !== 'outlined';
+export const isOutlinedPatternConfig = (c: PatternTypeConfig): c is OutlinedPatternConfig =>
+	c.type === 'outlined';
+
 export type GridVariant = 'rect' | 'triangle-0' | 'triangle-1';
 export type PanelVariant = 'triangle-0' | 'triangle-1';
 export type ShieldTesselationVariant = 'rect';
@@ -1047,14 +1070,13 @@ export type GlobuleConfig = {
 };
 
 export type GlobulePatternConfig = {
-	// [key: string]: CutoutConfig | PatternConfig | PatternViewConfig | TiledPatternConfig;
 	type: 'GlobulePatternConfig';
 	id: Id;
 	name?: string;
 	cutoutConfig: CutoutConfig;
 	patternConfig: PatternConfig;
 	patternViewConfig: PatternViewConfig;
-	tiledPatternConfig: TiledPatternConfig;
+	patternTypeConfig: PatternTypeConfig;
 };
 
 export type TabConfig = {
