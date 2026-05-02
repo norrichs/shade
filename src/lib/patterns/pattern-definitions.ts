@@ -31,6 +31,11 @@ for (const algorithm of algorithms) {
 	);
 }
 
+/**
+ * Pattern dispatch map. Built-in entries are populated at module load via the registry.
+ * User-defined variants are registered/unregistered at runtime by `tilePatternSpecStore`.
+ * Look up by id at call-time — do NOT snapshot Object.keys at module init.
+ */
 export const patterns: { [key: string]: PatternGenerator } = {
 	...builtInPatternsEntries,
 	'tiledHexPattern-1': {

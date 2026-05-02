@@ -9,36 +9,39 @@ import type {
 import { isSameAddress } from '$lib/util';
 import type { IndexPair } from '../../spec-types';
 
-export const START_SEGMENTS = 14;
-export const END_SEGMENTS = 14;
-export const MIDDLE_SEGMENTS = 52;
-
-export const retarget = (indices: number[], rows: number, columns: number) => {
+export const retarget = (
+	indices: number[],
+	rows: number,
+	columns: number,
+	startCount: number,
+	middleCount: number,
+	endCount: number
+) => {
 	const retargeted = indices.flatMap((index) => {
 		const result: number[] = [];
 
-		if (index < START_SEGMENTS && columns > 1) {
+		if (index < startCount && columns > 1) {
 			for (let c = 0; c < columns; c++) {
-				result.push(index + c * START_SEGMENTS);
+				result.push(index + c * startCount);
 			}
 			return result;
 		}
-		if (index >= START_SEGMENTS + MIDDLE_SEGMENTS && columns > 1) {
-			const localIndex = index - START_SEGMENTS - MIDDLE_SEGMENTS;
-			const entryPoint = START_SEGMENTS * columns + MIDDLE_SEGMENTS * rows * columns;
+		if (index >= startCount + middleCount && columns > 1) {
+			const localIndex = index - startCount - middleCount;
+			const entryPoint = startCount * columns + middleCount * rows * columns;
 			for (let c = 0; c < columns; c++) {
-				result.push(entryPoint + localIndex + c * END_SEGMENTS);
+				result.push(entryPoint + localIndex + c * endCount);
 			}
 			return result;
 		}
 		if (
-			index >= START_SEGMENTS &&
-			index < START_SEGMENTS + MIDDLE_SEGMENTS &&
+			index >= startCount &&
+			index < startCount + middleCount &&
 			(columns > 1 || rows > 1)
 		) {
-			const entryPoint = START_SEGMENTS * columns + MIDDLE_SEGMENTS * (rows - 1) * columns;
+			const entryPoint = startCount * columns + middleCount * (rows - 1) * columns;
 			for (let c = 0; c < columns; c++) {
-				result.push(entryPoint + index + c * MIDDLE_SEGMENTS);
+				result.push(entryPoint + index + c * middleCount);
 			}
 			return result;
 		}

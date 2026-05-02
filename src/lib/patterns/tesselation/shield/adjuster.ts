@@ -16,16 +16,29 @@ import {
 
 const DEBUG_METADATA = true;
 
-const retargetPairs = (pairs: IndexPair[], rows: number, columns: number): IndexPair[] => {
+const retargetPairs = (
+	pairs: IndexPair[],
+	rows: number,
+	columns: number,
+	startCount: number,
+	middleCount: number,
+	endCount: number
+): IndexPair[] => {
 	const sources = retarget(
 		pairs.map((p) => p.source),
 		rows,
-		columns
+		columns,
+		startCount,
+		middleCount,
+		endCount
 	);
 	const targets = retarget(
 		pairs.map((p) => p.target),
 		rows,
-		columns
+		columns,
+		startCount,
+		middleCount,
+		endCount
 	);
 	if (sources.length !== targets.length) {
 		throw new Error('retargetPairs length mismatch');
@@ -39,10 +52,12 @@ export const adjustShieldTesselation = (
 	tubes: TubeCutPattern[],
 	spec: TiledPatternSpec
 ) => {
-	console.debug("NEW ADJUSTER")
 	const {
 		config: { endLooped, endsMatched, rowCount: rows = 1, columnCount: columns = 1 }
 	} = tiledPatternConfig;
+	const startCount = spec.unit.start.length;
+	const middleCount = spec.unit.middle.length;
+	const endCount = spec.unit.end.length;
 
 	const newBands = structuredClone(bands);
 	for (let b = 0; b < bands.length; b++) {
@@ -64,9 +79,30 @@ export const adjustShieldTesselation = (
 			}
 		);
 
-		const withinBandPairs = retargetPairs(spec.adjustments.withinBand, rows, columns);
-		const acrossBandsPairs = retargetPairs(spec.adjustments.acrossBands, rows, columns);
-		const skipRemoveIndices = retarget(spec.adjustments.skipRemove, rows, columns);
+		const withinBandPairs = retargetPairs(
+			spec.adjustments.withinBand,
+			rows,
+			columns,
+			startCount,
+			middleCount,
+			endCount
+		);
+		const acrossBandsPairs = retargetPairs(
+			spec.adjustments.acrossBands,
+			rows,
+			columns,
+			startCount,
+			middleCount,
+			endCount
+		);
+		const skipRemoveIndices = retarget(
+			spec.adjustments.skipRemove,
+			rows,
+			columns,
+			startCount,
+			middleCount,
+			endCount
+		);
 
 		for (let f = 0; f < band.facets.length; f++) {
 			if (DEBUG_METADATA) {
@@ -107,7 +143,14 @@ export const adjustShieldTesselation = (
 					);
 
 					replaceInPlace({
-						pairs: retargetPairs(partnerPairs, rows, columns),
+						pairs: retargetPairs(
+							partnerPairs,
+							rows,
+							columns,
+							startCount,
+							middleCount,
+							endCount
+						),
 						target: newBands[b].facets[f].path,
 						source: partner.path
 					});

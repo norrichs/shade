@@ -7,7 +7,6 @@ import type {
 } from '$lib/types';
 import { translatePS } from '../../utils';
 import type { TiledPatternSpec } from '../../spec-types';
-import { END_SEGMENTS, START_SEGMENTS } from './helpers';
 
 export type ShieldGeneratorProps = {
 	size: number;
@@ -64,10 +63,6 @@ const buildUnit = (
 			middle: invertGroup(middle as (MovePathSegment | LinePathSegment)[], maxX),
 			end: invertGroup(end as (MovePathSegment | LinePathSegment)[], maxX)
 		};
-	}
-
-	if (start.length !== START_SEGMENTS || end.length !== END_SEGMENTS) {
-		throw new Error('shield tesselation definition is bad');
 	}
 
 	return { start, middle, end };
