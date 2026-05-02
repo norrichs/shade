@@ -335,7 +335,7 @@ git push
 
 The registry declares which algorithms support spec-driven editing and provides a factory that turns a spec into a `PatternGenerator` entry (the existing `patterns[type]` map shape).
 
-- [ ] **Step 1: Create the registry file**
+- [x] **Step 1: Create the registry file**
 
 Create `src/lib/patterns/pattern-registry.ts`:
 
@@ -384,13 +384,13 @@ export const findAlgorithm = (algorithmId: string): PatternAlgorithm | undefined
 	algorithms.find((a) => a.algorithmId === algorithmId);
 ```
 
-- [ ] **Step 2: Run type-check**
+- [x] **Step 2: Run type-check**
 
 ```bash
 npm run check 2>&1 | tail -3
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/lib/patterns/pattern-registry.ts
