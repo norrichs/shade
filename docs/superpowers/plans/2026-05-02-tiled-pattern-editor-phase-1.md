@@ -1302,7 +1302,7 @@ git push
 
 ### Task 10: Final verification
 
-- [ ] **Step 1: Run full test suite**
+- [x] **Step 1: Run full test suite**
 
 ```bash
 npm run test:unit
@@ -1310,7 +1310,7 @@ npm run test:unit
 
 Expected: PASS.
 
-- [ ] **Step 2: Run type-check**
+- [x] **Step 2: Run type-check**
 
 ```bash
 npm run check
@@ -1331,7 +1331,7 @@ Open `/designer2`. Verify shield rendering for at least three configurations:
 
 Compare against pre-Phase-1 behavior. The output should be visually identical.
 
-- [ ] **Step 4: Push final state**
+- [x] **Step 4: Push final state**
 
 ```bash
 git status
