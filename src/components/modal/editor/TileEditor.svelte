@@ -48,7 +48,7 @@
 		if (isDirty && draft && draft.id === found.spec.id) {
 			return;
 		}
-		draft = structuredClone(found.spec);
+		draft = $state.snapshot(found.spec) as TiledPatternSpec;
 		storedRowId = found.rowId;
 		isBuiltIn = found.builtIn;
 		isDirty = false;
@@ -62,7 +62,8 @@
 
 	const handleSave = async () => {
 		if (!draft || isBuiltIn || storedRowId === null) return;
-		const ok = await tilePatternSpecStore.update(storedRowId, draft);
+		const snapshot = $state.snapshot(draft) as TiledPatternSpec;
+		const ok = await tilePatternSpecStore.update(storedRowId, snapshot);
 		if (ok) isDirty = false;
 	};
 
@@ -77,8 +78,9 @@
 
 	const handleSaveAs = async (newName: string) => {
 		if (!draft) return;
+		const draftSnapshot = $state.snapshot(draft) as TiledPatternSpec;
 		const newSpec: TiledPatternSpec = {
-			...draft,
+			...draftSnapshot,
 			id: crypto.randomUUID(),
 			name: newName,
 			builtIn: false
@@ -91,7 +93,7 @@
 	const handleDiscard = () => {
 		const found = findSpec(activeVariantId);
 		if (!found) return;
-		draft = structuredClone(found.spec);
+		draft = $state.snapshot(found.spec) as TiledPatternSpec;
 		storedRowId = found.rowId;
 		isBuiltIn = found.builtIn;
 		isDirty = false;
