@@ -591,7 +591,7 @@ The top-level component that ties everything together. Owns the draft state, wat
 **Files:**
 - Create: `src/components/modal/editor/TileEditor.svelte`
 
-- [ ] **Step 1: Create the component**
+- [x] **Step 1: Create the component**
 
 Create `src/components/modal/editor/TileEditor.svelte` (use **tabs**):
 
@@ -760,7 +760,7 @@ Create `src/components/modal/editor/TileEditor.svelte` (use **tabs**):
 </style>
 ```
 
-- [ ] **Step 2: Type-check**
+- [x] **Step 2: Type-check**
 
 ```bash
 npm run check 2>&1 | tail -3
@@ -768,7 +768,7 @@ npm run check 2>&1 | tail -3
 
 Expected: error count stable. Two new errors related to `PointConfig2` shape or `Editor`/`Container` are acceptable if they echo pre-existing patterns (those components have loose props). Major new error counts > 5 mean something is wrong.
 
-- [ ] **Step 3: Run tests**
+- [x] **Step 3: Run tests**
 
 ```bash
 npm run test:unit 2>&1 | tail -5
@@ -776,7 +776,7 @@ npm run test:unit 2>&1 | tail -5
 
 Expected: 33/33 pass.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/components/modal/editor/TileEditor.svelte
