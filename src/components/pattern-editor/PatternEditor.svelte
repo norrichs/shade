@@ -41,7 +41,7 @@
 		generateTiling,
 		type GenerateTilingProps
 	} from '$lib/cut-pattern/generate-tiled-pattern';
-	import { adjustShieldTesselationAfterTiling } from '$lib/patterns/tiled-shield-tesselation-pattern';
+	import { adjustShieldTesselation as adjustShieldTesselationAfterTiling } from '$lib/patterns/shield-tesselation';
 
 	let quadBand: Quadrilateral[] = [
 		{

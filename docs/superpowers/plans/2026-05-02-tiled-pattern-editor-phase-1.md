@@ -1198,7 +1198,7 @@ Once equivalence is verified end-to-end, retire the old file. The equivalence te
 - Modify: `src/lib/patterns/index.ts` (replace export)
 - Modify: `src/lib/patterns/shield-tesselation/__tests__/equivalence.test.ts` (replace cross-file equivalence with snapshot regression)
 
-- [ ] **Step 1: Capture snapshots from the current (still-equivalent) old code, before deletion**
+- [x] **Step 1: Capture snapshots from the current (still-equivalent) old code, before deletion**
 
 Add a new test file `src/lib/patterns/shield-tesselation/__tests__/snapshot.test.ts` that captures golden output:
 
@@ -1231,7 +1231,7 @@ describe('shield-tesselation generator snapshot', () => {
 });
 ```
 
-- [ ] **Step 2: Run the snapshot test to capture snapshots**
+- [x] **Step 2: Run the snapshot test to capture snapshots**
 
 ```bash
 npm run test:unit -- src/lib/patterns/shield-tesselation/__tests__/snapshot.test.ts
@@ -1239,7 +1239,7 @@ npm run test:unit -- src/lib/patterns/shield-tesselation/__tests__/snapshot.test
 
 Expected: PASS, with snapshots captured into `__snapshots__/snapshot.test.ts.snap`. These snapshots are the golden record of the spec-driven shield's output.
 
-- [ ] **Step 3: Commit the snapshots**
+- [x] **Step 3: Commit the snapshots**
 
 ```bash
 git add src/lib/patterns/shield-tesselation/__tests__/snapshot.test.ts \
@@ -1248,7 +1248,7 @@ git commit -m "Capture shield generator output snapshots"
 git push
 ```
 
-- [ ] **Step 4: Replace the cross-file equivalence test with a no-op (or delete it)**
+- [x] **Step 4: Replace the cross-file equivalence test with a no-op (or delete it)**
 
 Delete the cross-file equivalence test now that the snapshot captures the same guarantee:
 
@@ -1256,7 +1256,7 @@ Delete the cross-file equivalence test now that the snapshot captures the same g
 rm src/lib/patterns/shield-tesselation/__tests__/equivalence.test.ts
 ```
 
-- [ ] **Step 5: Update `src/lib/patterns/index.ts`**
+- [x] **Step 5: Update `src/lib/patterns/index.ts`**
 
 Replace the `export * from './tiled-shield-tesselation-pattern';` line with:
 
@@ -1264,7 +1264,7 @@ Replace the `export * from './tiled-shield-tesselation-pattern';` line with:
 export * from './shield-tesselation';
 ```
 
-- [ ] **Step 6: Delete the old file and the unused copy**
+- [x] **Step 6: Delete the old file and the unused copy**
 
 ```bash
 git rm src/lib/patterns/tiled-shield-tesselation-pattern.ts
@@ -1272,7 +1272,7 @@ git rm src/lib/patterns/tiled-shield-tesselation-pattern.ts
 
 Note: there's also an untracked `src/lib/patterns/tiled-multihex-tesselation-pattern copy.ts` from earlier work — leave it untouched (it's separate scope).
 
-- [ ] **Step 7: Run all tests**
+- [x] **Step 7: Run all tests**
 
 ```bash
 npm run test:unit
@@ -1280,7 +1280,7 @@ npm run test:unit
 
 Expected: PASS. The snapshot test and any other shield-related tests should all pass.
 
-- [ ] **Step 8: Run full type-check**
+- [x] **Step 8: Run full type-check**
 
 ```bash
 npm run check
@@ -1288,7 +1288,7 @@ npm run check
 
 Expected: no new errors. The deletion of `tiled-shield-tesselation-pattern.ts` removes the old `adjustShieldTesselationAfterTiling` and `generateShieldTesselationTile` exports — verify nothing outside `pattern-definitions.ts` still imports them.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add src/lib/patterns/index.ts \
