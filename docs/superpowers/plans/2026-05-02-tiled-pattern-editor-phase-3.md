@@ -323,7 +323,7 @@ A drop-in component that takes a `UnitDefinition` and emits a new one when verti
 **Files:**
 - Create: `src/components/modal/editor/SegmentPathEditor.svelte`
 
-- [ ] **Step 1: Inspect DraggablePoint to understand the existing drag pattern**
+- [x] **Step 1: Inspect DraggablePoint to understand the existing drag pattern**
 
 ```bash
 cat src/components/modal/editor/DraggablePoint.svelte
@@ -331,7 +331,7 @@ cat src/components/modal/editor/DraggablePoint.svelte
 
 You'll see it accepts `{ config, canv, point, handleDrag, handleDragEnd, ... }` props and uses `asDraggable` from `svelte-drag-and-drop-actions`. We'll reuse this component verbatim — just bind it to vertices instead of bezier control points.
 
-- [ ] **Step 2: Create the component**
+- [x] **Step 2: Create the component**
 
 Create `src/components/modal/editor/SegmentPathEditor.svelte` (use **tabs**):
 
@@ -412,7 +412,7 @@ Create `src/components/modal/editor/SegmentPathEditor.svelte` (use **tabs**):
 </style>
 ```
 
-- [ ] **Step 3: Type-check**
+- [x] **Step 3: Type-check**
 
 ```bash
 npm run check 2>&1 | tail -3
@@ -420,7 +420,7 @@ npm run check 2>&1 | tail -3
 
 Expected: error count stable. If new errors appear about `DraggablePoint` props or `PointConfig2`, inspect `src/components/modal/editor/DraggablePoint.svelte` for the exact prop shape and adjust (the prop names in the snippet match the existing PathEditor.svelte usage).
 
-- [ ] **Step 4: Run tests**
+- [x] **Step 4: Run tests**
 
 ```bash
 npm run test:unit 2>&1 | tail -5
@@ -428,7 +428,7 @@ npm run test:unit 2>&1 | tail -5
 
 Expected: 33/33 pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/components/modal/editor/SegmentPathEditor.svelte
