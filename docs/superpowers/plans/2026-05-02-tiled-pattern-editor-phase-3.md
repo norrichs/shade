@@ -858,7 +858,7 @@ git push
 
 ### Task 7: End-to-end verification
 
-- [ ] **Step 1: Run full test suite**
+- [x] **Step 1: Run full test suite**
 
 ```bash
 npm run test:unit 2>&1 | tail -5
@@ -866,7 +866,7 @@ npm run test:unit 2>&1 | tail -5
 
 Expected: 33/33 pass.
 
-- [ ] **Step 2: Type-check**
+- [x] **Step 2: Type-check**
 
 ```bash
 npm run check 2>&1 | tail -3
@@ -898,7 +898,7 @@ If any step fails, file a bead and stop — investigation needed.
 
 - [ ] **Step 4: Stop dev server**
 
-- [ ] **Step 5: Update plan checkboxes + commit**
+- [x] **Step 5: Update plan checkboxes + commit**
 
 Edit `docs/superpowers/plans/2026-05-02-tiled-pattern-editor-phase-3.md`. Mark Task 7's steps `[x]` (Step 3 manual smoke marked only after performing).
 
