@@ -552,11 +552,11 @@ git push
 
 When the variant store hydrates from the API, each loaded spec needs to be registered as an entry in the `patterns` map so dispatch (`patterns[variantId]`) works without any additional resolver logic.
 
-- [ ] **Step 1: Make patterns map mutable**
+- [x] **Step 1: Make patterns map mutable**
 
 The `patterns` export in `pattern-definitions.ts` is already a regular object; mutation works. No code change needed if the export is just `export const patterns = { ... }`. Skip to Step 2 unless the file uses some other declaration.
 
-- [ ] **Step 2: Update tilePatternSpecStore to register variants**
+- [x] **Step 2: Update tilePatternSpecStore to register variants**
 
 Edit `src/lib/stores/tilePatternSpecStore.ts`. Add imports at the top:
 
@@ -665,13 +665,13 @@ const remove = async (rowId: number): Promise<boolean> => {
 };
 ```
 
-- [ ] **Step 3: Run type-check**
+- [x] **Step 3: Run type-check**
 
 ```bash
 npm run check 2>&1 | tail -3
 ```
 
-- [ ] **Step 4: Run full test suite**
+- [x] **Step 4: Run full test suite**
 
 ```bash
 npm run test:unit 2>&1 | tail -5
@@ -679,7 +679,7 @@ npm run test:unit 2>&1 | tail -5
 
 Expected: 29/29 pass. (No new tests; the registration is integration-tested manually in Step 5.)
 
-- [ ] **Step 5: Manual smoke test the registration flow**
+- [x] **Step 5: Manual smoke test the registration flow**
 
 ```bash
 npm run dev
@@ -711,7 +711,7 @@ curl -X DELETE 'http://localhost:5173/api/config/<smoke-id>'
 
 Stop the dev server.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/lib/stores/tilePatternSpecStore.ts

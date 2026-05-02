@@ -1,5 +1,7 @@
 import { writable, derived, get } from 'svelte/store';
 import type { TiledPatternSpec } from '$lib/patterns/spec-types';
+import { findAlgorithm } from '$lib/patterns/pattern-registry';
+import { patterns } from '$lib/patterns/pattern-definitions';
 
 type StoredVariant = TiledPatternSpec & { rowId: number };
 
@@ -29,6 +31,21 @@ const parseRow = (row: { id: number; name: string; configJson: string }): Stored
 	}
 };
 
+const registerVariant = (spec: TiledPatternSpec): void => {
+	const algorithm = findAlgorithm(spec.algorithm);
+	if (!algorithm) {
+		console.warn(
+			`tilePatternSpecStore: variant ${spec.id} references unknown algorithm '${spec.algorithm}'; skipping registration`
+		);
+		return;
+	}
+	patterns[spec.id] = algorithm.createPatternsEntry(spec);
+};
+
+const unregisterVariant = (variantId: string): void => {
+	delete patterns[variantId];
+};
+
 const hydrate = async (): Promise<void> => {
 	const state = get(internal);
 	if (state.hydrated || state.loading) return;
@@ -39,6 +56,7 @@ const hydrate = async (): Promise<void> => {
 		if (!res.ok) throw new Error(`HTTP ${res.status}`);
 		const rows = (await res.json()) as { id: number; name: string; configJson: string }[];
 		const variants = rows.map(parseRow).filter((v): v is StoredVariant => v !== null);
+		for (const v of variants) registerVariant(v);
 		internal.set({ hydrated: true, loading: false, variants, error: null });
 	} catch (e) {
 		const msg = e instanceof Error ? e.message : String(e);
@@ -59,6 +77,7 @@ const create = async (spec: TiledPatternSpec): Promise<StoredVariant | null> => 
 	}
 	const { id } = (await res.json()) as { id: number };
 	const variant: StoredVariant = { ...spec, rowId: id };
+	registerVariant(variant);
 	internal.update((s) => ({ ...s, variants: [...s.variants, variant] }));
 	return variant;
 };
@@ -73,19 +92,25 @@ const update = async (rowId: number, spec: TiledPatternSpec): Promise<boolean> =
 		console.warn('tilePatternSpecStore.update failed', await res.text());
 		return false;
 	}
+	const updated: StoredVariant = { ...spec, rowId };
+	registerVariant(updated);
 	internal.update((s) => ({
 		...s,
-		variants: s.variants.map((v) => (v.rowId === rowId ? { ...spec, rowId } : v))
+		variants: s.variants.map((v) => (v.rowId === rowId ? updated : v))
 	}));
 	return true;
 };
 
 const remove = async (rowId: number): Promise<boolean> => {
+	const state = get(internal);
+	const variant = state.variants.find((v) => v.rowId === rowId);
+
 	const res = await fetch(`/api/config/${rowId}`, { method: 'DELETE' });
 	if (!res.ok) {
 		console.warn('tilePatternSpecStore.remove failed', await res.text());
 		return false;
 	}
+	if (variant) unregisterVariant(variant.id);
 	internal.update((s) => ({
 		...s,
 		variants: s.variants.filter((v) => v.rowId !== rowId)
