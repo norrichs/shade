@@ -37,7 +37,7 @@
 **Files:**
 - Create: `src/lib/patterns/spec-types.ts`
 
-- [ ] **Step 1: Create the spec types file**
+- [x] **Step 1: Create the spec types file**
 
 Create `src/lib/patterns/spec-types.ts` with this content:
 
@@ -85,7 +85,7 @@ export type TiledPatternSpec = {
 };
 ```
 
-- [ ] **Step 2: Run type-check**
+- [x] **Step 2: Run type-check**
 
 ```bash
 npm run check
@@ -93,7 +93,7 @@ npm run check
 
 Expected: no new errors related to `spec-types.ts` (pre-existing errors elsewhere are fine — see CLAUDE.md note about ~378 pre-existing errors).
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/lib/patterns/spec-types.ts
