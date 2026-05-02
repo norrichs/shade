@@ -41,7 +41,7 @@ Existing rows in `shades_configs` get `kind: 'project'` by the column default. E
 - Modify: `src/lib/server/schema/shadesConfig.ts`
 - Create: `drizzle/migrations/0003_*.sql` (auto-generated)
 
-- [ ] **Step 1: Add `kind` column to schema**
+- [x] **Step 1: Add `kind` column to schema**
 
 Edit `src/lib/server/schema/shadesConfig.ts`:
 
@@ -63,7 +63,7 @@ export const shadesConfigs = sqliteTable('shades_configs', {
 });
 ```
 
-- [ ] **Step 2: Generate migration**
+- [x] **Step 2: Generate migration**
 
 ```bash
 npm run drizzle:generate
@@ -71,7 +71,7 @@ npm run drizzle:generate
 
 Expected: A new SQL file appears in `drizzle/migrations/` (e.g., `0003_*.sql`) containing `ALTER TABLE shades_configs ADD COLUMN kind TEXT NOT NULL DEFAULT 'project'`.
 
-- [ ] **Step 3: Apply migration**
+- [x] **Step 3: Apply migration**
 
 ```bash
 npm run drizzle:migrate
@@ -79,11 +79,11 @@ npm run drizzle:migrate
 
 Expected: migration succeeds without errors. Existing rows now have `kind = 'project'`.
 
-- [ ] **Step 4: Verify with drizzle:studio (optional)**
+- [x] **Step 4: Verify with drizzle:studio (optional)**
 
 If you want to spot-check: `npm run drizzle:studio` and confirm existing rows have `kind = 'project'`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/lib/server/schema/shadesConfig.ts drizzle/migrations/

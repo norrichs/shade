@@ -4,6 +4,7 @@ import { sql } from 'drizzle-orm';
 export const shadesConfigs = sqliteTable('shades_configs', {
 	id: integer('id').primaryKey(),
 	name: text('name').notNull(),
+	kind: text('kind').notNull().default('project'),
 	configJson: text('config_json').notNull(),
 	createdAt: text('created_at')
 		.notNull()

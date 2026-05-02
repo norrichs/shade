@@ -1,0 +1,1 @@
+ALTER TABLE `shades_configs` ADD `kind` text DEFAULT 'project' NOT NULL;
