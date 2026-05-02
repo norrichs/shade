@@ -662,7 +662,7 @@ The adjuster reads `IndexPair[]` from the spec instead of constructing parallel 
 **Files:**
 - Create: `src/lib/patterns/shield-tesselation/adjuster.ts`
 
-- [ ] **Step 1: Create the adjuster file**
+- [x] **Step 1: Create the adjuster file**
 
 Create `src/lib/patterns/shield-tesselation/adjuster.ts`:
 
@@ -811,7 +811,7 @@ export const adjustShieldTesselation = (
 
 > **Note on partner pairs:** The original code branched on `Number(partner.label) === 0` (start of partner band) vs not, swapping which array became the source-list. In the spec, `partner.startEnd` and `partner.endEnd` already encode `{source, target}`, so when the partner-label condition flips, we *swap* source and target. This produces the same final mutation as the original code's `[6,5,2,1] → [7,8,11,12]` vs `[73,74,77,78] → [72,71,68,67]` arrays — verified by the equivalence test in Task 7.
 
-- [ ] **Step 2: Run type-check**
+- [x] **Step 2: Run type-check**
 
 ```bash
 npm run check
@@ -819,7 +819,7 @@ npm run check
 
 Expected: no new errors related to `adjuster.ts`.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/lib/patterns/shield-tesselation/adjuster.ts
