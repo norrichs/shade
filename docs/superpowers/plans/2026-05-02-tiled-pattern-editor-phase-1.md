@@ -110,7 +110,7 @@ git push
 
 The existing `tiled-shield-tesselation-pattern.ts` mixes pure helpers with shield-specific code. This task extracts the helpers verbatim (with two signature changes: `replaceInPlace` accepts `IndexPair[]` instead of parallel arrays, and `removeInPlace` is unchanged), into a new file. The old file is **not yet deleted** — it stays so the equivalence test can compare old vs new.
 
-- [ ] **Step 1: Create the helpers file**
+- [x] **Step 1: Create the helpers file**
 
 Create `src/lib/patterns/shield-tesselation/helpers.ts`:
 
@@ -287,7 +287,7 @@ export const newTransformPS = (path: PathSegment[], transform: TransformConfig) 
 };
 ```
 
-- [ ] **Step 2: Run type-check**
+- [x] **Step 2: Run type-check**
 
 ```bash
 npm run check
@@ -295,7 +295,7 @@ npm run check
 
 Expected: no new errors related to `helpers.ts`.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/lib/patterns/shield-tesselation/helpers.ts
