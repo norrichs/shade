@@ -445,7 +445,7 @@ The header strip with name input, variant dropdown, and Save / Save As / Discard
 **Files:**
 - Create: `src/components/modal/editor/tile-editor/VariantBar.svelte`
 
-- [ ] **Step 1: Create the directory and component**
+- [x] **Step 1: Create the directory and component**
 
 ```bash
 mkdir -p src/components/modal/editor/tile-editor
@@ -568,13 +568,13 @@ Create `src/components/modal/editor/tile-editor/VariantBar.svelte` (use **tabs**
 </style>
 ```
 
-- [ ] **Step 2: Type-check**
+- [x] **Step 2: Type-check**
 
 ```bash
 npm run check 2>&1 | tail -3
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/components/modal/editor/tile-editor/VariantBar.svelte
