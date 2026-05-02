@@ -111,16 +111,25 @@
 
 	const editorConfig: PathEditorConfig = $derived.by(() => {
 		const currentDraft: TiledPatternSpec | null = draft;
+		const unitWidth = currentDraft?.unit.width ?? 42;
+		const unitHeight = currentDraft?.unit.height ?? 14;
+		const padding = 4;
+		const contentWidth = unitWidth + 4;
+		const contentHeight = unitHeight + 4;
+		const viewBoxWidth = contentWidth + padding * 2;
+		const viewBoxHeight = contentHeight + padding * 2;
+		const sizeWidth = 800;
+		const sizeHeight = (sizeWidth * viewBoxHeight) / viewBoxWidth;
 		return {
-			padding: 4,
+			padding,
 			gutter: 0,
 			contentBounds: {
 				top: -2,
 				left: -2,
-				width: (currentDraft?.unit.width ?? 42) + 4,
-				height: (currentDraft?.unit.height ?? 14) + 4
+				width: contentWidth,
+				height: contentHeight
 			},
-			size: { width: 600, height: 220 }
+			size: { width: sizeWidth, height: sizeHeight }
 		};
 	});
 </script>

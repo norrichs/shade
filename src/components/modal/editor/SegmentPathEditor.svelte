@@ -32,8 +32,13 @@
 	};
 </script>
 
-<div class="container">
-	<svg width={config.size.width} height={config.size.height} viewBox={canv.viewBox} class="canvas">
+<div class="container" style="width:{config.size.width}px; height:{config.size.height}px;">
+	<svg
+		width={config.size.width}
+		height={config.size.height}
+		viewBox={canv.viewBox}
+		class="canvas"
+	>
 		<rect x="0" y="0" width={unit.width} height={unit.height} class="unit-bounds" />
 		<path d={pathString} class="segments" />
 	</svg>
@@ -56,9 +61,12 @@
 		border: 1px dotted black;
 		padding: 0;
 		position: relative;
+		box-sizing: content-box;
+		flex: none;
 	}
 	.canvas {
 		background-color: beige;
+		display: block;
 	}
 	.unit-bounds {
 		fill: none;
