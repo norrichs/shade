@@ -875,7 +875,7 @@ Adjuster fixtures are minimal — the test constructs a small synthetic `BandCut
 **Files:**
 - Create: `src/lib/patterns/shield-tesselation/__tests__/equivalence.test.ts`
 
-- [ ] **Step 1: Write the equivalence test for the generator**
+- [x] **Step 1: Write the equivalence test for the generator**
 
 Create `src/lib/patterns/shield-tesselation/__tests__/equivalence.test.ts`:
 
@@ -914,7 +914,7 @@ describe('shield-tesselation generator equivalence', () => {
 });
 ```
 
-- [ ] **Step 2: Run the test**
+- [x] **Step 2: Run the test**
 
 ```bash
 npm run test:unit -- src/lib/patterns/shield-tesselation/__tests__/equivalence.test.ts
@@ -922,7 +922,7 @@ npm run test:unit -- src/lib/patterns/shield-tesselation/__tests__/equivalence.t
 
 Expected: PASS for all combinations. If FAIL, the new generator's output diverged from the old one — fix `generator.ts` until the test passes. Likely culprits: unit dimension scaling (the spec stores raw coefficients; the generator multiplies by `w`/`h`), or invert-group logic if `invert` is enabled.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/lib/patterns/shield-tesselation/__tests__/equivalence.test.ts
@@ -930,7 +930,7 @@ git commit -m "Add generator equivalence test for shield tesselation"
 git push
 ```
 
-- [ ] **Step 4: Add adjuster equivalence test**
+- [x] **Step 4: Add adjuster equivalence test**
 
 Append to `src/lib/patterns/shield-tesselation/__tests__/equivalence.test.ts`:
 
@@ -1021,7 +1021,7 @@ describe('shield-tesselation adjuster equivalence', () => {
 });
 ```
 
-- [ ] **Step 5: Run the adjuster test**
+- [x] **Step 5: Run the adjuster test**
 
 ```bash
 npm run test:unit -- src/lib/patterns/shield-tesselation/__tests__/equivalence.test.ts
@@ -1029,7 +1029,7 @@ npm run test:unit -- src/lib/patterns/shield-tesselation/__tests__/equivalence.t
 
 Expected: PASS for all four cases. If FAIL, the adjuster diverged — likely culprits: pair direction (source/target swapped), `partner.endEnd` mapping (the old code's `[73,74,77,78] → [72,71,68,67]` requires either the spec stores it source→target or the new code swaps source/target when `Number(partner.label) === 0`), or `retargetPairs` index expansion.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/lib/patterns/shield-tesselation/__tests__/equivalence.test.ts
