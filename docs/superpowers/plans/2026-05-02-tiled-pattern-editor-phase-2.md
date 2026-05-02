@@ -98,7 +98,7 @@ git push
 **Files:**
 - Modify: `src/routes/api/config/+server.ts`
 
-- [ ] **Step 1: Update GET to filter by kind**
+- [x] **Step 1: Update GET to filter by kind**
 
 Edit `src/routes/api/config/+server.ts`:
 
@@ -151,7 +151,7 @@ export const POST: RequestHandler = async ({ request }) => {
 };
 ```
 
-- [ ] **Step 2: Manual smoke test the API**
+- [x] **Step 2: Manual smoke test the API**
 
 Start dev server (`npm run dev`) and exercise the API in another terminal:
 
@@ -176,7 +176,7 @@ curl -X DELETE 'http://localhost:5173/api/config/<smoke-id>'
 
 Stop the dev server when done.
 
-- [ ] **Step 3: Run type-check**
+- [x] **Step 3: Run type-check**
 
 ```bash
 npm run check 2>&1 | tail -3
@@ -184,7 +184,7 @@ npm run check 2>&1 | tail -3
 
 Looking for new errors related to `+server.ts` (pre-existing errors elsewhere are fine).
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/routes/api/config/+server.ts
