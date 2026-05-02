@@ -509,7 +509,7 @@ Reproduce `generateShieldTesselationTile` from the old file, but it now consumes
 **Files:**
 - Create: `src/lib/patterns/shield-tesselation/generator.ts`
 
-- [ ] **Step 1: Create the generator file**
+- [x] **Step 1: Create the generator file**
 
 Create `src/lib/patterns/shield-tesselation/generator.ts`:
 
@@ -637,7 +637,7 @@ export const generateShieldTesselationTile = (
 };
 ```
 
-- [ ] **Step 2: Run type-check**
+- [x] **Step 2: Run type-check**
 
 ```bash
 npm run check
@@ -645,7 +645,7 @@ npm run check
 
 Expected: no new errors related to `generator.ts`.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/lib/patterns/shield-tesselation/generator.ts
