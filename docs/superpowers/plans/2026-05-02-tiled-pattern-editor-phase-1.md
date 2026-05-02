@@ -834,7 +834,7 @@ git push
 **Files:**
 - Create: `src/lib/patterns/shield-tesselation/index.ts`
 
-- [ ] **Step 1: Create the index file**
+- [x] **Step 1: Create the index file**
 
 Create `src/lib/patterns/shield-tesselation/index.ts`:
 
@@ -844,7 +844,7 @@ export { generateShieldTesselationTile, type ShieldGeneratorProps } from './gene
 export { adjustShieldTesselation } from './adjuster';
 ```
 
-- [ ] **Step 2: Run type-check**
+- [x] **Step 2: Run type-check**
 
 ```bash
 npm run check
@@ -852,7 +852,7 @@ npm run check
 
 Expected: no new errors.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/lib/patterns/shield-tesselation/index.ts
