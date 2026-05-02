@@ -46,7 +46,7 @@ Pull the generic canvas/viewbox math out of `path-editor.ts` so `SegmentPathEdit
 - Create: `src/components/modal/editor/path-editor-shared.ts`
 - Modify: `src/components/modal/editor/path-editor.ts`
 
-- [ ] **Step 1: Create the shared file**
+- [x] **Step 1: Create the shared file**
 
 Create `src/components/modal/editor/path-editor-shared.ts` with this content (use **tabs**):
 
@@ -88,7 +88,7 @@ export const getCanvas = (pathEditorConfig: PathEditorConfig): PathEditorCanvas 
 };
 ```
 
-- [ ] **Step 2: Re-export from path-editor.ts**
+- [x] **Step 2: Re-export from path-editor.ts**
 
 Edit `src/components/modal/editor/path-editor.ts`. At the top of the file, find the existing definitions of `PathEditorConfig`, `PathEditorCanvas`, and `getCanvas` (they currently live in this file).
 
@@ -101,7 +101,7 @@ export { getCanvas } from './path-editor-shared';
 
 Keep all other exports in `path-editor.ts` (`LimitedPoint`, `LimitedBezierConfig`, `flattenPolygon`, `getPolygonPaths`, the limit functions, `addControlPoint`, `insertPoint`, etc.). Those are bezier-specific and stay.
 
-- [ ] **Step 3: Type-check + tests**
+- [x] **Step 3: Type-check + tests**
 
 ```bash
 npm run check 2>&1 | tail -3
@@ -110,7 +110,7 @@ npm run test:unit 2>&1 | tail -5
 
 Expected: error count stable (~427); 29/29 tests pass.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/components/modal/editor/path-editor-shared.ts src/components/modal/editor/path-editor.ts
