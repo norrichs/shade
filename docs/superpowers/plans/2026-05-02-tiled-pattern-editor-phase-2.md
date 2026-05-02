@@ -201,7 +201,7 @@ git push
 
 The store hydrates from `/api/config?kind=tile-pattern-spec` on first access. It exposes a reactive list of specs and CRUD methods.
 
-- [ ] **Step 1: Create the store file**
+- [x] **Step 1: Create the store file**
 
 Create `src/lib/stores/tilePatternSpecStore.ts`:
 
@@ -310,7 +310,7 @@ export const tilePatternSpecStore = {
 };
 ```
 
-- [ ] **Step 2: Run type-check**
+- [x] **Step 2: Run type-check**
 
 ```bash
 npm run check 2>&1 | tail -3
@@ -318,7 +318,7 @@ npm run check 2>&1 | tail -3
 
 Looking for new errors. The `$lib/patterns/spec-types` import was created in Phase 1; it's available.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/lib/stores/tilePatternSpecStore.ts
