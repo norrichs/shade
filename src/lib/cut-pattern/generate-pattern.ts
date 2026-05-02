@@ -27,7 +27,7 @@ import {
 	generateTubeCutPattern,
 	applyTubePatternPostProcessing
 } from './generate-tiled-pattern';
-import { patterns } from '$lib/patterns';
+import { resolvePatternEntry } from '$lib/patterns/resolve-pattern';
 import { generateOutlinedProjectionPattern } from './generate-outlined-pattern';
 import { getEdge } from '$lib/projection-geometry/generate-projection';
 import type {
@@ -139,7 +139,7 @@ export const generateProjectionPattern = (
 		};
 	} else {
 		const tiledPatternConfig = patternTypeConfig;
-		const { adjustAfterTiling } = patterns[tiledPatternConfig.type];
+		const { adjustAfterTiling } = resolvePatternEntry(tiledPatternConfig.type);
 		const hasAdjustAfterTiling = !!adjustAfterTiling;
 
 		// Resolve tube range

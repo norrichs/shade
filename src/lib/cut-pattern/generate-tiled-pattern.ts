@@ -14,7 +14,7 @@ import type {
 import { getQuadrilaterals, transformPatternByQuad } from '$lib/patterns/quadrilateral';
 import type { BandCutPatternPattern, TiledPatternConfig } from '$lib/types';
 import { applyStrokeWidth, getFlatStripV2 } from './generate-cut-pattern';
-import { patterns } from '$lib/patterns';
+import { resolvePatternEntry } from '$lib/patterns/resolve-pattern';
 import { getQuadWidth, svgPathStringFromSegments } from '$lib/patterns/utils';
 import type {
 	GlobuleAddress_Band,
@@ -111,7 +111,7 @@ export const generateTiledBandPattern = ({
 	pixelScale: PixelScale;
 }): BandCutPatternPattern => {
 	const pattern: BandCutPatternPattern = { projectionType: 'patterned', bands: [] };
-	const { adjustAfterTiling } = patterns[tiledPatternConfig.type];
+	const { adjustAfterTiling } = resolvePatternEntry(tiledPatternConfig.type);
 	// Creates a line pattern without inner and outer elements, appropriate for post processing in Affinity
 	// TODO - see if it's possible to convert the output of this to "expanded path" (e.g. convert stroke widths to paths instead of doing so in Affinity)
 
@@ -166,7 +166,7 @@ export const generateTiling = ({
 		id: string;
 		tagAnchorPoint: Point;
 	}[] = quadBands.map((quadBand, bandIndex) => {
-		const { getPattern, tagAnchor, adjustAfterMapping } = patterns[tiledPatternConfig.type];
+		const { getPattern, tagAnchor, adjustAfterMapping } = resolvePatternEntry(tiledPatternConfig.type);
 		const { rowCount, columnCount, variant } = tiledPatternConfig.config;
 
 		let mappedPatternBand: PathSegment[][] | PathSegment[];

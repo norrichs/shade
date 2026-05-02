@@ -783,7 +783,7 @@ git push
 
 If a saved project references a variant id that no longer exists (e.g., the variant was deleted), `patterns[type]` is `undefined` and the destructure `const { getPattern } = patterns[type]` throws. The fallback returns the first registered algorithm's default entry and logs a warning.
 
-- [ ] **Step 1: Create the resolver helper**
+- [x] **Step 1: Create the resolver helper**
 
 Create `src/lib/patterns/resolve-pattern.ts`:
 
@@ -819,7 +819,7 @@ export const resolvePatternEntry = (variantId: string): PatternGenerator => {
 };
 ```
 
-- [ ] **Step 2: Update generate-tiled-pattern.ts dispatch sites**
+- [x] **Step 2: Update generate-tiled-pattern.ts dispatch sites**
 
 In `src/lib/cut-pattern/generate-tiled-pattern.ts`, find line 114:
 
@@ -851,7 +851,7 @@ Add the import near the top of the file:
 import { resolvePatternEntry } from '$lib/patterns/resolve-pattern';
 ```
 
-- [ ] **Step 3: Update generate-pattern.ts dispatch site**
+- [x] **Step 3: Update generate-pattern.ts dispatch site**
 
 In `src/lib/cut-pattern/generate-pattern.ts`, find line 142:
 
@@ -871,7 +871,7 @@ Add the import near the top of the file:
 import { resolvePatternEntry } from '$lib/patterns/resolve-pattern';
 ```
 
-- [ ] **Step 4: Update PatternEditor.svelte dispatch site**
+- [x] **Step 4: Update PatternEditor.svelte dispatch site**
 
 In `src/components/pattern-editor/PatternEditor.svelte`, find line 254:
 
@@ -891,7 +891,7 @@ Add the import near the top of the file:
 import { resolvePatternEntry } from '$lib/patterns/resolve-pattern';
 ```
 
-- [ ] **Step 5: Run snapshot test**
+- [x] **Step 5: Run snapshot test**
 
 ```bash
 npm run test:unit -- src/lib/patterns/tesselation/shield/__tests__/snapshot.test.ts 2>&1 | tail -5
@@ -899,7 +899,7 @@ npm run test:unit -- src/lib/patterns/tesselation/shield/__tests__/snapshot.test
 
 Expected: 16/16 pass. The resolver returns the same entry for known variant ids; output is unchanged.
 
-- [ ] **Step 6: Run full test suite**
+- [x] **Step 6: Run full test suite**
 
 ```bash
 npm run test:unit 2>&1 | tail -5
@@ -907,7 +907,7 @@ npm run test:unit 2>&1 | tail -5
 
 Expected: 29/29 pass.
 
-- [ ] **Step 7: Manual smoke for fallback**
+- [x] **Step 7: Manual smoke for fallback**
 
 ```bash
 npm run dev
@@ -924,7 +924,7 @@ console.log('fallback entry exists:', !!fallback);
 
 Stop the dev server.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add src/lib/patterns/resolve-pattern.ts \

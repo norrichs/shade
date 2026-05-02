@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { generateBranched, patterns } from '$lib/patterns';
+	import { resolvePatternEntry } from '$lib/patterns/resolve-pattern';
 	import { isSamePoint, svgQuad, transformPatternByQuad } from '$lib/patterns/quadrilateral';
 	import {
 		getAngle,
@@ -254,7 +255,7 @@
 	};
 
 	const generateTiledBands = ({ quadBands, tiledPatternConfig, address }: GenerateTilingProps) => {
-		let { adjustAfterTiling } = patterns[tiledPatternConfig.type];
+		let { adjustAfterTiling } = resolvePatternEntry(tiledPatternConfig.type);
 		if (tiledPatternConfig.type === 'tiledShieldTesselationPattern') {
 			adjustAfterTiling = adjustShieldTesselationAfterTiling;
 		}
