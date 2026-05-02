@@ -469,7 +469,7 @@ git push
 
 The existing shield entry in `pattern-definitions.ts` hardcodes the spec wiring. Replace it with a call to the registry's factory so the same construction logic is used for variants in Task 7.
 
-- [ ] **Step 1: Update pattern-definitions.ts**
+- [x] **Step 1: Update pattern-definitions.ts**
 
 In `src/lib/patterns/pattern-definitions.ts`, find the shield import block (currently around lines 24–28):
 
@@ -510,7 +510,7 @@ export const patterns: { [key: string]: PatternGenerator } = {
 
 (The other 8 entries — hex, box, bowtie, carnation, tristar, grid, panel, bandedBranched — stay exactly as they are.)
 
-- [ ] **Step 2: Verify by running snapshot test**
+- [x] **Step 2: Verify by running snapshot test**
 
 ```bash
 npm run test:unit -- src/lib/patterns/tesselation/shield/__tests__/snapshot.test.ts 2>&1 | tail -5
@@ -518,7 +518,7 @@ npm run test:unit -- src/lib/patterns/tesselation/shield/__tests__/snapshot.test
 
 Expected: 16/16 pass. The shield output is identical because the registry's factory uses the same `generateShieldTesselationTile(defaultShieldSpec, ...)` call.
 
-- [ ] **Step 3: Run type-check**
+- [x] **Step 3: Run type-check**
 
 ```bash
 npm run check 2>&1 | tail -3
@@ -526,7 +526,7 @@ npm run check 2>&1 | tail -3
 
 Expected: no new errors. The existing import of `BandCutPattern`, `TubeCutPattern`, `PathSegment`, etc. in `pattern-definitions.ts` may become unused after this change — remove unused imports.
 
-- [ ] **Step 4: Run full test suite**
+- [x] **Step 4: Run full test suite**
 
 ```bash
 npm run test:unit 2>&1 | tail -5
@@ -534,7 +534,7 @@ npm run test:unit 2>&1 | tail -5
 
 Expected: 29/29 pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/lib/patterns/pattern-definitions.ts

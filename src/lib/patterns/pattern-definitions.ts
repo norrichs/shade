@@ -1,14 +1,11 @@
 import type {
-	BandCutPattern,
 	PathSegment,
 	CutPattern,
 	Quadrilateral,
 	PatternGenerator,
 	TiledPatternConfig,
 	GridVariant,
-	PanelVariant,
-	Band,
-	TubeCutPattern
+	PanelVariant
 } from '$lib/types';
 import { adjustHexPatternAfterTiling, generateHexPattern } from './tiled-hex-pattern';
 import { adjustCarnation, generateCarnation } from './tiled-carnation-pattern';
@@ -21,17 +18,21 @@ import {
 	getTriStarSegments
 } from './tiled-tristar-pattern';
 import { generateGridPattern, adjustRectPatternAfterTiling } from './tiled-grid-pattern';
-import {
-	adjustShieldTesselation,
-	defaultShieldSpec,
-	generateShieldTesselationTile
-} from './tesselation/shield';
+import { algorithms } from './pattern-registry';
 import {
 	adjustPanelPatternAfterTiling,
 	generatePanelPattern
 } from './tiled-triangle-panel-pattern';
 
+const builtInPatternsEntries: { [key: string]: PatternGenerator } = {};
+for (const algorithm of algorithms) {
+	builtInPatternsEntries[algorithm.defaultSpec.id] = algorithm.createPatternsEntry(
+		algorithm.defaultSpec
+	);
+}
+
 export const patterns: { [key: string]: PatternGenerator } = {
+	...builtInPatternsEntries,
 	'tiledHexPattern-1': {
 		getPattern: (rows: number, columns: number) =>
 			generateHexPattern(rows, columns, { variant: 1, size: 1 }),
@@ -116,33 +117,6 @@ export const patterns: { [key: string]: PatternGenerator } = {
 			tiledPatternConfig: TiledPatternConfig
 		) => adjustPanelPatternAfterTiling(patternBand, quadBand, tiledPatternConfig)
 	},
-	tiledShieldTesselationPattern: {
-		getPattern: (
-			rows: number,
-			columns: number,
-			// eslint-disable-next-line @typescript-eslint/no-unused-vars
-			quadBand: Quadrilateral[] | undefined = undefined,
-			variant: GridVariant | undefined = 'rect',
-			sideOrientation: Band['sideOrientation']
-		) => {
-			return generateShieldTesselationTile(defaultShieldSpec, {
-				size: 1,
-				rows,
-				columns,
-				variant,
-				sideOrientation
-			});
-		},
-		tagAnchor: { facetIndex: 0, segmentIndex: 3 },
-		adjustAfterTiling: (
-			bands: BandCutPattern[],
-			tiledPatternConfig: TiledPatternConfig,
-			tubes: TubeCutPattern[]
-		) => {
-			return adjustShieldTesselation(bands, tiledPatternConfig, tubes, defaultShieldSpec);
-		}
-	},
-
 	'bandedBranchedPattern-0': {
 		getPattern: (rows: 1 | 2 | 3, columns: 1 | 2 | 3 | 4 | 5, quadBand?: Quadrilateral[]) => {
 			if (!quadBand) {
