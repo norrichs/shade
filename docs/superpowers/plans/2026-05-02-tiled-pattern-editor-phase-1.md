@@ -320,7 +320,7 @@ This is the heart of the refactor: the existing 80-segment unit and its four ind
 **Files:**
 - Create: `src/lib/patterns/shield-tesselation/default-spec.ts`
 
-- [ ] **Step 1: Create the default spec file**
+- [x] **Step 1: Create the default spec file**
 
 Create `src/lib/patterns/shield-tesselation/default-spec.ts`:
 
@@ -484,7 +484,7 @@ export const defaultShieldSpec: TiledPatternSpec = {
 
 > **Note on coordinate units:** The existing code multiplies indices by `w` and `h` *inline* in the literal segment list, where `w = col / 42` and `h = row / 14`. The spec stores the **un-multiplied** coefficients (`['L', 10, 2]` rather than `['L', 10*w, 2*h]`); the generator does the multiplication at tile time using the spec's `unit.width` / `unit.height` and the runtime-passed `size` / `rows` / `columns`. Default spec values match the existing coefficients exactly, so default-spec output is unchanged.
 
-- [ ] **Step 2: Run type-check**
+- [x] **Step 2: Run type-check**
 
 ```bash
 npm run check
@@ -492,7 +492,7 @@ npm run check
 
 Expected: no new errors related to `default-spec.ts`.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/lib/patterns/shield-tesselation/default-spec.ts
