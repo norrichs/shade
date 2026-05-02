@@ -128,7 +128,7 @@ The core piece of the segment editor is grouping coincident M/L segments into sh
 - Create: `src/components/modal/editor/segment-vertices.ts`
 - Create: `src/components/modal/editor/__tests__/segment-vertices.test.ts`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `src/components/modal/editor/__tests__/segment-vertices.test.ts`:
 
@@ -216,7 +216,7 @@ describe('computeVertices', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```bash
 npm run test:unit -- src/components/modal/editor/__tests__/segment-vertices.test.ts 2>&1 | tail -10
@@ -224,7 +224,7 @@ npm run test:unit -- src/components/modal/editor/__tests__/segment-vertices.test
 
 Expected: FAIL — `Cannot find module '../segment-vertices'`.
 
-- [ ] **Step 3: Create the implementation**
+- [x] **Step 3: Create the implementation**
 
 Create `src/components/modal/editor/segment-vertices.ts`:
 
@@ -290,7 +290,7 @@ export const updateUnitForVertexMove = (
 };
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 ```bash
 npm run test:unit -- src/components/modal/editor/__tests__/segment-vertices.test.ts 2>&1 | tail -10
@@ -298,7 +298,7 @@ npm run test:unit -- src/components/modal/editor/__tests__/segment-vertices.test
 
 Expected: PASS for all 4 cases.
 
-- [ ] **Step 5: Run full test suite**
+- [x] **Step 5: Run full test suite**
 
 ```bash
 npm run test:unit 2>&1 | tail -5
@@ -306,7 +306,7 @@ npm run test:unit 2>&1 | tail -5
 
 Expected: 33/33 pass (29 previous + 4 new).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/components/modal/editor/segment-vertices.ts src/components/modal/editor/__tests__/segment-vertices.test.ts
