@@ -7,8 +7,11 @@
 	import PatternTileButton from '../pattern/PatternTileButton.svelte';
 	import CheckboxInput from './CheckboxInput.svelte';
 	import NumberInput from './super-control/NumberInput.svelte';
-	import type { GridVariant, TiledPatternConfig, TabShape, TabEdgeOption } from '$lib/types';
+	import type { GridVariant, TiledPatternConfig, TabShape, TabEdgeOption, TilingBasis } from '$lib/types';
 	import { isTiledPatternConfig, isOutlinedPatternConfig } from '$lib/types';
+	import { algorithms } from '$lib/patterns/pattern-registry';
+	import { tilePatternSpecStore } from '$lib/stores/tilePatternSpecStore';
+	import type { TiledPatternSpec } from '$lib/patterns/spec-types';
 
 	let fitToPage = false;
 
@@ -48,12 +51,26 @@
 		// 	};
 		// }
 	};
-	const getTiles = (configs: { [key: string]: TiledPatternConfig }) => {
-		return ['quadrilateral', 'triangle', 'band']
-			.map((tilingBasis) => {
-				return Object.values(configs).filter((config) => config.tiling === tilingBasis);
-			})
-			.flat();
+	$: variantList = $tilePatternSpecStore.variants;
+
+	const getTiles = (
+		configs: { [key: string]: TiledPatternConfig },
+		variants: TiledPatternSpec[]
+	): { type: string; tiling: TilingBasis }[] => {
+		const builtInIds = new Set(algorithms.map((a) => a.defaultSpec.id));
+		const builtInTiles: { type: string; tiling: TilingBasis }[] = algorithms.map((a) => ({
+			type: a.defaultSpec.id,
+			tiling: 'quadrilateral' as TilingBasis
+		}));
+		const variantTiles: { type: string; tiling: TilingBasis }[] = variants
+			.filter((v) => !builtInIds.has(v.id))
+			.map((v) => ({ type: v.id, tiling: 'quadrilateral' as TilingBasis }));
+		const legacyTiles: { type: string; tiling: TilingBasis }[] = ['quadrilateral', 'triangle', 'band']
+			.flatMap((tilingBasis) =>
+				Object.values(configs).filter((c) => c.tiling === tilingBasis && !builtInIds.has(c.type))
+			)
+			.map((c) => ({ type: c.type, tiling: c.tiling }));
+		return [...legacyTiles, ...builtInTiles, ...variantTiles];
 	};
 
 	$: {
@@ -148,8 +165,8 @@
 	{#if isTiled}
 		<section class="tiles">
 			<div class="option-tile-group">
-				{#each getTiles(tiledPatternConfigs) as config}
-					<PatternTileButton size={45} patternType={config.type} tilingBasis={config.tiling} />
+				{#each getTiles(tiledPatternConfigs, variantList) as tile}
+					<PatternTileButton size={45} patternType={tile.type} tilingBasis={tile.tiling} />
 				{/each}
 			</div>
 		</section>

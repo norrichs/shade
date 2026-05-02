@@ -944,7 +944,7 @@ git push
 
 The picker currently iterates over the static `tiledPatternConfigs` dict in `shades-config.ts`. After Phase 2 it iterates over `algorithms` from the registry plus user variants from the store. Visually unchanged for the user (no variants yet → only built-in defaults render).
 
-- [ ] **Step 1: Read the relevant region**
+- [x] **Step 1: Read the relevant region**
 
 ```bash
 sed -n '50,60p;150,155p' src/components/controls/TilingControl.svelte
@@ -952,7 +952,7 @@ sed -n '50,60p;150,155p' src/components/controls/TilingControl.svelte
 
 You should see the `getTiles` helper and the `{#each getTiles(tiledPatternConfigs) as config}` loop.
 
-- [ ] **Step 2: Update imports**
+- [x] **Step 2: Update imports**
 
 Find the existing imports near the top of `TilingControl.svelte`. Add:
 
@@ -961,7 +961,7 @@ import { algorithms } from '$lib/patterns/pattern-registry';
 import { tilePatternSpecStore } from '$lib/stores/tilePatternSpecStore';
 ```
 
-- [ ] **Step 3: Replace getTiles with a registry-driven version**
+- [x] **Step 3: Replace getTiles with a registry-driven version**
 
 Replace the `getTiles` function (around line 51) with:
 
@@ -993,7 +993,7 @@ import type { GridVariant, TiledPatternConfig, TabShape, TabEdgeOption, TilingBa
 import type { TiledPatternSpec } from '$lib/patterns/spec-types';
 ```
 
-- [ ] **Step 4: Update the loop**
+- [x] **Step 4: Update the loop**
 
 Find the each block (around line 151):
 
@@ -1011,7 +1011,7 @@ Replace with:
 {/each}
 ```
 
-- [ ] **Step 5: Manual smoke test**
+- [x] **Step 5: Manual smoke test**
 
 ```bash
 npm run dev
@@ -1025,7 +1025,7 @@ If you have a smoke variant from Task 7's API test still in the DB, it should ap
 
 Stop the dev server.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/components/controls/TilingControl.svelte
