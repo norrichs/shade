@@ -15,7 +15,7 @@ Variants are persisted as named entries in the existing `shades_configs` Turso t
 - Make the shield pattern's design data editable in-app, end to end.
 - Persist user variants alongside the canonical default.
 - Establish a generic `TiledPatternSpec` shape that other tiled patterns (hex, carnation, box, …) can adopt incrementally — each fork uses the same editor, same storage, same picker integration.
-- Zero behavior change for existing projects: `type: 'shield-tesselation'` continues to render identically.
+- Zero behavior change for existing projects: `type: 'tiledShieldTesselationPattern'` continues to render identically.
 
 ## Non-goals (v1)
 
@@ -44,7 +44,7 @@ New types in `src/lib/types.ts` (or a new `src/lib/patterns/spec-types.ts`):
 
 ```ts
 export type TiledPatternSpec = {
-  id: string;                    // stable: 'shield-tesselation' for default; uuid for user variants
+  id: string;                    // stable: existing TiledPattern enum value (e.g. 'tiledShieldTesselationPattern') for builtIn defaults; uuid for user variants
   name: string;                  // display label
   algorithm:
     | 'shield-tesselation'
@@ -223,7 +223,7 @@ The current `src/lib/patterns/tiled-shield-tesselation-pattern.ts` is **deleted*
 
 ## Backward compatibility
 
-Existing saved projects with `type: 'shield-tesselation'` continue to work. `'shield-tesselation'` is the id of the file-level default variant. No project-config migration.
+Existing saved projects with `type: 'tiledShieldTesselationPattern'` (the current `TiledPattern` enum value) continue to work — that string is the id of the file-level default variant. No project-config migration.
 
 If a saved project references a deleted user variant id, the generator falls back to the algorithm's built-in default and logs a console warning.
 
