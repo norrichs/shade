@@ -1127,7 +1127,7 @@ git push
 
 ### Task 12: End-to-end verification
 
-- [ ] **Step 1: Run full test suite**
+- [x] **Step 1: Run full test suite**
 
 ```bash
 npm run test:unit 2>&1 | tail -5
@@ -1135,7 +1135,7 @@ npm run test:unit 2>&1 | tail -5
 
 Expected: 29/29 pass.
 
-- [ ] **Step 2: Run type-check**
+- [x] **Step 2: Run type-check**
 
 ```bash
 npm run check 2>&1 | tail -3
@@ -1166,15 +1166,17 @@ Then via API:
 
 Stop dev server.
 
-- [ ] **Step 4: Update plan checkboxes**
+**NOTE:** Step 3 manual end-to-end smoke is deferred to manual controller verification; do NOT start `npm run dev`.
+
+- [x] **Step 4: Update plan checkboxes**
 
 Edit `docs/superpowers/plans/2026-05-02-tiled-pattern-editor-phase-2.md` and mark Task 12's three steps `[x]`. Note: Step 3 manual smoke test is the only one a human needs to drive — mark `[x]` only after performing it; otherwise note as deferred.
 
-- [ ] **Step 5: Commit + push**
+- [x] **Step 5: Commit + push**
 
 ```bash
 git add docs/superpowers/plans/2026-05-02-tiled-pattern-editor-phase-2.md
-git commit -m "Mark Phase 2 verification complete"
+git commit -m "Mark Phase 2 automated verification complete"
 git push
 ```
 
