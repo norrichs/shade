@@ -3,7 +3,7 @@
 	import PatternTile from './PatternTile.svelte';
 	import { tiledPatternConfigs } from '$lib/shades-config';
 	import { patterns } from '$lib/patterns';
-	import type { TilingBasis } from '$lib/types';
+	import type { TilingBasis, TiledPatternConfig } from '$lib/types';
 
 	let {
 		patternType,
@@ -20,9 +20,17 @@
 
 <button
 	onclick={() => {
-		if (patterns[patternType]) {
-			$patternConfigStore.patternTypeConfig = tiledPatternConfigs[patternType];
+		if (!patterns[patternType]) return;
+		const baseConfig = tiledPatternConfigs[patternType];
+		if (baseConfig) {
+			$patternConfigStore.patternTypeConfig = baseConfig;
+			return;
 		}
+		const fallback: TiledPatternConfig = {
+			...tiledPatternConfigs['tiledShieldTesselationPattern'],
+			type: patternType
+		};
+		$patternConfigStore.patternTypeConfig = fallback;
 	}}
 >
 	<PatternTile

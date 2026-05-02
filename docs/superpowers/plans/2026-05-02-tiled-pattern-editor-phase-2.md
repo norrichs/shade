@@ -1042,7 +1042,7 @@ git push
 
 Currently `PatternTileButton.svelte` looks up `tiledPatternConfigs[patternType]` to set the active config when clicked. For variant ids that aren't in the static dict, this would fail. We need to construct a config on the fly.
 
-- [ ] **Step 1: Read the current file**
+- [x] **Step 1: Read the current file**
 
 ```bash
 cat src/components/pattern/PatternTileButton.svelte
@@ -1058,7 +1058,7 @@ if (patterns[patternType]) {
 
 For variants, `patterns[patternType]` exists (registered via the store) but `tiledPatternConfigs[patternType]` is undefined. We construct a fallback config from a known template.
 
-- [ ] **Step 2: Update the onclick**
+- [x] **Step 2: Update the onclick**
 
 Edit `src/components/pattern/PatternTileButton.svelte`:
 
@@ -1103,19 +1103,19 @@ Replace the `<button onclick=...>` body:
 >
 ```
 
-- [ ] **Step 3: Run type-check**
+- [x] **Step 3: Run type-check**
 
 ```bash
 npm run check 2>&1 | tail -3
 ```
 
-- [ ] **Step 4: Manual smoke**
+- [x] **Step 4: Manual smoke**
 
 If you have a smoke variant in the DB, click its tile in the picker and confirm:
 - The pattern config switches to it (no errors in console).
 - The 3D render uses the variant's spec data (for an empty smoke spec, the rendered pattern will be empty — that's expected).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/components/pattern/PatternTileButton.svelte
