@@ -791,7 +791,7 @@ git push
 **Files:**
 - Modify: `src/components/modal/sidebar-definitions.ts`
 
-- [ ] **Step 1: Read the current file**
+- [x] **Step 1: Read the current file**
 
 ```bash
 cat src/components/modal/sidebar-definitions.ts
@@ -799,7 +799,7 @@ cat src/components/modal/sidebar-definitions.ts
 
 You'll see `patternConfigs: SidebarDefinition` is a `Map` containing entries for `'Pattern'` and `'Pattern Scale'`.
 
-- [ ] **Step 2: Add the import**
+- [x] **Step 2: Add the import**
 
 In `src/components/modal/sidebar-definitions.ts`, add to the imports near the top:
 
@@ -807,7 +807,7 @@ In `src/components/modal/sidebar-definitions.ts`, add to the imports near the to
 import TileEditor from './editor/TileEditor.svelte';
 ```
 
-- [ ] **Step 3: Register the floater**
+- [x] **Step 3: Register the floater**
 
 In the `patternConfigs` map literal, add a new entry between the existing entries:
 
@@ -840,13 +840,13 @@ export const patternConfigs: SidebarDefinition = new Map([
 ]);
 ```
 
-- [ ] **Step 4: Type-check**
+- [x] **Step 4: Type-check**
 
 ```bash
 npm run check 2>&1 | tail -3
 ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/components/modal/sidebar-definitions.ts
