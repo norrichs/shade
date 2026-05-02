@@ -1,4 +1,5 @@
 import type {
+	BandCutPattern,
 	PathSegment,
 	CutPattern,
 	Quadrilateral,
@@ -6,7 +7,8 @@ import type {
 	TiledPatternConfig,
 	GridVariant,
 	PanelVariant,
-	Band
+	Band,
+	TubeCutPattern
 } from '$lib/types';
 import { adjustHexPatternAfterTiling, generateHexPattern } from './tiled-hex-pattern';
 import { adjustCarnation, generateCarnation } from './tiled-carnation-pattern';
@@ -20,9 +22,10 @@ import {
 } from './tiled-tristar-pattern';
 import { generateGridPattern, adjustRectPatternAfterTiling } from './tiled-grid-pattern';
 import {
-	adjustShieldTesselationAfterTiling,
+	adjustShieldTesselation,
+	defaultShieldSpec,
 	generateShieldTesselationTile
-} from './tiled-shield-tesselation-pattern';
+} from './shield-tesselation';
 import {
 	adjustPanelPatternAfterTiling,
 	generatePanelPattern
@@ -122,20 +125,21 @@ export const patterns: { [key: string]: PatternGenerator } = {
 			variant: GridVariant | undefined = 'rect',
 			sideOrientation: Band['sideOrientation']
 		) => {
-			return generateShieldTesselationTile({ size: 1, rows, columns, variant, sideOrientation });
+			return generateShieldTesselationTile(defaultShieldSpec, {
+				size: 1,
+				rows,
+				columns,
+				variant,
+				sideOrientation
+			});
 		},
 		tagAnchor: { facetIndex: 0, segmentIndex: 3 },
 		adjustAfterTiling: (
-			patternBand: PathSegment[][],
-			quadBand: Quadrilateral[],
-			tiledPatternConfig: TiledPatternConfig
+			bands: BandCutPattern[],
+			tiledPatternConfig: TiledPatternConfig,
+			tubes: TubeCutPattern[]
 		) => {
-			const adjusted = adjustShieldTesselationAfterTiling(
-				patternBand,
-				quadBand,
-				tiledPatternConfig
-			);
-			return adjusted;
+			return adjustShieldTesselation(bands, tiledPatternConfig, tubes, defaultShieldSpec);
 		}
 	},
 

@@ -1046,7 +1046,7 @@ Now that the new pipeline matches the old one, route the registered `tiledShield
 **Files:**
 - Modify: `src/lib/patterns/pattern-definitions.ts`
 
-- [ ] **Step 1: Update imports and shield entry**
+- [x] **Step 1: Update imports and shield entry**
 
 In `src/lib/patterns/pattern-definitions.ts`, replace lines 22–25:
 
@@ -1147,7 +1147,7 @@ import type {
 } from '$lib/types';
 ```
 
-- [ ] **Step 2: Run the equivalence test (still works because old file is still present)**
+- [x] **Step 2: Run the equivalence test (still works because old file is still present)**
 
 ```bash
 npm run test:unit -- src/lib/patterns/shield-tesselation/__tests__/equivalence.test.ts
@@ -1155,7 +1155,7 @@ npm run test:unit -- src/lib/patterns/shield-tesselation/__tests__/equivalence.t
 
 Expected: PASS — both old and new files still exist and the test verifies they're equivalent.
 
-- [ ] **Step 3: Run full type-check**
+- [x] **Step 3: Run full type-check**
 
 ```bash
 npm run check
@@ -1179,7 +1179,7 @@ Open `/designer2`, select a project that uses the shield pattern (or set `type: 
 
 If any visual divergence appears, the equivalence test missed a code path — add a test case for it and fix.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/lib/patterns/pattern-definitions.ts
