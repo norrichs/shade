@@ -408,7 +408,7 @@ git push
 
 `TiledPattern` is currently a string-literal union of 9 values. With variants becoming first-class, `TiledPattern` widens to `string`.
 
-- [ ] **Step 1: Update types.ts**
+- [x] **Step 1: Update types.ts**
 
 In `src/lib/types.ts`, find lines 538–548 (the `TiledPattern` definition):
 
@@ -432,7 +432,7 @@ Replace with:
 export type TiledPattern = string;
 ```
 
-- [ ] **Step 2: Run type-check to find broken switches**
+- [x] **Step 2: Run type-check to find broken switches**
 
 ```bash
 npm run check 2>&1 | grep -E "TiledPattern|Type 'string'" | head -20
@@ -442,7 +442,7 @@ Look for errors involving `TiledPattern` or string-narrowing failures. Fix each 
 
 If the only references are in type aliases / config files (no runtime switches), no changes needed beyond Step 1.
 
-- [ ] **Step 3: Run full test suite**
+- [x] **Step 3: Run full test suite**
 
 ```bash
 npm run test:unit 2>&1 | tail -5
@@ -450,7 +450,7 @@ npm run test:unit 2>&1 | tail -5
 
 Expected: 29 pass.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/lib/types.ts src/lib/shades-config.ts

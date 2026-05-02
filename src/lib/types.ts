@@ -535,17 +535,7 @@ export type FlatStripConfig = {
 // 	  }
 // 	| { type: 'doAddenda'; valueType: 'boolean'; value: boolean };
 
-export type TiledPattern =
-	| 'tiledHexPattern-1'
-	| 'tiledGridPattern-0'
-	| 'tiledPanelPattern-0'
-	| 'tiledBoxPattern-0'
-	| 'tiledBowtiePattern-0'
-	| 'tiledCarnationPattern-0'
-	| 'tiledCarnationPattern-1'
-	| 'tiledTriStarPattern-1'
-	| 'tiledShieldTesselationPattern'
-	| 'bandedBranchedPattern-0';
+export type TiledPattern = string;
 
 export type TilingBasis = 'quadrilateral' | 'band' | 'triangle';
 export type DynamicStrokeBasis = 'quadWidth' | 'quadHeight' | 'ranked';
