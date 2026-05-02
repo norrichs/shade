@@ -728,7 +728,7 @@ git push
 
 The variant store needs to hydrate at app init so dispatched calls like `patterns[variantId]` find the variant before any pattern rendering kicks off.
 
-- [ ] **Step 1: Find the right hydration point**
+- [x] **Step 1: Find the right hydration point**
 
 Grep for an existing app-init pattern:
 
@@ -738,7 +738,7 @@ grep -rn "onMount\|hydrate" src/routes/designer2/+page.svelte src/routes/+layout
 
 If the designer route already has an `onMount`, hydrate the variant store there. Otherwise hydrate from a `+layout.svelte` so it runs once per session.
 
-- [ ] **Step 2: Add hydration call**
+- [x] **Step 2: Add hydration call**
 
 In whichever file you chose, add:
 
@@ -753,7 +753,7 @@ onMount(() => {
 
 (If the file already uses Svelte 5 runes, use `$effect` instead — `$effect(() => { tilePatternSpecStore.hydrate(); });`. Match the file's existing style.)
 
-- [ ] **Step 3: Manual smoke test**
+- [x] **Step 3: Manual smoke test**
 
 ```bash
 npm run dev
@@ -763,7 +763,7 @@ Open the designer page in your browser. In the dev console, you should see no `t
 
 Stop the dev server.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add <the file you modified>
