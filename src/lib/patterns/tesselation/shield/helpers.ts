@@ -7,7 +7,7 @@ import type {
 	TubeCutPattern
 } from '$lib/types';
 import { isSameAddress } from '$lib/util';
-import type { IndexPair } from '../spec-types';
+import type { IndexPair } from '../../spec-types';
 
 export const START_SEGMENTS = 14;
 export const END_SEGMENTS = 14;

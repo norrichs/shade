@@ -4,8 +4,8 @@ import type {
 	TiledPatternConfig,
 	TubeCutPattern
 } from '$lib/types';
-import { getAngle, rotatePS, translatePS } from '../utils';
-import type { IndexPair, TiledPatternSpec } from '../spec-types';
+import { getAngle, rotatePS, translatePS } from '../../utils';
+import type { IndexPair, TiledPatternSpec } from '../../spec-types';
 import {
 	evaluateSkipEdge,
 	getTransformedPartnerCutPattern,
@@ -39,6 +39,7 @@ export const adjustShieldTesselation = (
 	tubes: TubeCutPattern[],
 	spec: TiledPatternSpec
 ) => {
+	console.debug("NEW ADJUSTER")
 	const {
 		config: { endLooped, endsMatched, rowCount: rows = 1, columnCount: columns = 1 }
 	} = tiledPatternConfig;

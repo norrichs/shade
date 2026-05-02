@@ -1,5 +1,5 @@
 import type { LinePathSegment, MovePathSegment } from '$lib/types';
-import type { TiledPatternSpec } from '../spec-types';
+import type { TiledPatternSpec } from '../../spec-types';
 
 const UNIT_WIDTH = 42;
 const UNIT_HEIGHT = 14;

@@ -5,8 +5,8 @@ import type {
 	MovePathSegment,
 	PathSegment
 } from '$lib/types';
-import { translatePS } from '../utils';
-import type { TiledPatternSpec } from '../spec-types';
+import { translatePS } from '../../utils';
+import type { TiledPatternSpec } from '../../spec-types';
 import { END_SEGMENTS, START_SEGMENTS } from './helpers';
 
 export type ShieldGeneratorProps = {

@@ -25,7 +25,7 @@ import {
 	adjustShieldTesselation,
 	defaultShieldSpec,
 	generateShieldTesselationTile
-} from './shield-tesselation';
+} from './tesselation/shield';
 import {
 	adjustPanelPatternAfterTiling,
 	generatePanelPattern

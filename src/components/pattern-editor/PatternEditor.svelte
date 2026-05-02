@@ -44,7 +44,7 @@
 	import {
 		adjustShieldTesselation as adjustShieldTesselationAfterTiling,
 		defaultShieldSpec
-	} from '$lib/patterns/shield-tesselation';
+	} from '$lib/patterns/tesselation/shield';
 
 	let quadBand: Quadrilateral[] = [
 		{
