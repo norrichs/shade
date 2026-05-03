@@ -169,6 +169,8 @@
 	};
 
 	const handleDiscard = () => {
+		selectedTarget = null;
+		selectedConnection = null;
 		const found = findSpec(activeVariantId);
 		if (!found) return;
 		draft = $state.snapshot(found.spec) as TiledPatternSpec;
@@ -186,6 +188,8 @@
 	};
 
 	const handleSelectVariant = (variantId: string) => {
+		selectedTarget = null;
+		selectedConnection = null;
 		setActiveVariant(variantId);
 	};
 
