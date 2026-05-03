@@ -32,6 +32,7 @@
 	import { PROJECTION_GEOMETRY_OVERRIDE } from '$lib/projection-geometry/constants';
 	import ProjectionGeometryComponent from '../projection/ProjectionGeometryComponent.svelte';
 	import GlobuleGeometryComponent from './GlobuleGeometryComponent.svelte';
+	import Highlight from '../projection/Highlight.svelte';
 	import type { GlobuleAddress_Facet } from '$lib/projection-geometry/types';
 	import { selectedProjection } from '$lib/stores';
 	import { cameraDirection } from '$lib/stores/selectionStores';
@@ -231,3 +232,4 @@
 
 <ProjectionGeometryComponent onClick={handleProjectionClick} />
 <GlobuleGeometryComponent {getInteractionMaterial} {handleClick} />
+<Highlight />

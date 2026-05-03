@@ -135,6 +135,7 @@
 					.b.x},{distortedGhost.mainQuad.b.y} {distortedGhost.mainQuad.c.x},{distortedGhost.mainQuad
 					.c.y} {distortedGhost.mainQuad.d.x},{distortedGhost.mainQuad.d.y}"
 				class="unit-bounds"
+				style="fill: {mode === 'partnerStart' ? 'rgba(0,255,0,0.1)' : 'rgba(255,0,0,0.1)'}"
 			/>
 			<polygon
 				points="{distortedGhost.ghostQuad.a.x},{distortedGhost.ghostQuad.a.y} {distortedGhost
@@ -142,6 +143,7 @@
 					.x},{distortedGhost.ghostQuad.c.y} {distortedGhost.ghostQuad.d.x},{distortedGhost
 					.ghostQuad.d.y}"
 				class="ghost-bounds"
+				style="fill: {mode === 'partnerStart' ? 'rgba(255,0,0,0.1)' : 'rgba(0,255,0,0.1)'}"
 			/>
 			<path d={distortedMainPathStr} class="segments" />
 			<path d={distortedGhostPathStr} class="ghost-segments" />
