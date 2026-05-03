@@ -66,7 +66,7 @@
 		<rect x="0" y="0" width={unit.width} height={unit.height} class="unit-bounds" />
 		<path d={pathString} class="segments" />
 		{#if tool === 'remove'}
-			{#each vertices as vertex (vertex.x + ':' + vertex.y)}
+			{#each vertices.filter((v) => v.refs.length >= 2) as vertex (vertex.x + ':' + vertex.y)}
 				<circle
 					cx={vertex.x}
 					cy={vertex.y}

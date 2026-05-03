@@ -8,8 +8,7 @@
 	import Editor from './Editor.svelte';
 	import Container from './Container.svelte';
 	import SegmentPathEditor from './SegmentPathEditor.svelte';
-	import UnitToolbar from './tile-editor/UnitToolbar.svelte';
-	import type { UnitTool } from './tile-editor/UnitToolbar.svelte';
+	import UnitToolbar, { type UnitTool } from './tile-editor/UnitToolbar.svelte';
 	import VariantBar from './tile-editor/VariantBar.svelte';
 	import ModeBar from './tile-editor/ModeBar.svelte';
 	import type { EditorMode } from './tile-editor/editor-mode';
@@ -221,6 +220,7 @@
 
 	const updateModeAndClearSelection = (newMode: EditorMode) => {
 		mode = newMode;
+		tool = 'drag';
 		selectedTarget = null;
 		selectedConnection = null;
 	};
