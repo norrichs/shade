@@ -13,6 +13,7 @@
 ## File Structure
 
 **Create:**
+
 - `src/components/modal/editor/vertex-addressing.ts` — `flatIndex(unit, ref)`, `flatIndexes(unit, vertex)`, `findVertexByFlatIndex`, `computeConnections`, `addRuleForPairing`, `removeRulesForPairing`
 - `src/components/modal/editor/__tests__/vertex-addressing.test.ts` — TDD tests for the helpers
 - `src/components/modal/editor/tile-editor/ModeBar.svelte` — mode toggle button row
@@ -22,6 +23,7 @@
 - `src/components/modal/editor/tile-editor/editor-mode.ts` — `EditorMode` type, `ruleModes` const, `ghostTransform(mode, unit, point)`, `ghostSvgTransform(mode, unit)`
 
 **Modify:**
+
 - `src/components/modal/editor/TileEditor.svelte` — add `mode` rune, `selectedTarget` rune, render branch on mode, add rule-mutation handlers, integrate ModeBar + RuleList
 
 ---
@@ -37,16 +39,17 @@ replaceInPlace({ pairs, target: currentFacet.path, source: nextOrPrevOrPartner.p
 
 So in the visualization:
 
-| Field | Meaning | UI side |
-|---|---|---|
-| `pair.target` | flat index in main unit (this facet) — the vertex whose position gets overwritten | **main** |
+| Field         | Meaning                                                                                           | UI side   |
+| ------------- | ------------------------------------------------------------------------------------------------- | --------- |
+| `pair.target` | flat index in main unit (this facet) — the vertex whose position gets overwritten                 | **main**  |
 | `pair.source` | flat index in same flat space, addressing the neighbor's path — the vertex providing the position | **ghost** |
 
 User flow:
+
 1. Click a vertex in the **main** unit → `selectedTarget = vertex`.
 2. Click a vertex in the **ghost** → creates rule(s): `{ source: ghostVertexFlatIdx, target: selectedTargetFlatIdx }`. Reset `selectedTarget`.
 
-For **coincident-vertex pairs** (M+L at the same coord, e.g., shield's vertex at index 1+2): clicking that vertex represents *all* its refs. Pairing two coincident vertices generates `min(refs.length)` rule entries, matching refs by index order.
+For **coincident-vertex pairs** (M+L at the same coord, e.g., shield's vertex at index 1+2): clicking that vertex represents _all_ its refs. Pairing two coincident vertices generates `min(refs.length)` rule entries, matching refs by index order.
 
 **Connection lines**: rules with the same `(sourceVertex, targetVertex)` collapse to one visible connection line; deleting that line removes all matching rules.
 
@@ -55,6 +58,7 @@ For **coincident-vertex pairs** (M+L at the same coord, e.g., shield's vertex at
 ### Task 1: EditorMode types + ghost transforms + tests
 
 **Files:**
+
 - Create: `src/components/modal/editor/tile-editor/editor-mode.ts`
 - Create: `src/components/modal/editor/__tests__/editor-mode.test.ts`
 
@@ -111,8 +115,7 @@ export type EditorMode =
 
 export const ruleModes: EditorMode[] = ['withinBand', 'acrossBands', 'partnerStart', 'partnerEnd'];
 
-export const isRuleMode = (mode: EditorMode): boolean =>
-	(ruleModes as EditorMode[]).includes(mode);
+export const isRuleMode = (mode: EditorMode): boolean => (ruleModes as EditorMode[]).includes(mode);
 
 export type Point = { x: number; y: number };
 
@@ -188,6 +191,7 @@ git push
 These map between the `Vertex` objects (one per unique x,y) and the flat segment indices used in `IndexPair[]`. Plus connection grouping.
 
 **Files:**
+
 - Create: `src/components/modal/editor/vertex-addressing.ts`
 - Create: `src/components/modal/editor/__tests__/vertex-addressing.test.ts`
 
@@ -219,8 +223,15 @@ const makeUnit = (overrides: Partial<UnitDefinition> = {}): UnitDefinition => ({
 
 describe('flatIndex', () => {
 	const unit = makeUnit({
-		start: [['M', 0, 0], ['L', 1, 1]], // length 2
-		middle: [['M', 2, 2], ['L', 3, 3], ['M', 4, 4]], // length 3
+		start: [
+			['M', 0, 0],
+			['L', 1, 1]
+		], // length 2
+		middle: [
+			['M', 2, 2],
+			['L', 3, 3],
+			['M', 4, 4]
+		], // length 3
 		end: [['L', 5, 5]] // length 1
 	});
 
@@ -242,7 +253,10 @@ describe('flatIndex', () => {
 describe('flatIndexes', () => {
 	it('maps each ref to its flat index', () => {
 		const unit = makeUnit({
-			start: [['M', 0, 0], ['L', 0, 0]]
+			start: [
+				['M', 0, 0],
+				['L', 0, 0]
+			]
 		});
 		const vertices = computeVertices(unit);
 		expect(flatIndexes(unit, vertices[0])).toEqual([0, 1]);
@@ -251,7 +265,11 @@ describe('flatIndexes', () => {
 
 describe('findVertexByFlatIndex', () => {
 	const unit = makeUnit({
-		start: [['M', 0, 0], ['L', 1, 1], ['M', 1, 1]]
+		start: [
+			['M', 0, 0],
+			['L', 1, 1],
+			['M', 1, 1]
+		]
 	});
 	const vertices = computeVertices(unit);
 
@@ -274,7 +292,12 @@ describe('findVertexByFlatIndex', () => {
 describe('computeConnections', () => {
 	it('groups rules by (sourceVertex, targetVertex)', () => {
 		const unit = makeUnit({
-			start: [['M', 0, 0], ['L', 0, 0], ['M', 5, 5], ['L', 5, 5]]
+			start: [
+				['M', 0, 0],
+				['L', 0, 0],
+				['M', 5, 5],
+				['L', 5, 5]
+			]
 		});
 		const vertices = computeVertices(unit);
 		const rules: IndexPair[] = [
@@ -292,7 +315,12 @@ describe('computeConnections', () => {
 describe('addRuleForPairing', () => {
 	it('appends one rule per matched ref pair', () => {
 		const unit = makeUnit({
-			start: [['M', 0, 0], ['L', 0, 0], ['M', 5, 5], ['L', 5, 5]]
+			start: [
+				['M', 0, 0],
+				['L', 0, 0],
+				['M', 5, 5],
+				['L', 5, 5]
+			]
 		});
 		const vertices = computeVertices(unit);
 		const targetVertex = vertices.find((v) => v.x === 0)!; // refs [0, 1]
@@ -309,7 +337,10 @@ describe('addRuleForPairing', () => {
 describe('removeRulesForPairing', () => {
 	it('removes rules between two vertices', () => {
 		const unit = makeUnit({
-			start: [['M', 0, 0], ['M', 5, 5]]
+			start: [
+				['M', 0, 0],
+				['M', 5, 5]
+			]
 		});
 		const vertices = computeVertices(unit);
 		const targetVertex = vertices.find((v) => v.x === 0)!;
@@ -441,9 +472,10 @@ git push
 ### Task 3: ModeBar component
 
 **Files:**
+
 - Create: `src/components/modal/editor/tile-editor/ModeBar.svelte`
 
-- [ ] **Step 1: Create the component**
+- [x] **Step 1: Create the component**
 
 Create `src/components/modal/editor/tile-editor/ModeBar.svelte` (use **tabs**):
 
@@ -472,10 +504,7 @@ Create `src/components/modal/editor/tile-editor/ModeBar.svelte` (use **tabs**):
 
 <div class="mode-bar">
 	{#each options as option}
-		<button
-			class:active={mode === option.id}
-			onclick={() => onChangeMode(option.id)}
-		>
+		<button class:active={mode === option.id} onclick={() => onChangeMode(option.id)}>
 			{option.label}
 		</button>
 	{/each}
@@ -495,13 +524,13 @@ Create `src/components/modal/editor/tile-editor/ModeBar.svelte` (use **tabs**):
 </style>
 ```
 
-- [ ] **Step 2: Type-check**
+- [x] **Step 2: Type-check**
 
 ```bash
 npm run check 2>&1 | tail -3
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/components/modal/editor/tile-editor/ModeBar.svelte
@@ -516,6 +545,7 @@ git push
 Wire up the `mode` rune and ModeBar without changing the actual rendering yet — the upcoming tasks add the mode-specific viewports.
 
 **Files:**
+
 - Modify: `src/components/modal/editor/TileEditor.svelte`
 
 - [ ] **Step 1: Add mode state + import + ModeBar**
@@ -573,6 +603,7 @@ git push
 The viewport for the four rule modes — main unit + ghost + connection lines for existing rules. No interaction yet (clicks come in Task 6).
 
 **Files:**
+
 - Create: `src/components/modal/editor/tile-editor/RuleEditViewport.svelte`
 
 - [ ] **Step 1: Create the component**
@@ -620,12 +651,7 @@ Create `src/components/modal/editor/tile-editor/RuleEditViewport.svelte` (use **
 </script>
 
 <div class="container" style="width:{config.size.width}px; height:{config.size.height}px;">
-	<svg
-		width={config.size.width}
-		height={config.size.height}
-		viewBox={canv.viewBox}
-		class="canvas"
-	>
+	<svg width={config.size.width} height={config.size.height} viewBox={canv.viewBox} class="canvas">
 		<rect x="0" y="0" width={spec.unit.width} height={spec.unit.height} class="unit-bounds" />
 		<g transform={ghostTransformStr} class="ghost">
 			<rect x="0" y="0" width={spec.unit.width} height={spec.unit.height} class="ghost-bounds" />
@@ -751,6 +777,7 @@ git push
 Wire up the four rule modes to render the new viewport. Plus add the `selectedTarget` rune and the rule-mutation handlers.
 
 **Files:**
+
 - Modify: `src/components/modal/editor/TileEditor.svelte`
 
 - [ ] **Step 1: Update imports**
@@ -835,11 +862,7 @@ Replace the existing `{#if draft}` block with:
 {#if draft}
 	{#if mode === 'unit'}
 		<div class="viewport-wrap">
-			<SegmentPathEditor
-				unit={draft.unit}
-				config={editorConfig}
-				onChangeUnit={handleUnitChange}
-			/>
+			<SegmentPathEditor unit={draft.unit} config={editorConfig} onChangeUnit={handleUnitChange} />
 		</div>
 	{:else if isRuleMode(mode)}
 		<div class="viewport-wrap">
@@ -949,7 +972,8 @@ Replace the `onclick` on the line:
 	...
 	class:selected={selectedConnection?.sourceVertex === conn.sourceVertex &&
 		selectedConnection?.targetVertex === conn.targetVertex}
-	onclick={() => (selectedConnection = { sourceVertex: conn.sourceVertex, targetVertex: conn.targetVertex })}
+	onclick={() =>
+		(selectedConnection = { sourceVertex: conn.sourceVertex, targetVertex: conn.targetVertex })}
 />
 ```
 
@@ -1001,6 +1025,7 @@ git push
 Lists rules for the current rule mode, with a delete button per row. Click row → highlights connection in viewport (via the shared selectedConnection state — but for v1, the sidebar is just a viewer + delete).
 
 **Files:**
+
 - Create: `src/components/modal/editor/tile-editor/RuleList.svelte`
 - Modify: `src/components/modal/editor/TileEditor.svelte`
 
@@ -1143,6 +1168,7 @@ git push
 Renders the unit with red rings on vertices whose flat-indices appear in `spec.adjustments.skipRemove`. Click a vertex toggles all its flat-indices in/out of `skipRemove`.
 
 **Files:**
+
 - Create: `src/components/modal/editor/tile-editor/SkipRemoveViewport.svelte`
 
 - [ ] **Step 1: Create the component**
@@ -1178,12 +1204,7 @@ Create `src/components/modal/editor/tile-editor/SkipRemoveViewport.svelte` (use 
 </script>
 
 <div class="container" style="width:{config.size.width}px; height:{config.size.height}px;">
-	<svg
-		width={config.size.width}
-		height={config.size.height}
-		viewBox={canv.viewBox}
-		class="canvas"
-	>
+	<svg width={config.size.width} height={config.size.height} viewBox={canv.viewBox} class="canvas">
 		<rect x="0" y="0" width={spec.unit.width} height={spec.unit.height} class="unit-bounds" />
 		<path d={pathString} class="segments" />
 
@@ -1257,6 +1278,7 @@ git push
 ### Task 10: Wire SkipRemoveViewport into TileEditor
 
 **Files:**
+
 - Modify: `src/components/modal/editor/TileEditor.svelte`
 
 - [ ] **Step 1: Import + handler**
@@ -1348,6 +1370,7 @@ Expected: error count stable (~427).
 - [ ] **Step 3: Manual smoke (deferred to controller)**
 
 The controller will run `npm run dev` and exercise:
+
 - Open Tile Editor (`TE` in sidebar).
 - Switch to `Within Band`. Confirm: ghost unit appears to the right; existing connections render as blue lines from main vertices to ghost vertices.
 - Click a main vertex (highlights orange). Click a ghost vertex. Confirm: a new connection appears, dirty indicator turns on, RuleList shows new entries.
@@ -1381,11 +1404,11 @@ git push
 
 ## Risk register
 
-| Risk | Mitigation |
-|---|---|
-| `RuleEditViewport`'s connection-line click is over the line stroke (~0.3 SVG units, very thin); easy to miss-click | Stroke widens on hover; can be widened further if it bites |
-| `selectedConnection` lives inside `RuleEditViewport` while `selectedTarget` lives in `TileEditor` — split state could cause confusion if a future feature wants both | Acceptable in v1; refactor only if a use case arises |
-| Coincident-vertex pairing creates multiple rules; user can't fine-tune individual entries via viewport | RuleList sidebar provides per-entry deletion; for fine-grained control of M-vs-L pairing, add per-segment view in a future phase |
-| `acrossBands` mode's `top` viewBox shift may confuse users (the path still renders at y > 0 but the viewport is now centered around y = 0) | The unit-bounds dotted rect anchors the user's reference; ghost-bounds at `y < 0` makes the spatial relationship clear |
-| `partnerStart` / `partnerEnd` mirror transforms make ghost text/labels backwards | No labels in v1; if labels added later, apply counter-transform on labels only |
-| Window-level keydown listener for Delete may interfere with text inputs elsewhere | Listener checks `selectedConnection !== null` before acting; if a future input is focused while a connection is selected, Delete is captured — acceptable; can scope to viewport `keydown` if it bites |
+| Risk                                                                                                                                                                 | Mitigation                                                                                                                                                                                             |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `RuleEditViewport`'s connection-line click is over the line stroke (~0.3 SVG units, very thin); easy to miss-click                                                   | Stroke widens on hover; can be widened further if it bites                                                                                                                                             |
+| `selectedConnection` lives inside `RuleEditViewport` while `selectedTarget` lives in `TileEditor` — split state could cause confusion if a future feature wants both | Acceptable in v1; refactor only if a use case arises                                                                                                                                                   |
+| Coincident-vertex pairing creates multiple rules; user can't fine-tune individual entries via viewport                                                               | RuleList sidebar provides per-entry deletion; for fine-grained control of M-vs-L pairing, add per-segment view in a future phase                                                                       |
+| `acrossBands` mode's `top` viewBox shift may confuse users (the path still renders at y > 0 but the viewport is now centered around y = 0)                           | The unit-bounds dotted rect anchors the user's reference; ghost-bounds at `y < 0` makes the spatial relationship clear                                                                                 |
+| `partnerStart` / `partnerEnd` mirror transforms make ghost text/labels backwards                                                                                     | No labels in v1; if labels added later, apply counter-transform on labels only                                                                                                                         |
+| Window-level keydown listener for Delete may interfere with text inputs elsewhere                                                                                    | Listener checks `selectedConnection !== null` before acting; if a future input is focused while a connection is selected, Delete is captured — acceptable; can scope to viewport `keydown` if it bites |
