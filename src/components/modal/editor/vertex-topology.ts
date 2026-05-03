@@ -7,7 +7,7 @@ import type {
 
 export type Group = 'start' | 'middle' | 'end';
 
-const groupBaseIndex = (unit: UnitDefinition, group: Group): number => {
+export const groupBaseIndex = (unit: UnitDefinition, group: Group): number => {
 	if (group === 'start') return 0;
 	if (group === 'middle') return unit.start.length;
 	return unit.start.length + unit.middle.length;
@@ -54,13 +54,7 @@ export const addVertex = (
 		middle: [...spec.unit.middle],
 		end: [...spec.unit.end]
 	};
-	// When appending to 'start', middle and end indices shift up by 2.
-	// When appending to 'middle' or 'end', no existing rule indices are displaced
-	// (the appended segments take new positions beyond the current end of those groups).
-	const shiftThreshold =
-		group === 'start'
-			? groupEndIndex(spec.unit, 'start')
-			: groupEndIndex(spec.unit, 'end') + 2; // beyond any existing index → nothing shifts
+	const shiftThreshold = groupEndIndex(spec.unit, group);
 	const newSegments: UnitDefinition['start'] = [
 		['M', x, y],
 		['L', x, y]
@@ -71,6 +65,3 @@ export const addVertex = (
 
 	return { ...spec, unit, adjustments };
 };
-
-// Re-export groupBaseIndex for use by removeVertex (Task B2)
-export { groupBaseIndex };

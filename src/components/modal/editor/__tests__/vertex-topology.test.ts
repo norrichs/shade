@@ -53,16 +53,14 @@ describe('addVertex', () => {
 		expect(next.adjustments.skipRemove).toEqual([6]);
 	});
 
-	it('shifts only end indices when inserting in middle', () => {
+	it('shifts end indices by +2 when inserting in middle', () => {
 		const spec = makeSpec();
 		const next = addVertex(spec, 'middle', 9, 9);
 		expect(next.unit.middle).toHaveLength(4);
-		// withinBand source=5 was middle[1] which is at flat 5 → unchanged inside middle but pushed because we appended
-		// Inserting at end of middle pushes nothing (end gets shifted by +2 because middle.length grew).
-		// Original index 5 (middle[1]) stays 5; original index 4 (middle[0]) stays 4.
-		// Original skipRemove [4] (middle[0]) stays [4].
-		expect(next.adjustments.withinBand).toEqual([{ source: 5, target: 0 }]);
-		expect(next.adjustments.skipRemove).toEqual([4]);
+		// Threshold = start.length + middle.length = 4. Indices >= 4 shift by +2.
+		// Original withinBand source=5 (end[1]) -> 7; skipRemove [4] (end[0]) -> [6].
+		expect(next.adjustments.withinBand).toEqual([{ source: 7, target: 0 }]);
+		expect(next.adjustments.skipRemove).toEqual([6]);
 	});
 
 	it('shifts nothing when inserting in end', () => {
