@@ -30,6 +30,11 @@
 		if (builtInId && tiledPatternConfigs[builtInId]) {
 			return { ...tiledPatternConfigs[builtInId], type };
 		}
+		if (variant) {
+			console.warn(
+				`PatternTileButton: variant ${type} references algorithm '${variant.algorithm}' with no registered config; falling back to shield`
+			);
+		}
 		return { ...tiledPatternConfigs['tiledShieldTesselationPattern'], type };
 	};
 </script>
