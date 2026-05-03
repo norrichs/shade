@@ -548,7 +548,7 @@ Wire up the `mode` rune and ModeBar without changing the actual rendering yet â€
 
 - Modify: `src/components/modal/editor/TileEditor.svelte`
 
-- [ ] **Step 1: Add mode state + import + ModeBar**
+- [x] **Step 1: Add mode state + import + ModeBar**
 
 In `src/components/modal/editor/TileEditor.svelte`, add to the imports (after the existing local-folder imports):
 
@@ -579,7 +579,7 @@ In the template, add `<ModeBar>` between `<VariantBar>` and the `{#if draft}` bl
 
 Leave the `{#if draft}` block as-is for now â€” it still renders SegmentPathEditor unconditionally. The mode-specific branch comes in Tasks 5+.
 
-- [ ] **Step 2: Run tests + type-check**
+- [x] **Step 2: Run tests + type-check**
 
 ```bash
 npm run test:unit 2>&1 | tail -5
@@ -588,7 +588,7 @@ npm run check 2>&1 | tail -3
 
 Expected: 41/41 pass (37 + 4 from Task 1); type-check stable.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/components/modal/editor/TileEditor.svelte

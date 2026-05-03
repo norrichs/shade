@@ -9,9 +9,12 @@
 	import Container from './Container.svelte';
 	import SegmentPathEditor from './SegmentPathEditor.svelte';
 	import VariantBar from './tile-editor/VariantBar.svelte';
+	import ModeBar from './tile-editor/ModeBar.svelte';
+	import type { EditorMode } from './tile-editor/editor-mode';
 	import type { PathEditorConfig } from './path-editor-shared';
 
 	let draft: TiledPatternSpec | null = $state(null);
+	let mode: EditorMode = $state('unit');
 	let storedRowId: number | null = $state(null);
 	let isBuiltIn: boolean = $state(false);
 	let isDirty: boolean = $state(false);
@@ -111,6 +114,10 @@
 		setActiveVariant(variantId);
 	};
 
+	const updateModeAndClearSelection = (newMode: EditorMode) => {
+		mode = newMode;
+	};
+
 	const editorConfig: PathEditorConfig = $derived.by(() => {
 		const currentDraft: TiledPatternSpec | null = draft;
 		const unitWidth = currentDraft?.unit.width ?? 42;
@@ -151,6 +158,7 @@
 				onDiscard={handleDiscard}
 				onDelete={handleDelete}
 			/>
+			<ModeBar {mode} onChangeMode={updateModeAndClearSelection} />
 			{#if draft}
 				<div class="viewport-wrap">
 					<SegmentPathEditor
