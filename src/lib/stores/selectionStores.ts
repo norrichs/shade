@@ -20,6 +20,7 @@ import type {
 	GlobuleAddress_Tube
 } from '$lib/projection-geometry/types';
 import { BufferGeometry } from 'three';
+import { partnerHighlightStore } from './partnerHighlightStore';
 import {
 	concatAddress_Band,
 	concatAddress_Tube,
@@ -468,6 +469,35 @@ export const rotateToSelection = () => {
 
 	cameraDirection.set({ x: x / len, y: y / len, z: z / len });
 };
+
+export type ChooserPairGeometry = {
+	startGeometry: BufferGeometry | null;
+	endGeometry: BufferGeometry | null;
+} | null;
+
+export const chooserPairGeometry = derived(
+	[partnerHighlightStore, superGlobuleStore],
+	([$partnerHighlightStore, $superGlobuleStore]): ChooserPairGeometry => {
+		if (!$partnerHighlightStore.start && !$partnerHighlightStore.end) return null;
+
+		const facetToGeometry = (addr: GlobuleAddress_Facet | null): BufferGeometry | null => {
+			if (!addr) return null;
+			const facet =
+				$superGlobuleStore.projections[addr.globule]?.tubes[addr.tube]?.bands[addr.band]
+					?.facets[addr.facet];
+			if (!facet?.triangle) return null;
+			const { a, b, c } = facet.triangle;
+			const geom = new BufferGeometry().setFromPoints([a, b, c]);
+			geom.computeVertexNormals();
+			return geom;
+		};
+
+		return {
+			startGeometry: facetToGeometry($partnerHighlightStore.start),
+			endGeometry: facetToGeometry($partnerHighlightStore.end)
+		};
+	}
+);
 
 const isSelected = <T extends SelectableAddress>(
 	a: T,
