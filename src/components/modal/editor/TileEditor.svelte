@@ -8,6 +8,8 @@
 	import Editor from './Editor.svelte';
 	import Container from './Container.svelte';
 	import SegmentPathEditor from './SegmentPathEditor.svelte';
+	import UnitToolbar from './tile-editor/UnitToolbar.svelte';
+	import type { UnitTool } from './tile-editor/UnitToolbar.svelte';
 	import VariantBar from './tile-editor/VariantBar.svelte';
 	import ModeBar from './tile-editor/ModeBar.svelte';
 	import type { EditorMode } from './tile-editor/editor-mode';
@@ -17,11 +19,15 @@
 	import { isRuleMode } from './tile-editor/editor-mode';
 	import type { Vertex } from './segment-vertices';
 	import { addRuleForPairing, removeRulesForPairing, flatIndexes } from './vertex-addressing';
+	import type { Group } from './vertex-topology';
+	import { addVertex, removeVertex } from './vertex-topology';
 	import type { IndexPair } from '$lib/patterns/spec-types';
 	import SkipRemoveViewport from './tile-editor/SkipRemoveViewport.svelte';
 
 	let draft: TiledPatternSpec | null = $state(null);
 	let mode: EditorMode = $state('unit');
+	let tool: UnitTool = $state('drag');
+	let group: Group = $state('start');
 	let selectedTarget: Vertex | null = $state(null);
 	let selectedConnection: { sourceVertex: Vertex; targetVertex: Vertex } | null = $state(null);
 
@@ -135,6 +141,20 @@
 	const handleUnitChange = (newUnit: UnitDefinition) => {
 		if (!draft) return;
 		draft = { ...draft, unit: newUnit };
+		isDirty = true;
+	};
+
+	const handleAddVertex = (x: number, y: number) => {
+		if (!draft) return;
+		const next = addVertex($state.snapshot(draft) as TiledPatternSpec, group, x, y);
+		draft = next;
+		isDirty = true;
+	};
+
+	const handleRemoveVertex = (vertex: Vertex) => {
+		if (!draft) return;
+		const next = removeVertex($state.snapshot(draft) as TiledPatternSpec, vertex);
+		draft = next;
 		isDirty = true;
 	};
 
@@ -274,11 +294,15 @@
 			<ModeBar {mode} onChangeMode={updateModeAndClearSelection} />
 			{#if draft}
 				{#if mode === 'unit'}
+					<UnitToolbar {tool} {group} onChangeTool={(t) => (tool = t)} onChangeGroup={(g) => (group = g)} />
 					<div class="viewport-wrap">
 						<SegmentPathEditor
 							unit={draft.unit}
 							config={editorConfig}
+							{tool}
 							onChangeUnit={handleUnitChange}
+							onAddVertex={handleAddVertex}
+							onRemoveVertex={handleRemoveVertex}
 						/>
 					</div>
 				{:else if isRuleMode(mode)}
