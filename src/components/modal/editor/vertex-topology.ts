@@ -82,10 +82,11 @@ export const shiftRulesForRemoval = (
 		];
 		const droppedSkip = rules.skipRemove.filter((i) => removedIndices.has(i));
 		if (droppedRules.length > 0 || droppedSkip.length > 0) {
-			console.warn(
-				'[vertex-topology] removed vertex caused orphaned rules to be dropped',
-				{ droppedRules, droppedSkip, removedIndices: [...removedIndices] }
-			);
+			console.warn('[vertex-topology] removed vertex caused orphaned rules to be dropped', {
+				droppedRules,
+				droppedSkip,
+				removedIndices: [...removedIndices]
+			});
 		}
 	}
 

@@ -20,7 +20,7 @@
 - **Index shift on topology change is eager**, not stable-id. Reason: the data model already uses flat indices end-to-end (`IndexPair { source, target }` and `skipRemove: number[]`); converting to stable ids is a separate refactor that touches `adjustShieldTesselation` and the snapshot test; not worth doing for v1. The shift functions live in `vertex-topology.ts` as pure functions and are unit tested.
 - **Skip-remove indices that point at a removed vertex are dropped silently**; rules whose `source` or `target` points at a removed vertex are dropped silently. Both are surfaced through console warnings in dev-mode — sufficient for a single-user tool.
 - **Add vertex** creates an `M` + `L` pair at the same coordinate (matches existing shield convention from `default-spec.ts`) in the currently-selected group. Group selection is a radio in the new Unit toolbar.
-- **Group reassignment** (move existing vertex from one group to another) is *out* of v1. Add/remove only. If a vertex needs to move groups, the user removes it and adds a new one.
+- **Group reassignment** (move existing vertex from one group to another) is _out_ of v1. Add/remove only. If a vertex needs to move groups, the user removes it and adds a new one.
 
 ---
 
@@ -86,9 +86,7 @@ let {
 	onSelectTarget: (vertex: Vertex) => void;
 	onSelectGhost: (vertex: Vertex) => void;
 	onSelectConnection: (sourceVertex: Vertex, targetVertex: Vertex) => void;
-	onSelectConnectionLine: (
-		conn: { sourceVertex: Vertex; targetVertex: Vertex } | null
-	) => void;
+	onSelectConnectionLine: (conn: { sourceVertex: Vertex; targetVertex: Vertex } | null) => void;
 } = $props();
 ```
 
@@ -240,14 +238,7 @@ const validationError = $derived.by(() => {
 In the `<VariantBar>` instantiation, add:
 
 ```svelte
-<VariantBar
-	{draft}
-	{isDirty}
-	{isBuiltIn}
-	{validationError}
-	availableVariants={variantList}
-	...
-/>
+<VariantBar {draft} {isDirty} {isBuiltIn} {validationError} availableVariants={variantList} ... />
 ```
 
 - [ ] **Step 3: Update `VariantBar.svelte` props**
@@ -291,10 +282,7 @@ In `VariantBar.svelte`, change:
 to:
 
 ```svelte
-<button
-	onclick={onSave}
-	disabled={isBuiltIn || !isDirty || validationError !== null}
->
+<button onclick={onSave} disabled={isBuiltIn || !isDirty || validationError !== null}>
 	Save
 </button>
 ```
@@ -368,7 +356,11 @@ git commit -m "Block save when any unit group is empty; show inline error"
 In `src/components/controls/TilingControl.svelte`, replace `getTiles` and the surrounding usage with a grouped variant. Replace lines 62-84:
 
 ```ts
-type TileGroup = { algorithmId: string; displayName: string; tiles: { type: string; tiling: TilingBasis }[] };
+type TileGroup = {
+	algorithmId: string;
+	displayName: string;
+	tiles: { type: string; tiling: TilingBasis }[];
+};
 
 const getTileGroups = (
 	configs: { [key: string]: TiledPatternConfig },
@@ -380,7 +372,11 @@ const getTileGroups = (
 		const userVariants = variants
 			.filter((v) => !builtInIds.has(v.id) && v.algorithm === a.algorithmId)
 			.map((v) => ({ type: v.id, tiling: 'quadrilateral' as TilingBasis }));
-		return { algorithmId: a.algorithmId, displayName: a.displayName, tiles: [builtIn, ...userVariants] };
+		return {
+			algorithmId: a.algorithmId,
+			displayName: a.displayName,
+			tiles: [builtIn, ...userVariants]
+		};
 	});
 	const legacyTiles: { type: string; tiling: TilingBasis }[] = (
 		['quadrilateral', 'triangle', 'band'] as TilingBasis[]
@@ -539,7 +535,7 @@ git commit -m "Resolve per-variant default config via algorithm registry, not ha
 
 ### Task A5: Confirm-before-discard on mode switch with unsaved edits
 
-**Why:** Phase 5 scope item: "confirm-before-discard on close" was originally framed as floater-close. Floater close is non-trivial in this codebase (controlled by sidebar). The same protection mode-switch is more useful: switching from Unit mode after editing vertex positions, then to a rule mode, doesn't lose the edits (they stay in `draft`). But switching to a different *variant* via `VariantBar`'s select drops the draft. That's the dangerous transition.
+**Why:** Phase 5 scope item: "confirm-before-discard on close" was originally framed as floater-close. Floater close is non-trivial in this codebase (controlled by sidebar). The same protection mode-switch is more useful: switching from Unit mode after editing vertex positions, then to a rule mode, doesn't lose the edits (they stay in `draft`). But switching to a different _variant_ via `VariantBar`'s select drops the draft. That's the dangerous transition.
 
 **Files:**
 
@@ -768,7 +764,7 @@ git commit -m "Add vertex-topology.addVertex with adjustment-rule index shifting
 
 ### Task B2: `removeVertex` with rule index shifting and orphan rule removal
 
-**Why:** Removing a vertex deletes its `M` and `L` segments (potentially up to 2 segments per ref). All indices ≥ the lowest removed segment shift by `-(removed count)`. Rules whose `source` or `target` pointed *at* a removed segment must be dropped (they'd now address a different segment).
+**Why:** Removing a vertex deletes its `M` and `L` segments (potentially up to 2 segments per ref). All indices ≥ the lowest removed segment shift by `-(removed count)`. Rules whose `source` or `target` pointed _at_ a removed segment must be dropped (they'd now address a different segment).
 
 **Files:**
 
@@ -792,7 +788,7 @@ describe('shiftRulesForRemoval', () => {
 					{ source: 0, target: 1 }, // keep, no shift
 					{ source: 4, target: 0 }, // keep, source shifts to 2
 					{ source: 2, target: 0 }, // drop (touches removed)
-					{ source: 0, target: 3 }  // drop
+					{ source: 0, target: 3 } // drop
 				],
 				acrossBands: [],
 				partner: { startEnd: [], endEnd: [] },
@@ -863,7 +859,7 @@ describe('removeVertex', () => {
 			adjustments: {
 				withinBand: [
 					{ source: 3, target: 0 }, // index 3 = vertex (10,10), keep, source shifts to 1
-					{ source: 1, target: 0 }  // index 1 = removed, drop
+					{ source: 1, target: 0 } // index 1 = removed, drop
 				],
 				acrossBands: [],
 				partner: { startEnd: [], endEnd: [] },
@@ -1240,8 +1236,10 @@ const handleSvgClick = (e: MouseEvent) => {
 	const screenY = e.clientY - rect.top;
 	const vbWidth = config.contentBounds.width + config.padding * 2;
 	const vbHeight = config.contentBounds.height + config.padding * 2;
-	const vbX = (screenX / config.size.width) * vbWidth + (config.contentBounds.left - config.padding);
-	const vbY = (screenY / config.size.height) * vbHeight + (config.contentBounds.top - config.padding);
+	const vbX =
+		(screenX / config.size.width) * vbWidth + (config.contentBounds.left - config.padding);
+	const vbY =
+		(screenY / config.size.height) * vbHeight + (config.contentBounds.top - config.padding);
 	onAddVertex(vbX, vbY);
 };
 ```

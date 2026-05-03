@@ -83,7 +83,7 @@ describe('shiftRulesForRemoval', () => {
 					{ source: 0, target: 1 }, // keep, no shift
 					{ source: 4, target: 0 }, // keep, source shifts to 2
 					{ source: 2, target: 0 }, // drop (touches removed)
-					{ source: 0, target: 3 }  // drop
+					{ source: 0, target: 3 } // drop
 				],
 				acrossBands: [],
 				partner: { startEnd: [], endEnd: [] },
@@ -154,7 +154,7 @@ describe('removeVertex', () => {
 			adjustments: {
 				withinBand: [
 					{ source: 3, target: 0 }, // index 3 = vertex (10,10), keep, source shifts to 1
-					{ source: 1, target: 0 }  // index 1 = removed, drop
+					{ source: 1, target: 0 } // index 1 = removed, drop
 				],
 				acrossBands: [],
 				partner: { startEnd: [], endEnd: [] },

@@ -70,7 +70,12 @@
 
 	const handleSelectConnection = (sourceVertex: Vertex, targetVertex: Vertex) => {
 		if (!draft) return;
-		const newRules = removeRulesForPairing(getRulesForMode(), draft.unit, targetVertex, sourceVertex);
+		const newRules = removeRulesForPairing(
+			getRulesForMode(),
+			draft.unit,
+			targetVertex,
+			sourceVertex
+		);
 		setRulesForMode(newRules);
 	};
 
@@ -294,7 +299,12 @@
 			<ModeBar {mode} onChangeMode={updateModeAndClearSelection} />
 			{#if draft}
 				{#if mode === 'unit'}
-					<UnitToolbar {tool} {group} onChangeTool={(t) => (tool = t)} onChangeGroup={(g) => (group = g)} />
+					<UnitToolbar
+						{tool}
+						{group}
+						onChangeTool={(t) => (tool = t)}
+						onChangeGroup={(g) => (group = g)}
+					/>
 					<div class="viewport-wrap">
 						<SegmentPathEditor
 							unit={draft.unit}

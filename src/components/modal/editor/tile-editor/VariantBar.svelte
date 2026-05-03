@@ -63,11 +63,12 @@
 				<option value={variant.id}>{variant.name}</option>
 			{/each}
 		</select>
-		<button
-			onclick={onSave}
-			disabled={isBuiltIn || !isDirty || validationError !== null}
-		>Save</button>
-		<button onclick={handleSaveAsClick} disabled={!draft || validationError !== null}>Save As…</button>
+		<button onclick={onSave} disabled={isBuiltIn || !isDirty || validationError !== null}
+			>Save</button
+		>
+		<button onclick={handleSaveAsClick} disabled={!draft || validationError !== null}
+			>Save As…</button
+		>
 		<button onclick={onDiscard} disabled={!isDirty}>Discard</button>
 		<button onclick={onDelete} disabled={isBuiltIn || !draft}>Delete</button>
 		{#if isDirty}

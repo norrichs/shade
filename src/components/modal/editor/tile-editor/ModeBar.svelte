@@ -22,10 +22,7 @@
 
 <div class="mode-bar">
 	{#each options as option}
-		<button
-			class:active={mode === option.id}
-			onclick={() => onChangeMode(option.id)}
-		>
+		<button class:active={mode === option.id} onclick={() => onChangeMode(option.id)}>
 			{option.label}
 		</button>
 	{/each}

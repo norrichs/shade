@@ -59,7 +59,11 @@
 	};
 	$: variantList = $tilePatternSpecStore.variants;
 
-	type TileGroup = { algorithmId: string; displayName: string; tiles: { type: string; tiling: TilingBasis }[] };
+	type TileGroup = {
+		algorithmId: string;
+		displayName: string;
+		tiles: { type: string; tiling: TilingBasis }[];
+	};
 
 	const getTileGroups = (
 		configs: { [key: string]: TiledPatternConfig },
@@ -71,7 +75,11 @@
 			const userVariants = variants
 				.filter((v) => !builtInIds.has(v.id) && v.algorithm === a.algorithmId)
 				.map((v) => ({ type: v.id, tiling: 'quadrilateral' as TilingBasis }));
-			return { algorithmId: a.algorithmId, displayName: a.displayName, tiles: [builtIn, ...userVariants] };
+			return {
+				algorithmId: a.algorithmId,
+				displayName: a.displayName,
+				tiles: [builtIn, ...userVariants]
+			};
 		});
 		const legacyTiles: { type: string; tiling: TilingBasis }[] = (
 			['quadrilateral', 'triangle', 'band'] as TilingBasis[]
