@@ -20,6 +20,18 @@
 		onChange: (snapshot: ResolvedPair | null) => void;
 	} = $props();
 
+	const sourceCounts = $derived.by(() => {
+		const fromTubes = (source: any): number =>
+			source?.tubes?.reduce((n: number, t: any) => n + (t.bands?.length ?? 0), 0) ?? 0;
+		return {
+			projection: fromTubes($superGlobulePatternStore?.projectionPattern),
+			surface: fromTubes($superGlobulePatternStore?.surfaceProjectionPattern),
+			globuleTube: fromTubes($superGlobulePatternStore?.globuleTubePattern),
+			superGlobule:
+				($superGlobulePatternStore?.superGlobulePattern as any)?.bandPatterns?.length ?? 0
+		};
+	});
+
 	const bands = $derived.by((): BandCutPattern[] => {
 		const fromTubes = (source: any): BandCutPattern[] =>
 			source?.tubes?.flatMap((t: { bands: BandCutPattern[] }) => t.bands) ?? [];
@@ -105,7 +117,13 @@
 <div class="chooser">
 	<div class="title">Pair</div>
 	{#if eligible.length === 0}
-		<div class="empty">{bands.length === 0 ? 'No model loaded' : 'No partner pairs in model'}</div>
+		<div class="empty">
+			{bands.length === 0 ? 'No model loaded' : 'No partner pairs in model'}
+		</div>
+		<div class="diag">
+			bands by source — projection: {sourceCounts.projection}, surface: {sourceCounts.surface},
+			globuleTube: {sourceCounts.globuleTube}, super: {sourceCounts.superGlobule}
+		</div>
 	{:else}
 		<div class="row">
 			<select
@@ -160,6 +178,11 @@
 	.empty {
 		color: rgba(0, 0, 0, 0.5);
 		font-size: 0.85em;
+	}
+	.diag {
+		color: rgba(0, 0, 0, 0.4);
+		font-size: 0.75em;
+		font-family: monospace;
 	}
 	.caption {
 		color: rgba(0, 0, 0, 0.5);
