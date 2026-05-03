@@ -1,5 +1,6 @@
-import { addVertex } from '../vertex-topology';
+import { addVertex, removeVertex, shiftRulesForRemoval } from '../vertex-topology';
 import type { TiledPatternSpec } from '$lib/patterns/spec-types';
+import { computeVertices } from '../segment-vertices';
 
 const makeSpec = (): TiledPatternSpec => ({
 	id: 'test',
@@ -69,5 +70,99 @@ describe('addVertex', () => {
 		expect(next.unit.end).toHaveLength(4);
 		expect(next.adjustments.withinBand).toEqual([{ source: 5, target: 0 }]);
 		expect(next.adjustments.skipRemove).toEqual([4]);
+	});
+});
+
+describe('shiftRulesForRemoval', () => {
+	it('removes pairs that touch any removed index and shifts the rest down', () => {
+		const removed = new Set([2, 3]);
+		const result = shiftRulesForRemoval(
+			{
+				withinBand: [
+					{ source: 0, target: 1 }, // keep, no shift
+					{ source: 4, target: 0 }, // keep, source shifts to 2
+					{ source: 2, target: 0 }, // drop (touches removed)
+					{ source: 0, target: 3 }  // drop
+				],
+				acrossBands: [],
+				partner: { startEnd: [], endEnd: [] },
+				skipRemove: [0, 2, 5]
+			},
+			removed
+		);
+		expect(result.withinBand).toEqual([
+			{ source: 0, target: 1 },
+			{ source: 2, target: 0 }
+		]);
+		expect(result.skipRemove).toEqual([0, 3]);
+	});
+});
+
+describe('removeVertex', () => {
+	it('removes the M+L pair at coincident M+L vertex', () => {
+		const spec: TiledPatternSpec = {
+			id: 't',
+			name: 'T',
+			algorithm: 'shield-tesselation',
+			builtIn: false,
+			unit: {
+				width: 42,
+				height: 14,
+				start: [
+					['M', 0, 0],
+					['L', 5, 5],
+					['M', 5, 5],
+					['L', 10, 10]
+				],
+				middle: [],
+				end: []
+			},
+			adjustments: {
+				withinBand: [],
+				acrossBands: [],
+				partner: { startEnd: [], endEnd: [] },
+				skipRemove: []
+			}
+		};
+		const vertex = computeVertices(spec.unit).find((v) => v.x === 5)!;
+		const next = removeVertex(spec, vertex);
+		expect(next.unit.start).toEqual([
+			['M', 0, 0],
+			['L', 10, 10]
+		]);
+	});
+
+	it('drops rules referencing a removed index and shifts the rest', () => {
+		const spec: TiledPatternSpec = {
+			id: 't',
+			name: 'T',
+			algorithm: 'shield-tesselation',
+			builtIn: false,
+			unit: {
+				width: 42,
+				height: 14,
+				start: [
+					['M', 0, 0],
+					['L', 5, 5],
+					['M', 5, 5],
+					['L', 10, 10]
+				],
+				middle: [],
+				end: []
+			},
+			adjustments: {
+				withinBand: [
+					{ source: 3, target: 0 }, // index 3 = vertex (10,10), keep, source shifts to 1
+					{ source: 1, target: 0 }  // index 1 = removed, drop
+				],
+				acrossBands: [],
+				partner: { startEnd: [], endEnd: [] },
+				skipRemove: [3, 2] // 3 = (10,10) keep→1; 2 = removed, drop
+			}
+		};
+		const vertex = computeVertices(spec.unit).find((v) => v.x === 5)!;
+		const next = removeVertex(spec, vertex);
+		expect(next.adjustments.withinBand).toEqual([{ source: 1, target: 0 }]);
+		expect(next.adjustments.skipRemove).toEqual([1]);
 	});
 });

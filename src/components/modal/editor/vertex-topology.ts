@@ -4,6 +4,8 @@ import type {
 	IndexPair,
 	AdjustmentRules
 } from '$lib/patterns/spec-types';
+import type { Vertex } from './segment-vertices';
+import { flatIndexes } from './vertex-addressing';
 
 export type Group = 'start' | 'middle' | 'end';
 
@@ -40,6 +42,51 @@ export const shiftRulesForInsertion = (
 	},
 	skipRemove: rules.skipRemove.map((i) => shiftIndex(i, threshold, delta))
 });
+
+export const shiftRulesForRemoval = (
+	rules: AdjustmentRules,
+	removedIndices: Set<number>
+): AdjustmentRules => {
+	const sortedRemoved = [...removedIndices].sort((a, b) => a - b);
+	const shift = (idx: number): number => {
+		let count = 0;
+		for (const r of sortedRemoved) {
+			if (r < idx) count++;
+			else break;
+		}
+		return idx - count;
+	};
+	const filterAndShift = (pairs: IndexPair[]): IndexPair[] =>
+		pairs
+			.filter((p) => !removedIndices.has(p.source) && !removedIndices.has(p.target))
+			.map((p) => ({ source: shift(p.source), target: shift(p.target) }));
+	return {
+		withinBand: filterAndShift(rules.withinBand),
+		acrossBands: filterAndShift(rules.acrossBands),
+		partner: {
+			startEnd: filterAndShift(rules.partner.startEnd),
+			endEnd: filterAndShift(rules.partner.endEnd)
+		},
+		skipRemove: rules.skipRemove.filter((i) => !removedIndices.has(i)).map(shift)
+	};
+};
+
+export const removeVertex = (spec: TiledPatternSpec, vertex: Vertex): TiledPatternSpec => {
+	const removed = new Set(flatIndexes(spec.unit, vertex));
+	const removeFromGroup = (group: Group): UnitDefinition[Group] => {
+		const base = groupBaseIndex(spec.unit, group);
+		return spec.unit[group].filter((_, i) => !removed.has(base + i));
+	};
+	const unit: UnitDefinition = {
+		width: spec.unit.width,
+		height: spec.unit.height,
+		start: removeFromGroup('start'),
+		middle: removeFromGroup('middle'),
+		end: removeFromGroup('end')
+	};
+	const adjustments = shiftRulesForRemoval(spec.adjustments, removed);
+	return { ...spec, unit, adjustments };
+};
 
 export const addVertex = (
 	spec: TiledPatternSpec,
