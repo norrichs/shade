@@ -5,15 +5,22 @@
 	import { getCanvas, type PathEditorConfig } from './path-editor-shared';
 	import { computeVertices, updateUnitForVertexMove, type Vertex } from './segment-vertices';
 	import DraggablePoint from './DraggablePoint.svelte';
+	import type { UnitTool } from './tile-editor/UnitToolbar.svelte';
 
 	let {
 		unit,
 		config,
-		onChangeUnit
+		tool = 'drag',
+		onChangeUnit,
+		onAddVertex,
+		onRemoveVertex
 	}: {
 		unit: UnitDefinition;
 		config: PathEditorConfig;
+		tool?: UnitTool;
 		onChangeUnit: (unit: UnitDefinition) => void;
+		onAddVertex?: (x: number, y: number) => void;
+		onRemoveVertex?: (vertex: Vertex) => void;
 	} = $props();
 
 	const canv = $derived(getCanvas(config));
@@ -22,33 +29,71 @@
 	const pathString = $derived(svgPathStringFromSegments(allSegments));
 
 	const handleDrag = (vertex: Vertex, newX: number, newY: number) => {
+		if (tool !== 'drag') return;
 		const scaledX = newX * canv.scale;
 		const scaledY = newY * canv.scale;
 		onChangeUnit(updateUnitForVertexMove(unit, vertex, scaledX, scaledY));
 	};
 
-	const handleDragEnd = () => {
-		// Updates flow on every drag tick; nothing to commit on end
+	const handleDragEnd = () => {};
+
+	const handleSvgClick = (e: MouseEvent) => {
+		if (tool !== 'add' || !onAddVertex) return;
+		const svg = e.currentTarget as SVGSVGElement;
+		const rect = svg.getBoundingClientRect();
+		const screenX = e.clientX - rect.left;
+		const screenY = e.clientY - rect.top;
+		const vbX = (screenX / config.size.width) * canv.viewBoxData.width + canv.viewBoxData.left;
+		const vbY = (screenY / config.size.height) * canv.viewBoxData.height + canv.viewBoxData.top;
+		onAddVertex(vbX, vbY);
+	};
+
+	const handleVertexClick = (vertex: Vertex) => {
+		if (tool === 'remove' && onRemoveVertex) onRemoveVertex(vertex);
 	};
 </script>
 
 <div class="container" style="width:{config.size.width}px; height:{config.size.height}px;">
-	<svg width={config.size.width} height={config.size.height} viewBox={canv.viewBox} class="canvas">
+	<svg
+		width={config.size.width}
+		height={config.size.height}
+		viewBox={canv.viewBox}
+		class="canvas"
+		class:add={tool === 'add'}
+		class:remove={tool === 'remove'}
+		onclick={handleSvgClick}
+	>
 		<rect x="0" y="0" width={unit.width} height={unit.height} class="unit-bounds" />
 		<path d={pathString} class="segments" />
+		{#if tool === 'remove'}
+			{#each vertices as vertex (vertex.x + ':' + vertex.y)}
+				<circle
+					cx={vertex.x}
+					cy={vertex.y}
+					r="0.6"
+					class="remove-target"
+					onclick={(e) => {
+						e.stopPropagation();
+						handleVertexClick(vertex);
+					}}
+				/>
+			{/each}
+		{/if}
 	</svg>
-	{#each vertices as vertex (vertex.x + ':' + vertex.y)}
-		<DraggablePoint
-			{config}
-			{canv}
-			curveIndex={0}
-			pointIndex={0}
-			point={{ type: 'PointConfig2', x: vertex.x, y: vertex.y }}
-			handleDrag={(x, y) => handleDrag(vertex, x, y)}
-			{handleDragEnd}
-			handleDoubleClick={() => {}}
-		/>
-	{/each}
+	{#if tool === 'drag'}
+		{#each vertices as vertex (vertex.x + ':' + vertex.y)}
+			<DraggablePoint
+				{config}
+				{canv}
+				curveIndex={0}
+				pointIndex={0}
+				point={{ type: 'PointConfig2', x: vertex.x, y: vertex.y }}
+				handleDrag={(x, y) => handleDrag(vertex, x, y)}
+				{handleDragEnd}
+				handleDoubleClick={() => {}}
+			/>
+		{/each}
+	{/if}
 </div>
 
 <style>
@@ -63,6 +108,12 @@
 		background-color: beige;
 		display: block;
 	}
+	.canvas.add {
+		cursor: crosshair;
+	}
+	.canvas.remove {
+		cursor: not-allowed;
+	}
 	.unit-bounds {
 		fill: none;
 		stroke: rgba(0, 0, 0, 0.15);
@@ -73,5 +124,14 @@
 		fill: none;
 		stroke: black;
 		stroke-width: 0.4;
+	}
+	.remove-target {
+		fill: rgba(255, 0, 0, 0.15);
+		stroke: red;
+		stroke-width: 0.2;
+		cursor: pointer;
+	}
+	.remove-target:hover {
+		fill: rgba(255, 0, 0, 0.5);
 	}
 </style>
