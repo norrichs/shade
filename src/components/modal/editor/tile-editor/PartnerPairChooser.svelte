@@ -21,15 +21,14 @@
 	} = $props();
 
 	const bands = $derived.by((): BandCutPattern[] => {
-		const fromProjection =
-			($superGlobulePatternStore?.projectionPattern as any)?.tubes?.flatMap(
-				(t: { bands: BandCutPattern[] }) => t.bands
-			) ?? [];
-		const fromSurface =
-			($superGlobulePatternStore?.surfaceProjectionPattern as any)?.tubes?.flatMap(
-				(t: { bands: BandCutPattern[] }) => t.bands
-			) ?? [];
-		return [...fromProjection, ...fromSurface];
+		const fromTubes = (source: any): BandCutPattern[] =>
+			source?.tubes?.flatMap((t: { bands: BandCutPattern[] }) => t.bands) ?? [];
+		const fromProjection = fromTubes($superGlobulePatternStore?.projectionPattern);
+		const fromSurface = fromTubes($superGlobulePatternStore?.surfaceProjectionPattern);
+		const fromGlobuleTube = fromTubes($superGlobulePatternStore?.globuleTubePattern);
+		const fromSuper =
+			($superGlobulePatternStore?.superGlobulePattern as any)?.bandPatterns ?? [];
+		return [...fromProjection, ...fromSurface, ...fromGlobuleTube, ...fromSuper];
 	});
 	const eligible = $derived(getEligibleBands(bands, mode));
 
