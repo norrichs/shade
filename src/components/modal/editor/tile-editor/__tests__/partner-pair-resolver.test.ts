@@ -15,7 +15,10 @@ const makeQuad = (id: number) => ({
 });
 
 const makeFacet = (id: number) => ({
-	path: [['M', id, id], ['L', id + 1, id + 1]] as any,
+	path: [
+		['M', id, id],
+		['L', id + 1, id + 1]
+	] as any,
 	quad: makeQuad(id),
 	label: `${id}`
 });
@@ -26,7 +29,10 @@ const makeBand = (
 	options: {
 		startPartnerBand?: GlobuleAddress_Band;
 		endPartnerBand?: GlobuleAddress_Band;
-		startPartnerTransform?: { translate: { x: number; y: number; z: number }; rotate: { z: number } };
+		startPartnerTransform?: {
+			translate: { x: number; y: number; z: number };
+			rotate: { z: number };
+		};
 		endPartnerTransform?: { translate: { x: number; y: number; z: number }; rotate: { z: number } };
 	} = {}
 ): BandCutPattern =>
@@ -37,12 +43,8 @@ const makeBand = (
 		meta:
 			options.startPartnerBand || options.endPartnerBand
 				? {
-						...(options.startPartnerBand
-							? { startPartnerBand: options.startPartnerBand }
-							: {}),
-						...(options.endPartnerBand
-							? { endPartnerBand: options.endPartnerBand }
-							: {}),
+						...(options.startPartnerBand ? { startPartnerBand: options.startPartnerBand } : {}),
+						...(options.endPartnerBand ? { endPartnerBand: options.endPartnerBand } : {}),
 						startPartnerTransform: options.startPartnerTransform,
 						endPartnerTransform: options.endPartnerTransform
 					}
@@ -85,9 +87,7 @@ describe('resolvePair', () => {
 	});
 
 	it('returns null when partner band cannot be resolved', () => {
-		const bands = [
-			makeBand(0, 0, { startPartnerBand: { globule: 0, tube: 99, band: 99 } })
-		];
+		const bands = [makeBand(0, 0, { startPartnerBand: { globule: 0, tube: 99, band: 99 } })];
 		const result = resolvePair(bands, { globule: 0, tube: 0, band: 0 }, 'partnerStart');
 		expect(result).toBeNull();
 	});

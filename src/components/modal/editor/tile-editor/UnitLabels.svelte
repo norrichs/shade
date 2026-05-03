@@ -37,8 +37,8 @@
 		dominant-baseline={dominantBaseline}
 		fill="rgba(0, 0, 0, {opacity})"
 		pointer-events="none"
-		style="user-select: none;"
-	>{flatIndexes(unit, vertex).join(',')}</text>
+		style="user-select: none;">{flatIndexes(unit, vertex).join(',')}</text
+	>
 {/each}
 
 {#each corners as corner (corner.label)}
@@ -50,6 +50,6 @@
 		dominant-baseline={dominantBaseline}
 		fill="rgba(0, 0, 0, {opacity})"
 		pointer-events="none"
-		style="user-select: none;"
-	>{corner.label}</text>
+		style="user-select: none;">{corner.label}</text
+	>
 {/each}

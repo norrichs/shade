@@ -483,8 +483,9 @@ export const chooserPairGeometry = derived(
 		const facetToGeometry = (addr: GlobuleAddress_Facet | null): BufferGeometry | null => {
 			if (!addr) return null;
 			const facet =
-				$superGlobuleStore.projections[addr.globule]?.tubes[addr.tube]?.bands[addr.band]
-					?.facets[addr.facet];
+				$superGlobuleStore.projections[addr.globule]?.tubes[addr.tube]?.bands[addr.band]?.facets[
+					addr.facet
+				];
 			if (!facet?.triangle) return null;
 			const { a, b, c } = facet.triangle;
 			const geom = new BufferGeometry().setFromPoints([a, b, c]);

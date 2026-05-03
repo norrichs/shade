@@ -355,7 +355,10 @@
 					</div>
 				{:else if isRuleMode(mode)}
 					{#if isPartnerMode && isShieldVariant}
-						<PartnerPairChooser mode={mode as 'partnerStart' | 'partnerEnd'} onChange={handleDistortedGhostChange} />
+						<PartnerPairChooser
+							mode={mode as 'partnerStart' | 'partnerEnd'}
+							onChange={handleDistortedGhostChange}
+						/>
 					{/if}
 					<div class="rule-row">
 						<div class="viewport-wrap">

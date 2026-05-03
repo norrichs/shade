@@ -18,14 +18,8 @@
 {/if}
 
 {#if $chooserPairGeometry?.startGeometry}
-	<T.Mesh
-		geometry={$chooserPairGeometry.startGeometry}
-		material={materials.numbered[1]}
-	/>
+	<T.Mesh geometry={$chooserPairGeometry.startGeometry} material={materials.numbered[1]} />
 {/if}
 {#if $chooserPairGeometry?.endGeometry}
-	<T.Mesh
-		geometry={$chooserPairGeometry.endGeometry}
-		material={materials.numbered[4]}
-	/>
+	<T.Mesh geometry={$chooserPairGeometry.endGeometry} material={materials.numbered[4]} />
 {/if}

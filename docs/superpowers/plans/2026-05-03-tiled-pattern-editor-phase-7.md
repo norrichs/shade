@@ -16,20 +16,20 @@
 
 **New files:**
 
-| Path | Responsibility |
-|------|----------------|
-| `src/lib/stores/partnerHighlightStore.ts` | Writable holding the chooser-selected partner pair's two facet addresses (or null/null when cleared). Read by `Highlight.svelte`; written by `PartnerPairChooser`. |
-| `src/components/modal/editor/tile-editor/partner-pair-resolver.ts` | Pure functions: `getEligibleBands(allBands, mode)` (returns BandCutPatterns whose meta has the relevant partner address); `resolvePair(allBands, mainAddress, mode)` (returns `{ mainQuad, mainPath, ghostQuad, ghostPath, mainAddress, ghostAddress }` or null); `pairsEqual(a, b)` (deep-compare two pair snapshots for change detection). |
-| `src/components/modal/editor/tile-editor/PartnerPairChooser.svelte` | Sidebar UI: dropdown of eligible bands, random button, model-changed banner, generalization caption. Owns `snapshot` rune, subscribes to `superGlobulePatternStore`, writes to `partnerHighlightStore`. Emits the `distortedGhost` prop value via a callback. |
-| `src/components/modal/editor/tile-editor/__tests__/partner-pair-resolver.test.ts` | Jest unit tests for `getEligibleBands`, `resolvePair`, `pairsEqual`. |
+| Path                                                                              | Responsibility                                                                                                                                                                                                                                                                                                                               |
+| --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/lib/stores/partnerHighlightStore.ts`                                         | Writable holding the chooser-selected partner pair's two facet addresses (or null/null when cleared). Read by `Highlight.svelte`; written by `PartnerPairChooser`.                                                                                                                                                                           |
+| `src/components/modal/editor/tile-editor/partner-pair-resolver.ts`                | Pure functions: `getEligibleBands(allBands, mode)` (returns BandCutPatterns whose meta has the relevant partner address); `resolvePair(allBands, mainAddress, mode)` (returns `{ mainQuad, mainPath, ghostQuad, ghostPath, mainAddress, ghostAddress }` or null); `pairsEqual(a, b)` (deep-compare two pair snapshots for change detection). |
+| `src/components/modal/editor/tile-editor/PartnerPairChooser.svelte`               | Sidebar UI: dropdown of eligible bands, random button, model-changed banner, generalization caption. Owns `snapshot` rune, subscribes to `superGlobulePatternStore`, writes to `partnerHighlightStore`. Emits the `distortedGhost` prop value via a callback.                                                                                |
+| `src/components/modal/editor/tile-editor/__tests__/partner-pair-resolver.test.ts` | Jest unit tests for `getEligibleBands`, `resolvePair`, `pairsEqual`.                                                                                                                                                                                                                                                                         |
 
 **Modified files:**
 
-| Path | Change |
-|------|--------|
-| `src/components/projection/Highlight.svelte` | Also render facets from `partnerHighlightStore` using `materials.numbered[1]` (start) and `materials.numbered[4]` (end). Existing `selectedProjectionGeometry` path preserved. |
+| Path                                                              | Change                                                                                                                                                                                                                                                                                                                |
+| ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/components/projection/Highlight.svelte`                      | Also render facets from `partnerHighlightStore` using `materials.numbered[1]` (start) and `materials.numbered[4]` (end). Existing `selectedProjectionGeometry` path preserved.                                                                                                                                        |
 | `src/components/modal/editor/tile-editor/RuleEditViewport.svelte` | Accept optional `distortedGhost` prop. When non-null, render `mainPath` in `mainQuad`, `ghostPath` in `ghostQuad` (already includes baked partner transform), connection lines in distorted-frame coords. ViewBox extends to fit both quads' bounding boxes. When null, existing symmetric-mirror behavior unchanged. |
-| `src/components/modal/editor/TileEditor.svelte` | In partner modes for shield variants, mount `PartnerPairChooser` and pass its emitted `distortedGhost` value through to `RuleEditViewport`. Other modes unchanged. |
+| `src/components/modal/editor/TileEditor.svelte`                   | In partner modes for shield variants, mount `PartnerPairChooser` and pass its emitted `distortedGhost` value through to `RuleEditViewport`. Other modes unchanged.                                                                                                                                                    |
 
 **Pre-existing TS error baseline:** ~427. Don't grow significantly.
 
@@ -38,6 +38,7 @@
 ### Task 1: Create `partnerHighlightStore`
 
 **Files:**
+
 - Create: `src/lib/stores/partnerHighlightStore.ts`
 
 A trivial writable. No tests — it's three lines of Svelte store boilerplate.
@@ -82,6 +83,7 @@ git commit -m "Add partnerHighlightStore for chooser-driven 3D pair highlight"
 ### Task 2: Create `partner-pair-resolver` with TDD
 
 **Files:**
+
 - Create: `src/components/modal/editor/tile-editor/__tests__/partner-pair-resolver.test.ts`
 - Create: `src/components/modal/editor/tile-editor/partner-pair-resolver.ts`
 
@@ -109,7 +111,10 @@ const makeQuad = (id: number) => ({
 });
 
 const makeFacet = (id: number) => ({
-	path: [['M', id, id], ['L', id + 1, id + 1]] as any,
+	path: [
+		['M', id, id],
+		['L', id + 1, id + 1]
+	] as any,
 	quad: makeQuad(id),
 	label: `${id}`
 });
@@ -120,7 +125,10 @@ const makeBand = (
 	options: {
 		startPartnerBand?: GlobuleAddress_Band;
 		endPartnerBand?: GlobuleAddress_Band;
-		startPartnerTransform?: { translate: { x: number; y: number; z: number }; rotate: { z: number } };
+		startPartnerTransform?: {
+			translate: { x: number; y: number; z: number };
+			rotate: { z: number };
+		};
 		endPartnerTransform?: { translate: { x: number; y: number; z: number }; rotate: { z: number } };
 	} = {}
 ): BandCutPattern =>
@@ -175,9 +183,7 @@ describe('resolvePair', () => {
 	});
 
 	it('returns null when partner band cannot be resolved', () => {
-		const bands = [
-			makeBand(0, 0, { startPartnerBand: { globule: 0, tube: 99, band: 99 } })
-		];
+		const bands = [makeBand(0, 0, { startPartnerBand: { globule: 0, tube: 99, band: 99 } })];
 		const result = resolvePair(bands, { globule: 0, tube: 0, band: 0 }, 'partnerStart');
 		expect(result).toBeNull();
 	});
@@ -406,6 +412,7 @@ git commit -m "Add partner-pair-resolver with eligibility, resolution, and equal
 ### Task 3: Update `Highlight.svelte` to render chooser-pair facets
 
 **Files:**
+
 - Modify: `src/components/projection/Highlight.svelte`
 
 The component currently renders one selected facet + one combined `partner` BufferGeometry (both from `selectedProjectionGeometry`). For Phase 7 it ALSO renders the chooser-selected pair's two facets in distinct colors. The two highlight sources coexist — they don't replace each other.
@@ -441,14 +448,21 @@ export const chooserPairGeometry = derived(
 		const facetToGeometry = (addr: GlobuleAddress_Facet | null): BufferGeometry | null => {
 			if (!addr) return null;
 			const facet =
-				$superGlobuleStore.projections[addr.globule]?.tubes[addr.tube]?.bands[addr.band]
-					?.facets[addr.facet];
+				$superGlobuleStore.projections[addr.globule]?.tubes[addr.tube]?.bands[addr.band]?.facets[
+					addr.facet
+				];
 			if (!facet) return null;
 			const geom = new BufferGeometry();
 			const positions = new Float32Array([
-				facet.triangle.a.x, facet.triangle.a.y, facet.triangle.a.z,
-				facet.triangle.b.x, facet.triangle.b.y, facet.triangle.b.z,
-				facet.triangle.c.x, facet.triangle.c.y, facet.triangle.c.z
+				facet.triangle.a.x,
+				facet.triangle.a.y,
+				facet.triangle.a.z,
+				facet.triangle.b.x,
+				facet.triangle.b.y,
+				facet.triangle.b.z,
+				facet.triangle.c.x,
+				facet.triangle.c.y,
+				facet.triangle.c.z
 			]);
 			geom.setAttribute('position', new (require('three').Float32BufferAttribute)(positions, 3));
 			geom.computeVertexNormals();
@@ -502,16 +516,10 @@ Replace `src/components/projection/Highlight.svelte` with:
 {/if}
 
 {#if $chooserPairGeometry?.startGeometry}
-	<T.Mesh
-		geometry={$chooserPairGeometry.startGeometry}
-		material={materials.numbered[1]}
-	/>
+	<T.Mesh geometry={$chooserPairGeometry.startGeometry} material={materials.numbered[1]} />
 {/if}
 {#if $chooserPairGeometry?.endGeometry}
-	<T.Mesh
-		geometry={$chooserPairGeometry.endGeometry}
-		material={materials.numbered[4]}
-	/>
+	<T.Mesh geometry={$chooserPairGeometry.endGeometry} material={materials.numbered[4]} />
 {/if}
 ```
 
@@ -547,6 +555,7 @@ git commit -m "Highlight chooser-selected partner pair in 3D viewport"
 ### Task 4: Create `PartnerPairChooser.svelte` (basic chooser without model-change banner)
 
 **Files:**
+
 - Create: `src/components/modal/editor/tile-editor/PartnerPairChooser.svelte`
 
 This task implements the chooser's UI and pair-selection logic. The model-change detection / refresh banner is added in Task 5 to keep this task small.
@@ -700,6 +709,7 @@ git commit -m "Add PartnerPairChooser sidebar UI (basic — no model-change bann
 ### Task 5: Add model-change detection and Refresh banner to `PartnerPairChooser`
 
 **Files:**
+
 - Modify: `src/components/modal/editor/tile-editor/PartnerPairChooser.svelte`
 
 The chooser snapshots a pair on selection and freezes it. Whenever the underlying store ticks, we deep-compare the current pair (resolved live from the store) to the snapshot. If they differ, show "Model changed — Refresh?". Refresh re-resolves and re-snapshots.
@@ -802,16 +812,16 @@ Inside the `{#if eligible.length === 0}` ELSE branch, after the `.row` div with 
 Add to `<style>`:
 
 ```css
-	.banner {
-		display: flex;
-		gap: 6px;
-		align-items: center;
-		font-size: 0.85em;
-		color: #b00020;
-	}
-	.banner button {
-		font-size: 0.85em;
-	}
+.banner {
+	display: flex;
+	gap: 6px;
+	align-items: center;
+	font-size: 0.85em;
+	color: #b00020;
+}
+.banner button {
+	font-size: 0.85em;
+}
 ```
 
 - [ ] **Step 5: Run typecheck**
@@ -834,6 +844,7 @@ git commit -m "Add model-change detection and Refresh banner to PartnerPairChoos
 ### Task 6: Wire `distortedGhost` prop into `RuleEditViewport.svelte` (plumbing only, no rendering yet)
 
 **Files:**
+
 - Modify: `src/components/modal/editor/tile-editor/RuleEditViewport.svelte`
 
 This task adds the prop without changing render behavior. Render comes in Task 7 to keep the diffs reviewable.
@@ -868,9 +879,7 @@ let {
 	onSelectTarget: (vertex: Vertex) => void;
 	onSelectGhost: (vertex: Vertex) => void;
 	onSelectConnection: (sourceVertex: Vertex, targetVertex: Vertex) => void;
-	onSelectConnectionLine: (
-		conn: { sourceVertex: Vertex; targetVertex: Vertex } | null
-	) => void;
+	onSelectConnectionLine: (conn: { sourceVertex: Vertex; targetVertex: Vertex } | null) => void;
 } = $props();
 ```
 
@@ -896,6 +905,7 @@ git commit -m "Add distortedGhost prop to RuleEditViewport (plumbing only)"
 ### Task 7: Implement distorted-ghost rendering in `RuleEditViewport.svelte`
 
 **Files:**
+
 - Modify: `src/components/modal/editor/tile-editor/RuleEditViewport.svelte`
 
 When `distortedGhost` is non-null, the viewport replaces its synthetic-mirror rendering with the real pair. The unit-mode dashed bounding rect, ghost position, and connection lines all change.
@@ -955,12 +965,17 @@ The distorted branch (skeleton — adapt to actual existing render structure):
 	>
 		<!-- Main quad outline -->
 		<polygon
-			points="{distortedGhost.mainQuad.a.x},{distortedGhost.mainQuad.a.y} {distortedGhost.mainQuad.b.x},{distortedGhost.mainQuad.b.y} {distortedGhost.mainQuad.c.x},{distortedGhost.mainQuad.c.y} {distortedGhost.mainQuad.d.x},{distortedGhost.mainQuad.d.y}"
+			points="{distortedGhost.mainQuad.a.x},{distortedGhost.mainQuad.a.y} {distortedGhost.mainQuad.b
+				.x},{distortedGhost.mainQuad.b.y} {distortedGhost.mainQuad.c.x},{distortedGhost.mainQuad.c
+				.y} {distortedGhost.mainQuad.d.x},{distortedGhost.mainQuad.d.y}"
 			class="unit-bounds"
 		/>
 		<!-- Ghost quad outline -->
 		<polygon
-			points="{distortedGhost.ghostQuad.a.x},{distortedGhost.ghostQuad.a.y} {distortedGhost.ghostQuad.b.x},{distortedGhost.ghostQuad.b.y} {distortedGhost.ghostQuad.c.x},{distortedGhost.ghostQuad.c.y} {distortedGhost.ghostQuad.d.x},{distortedGhost.ghostQuad.d.y}"
+			points="{distortedGhost.ghostQuad.a.x},{distortedGhost.ghostQuad.a.y} {distortedGhost
+				.ghostQuad.b.x},{distortedGhost.ghostQuad.b.y} {distortedGhost.ghostQuad.c
+				.x},{distortedGhost.ghostQuad.c.y} {distortedGhost.ghostQuad.d.x},{distortedGhost.ghostQuad
+				.d.y}"
 			class="ghost-bounds"
 		/>
 		<!-- Main pattern -->
@@ -1046,6 +1061,7 @@ git commit -m "Render distorted partner pair geometry in RuleEditViewport when d
 ### Task 8: Wire `PartnerPairChooser` and `distortedGhost` into `TileEditor.svelte`
 
 **Files:**
+
 - Modify: `src/components/modal/editor/TileEditor.svelte`
 
 The TileEditor mounts the chooser only in `partnerStart` / `partnerEnd` modes for shield variants. It owns the `distortedGhost` rune and passes it through to `RuleEditViewport`.

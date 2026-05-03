@@ -12,7 +12,12 @@ describe('hex generator snapshot', () => {
 		for (const rows of rowsList) {
 			for (const columns of columnsList) {
 				it(`generateHexPattern size=${size} rows=${rows} columns=${columns}`, () => {
-					const result = generateHexTile(defaultHexSpec, { size, rows, columns, sideOrientation: 'outside' });
+					const result = generateHexTile(defaultHexSpec, {
+						size,
+						rows,
+						columns,
+						sideOrientation: 'outside'
+					});
 					expect(result).toMatchSnapshot();
 				});
 			}
@@ -47,7 +52,9 @@ describe('hex adjuster snapshot', () => {
 		const rows = 1;
 		const columns = 1;
 		const config = makeConfig({ rowCount: rows, columnCount: columns });
-		const patternBand = [generateHexTile(defaultHexSpec, { size: 1, rows, columns, sideOrientation: 'outside' })];
+		const patternBand = [
+			generateHexTile(defaultHexSpec, { size: 1, rows, columns, sideOrientation: 'outside' })
+		];
 		const quadBand = [
 			{
 				a: { x: 0, y: 0, z: 0 } as any,

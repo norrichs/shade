@@ -1,4 +1,10 @@
-import type { BandCutPattern, PathSegment, Quadrilateral, TiledPatternConfig, TubeCutPattern } from '$lib/types';
+import type {
+	BandCutPattern,
+	PathSegment,
+	Quadrilateral,
+	TiledPatternConfig,
+	TubeCutPattern
+} from '$lib/types';
 import type { Point } from '$lib/types';
 import { getAngle, rotatePS, rotatePoint, translatePS } from '../../utils';
 import { hexSegments, straightenEndSegments } from './helpers';
@@ -102,8 +108,18 @@ const adjustHexBand = (
 	});
 
 	if (endsTrimmed) {
-		const startSegments = hexSegments('start', rowCount || 1, columnCount || 1, patternBand[0].length).flat();
-		const endSegments = hexSegments('end', rowCount || 1, columnCount || 1, patternBand[patternBand.length - 1].length).flat();
+		const startSegments = hexSegments(
+			'start',
+			rowCount || 1,
+			columnCount || 1,
+			patternBand[0].length
+		).flat();
+		const endSegments = hexSegments(
+			'end',
+			rowCount || 1,
+			columnCount || 1,
+			patternBand[patternBand.length - 1].length
+		).flat();
 		patternBand[0].splice(0, startSegments.length);
 		patternBand[patternBand.length - 1].splice(Math.min(...endSegments), endSegments.length);
 	}

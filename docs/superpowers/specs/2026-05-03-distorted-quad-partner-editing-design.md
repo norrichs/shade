@@ -128,17 +128,17 @@ The chooser writes both addresses on pair-select, sets both to null on clear/mod
 
 ## State transitions & edge cases
 
-| State                                    | Chooser                  | Viewport                            |
-| ---------------------------------------- | ------------------------ | ----------------------------------- |
-| Mode entry, model loaded, eligible pairs | Empty top option active  | Symmetric mirror                    |
-| Mode entry, no model loaded              | Disabled, "No model"     | Symmetric mirror                    |
-| Mode entry, model loaded, no eligible    | Disabled, "No partners"  | Symmetric mirror                    |
-| User picks pair                          | Selected entry           | Distorted ghost                     |
-| Model changes, snapshot stale            | Refresh banner active    | Distorted ghost (frozen snapshot)   |
-| Selected band disappears                 | "Pair no longer exists"  | Symmetric mirror                    |
-| User picks empty top option              | Empty top option         | Symmetric mirror                    |
-| Mode switch away                         | (unmounted)              | (mode-specific behavior)            |
-| Mode switch back                         | Empty top option active  | Symmetric mirror                    |
+| State                                    | Chooser                 | Viewport                          |
+| ---------------------------------------- | ----------------------- | --------------------------------- |
+| Mode entry, model loaded, eligible pairs | Empty top option active | Symmetric mirror                  |
+| Mode entry, no model loaded              | Disabled, "No model"    | Symmetric mirror                  |
+| Mode entry, model loaded, no eligible    | Disabled, "No partners" | Symmetric mirror                  |
+| User picks pair                          | Selected entry          | Distorted ghost                   |
+| Model changes, snapshot stale            | Refresh banner active   | Distorted ghost (frozen snapshot) |
+| Selected band disappears                 | "Pair no longer exists" | Symmetric mirror                  |
+| User picks empty top option              | Empty top option        | Symmetric mirror                  |
+| Mode switch away                         | (unmounted)             | (mode-specific behavior)          |
+| Mode switch back                         | Empty top option active | Symmetric mirror                  |
 
 The chooser's selection is local to its lifetime — it does not persist across mode switches or floater close/reopen.
 
@@ -199,12 +199,12 @@ Items to verify during implementation (not during design):
 
 ## Decisions made during brainstorm
 
-| #  | Question                          | Choice                                             |
-| -- | --------------------------------- | -------------------------------------------------- |
-| Q1 | Synthetic fallback in v1?         | **No.** Symmetric mirror remains the fallback.     |
-| Q2 | Snapshot vs. live-track?          | **Snapshot on selection** with model-change banner |
-| Q3 | Default state on mode entry?      | **Symmetric mirror** until user explicitly picks   |
-| Q4 | Chooser placement                 | Above or beside rule list in `.rule-row` (TBD impl) |
-| Q5 | Random button cycling?            | Uniform random, can repeat                         |
-| Q6 | Algorithm scope                   | Shield only; chooser hides for hex/box variants    |
-| Q7 | Multi-pair-per-band?              | Each band-end has at most one partner per spec     |
+| #   | Question                     | Choice                                              |
+| --- | ---------------------------- | --------------------------------------------------- |
+| Q1  | Synthetic fallback in v1?    | **No.** Symmetric mirror remains the fallback.      |
+| Q2  | Snapshot vs. live-track?     | **Snapshot on selection** with model-change banner  |
+| Q3  | Default state on mode entry? | **Symmetric mirror** until user explicitly picks    |
+| Q4  | Chooser placement            | Above or beside rule list in `.rule-row` (TBD impl) |
+| Q5  | Random button cycling?       | Uniform random, can repeat                          |
+| Q6  | Algorithm scope              | Shield only; chooser hides for hex/box variants     |
+| Q7  | Multi-pair-per-band?         | Each band-end has at most one partner per spec      |

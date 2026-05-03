@@ -131,11 +131,16 @@
 			class="canvas"
 		>
 			<polygon
-				points="{distortedGhost.mainQuad.a.x},{distortedGhost.mainQuad.a.y} {distortedGhost.mainQuad.b.x},{distortedGhost.mainQuad.b.y} {distortedGhost.mainQuad.c.x},{distortedGhost.mainQuad.c.y} {distortedGhost.mainQuad.d.x},{distortedGhost.mainQuad.d.y}"
+				points="{distortedGhost.mainQuad.a.x},{distortedGhost.mainQuad.a.y} {distortedGhost.mainQuad
+					.b.x},{distortedGhost.mainQuad.b.y} {distortedGhost.mainQuad.c.x},{distortedGhost.mainQuad
+					.c.y} {distortedGhost.mainQuad.d.x},{distortedGhost.mainQuad.d.y}"
 				class="unit-bounds"
 			/>
 			<polygon
-				points="{distortedGhost.ghostQuad.a.x},{distortedGhost.ghostQuad.a.y} {distortedGhost.ghostQuad.b.x},{distortedGhost.ghostQuad.b.y} {distortedGhost.ghostQuad.c.x},{distortedGhost.ghostQuad.c.y} {distortedGhost.ghostQuad.d.x},{distortedGhost.ghostQuad.d.y}"
+				points="{distortedGhost.ghostQuad.a.x},{distortedGhost.ghostQuad.a.y} {distortedGhost
+					.ghostQuad.b.x},{distortedGhost.ghostQuad.b.y} {distortedGhost.ghostQuad.c
+					.x},{distortedGhost.ghostQuad.c.y} {distortedGhost.ghostQuad.d.x},{distortedGhost
+					.ghostQuad.d.y}"
 				class="ghost-bounds"
 			/>
 			<path d={distortedMainPathStr} class="segments" />
@@ -167,7 +172,12 @@
 			{/each}
 		</svg>
 	{:else}
-		<svg width={config.size.width} height={config.size.height} viewBox={canv.viewBox} class="canvas">
+		<svg
+			width={config.size.width}
+			height={config.size.height}
+			viewBox={canv.viewBox}
+			class="canvas"
+		>
 			<rect x="0" y="0" width={spec.unit.width} height={spec.unit.height} class="unit-bounds" />
 			<g transform={ghostTransformStr} class="ghost">
 				<rect x="0" y="0" width={spec.unit.width} height={spec.unit.height} class="ghost-bounds" />
@@ -185,8 +195,8 @@
 					dominant-baseline="text-before-edge"
 					fill="rgba(0, 0, 0, 0.4)"
 					pointer-events="none"
-					style="user-select: none;"
-				>{flatIndexes(spec.unit, gp.vertex).join(',')}</text>
+					style="user-select: none;">{flatIndexes(spec.unit, gp.vertex).join(',')}</text
+				>
 			{/each}
 			{#each ghostCorners as gc (gc.label)}
 				<text
@@ -197,8 +207,8 @@
 					dominant-baseline="text-before-edge"
 					fill="rgba(0, 0, 0, 0.4)"
 					pointer-events="none"
-					style="user-select: none;"
-				>{gc.label}</text>
+					style="user-select: none;">{gc.label}</text
+				>
 			{/each}
 
 			{#each connections as conn}

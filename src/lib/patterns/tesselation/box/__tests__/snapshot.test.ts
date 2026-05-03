@@ -10,7 +10,12 @@ describe('box generator snapshot', () => {
 		for (const height of heightList) {
 			for (const width of widthList) {
 				it(`generateBoxPattern size=${size} height=${height} width=${width}`, () => {
-					const result = generateBoxTile(defaultBoxSpec, { size, rows: height, columns: width, sideOrientation: 'outside' });
+					const result = generateBoxTile(defaultBoxSpec, {
+						size,
+						rows: height,
+						columns: width,
+						sideOrientation: 'outside'
+					});
 					expect(result).toMatchSnapshot();
 				});
 			}
