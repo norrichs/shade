@@ -58,7 +58,7 @@ For **coincident-vertex pairs** (M+L at the same coord, e.g., shield's vertex at
 - Create: `src/components/modal/editor/tile-editor/editor-mode.ts`
 - Create: `src/components/modal/editor/__tests__/editor-mode.test.ts`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `src/components/modal/editor/__tests__/editor-mode.test.ts`:
 
@@ -86,7 +86,7 @@ describe('ghostTransform', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```bash
 npm run test:unit -- src/components/modal/editor/__tests__/editor-mode.test.ts 2>&1 | tail -10
@@ -94,7 +94,7 @@ npm run test:unit -- src/components/modal/editor/__tests__/editor-mode.test.ts 2
 
 Expected: FAIL — `Cannot find module '../tile-editor/editor-mode'`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Create `src/components/modal/editor/tile-editor/editor-mode.ts` (use **tabs**):
 
@@ -157,7 +157,7 @@ export const ruleArrayKey: Record<
 };
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 ```bash
 npm run test:unit -- src/components/modal/editor/__tests__/editor-mode.test.ts 2>&1 | tail -10
@@ -165,7 +165,7 @@ npm run test:unit -- src/components/modal/editor/__tests__/editor-mode.test.ts 2
 
 Expected: PASS for all 4 cases.
 
-- [ ] **Step 5: Run full test suite**
+- [x] **Step 5: Run full test suite**
 
 ```bash
 npm run test:unit 2>&1 | tail -5
@@ -173,7 +173,7 @@ npm run test:unit 2>&1 | tail -5
 
 Expected: 37/37 pass (33 previous + 4 new).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/components/modal/editor/tile-editor/editor-mode.ts src/components/modal/editor/__tests__/editor-mode.test.ts
