@@ -21,9 +21,9 @@ export const ghostTransform = (mode: EditorMode, unit: UnitDefinition, p: Point)
 		case 'acrossBands':
 			return { x: p.x - unit.width, y: p.y };
 		case 'partnerStart':
-			return { x: p.x, y: -p.y };
+			return { x: unit.width - p.x, y: -p.y };
 		case 'partnerEnd':
-			return { x: p.x, y: 2 * unit.height - p.y };
+			return { x: unit.width - p.x, y: 2 * unit.height - p.y };
 		default:
 			return p;
 	}
@@ -36,9 +36,9 @@ export const ghostSvgTransform = (mode: EditorMode, unit: UnitDefinition): strin
 		case 'acrossBands':
 			return `translate(${-unit.width}, 0)`;
 		case 'partnerStart':
-			return `scale(1, -1)`;
+			return `translate(${unit.width}, 0) scale(-1, -1)`;
 		case 'partnerEnd':
-			return `translate(0, ${2 * unit.height}) scale(1, -1)`;
+			return `translate(${unit.width}, ${2 * unit.height}) scale(-1, -1)`;
 		default:
 			return '';
 	}

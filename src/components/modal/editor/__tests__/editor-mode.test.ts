@@ -11,11 +11,11 @@ describe('ghostTransform', () => {
 		expect(ghostTransform('acrossBands', unit, { x: 10, y: 2 })).toEqual({ x: -32, y: 2 });
 	});
 
-	it('mirrors across y=0 for partnerStart', () => {
-		expect(ghostTransform('partnerStart', unit, { x: 10, y: 2 })).toEqual({ x: 10, y: -2 });
+	it('rotates 180° around (unit.width/2, 0) for partnerStart', () => {
+		expect(ghostTransform('partnerStart', unit, { x: 10, y: 2 })).toEqual({ x: 32, y: -2 });
 	});
 
-	it('mirrors across y=unit.height for partnerEnd', () => {
-		expect(ghostTransform('partnerEnd', unit, { x: 10, y: 2 })).toEqual({ x: 10, y: 26 });
+	it('rotates 180° around (unit.width/2, unit.height) for partnerEnd', () => {
+		expect(ghostTransform('partnerEnd', unit, { x: 10, y: 2 })).toEqual({ x: 32, y: 26 });
 	});
 });
