@@ -56,11 +56,14 @@ export const shiftRulesForRemoval = (
 		}
 		return idx - count;
 	};
+	const dropPair = (p: IndexPair): boolean =>
+		removedIndices.has(p.source) || removedIndices.has(p.target);
 	const filterAndShift = (pairs: IndexPair[]): IndexPair[] =>
 		pairs
-			.filter((p) => !removedIndices.has(p.source) && !removedIndices.has(p.target))
+			.filter((p) => !dropPair(p))
 			.map((p) => ({ source: shift(p.source), target: shift(p.target) }));
-	return {
+
+	const result: AdjustmentRules = {
 		withinBand: filterAndShift(rules.withinBand),
 		acrossBands: filterAndShift(rules.acrossBands),
 		partner: {
@@ -69,6 +72,24 @@ export const shiftRulesForRemoval = (
 		},
 		skipRemove: rules.skipRemove.filter((i) => !removedIndices.has(i)).map(shift)
 	};
+
+	if (process.env.NODE_ENV === 'development') {
+		const droppedRules = [
+			...rules.withinBand.filter(dropPair),
+			...rules.acrossBands.filter(dropPair),
+			...rules.partner.startEnd.filter(dropPair),
+			...rules.partner.endEnd.filter(dropPair)
+		];
+		const droppedSkip = rules.skipRemove.filter((i) => removedIndices.has(i));
+		if (droppedRules.length > 0 || droppedSkip.length > 0) {
+			console.warn(
+				'[vertex-topology] removed vertex caused orphaned rules to be dropped',
+				{ droppedRules, droppedSkip, removedIndices: [...removedIndices] }
+			);
+		}
+	}
+
+	return result;
 };
 
 export const removeVertex = (spec: TiledPatternSpec, vertex: Vertex): TiledPatternSpec => {
