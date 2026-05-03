@@ -17,13 +17,13 @@ export type Point = { x: number; y: number };
 export const ghostTransform = (mode: EditorMode, unit: UnitDefinition, p: Point): Point => {
 	switch (mode) {
 		case 'withinBand':
-			return { x: p.x + unit.width, y: p.y };
+			return { x: p.x, y: p.y + unit.height };
 		case 'acrossBands':
-			return { x: p.x, y: p.y - unit.height };
+			return { x: p.x - unit.width, y: p.y };
 		case 'partnerStart':
-			return { x: -p.x, y: p.y };
+			return { x: p.x, y: -p.y };
 		case 'partnerEnd':
-			return { x: 2 * unit.width - p.x, y: p.y };
+			return { x: p.x, y: 2 * unit.height - p.y };
 		default:
 			return p;
 	}
@@ -32,13 +32,13 @@ export const ghostTransform = (mode: EditorMode, unit: UnitDefinition, p: Point)
 export const ghostSvgTransform = (mode: EditorMode, unit: UnitDefinition): string => {
 	switch (mode) {
 		case 'withinBand':
-			return `translate(${unit.width}, 0)`;
+			return `translate(0, ${unit.height})`;
 		case 'acrossBands':
-			return `translate(0, ${-unit.height})`;
+			return `translate(${-unit.width}, 0)`;
 		case 'partnerStart':
-			return `scale(-1, 1)`;
+			return `scale(1, -1)`;
 		case 'partnerEnd':
-			return `translate(${2 * unit.width}, 0) scale(-1, 1)`;
+			return `translate(0, ${2 * unit.height}) scale(1, -1)`;
 		default:
 			return '';
 	}

@@ -250,13 +250,13 @@
 		let contentHeight = unitHeight + 4;
 
 		if (mode === 'withinBand' || mode === 'partnerEnd') {
-			contentWidth = 2 * unitWidth + 4;
+			contentHeight = 2 * unitHeight + 4;
 		} else if (mode === 'partnerStart') {
-			left = -unitWidth - 2;
-			contentWidth = 2 * unitWidth + 4;
-		} else if (mode === 'acrossBands') {
 			top = -unitHeight - 2;
 			contentHeight = 2 * unitHeight + 4;
+		} else if (mode === 'acrossBands') {
+			left = -unitWidth - 2;
+			contentWidth = 2 * unitWidth + 4;
 		}
 
 		const viewBoxWidth = contentWidth + padding * 2;
