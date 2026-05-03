@@ -188,6 +188,12 @@
 	};
 
 	const handleSelectVariant = (variantId: string) => {
+		if (isDirty) {
+			const proceed = window.confirm(
+				'You have unsaved changes. Switching variants will discard them. Continue?'
+			);
+			if (!proceed) return;
+		}
 		selectedTarget = null;
 		selectedConnection = null;
 		setActiveVariant(variantId);
