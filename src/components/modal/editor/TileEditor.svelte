@@ -13,6 +13,7 @@
 	import type { EditorMode } from './tile-editor/editor-mode';
 	import type { PathEditorConfig } from './path-editor-shared';
 	import RuleEditViewport from './tile-editor/RuleEditViewport.svelte';
+	import RuleList from './tile-editor/RuleList.svelte';
 	import { isRuleMode } from './tile-editor/editor-mode';
 	import type { Vertex } from './segment-vertices';
 	import { addRuleForPairing, removeRulesForPairing } from './vertex-addressing';
@@ -57,6 +58,12 @@
 	const handleSelectConnection = (sourceVertex: Vertex, targetVertex: Vertex) => {
 		if (!draft) return;
 		const newRules = removeRulesForPairing(getRulesForMode(), draft.unit, targetVertex, sourceVertex);
+		setRulesForMode(newRules);
+	};
+
+	const handleDeleteRuleByIndex = (index: number) => {
+		const rules = getRulesForMode();
+		const newRules = rules.filter((_, i) => i !== index);
 		setRulesForMode(newRules);
 	};
 	let storedRowId: number | null = $state(null);
@@ -231,17 +238,20 @@
 						/>
 					</div>
 				{:else if isRuleMode(mode)}
-					<div class="viewport-wrap">
-						<RuleEditViewport
-							spec={draft}
-							{mode}
-							rules={getRulesForMode()}
-							config={editorConfig}
-							{selectedTarget}
-							onSelectTarget={handleSelectTarget}
-							onSelectGhost={handleSelectGhost}
-							onSelectConnection={handleSelectConnection}
-						/>
+					<div class="rule-row">
+						<div class="viewport-wrap">
+							<RuleEditViewport
+								spec={draft}
+								{mode}
+								rules={getRulesForMode()}
+								config={editorConfig}
+								{selectedTarget}
+								onSelectTarget={handleSelectTarget}
+								onSelectGhost={handleSelectGhost}
+								onSelectConnection={handleSelectConnection}
+							/>
+						</div>
+						<RuleList rules={getRulesForMode()} onDelete={handleDeleteRuleByIndex} />
 					</div>
 				{/if}
 			{:else}
@@ -258,5 +268,9 @@
 	.empty {
 		padding: 16px;
 		color: rgba(0, 0, 0, 0.5);
+	}
+	.rule-row {
+		display: flex;
+		flex-direction: row;
 	}
 </style>

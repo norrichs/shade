@@ -1029,7 +1029,7 @@ Lists rules for the current rule mode, with a delete button per row. Click row â
 - Create: `src/components/modal/editor/tile-editor/RuleList.svelte`
 - Modify: `src/components/modal/editor/TileEditor.svelte`
 
-- [ ] **Step 1: Create RuleList**
+- [x] **Step 1: Create RuleList**
 
 Create `src/components/modal/editor/tile-editor/RuleList.svelte` (use **tabs**):
 
@@ -1106,7 +1106,7 @@ Create `src/components/modal/editor/tile-editor/RuleList.svelte` (use **tabs**):
 </style>
 ```
 
-- [ ] **Step 2: Wire in TileEditor**
+- [x] **Step 2: Wire in TileEditor**
 
 In `src/components/modal/editor/TileEditor.svelte`, add the import:
 
@@ -1146,14 +1146,14 @@ Add CSS in TileEditor:
 }
 ```
 
-- [ ] **Step 3: Run tests + type-check**
+- [x] **Step 3: Run tests + type-check**
 
 ```bash
 npm run test:unit 2>&1 | tail -5
 npm run check 2>&1 | tail -3
 ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/components/modal/editor/tile-editor/RuleList.svelte src/components/modal/editor/TileEditor.svelte
