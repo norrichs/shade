@@ -139,7 +139,7 @@
 	};
 
 	const handleSave = async () => {
-		if (!draft || isBuiltIn || storedRowId === null) return;
+		if (!draft || isBuiltIn || storedRowId === null || validationError !== null) return;
 		const snapshot = $state.snapshot(draft) as TiledPatternSpec;
 		const ok = await tilePatternSpecStore.update(storedRowId, snapshot);
 		if (ok) isDirty = false;
@@ -155,7 +155,7 @@
 	};
 
 	const handleSaveAs = async (newName: string) => {
-		if (!draft) return;
+		if (!draft || validationError !== null) return;
 		const draftSnapshot = $state.snapshot(draft) as TiledPatternSpec;
 		const newSpec: TiledPatternSpec = {
 			...draftSnapshot,
