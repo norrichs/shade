@@ -606,7 +606,7 @@ The viewport for the four rule modes — main unit + ghost + connection lines fo
 
 - Create: `src/components/modal/editor/tile-editor/RuleEditViewport.svelte`
 
-- [ ] **Step 1: Create the component**
+- [x] **Step 1: Create the component**
 
 Create `src/components/modal/editor/tile-editor/RuleEditViewport.svelte` (use **tabs**):
 
@@ -754,7 +754,7 @@ Create `src/components/modal/editor/tile-editor/RuleEditViewport.svelte` (use **
 </style>
 ```
 
-- [ ] **Step 2: Type-check**
+- [x] **Step 2: Type-check**
 
 ```bash
 npm run check 2>&1 | tail -3
@@ -762,7 +762,7 @@ npm run check 2>&1 | tail -3
 
 Expected: error count stable. >3 new errors directly traceable to this file → report **DONE_WITH_CONCERNS**.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/components/modal/editor/tile-editor/RuleEditViewport.svelte
