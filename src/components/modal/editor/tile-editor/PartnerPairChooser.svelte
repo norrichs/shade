@@ -20,12 +20,17 @@
 		onChange: (snapshot: ResolvedPair | null) => void;
 	} = $props();
 
-	// ProjectionCutPattern → tubes: TubeCutPattern[] → bands: BandCutPattern[]
-	const bands = $derived<BandCutPattern[]>(
-		($superGlobulePatternStore?.projectionPattern as any)?.tubes?.flatMap(
-			(t: { bands: BandCutPattern[] }) => t.bands
-		) ?? []
-	);
+	const bands = $derived.by((): BandCutPattern[] => {
+		const fromProjection =
+			($superGlobulePatternStore?.projectionPattern as any)?.tubes?.flatMap(
+				(t: { bands: BandCutPattern[] }) => t.bands
+			) ?? [];
+		const fromSurface =
+			($superGlobulePatternStore?.surfaceProjectionPattern as any)?.tubes?.flatMap(
+				(t: { bands: BandCutPattern[] }) => t.bands
+			) ?? [];
+		return [...fromProjection, ...fromSurface];
+	});
 	const eligible = $derived(getEligibleBands(bands, mode));
 
 	let selectedAddressJSON: string = $state('');
