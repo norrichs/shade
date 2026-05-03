@@ -5,3 +5,4 @@ export * from '$lib/stores/selectionStores';
 export * from '$lib/stores/uiStores';
 export * from '$lib/stores/viewControlStore';
 export * from '$lib/stores/workerStore';
+export * from '$lib/stores/partnerHighlightStore';
