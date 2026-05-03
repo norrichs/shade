@@ -1,9 +1,4 @@
-import type {
-	BandCutPattern,
-	CutPattern,
-	TiledPatternConfig,
-	TubeCutPattern
-} from '$lib/types';
+import type { BandCutPattern, CutPattern, TiledPatternConfig, TubeCutPattern } from '$lib/types';
 import { getAngle, rotatePS, translatePS } from '../../utils';
 import type { IndexPair, TiledPatternSpec } from '../../spec-types';
 import {
@@ -138,19 +133,13 @@ export const adjustShieldTesselation = (
 						f === 0
 							? spec.adjustments.partner.startEnd.map((p) => p.target)
 							: spec.adjustments.partner.endEnd.map((p) => p.target);
-					const partnerPairs = partnerSources.map(
-						(source, i) => ({ source, target: partnerTargets[i] })
-					);
+					const partnerPairs = partnerSources.map((source, i) => ({
+						source,
+						target: partnerTargets[i]
+					}));
 
 					replaceInPlace({
-						pairs: retargetPairs(
-							partnerPairs,
-							rows,
-							columns,
-							startCount,
-							middleCount,
-							endCount
-						),
+						pairs: retargetPairs(partnerPairs, rows, columns, startCount, middleCount, endCount),
 						target: newBands[b].facets[f].path,
 						source: partner.path
 					});

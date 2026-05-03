@@ -8,8 +8,12 @@
 		outlined,
 		bandIndex = 0,
 		fillColor = 'red'
-	}: { branches: DynamicPath; outlined: boolean; bandIndex?: number; fillColor?: string } =
-		$props();
+	}: {
+		branches: DynamicPath;
+		outlined: boolean;
+		bandIndex?: number;
+		fillColor?: string;
+	} = $props();
 </script>
 
 <g stroke-linecap="round" stroke-linejoin="round" fill="red" stroke="none">

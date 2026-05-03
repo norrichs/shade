@@ -1,5 +1,9 @@
 <script lang="ts">
-	let { show = true, value = $bindable(), label }: { show?: boolean; value: boolean; label: string } = $props();
+	let {
+		show = true,
+		value = $bindable(),
+		label
+	}: { show?: boolean; value: boolean; label: string } = $props();
 </script>
 
 {#if show}

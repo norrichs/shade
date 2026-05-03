@@ -1050,7 +1050,6 @@ const matchTubeEnds = (tubes: Tube[]) => {
 		)
 	);
 
-
 	tubes.forEach((tube, t) =>
 		tube.bands.forEach((band, b) => {
 			const firstFacet = band.facets[0];
@@ -1225,9 +1224,10 @@ export const generateSurfaceProjectionBands = (
 	});
 
 	// Derive projection center for winding check
-	const projCenter = projectionConfig.surfaceConfig.type === 'GlobuleConfig'
-		? new Vector3(0, 0, 0)
-		: getVector3(projectionConfig.surfaceConfig.center) as Vector3;
+	const projCenter =
+		projectionConfig.surfaceConfig.type === 'GlobuleConfig'
+			? new Vector3(0, 0, 0)
+			: (getVector3(projectionConfig.surfaceConfig.center) as Vector3);
 
 	for (let i = 0; i < edgeMap.length; i += 2) {
 		const em0 = edgeMap[i];
@@ -1245,10 +1245,9 @@ export const generateSurfaceProjectionBands = (
 		const e0First = edge0.sections[0].intersections.edge;
 		const e1First = edge1.sections[0].intersections.edge;
 		const e1Last = edge1.sections[edge1.sections.length - 1].intersections.edge;
-		const shouldReverseEdge1 = e0First.distanceToSquared(e1Last) < e0First.distanceToSquared(e1First);
-		const edge1Sections = shouldReverseEdge1
-			? [...edge1.sections].reverse()
-			: edge1.sections;
+		const shouldReverseEdge1 =
+			e0First.distanceToSquared(e1Last) < e0First.distanceToSquared(e1First);
+		const edge1Sections = shouldReverseEdge1 ? [...edge1.sections].reverse() : edge1.sections;
 
 		// Build combined sections: [edge0.curve, shared_edge, edge1.curve]
 		// shared_edge ≈ edge0.intersections.edge ≈ edge1.intersections.edge
@@ -1449,7 +1448,6 @@ const matchSurfaceProjectionTubeEnds = (tubes: Tube[]) => {
 };
 
 export const makeProjection = (projectionConfig: BaseProjectionConfig, address: GlobuleAddress) => {
-
 	// const globuleConfig = generateDefaultGlobuleConfig();
 	// projectionConfig.surfaceConfig = {
 	// 	...globuleConfig,
@@ -1474,11 +1472,14 @@ export const makeProjection = (projectionConfig: BaseProjectionConfig, address: 
 	auditSides(tubes);
 
 	const { tubes: surfaceProjectionTubes } = generateSurfaceProjectionBands(
-		projection, projectionConfig, address
+		projection,
+		projectionConfig,
+		address
 	);
-	const auditCenter = preparedProjectionConfig.surfaceConfig.type === 'GlobuleConfig'
-		? new Vector3(0, 0, 0)
-		: getVector3(preparedProjectionConfig.surfaceConfig.center) as Vector3;
+	const auditCenter =
+		preparedProjectionConfig.surfaceConfig.type === 'GlobuleConfig'
+			? new Vector3(0, 0, 0)
+			: (getVector3(preparedProjectionConfig.surfaceConfig.center) as Vector3);
 	auditSurfaceProjectionSides(surfaceProjectionTubes, auditCenter);
 
 	return { projection, polyhedron, tubes, surfaceProjectionTubes, surface };

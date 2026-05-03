@@ -59,10 +59,7 @@ describe('computeVertices', () => {
 
 	it('treats Z and arc/bezier segments as ignored (not editable in v1)', () => {
 		const unit = makeUnit({
-			start: [
-				['M', 0, 0],
-				['Z']
-			],
+			start: [['M', 0, 0], ['Z']],
 			middle: [['C', 1, 1, 2, 2, 3, 3]]
 		});
 		const vertices = computeVertices(unit);

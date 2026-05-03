@@ -20,7 +20,10 @@
 	$: bandOptions = (() => {
 		const spTubes = $superGlobuleStore.projections?.[0]?.surfaceProjectionTubes;
 		if (!spTubes) return [];
-		const opts: { label: string; value: { globule: number; tube: number; band: number; facet: number } }[] = [];
+		const opts: {
+			label: string;
+			value: { globule: number; tube: number; band: number; facet: number };
+		}[] = [];
 		spTubes.forEach((tube, t) => {
 			tube.bands.forEach((_, b) => {
 				opts.push({
@@ -39,8 +42,11 @@
 	function handleBandSelect(event: Event) {
 		const target = event.target as HTMLSelectElement;
 		const val = target.value;
-		if (!val) { $selectedSurfaceProjection = null; return; }
-		const opt = bandOptions.find(o => o.label === val);
+		if (!val) {
+			$selectedSurfaceProjection = null;
+			return;
+		}
+		const opt = bandOptions.find((o) => o.label === val);
 		if (opt) {
 			$selectedSurfaceProjection = opt.value;
 			// Use tick to ensure store update propagates before rotating
@@ -105,8 +111,7 @@
 				}}>Select Bands</Button
 			>
 			<Button
-				onclick={() =>
-					downloadSvg('pattern-svg', `globule-pattern ${$superGlobuleStore.name}.svg`)}
+				onclick={() => downloadSvg('pattern-svg', `globule-pattern ${$superGlobuleStore.name}.svg`)}
 				>Download SVG</Button
 			>
 			<Button

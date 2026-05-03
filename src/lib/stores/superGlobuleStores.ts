@@ -26,7 +26,11 @@ import {
 	generateSuperGlobulePattern,
 	validateAllPanels
 } from '$lib/cut-pattern/generate-pattern';
-import { patternConfigStore, patternGenerationConfig, type PatternGenerationConfig } from './globulePatternStores';
+import {
+	patternConfigStore,
+	patternGenerationConfig,
+	type PatternGenerationConfig
+} from './globulePatternStores';
 import { overrideStore } from './overrideStore';
 import { getMetaInfo } from '$lib/projection-geometry/meta-info';
 import { computationMode, pausePatternUpdates, isManualMode, hasPendingChanges } from './uiStores';
@@ -397,7 +401,12 @@ const superGlobulePatternStoreInternal = derived(
 
 		// Skip pattern generation in 3d-only mode
 		if ($computationMode === '3d-only') {
-			return { superGlobulePattern: null, projectionPattern: undefined, globuleTubePattern: null, surfaceProjectionPattern: undefined };
+			return {
+				superGlobulePattern: null,
+				projectionPattern: undefined,
+				globuleTubePattern: null,
+				surfaceProjectionPattern: undefined
+			};
 		}
 
 		console.time('PATTERN_GENERATION');
@@ -418,13 +427,22 @@ const superGlobulePatternStoreInternal = derived(
 		};
 
 		const superGlobulePattern = showGlobuleGeometry.any
-			? generateSuperGlobulePattern($superGlobuleStore, $superConfigStore, patternConfigForGeneration)
+			? generateSuperGlobulePattern(
+					$superGlobuleStore,
+					$superConfigStore,
+					patternConfigForGeneration
+				)
 			: null;
 
 		const projection = $superGlobuleStore.projections[0];
 		const globuleTubes = $superGlobuleStore.globuleTubes;
 		const globuleTubePattern = showGlobuleTubeGeometry.any
-			? generateProjectionPattern(globuleTubes, $superConfigStore.id, patternConfigForGeneration, $genConfig.range)
+			? generateProjectionPattern(
+					globuleTubes,
+					$superConfigStore.id,
+					patternConfigForGeneration,
+					$genConfig.range
+				)
 			: null;
 
 		const patternSource = $genConfig.patternSource ?? 'projection';
@@ -434,7 +452,12 @@ const superGlobulePatternStoreInternal = derived(
 			showProjectionGeometry.any &&
 			showProjectionGeometry.bands &&
 			$genConfig.showBands
-				? generateProjectionPattern(projection.tubes, $superConfigStore.id, patternConfigForGeneration, $genConfig.range)
+				? generateProjectionPattern(
+						projection.tubes,
+						$superConfigStore.id,
+						patternConfigForGeneration,
+						$genConfig.range
+					)
 				: undefined;
 
 		const surfaceProjectionPattern =
@@ -442,7 +465,12 @@ const superGlobulePatternStoreInternal = derived(
 			showProjectionGeometry.any &&
 			$genConfig.showBands &&
 			projection.surfaceProjectionTubes?.length
-				? generateProjectionPattern(projection.surfaceProjectionTubes, $superConfigStore.id, patternConfigForGeneration, $genConfig.range)
+				? generateProjectionPattern(
+						projection.surfaceProjectionTubes,
+						$superConfigStore.id,
+						patternConfigForGeneration,
+						$genConfig.range
+					)
 				: undefined;
 
 		const metaInfo = getMetaInfo(projectionPattern);
@@ -494,7 +522,12 @@ export const superGlobulePatternStore = derived(
 		// Return last result while debouncing, or current result if available
 		return lastPatternResult;
 	},
-	{ superGlobulePattern: null, projectionPattern: undefined, globuleTubePattern: null, surfaceProjectionPattern: undefined }
+	{
+		superGlobulePattern: null,
+		projectionPattern: undefined,
+		globuleTubePattern: null,
+		surfaceProjectionPattern: undefined
+	}
 );
 
 export type SuperGlobulePattern = SuperGlobuleBandPattern | SuperGlobuleProjectionPattern;

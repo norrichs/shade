@@ -6,8 +6,11 @@
 		showPathPointIndices = false,
 		band,
 		facetRange
-	}: { showPathPointIndices?: boolean; band: BandCutPattern; facetRange?: [number, number] } =
-		$props();
+	}: {
+		showPathPointIndices?: boolean;
+		band: BandCutPattern;
+		facetRange?: [number, number];
+	} = $props();
 
 	let effectiveFacetRange = $derived(facetRange ?? [0, band.facets.length]);
 

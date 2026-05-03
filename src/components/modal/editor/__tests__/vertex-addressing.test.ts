@@ -20,8 +20,15 @@ const makeUnit = (overrides: Partial<UnitDefinition> = {}): UnitDefinition => ({
 
 describe('flatIndex', () => {
 	const unit = makeUnit({
-		start: [['M', 0, 0], ['L', 1, 1]],
-		middle: [['M', 2, 2], ['L', 3, 3], ['M', 4, 4]],
+		start: [
+			['M', 0, 0],
+			['L', 1, 1]
+		],
+		middle: [
+			['M', 2, 2],
+			['L', 3, 3],
+			['M', 4, 4]
+		],
 		end: [['L', 5, 5]]
 	});
 
@@ -43,7 +50,10 @@ describe('flatIndex', () => {
 describe('flatIndexes', () => {
 	it('maps each ref to its flat index', () => {
 		const unit = makeUnit({
-			start: [['M', 0, 0], ['L', 0, 0]]
+			start: [
+				['M', 0, 0],
+				['L', 0, 0]
+			]
 		});
 		const vertices = computeVertices(unit);
 		expect(flatIndexes(unit, vertices[0])).toEqual([0, 1]);
@@ -52,7 +62,11 @@ describe('flatIndexes', () => {
 
 describe('findVertexByFlatIndex', () => {
 	const unit = makeUnit({
-		start: [['M', 0, 0], ['L', 1, 1], ['M', 1, 1]]
+		start: [
+			['M', 0, 0],
+			['L', 1, 1],
+			['M', 1, 1]
+		]
 	});
 	const vertices = computeVertices(unit);
 
@@ -75,7 +89,12 @@ describe('findVertexByFlatIndex', () => {
 describe('computeConnections', () => {
 	it('groups rules by (sourceVertex, targetVertex)', () => {
 		const unit = makeUnit({
-			start: [['M', 0, 0], ['L', 0, 0], ['M', 5, 5], ['L', 5, 5]]
+			start: [
+				['M', 0, 0],
+				['L', 0, 0],
+				['M', 5, 5],
+				['L', 5, 5]
+			]
 		});
 		const vertices = computeVertices(unit);
 		const rules: IndexPair[] = [
@@ -93,7 +112,12 @@ describe('computeConnections', () => {
 describe('addRuleForPairing', () => {
 	it('appends one rule per matched ref pair', () => {
 		const unit = makeUnit({
-			start: [['M', 0, 0], ['L', 0, 0], ['M', 5, 5], ['L', 5, 5]]
+			start: [
+				['M', 0, 0],
+				['L', 0, 0],
+				['M', 5, 5],
+				['L', 5, 5]
+			]
 		});
 		const vertices = computeVertices(unit);
 		const targetVertex = vertices.find((v) => v.x === 0)!;
@@ -110,7 +134,10 @@ describe('addRuleForPairing', () => {
 describe('removeRulesForPairing', () => {
 	it('removes rules between two vertices', () => {
 		const unit = makeUnit({
-			start: [['M', 0, 0], ['M', 5, 5]]
+			start: [
+				['M', 0, 0],
+				['M', 5, 5]
+			]
 		});
 		const vertices = computeVertices(unit);
 		const targetVertex = vertices.find((v) => v.x === 0)!;

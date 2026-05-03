@@ -2,7 +2,10 @@ import { writable, derived, type Readable } from 'svelte/store';
 import type { SuperGlobuleConfig, SuperGlobule } from '$lib/types';
 import type { WorkerMessage, WorkerResponse } from '$lib/workers/super-globule.worker';
 import { Vector3, Triangle } from 'three';
-import { generateSurface, prepareProjectionConfig } from '$lib/projection-geometry/generate-projection';
+import {
+	generateSurface,
+	prepareProjectionConfig
+} from '$lib/projection-geometry/generate-projection';
 
 // Store to track if the worker is currently processing
 export const isWorking = writable<boolean>(false);

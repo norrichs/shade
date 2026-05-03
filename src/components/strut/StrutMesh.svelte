@@ -18,9 +18,7 @@
 	} = $props();
 
 	let bandPoints = $derived(
-		strut.facets
-			.map((facet) => [facet.triangle.a, facet.triangle.b, facet.triangle.c])
-			.flat(1)
+		strut.facets.map((facet) => [facet.triangle.a, facet.triangle.b, facet.triangle.c]).flat(1)
 	);
 
 	let tabPoints = $derived(

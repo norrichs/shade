@@ -39,8 +39,7 @@
 		onChangeCurveDef(curveDef);
 	};
 
-	const handleDoubleClick = () => {
-	};
+	const handleDoubleClick = () => {};
 
 	const handleDrag = (newX: number, newY: number, curveIndex: number, pointIndex: number) => {
 		const scaledPoint = {

@@ -70,10 +70,7 @@
 			};
 
 			const mode = get(interactionMode);
-			if (
-				isBandSelectInteractionMode(mode) &&
-				mode.type === 'band-select'
-			) {
+			if (isBandSelectInteractionMode(mode) && mode.type === 'band-select') {
 				const { pick, bands } = mode.data;
 				if (bands.length < pick) {
 					mode.data.bands = [...bands, newSelection];
@@ -207,7 +204,8 @@
 			}
 		} else if (mode.type === 'standard') {
 			if (selectedBandValue && isSameBand(selectedBandValue, band.address)) return 'selected';
-			if (selectedBandValue && isSameGlobule(selectedBandValue, band.address)) return 'selectedLight';
+			if (selectedBandValue && isSameGlobule(selectedBandValue, band.address))
+				return 'selectedLight';
 			if (selectedBandValue && selectedBandValue.s === band.address.s) return 'selectedVeryLight';
 		} else if (mode.type === 'band-select-multiple') {
 			if (includesBandAddress(mode.data.bands, band.address)) {
@@ -221,7 +219,6 @@
 <div>{formatAddress($selectedBand)}</div>
 <DesignerCamera direction={$cameraDirection ?? undefined} />
 <DesignerLighting />
-
 
 <TransformDisplay />
 {#if isPointSelectInteractionMode($interactionMode)}

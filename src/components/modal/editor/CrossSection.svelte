@@ -15,7 +15,8 @@
 	import Container from './Container.svelte';
 	import Editor from './Editor.svelte';
 
-	let { editCurve = true, sectionIndex = 0 }: { editCurve?: boolean; sectionIndex?: number } = $props();
+	let { editCurve = true, sectionIndex = 0 }: { editCurve?: boolean; sectionIndex?: number } =
+		$props();
 
 	const handleChangeSampleMethod = (event: Event, crossSection: CrossSectionConfig) => {
 		const newMethod = (event.target as HTMLSelectElement)

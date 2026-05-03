@@ -19,7 +19,11 @@
 		Tube
 	} from '$lib/projection-geometry/types';
 	import ColorMapped from './ColorMapped.svelte';
-	import { selectedProjectionGeometry, selectedSurfaceProjection, selectedSurfaceProjectionGeometry } from '$lib/stores';
+	import {
+		selectedProjectionGeometry,
+		selectedSurfaceProjection,
+		selectedSurfaceProjectionGeometry
+	} from '$lib/stores';
 
 	let {
 		onClick,
@@ -67,7 +71,16 @@
 	};
 
 	const LENGTH = 25;
-	const buildNormalGeometry = (triangle: { a: Vector3; b: Vector3; c: Vector3; getNormal: (target: Vector3) => Vector3; getMidpoint: (target: Vector3) => Vector3 }, length: number) => {
+	const buildNormalGeometry = (
+		triangle: {
+			a: Vector3;
+			b: Vector3;
+			c: Vector3;
+			getNormal: (target: Vector3) => Vector3;
+			getMidpoint: (target: Vector3) => Vector3;
+		},
+		length: number
+	) => {
 		const normal = new Vector3();
 		const anchor = new Vector3();
 		const ab = triangle.b.clone().addScaledVector(triangle.a, -1).normalize();
@@ -164,7 +177,10 @@
 					<T.Mesh geometry={band} material={materials.numbered[i % materials.numbered.length]} />
 				{/each}
 			{:else}
-				<T.Mesh geometry={projectionGeometry.surfaceProjection} material={materials.highlightedSecondary} />
+				<T.Mesh
+					geometry={projectionGeometry.surfaceProjection}
+					material={materials.highlightedSecondary}
+				/>
 			{/if}
 		{/if}
 		{#if showNormals && projectionGeometry.surfaceProjectionFacets}

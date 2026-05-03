@@ -23,13 +23,15 @@
 		outlined: boolean;
 	} = $props();
 
-	let pathObject = $derived(generateBranched(band.facets.map((f) => f.quad) as Quadrilateral[], {
-		rows: 1,
-		columns: 1,
-		variant,
-		minWidth,
-		maxWidth
-	}));
+	let pathObject = $derived(
+		generateBranched(band.facets.map((f) => f.quad) as Quadrilateral[], {
+			rows: 1,
+			columns: 1,
+			variant,
+			minWidth,
+			maxWidth
+		})
+	);
 </script>
 
 <g>

@@ -10,8 +10,12 @@
 		triangle,
 		style = 'tick',
 		length = 5
-	}: { edge: TriangleEdge; triangle: Triangle; style?: 'tick' | 'check'; length?: number } =
-		$props();
+	}: {
+		edge: TriangleEdge;
+		triangle: Triangle;
+		style?: 'tick' | 'check';
+		length?: number;
+	} = $props();
 
 	const getMarkPath = (edge: TriangleEdge, triangle: Triangle, style: 'tick' | 'check') => {
 		const [p0, p1] = getTrianglePointFromTriangleEdge(edge, 'triangle-order');

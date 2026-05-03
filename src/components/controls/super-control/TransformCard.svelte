@@ -3,17 +3,18 @@
 	import type { GlobuleTransform } from '$lib/types';
 	import { getConstants } from '$lib/transform-globule';
 	import { Icon } from 'svelte-icons-pack';
-	import {
-		FiChevronUp,
-		FiChevronDown,
-		FiXCircle
-	} from 'svelte-icons-pack/fi';
+	import { FiChevronUp, FiChevronDown, FiXCircle } from 'svelte-icons-pack/fi';
 	import { interactionMode } from '../../three-renderer/interaction-mode';
 	import AddRemoveTransform from './AddRemoveTransform.svelte';
 	import { selectedBand, superConfigStore as store } from '$lib/stores';
 	import { get } from 'svelte/store';
 
-	let { transform, sgIndex, tIndex, children }: {
+	let {
+		transform,
+		sgIndex,
+		tIndex,
+		children
+	}: {
 		transform: GlobuleTransform;
 		sgIndex: number;
 		tIndex: number;

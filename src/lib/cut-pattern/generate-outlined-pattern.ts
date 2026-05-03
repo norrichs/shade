@@ -31,8 +31,13 @@ import {
 /**
  * Compute bounding box from all coordinates in a path.
  */
-const getBoundsFromPath = (path: PathSegment[]): { left: number; top: number; width: number; height: number; center: Vector3 } => {
-	let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+const getBoundsFromPath = (
+	path: PathSegment[]
+): { left: number; top: number; width: number; height: number; center: Vector3 } => {
+	let minX = Infinity,
+		minY = Infinity,
+		maxX = -Infinity,
+		maxY = -Infinity;
 	for (const seg of path) {
 		if (seg[0] === 'Z') continue;
 		if (seg[0] === 'M' || seg[0] === 'L') {
@@ -54,7 +59,13 @@ const getBoundsFromPath = (path: PathSegment[]): { left: number; top: number; wi
 	}
 	const width = maxX - minX;
 	const height = maxY - minY;
-	return { left: minX, top: minY, width, height, center: new Vector3(minX + width / 2, minY + height / 2, 0) };
+	return {
+		left: minX,
+		top: minY,
+		width,
+		height,
+		center: new Vector3(minX + width / 2, minY + height / 2, 0)
+	};
 };
 
 /**
@@ -130,8 +141,10 @@ const transformPartnerPoints = (
 	const sin = Math.sin(rotation);
 
 	// After rotation, partnerEnd aligns with originStart (edges run opposite directions)
-	const rotatedPartnerEndX = (partnerEnd.x - partnerStart.x) * cos - (partnerEnd.y - partnerStart.y) * sin + partnerStart.x;
-	const rotatedPartnerEndY = (partnerEnd.x - partnerStart.x) * sin + (partnerEnd.y - partnerStart.y) * cos + partnerStart.y;
+	const rotatedPartnerEndX =
+		(partnerEnd.x - partnerStart.x) * cos - (partnerEnd.y - partnerStart.y) * sin + partnerStart.x;
+	const rotatedPartnerEndY =
+		(partnerEnd.x - partnerStart.x) * sin + (partnerEnd.y - partnerStart.y) * cos + partnerStart.y;
 	const tx = originStart.x - rotatedPartnerEndX;
 	const ty = originStart.y - rotatedPartnerEndY;
 
@@ -169,11 +182,10 @@ const getOutlineEdges = (
 		if (partnerQ) {
 			// Partner's shared edge is c→b, our shared edge is a→d
 			// Partner's non-shared vertices are a and d
-			const [tA, tD] = transformPartnerPoints(
-				q.a, q.d,
-				partnerQ.c, partnerQ.b,
-				[partnerQ.a, partnerQ.d]
-			);
+			const [tA, tD] = transformPartnerPoints(q.a, q.d, partnerQ.c, partnerQ.b, [
+				partnerQ.a,
+				partnerQ.d
+			]);
 			partnerOuter = { start: tA, end: tD };
 		}
 		// Interior point: midpoint of opposite edge (b-c) of same quad
@@ -189,7 +201,10 @@ const getOutlineEdges = (
 
 	// End edge: d[last] → c[last] (far end of band)
 	// Interior point: midpoint of opposite end (a-b) of last quad
-	const farEndInterior = quads[quads.length - 1].a.clone().add(quads[quads.length - 1].b).multiplyScalar(0.5);
+	const farEndInterior = quads[quads.length - 1].a
+		.clone()
+		.add(quads[quads.length - 1].b)
+		.multiplyScalar(0.5);
 	edges.push({
 		start: quads[quads.length - 1].d.clone(),
 		end: quads[quads.length - 1].c.clone(),
@@ -208,11 +223,10 @@ const getOutlineEdges = (
 			// Partner's shared edge is a→d, our shared edge is c→b
 			// Partner's non-shared vertices are b and c
 			// After rotation: tC lands near our c (start), tB lands near our b (end)
-			const [tB, tC] = transformPartnerPoints(
-				q.c, q.b,
-				partnerQ.a, partnerQ.d,
-				[partnerQ.b, partnerQ.c]
-			);
+			const [tB, tC] = transformPartnerPoints(q.c, q.b, partnerQ.a, partnerQ.d, [
+				partnerQ.b,
+				partnerQ.c
+			]);
 			partnerOuter = { start: tC, end: tB };
 		}
 		// Interior point: midpoint of opposite edge (a-d) of same quad
@@ -248,17 +262,44 @@ const generateTabForEdge = (edge: OutlineEdge, tabConfig: OutlinedTabConfig): Ta
 		case 'rounded':
 			return generateRoundedTab(edge.start, edge.end, tabConfig.tabWidth, edge.interiorPoint);
 		case 'inset':
-			return generateInsetTab(edge.start, edge.end, tabConfig.tabWidth, edge.interiorPoint, tabConfig.inset);
+			return generateInsetTab(
+				edge.start,
+				edge.end,
+				tabConfig.tabWidth,
+				edge.interiorPoint,
+				tabConfig.inset
+			);
 		case 'partner':
 			if (edge.partnerOuter) {
-				return generatePartnerTab(edge.start, edge.end, tabConfig.tabWidth, edge.interiorPoint, edge.partnerOuter.start, edge.partnerOuter.end);
+				return generatePartnerTab(
+					edge.start,
+					edge.end,
+					tabConfig.tabWidth,
+					edge.interiorPoint,
+					edge.partnerOuter.start,
+					edge.partnerOuter.end
+				);
 			}
 			return generateRectangularTab(edge.start, edge.end, tabConfig.tabWidth, edge.interiorPoint);
 		case 'partner-inset':
 			if (edge.partnerOuter) {
-				return generatePartnerInsetTab(edge.start, edge.end, tabConfig.tabWidth, edge.interiorPoint, edge.partnerOuter.start, edge.partnerOuter.end, tabConfig.inset);
+				return generatePartnerInsetTab(
+					edge.start,
+					edge.end,
+					tabConfig.tabWidth,
+					edge.interiorPoint,
+					edge.partnerOuter.start,
+					edge.partnerOuter.end,
+					tabConfig.inset
+				);
 			}
-			return generateInsetTab(edge.start, edge.end, tabConfig.tabWidth, edge.interiorPoint, tabConfig.inset);
+			return generateInsetTab(
+				edge.start,
+				edge.end,
+				tabConfig.tabWidth,
+				edge.interiorPoint,
+				tabConfig.inset
+			);
 		case 'rectangle':
 		default:
 			return generateRectangularTab(edge.start, edge.end, tabConfig.tabWidth, edge.interiorPoint);
@@ -300,10 +341,16 @@ const shouldHaveTab = (
 	currentTube: number
 ): boolean => {
 	if (edge.side === 'after') {
-		return hasPartners.after && (tabConfig.bandEdge === 'after' || tabConfig.bandEdge === 'beforeAndAfter');
+		return (
+			hasPartners.after &&
+			(tabConfig.bandEdge === 'after' || tabConfig.bandEdge === 'beforeAndAfter')
+		);
 	}
 	if (edge.side === 'before') {
-		return hasPartners.before && (tabConfig.bandEdge === 'before' || tabConfig.bandEdge === 'beforeAndAfter');
+		return (
+			hasPartners.before &&
+			(tabConfig.bandEdge === 'before' || tabConfig.bandEdge === 'beforeAndAfter')
+		);
 	}
 	if (edge.side === 'end') {
 		if (edge.endPartnerTube === undefined) return false;
@@ -439,9 +486,7 @@ const generateOutlinedTubePattern = (
 	const alignedBands = alignBands(flatBands);
 
 	const scale = pixelScale?.value || 1;
-	const allQuads = alignedBands.map((band) =>
-		getQuadrilaterals(band, scale, band.sideOrientation)
-	);
+	const allQuads = alignedBands.map((band) => getQuadrilaterals(band, scale, band.sideOrientation));
 
 	const bandPatterns = alignedBands.map((band, i) =>
 		generateOutlinedBandPattern(
@@ -482,13 +527,10 @@ export const generateOutlinedProjectionPattern = (
 		const totalBands = bands.filter((b) => b.visible).length;
 		const [bandStart, bandEnd] = resolveRangeIndices(projectionRange?.bands, totalBands);
 
-		const tubePattern = generateOutlinedTubePattern(
-			address,
-			bands,
-			config,
-			pixelScale,
-			{ start: bandStart, end: bandEnd }
-		);
+		const tubePattern = generateOutlinedTubePattern(address, bands, config, pixelScale, {
+			start: bandStart,
+			end: bandEnd
+		});
 		outputTubePatterns.push(tubePattern);
 	}
 

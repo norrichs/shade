@@ -19,7 +19,11 @@
 	import PickPointsButton from './PickPointsButton.svelte';
 	import { get } from 'svelte/store';
 
-	let { sgIndex = 0, tIndex = 0, active = false }: {
+	let {
+		sgIndex = 0,
+		tIndex = 0,
+		active = false
+	}: {
 		sgIndex?: number;
 		tIndex?: number;
 		active?: boolean;
@@ -35,9 +39,7 @@
 			: { x: 0, y: 0, z: 0 }
 	);
 	let scaleValue = $state(
-		isGlobuleTransformScale(initTransform)
-			? initTransform.scale.scaleValue
-			: 1
+		isGlobuleTransformScale(initTransform) ? initTransform.scale.scaleValue : 1
 	);
 
 	const activate = () => {

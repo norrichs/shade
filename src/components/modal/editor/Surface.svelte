@@ -39,7 +39,9 @@
 		superConfigStore.set(config);
 	};
 
-	let surfaceConfig = $derived($superConfigStore.projectionConfigs[0].surfaceConfig as SurfaceConfig);
+	let surfaceConfig = $derived(
+		$superConfigStore.projectionConfigs[0].surfaceConfig as SurfaceConfig
+	);
 	let surfaceTypeValue = $derived(surfaceConfig.type.replace('Config', '').toLowerCase());
 </script>
 

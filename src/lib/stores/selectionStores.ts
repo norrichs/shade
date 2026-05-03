@@ -265,7 +265,11 @@ export const selectedProjectionGeometry = derived(
 			isSelected: ((a) => isSelected(a, selected)) as AddressSelector,
 			isPartner: ((a) => isSelected(a, selectedPartners)) as AddressSelector,
 			isSelectedOrPartner: ((a) =>
-				isSelected(a, [...selectedStartPartners, ...selectedEndPartners, ...selected])) as AddressSelector,
+				isSelected(a, [
+					...selectedStartPartners,
+					...selectedEndPartners,
+					...selected
+				])) as AddressSelector,
 			isStartPartner: ((a) => isSelected(a, selectedStartPartners)) as AddressSelector,
 			isEndPartner: ((a) => isSelected(a, selectedEndPartners)) as AddressSelector,
 			geometry: {
@@ -285,7 +289,11 @@ export const selectedProjectionGeometry = derived(
 // Surface Projection Selection
 export const selectedSurfaceProjection = writable<GlobuleAddress_Facet | null>(null);
 
-const getSurfaceProjectionSelectedFacet = (address: GlobuleAddress_Facet, sg: SuperGlobule, mode: SelectionMode) => {
+const getSurfaceProjectionSelectedFacet = (
+	address: GlobuleAddress_Facet,
+	sg: SuperGlobule,
+	mode: SelectionMode
+) => {
 	const facets = new Set<Facet>([]);
 	const spTubes = sg.projections[address.globule]?.surfaceProjectionTubes;
 	if (!spTubes?.[address.tube]?.bands?.[address.band]) return [];
@@ -294,22 +302,33 @@ const getSurfaceProjectionSelectedFacet = (address: GlobuleAddress_Facet, sg: Su
 			band.facets.forEach((facet) => facets.add(facet))
 		);
 	} else if (mode.includes.band) {
-		spTubes[address.tube].bands[address.band].facets.forEach(
-			(facet) => facets.add(facet)
-		);
+		spTubes[address.tube].bands[address.band].facets.forEach((facet) => facets.add(facet));
 	} else if (mode.includes.facet) {
 		facets.add(spTubes[address.tube].bands[address.band].facets[address.facet]);
 	}
 	return Array.from(facets);
 };
 
-const getSurfaceProjectionPartnerFacets = (facets: Facet[], sg: SuperGlobule, mode: SelectionMode) => {
+const getSurfaceProjectionPartnerFacets = (
+	facets: Facet[],
+	sg: SuperGlobule,
+	mode: SelectionMode
+) => {
 	if (!mode.includes.partners)
-		return { startPartnerFacets: [] as Facet[], endPartnerFacets: [] as Facet[], partnerFacets: [] as Facet[] };
+		return {
+			startPartnerFacets: [] as Facet[],
+			endPartnerFacets: [] as Facet[],
+			partnerFacets: [] as Facet[]
+		};
 
 	const globuleIdx = facets[0]?.address?.globule ?? 0;
 	const spTubes = sg.projections[globuleIdx]?.surfaceProjectionTubes;
-	if (!spTubes) return { startPartnerFacets: [] as Facet[], endPartnerFacets: [] as Facet[], partnerFacets: [] as Facet[] };
+	if (!spTubes)
+		return {
+			startPartnerFacets: [] as Facet[],
+			endPartnerFacets: [] as Facet[],
+			partnerFacets: [] as Facet[]
+		};
 
 	const facetAddresses = new Set(facets.map((facet) => concatAddress(facet.address)));
 	const partners = new Set<Facet>([]);
@@ -357,11 +376,7 @@ const getSurfaceProjectionPartnerFacets = (facets: Facet[], sg: SuperGlobule, mo
 
 export const selectedSurfaceProjectionGeometry = derived(
 	[selectedSurfaceProjection, superGlobuleStore, selectMode],
-	([
-		$selectedSurfaceProjection,
-		$superGlobuleStore,
-		$selectMode
-	]): SelectedProjectionGeometry => {
+	([$selectedSurfaceProjection, $superGlobuleStore, $selectMode]): SelectedProjectionGeometry => {
 		if (!$selectedSurfaceProjection) return null;
 
 		const selectedFacets: Facet[] = getSurfaceProjectionSelectedFacet(
@@ -370,11 +385,8 @@ export const selectedSurfaceProjectionGeometry = derived(
 			$selectMode
 		);
 
-		const { startPartnerFacets, endPartnerFacets, partnerFacets } = getSurfaceProjectionPartnerFacets(
-			selectedFacets,
-			$superGlobuleStore,
-			$selectMode
-		);
+		const { startPartnerFacets, endPartnerFacets, partnerFacets } =
+			getSurfaceProjectionPartnerFacets(selectedFacets, $superGlobuleStore, $selectMode);
 
 		const facetPoints = selectedFacets
 			.map(({ triangle }) => [triangle.a, triangle.b, triangle.c])
@@ -409,7 +421,11 @@ export const selectedSurfaceProjectionGeometry = derived(
 			isSelected: ((a) => isSelected(a, selected)) as AddressSelector,
 			isPartner: ((a) => isSelected(a, selectedPartners)) as AddressSelector,
 			isSelectedOrPartner: ((a) =>
-				isSelected(a, [...selectedStartPartners, ...selectedEndPartners, ...selected])) as AddressSelector,
+				isSelected(a, [
+					...selectedStartPartners,
+					...selectedEndPartners,
+					...selected
+				])) as AddressSelector,
 			isStartPartner: ((a) => isSelected(a, selectedStartPartners)) as AddressSelector,
 			isEndPartner: ((a) => isSelected(a, selectedEndPartners)) as AddressSelector,
 			geometry: {

@@ -1,6 +1,8 @@
 <script lang="ts">
-	let { values = [], offsetBy = { x: 0, y: 0 } }: { values?: number[]; offsetBy?: { x: number; y: number } } =
-		$props();
+	let {
+		values = [],
+		offsetBy = { x: 0, y: 0 }
+	}: { values?: number[]; offsetBy?: { x: number; y: number } } = $props();
 
 	type PathSegmentCharacter = 'M' | 'A' | 'Z' | 'L' | 'Q' | 'C';
 

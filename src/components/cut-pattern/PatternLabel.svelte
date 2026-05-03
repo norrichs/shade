@@ -110,9 +110,11 @@
 		}
 	});
 
-	let path = $derived(svgPathStringFromSegments(
-		adjust(getLabelPathSegments({ value, r: radius, addressStrings }), anchor, angle, scale)
-	));
+	let path = $derived(
+		svgPathStringFromSegments(
+			adjust(getLabelPathSegments({ value, r: radius, addressStrings }), anchor, angle, scale)
+		)
+	);
 </script>
 
 {#if portal}

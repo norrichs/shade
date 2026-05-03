@@ -111,8 +111,7 @@
 			storeValue[path[0]][path[1]][path[2]][path[3]][path[4]][path[5]] = selectedSettings;
 			settingStore.set(storeValue);
 		} else if (path.length === 7) {
-			storeValue[path[0]][path[1]][path[2]][path[3]][path[4]][path[5]][path[6]] =
-				selectedSettings;
+			storeValue[path[0]][path[1]][path[2]][path[3]][path[4]][path[5]][path[6]] = selectedSettings;
 			settingStore.set(storeValue);
 		} else if (path.length === 8) {
 			storeValue[path[0]][path[1]][path[2]][path[3]][path[4]][path[5]][path[6]][path[7]] =

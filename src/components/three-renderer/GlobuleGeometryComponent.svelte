@@ -8,7 +8,8 @@
 	import { interactionMode } from './interaction-mode';
 	import GlobuleMesh from '../globuleMesh/GlobuleMesh.svelte';
 
-	let { getInteractionMaterial, handleClick }: { getInteractionMaterial: any; handleClick: any } = $props();
+	let { getInteractionMaterial, handleClick }: { getInteractionMaterial: any; handleClick: any } =
+		$props();
 </script>
 
 {#if $view.showGlobuleGeometry.any}

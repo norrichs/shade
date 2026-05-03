@@ -11,7 +11,11 @@
 
 	interactivity();
 
-	let { globuleConfig, sgIndex, selected = false }: { globuleConfig: GlobuleConfig; sgIndex: number; selected?: boolean } = $props();
+	let {
+		globuleConfig,
+		sgIndex,
+		selected = false
+	}: { globuleConfig: GlobuleConfig; sgIndex: number; selected?: boolean } = $props();
 	const CLICK_DELTA_THRESHOLD = 10;
 
 	const handleClick = (event: any) => {

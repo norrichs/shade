@@ -34,11 +34,7 @@ export const retarget = (
 			}
 			return result;
 		}
-		if (
-			index >= startCount &&
-			index < startCount + middleCount &&
-			(columns > 1 || rows > 1)
-		) {
+		if (index >= startCount && index < startCount + middleCount && (columns > 1 || rows > 1)) {
 			const entryPoint = startCount * columns + middleCount * (rows - 1) * columns;
 			for (let c = 0; c < columns; c++) {
 				result.push(entryPoint + index + c * middleCount);

@@ -18,7 +18,9 @@
 	const getCurves = (crossSection: ShapeConfig) => {
 		return crossSection.curves;
 	};
-	let crossSection: ShapeConfig = $state($superConfigStore.subGlobuleConfigs[0].globuleConfig.shapeConfig);
+	let crossSection: ShapeConfig = $state(
+		$superConfigStore.subGlobuleConfigs[0].globuleConfig.shapeConfig
+	);
 	let curves = $derived(getCurves(crossSection));
 </script>
 
@@ -49,8 +51,7 @@
 					<NumberInput
 						onChange={(value) => {
 							const config = get(superConfigStore);
-							config.subGlobuleConfigs[0].globuleConfig.shapeConfig.symmetryNumber =
-								value;
+							config.subGlobuleConfigs[0].globuleConfig.shapeConfig.symmetryNumber = value;
 							superConfigStore.set(config);
 							crossSection = config.subGlobuleConfigs[0].globuleConfig.shapeConfig;
 						}}

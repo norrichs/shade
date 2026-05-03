@@ -479,7 +479,7 @@ export const defaultOutlinedPatternConfig = (): OutlinedPatternConfig => ({
 	tabConfig: {
 		tabWidth: 20,
 		shape: 'partner',
-		bandEdge: 'after',
+		bandEdge: 'after'
 	}
 });
 

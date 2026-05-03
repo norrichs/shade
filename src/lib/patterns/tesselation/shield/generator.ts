@@ -1,10 +1,4 @@
-import type {
-	Band,
-	GridVariant,
-	LinePathSegment,
-	MovePathSegment,
-	PathSegment
-} from '$lib/types';
+import type { Band, GridVariant, LinePathSegment, MovePathSegment, PathSegment } from '$lib/types';
 import { translatePS } from '../../utils';
 import type { TiledPatternSpec } from '../../spec-types';
 
@@ -52,9 +46,7 @@ const buildUnit = (
 	const middle = spec.unit.middle.map((s) =>
 		scaleSegment(s as MovePathSegment | LinePathSegment, w, h)
 	);
-	const end = spec.unit.end.map((s) =>
-		scaleSegment(s as MovePathSegment | LinePathSegment, w, h)
-	);
+	const end = spec.unit.end.map((s) => scaleSegment(s as MovePathSegment | LinePathSegment, w, h));
 
 	if (invert) {
 		const maxX = 1;

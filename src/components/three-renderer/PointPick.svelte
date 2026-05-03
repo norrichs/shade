@@ -72,8 +72,7 @@
 			newRecurrences[recurrenceIndex].recombines = { bandMap: [...newBandMap, newBandMapping] };
 		}
 
-		config.subGlobuleConfigs[origin.s].transforms[origin.g.length - 1].recurs =
-			newRecurrences;
+		config.subGlobuleConfigs[origin.s].transforms[origin.g.length - 1].recurs = newRecurrences;
 		superConfigStore.set(config);
 
 		const modeUpdate = get(mode);
@@ -90,7 +89,6 @@
 	};
 	let partnerJoin: BandEnd = $state('end');
 	let originJoin: BandEnd = $state('end');
-
 </script>
 
 <div class={`overlay ${$mode.type === 'standard' ? 'hide' : 'show'}`}>

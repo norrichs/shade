@@ -1,73 +1,73 @@
 {
-  "version": "6",
-  "dialect": "sqlite",
-  "id": "0ee9d13d-d4f4-4eb6-9d68-3948f3b320af",
-  "prevId": "213eec04-4558-4845-bcf2-0a88cb7ac120",
-  "tables": {
-    "shades_configs": {
-      "name": "shades_configs",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "integer",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "kind": {
-          "name": "kind",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'project'"
-        },
-        "config_json": {
-          "name": "config_json",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "(datetime('now'))"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "(datetime('now'))"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    }
-  },
-  "views": {},
-  "enums": {},
-  "_meta": {
-    "schemas": {},
-    "tables": {},
-    "columns": {}
-  },
-  "internal": {
-    "indexes": {}
-  }
+	"version": "6",
+	"dialect": "sqlite",
+	"id": "0ee9d13d-d4f4-4eb6-9d68-3948f3b320af",
+	"prevId": "213eec04-4558-4845-bcf2-0a88cb7ac120",
+	"tables": {
+		"shades_configs": {
+			"name": "shades_configs",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "integer",
+					"primaryKey": true,
+					"notNull": true,
+					"autoincrement": false
+				},
+				"name": {
+					"name": "name",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false
+				},
+				"kind": {
+					"name": "kind",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false,
+					"default": "'project'"
+				},
+				"config_json": {
+					"name": "config_json",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false
+				},
+				"created_at": {
+					"name": "created_at",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false,
+					"default": "(datetime('now'))"
+				},
+				"updated_at": {
+					"name": "updated_at",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false,
+					"default": "(datetime('now'))"
+				}
+			},
+			"indexes": {},
+			"foreignKeys": {},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {},
+			"checkConstraints": {}
+		}
+	},
+	"views": {},
+	"enums": {},
+	"_meta": {
+		"schemas": {},
+		"tables": {},
+		"columns": {}
+	},
+	"internal": {
+		"indexes": {}
+	}
 }

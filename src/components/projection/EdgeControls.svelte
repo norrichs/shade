@@ -19,25 +19,20 @@
 		const config = get(superConfigStore);
 		const indexOfCurve = getEdge(config.projectionConfigs, address).widthCurve;
 		const newCurve = window.structuredClone(
-			config.projectionConfigs[address[0]].projectorConfig.polyhedron.edgeCurves[
-				indexOfCurve
-			]
+			config.projectionConfigs[address[0]].projectorConfig.polyhedron.edgeCurves[indexOfCurve]
 		);
-		config.projectionConfigs[address[0]].projectorConfig.polyhedron.edgeCurves.push(
-			newCurve
-		);
+		config.projectionConfigs[address[0]].projectorConfig.polyhedron.edgeCurves.push(newCurve);
 		const newIndex =
-			config.projectionConfigs[address[0]].projectorConfig.polyhedron.edgeCurves.length -
-			1;
+			config.projectionConfigs[address[0]].projectorConfig.polyhedron.edgeCurves.length - 1;
 		superConfigStore.set(config);
 		return newIndex;
 	};
 
 	const handleClickMakeUnique = (address: [number, number, number]) => {
 		const config = get(superConfigStore);
-		config.projectionConfigs[address[0]].projectorConfig.polyhedron.polygons[
-			address[1]
-		].edges[address[2]].widthCurve = copyEdgeCurve(address);
+		config.projectionConfigs[address[0]].projectorConfig.polyhedron.polygons[address[1]].edges[
+			address[2]
+		].widthCurve = copyEdgeCurve(address);
 		superConfigStore.set(config);
 	};
 

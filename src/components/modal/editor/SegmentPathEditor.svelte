@@ -33,12 +33,7 @@
 </script>
 
 <div class="container" style="width:{config.size.width}px; height:{config.size.height}px;">
-	<svg
-		width={config.size.width}
-		height={config.size.height}
-		viewBox={canv.viewBox}
-		class="canvas"
-	>
+	<svg width={config.size.width} height={config.size.height} viewBox={canv.viewBox} class="canvas">
 		<rect x="0" y="0" width={unit.width} height={unit.height} class="unit-bounds" />
 		<path d={pathString} class="segments" />
 	</svg>

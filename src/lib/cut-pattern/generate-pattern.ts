@@ -125,7 +125,13 @@ export const generateProjectionPattern = (
 	} = globulePatternConfig;
 
 	if (isOutlinedPatternConfig(patternTypeConfig)) {
-		return generateOutlinedProjectionPattern(tubes, id, patternTypeConfig, pixelScale, projectionRange);
+		return generateOutlinedProjectionPattern(
+			tubes,
+			id,
+			patternTypeConfig,
+			pixelScale,
+			projectionRange
+		);
 	} else if (shouldUsePanelPattern(patternTypeConfig)) {
 		const projectionPanelPattern = generateProjectionPanelPattern({
 			tubes,
@@ -155,7 +161,11 @@ export const generateProjectionPattern = (
 		for (let t = tubeStart; t < tubeEnd; t++) {
 			const { bands, address } = tubes[t];
 			const totalBands = bands.filter((b) => b.visible).length;
-			const [bandStart, bandEnd] = resolveRangeIndices(projectionRange?.bands, totalBands, bandExpand);
+			const [bandStart, bandEnd] = resolveRangeIndices(
+				projectionRange?.bands,
+				totalBands,
+				bandExpand
+			);
 
 			const tubePattern = generateTubeCutPattern({
 				address,
@@ -205,7 +215,11 @@ export const generateProjectionPattern = (
 				const tp = tubePatterns[t];
 				if (!tp) continue;
 				// adjustAfterTiling indexes by tube number, pass the sparse array
-				const adjusted = adjustAfterTiling(tp.bands, tiledPatternConfig, tubePatterns as TubeCutPattern[]);
+				const adjusted = adjustAfterTiling(
+					tp.bands,
+					tiledPatternConfig,
+					tubePatterns as TubeCutPattern[]
+				);
 				tubePatterns[t] = { ...tp, bands: adjusted };
 			}
 		}
@@ -216,7 +230,10 @@ export const generateProjectionPattern = (
 				const tp = tubePatterns[t];
 				if (!tp) continue;
 				const totalVisibleBands = tubes[t].bands.filter((b) => b.visible).length;
-				const [exactStart, exactEnd] = resolveRangeIndices(projectionRange.bands, totalVisibleBands);
+				const [exactStart, exactEnd] = resolveRangeIndices(
+					projectionRange.bands,
+					totalVisibleBands
+				);
 				// Bands were generated with expanded range; now trim to exact
 				tubePatterns[t] = {
 					...tp,
@@ -482,7 +499,10 @@ export const getEndPartnerTransform = (
 	};
 };
 
-const findBandByAddress = (tubePatterns: TubeCutPattern[], address: GlobuleAddress_Band): BandCutPattern | undefined => {
+const findBandByAddress = (
+	tubePatterns: TubeCutPattern[],
+	address: GlobuleAddress_Band
+): BandCutPattern | undefined => {
 	const tube = tubePatterns[address.tube];
 	if (!tube) return undefined;
 	// Look up by address.band matching since bands may be a sparse subset

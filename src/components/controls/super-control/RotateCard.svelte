@@ -20,7 +20,11 @@
 	import { isClose } from '$lib/util';
 	import { get } from 'svelte/store';
 
-	let { sgIndex = 0, tIndex = 0, active = false }: {
+	let {
+		sgIndex = 0,
+		tIndex = 0,
+		active = false
+	}: {
 		sgIndex?: number;
 		tIndex?: number;
 		active?: boolean;
@@ -30,9 +34,7 @@
 	let initTransform = initConfig.subGlobuleConfigs[sgIndex].transforms[tIndex];
 
 	let angle = $state(
-		isGlobuleTransformRotate(initTransform)
-			? radToDeg(initTransform.rotate.angle)
-			: 0
+		isGlobuleTransformRotate(initTransform) ? radToDeg(initTransform.rotate.angle) : 0
 	);
 	let axis: Point3 = $state(
 		isGlobuleTransformRotate(initTransform)
@@ -123,9 +125,7 @@
 
 	const onSelectPoint = () => {
 		const config = get(superConfigStore);
-		if (
-			!isGlobuleTransformRotate(config.subGlobuleConfigs[sgIndex].transforms[tIndex])
-		) {
+		if (!isGlobuleTransformRotate(config.subGlobuleConfigs[sgIndex].transforms[tIndex])) {
 			interactionMode.set({ type: 'standard' });
 			return;
 		}

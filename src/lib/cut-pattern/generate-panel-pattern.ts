@@ -620,7 +620,7 @@ export const getPanelEdgeMeta = (
 	let edgeMeta = Object.fromEntries(
 		(['ab', 'bc', 'ac'] as TriangleEdge[]).map((edge) => {
 			if (!facet.meta || !facet.meta[edge]) {
-					throw Error(`facet edge missing meta at address ${JSON.stringify(facet.address)}`);
+				throw Error(`facet edge missing meta at address ${JSON.stringify(facet.address)}`);
 			}
 			const { partner } = facet.meta[edge];
 			const partnerFacet = tubes[partner.tube].bands[partner.band].facets[partner.facet];

@@ -3,8 +3,11 @@
 	import outline from 'svg-path-outline';
 	import type { DynamicPath } from '$lib/patterns/patterns';
 
-	let { midline, bandIndex, outlined }: { midline: DynamicPath; bandIndex: number; outlined: boolean } =
-		$props();
+	let {
+		midline,
+		bandIndex,
+		outlined
+	}: { midline: DynamicPath; bandIndex: number; outlined: boolean } = $props();
 </script>
 
 <g

@@ -58,7 +58,9 @@
 			...(hasProjectionPattern && showProjectionGeometry.any && patternSource === 'projection'
 				? projectionPattern.projectionCutPattern.tubes
 				: []),
-			...(hasSurfaceProjectionPattern && showProjectionGeometry.any && patternSource === 'surfaceProjection'
+			...(hasSurfaceProjectionPattern &&
+			showProjectionGeometry.any &&
+			patternSource === 'surfaceProjection'
 				? surfaceProjectionPattern.projectionCutPattern.tubes
 				: [])
 		];
@@ -81,7 +83,10 @@
 <div class="container-svg scroll-container" class:showBands>
 	<div class="scroll-container">
 		<CutPatternSvg width={6000} height={6000}>
-			<CutPatternRenderer tubes={collatedPatterns} selectionTarget={$patternConfigStore.patternViewConfig.patternSource ?? 'projection'} />
+			<CutPatternRenderer
+				tubes={collatedPatterns}
+				selectionTarget={$patternConfigStore.patternViewConfig.patternSource ?? 'projection'}
+			/>
 
 			{#if $superGlobulePatternStore.projectionPattern && $viewControlStore.showProjectionGeometry.any}
 				<ProjectionPanelPatterns

@@ -13,6 +13,7 @@
 ## File Structure
 
 **Create:**
+
 - `src/lib/patterns/spec-types.ts` — `TiledPatternSpec`, `UnitDefinition`, `AdjustmentRules`, `IndexPair`
 - `src/lib/patterns/shield-tesselation/index.ts` — re-exports
 - `src/lib/patterns/shield-tesselation/default-spec.ts` — `defaultShieldSpec` constant
@@ -22,10 +23,12 @@
 - `src/lib/patterns/shield-tesselation/__tests__/equivalence.test.ts` — golden test (compares old vs new)
 
 **Modify:**
+
 - `src/lib/patterns/pattern-definitions.ts` — change shield import + entry to call new functions; pass `defaultShieldSpec`
 - `src/lib/patterns/index.ts` — replace `export * from './tiled-shield-tesselation-pattern';` with `export * from './shield-tesselation';`
 
 **Delete:**
+
 - `src/lib/patterns/tiled-shield-tesselation-pattern.ts`
 
 **No changes:** `src/lib/types.ts` (`TiledPattern` still includes `'tiledShieldTesselationPattern'` — backward compatible). The wider type-system loosening is Phase 2.
@@ -35,6 +38,7 @@
 ### Task 1: Spec types
 
 **Files:**
+
 - Create: `src/lib/patterns/spec-types.ts`
 
 - [x] **Step 1: Create the spec types file**
@@ -106,6 +110,7 @@ git push
 ### Task 2: Helpers extracted from current shield
 
 **Files:**
+
 - Create: `src/lib/patterns/shield-tesselation/helpers.ts`
 
 The existing `tiled-shield-tesselation-pattern.ts` mixes pure helpers with shield-specific code. This task extracts the helpers verbatim (with two signature changes: `replaceInPlace` accepts `IndexPair[]` instead of parallel arrays, and `removeInPlace` is unchanged), into a new file. The old file is **not yet deleted** — it stays so the equivalence test can compare old vs new.
@@ -309,15 +314,16 @@ git push
 
 This is the heart of the refactor: the existing 80-segment unit and its four index arrays must be ported byte-for-byte into the new spec shape. The four `replaceInPlace` calls in the current `adjustShieldTesselationAfterTiling` use these parallel arrays:
 
-| Current parallel arrays | New `IndexPair[]` |
-|---|---|
-| `sourceIndices.start = [1, 2, 5, 6, 7, 8, 7, 11, 12, 11]`, `targetIndices.end = [67, 68, 71, 72, 73, 74, 33, 77, 78, 35]` | `withinBand` |
-| `sourceIndices.left = [36, 36, 29, 29, 29]`, `targetIndices.right = [22, 38, 15, 39, 40]` | `acrossBands` |
-| `[6, 5, 2, 1] → [7, 8, 11, 12]` (when `partner.label === 0`, `f === 0`) | `partner.startEnd` |
-| `[73, 74, 77, 78] → [72, 71, 68, 67]` (when `partner.label !== 0`, `f === last`) | `partner.endEnd` |
-| `targetIndices.remove = [22, 23, 38, 39]` | `skipRemove` |
+| Current parallel arrays                                                                                                   | New `IndexPair[]`  |
+| ------------------------------------------------------------------------------------------------------------------------- | ------------------ |
+| `sourceIndices.start = [1, 2, 5, 6, 7, 8, 7, 11, 12, 11]`, `targetIndices.end = [67, 68, 71, 72, 73, 74, 33, 77, 78, 35]` | `withinBand`       |
+| `sourceIndices.left = [36, 36, 29, 29, 29]`, `targetIndices.right = [22, 38, 15, 39, 40]`                                 | `acrossBands`      |
+| `[6, 5, 2, 1] → [7, 8, 11, 12]` (when `partner.label === 0`, `f === 0`)                                                   | `partner.startEnd` |
+| `[73, 74, 77, 78] → [72, 71, 68, 67]` (when `partner.label !== 0`, `f === last`)                                          | `partner.endEnd`   |
+| `targetIndices.remove = [22, 23, 38, 39]`                                                                                 | `skipRemove`       |
 
 **Files:**
+
 - Create: `src/lib/patterns/shield-tesselation/default-spec.ts`
 
 - [x] **Step 1: Create the default spec file**
@@ -482,7 +488,7 @@ export const defaultShieldSpec: TiledPatternSpec = {
 };
 ```
 
-> **Note on coordinate units:** The existing code multiplies indices by `w` and `h` *inline* in the literal segment list, where `w = col / 42` and `h = row / 14`. The spec stores the **un-multiplied** coefficients (`['L', 10, 2]` rather than `['L', 10*w, 2*h]`); the generator does the multiplication at tile time using the spec's `unit.width` / `unit.height` and the runtime-passed `size` / `rows` / `columns`. Default spec values match the existing coefficients exactly, so default-spec output is unchanged.
+> **Note on coordinate units:** The existing code multiplies indices by `w` and `h` _inline_ in the literal segment list, where `w = col / 42` and `h = row / 14`. The spec stores the **un-multiplied** coefficients (`['L', 10, 2]` rather than `['L', 10*w, 2*h]`); the generator does the multiplication at tile time using the spec's `unit.width` / `unit.height` and the runtime-passed `size` / `rows` / `columns`. Default spec values match the existing coefficients exactly, so default-spec output is unchanged.
 
 - [x] **Step 2: Run type-check**
 
@@ -507,6 +513,7 @@ git push
 Reproduce `generateShieldTesselationTile` from the old file, but it now consumes a spec instead of hardcoded literals. The signature accepts the spec separately from the per-call props (size, rows, columns, sideOrientation).
 
 **Files:**
+
 - Create: `src/lib/patterns/shield-tesselation/generator.ts`
 
 - [x] **Step 1: Create the generator file**
@@ -514,13 +521,7 @@ Reproduce `generateShieldTesselationTile` from the old file, but it now consumes
 Create `src/lib/patterns/shield-tesselation/generator.ts`:
 
 ```ts
-import type {
-	Band,
-	GridVariant,
-	LinePathSegment,
-	MovePathSegment,
-	PathSegment
-} from '$lib/types';
+import type { Band, GridVariant, LinePathSegment, MovePathSegment, PathSegment } from '$lib/types';
 import { translatePS } from '../utils';
 import type { TiledPatternSpec } from '../spec-types';
 import { END_SEGMENTS, START_SEGMENTS } from './helpers';
@@ -569,9 +570,7 @@ const buildUnit = (
 	const middle = spec.unit.middle.map((s) =>
 		scaleSegment(s as MovePathSegment | LinePathSegment, w, h)
 	);
-	const end = spec.unit.end.map((s) =>
-		scaleSegment(s as MovePathSegment | LinePathSegment, w, h)
-	);
+	const end = spec.unit.end.map((s) => scaleSegment(s as MovePathSegment | LinePathSegment, w, h));
 
 	if (invert) {
 		const maxX = 1;
@@ -660,6 +659,7 @@ git push
 The adjuster reads `IndexPair[]` from the spec instead of constructing parallel arrays inline. Behavior is otherwise identical to the existing `adjustShieldTesselationAfterTiling`.
 
 **Files:**
+
 - Create: `src/lib/patterns/shield-tesselation/adjuster.ts`
 
 - [x] **Step 1: Create the adjuster file**
@@ -667,12 +667,7 @@ The adjuster reads `IndexPair[]` from the spec instead of constructing parallel 
 Create `src/lib/patterns/shield-tesselation/adjuster.ts`:
 
 ```ts
-import type {
-	BandCutPattern,
-	CutPattern,
-	TiledPatternConfig,
-	TubeCutPattern
-} from '$lib/types';
+import type { BandCutPattern, CutPattern, TiledPatternConfig, TubeCutPattern } from '$lib/types';
 import { getAngle, rotatePS, translatePS } from '../utils';
 import type { IndexPair, TiledPatternSpec } from '../spec-types';
 import {
@@ -809,7 +804,7 @@ export const adjustShieldTesselation = (
 };
 ```
 
-> **Note on partner pairs:** The original code branched on `Number(partner.label) === 0` (start of partner band) vs not, swapping which array became the source-list. In the spec, `partner.startEnd` and `partner.endEnd` already encode `{source, target}`, so when the partner-label condition flips, we *swap* source and target. This produces the same final mutation as the original code's `[6,5,2,1] → [7,8,11,12]` vs `[73,74,77,78] → [72,71,68,67]` arrays — verified by the equivalence test in Task 7.
+> **Note on partner pairs:** The original code branched on `Number(partner.label) === 0` (start of partner band) vs not, swapping which array became the source-list. In the spec, `partner.startEnd` and `partner.endEnd` already encode `{source, target}`, so when the partner-label condition flips, we _swap_ source and target. This produces the same final mutation as the original code's `[6,5,2,1] → [7,8,11,12]` vs `[73,74,77,78] → [72,71,68,67]` arrays — verified by the equivalence test in Task 7.
 
 - [x] **Step 2: Run type-check**
 
@@ -832,6 +827,7 @@ git push
 ### Task 6: Index file
 
 **Files:**
+
 - Create: `src/lib/patterns/shield-tesselation/index.ts`
 
 - [x] **Step 1: Create the index file**
@@ -867,12 +863,14 @@ git push
 This is the centerpiece of the refactor. The test imports both the **old** `tiled-shield-tesselation-pattern.ts` and the **new** `shield-tesselation/` module, runs both at multiple parameter combinations, and asserts deep equality. Once the test passes for all cases, the old file can be deleted.
 
 The test has two parts:
+
 - **Generator equivalence:** `generateShieldTesselationTile(defaultShieldSpec, props) ≡ oldGenerateShieldTesselationTile(props)` for all parameter combinations.
 - **Adjuster equivalence:** `adjustShieldTesselation(bands, config, tubes, defaultShieldSpec) ≡ oldAdjustShieldTesselationAfterTiling(bands, config, tubes)` for representative band/tube fixtures.
 
 Adjuster fixtures are minimal — the test constructs a small synthetic `BandCutPattern` with one band and a few facets, exercises each `endsMatched` / `skipEdges` / `endLooped` branch, and asserts deep equality of the result.
 
 **Files:**
+
 - Create: `src/lib/patterns/shield-tesselation/__tests__/equivalence.test.ts`
 
 - [x] **Step 1: Write the equivalence test for the generator**
@@ -937,12 +935,7 @@ Append to `src/lib/patterns/shield-tesselation/__tests__/equivalence.test.ts`:
 ```ts
 import { adjustShieldTesselationAfterTiling as oldAdjust } from '../../tiled-shield-tesselation-pattern';
 import { adjustShieldTesselation as newAdjust } from '../adjuster';
-import type {
-	BandCutPattern,
-	TiledPatternConfig,
-	TubeCutPattern,
-	SkipEdges
-} from '$lib/types';
+import type { BandCutPattern, TiledPatternConfig, TubeCutPattern, SkipEdges } from '$lib/types';
 
 const makeFacet = (offsetX: number, segmentCount: number) => {
 	const path = [];
@@ -1044,6 +1037,7 @@ git push
 Now that the new pipeline matches the old one, route the registered `tiledShieldTesselationPattern` entry through the new functions. The wrapper signature stays loose (`adjustAfterTiling: any`) — Phase 2 will tighten this when the pattern registry is redesigned.
 
 **Files:**
+
 - Modify: `src/lib/patterns/pattern-definitions.ts`
 
 - [x] **Step 1: Update imports and shield entry**
@@ -1128,7 +1122,7 @@ tiledShieldTesselationPattern: {
 },
 ```
 
-The wrapper's parameter names now reflect the *actual* call signature used at the call site in `src/lib/cut-pattern/generate-pattern.ts:208` (`adjustAfterTiling(tp.bands, tiledPatternConfig, tubePatterns)`), fixing a long-standing naming lie.
+The wrapper's parameter names now reflect the _actual_ call signature used at the call site in `src/lib/cut-pattern/generate-pattern.ts:208` (`adjustAfterTiling(tp.bands, tiledPatternConfig, tubePatterns)`), fixing a long-standing naming lie.
 
 You'll also need to add type imports for `BandCutPattern` and `TubeCutPattern` near the top:
 
@@ -1172,6 +1166,7 @@ npm run dev
 ```
 
 Open `/designer2`, select a project that uses the shield pattern (or set `type: 'tiledShieldTesselationPattern'` in TilingControl), and confirm the rendered SVG output looks identical to before. Test:
+
 - Default: rows=1, columns=1
 - Multi-column: columns=3
 - `endsMatched: true`
@@ -1194,6 +1189,7 @@ git push
 Once equivalence is verified end-to-end, retire the old file. The equivalence test gets reduced to a regression test of `defaultShieldSpec` against captured snapshots.
 
 **Files:**
+
 - Delete: `src/lib/patterns/tiled-shield-tesselation-pattern.ts`
 - Modify: `src/lib/patterns/index.ts` (replace export)
 - Modify: `src/lib/patterns/shield-tesselation/__tests__/equivalence.test.ts` (replace cross-file equivalence with snapshot regression)
@@ -1325,6 +1321,7 @@ npm run dev
 ```
 
 Open `/designer2`. Verify shield rendering for at least three configurations:
+
 - Default shield with rows=1, columns=1, endsMatched=false
 - Shield with columns=3
 - Shield with endsMatched=true and a multi-band projection
@@ -1345,6 +1342,7 @@ Confirm the branch contains the expected commit history and is fully pushed.
 ## What's NOT in Phase 1 (deferred to Phases 2–4)
 
 Phase 2 (variant storage + picker integration):
+
 - Add `kind: 'tiled-pattern-spec'` rows to the `shades_configs` table
 - New CRUD endpoints / store layer for variants (`tilePatternSpecStore.ts`)
 - Pattern registry redesign (`pattern-registry.ts` per the spec)
@@ -1353,6 +1351,7 @@ Phase 2 (variant storage + picker integration):
 - `TiledPatternConfig.type` resolution falls back to `defaultShieldSpec` when the referenced variant id is missing
 
 Phase 3 (SegmentPathEditor + Unit mode editor):
+
 - Extract `path-editor-shared.ts` from `PathEditor.svelte`
 - New `SegmentPathEditor.svelte` for `PathSegment[]`
 - New `TileEditor.svelte` floater with Unit mode only
@@ -1360,6 +1359,7 @@ Phase 3 (SegmentPathEditor + Unit mode editor):
 - Save / Save As / Discard / Delete UI
 
 Phase 4 (adjustment-rule editing modes):
+
 - Within Band / Across Bands / Partner Start / Partner End / Skip Remove modes
 - `AdjacencyGhost.svelte` for ghost neighbor rendering
 - `RuleList.svelte` sidebar with click-to-highlight
@@ -1371,10 +1371,10 @@ Each phase becomes its own plan once the previous one lands.
 
 ## Risk register
 
-| Risk | Mitigation |
-|---|---|
-| Old `adjustShieldTesselationAfterTiling` and new `adjustShieldTesselation` diverge in subtle ways (e.g., partner-pair direction, retarget edge cases) | Adjuster equivalence test covers the four main flag combinations; cross-file test stays in place through Task 8 to verify wiring change preserves behavior |
-| Coordinate scaling difference between old (multipliers inline) and new (multipliers in generator) introduces floating-point drift | Default spec values written *without* `* w` and `* h` (raw coefficients); generator applies `w` / `h` once at the same point in the pipeline as the original; equivalence test uses `toEqual` (exact match) |
-| `pattern-definitions.ts` change breaks downstream code that depended on the old wrapper's parameter names | The wrapper is the only consumer that destructures `adjustAfterTiling`; the actual call signature is unchanged |
-| Pre-existing TypeScript errors mask new ones introduced by the refactor | After each task, scan `npm run check` output diff for *new* errors specifically |
-| Hidden code paths (e.g., `invert` is currently always false but the code path exists) might be exercised by some configuration the equivalence test doesn't cover | The equivalence test pins behavior; if a code path is not exercised, it's not part of v1's contract — Phase 1 explicitly preserves only what the existing tests cover |
+| Risk                                                                                                                                                              | Mitigation                                                                                                                                                                                                  |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Old `adjustShieldTesselationAfterTiling` and new `adjustShieldTesselation` diverge in subtle ways (e.g., partner-pair direction, retarget edge cases)             | Adjuster equivalence test covers the four main flag combinations; cross-file test stays in place through Task 8 to verify wiring change preserves behavior                                                  |
+| Coordinate scaling difference between old (multipliers inline) and new (multipliers in generator) introduces floating-point drift                                 | Default spec values written _without_ `* w` and `* h` (raw coefficients); generator applies `w` / `h` once at the same point in the pipeline as the original; equivalence test uses `toEqual` (exact match) |
+| `pattern-definitions.ts` change breaks downstream code that depended on the old wrapper's parameter names                                                         | The wrapper is the only consumer that destructures `adjustAfterTiling`; the actual call signature is unchanged                                                                                              |
+| Pre-existing TypeScript errors mask new ones introduced by the refactor                                                                                           | After each task, scan `npm run check` output diff for _new_ errors specifically                                                                                                                             |
+| Hidden code paths (e.g., `invert` is currently always false but the code path exists) might be exercised by some configuration the equivalence test doesn't cover | The equivalence test pins behavior; if a code path is not exercised, it's not part of v1's contract — Phase 1 explicitly preserves only what the existing tests cover                                       |

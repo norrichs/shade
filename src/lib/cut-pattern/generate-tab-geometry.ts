@@ -13,7 +13,11 @@ export type TabGeometry = {
  * Compute a unit normal to a 2D edge (z=0), pointing in the given direction.
  * `interiorPoint` is a point on the band interior side — the normal will point AWAY from it.
  */
-const getOutwardNormal = (edgeStart: Vector3, edgeEnd: Vector3, interiorPoint: Vector3): Vector3 => {
+const getOutwardNormal = (
+	edgeStart: Vector3,
+	edgeEnd: Vector3,
+	interiorPoint: Vector3
+): Vector3 => {
 	const edge = new Vector3().subVectors(edgeEnd, edgeStart);
 	// 2D perpendicular (rotate 90 degrees)
 	const normal = new Vector3(-edge.y, edge.x, 0).normalize();
@@ -312,10 +316,7 @@ const getTabOuterPoints = (tab: TabGeometry): [Vector3, Vector3] => {
 	const p1 = tab.path[0];
 	const p2 = tab.path[1];
 	if (p1[0] === 'L' && p2[0] === 'L') {
-		return [
-			new Vector3(p1[1], p1[2], 0),
-			new Vector3(p2[1], p2[2], 0)
-		];
+		return [new Vector3(p1[1], p1[2], 0), new Vector3(p2[1], p2[2], 0)];
 	}
 	// For arc tabs, we'd need different handling — skip correction for now
 	return [tab.edgeStart.clone(), tab.edgeEnd.clone()];
@@ -345,12 +346,7 @@ export const correctTabOverlaps = (tabs: TabGeometry[]): TabGeometry[] => {
 		// Check if the offset edges of adjacent tabs intersect:
 		// tabA's "end" offset edge: outerEndA → edgeEnd
 		// tabB's "start" offset edge: edgeStart → outerStartB
-		const intersection = segmentIntersection(
-			outerEndA,
-			tabA.edgeEnd,
-			tabB.edgeStart,
-			outerStartB
-		);
+		const intersection = segmentIntersection(outerEndA, tabA.edgeEnd, tabB.edgeStart, outerStartB);
 
 		if (intersection) {
 			// Replace tabA's outerEnd with intersection point

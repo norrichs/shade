@@ -6,7 +6,11 @@
 
 	type VectorConstraint = { length: number } | undefined; //| { direction: Point3 };
 
-	let { label = '', constraint = undefined, value = $bindable() }: {
+	let {
+		label = '',
+		constraint = undefined,
+		value = $bindable()
+	}: {
 		label?: string;
 		constraint?: VectorConstraint;
 		value: Point3;
@@ -20,7 +24,9 @@
 	// Reading x/y/z inside untrack() prevents this effect from re-running
 	// when local state changes, which would revert user input.
 	$effect.pre(() => {
-		const vx = value.x, vy = value.y, vz = value.z;
+		const vx = value.x,
+			vy = value.y,
+			vz = value.z;
 		untrack(() => {
 			if (vx !== x) x = vx;
 			if (vy !== y) y = vy;

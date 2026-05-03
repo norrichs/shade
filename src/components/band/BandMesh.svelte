@@ -20,9 +20,7 @@
 	} = $props();
 
 	let bandPoints = $derived(
-		band.facets
-			.map((facet) => [facet.triangle.a, facet.triangle.b, facet.triangle.c])
-			.flat(1)
+		band.facets.map((facet) => [facet.triangle.a, facet.triangle.b, facet.triangle.c]).flat(1)
 	);
 
 	let tabPoints = $derived(

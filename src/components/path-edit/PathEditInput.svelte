@@ -15,7 +15,8 @@
 
 	let offsetX = $derived.by(() => {
 		if (!showPointInputsInline) return 0;
-		if (offsetDirection.type === 'lateral') return point.x >= 0 ? offsetDirection.value : -offsetDirection.value;
+		if (offsetDirection.type === 'lateral')
+			return point.x >= 0 ? offsetDirection.value : -offsetDirection.value;
 		return 0;
 	});
 	let offsetY = $derived.by(() => {

@@ -1,8 +1,11 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 
-	let { label, show = true, children }: { label: string; show?: boolean; children: Snippet } =
-		$props();
+	let {
+		label,
+		show = true,
+		children
+	}: { label: string; show?: boolean; children: Snippet } = $props();
 </script>
 
 {#if show}

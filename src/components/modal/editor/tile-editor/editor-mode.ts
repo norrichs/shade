@@ -10,8 +10,7 @@ export type EditorMode =
 
 export const ruleModes: EditorMode[] = ['withinBand', 'acrossBands', 'partnerStart', 'partnerEnd'];
 
-export const isRuleMode = (mode: EditorMode): boolean =>
-	(ruleModes as EditorMode[]).includes(mode);
+export const isRuleMode = (mode: EditorMode): boolean => (ruleModes as EditorMode[]).includes(mode);
 
 export type Point = { x: number; y: number };
 

@@ -54,7 +54,9 @@
 	};
 	let effectiveGroupSizeMap = $derived(getEffectiveGroupSizeMap(groupSizeMap));
 	let effectiveMaterials = $derived(Array.isArray(materials) ? materials : [materials]);
-	let groupMaterials = $derived(getRowMaterials(effectiveGroupSizeMap, effectiveMaterials, geometry));
+	let groupMaterials = $derived(
+		getRowMaterials(effectiveGroupSizeMap, effectiveMaterials, geometry)
+	);
 </script>
 
 {#each geometry || [] as g, i}

@@ -16,7 +16,11 @@
 	import TextInput from '../../design-system/TextInput.svelte';
 	import { get } from 'svelte/store';
 
-	let { sgIndex, active = false, children }: {
+	let {
+		sgIndex,
+		active = false,
+		children
+	}: {
 		sgIndex: number;
 		active?: boolean;
 		children: Snippet;

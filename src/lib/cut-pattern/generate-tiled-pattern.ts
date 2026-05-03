@@ -19,7 +19,7 @@ import { getQuadWidth, svgPathStringFromSegments } from '$lib/patterns/utils';
 import type {
 	GlobuleAddress_Band,
 	GlobuleAddress_FacetEdge,
-	GlobuleAddress_Tube,
+	GlobuleAddress_Tube
 } from '$lib/projection-geometry/types';
 import {
 	getAllTrianglePoints,
@@ -27,7 +27,6 @@ import {
 } from '../../components/cut-pattern/distrubute-panels';
 import { Triangle, Vector3 } from 'three';
 import { getBandTriangleEdges } from '$lib/projection-geometry/generate-projection';
-
 
 export const generateTubeCutPattern = ({
 	address,
@@ -166,7 +165,9 @@ export const generateTiling = ({
 		id: string;
 		tagAnchorPoint: Point;
 	}[] = quadBands.map((quadBand, bandIndex) => {
-		const { getPattern, tagAnchor, adjustAfterMapping } = resolvePatternEntry(tiledPatternConfig.type);
+		const { getPattern, tagAnchor, adjustAfterMapping } = resolvePatternEntry(
+			tiledPatternConfig.type
+		);
 		const { rowCount, columnCount, variant } = tiledPatternConfig.config;
 
 		let mappedPatternBand: PathSegment[][] | PathSegment[];

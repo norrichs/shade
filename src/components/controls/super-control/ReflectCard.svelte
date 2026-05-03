@@ -19,7 +19,11 @@
 	import { isSameRecombination } from '$lib/matchers';
 	import { get } from 'svelte/store';
 
-	let { sgIndex = 0, tIndex = 0, active = false }: {
+	let {
+		sgIndex = 0,
+		tIndex = 0,
+		active = false
+	}: {
 		sgIndex?: number;
 		tIndex?: number;
 		active?: boolean;

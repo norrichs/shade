@@ -13,11 +13,13 @@
 ## File Structure
 
 **Create:**
+
 - `src/lib/patterns/pattern-registry.ts` — `PatternAlgorithm` type, `algorithms` list, factory + registration functions
 - `src/lib/stores/tilePatternSpecStore.ts` — reactive Svelte store; loads variants from API and registers them in the patterns map
 - `drizzle/migrations/0003_*.sql` — auto-generated migration for `kind` column
 
 **Modify:**
+
 - `src/lib/server/schema/shadesConfig.ts` — add `kind` column with default `'project'`
 - `src/routes/api/config/+server.ts` — accept `?kind=` query param to filter; include `configJson` in list response when `kind` filter is present
 - `src/lib/types.ts` — loosen `TiledPattern` from string-literal union to `string`
@@ -38,6 +40,7 @@ Existing rows in `shades_configs` get `kind: 'project'` by the column default. E
 ### Task 1: Add `kind` column to schema + migration
 
 **Files:**
+
 - Modify: `src/lib/server/schema/shadesConfig.ts`
 - Create: `drizzle/migrations/0003_*.sql` (auto-generated)
 
@@ -96,6 +99,7 @@ git push
 ### Task 2: API kind filter + configJson inclusion
 
 **Files:**
+
 - Modify: `src/routes/api/config/+server.ts`
 
 - [x] **Step 1: Update GET to filter by kind**
@@ -111,7 +115,8 @@ import { desc, eq } from 'drizzle-orm';
 
 export const GET: RequestHandler = async ({ url }) => {
 	const kind = url.searchParams.get('kind');
-	const includeConfigJson = url.searchParams.get('include') === 'configJson' || kind === 'tile-pattern-spec';
+	const includeConfigJson =
+		url.searchParams.get('include') === 'configJson' || kind === 'tile-pattern-spec';
 
 	const db = tursoClient();
 	const baseColumns = {
@@ -147,7 +152,10 @@ export const POST: RequestHandler = async ({ request }) => {
 		configJson: typeof configJson === 'string' ? configJson : JSON.stringify(configJson)
 	});
 
-	return json({ id: Number(result.lastInsertRowid), name, kind: kind || 'project' }, { status: 201 });
+	return json(
+		{ id: Number(result.lastInsertRowid), name, kind: kind || 'project' },
+		{ status: 201 }
+	);
 };
 ```
 
@@ -197,6 +205,7 @@ git push
 ### Task 3: Variant store
 
 **Files:**
+
 - Create: `src/lib/stores/tilePatternSpecStore.ts`
 
 The store hydrates from `/api/config?kind=tile-pattern-spec` on first access. It exposes a reactive list of specs and CRUD methods.
@@ -331,6 +340,7 @@ git push
 ### Task 4: Pattern registry
 
 **Files:**
+
 - Create: `src/lib/patterns/pattern-registry.ts`
 
 The registry declares which algorithms support spec-driven editing and provides a factory that turns a spec into a `PatternGenerator` entry (the existing `patterns[type]` map shape).
@@ -403,6 +413,7 @@ git push
 ### Task 5: Loosen TiledPattern type to string
 
 **Files:**
+
 - Modify: `src/lib/types.ts`
 - Modify: `src/lib/shades-config.ts` (only if a switch on TiledPattern needs a default)
 
@@ -465,6 +476,7 @@ git push
 ### Task 6: Replace pattern-definitions shield entry with registry-driven construction
 
 **Files:**
+
 - Modify: `src/lib/patterns/pattern-definitions.ts`
 
 The existing shield entry in `pattern-definitions.ts` hardcodes the spec wiring. Replace it with a call to the registry's factory so the same construction logic is used for variants in Task 7.
@@ -492,7 +504,9 @@ Find the `tiledShieldTesselationPattern` entry (currently around lines 116–140
 ```ts
 const builtInPatternsEntries: { [key: string]: PatternGenerator } = {};
 for (const algorithm of algorithms) {
-	builtInPatternsEntries[algorithm.defaultSpec.id] = algorithm.createPatternsEntry(algorithm.defaultSpec);
+	builtInPatternsEntries[algorithm.defaultSpec.id] = algorithm.createPatternsEntry(
+		algorithm.defaultSpec
+	);
 }
 ```
 
@@ -503,7 +517,7 @@ export const patterns: { [key: string]: PatternGenerator } = {
 	...builtInPatternsEntries,
 	'tiledHexPattern-1': {
 		// ...existing entry unchanged
-	},
+	}
 	// ...remaining existing entries unchanged, MINUS tiledShieldTesselationPattern
 };
 ```
@@ -547,6 +561,7 @@ git push
 ### Task 7: Variant store registers loaded variants into patterns map
 
 **Files:**
+
 - Modify: `src/lib/stores/tilePatternSpecStore.ts`
 - Modify: `src/lib/patterns/pattern-definitions.ts` (export the patterns map mutably)
 
@@ -697,8 +712,10 @@ curl -X POST 'http://localhost:5173/api/config' \
 In the browser console, after the page loads, run:
 
 ```js
-import('/src/lib/stores/tilePatternSpecStore.ts').then(m => m.tilePatternSpecStore.hydrate());
-import('/src/lib/patterns/pattern-definitions.ts').then(m => console.log(Object.keys(m.patterns)));
+import('/src/lib/stores/tilePatternSpecStore.ts').then((m) => m.tilePatternSpecStore.hydrate());
+import('/src/lib/patterns/pattern-definitions.ts').then((m) =>
+	console.log(Object.keys(m.patterns))
+);
 ```
 
 Expected output: the `patterns` object's keys include `'smoke-shield-id'` after hydration.
@@ -724,6 +741,7 @@ git push
 ### Task 8: Hydrate variants on app init
 
 **Files:**
+
 - Modify: `src/routes/designer2/+page.svelte` (or whichever top-level route hosts the designer; check first)
 
 The variant store needs to hydrate at app init so dispatched calls like `patterns[variantId]` find the variant before any pattern rendering kicks off.
@@ -776,6 +794,7 @@ git push
 ### Task 9: Fallback at dispatch sites (missing variant id → default)
 
 **Files:**
+
 - Create: `src/lib/patterns/resolve-pattern.ts`
 - Modify: `src/lib/cut-pattern/generate-tiled-pattern.ts` (lines 114, 169)
 - Modify: `src/lib/cut-pattern/generate-pattern.ts` (line 142)
@@ -940,6 +959,7 @@ git push
 ### Task 10: TilingControl picker iterates registry
 
 **Files:**
+
 - Modify: `src/components/controls/TilingControl.svelte`
 
 The picker currently iterates over the static `tiledPatternConfigs` dict in `shades-config.ts`. After Phase 2 it iterates over `algorithms` from the registry plus user variants from the store. Visually unchanged for the user (no variants yet → only built-in defaults render).
@@ -973,7 +993,10 @@ const getTiles = (
 	variants: TiledPatternSpec[]
 ): { type: string; tiling: TilingBasis }[] => {
 	const builtInIds = new Set(algorithms.map((a) => a.defaultSpec.id));
-	const builtInTiles = algorithms.map((a) => ({ type: a.defaultSpec.id, tiling: 'quadrilateral' as const }));
+	const builtInTiles = algorithms.map((a) => ({
+		type: a.defaultSpec.id,
+		tiling: 'quadrilateral' as const
+	}));
 	const variantTiles = variants
 		.filter((v) => !builtInIds.has(v.id))
 		.map((v) => ({ type: v.id, tiling: 'quadrilateral' as const }));
@@ -989,7 +1012,13 @@ const getTiles = (
 Add the type import for `TiledPatternSpec` to the existing type imports:
 
 ```ts
-import type { GridVariant, TiledPatternConfig, TabShape, TabEdgeOption, TilingBasis } from '$lib/types';
+import type {
+	GridVariant,
+	TiledPatternConfig,
+	TabShape,
+	TabEdgeOption,
+	TilingBasis
+} from '$lib/types';
 import type { TiledPatternSpec } from '$lib/patterns/spec-types';
 ```
 
@@ -1018,6 +1047,7 @@ npm run dev
 ```
 
 Open the designer; switch to the tiled pattern picker. Confirm:
+
 - Same set of pattern tiles appears as before (8 legacy patterns + 1 shield default = 9 total).
 - Clicking the shield tile selects it and the rendering still works.
 
@@ -1038,6 +1068,7 @@ git push
 ### Task 11: PatternTileButton handles variant ids that aren't in shades-config
 
 **Files:**
+
 - Modify: `src/components/pattern/PatternTileButton.svelte`
 
 Currently `PatternTileButton.svelte` looks up `tiledPatternConfigs[patternType]` to set the active config when clicked. For variant ids that aren't in the static dict, this would fail. We need to construct a config on the fly.
@@ -1112,6 +1143,7 @@ npm run check 2>&1 | tail -3
 - [x] **Step 4: Manual smoke**
 
 If you have a smoke variant in the DB, click its tile in the picker and confirm:
+
 - The pattern config switches to it (no errors in console).
 - The 3D render uses the variant's spec data (for an empty smoke spec, the rendered pattern will be empty — that's expected).
 
@@ -1150,12 +1182,14 @@ npm run dev
 ```
 
 In the browser:
+
 - Open `/designer2`
 - Default shield pattern renders correctly
 - Switch between several patterns in the picker; each renders correctly
 - No console errors related to patterns map / variants
 
 Then via API:
+
 - Create a tile-pattern-spec variant (shield algorithm, valid spec)
 - Refresh page
 - The new variant appears as a tile in the picker
@@ -1193,10 +1227,10 @@ git push
 
 ## Risk register
 
-| Risk | Mitigation |
-|---|---|
-| Migration adds `kind` column with default `'project'`; if production DB has rows that should be other kinds, they get mislabeled | Phase 2 is the first introduction of `kind`; all existing rows ARE projects. Future kinds register with their own discriminators. |
-| `TiledPattern = string` widens the type; any code that did `switch (type) { case 'tiledHexPattern-1': ... }` needs a `default` branch | Task 5 Step 2 surfaces these via type-check; fix each by adding a `default` branch. |
-| Race: pattern dispatch runs before variant store hydrates → `patterns[variantId]` is undefined | Task 8 hydrates on app init; pattern rendering happens after onMount. Worst case: first render uses default; subsequent re-render after hydration uses variant. |
-| `pattern-definitions.ts` and `pattern-registry.ts` both touch the patterns map; circular import risk | Registry imports from `tesselation/shield` only; pattern-definitions imports from registry. No circular. |
-| `shadesConfigs.kind` column added without an index — list filtering scans full table | Acceptable for single-user dataset; if performance matters, add index in a follow-up migration. |
+| Risk                                                                                                                                  | Mitigation                                                                                                                                                      |
+| ------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Migration adds `kind` column with default `'project'`; if production DB has rows that should be other kinds, they get mislabeled      | Phase 2 is the first introduction of `kind`; all existing rows ARE projects. Future kinds register with their own discriminators.                               |
+| `TiledPattern = string` widens the type; any code that did `switch (type) { case 'tiledHexPattern-1': ... }` needs a `default` branch | Task 5 Step 2 surfaces these via type-check; fix each by adding a `default` branch.                                                                             |
+| Race: pattern dispatch runs before variant store hydrates → `patterns[variantId]` is undefined                                        | Task 8 hydrates on app init; pattern rendering happens after onMount. Worst case: first render uses default; subsequent re-render after hydration uses variant. |
+| `pattern-definitions.ts` and `pattern-registry.ts` both touch the patterns map; circular import risk                                  | Registry imports from `tesselation/shield` only; pattern-definitions imports from registry. No circular.                                                        |
+| `shadesConfigs.kind` column added without an index — list filtering scans full table                                                  | Acceptable for single-user dataset; if performance matters, add index in a follow-up migration.                                                                 |

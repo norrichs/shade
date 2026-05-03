@@ -13,6 +13,7 @@
 ## File Structure
 
 **Create:**
+
 - `src/components/modal/editor/path-editor-shared.ts` — `PathEditorConfig`, `PathEditorCanvas`, `getCanvas` (extracted from `path-editor.ts`)
 - `src/components/modal/editor/SegmentPathEditor.svelte` — `PathSegment[]` editor with vertex dedup
 - `src/components/modal/editor/TileEditor.svelte` — top-level floater
@@ -20,6 +21,7 @@
 - `src/components/modal/editor/tile-editor/__tests__/segment-vertex-dedup.test.ts` — unit test for the vertex-dedup helper
 
 **Modify:**
+
 - `src/components/modal/editor/path-editor.ts` — re-export from `path-editor-shared.ts`; existing `PathEditor.svelte` continues to import from here (no behavior change for current consumers)
 - `src/components/modal/sidebar-definitions.ts` — register `TileEditor` in `patternConfigs`
 
@@ -30,6 +32,7 @@
 ## Important note on draft state
 
 Draft state lives **inside the `TileEditor` component** as Svelte 5 `$state` runes — not in a separate store. Reasons:
+
 - The draft is only meaningful while the floater is open.
 - The persistent state (saved variants) already lives in `tilePatternSpecStore`.
 - Component-local state avoids needing to clean up a global store on close.
@@ -43,6 +46,7 @@ When `Save` is clicked, the draft is committed via `tilePatternSpecStore.update`
 Pull the generic canvas/viewbox math out of `path-editor.ts` so `SegmentPathEditor` can depend on it without pulling in bezier-specific code.
 
 **Files:**
+
 - Create: `src/components/modal/editor/path-editor-shared.ts`
 - Modify: `src/components/modal/editor/path-editor.ts`
 
@@ -125,6 +129,7 @@ git push
 The core piece of the segment editor is grouping coincident M/L segments into shared "vertices" so a drag handle moves both segments at once. Build this as a pure function with a unit test before wiring it into the component.
 
 **Files:**
+
 - Create: `src/components/modal/editor/segment-vertices.ts`
 - Create: `src/components/modal/editor/__tests__/segment-vertices.test.ts`
 
@@ -194,10 +199,7 @@ describe('computeVertices', () => {
 
 	it('treats Z and arc/bezier segments as ignored (not editable in v1)', () => {
 		const unit = makeUnit({
-			start: [
-				['M', 0, 0],
-				['Z']
-			],
+			start: [['M', 0, 0], ['Z']],
 			middle: [['C', 1, 1, 2, 2, 3, 3]]
 		});
 		const vertices = computeVertices(unit);
@@ -321,6 +323,7 @@ git push
 A drop-in component that takes a `UnitDefinition` and emits a new one when vertices are dragged.
 
 **Files:**
+
 - Create: `src/components/modal/editor/SegmentPathEditor.svelte`
 
 - [x] **Step 1: Inspect DraggablePoint to understand the existing drag pattern**
@@ -443,6 +446,7 @@ git push
 The header strip with name input, variant dropdown, and Save / Save As / Discard / Delete buttons.
 
 **Files:**
+
 - Create: `src/components/modal/editor/tile-editor/VariantBar.svelte`
 
 - [x] **Step 1: Create the directory and component**
@@ -589,6 +593,7 @@ git push
 The top-level component that ties everything together. Owns the draft state, watches the active variant id, and wires CRUD through `tilePatternSpecStore`.
 
 **Files:**
+
 - Create: `src/components/modal/editor/TileEditor.svelte`
 
 - [x] **Step 1: Create the component**
@@ -789,6 +794,7 @@ git push
 ### Task 6: Register TileEditor floater
 
 **Files:**
+
 - Modify: `src/components/modal/sidebar-definitions.ts`
 
 - [x] **Step 1: Read the current file**
@@ -925,11 +931,11 @@ git push
 
 ## Risk register
 
-| Risk | Mitigation |
-|---|---|
-| `DraggablePoint` is bezier-shaped (expects `curveIndex`/`pointIndex`) and may not cleanly accept arbitrary vertex props | Task 3 inspects the existing component's prop shape first; if mismatch, adjust the SegmentPathEditor's call site or add a thin wrapper |
-| `$effect` reload of draft when active variant id changes could clobber unsaved edits | Task 5's effect short-circuits when `isDirty && draft.id === found.spec.id` — a switch to a different variant still drops the draft (acceptable for v1; document in the deferred list) |
-| Save As mints a UUID via `crypto.randomUUID()` — older browser support varies | All current evergreen browsers support it; failing back is out of v1 scope |
-| Patterns map mutation lag: a Save As writes to storage, registers in patterns map, then switches the project's `type` to the new id — if the order races, the picker flashes "missing pattern" | `tilePatternSpecStore.create()` registers synchronously after the API resolves and BEFORE the patternConfigStore update — the order is sequential |
-| Editor opens on `+layout.svelte` mount; `tilePatternSpecStore.hydrate()` is also called on mount; if hydration is slow, the dropdown may render with only built-ins for a tick | The dropdown is reactive — it re-renders when variants load. First-render flicker is acceptable; can move hydration into `+layout.ts`'s `load` for SSR-friendly behavior in a follow-up |
-| Editing the unit doesn't trigger a re-tile of the main 3D / SVG view (per Phase 3 spec — "Save → main view re-renders") | Working as designed. The patternConfigStore update on Save As / Delete triggers re-tile via the existing reactive chain. Save (in-place update) re-renders because `tilePatternSpecStore.variants` is reactive and pattern dispatch resolves through `patterns[id]` which now points to the updated entry. Verify in Step 3.3 of Task 7. |
+| Risk                                                                                                                                                                                           | Mitigation                                                                                                                                                                                                                                                                                                                               |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DraggablePoint` is bezier-shaped (expects `curveIndex`/`pointIndex`) and may not cleanly accept arbitrary vertex props                                                                        | Task 3 inspects the existing component's prop shape first; if mismatch, adjust the SegmentPathEditor's call site or add a thin wrapper                                                                                                                                                                                                   |
+| `$effect` reload of draft when active variant id changes could clobber unsaved edits                                                                                                           | Task 5's effect short-circuits when `isDirty && draft.id === found.spec.id` — a switch to a different variant still drops the draft (acceptable for v1; document in the deferred list)                                                                                                                                                   |
+| Save As mints a UUID via `crypto.randomUUID()` — older browser support varies                                                                                                                  | All current evergreen browsers support it; failing back is out of v1 scope                                                                                                                                                                                                                                                               |
+| Patterns map mutation lag: a Save As writes to storage, registers in patterns map, then switches the project's `type` to the new id — if the order races, the picker flashes "missing pattern" | `tilePatternSpecStore.create()` registers synchronously after the API resolves and BEFORE the patternConfigStore update — the order is sequential                                                                                                                                                                                        |
+| Editor opens on `+layout.svelte` mount; `tilePatternSpecStore.hydrate()` is also called on mount; if hydration is slow, the dropdown may render with only built-ins for a tick                 | The dropdown is reactive — it re-renders when variants load. First-render flicker is acceptable; can move hydration into `+layout.ts`'s `load` for SSR-friendly behavior in a follow-up                                                                                                                                                  |
+| Editing the unit doesn't trigger a re-tile of the main 3D / SVG view (per Phase 3 spec — "Save → main view re-renders")                                                                        | Working as designed. The patternConfigStore update on Save As / Delete triggers re-tile via the existing reactive chain. Save (in-place update) re-renders because `tilePatternSpecStore.variants` is reactive and pattern dispatch resolves through `patterns[id]` which now points to the updated entry. Verify in Step 3.3 of Task 7. |

@@ -11,9 +11,15 @@
 	};
 
 	let selectedBands = $derived(getUniqueAddresses($selectedProjectionGeometry?.selected));
-	let selectedPartners = $derived(getUniqueAddresses($selectedProjectionGeometry?.selectedPartners));
-	let selectedStartPartners = $derived(getUniqueAddresses($selectedProjectionGeometry?.selectedStartPartners));
-	let selectedEndPartners = $derived(getUniqueAddresses($selectedProjectionGeometry?.selectedEndPartners));
+	let selectedPartners = $derived(
+		getUniqueAddresses($selectedProjectionGeometry?.selectedPartners)
+	);
+	let selectedStartPartners = $derived(
+		getUniqueAddresses($selectedProjectionGeometry?.selectedStartPartners)
+	);
+	let selectedEndPartners = $derived(
+		getUniqueAddresses($selectedProjectionGeometry?.selectedEndPartners)
+	);
 </script>
 
 <Editor>

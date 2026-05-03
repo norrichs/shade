@@ -2,7 +2,12 @@
 	import type { Component } from 'svelte';
 	import Button from '../design-system/Button.svelte';
 
-	let { onClose, title, showFloater, content: Content }: {
+	let {
+		onClose,
+		title,
+		showFloater,
+		content: Content
+	}: {
 		onClose: () => void;
 		title: string | string[] | undefined;
 		showFloater: boolean;

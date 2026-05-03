@@ -68,32 +68,34 @@
 
 	let polygonIndex = $state(0);
 
-	let flattenedPolygon = $derived((() => {
-		const projectionConfig = $superConfigStore.projectionConfigs[0];
-		if (!projectionConfig) return null;
+	let flattenedPolygon = $derived(
+		(() => {
+			const projectionConfig = $superConfigStore.projectionConfigs[0];
+			if (!projectionConfig) return null;
 
-		const rawPolygonConfig = projectionConfig.projectorConfig.polyhedron.polygons[polygonIndex];
-		if (!rawPolygonConfig) return null;
+			const rawPolygonConfig = projectionConfig.projectorConfig.polyhedron.polygons[polygonIndex];
+			if (!rawPolygonConfig) return null;
 
-		try {
-			const preparedPolygonConfig = preparePolygonConfig(
-				rawPolygonConfig,
-				projectionConfig.projectorConfig.polyhedron.vertices,
-				projectionConfig.projectorConfig.polyhedron.edgeCurves,
-				projectionConfig.projectorConfig.polyhedron.crossSectionCurves
-			);
+			try {
+				const preparedPolygonConfig = preparePolygonConfig(
+					rawPolygonConfig,
+					projectionConfig.projectorConfig.polyhedron.vertices,
+					projectionConfig.projectorConfig.polyhedron.edgeCurves,
+					projectionConfig.projectorConfig.polyhedron.crossSectionCurves
+				);
 
-			const polygon = generatePolygonFromConfig(
-				preparedPolygonConfig,
-				projectionConfig.meta.transform
-			);
+				const polygon = generatePolygonFromConfig(
+					preparedPolygonConfig,
+					projectionConfig.meta.transform
+				);
 
-			return flattenPolygon(polygon);
-		} catch (error) {
-			console.error('Failed to generate polygon preview:', error);
-			return null;
-		}
-	})());
+				return flattenPolygon(polygon);
+			} catch (error) {
+				console.error('Failed to generate polygon preview:', error);
+				return null;
+			}
+		})()
+	);
 
 	let polygonPaths = $derived(flattenedPolygon ? getPolygonPaths(flattenedPolygon) : []);
 </script>

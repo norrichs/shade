@@ -22,7 +22,11 @@
 	import Button from '../../design-system/Button.svelte';
 	import { get } from 'svelte/store';
 
-	let { recurs = $bindable(), sgIndex, tIndex }: {
+	let {
+		recurs = $bindable(),
+		sgIndex,
+		tIndex
+	}: {
 		recurs: RecombinatoryRecurrence[];
 		sgIndex: number;
 		tIndex: number;
