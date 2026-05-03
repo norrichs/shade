@@ -3,7 +3,10 @@
 	import PatternTile from './PatternTile.svelte';
 	import { tiledPatternConfigs } from '$lib/shades-config';
 	import { patterns } from '$lib/patterns';
+	import { tilePatternSpecStore } from '$lib/stores/tilePatternSpecStore';
+	import { algorithms } from '$lib/patterns/pattern-registry';
 	import type { TilingBasis, TiledPatternConfig } from '$lib/types';
+	import { get } from 'svelte/store';
 
 	let {
 		patternType,
@@ -16,21 +19,25 @@
 	} = $props();
 
 	let strokeWidth = $derived(size >= 50 ? 2 : 0.5);
+
+	const resolveBaseConfig = (type: string): TiledPatternConfig => {
+		const direct = tiledPatternConfigs[type];
+		if (direct) return direct;
+		const variant = get(tilePatternSpecStore).variants.find((v) => v.id === type);
+		const algorithmId = variant?.algorithm;
+		const algorithm = algorithms.find((a) => a.algorithmId === algorithmId);
+		const builtInId = algorithm?.defaultSpec.id;
+		if (builtInId && tiledPatternConfigs[builtInId]) {
+			return { ...tiledPatternConfigs[builtInId], type };
+		}
+		return { ...tiledPatternConfigs['tiledShieldTesselationPattern'], type };
+	};
 </script>
 
 <button
 	onclick={() => {
 		if (!patterns[patternType]) return;
-		const baseConfig = tiledPatternConfigs[patternType];
-		if (baseConfig) {
-			$patternConfigStore.patternTypeConfig = baseConfig;
-			return;
-		}
-		const fallback: TiledPatternConfig = {
-			...tiledPatternConfigs['tiledShieldTesselationPattern'],
-			type: patternType
-		};
-		$patternConfigStore.patternTypeConfig = fallback;
+		$patternConfigStore.patternTypeConfig = resolveBaseConfig(patternType);
 	}}
 >
 	<PatternTile
