@@ -47,6 +47,7 @@
 	onClose={toggleFloater}
 	title={currentFloater?.title}
 	content={currentFloater?.content}
+	closeOnClickAway={currentFloater?.closeOnClickAway ?? true}
 />
 
 <style>

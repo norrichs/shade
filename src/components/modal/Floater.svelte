@@ -6,12 +6,14 @@
 		onClose,
 		title,
 		showFloater,
-		content: Content
+		content: Content,
+		closeOnClickAway = true
 	}: {
 		onClose: () => void;
 		title: string | string[] | undefined;
 		showFloater: boolean;
 		content: Component | undefined;
+		closeOnClickAway?: boolean;
 	} = $props();
 
 	function clickOutside(node: HTMLElement) {
@@ -32,13 +34,23 @@
 </script>
 
 {#if showFloater}
-	<main use:clickOutside>
-		<header>
-			<span>{title}</span>
-			<Button onclick={() => onClose()}>X</Button>
-		</header>
-		{#if Content}<Content />{/if}
-	</main>
+	{#if closeOnClickAway}
+		<main use:clickOutside>
+			<header>
+				<span>{title}</span>
+				<Button onclick={() => onClose()}>X</Button>
+			</header>
+			{#if Content}<Content />{/if}
+		</main>
+	{:else}
+		<main>
+			<header>
+				<span>{title}</span>
+				<Button onclick={() => onClose()}>X</Button>
+			</header>
+			{#if Content}<Content />{/if}
+		</main>
+	{/if}
 {/if}
 
 <style>

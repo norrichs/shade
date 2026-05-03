@@ -2,9 +2,13 @@
 	import { materials } from '../three-renderer/materials';
 	import { selectedProjectionGeometry, chooserPairGeometry } from '$lib/stores';
 	import { T } from '@threlte/core';
+
+	const chooserActive = $derived(
+		Boolean($chooserPairGeometry?.startGeometry || $chooserPairGeometry?.endGeometry)
+	);
 </script>
 
-{#if $selectedProjectionGeometry}
+{#if $selectedProjectionGeometry && !chooserActive}
 	<T.Mesh
 		geometry={$selectedProjectionGeometry.geometry.facet}
 		material={materials.highlightedSecondary}

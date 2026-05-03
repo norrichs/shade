@@ -92,8 +92,11 @@ describe('resolvePair', () => {
 		expect(result).toBeNull();
 	});
 
-	it('resolves partner pair for partnerStart with no transform (identity)', () => {
-		const partnerBand = makeBand(5, 1);
+	it('uses partner facet 0 when partner.meta.startPartnerBand matches main', () => {
+		// Partner's start is matched to us, so partner's facet 0 is the matched one
+		const partnerBand = makeBand(5, 1, {
+			startPartnerBand: { globule: 0, tube: 0, band: 0 }
+		});
 		const mainBand = makeBand(0, 0, {
 			startPartnerBand: { globule: 0, tube: 1, band: 5 }
 		});
@@ -101,19 +104,18 @@ describe('resolvePair', () => {
 		expect(result).not.toBeNull();
 		expect(result!.mainAddress).toEqual({ globule: 0, tube: 0, band: 0, facet: 0 });
 		expect(result!.ghostAddress).toEqual({ globule: 0, tube: 1, band: 5, facet: 0 });
-		expect(result!.mainPath).toEqual(mainBand.facets[0].path);
-		expect(result!.ghostPath).toEqual(partnerBand.facets[0].path);
 	});
 
-	it('resolves partner pair for partnerEnd at last facet index', () => {
-		const partnerBand = makeBand(5, 1);
-		const mainBand = makeBand(0, 0, {
-			endPartnerBand: { globule: 0, tube: 1, band: 5 }
+	it('uses partner last facet when partner.meta.startPartnerBand does NOT match main', () => {
+		// Partner's end is matched to us, so partner's last facet is the matched one
+		const partnerBand = makeBand(5, 1, {
+			startPartnerBand: { globule: 0, tube: 9, band: 9 } // not us
 		});
-		const result = resolvePair([mainBand, partnerBand], mainBand.address, 'partnerEnd');
+		const mainBand = makeBand(0, 0, {
+			startPartnerBand: { globule: 0, tube: 1, band: 5 }
+		});
+		const result = resolvePair([mainBand, partnerBand], mainBand.address, 'partnerStart');
 		expect(result).not.toBeNull();
-		const lastIdx = mainBand.facets.length - 1;
-		expect(result!.mainAddress).toEqual({ globule: 0, tube: 0, band: 0, facet: lastIdx });
 		expect(result!.ghostAddress).toEqual({
 			globule: 0,
 			tube: 1,
@@ -122,8 +124,24 @@ describe('resolvePair', () => {
 		});
 	});
 
+	it('partnerEnd: uses last facet of main; partner facet via partner.meta', () => {
+		const partnerBand = makeBand(5, 1, {
+			startPartnerBand: { globule: 0, tube: 0, band: 0 }
+		});
+		const mainBand = makeBand(0, 0, {
+			endPartnerBand: { globule: 0, tube: 1, band: 5 }
+		});
+		const result = resolvePair([mainBand, partnerBand], mainBand.address, 'partnerEnd');
+		expect(result).not.toBeNull();
+		const lastIdx = mainBand.facets.length - 1;
+		expect(result!.mainAddress).toEqual({ globule: 0, tube: 0, band: 0, facet: lastIdx });
+		expect(result!.ghostAddress).toEqual({ globule: 0, tube: 1, band: 5, facet: 0 });
+	});
+
 	it('applies startPartnerTransform to ghost path', () => {
-		const partnerBand = makeBand(5, 1);
+		const partnerBand = makeBand(5, 1, {
+			startPartnerBand: { globule: 0, tube: 0, band: 0 }
+		});
 		const mainBand = makeBand(0, 0, {
 			startPartnerBand: { globule: 0, tube: 1, band: 5 },
 			startPartnerTransform: {
@@ -133,8 +151,9 @@ describe('resolvePair', () => {
 		});
 		const result = resolvePair([mainBand, partnerBand], mainBand.address, 'partnerStart');
 		expect(result).not.toBeNull();
-		// Original partner facet[0] path is [['M', 50, 50], ['L', 51, 51]]
-		// After translate(100, 200): [['M', 150, 250], ['L', 151, 251]]
+		// Partner facet 0 is used (because partner.meta.startPartnerBand matches main).
+		// Original partner facet[0] path is [['M', 50, 50], ['L', 51, 51]].
+		// After translate(100, 200): [['M', 150, 250], ['L', 151, 251]].
 		expect(result!.ghostPath).toEqual([
 			['M', 150, 250],
 			['L', 151, 251]

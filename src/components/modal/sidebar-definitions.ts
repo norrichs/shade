@@ -16,6 +16,7 @@ export type FloaterContent = {
 	shortTitle: string;
 	title: string | string[];
 	content: Component;
+	closeOnClickAway?: boolean;
 };
 
 export type SidebarDefinition = Map<FloaterContent['title'], FloaterContent>;
@@ -69,7 +70,8 @@ export const patternConfigs: SidebarDefinition = new Map([
 		{
 			shortTitle: 'TE',
 			title: 'Tile Editor',
-			content: TileEditor
+			content: TileEditor,
+			closeOnClickAway: false
 		}
 	]
 ]);
