@@ -3,7 +3,9 @@
 	import { tilePatternSpecStore } from '$lib/stores/tilePatternSpecStore';
 	import { algorithms } from '$lib/patterns/pattern-registry';
 	import type { TiledPatternSpec, UnitDefinition } from '$lib/patterns/spec-types';
-	import type { PatternTypeConfig } from '$lib/types';
+	import type { PatternTypeConfig, TiledPatternConfig } from '$lib/types';
+	import { isTiledPatternConfig } from '$lib/types';
+	import { tiledPatternConfigs } from '$lib/shades-config';
 	import { get } from 'svelte/store';
 	import Editor from './Editor.svelte';
 	import Container from './Container.svelte';
@@ -170,12 +172,29 @@
 	};
 
 	const setActiveVariant = (variantId: string) => {
-		const config = get(patternConfigStore);
-		config.patternTypeConfig = {
-			...config.patternTypeConfig,
-			type: variantId
-		} as PatternTypeConfig;
-		patternConfigStore.set(config);
+		const store = get(patternConfigStore);
+		const existing = store.patternTypeConfig;
+
+		const direct = tiledPatternConfigs[variantId];
+		let next: TiledPatternConfig;
+		if (direct) {
+			next = { ...direct };
+		} else {
+			const variant = get(tilePatternSpecStore).variants.find((v) => v.id === variantId);
+			const algorithm = algorithms.find((a) => a.algorithmId === variant?.algorithm);
+			const builtInId = algorithm?.defaultSpec.id;
+			const base =
+				(builtInId && tiledPatternConfigs[builtInId]) ||
+				tiledPatternConfigs['tiledShieldTesselationPattern'];
+			next = { ...base, type: variantId };
+		}
+
+		if (isTiledPatternConfig(existing) && existing.config) {
+			next = { ...next, config: existing.config };
+		}
+
+		store.patternTypeConfig = next as PatternTypeConfig;
+		patternConfigStore.set(store);
 	};
 
 	const handleSaveAs = async (newName: string) => {
