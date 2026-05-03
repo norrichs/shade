@@ -12,18 +12,24 @@
 		rules,
 		config,
 		selectedTarget,
+		selectedConnection,
 		onSelectTarget,
 		onSelectGhost,
-		onSelectConnection
+		onSelectConnection,
+		onSelectConnectionLine
 	}: {
 		spec: TiledPatternSpec;
 		mode: EditorMode;
 		rules: IndexPair[];
 		config: PathEditorConfig;
 		selectedTarget: Vertex | null;
+		selectedConnection: { sourceVertex: Vertex; targetVertex: Vertex } | null;
 		onSelectTarget: (vertex: Vertex) => void;
 		onSelectGhost: (vertex: Vertex) => void;
 		onSelectConnection: (sourceVertex: Vertex, targetVertex: Vertex) => void;
+		onSelectConnectionLine: (
+			conn: { sourceVertex: Vertex; targetVertex: Vertex } | null
+		) => void;
 	} = $props();
 
 	const canv = $derived(getCanvas(config));
@@ -39,13 +45,11 @@
 		}))
 	);
 
-	let selectedConnection: { sourceVertex: Vertex; targetVertex: Vertex } | null = $state(null);
-
 	$effect(() => {
 		const onKey = (e: KeyboardEvent) => {
 			if ((e.key === 'Delete' || e.key === 'Backspace') && selectedConnection) {
 				onSelectConnection(selectedConnection.sourceVertex, selectedConnection.targetVertex);
-				selectedConnection = null;
+				onSelectConnectionLine(null);
 			}
 		};
 		window.addEventListener('keydown', onKey);
@@ -78,7 +82,7 @@
 				class:selected={selectedConnection?.sourceVertex === conn.sourceVertex &&
 					selectedConnection?.targetVertex === conn.targetVertex}
 				onclick={() =>
-					(selectedConnection = {
+					onSelectConnectionLine({
 						sourceVertex: conn.sourceVertex,
 						targetVertex: conn.targetVertex
 					})}

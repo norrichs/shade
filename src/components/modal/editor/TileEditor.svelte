@@ -23,6 +23,13 @@
 	let draft: TiledPatternSpec | null = $state(null);
 	let mode: EditorMode = $state('unit');
 	let selectedTarget: Vertex | null = $state(null);
+	let selectedConnection: { sourceVertex: Vertex; targetVertex: Vertex } | null = $state(null);
+
+	const handleSelectConnectionLine = (
+		conn: { sourceVertex: Vertex; targetVertex: Vertex } | null
+	) => {
+		selectedConnection = conn;
+	};
 
 	const getRulesForMode = (): IndexPair[] => {
 		if (!draft) return [];
@@ -185,6 +192,7 @@
 	const updateModeAndClearSelection = (newMode: EditorMode) => {
 		mode = newMode;
 		selectedTarget = null;
+		selectedConnection = null;
 	};
 
 	const editorConfig: PathEditorConfig = $derived.by(() => {
@@ -263,9 +271,11 @@
 								rules={getRulesForMode()}
 								config={editorConfig}
 								{selectedTarget}
+								{selectedConnection}
 								onSelectTarget={handleSelectTarget}
 								onSelectGhost={handleSelectGhost}
 								onSelectConnection={handleSelectConnection}
+								onSelectConnectionLine={handleSelectConnectionLine}
 							/>
 						</div>
 						<RuleList rules={getRulesForMode()} onDelete={handleDeleteRuleByIndex} />
