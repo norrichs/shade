@@ -1351,7 +1351,7 @@ git push
 
 ### Task 11: End-to-end verification
 
-- [ ] **Step 1: Run full test suite**
+- [x] **Step 1: Run full test suite**
 
 ```bash
 npm run test:unit 2>&1 | tail -5
@@ -1359,7 +1359,7 @@ npm run test:unit 2>&1 | tail -5
 
 Expected: 41/41 pass.
 
-- [ ] **Step 2: Type-check**
+- [x] **Step 2: Type-check**
 
 ```bash
 npm run check 2>&1 | tail -3
@@ -1380,7 +1380,7 @@ The controller will run `npm run dev` and exercise:
 - Switch to `Skip Remove`. Click vertices to toggle red overlay; dirty turns on.
 - Save. Reload. Confirm changes persisted.
 
-- [ ] **Step 4: Update plan checkboxes + commit**
+- [x] **Step 4: Update plan checkboxes + commit**
 
 Edit `docs/superpowers/plans/2026-05-02-tiled-pattern-editor-phase-4.md`. Mark Task 11 Steps 1, 2, 4 `[x]`. Step 3 manual smoke marked `[ ]` (deferred).
 
