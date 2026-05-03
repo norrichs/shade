@@ -4,6 +4,7 @@
 	import {
 		getEligibleBands,
 		resolvePair,
+		pairsEqual,
 		type PartnerMode,
 		type ResolvedPair
 	} from './partner-pair-resolver';
@@ -29,6 +30,20 @@
 
 	let selectedAddressJSON: string = $state('');
 
+	let snapshot: ResolvedPair | null = $state(null);
+
+	const livePair = $derived.by((): ResolvedPair | null => {
+		if (!selectedAddressJSON) return null;
+		const addr = JSON.parse(selectedAddressJSON) as GlobuleAddress_Band;
+		return resolvePair(bands, addr, mode);
+	});
+
+	const isStale = $derived.by(() => {
+		if (!snapshot) return false;
+		if (!livePair) return true; // selected band disappeared
+		return !pairsEqual(snapshot, livePair);
+	});
+
 	const addressForOption = (b: BandCutPattern): string => JSON.stringify(b.address);
 	const labelForOption = (b: BandCutPattern): string =>
 		`Tube ${b.address.tube} / Band ${b.address.band}`;
@@ -36,17 +51,19 @@
 	const handleSelect = (addrJSON: string) => {
 		selectedAddressJSON = addrJSON;
 		if (!addrJSON) {
+			snapshot = null;
 			onChange(null);
 			partnerHighlightStore.set({ start: null, end: null });
 			return;
 		}
 		const addr = JSON.parse(addrJSON) as GlobuleAddress_Band;
-		const snapshot = resolvePair(bands, addr, mode);
-		onChange(snapshot);
-		if (snapshot) {
+		const fresh = resolvePair(bands, addr, mode);
+		snapshot = fresh;
+		onChange(fresh);
+		if (fresh) {
 			partnerHighlightStore.set({
-				start: mode === 'partnerStart' ? snapshot.mainAddress : snapshot.ghostAddress,
-				end: mode === 'partnerEnd' ? snapshot.mainAddress : snapshot.ghostAddress
+				start: mode === 'partnerStart' ? fresh.mainAddress : fresh.ghostAddress,
+				end: mode === 'partnerEnd' ? fresh.mainAddress : fresh.ghostAddress
 			});
 		} else {
 			partnerHighlightStore.set({ start: null, end: null });
@@ -61,6 +78,19 @@
 
 	const handleClear = () => {
 		handleSelect('');
+	};
+
+	const handleRefresh = () => {
+		if (!selectedAddressJSON) return;
+		const addr = JSON.parse(selectedAddressJSON) as GlobuleAddress_Band;
+		const fresh = resolvePair(bands, addr, mode);
+		snapshot = fresh;
+		onChange(fresh);
+		if (!fresh) {
+			// Selected band gone; clear
+			selectedAddressJSON = '';
+			partnerHighlightStore.set({ start: null, end: null });
+		}
 	};
 
 	onDestroy(() => {
@@ -88,6 +118,17 @@
 				<button onclick={handleClear} title="Clear selection">×</button>
 			{/if}
 		</div>
+		{#if isStale && livePair}
+			<div class="banner">
+				⚠ Model changed
+				<button onclick={handleRefresh}>Refresh</button>
+			</div>
+		{:else if isStale && !livePair}
+			<div class="banner">
+				Pair no longer exists in model
+				<button onclick={handleClear}>Clear</button>
+			</div>
+		{/if}
 		<div class="caption">Showing one pair — rules apply to all</div>
 	{/if}
 </div>
@@ -119,5 +160,15 @@
 	.caption {
 		color: rgba(0, 0, 0, 0.5);
 		font-size: 0.8em;
+	}
+	.banner {
+		display: flex;
+		gap: 6px;
+		align-items: center;
+		font-size: 0.85em;
+		color: #b00020;
+	}
+	.banner button {
+		font-size: 0.85em;
 	}
 </style>
