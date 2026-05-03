@@ -191,7 +191,7 @@ These map between the `Vertex` objects (one per unique x,y) and the flat segment
 - Create: `src/components/modal/editor/vertex-addressing.ts`
 - Create: `src/components/modal/editor/__tests__/vertex-addressing.test.ts`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `src/components/modal/editor/__tests__/vertex-addressing.test.ts`:
 
@@ -325,7 +325,7 @@ describe('removeRulesForPairing', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```bash
 npm run test:unit -- src/components/modal/editor/__tests__/vertex-addressing.test.ts 2>&1 | tail -10
@@ -333,7 +333,7 @@ npm run test:unit -- src/components/modal/editor/__tests__/vertex-addressing.tes
 
 Expected: FAIL — module not found.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Create `src/components/modal/editor/vertex-addressing.ts`:
 
@@ -411,7 +411,7 @@ export const removeRulesForPairing = (
 };
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 ```bash
 npm run test:unit -- src/components/modal/editor/__tests__/vertex-addressing.test.ts 2>&1 | tail -10
@@ -419,7 +419,7 @@ npm run test:unit -- src/components/modal/editor/__tests__/vertex-addressing.tes
 
 Expected: PASS for all 6 describe blocks.
 
-- [ ] **Step 5: Run full test suite + type-check**
+- [x] **Step 5: Run full test suite + type-check**
 
 ```bash
 npm run test:unit 2>&1 | tail -5
@@ -428,7 +428,7 @@ npm run check 2>&1 | tail -3
 
 Expected: tests pass; type-check stable.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/components/modal/editor/vertex-addressing.ts src/components/modal/editor/__tests__/vertex-addressing.test.ts
