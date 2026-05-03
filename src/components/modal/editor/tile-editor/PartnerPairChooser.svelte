@@ -137,6 +137,18 @@
 				?.patternViewConfig?.showBands ?? '?'}, patternSource: {$patternConfigStore?.patternViewConfig
 				?.patternSource ?? 'projection'}
 		</div>
+		<div class="diag">
+			pattern types — projection: {($superGlobulePatternStore?.projectionPattern as any)?.type ??
+				'undefined'}, surface: {($superGlobulePatternStore?.surfaceProjectionPattern as any)?.type ??
+				'undefined'}, globuleTube: {($superGlobulePatternStore?.globuleTubePattern as any)?.type ??
+				'undefined'}, super: {($superGlobulePatternStore?.superGlobulePattern as any)?.type ??
+				'undefined'}
+		</div>
+		<div class="diag">
+			pattern keys — projection: [{Object.keys(
+				($superGlobulePatternStore?.projectionPattern as any) ?? {}
+			).join(',')}]
+		</div>
 	{:else}
 		<div class="row">
 			<select
