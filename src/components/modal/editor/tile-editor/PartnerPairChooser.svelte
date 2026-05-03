@@ -2,13 +2,6 @@
 	import { superGlobulePatternStore } from '$lib/stores/superGlobuleStores';
 	import { partnerHighlightStore } from '$lib/stores/partnerHighlightStore';
 	import {
-		computationMode,
-		pausePatternUpdates,
-		isManualMode,
-		hasPendingChanges
-	} from '$lib/stores/uiStores';
-	import { patternConfigStore } from '$lib/stores';
-	import {
 		getEligibleBands,
 		resolvePair,
 		pairsEqual,
@@ -27,24 +20,14 @@
 		onChange: (snapshot: ResolvedPair | null) => void;
 	} = $props();
 
-	const sourceCounts = $derived.by(() => {
-		const fromTubes = (source: any): number =>
-			source?.tubes?.reduce((n: number, t: any) => n + (t.bands?.length ?? 0), 0) ?? 0;
-		return {
-			projection: fromTubes($superGlobulePatternStore?.projectionPattern),
-			surface: fromTubes($superGlobulePatternStore?.surfaceProjectionPattern),
-			globuleTube: fromTubes($superGlobulePatternStore?.globuleTubePattern),
-			superGlobule:
-				($superGlobulePatternStore?.superGlobulePattern as any)?.bandPatterns?.length ?? 0
-		};
-	});
-
 	const bands = $derived.by((): BandCutPattern[] => {
-		const fromTubes = (source: any): BandCutPattern[] =>
-			source?.tubes?.flatMap((t: { bands: BandCutPattern[] }) => t.bands) ?? [];
-		const fromProjection = fromTubes($superGlobulePatternStore?.projectionPattern);
-		const fromSurface = fromTubes($superGlobulePatternStore?.surfaceProjectionPattern);
-		const fromGlobuleTube = fromTubes($superGlobulePatternStore?.globuleTubePattern);
+		const tubesOf = (source: any): { bands: BandCutPattern[] }[] | undefined =>
+			source?.projectionCutPattern?.tubes ?? source?.tubes;
+		const fromCut = (source: any): BandCutPattern[] =>
+			tubesOf(source)?.flatMap((t) => t.bands) ?? [];
+		const fromProjection = fromCut($superGlobulePatternStore?.projectionPattern);
+		const fromSurface = fromCut($superGlobulePatternStore?.surfaceProjectionPattern);
+		const fromGlobuleTube = fromCut($superGlobulePatternStore?.globuleTubePattern);
 		const fromSuper =
 			($superGlobulePatternStore?.superGlobulePattern as any)?.bandPatterns ?? [];
 		return [...fromProjection, ...fromSurface, ...fromGlobuleTube, ...fromSuper];
@@ -127,28 +110,6 @@
 		<div class="empty">
 			{bands.length === 0 ? 'No model loaded' : 'No partner pairs in model'}
 		</div>
-		<div class="diag">
-			bands by source — projection: {sourceCounts.projection}, surface: {sourceCounts.surface},
-			globuleTube: {sourceCounts.globuleTube}, super: {sourceCounts.superGlobule}
-		</div>
-		<div class="diag">
-			flags — computationMode: {$computationMode}, pausePatternUpdates: {$pausePatternUpdates},
-			manualMode: {$isManualMode}, pending: {$hasPendingChanges}, showBands: {$patternConfigStore
-				?.patternViewConfig?.showBands ?? '?'}, patternSource: {$patternConfigStore?.patternViewConfig
-				?.patternSource ?? 'projection'}
-		</div>
-		<div class="diag">
-			pattern types — projection: {($superGlobulePatternStore?.projectionPattern as any)?.type ??
-				'undefined'}, surface: {($superGlobulePatternStore?.surfaceProjectionPattern as any)?.type ??
-				'undefined'}, globuleTube: {($superGlobulePatternStore?.globuleTubePattern as any)?.type ??
-				'undefined'}, super: {($superGlobulePatternStore?.superGlobulePattern as any)?.type ??
-				'undefined'}
-		</div>
-		<div class="diag">
-			pattern keys — projection: [{Object.keys(
-				($superGlobulePatternStore?.projectionPattern as any) ?? {}
-			).join(',')}]
-		</div>
 	{:else}
 		<div class="row">
 			<select
@@ -203,11 +164,6 @@
 	.empty {
 		color: rgba(0, 0, 0, 0.5);
 		font-size: 0.85em;
-	}
-	.diag {
-		color: rgba(0, 0, 0, 0.4);
-		font-size: 0.75em;
-		font-family: monospace;
 	}
 	.caption {
 		color: rgba(0, 0, 0, 0.5);
