@@ -480,15 +480,24 @@ export const chooserPairGeometry = derived(
 	([$partnerHighlightStore, $superGlobuleStore]): ChooserPairGeometry => {
 		if (!$partnerHighlightStore.start && !$partnerHighlightStore.end) return null;
 
+		// Cut-pattern facet index is a QUAD index (one CutPattern = one quad).
+		// 3D bands.facets are TRIANGLES — each quad maps to triangles 2n and 2n+1.
 		const facetToGeometry = (addr: GlobuleAddress_Facet | null): BufferGeometry | null => {
 			if (!addr) return null;
-			const facet =
-				$superGlobuleStore.projections[addr.globule]?.tubes[addr.tube]?.bands[addr.band]?.facets[
-					addr.facet
-				];
-			if (!facet?.triangle) return null;
-			const { a, b, c } = facet.triangle;
-			const geom = new BufferGeometry().setFromPoints([a, b, c]);
+			const band =
+				$superGlobuleStore.projections[addr.globule]?.tubes[addr.tube]?.bands[addr.band];
+			if (!band) return null;
+			const t1 = band.facets[addr.facet * 2];
+			const t2 = band.facets[addr.facet * 2 + 1];
+			const points = [];
+			if (t1?.triangle) {
+				points.push(t1.triangle.a, t1.triangle.b, t1.triangle.c);
+			}
+			if (t2?.triangle) {
+				points.push(t2.triangle.a, t2.triangle.b, t2.triangle.c);
+			}
+			if (points.length === 0) return null;
+			const geom = new BufferGeometry().setFromPoints(points);
 			geom.computeVertexNormals();
 			return geom;
 		};
