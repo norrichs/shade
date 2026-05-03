@@ -7,7 +7,6 @@ import type {
 	GridVariant,
 	PanelVariant
 } from '$lib/types';
-import { adjustHexPatternAfterTiling, generateHexPattern } from './tiled-hex-pattern';
 import { adjustCarnation, generateCarnation } from './tiled-carnation-pattern';
 import { generateBoxPattern } from './tiled-box-pattern';
 import { generateAuxetic } from './tiled-bowtie-pattern';
@@ -38,12 +37,6 @@ for (const algorithm of algorithms) {
  */
 export const patterns: { [key: string]: PatternGenerator } = {
 	...builtInPatternsEntries,
-	'tiledHexPattern-1': {
-		getPattern: (rows: number, columns: number) =>
-			generateHexPattern(rows, columns, { variant: 1, size: 1 }),
-		tagAnchor: { facetIndex: 0, segmentIndex: 0 },
-		adjustAfterMapping: adjustHexPatternAfterTiling
-	},
 	'tiledBoxPattern-0': {
 		getPattern: (rows: number, columns: number) =>
 			generateBoxPattern({ size: 1, height: rows, width: columns }),

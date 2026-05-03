@@ -1,4 +1,6 @@
-import { generateHexPattern, adjustHexPatternAfterTiling } from '../../../tiled-hex-pattern';
+import { generateHexTile } from '../generator';
+import { adjustHexTesselation } from '../adjuster';
+import { defaultHexSpec } from '../default-spec';
 import type { TiledPatternConfig } from '$lib/types';
 
 describe('hex generator snapshot', () => {
@@ -10,7 +12,7 @@ describe('hex generator snapshot', () => {
 		for (const rows of rowsList) {
 			for (const columns of columnsList) {
 				it(`generateHexPattern size=${size} rows=${rows} columns=${columns}`, () => {
-					const result = generateHexPattern(rows, columns, { size });
+					const result = generateHexTile(defaultHexSpec, { size, rows, columns, sideOrientation: 'outside' });
 					expect(result).toMatchSnapshot();
 				});
 			}
@@ -45,7 +47,7 @@ describe('hex adjuster snapshot', () => {
 		const rows = 1;
 		const columns = 1;
 		const config = makeConfig({ rowCount: rows, columnCount: columns });
-		const patternBand = [generateHexPattern(rows, columns, { size: 1 })];
+		const patternBand = [generateHexTile(defaultHexSpec, { size: 1, rows, columns, sideOrientation: 'outside' })];
 		const quadBand = [
 			{
 				a: { x: 0, y: 0, z: 0 } as any,
@@ -54,8 +56,16 @@ describe('hex adjuster snapshot', () => {
 				d: { x: 1, y: 1, z: 0 } as any
 			}
 		];
-		const result = adjustHexPatternAfterTiling(patternBand, quadBand, config);
-		expect(result).toMatchSnapshot();
+		// Each old patternBand[i] becomes a BandCutPattern with a single facet wrapping that path + quad
+		const wrappedBands = patternBand.map((path, i) => ({
+			address: { tube: 0, band: i },
+			facets: [{ path, quad: quadBand[i], label: `${i}` }],
+			meta: undefined
+		})) as any;
+		const result = adjustHexTesselation(wrappedBands, config, []);
+		// Unwrap for snapshot — flatten the path arrays back out
+		const paths = result.map((b: any) => b.facets.map((f: any) => f.path));
+		expect(paths).toMatchSnapshot();
 	});
 
 	it('adjuster with endsMatched=false endsTrimmed=false rows=1 columns=2', () => {
@@ -69,11 +79,19 @@ describe('hex adjuster snapshot', () => {
 			d: { x: 1, y: 1, z: 0 } as any
 		};
 		const patternBand = [
-			generateHexPattern(rows, columns, { size: 1 }),
-			generateHexPattern(rows, columns, { size: 1 })
+			generateHexTile(defaultHexSpec, { size: 1, rows, columns, sideOrientation: 'outside' }),
+			generateHexTile(defaultHexSpec, { size: 1, rows, columns, sideOrientation: 'outside' })
 		];
 		const quadBand = [quad, quad];
-		const result = adjustHexPatternAfterTiling(patternBand, quadBand, config);
-		expect(result).toMatchSnapshot();
+		// Each old patternBand[i] becomes a BandCutPattern with a single facet wrapping that path + quad
+		const wrappedBands = patternBand.map((path, i) => ({
+			address: { tube: 0, band: i },
+			facets: [{ path, quad: quadBand[i], label: `${i}` }],
+			meta: undefined
+		})) as any;
+		const result = adjustHexTesselation(wrappedBands, config, []);
+		// Unwrap for snapshot — flatten the path arrays back out
+		const paths = result.map((b: any) => b.facets.map((f: any) => f.path));
+		expect(paths).toMatchSnapshot();
 	});
 });

@@ -6,6 +6,7 @@ import {
 	defaultShieldSpec,
 	generateShieldTesselationTile
 } from './tesselation/shield';
+import { adjustHexTesselation, defaultHexSpec, generateHexTile } from './tesselation/hex';
 
 export type PatternAlgorithm = {
 	algorithmId: string;
@@ -43,7 +44,35 @@ const shieldAlgorithm: PatternAlgorithm = {
 	})
 };
 
-export const algorithms: PatternAlgorithm[] = [shieldAlgorithm];
+const hexAlgorithm: PatternAlgorithm = {
+	algorithmId: 'hex',
+	displayName: 'Hex',
+	defaultSpec: defaultHexSpec,
+	supportsEditing: true,
+	createPatternsEntry: (spec) => ({
+		getPattern: (
+			rows: number,
+			columns: number,
+			// eslint-disable-next-line @typescript-eslint/no-unused-vars
+			_quadBand: Quadrilateral[] | undefined = undefined,
+			variant: GridVariant | undefined = 'rect',
+			sideOrientation: Band['sideOrientation']
+		) =>
+			generateHexTile(spec, {
+				size: 1,
+				rows,
+				columns,
+				variant,
+				sideOrientation
+			}),
+		tagAnchor: { facetIndex: 0, segmentIndex: 0 },
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		adjustAfterTiling: (bands: any, tiledPatternConfig: any, tubes: any) =>
+			adjustHexTesselation(bands, tiledPatternConfig, tubes)
+	})
+};
+
+export const algorithms: PatternAlgorithm[] = [shieldAlgorithm, hexAlgorithm];
 
 export const findAlgorithm = (algorithmId: string): PatternAlgorithm | undefined =>
 	algorithms.find((a) => a.algorithmId === algorithmId);
