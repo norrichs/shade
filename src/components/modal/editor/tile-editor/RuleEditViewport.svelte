@@ -6,6 +6,7 @@
 	import { computeConnections } from '../vertex-addressing';
 	import { ghostSvgTransform, ghostTransform, type EditorMode } from './editor-mode';
 	import { flatIndexes } from '../vertex-addressing';
+	import type { ResolvedPair } from './partner-pair-resolver';
 	import UnitLabels from './UnitLabels.svelte';
 
 	let {
@@ -13,6 +14,7 @@
 		mode,
 		rules,
 		config,
+		distortedGhost,
 		selectedTarget,
 		selectedConnection,
 		onSelectTarget,
@@ -24,6 +26,7 @@
 		mode: EditorMode;
 		rules: IndexPair[];
 		config: PathEditorConfig;
+		distortedGhost: ResolvedPair | null;
 		selectedTarget: Vertex | null;
 		selectedConnection: { sourceVertex: Vertex; targetVertex: Vertex } | null;
 		onSelectTarget: (vertex: Vertex) => void;
