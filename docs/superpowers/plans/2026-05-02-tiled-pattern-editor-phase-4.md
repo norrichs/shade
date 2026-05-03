@@ -1171,7 +1171,7 @@ Renders the unit with red rings on vertices whose flat-indices appear in `spec.a
 
 - Create: `src/components/modal/editor/tile-editor/SkipRemoveViewport.svelte`
 
-- [ ] **Step 1: Create the component**
+- [x] **Step 1: Create the component**
 
 Create `src/components/modal/editor/tile-editor/SkipRemoveViewport.svelte` (use **tabs**):
 
@@ -1259,13 +1259,13 @@ Create `src/components/modal/editor/tile-editor/SkipRemoveViewport.svelte` (use 
 </style>
 ```
 
-- [ ] **Step 2: Type-check**
+- [x] **Step 2: Type-check**
 
 ```bash
 npm run check 2>&1 | tail -3
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/components/modal/editor/tile-editor/SkipRemoveViewport.svelte
