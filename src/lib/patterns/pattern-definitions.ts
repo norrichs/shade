@@ -8,7 +8,6 @@ import type {
 	PanelVariant
 } from '$lib/types';
 import { adjustCarnation, generateCarnation } from './tiled-carnation-pattern';
-import { generateBoxPattern } from './tiled-box-pattern';
 import { generateAuxetic } from './tiled-bowtie-pattern';
 import { generateBranched } from './banded-branched-pattern';
 import {
@@ -37,12 +36,6 @@ for (const algorithm of algorithms) {
  */
 export const patterns: { [key: string]: PatternGenerator } = {
 	...builtInPatternsEntries,
-	'tiledBoxPattern-0': {
-		getPattern: (rows: number, columns: number) =>
-			generateBoxPattern({ size: 1, height: rows, width: columns }),
-		// adjustAfterTiling: (facets: CutPattern) => facets,
-		tagAnchor: { facetIndex: 0, segmentIndex: 5, angle: 0 }
-	},
 	'tiledBowtiePattern-0': {
 		getPattern: (rows: number, columns: number) => generateAuxetic({ size: 1, rows, columns }),
 		tagAnchor: { facetIndex: 0, segmentIndex: 7, angle: 0 }

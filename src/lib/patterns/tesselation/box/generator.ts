@@ -1,19 +1,25 @@
-import type { PathSegment } from '$lib/types';
+import type { Band, GridVariant, PathSegment } from '$lib/types';
+import type { TiledPatternSpec } from '../../spec-types';
 
-export const generateBoxPattern = ({
-	size = 1,
-	height = 1,
-	width = 2
-}: {
-	size?: number;
-	height?: number;
-	width?: number;
-}) => {
+export type BoxGeneratorProps = {
+	size: number;
+	rows: number;
+	columns: number;
+	variant?: GridVariant;
+	sideOrientation: Band['sideOrientation'];
+};
+
+export const generateBoxTile = (
+	_spec: TiledPatternSpec,
+	props: BoxGeneratorProps
+): PathSegment[] => {
+	const { size, rows: height, columns: width } = props;
 	const rowHeight = size / height;
 	const columnWidth = size / width;
 	const v = rowHeight / 6;
 	const h = columnWidth / 2;
 	const segments: PathSegment[] = [];
+
 	for (let row = 0; row < height; row++) {
 		for (let col = 0; col < width; col++) {
 			const r = rowHeight * row;

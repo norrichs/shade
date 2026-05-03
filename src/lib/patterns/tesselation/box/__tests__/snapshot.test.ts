@@ -1,4 +1,5 @@
-import { generateBoxPattern } from '../../../tiled-box-pattern';
+import { generateBoxTile } from '../generator';
+import { defaultBoxSpec } from '../default-spec';
 
 describe('box generator snapshot', () => {
 	const sizes = [1, 100];
@@ -9,7 +10,7 @@ describe('box generator snapshot', () => {
 		for (const height of heightList) {
 			for (const width of widthList) {
 				it(`generateBoxPattern size=${size} height=${height} width=${width}`, () => {
-					const result = generateBoxPattern({ size, height, width });
+					const result = generateBoxTile(defaultBoxSpec, { size, rows: height, columns: width, sideOrientation: 'outside' });
 					expect(result).toMatchSnapshot();
 				});
 			}
