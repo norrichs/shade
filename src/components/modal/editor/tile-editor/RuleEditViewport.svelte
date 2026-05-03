@@ -38,6 +38,19 @@
 			...ghostTransform(mode, spec.unit, { x: v.x, y: v.y })
 		}))
 	);
+
+	let selectedConnection: { sourceVertex: Vertex; targetVertex: Vertex } | null = $state(null);
+
+	$effect(() => {
+		const onKey = (e: KeyboardEvent) => {
+			if ((e.key === 'Delete' || e.key === 'Backspace') && selectedConnection) {
+				onSelectConnection(selectedConnection.sourceVertex, selectedConnection.targetVertex);
+				selectedConnection = null;
+			}
+		};
+		window.addEventListener('keydown', onKey);
+		return () => window.removeEventListener('keydown', onKey);
+	});
 </script>
 
 <div class="container" style="width:{config.size.width}px; height:{config.size.height}px;">
@@ -62,7 +75,13 @@
 				x2={ghostPos?.x ?? 0}
 				y2={ghostPos?.y ?? 0}
 				class="connection"
-				onclick={() => onSelectConnection(conn.sourceVertex, conn.targetVertex)}
+				class:selected={selectedConnection?.sourceVertex === conn.sourceVertex &&
+					selectedConnection?.targetVertex === conn.targetVertex}
+				onclick={() =>
+					(selectedConnection = {
+						sourceVertex: conn.sourceVertex,
+						targetVertex: conn.targetVertex
+					})}
 			/>
 		{/each}
 
@@ -145,6 +164,10 @@
 	}
 	.connection:hover {
 		stroke: rgba(0, 100, 200, 1);
+		stroke-width: 0.5;
+	}
+	.connection.selected {
+		stroke: red;
 		stroke-width: 0.5;
 	}
 </style>

@@ -957,7 +957,7 @@ A clicked connection currently triggers `onSelectConnection` which immediately d
 
 Actually, given the connection has a single visual representation and the click already targets a specific connection, we can keep the immediate-delete behavior — it's simpler. But the spec calls for click-to-select + Delete-to-remove, so to match the spec:
 
-- [ ] **Step 1: Modify RuleEditViewport for two-step delete**
+- [x] **Step 1: Modify RuleEditViewport for two-step delete**
 
 In `src/components/modal/editor/tile-editor/RuleEditViewport.svelte`, add internal state:
 
@@ -1001,7 +1001,7 @@ Add CSS for selected line:
 }
 ```
 
-- [ ] **Step 2: Type-check + tests**
+- [x] **Step 2: Type-check + tests**
 
 ```bash
 npm run check 2>&1 | tail -3
@@ -1010,7 +1010,7 @@ npm run test:unit 2>&1 | tail -5
 
 Expected: stable.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/components/modal/editor/tile-editor/RuleEditViewport.svelte
