@@ -110,6 +110,53 @@
 		return lines;
 	});
 
+	// Scale visual styling (stroke widths, vertex radii, font sizes) to match
+	// the unit-mode look at the unit's nominal 42-wide reference. The distorted
+	// viewBox can be much larger or smaller, so without scaling, paths look
+	// either hairline-thin or excessively thick.
+	const distortedScale = $derived.by(() => {
+		if (!distortedGhost) return 1;
+		const allCorners = [
+			distortedGhost.mainQuad.a,
+			distortedGhost.mainQuad.b,
+			distortedGhost.mainQuad.c,
+			distortedGhost.mainQuad.d,
+			distortedGhost.ghostQuad.a,
+			distortedGhost.ghostQuad.b,
+			distortedGhost.ghostQuad.c,
+			distortedGhost.ghostQuad.d
+		];
+		const xs = allCorners.map((p: any) => p.x);
+		const ys = allCorners.map((p: any) => p.y);
+		const span = Math.max(
+			Math.max(...xs) - Math.min(...xs),
+			Math.max(...ys) - Math.min(...ys)
+		);
+		const REFERENCE_SPAN = 42; // unit.width in default shield
+		return span / REFERENCE_SPAN;
+	});
+
+	const distortedMainCorners = $derived(
+		distortedGhost
+			? [
+					{ label: 'a', x: distortedGhost.mainQuad.a.x, y: distortedGhost.mainQuad.a.y },
+					{ label: 'b', x: distortedGhost.mainQuad.b.x, y: distortedGhost.mainQuad.b.y },
+					{ label: 'c', x: distortedGhost.mainQuad.c.x, y: distortedGhost.mainQuad.c.y },
+					{ label: 'd', x: distortedGhost.mainQuad.d.x, y: distortedGhost.mainQuad.d.y }
+				]
+			: []
+	);
+	const distortedGhostCorners = $derived(
+		distortedGhost
+			? [
+					{ label: 'a', x: distortedGhost.ghostQuad.a.x, y: distortedGhost.ghostQuad.a.y },
+					{ label: 'b', x: distortedGhost.ghostQuad.b.x, y: distortedGhost.ghostQuad.b.y },
+					{ label: 'c', x: distortedGhost.ghostQuad.c.x, y: distortedGhost.ghostQuad.c.y },
+					{ label: 'd', x: distortedGhost.ghostQuad.d.x, y: distortedGhost.ghostQuad.d.y }
+				]
+			: []
+	);
+
 	$effect(() => {
 		const onKey = (e: KeyboardEvent) => {
 			if ((e.key === 'Delete' || e.key === 'Backspace') && selectedConnection) {
@@ -145,20 +192,36 @@
 				class="ghost-bounds"
 				style="fill: {mode === 'partnerStart' ? 'rgba(255,0,0,0.1)' : 'rgba(0,255,0,0.1)'}"
 			/>
-			<path d={distortedMainPathStr} class="segments" />
-			<path d={distortedGhostPathStr} class="ghost-segments" />
+			<path
+				d={distortedMainPathStr}
+				class="segments"
+				style="stroke-width: {0.4 * distortedScale}"
+			/>
+			<path
+				d={distortedGhostPathStr}
+				class="ghost-segments"
+				style="stroke-width: {0.4 * distortedScale}"
+			/>
 
 			{#each distortedConnections as line, i (i)}
-				<line x1={line.x1} y1={line.y1} x2={line.x2} y2={line.y2} class="connection" />
+				<line
+					x1={line.x1}
+					y1={line.y1}
+					x2={line.x2}
+					y2={line.y2}
+					class="connection"
+					style="stroke-width: {0.3 * distortedScale}"
+				/>
 			{/each}
 
 			{#each distortedMainVertices as vertex (vertex.x + ':' + vertex.y)}
 				<circle
 					cx={vertex.x}
 					cy={vertex.y}
-					r="0.5"
+					r={0.5 * distortedScale}
 					class="main-vertex"
 					class:selected={selectedTarget === vertex}
+					style="stroke-width: {0.15 * distortedScale}"
 					onclick={() => onSelectTarget(vertex)}
 				/>
 			{/each}
@@ -167,10 +230,64 @@
 				<circle
 					cx={vertex.x}
 					cy={vertex.y}
-					r="0.5"
+					r={0.5 * distortedScale}
 					class="ghost-vertex"
+					style="stroke-width: {0.15 * distortedScale}"
 					onclick={() => onSelectGhost(vertex)}
 				/>
+			{/each}
+
+			<!-- Main vertex labels (above) -->
+			{#each distortedMainVertices as vertex (vertex.x + ':' + vertex.y + ':l')}
+				<text
+					x={vertex.x}
+					y={vertex.y - 0.7 * distortedScale}
+					font-size={0.8 * distortedScale}
+					text-anchor="middle"
+					dominant-baseline="text-after-edge"
+					fill="rgba(0,0,0,0.6)"
+					pointer-events="none"
+					style="user-select: none;">{vertex.refs[0]?.index ?? ''}</text
+				>
+			{/each}
+			<!-- Main quad corner labels (above) -->
+			{#each distortedMainCorners as corner (corner.label + ':main')}
+				<text
+					x={corner.x}
+					y={corner.y - 0.7 * distortedScale}
+					font-size={0.8 * distortedScale}
+					text-anchor="middle"
+					dominant-baseline="text-after-edge"
+					fill="rgba(0,0,0,0.6)"
+					pointer-events="none"
+					style="user-select: none;">{corner.label}</text
+				>
+			{/each}
+			<!-- Ghost vertex labels (below) -->
+			{#each distortedGhostVertices as vertex (vertex.x + ':' + vertex.y + ':lg')}
+				<text
+					x={vertex.x}
+					y={vertex.y + 0.7 * distortedScale}
+					font-size={0.8 * distortedScale}
+					text-anchor="middle"
+					dominant-baseline="text-before-edge"
+					fill="rgba(0,0,0,0.4)"
+					pointer-events="none"
+					style="user-select: none;">{vertex.refs[0]?.index ?? ''}</text
+				>
+			{/each}
+			<!-- Ghost quad corner labels (below) -->
+			{#each distortedGhostCorners as corner (corner.label + ':ghost')}
+				<text
+					x={corner.x}
+					y={corner.y + 0.7 * distortedScale}
+					font-size={0.8 * distortedScale}
+					text-anchor="middle"
+					dominant-baseline="text-before-edge"
+					fill="rgba(0,0,0,0.4)"
+					pointer-events="none"
+					style="user-select: none;">{corner.label}</text
+				>
 			{/each}
 		</svg>
 	{:else}
