@@ -25,14 +25,14 @@
 
 <div class="toolbar">
 	<div class="tools">
-		{#each tools as t}
+		{#each tools as t (t.id)}
 			<button class:active={tool === t.id} onclick={() => onChangeTool(t.id)}>{t.label}</button>
 		{/each}
 	</div>
 	{#if tool === 'add'}
 		<div class="groups">
 			<span class="label">Group:</span>
-			{#each groups as g}
+			{#each groups as g (g)}
 				<label>
 					<input
 						type="radio"
