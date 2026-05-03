@@ -4,6 +4,7 @@
 	import { getCanvas, type PathEditorConfig } from '../path-editor-shared';
 	import { computeVertices, type Vertex } from '../segment-vertices';
 	import { flatIndexes } from '../vertex-addressing';
+	import UnitLabels from './UnitLabels.svelte';
 
 	let {
 		spec,
@@ -29,6 +30,7 @@
 	<svg width={config.size.width} height={config.size.height} viewBox={canv.viewBox} class="canvas">
 		<rect x="0" y="0" width={spec.unit.width} height={spec.unit.height} class="unit-bounds" />
 		<path d={pathString} class="segments" />
+		<UnitLabels unit={spec.unit} {vertices} placement="above" />
 
 		{#each vertices as vertex (vertex.x + ':' + vertex.y)}
 			{@const skipped = isVertexSkipped(vertex)}

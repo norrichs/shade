@@ -5,6 +5,8 @@
 	import { computeVertices, type Vertex } from '../segment-vertices';
 	import { computeConnections } from '../vertex-addressing';
 	import { ghostSvgTransform, ghostTransform, type EditorMode } from './editor-mode';
+	import { flatIndexes } from '../vertex-addressing';
+	import UnitLabels from './UnitLabels.svelte';
 
 	let {
 		spec,
@@ -43,6 +45,16 @@
 		}))
 	);
 
+	const GHOST_LABEL_OFFSET = 0.7;
+	const GHOST_FONT_SIZE = 0.8;
+
+	const ghostCorners = $derived([
+		{ label: 'a', ...ghostTransform(mode, spec.unit, { x: 0, y: spec.unit.height }) },
+		{ label: 'b', ...ghostTransform(mode, spec.unit, { x: spec.unit.width, y: spec.unit.height }) },
+		{ label: 'c', ...ghostTransform(mode, spec.unit, { x: spec.unit.width, y: 0 }) },
+		{ label: 'd', ...ghostTransform(mode, spec.unit, { x: 0, y: 0 }) }
+	]);
+
 	$effect(() => {
 		const onKey = (e: KeyboardEvent) => {
 			if ((e.key === 'Delete' || e.key === 'Backspace') && selectedConnection) {
@@ -63,6 +75,32 @@
 			<path d={pathString} class="ghost-segments" />
 		</g>
 		<path d={pathString} class="segments" />
+		<UnitLabels unit={spec.unit} {vertices} placement="above" />
+
+		{#each ghostPositions as gp (gp.vertex.x + ':' + gp.vertex.y)}
+			<text
+				x={gp.x}
+				y={gp.y + GHOST_LABEL_OFFSET}
+				font-size={GHOST_FONT_SIZE}
+				text-anchor="middle"
+				dominant-baseline="text-before-edge"
+				fill="rgba(0, 0, 0, 0.4)"
+				pointer-events="none"
+				style="user-select: none;"
+			>{flatIndexes(spec.unit, gp.vertex).join(',')}</text>
+		{/each}
+		{#each ghostCorners as gc (gc.label)}
+			<text
+				x={gc.x}
+				y={gc.y + GHOST_LABEL_OFFSET}
+				font-size={GHOST_FONT_SIZE}
+				text-anchor="middle"
+				dominant-baseline="text-before-edge"
+				fill="rgba(0, 0, 0, 0.4)"
+				pointer-events="none"
+				style="user-select: none;"
+			>{gc.label}</text>
+		{/each}
 
 		{#each connections as conn}
 			{@const ghostPos = ghostPositions.find((g) => g.vertex === conn.sourceVertex)}

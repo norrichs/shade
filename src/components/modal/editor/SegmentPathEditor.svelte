@@ -6,6 +6,7 @@
 	import { computeVertices, updateUnitForVertexMove, type Vertex } from './segment-vertices';
 	import DraggablePoint from './DraggablePoint.svelte';
 	import type { UnitTool } from './tile-editor/UnitToolbar.svelte';
+	import UnitLabels from './tile-editor/UnitLabels.svelte';
 
 	let {
 		unit,
@@ -65,6 +66,7 @@
 	>
 		<rect x="0" y="0" width={unit.width} height={unit.height} class="unit-bounds" />
 		<path d={pathString} class="segments" />
+		<UnitLabels {unit} {vertices} placement="above" />
 		{#if tool === 'remove'}
 			{#each vertices.filter((v) => v.refs.length >= 2) as vertex (vertex.x + ':' + vertex.y)}
 				<circle
