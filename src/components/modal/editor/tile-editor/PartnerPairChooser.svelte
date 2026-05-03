@@ -1,6 +1,9 @@
 <script lang="ts">
 	import { superGlobulePatternStore } from '$lib/stores/superGlobuleStores';
-	import { partnerHighlightStore } from '$lib/stores/partnerHighlightStore';
+	import {
+		partnerHighlightStore,
+		type PartnerHighlightSource
+	} from '$lib/stores/partnerHighlightStore';
 	import {
 		getEligibleBands,
 		resolvePair,
@@ -20,28 +23,44 @@
 		onChange: (snapshot: ResolvedPair | null) => void;
 	} = $props();
 
-	const bands = $derived.by((): BandCutPattern[] => {
-		const tubesOf = (source: any): { bands: BandCutPattern[] }[] | undefined =>
-			source?.projectionCutPattern?.tubes ?? source?.tubes;
-		const fromCut = (source: any): BandCutPattern[] =>
-			tubesOf(source)?.flatMap((t) => t.bands) ?? [];
-		const fromProjection = fromCut($superGlobulePatternStore?.projectionPattern);
-		const fromSurface = fromCut($superGlobulePatternStore?.surfaceProjectionPattern);
-		const fromGlobuleTube = fromCut($superGlobulePatternStore?.globuleTubePattern);
-		const fromSuper =
-			($superGlobulePatternStore?.superGlobulePattern as any)?.bandPatterns ?? [];
+	type SourcedBand = { source: PartnerHighlightSource; band: BandCutPattern };
+
+	const sourcedBands = $derived.by((): SourcedBand[] => {
+		const tubesOf = (raw: any): { bands: BandCutPattern[] }[] | undefined =>
+			raw?.projectionCutPattern?.tubes ?? raw?.tubes;
+		const fromCut = (raw: any, source: PartnerHighlightSource): SourcedBand[] =>
+			tubesOf(raw)?.flatMap((t) => t.bands.map((b) => ({ source, band: b }))) ?? [];
+		const fromProjection = fromCut($superGlobulePatternStore?.projectionPattern, 'projection');
+		const fromSurface = fromCut($superGlobulePatternStore?.surfaceProjectionPattern, 'surface');
+		const fromGlobuleTube = fromCut($superGlobulePatternStore?.globuleTubePattern, 'globuleTube');
+		const fromSuper: SourcedBand[] = (
+			($superGlobulePatternStore?.superGlobulePattern as any)?.bandPatterns ?? []
+		).map((b: BandCutPattern) => ({ source: 'projection' as PartnerHighlightSource, band: b }));
 		return [...fromProjection, ...fromSurface, ...fromGlobuleTube, ...fromSuper];
 	});
-	const eligible = $derived(getEligibleBands(bands, mode));
 
-	let selectedAddressJSON: string = $state('');
+	const bands = $derived(sourcedBands.map((s) => s.band));
+	const eligibleSourced = $derived(
+		sourcedBands.filter((s) => s.band.meta?.[mode === 'partnerStart' ? 'startPartnerBand' : 'endPartnerBand'])
+	);
+	const eligible = $derived(eligibleSourced.map((s) => s.band));
+
+	let selectedKey: string = $state('');
 
 	let snapshot: ResolvedPair | null = $state(null);
 
+	// Lookup the source associated with the currently-selected dropdown entry
+	const selectedSourcedBand = $derived(eligibleSourced.find((s) => keyForOption(s) === selectedKey));
+
+	const sameSourceBands = $derived(
+		selectedSourcedBand
+			? sourcedBands.filter((s) => s.source === selectedSourcedBand.source).map((s) => s.band)
+			: []
+	);
+
 	const livePair = $derived.by((): ResolvedPair | null => {
-		if (!selectedAddressJSON) return null;
-		const addr = JSON.parse(selectedAddressJSON) as GlobuleAddress_Band;
-		return resolvePair(bands, addr, mode);
+		if (!selectedSourcedBand) return null;
+		return resolvePair(sameSourceBands, selectedSourcedBand.band.address, mode);
 	});
 
 	const isStale = $derived.by(() => {
@@ -50,36 +69,49 @@
 		return !pairsEqual(snapshot, livePair);
 	});
 
-	const addressForOption = (b: BandCutPattern): string => JSON.stringify(b.address);
-	const labelForOption = (b: BandCutPattern): string =>
-		`Tube ${b.address.tube} / Band ${b.address.band}`;
+	const keyForOption = (s: SourcedBand): string =>
+		`${s.source}|${JSON.stringify(s.band.address)}`;
+	const labelForOption = (s: SourcedBand): string =>
+		`[${s.source}] Tube ${s.band.address.tube} / Band ${s.band.address.band}`;
 
-	const handleSelect = (addrJSON: string) => {
-		selectedAddressJSON = addrJSON;
-		if (!addrJSON) {
-			snapshot = null;
-			onChange(null);
-			partnerHighlightStore.set({ start: null, end: null });
+	const writeHighlight = (sourced: SourcedBand | undefined, fresh: ResolvedPair | null) => {
+		if (!sourced || !fresh) {
+			partnerHighlightStore.set({ source: 'projection', start: null, end: null });
 			return;
 		}
-		const addr = JSON.parse(addrJSON) as GlobuleAddress_Band;
-		const fresh = resolvePair(bands, addr, mode);
+		partnerHighlightStore.set({
+			source: sourced.source,
+			start: mode === 'partnerStart' ? fresh.mainAddress : fresh.ghostAddress,
+			end: mode === 'partnerEnd' ? fresh.mainAddress : fresh.ghostAddress
+		});
+	};
+
+	const handleSelect = (key: string) => {
+		selectedKey = key;
+		if (!key) {
+			snapshot = null;
+			onChange(null);
+			writeHighlight(undefined, null);
+			return;
+		}
+		const sourced = eligibleSourced.find((s) => keyForOption(s) === key);
+		if (!sourced) {
+			snapshot = null;
+			onChange(null);
+			writeHighlight(undefined, null);
+			return;
+		}
+		const sameSource = sourcedBands.filter((s) => s.source === sourced.source).map((s) => s.band);
+		const fresh = resolvePair(sameSource, sourced.band.address, mode);
 		snapshot = fresh;
 		onChange(fresh);
-		if (fresh) {
-			partnerHighlightStore.set({
-				start: mode === 'partnerStart' ? fresh.mainAddress : fresh.ghostAddress,
-				end: mode === 'partnerEnd' ? fresh.mainAddress : fresh.ghostAddress
-			});
-		} else {
-			partnerHighlightStore.set({ start: null, end: null });
-		}
+		writeHighlight(sourced, fresh);
 	};
 
 	const handleRandom = () => {
-		if (eligible.length === 0) return;
-		const random = eligible[Math.floor(Math.random() * eligible.length)];
-		handleSelect(addressForOption(random));
+		if (eligibleSourced.length === 0) return;
+		const random = eligibleSourced[Math.floor(Math.random() * eligibleSourced.length)];
+		handleSelect(keyForOption(random));
 	};
 
 	const handleClear = () => {
@@ -87,20 +119,20 @@
 	};
 
 	const handleRefresh = () => {
-		if (!selectedAddressJSON) return;
-		const addr = JSON.parse(selectedAddressJSON) as GlobuleAddress_Band;
-		const fresh = resolvePair(bands, addr, mode);
+		if (!selectedSourcedBand) return;
+		const fresh = resolvePair(sameSourceBands, selectedSourcedBand.band.address, mode);
 		snapshot = fresh;
 		onChange(fresh);
 		if (!fresh) {
-			// Selected band gone; clear
-			selectedAddressJSON = '';
-			partnerHighlightStore.set({ start: null, end: null });
+			selectedKey = '';
+			writeHighlight(undefined, null);
+		} else {
+			writeHighlight(selectedSourcedBand, fresh);
 		}
 	};
 
 	onDestroy(() => {
-		partnerHighlightStore.set({ start: null, end: null });
+		partnerHighlightStore.set({ source: 'projection', start: null, end: null });
 	});
 </script>
 
@@ -113,16 +145,16 @@
 	{:else}
 		<div class="row">
 			<select
-				value={selectedAddressJSON}
+				value={selectedKey}
 				onchange={(e) => handleSelect((e.currentTarget as HTMLSelectElement).value)}
 			>
 				<option value="">— pick a pair —</option>
-				{#each eligible as b (addressForOption(b))}
-					<option value={addressForOption(b)}>{labelForOption(b)}</option>
+				{#each eligibleSourced as s (keyForOption(s))}
+					<option value={keyForOption(s)}>{labelForOption(s)}</option>
 				{/each}
 			</select>
 			<button onclick={handleRandom} title="Random pair">🎲</button>
-			{#if selectedAddressJSON}
+			{#if selectedKey}
 				<button onclick={handleClear} title="Clear selection">×</button>
 			{/if}
 		</div>

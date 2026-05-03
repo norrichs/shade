@@ -480,12 +480,20 @@ export const chooserPairGeometry = derived(
 	([$partnerHighlightStore, $superGlobuleStore]): ChooserPairGeometry => {
 		if (!$partnerHighlightStore.start && !$partnerHighlightStore.end) return null;
 
+		// Pick the right 3D tube collection based on which cut-pattern source the chooser used.
+		const tubesForSource = (globuleIdx: number) => {
+			const proj = $superGlobuleStore.projections[globuleIdx];
+			if ($partnerHighlightStore.source === 'surface') return proj?.surfaceProjectionTubes;
+			if ($partnerHighlightStore.source === 'globuleTube') return $superGlobuleStore.globuleTubes;
+			return proj?.tubes;
+		};
+
 		// Cut-pattern facet index is a QUAD index (one CutPattern = one quad).
 		// 3D bands.facets are TRIANGLES — each quad maps to triangles 2n and 2n+1.
 		const facetToGeometry = (addr: GlobuleAddress_Facet | null): BufferGeometry | null => {
 			if (!addr) return null;
-			const band =
-				$superGlobuleStore.projections[addr.globule]?.tubes[addr.tube]?.bands[addr.band];
+			const tubes = tubesForSource(addr.globule);
+			const band = tubes?.[addr.tube]?.bands[addr.band];
 			if (!band) return null;
 			const t1 = band.facets[addr.facet * 2];
 			const t2 = band.facets[addr.facet * 2 + 1];
