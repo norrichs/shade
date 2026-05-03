@@ -24,6 +24,8 @@
 	import { addVertex, removeVertex } from './vertex-topology';
 	import type { IndexPair } from '$lib/patterns/spec-types';
 	import SkipRemoveViewport from './tile-editor/SkipRemoveViewport.svelte';
+	import PartnerPairChooser from './tile-editor/PartnerPairChooser.svelte';
+	import type { ResolvedPair } from './tile-editor/partner-pair-resolver';
 
 	let draft: TiledPatternSpec | null = $state(null);
 	let mode: EditorMode = $state('unit');
@@ -31,6 +33,20 @@
 	let group: Group = $state('start');
 	let selectedTarget: Vertex | null = $state(null);
 	let selectedConnection: { sourceVertex: Vertex; targetVertex: Vertex } | null = $state(null);
+	let distortedGhost: ResolvedPair | null = $state(null);
+
+	const handleDistortedGhostChange = (snapshot: ResolvedPair | null) => {
+		distortedGhost = snapshot;
+	};
+
+	const isShieldVariant = $derived.by(() => {
+		const d: TiledPatternSpec | null = draft;
+		return d !== null && d.algorithm === 'shield-tesselation';
+	});
+	const isPartnerMode = $derived.by(() => {
+		const m: EditorMode = mode;
+		return m === 'partnerStart' || m === 'partnerEnd';
+	});
 
 	const handleSelectConnectionLine = (
 		conn: { sourceVertex: Vertex; targetVertex: Vertex } | null
@@ -214,6 +230,7 @@
 	const handleDiscard = () => {
 		selectedTarget = null;
 		selectedConnection = null;
+		distortedGhost = null;
 		const found = findSpec(activeVariantId);
 		if (!found) return;
 		draft = $state.snapshot(found.spec) as TiledPatternSpec;
@@ -239,6 +256,7 @@
 		}
 		selectedTarget = null;
 		selectedConnection = null;
+		distortedGhost = null;
 		setActiveVariant(variantId);
 	};
 
@@ -247,6 +265,7 @@
 		tool = 'drag';
 		selectedTarget = null;
 		selectedConnection = null;
+		distortedGhost = null;
 	};
 
 	const validationError = $derived.by(() => {
@@ -335,6 +354,9 @@
 						/>
 					</div>
 				{:else if isRuleMode(mode)}
+					{#if isPartnerMode && isShieldVariant}
+						<PartnerPairChooser mode={mode as 'partnerStart' | 'partnerEnd'} onChange={handleDistortedGhostChange} />
+					{/if}
 					<div class="rule-row">
 						<div class="viewport-wrap">
 							<RuleEditViewport
@@ -344,6 +366,7 @@
 								config={editorConfig}
 								{selectedTarget}
 								{selectedConnection}
+								{distortedGhost}
 								onSelectTarget={handleSelectTarget}
 								onSelectGhost={handleSelectGhost}
 								onSelectConnection={handleSelectConnection}
