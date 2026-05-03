@@ -59,28 +59,33 @@
 	};
 	$: variantList = $tilePatternSpecStore.variants;
 
-	const getTiles = (
+	type TileGroup = { algorithmId: string; displayName: string; tiles: { type: string; tiling: TilingBasis }[] };
+
+	const getTileGroups = (
 		configs: { [key: string]: TiledPatternConfig },
 		variants: TiledPatternSpec[]
-	): { type: string; tiling: TilingBasis }[] => {
+	): TileGroup[] => {
 		const builtInIds = new Set(algorithms.map((a) => a.defaultSpec.id));
-		const builtInTiles: { type: string; tiling: TilingBasis }[] = algorithms.map((a) => ({
-			type: a.defaultSpec.id,
-			tiling: 'quadrilateral' as TilingBasis
-		}));
-		const variantTiles: { type: string; tiling: TilingBasis }[] = variants
-			.filter((v) => !builtInIds.has(v.id))
-			.map((v) => ({ type: v.id, tiling: 'quadrilateral' as TilingBasis }));
-		const legacyTiles: { type: string; tiling: TilingBasis }[] = [
-			'quadrilateral',
-			'triangle',
-			'band'
-		]
+		const algoGroups: TileGroup[] = algorithms.map((a) => {
+			const builtIn = { type: a.defaultSpec.id, tiling: 'quadrilateral' as TilingBasis };
+			const userVariants = variants
+				.filter((v) => !builtInIds.has(v.id) && v.algorithm === a.algorithmId)
+				.map((v) => ({ type: v.id, tiling: 'quadrilateral' as TilingBasis }));
+			return { algorithmId: a.algorithmId, displayName: a.displayName, tiles: [builtIn, ...userVariants] };
+		});
+		const legacyTiles: { type: string; tiling: TilingBasis }[] = (
+			['quadrilateral', 'triangle', 'band'] as TilingBasis[]
+		)
 			.flatMap((tilingBasis) =>
 				Object.values(configs).filter((c) => c.tiling === tilingBasis && !builtInIds.has(c.type))
 			)
 			.map((c) => ({ type: c.type, tiling: c.tiling }));
-		return [...legacyTiles, ...builtInTiles, ...variantTiles];
+		const legacyGroup: TileGroup = {
+			algorithmId: 'legacy',
+			displayName: 'Other',
+			tiles: legacyTiles
+		};
+		return [legacyGroup, ...algoGroups];
 	};
 
 	$: {
@@ -176,11 +181,16 @@
 
 	{#if isTiled}
 		<section class="tiles">
-			<div class="option-tile-group">
-				{#each getTiles(tiledPatternConfigs, variantList) as tile}
-					<PatternTileButton size={45} patternType={tile.type} tilingBasis={tile.tiling} />
-				{/each}
-			</div>
+			{#each getTileGroups(tiledPatternConfigs, variantList) as group (group.algorithmId)}
+				{#if group.tiles.length > 0}
+					<div class="group-header">{group.displayName}</div>
+					<div class="option-tile-group">
+						{#each group.tiles as tile}
+							<PatternTileButton size={45} patternType={tile.type} tilingBasis={tile.tiling} />
+						{/each}
+					</div>
+				{/if}
+			{/each}
 		</section>
 	{/if}
 
@@ -282,6 +292,11 @@
 	button.active {
 		font-weight: bold;
 		text-decoration: underline;
+	}
+	.group-header {
+		font-size: 0.85em;
+		color: rgba(0, 0, 0, 0.6);
+		padding: 6px 4px 2px;
 	}
 	.option-tile-group {
 		display: flex;
