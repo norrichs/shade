@@ -780,7 +780,7 @@ Wire up the four rule modes to render the new viewport. Plus add the `selectedTa
 
 - Modify: `src/components/modal/editor/TileEditor.svelte`
 
-- [ ] **Step 1: Update imports**
+- [x] **Step 1: Update imports**
 
 Add to the imports:
 
@@ -792,7 +792,7 @@ import { addRuleForPairing, removeRulesForPairing } from './vertex-addressing';
 import type { IndexPair } from '$lib/patterns/spec-types';
 ```
 
-- [ ] **Step 2: Add selectedTarget rune + helpers**
+- [x] **Step 2: Add selectedTarget rune + helpers**
 
 After the existing `let mode: EditorMode = $state('unit');`:
 
@@ -854,7 +854,7 @@ In `<ModeBar onChangeMode={...}>`, change to:
 
 (And delete the now-unused `handleChangeMode`.)
 
-- [ ] **Step 3: Branch the viewport render**
+- [x] **Step 3: Branch the viewport render**
 
 Replace the existing `{#if draft}` block with:
 
@@ -885,7 +885,7 @@ Replace the existing `{#if draft}` block with:
 
 (The `skipRemove` branch is added in Task 9.)
 
-- [ ] **Step 4: Update editorConfig for rule modes**
+- [x] **Step 4: Update editorConfig for rule modes**
 
 The viewBox needs to expand to include the ghost. Replace the existing `editorConfig` with:
 
@@ -932,7 +932,7 @@ const editorConfig: PathEditorConfig = $derived.by(() => {
 });
 ```
 
-- [ ] **Step 5: Run tests + type-check**
+- [x] **Step 5: Run tests + type-check**
 
 ```bash
 npm run test:unit 2>&1 | tail -5
@@ -941,7 +941,7 @@ npm run check 2>&1 | tail -3
 
 Expected: 41/41 pass. Type-check stable.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/components/modal/editor/TileEditor.svelte

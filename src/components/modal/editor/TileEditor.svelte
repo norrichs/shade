@@ -12,9 +12,53 @@
 	import ModeBar from './tile-editor/ModeBar.svelte';
 	import type { EditorMode } from './tile-editor/editor-mode';
 	import type { PathEditorConfig } from './path-editor-shared';
+	import RuleEditViewport from './tile-editor/RuleEditViewport.svelte';
+	import { isRuleMode } from './tile-editor/editor-mode';
+	import type { Vertex } from './segment-vertices';
+	import { addRuleForPairing, removeRulesForPairing } from './vertex-addressing';
+	import type { IndexPair } from '$lib/patterns/spec-types';
 
 	let draft: TiledPatternSpec | null = $state(null);
 	let mode: EditorMode = $state('unit');
+	let selectedTarget: Vertex | null = $state(null);
+
+	const getRulesForMode = (): IndexPair[] => {
+		if (!draft) return [];
+		if (mode === 'withinBand') return draft.adjustments.withinBand;
+		if (mode === 'acrossBands') return draft.adjustments.acrossBands;
+		if (mode === 'partnerStart') return draft.adjustments.partner.startEnd;
+		if (mode === 'partnerEnd') return draft.adjustments.partner.endEnd;
+		return [];
+	};
+
+	const setRulesForMode = (newRules: IndexPair[]) => {
+		if (!draft) return;
+		const updated: TiledPatternSpec = $state.snapshot(draft) as TiledPatternSpec;
+		const cleanRules: IndexPair[] = newRules.map((r) => ({ source: r.source, target: r.target }));
+		if (mode === 'withinBand') updated.adjustments.withinBand = cleanRules;
+		else if (mode === 'acrossBands') updated.adjustments.acrossBands = cleanRules;
+		else if (mode === 'partnerStart') updated.adjustments.partner.startEnd = cleanRules;
+		else if (mode === 'partnerEnd') updated.adjustments.partner.endEnd = cleanRules;
+		draft = updated;
+		isDirty = true;
+	};
+
+	const handleSelectTarget = (vertex: Vertex) => {
+		selectedTarget = vertex;
+	};
+
+	const handleSelectGhost = (vertex: Vertex) => {
+		if (!draft || !selectedTarget) return;
+		const newRules = addRuleForPairing(getRulesForMode(), draft.unit, selectedTarget, vertex);
+		setRulesForMode(newRules);
+		selectedTarget = null;
+	};
+
+	const handleSelectConnection = (sourceVertex: Vertex, targetVertex: Vertex) => {
+		if (!draft) return;
+		const newRules = removeRulesForPairing(getRulesForMode(), draft.unit, targetVertex, sourceVertex);
+		setRulesForMode(newRules);
+	};
 	let storedRowId: number | null = $state(null);
 	let isBuiltIn: boolean = $state(false);
 	let isDirty: boolean = $state(false);
@@ -116,6 +160,7 @@
 
 	const updateModeAndClearSelection = (newMode: EditorMode) => {
 		mode = newMode;
+		selectedTarget = null;
 	};
 
 	const editorConfig: PathEditorConfig = $derived.by(() => {
@@ -123,21 +168,38 @@
 		const unitWidth = currentDraft?.unit.width ?? 42;
 		const unitHeight = currentDraft?.unit.height ?? 14;
 		const padding = 4;
-		const contentWidth = unitWidth + 4;
-		const contentHeight = unitHeight + 4;
+
+		let left = -2;
+		let top = -2;
+		let contentWidth = unitWidth + 4;
+		let contentHeight = unitHeight + 4;
+
+		if (mode === 'withinBand' || mode === 'partnerEnd') {
+			contentWidth = 2 * unitWidth + 4;
+		} else if (mode === 'partnerStart') {
+			left = -unitWidth - 2;
+			contentWidth = 2 * unitWidth + 4;
+		} else if (mode === 'acrossBands') {
+			top = -unitHeight - 2;
+			contentHeight = 2 * unitHeight + 4;
+		}
+
 		const viewBoxWidth = contentWidth + padding * 2;
 		const viewBoxHeight = contentHeight + padding * 2;
-		const sizeWidth = 800;
-		const sizeHeight = (sizeWidth * viewBoxHeight) / viewBoxWidth;
+		const maxSizeWidth = 800;
+		const maxSizeHeight = 500;
+		const aspect = viewBoxWidth / viewBoxHeight;
+		let sizeWidth = maxSizeWidth;
+		let sizeHeight = sizeWidth / aspect;
+		if (sizeHeight > maxSizeHeight) {
+			sizeHeight = maxSizeHeight;
+			sizeWidth = sizeHeight * aspect;
+		}
+
 		return {
 			padding,
 			gutter: 0,
-			contentBounds: {
-				top: -2,
-				left: -2,
-				width: contentWidth,
-				height: contentHeight
-			},
+			contentBounds: { top, left, width: contentWidth, height: contentHeight },
 			size: { width: sizeWidth, height: sizeHeight }
 		};
 	});
@@ -160,13 +222,28 @@
 			/>
 			<ModeBar {mode} onChangeMode={updateModeAndClearSelection} />
 			{#if draft}
-				<div class="viewport-wrap">
-					<SegmentPathEditor
-						unit={draft.unit}
-						config={editorConfig}
-						onChangeUnit={handleUnitChange}
-					/>
-				</div>
+				{#if mode === 'unit'}
+					<div class="viewport-wrap">
+						<SegmentPathEditor
+							unit={draft.unit}
+							config={editorConfig}
+							onChangeUnit={handleUnitChange}
+						/>
+					</div>
+				{:else if isRuleMode(mode)}
+					<div class="viewport-wrap">
+						<RuleEditViewport
+							spec={draft}
+							{mode}
+							rules={getRulesForMode()}
+							config={editorConfig}
+							{selectedTarget}
+							onSelectTarget={handleSelectTarget}
+							onSelectGhost={handleSelectGhost}
+							onSelectConnection={handleSelectConnection}
+						/>
+					</div>
+				{/if}
 			{:else}
 				<div class="empty">No variant selected.</div>
 			{/if}
