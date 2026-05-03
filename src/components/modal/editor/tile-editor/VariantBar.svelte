@@ -6,6 +6,7 @@
 		draft,
 		isDirty,
 		isBuiltIn,
+		validationError,
 		availableVariants,
 		onSelectVariant,
 		onSave,
@@ -16,6 +17,7 @@
 		draft: TiledPatternSpec | null;
 		isDirty: boolean;
 		isBuiltIn: boolean;
+		validationError: string | null;
 		availableVariants: TiledPatternSpec[];
 		onSelectVariant: (variantId: string) => void;
 		onSave: () => void;
@@ -61,8 +63,11 @@
 				<option value={variant.id}>{variant.name}</option>
 			{/each}
 		</select>
-		<button onclick={onSave} disabled={isBuiltIn || !isDirty}>Save</button>
-		<button onclick={handleSaveAsClick} disabled={!draft}>Save As…</button>
+		<button
+			onclick={onSave}
+			disabled={isBuiltIn || !isDirty || validationError !== null}
+		>Save</button>
+		<button onclick={handleSaveAsClick} disabled={!draft || validationError !== null}>Save As…</button>
 		<button onclick={onDiscard} disabled={!isDirty}>Discard</button>
 		<button onclick={onDelete} disabled={isBuiltIn || !draft}>Delete</button>
 		{#if isDirty}
@@ -83,6 +88,9 @@
 			<span class="label">algorithm:</span>
 			<code>{draft.algorithm}</code>
 		</div>
+	{/if}
+	{#if validationError}
+		<div class="row error">{validationError}</div>
 	{/if}
 </div>
 
@@ -107,6 +115,10 @@
 		color: rgba(0, 0, 0, 0.5);
 	}
 	.meta code {
+		font-size: 0.85em;
+	}
+	.error {
+		color: #b00020;
 		font-size: 0.85em;
 	}
 </style>

@@ -199,6 +199,14 @@
 		selectedConnection = null;
 	};
 
+	const validationError = $derived.by(() => {
+		if (!draft) return null;
+		if (draft.unit.start.length === 0) return 'start group must have at least 1 segment';
+		if (draft.unit.middle.length === 0) return 'middle group must have at least 1 segment';
+		if (draft.unit.end.length === 0) return 'end group must have at least 1 segment';
+		return null;
+	});
+
 	const editorConfig: PathEditorConfig = $derived.by(() => {
 		const currentDraft: TiledPatternSpec | null = draft;
 		const unitWidth = currentDraft?.unit.width ?? 42;
@@ -249,6 +257,7 @@
 				{draft}
 				{isDirty}
 				{isBuiltIn}
+				{validationError}
 				availableVariants={variantList}
 				onSelectVariant={handleSelectVariant}
 				onSave={handleSave}
