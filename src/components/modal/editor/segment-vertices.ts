@@ -36,6 +36,24 @@ export const computeVertices = (unit: UnitDefinition): Vertex[] => {
 	return Array.from(byKey.values());
 };
 
+export const computeVerticesFromFlatPath = (path: PathSegment[]): Vertex[] => {
+	const byKey = new Map<string, Vertex>();
+	for (let i = 0; i < path.length; i++) {
+		const seg = path[i];
+		if (!isMovePathSegment(seg) && !isLinePathSegment(seg)) continue;
+		const x = seg[1];
+		const y = seg[2];
+		const key = `${x}::${y}`;
+		const existing = byKey.get(key);
+		if (existing) {
+			existing.refs.push({ group: 'middle', index: i });
+		} else {
+			byKey.set(key, { x, y, refs: [{ group: 'middle', index: i }] });
+		}
+	}
+	return Array.from(byKey.values());
+};
+
 export const updateUnitForVertexMove = (
 	unit: UnitDefinition,
 	vertex: Vertex,
