@@ -1,6 +1,7 @@
 import { addVertex, removeVertex, shiftRulesForRemoval } from '../vertex-topology';
 import type { TiledPatternSpec } from '$lib/patterns/spec-types';
 import { computeVertices } from '../segment-vertices';
+import { defaultShieldSpec } from '$lib/patterns/tesselation/shield';
 
 const makeSpec = (): TiledPatternSpec => ({
 	id: 'test',
@@ -164,5 +165,16 @@ describe('removeVertex', () => {
 		const next = removeVertex(spec, vertex);
 		expect(next.adjustments.withinBand).toEqual([{ source: 1, target: 0 }]);
 		expect(next.adjustments.skipRemove).toEqual([1]);
+	});
+});
+
+describe('topology round-trip', () => {
+	it('add then remove of same vertex restores the spec exactly', () => {
+		const before = defaultShieldSpec;
+		const added = addVertex(before, 'middle', 99, 99);
+		const newVertex = computeVertices(added.unit).find((v) => v.x === 99 && v.y === 99)!;
+		const restored = removeVertex(added, newVertex);
+		expect(restored.unit).toEqual(before.unit);
+		expect(restored.adjustments).toEqual(before.adjustments);
 	});
 });
