@@ -2,6 +2,13 @@
 	import { superGlobulePatternStore } from '$lib/stores/superGlobuleStores';
 	import { partnerHighlightStore } from '$lib/stores/partnerHighlightStore';
 	import {
+		computationMode,
+		pausePatternUpdates,
+		isManualMode,
+		hasPendingChanges
+	} from '$lib/stores/uiStores';
+	import { patternConfigStore } from '$lib/stores';
+	import {
 		getEligibleBands,
 		resolvePair,
 		pairsEqual,
@@ -123,6 +130,12 @@
 		<div class="diag">
 			bands by source — projection: {sourceCounts.projection}, surface: {sourceCounts.surface},
 			globuleTube: {sourceCounts.globuleTube}, super: {sourceCounts.superGlobule}
+		</div>
+		<div class="diag">
+			flags — computationMode: {$computationMode}, pausePatternUpdates: {$pausePatternUpdates},
+			manualMode: {$isManualMode}, pending: {$hasPendingChanges}, showBands: {$patternConfigStore
+				?.patternViewConfig?.showBands ?? '?'}, patternSource: {$patternConfigStore?.patternViewConfig
+				?.patternSource ?? 'projection'}
 		</div>
 	{:else}
 		<div class="row">
