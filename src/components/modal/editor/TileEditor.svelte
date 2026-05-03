@@ -16,8 +16,9 @@
 	import RuleList from './tile-editor/RuleList.svelte';
 	import { isRuleMode } from './tile-editor/editor-mode';
 	import type { Vertex } from './segment-vertices';
-	import { addRuleForPairing, removeRulesForPairing } from './vertex-addressing';
+	import { addRuleForPairing, removeRulesForPairing, flatIndexes } from './vertex-addressing';
 	import type { IndexPair } from '$lib/patterns/spec-types';
+	import SkipRemoveViewport from './tile-editor/SkipRemoveViewport.svelte';
 
 	let draft: TiledPatternSpec | null = $state(null);
 	let mode: EditorMode = $state('unit');
@@ -66,6 +67,22 @@
 		const newRules = rules.filter((_, i) => i !== index);
 		setRulesForMode(newRules);
 	};
+
+	const handleToggleSkip = (vertex: Vertex) => {
+		if (!draft) return;
+		const indices = flatIndexes(draft.unit, vertex);
+		const current = new Set(draft.adjustments.skipRemove);
+		const allIn = indices.every((i) => current.has(i));
+		for (const i of indices) {
+			if (allIn) current.delete(i);
+			else current.add(i);
+		}
+		const updated: TiledPatternSpec = $state.snapshot(draft) as TiledPatternSpec;
+		updated.adjustments.skipRemove = Array.from(current).sort((a, b) => a - b);
+		draft = updated;
+		isDirty = true;
+	};
+
 	let storedRowId: number | null = $state(null);
 	let isBuiltIn: boolean = $state(false);
 	let isDirty: boolean = $state(false);
@@ -252,6 +269,14 @@
 							/>
 						</div>
 						<RuleList rules={getRulesForMode()} onDelete={handleDeleteRuleByIndex} />
+					</div>
+				{:else if mode === 'skipRemove'}
+					<div class="viewport-wrap">
+						<SkipRemoveViewport
+							spec={draft}
+							config={editorConfig}
+							onToggleVertex={handleToggleSkip}
+						/>
 					</div>
 				{/if}
 			{:else}

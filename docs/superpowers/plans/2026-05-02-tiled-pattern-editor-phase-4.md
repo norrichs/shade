@@ -1281,7 +1281,7 @@ git push
 
 - Modify: `src/components/modal/editor/TileEditor.svelte`
 
-- [ ] **Step 1: Import + handler**
+- [x] **Step 1: Import + handler**
 
 In `src/components/modal/editor/TileEditor.svelte`, add to imports:
 
@@ -1309,7 +1309,7 @@ const handleToggleSkip = (vertex: Vertex) => {
 };
 ```
 
-- [ ] **Step 2: Add the branch**
+- [x] **Step 2: Add the branch**
 
 Update the mode-branch in the template:
 
@@ -1332,14 +1332,14 @@ Update the mode-branch in the template:
 {/if}
 ```
 
-- [ ] **Step 3: Run tests + type-check**
+- [x] **Step 3: Run tests + type-check**
 
 ```bash
 npm run test:unit 2>&1 | tail -5
 npm run check 2>&1 | tail -3
 ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/components/modal/editor/TileEditor.svelte
