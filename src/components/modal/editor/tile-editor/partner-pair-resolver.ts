@@ -39,14 +39,6 @@ export type ResolvedPair = {
 	ghostOriginalPath?: PathSegment[];
 };
 
-export const getEligibleBands = (
-	allBands: BandCutPattern[],
-	mode: PartnerMode
-): BandCutPattern[] => {
-	const key = mode === 'partnerStart' ? 'startPartnerBand' : 'endPartnerBand';
-	return allBands.filter((b) => b.meta && b.meta[key]);
-};
-
 const findBandByAddress = (
 	allBands: BandCutPattern[],
 	address: GlobuleAddress_Band

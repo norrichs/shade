@@ -1,9 +1,4 @@
-import {
-	getEligibleBands,
-	resolvePair,
-	pairsEqual,
-	type ResolvedPair
-} from '../partner-pair-resolver';
+import { resolvePair, pairsEqual, type ResolvedPair } from '../partner-pair-resolver';
 import type { BandCutPattern } from '$lib/types';
 import type { GlobuleAddress_Band } from '$lib/projection-geometry/types';
 
@@ -50,34 +45,6 @@ const makeBand = (
 					}
 				: undefined
 	}) as any;
-
-describe('getEligibleBands', () => {
-	it('returns bands with meta.startPartnerBand for partnerStart mode', () => {
-		const bands = [
-			makeBand(0, 0, { startPartnerBand: { globule: 0, tube: 1, band: 0 } }),
-			makeBand(1, 0),
-			makeBand(2, 0, { endPartnerBand: { globule: 0, tube: 1, band: 1 } })
-		];
-		const result = getEligibleBands(bands, 'partnerStart');
-		expect(result.map((b) => b.address.band)).toEqual([0]);
-	});
-
-	it('returns bands with meta.endPartnerBand for partnerEnd mode', () => {
-		const bands = [
-			makeBand(0, 0, { startPartnerBand: { globule: 0, tube: 1, band: 0 } }),
-			makeBand(1, 0),
-			makeBand(2, 0, { endPartnerBand: { globule: 0, tube: 1, band: 1 } })
-		];
-		const result = getEligibleBands(bands, 'partnerEnd');
-		expect(result.map((b) => b.address.band)).toEqual([2]);
-	});
-
-	it('returns empty array if no bands have meta', () => {
-		const bands = [makeBand(0, 0), makeBand(1, 0)];
-		expect(getEligibleBands(bands, 'partnerStart')).toEqual([]);
-		expect(getEligibleBands(bands, 'partnerEnd')).toEqual([]);
-	});
-});
 
 describe('resolvePair', () => {
 	it('returns null when band has no meta for the mode', () => {
