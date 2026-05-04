@@ -71,6 +71,35 @@
 		writeHighlight(next.source as any, fresh);
 	};
 
+	const livePair = $derived.by((): PartnerBundle | null => {
+		if (!address) return null;
+		const bands = flattenBands(address.source);
+		return resolveBaseAndPartners(bands, {
+			globule: address.globule,
+			tube: address.tube,
+			band: address.band,
+			facet: address.facet
+		});
+	});
+
+	const isStale = $derived.by(() => {
+		if (!snapshot) return false;
+		if (!livePair) return true;
+		return JSON.stringify(snapshot) !== JSON.stringify(livePair);
+	});
+
+	const handleRefresh = () => {
+		if (!address) return;
+		snapshot = livePair;
+		writeHighlight(address.source as any, livePair);
+	};
+
+	const handleClear = () => {
+		address = null;
+		snapshot = null;
+		writeHighlight(null as any, null);
+	};
+
 	const ruleArray = (key: RuleSetKey): IndexPair[] => {
 		if (key === 'withinBand') return spec.adjustments.withinBand;
 		if (key === 'acrossBands') return spec.adjustments.acrossBands;
@@ -114,6 +143,17 @@
 
 <div class="partner-editor">
 	<BaseQuadSelector value={address} onChange={handleAddressChange} />
+	{#if isStale && livePair}
+		<div class="banner">
+			⚠ Model changed
+			<button onclick={handleRefresh}>Refresh</button>
+		</div>
+	{:else if isStale && !livePair}
+		<div class="banner">
+			Selection no longer valid
+			<button onclick={handleClear}>Clear</button>
+		</div>
+	{/if}
 	<div class="row">
 		<div class="viewport-wrap">
 			{#if snapshot}
@@ -158,5 +198,16 @@
 		padding: 32px;
 		color: rgba(0, 0, 0, 0.5);
 		text-align: center;
+	}
+	.banner {
+		display: flex;
+		gap: 6px;
+		align-items: center;
+		font-size: 0.85em;
+		color: #b00020;
+		padding: 4px 8px;
+	}
+	.banner button {
+		font-size: 0.85em;
 	}
 </style>
