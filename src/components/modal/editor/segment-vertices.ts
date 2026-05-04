@@ -38,6 +38,11 @@ export const computeVertices = (unit: UnitDefinition): Vertex[] => {
 
 export const computeVerticesFromFlatPath = (path: PathSegment[]): Vertex[] => {
 	const byKey = new Map<string, Vertex>();
+	// Distorted-mode vertices need refs that resolve to the FLAT path index when
+	// fed through flatIndex(unit, ref). Using group: 'start' makes flatIndex return
+	// ref.index unchanged — so we store the flat path index there directly. The
+	// "start" group label is nominal; what matters is that flatIndex/flatIndexes
+	// produce correct flat indices for addRuleForPairing/removeRulesForPairing.
 	for (let i = 0; i < path.length; i++) {
 		const seg = path[i];
 		if (!isMovePathSegment(seg) && !isLinePathSegment(seg)) continue;
@@ -46,9 +51,9 @@ export const computeVerticesFromFlatPath = (path: PathSegment[]): Vertex[] => {
 		const key = `${x}::${y}`;
 		const existing = byKey.get(key);
 		if (existing) {
-			existing.refs.push({ group: 'middle', index: i });
+			existing.refs.push({ group: 'start', index: i });
 		} else {
-			byKey.set(key, { x, y, refs: [{ group: 'middle', index: i }] });
+			byKey.set(key, { x, y, refs: [{ group: 'start', index: i }] });
 		}
 	}
 	return Array.from(byKey.values());

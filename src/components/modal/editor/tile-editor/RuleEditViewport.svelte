@@ -95,7 +95,17 @@
 
 	const distortedConnections = $derived.by(() => {
 		if (!distortedGhost) return [];
-		const lines: { x1: number; y1: number; x2: number; y2: number }[] = [];
+		type DistortedLine = {
+			x1: number;
+			y1: number;
+			x2: number;
+			y2: number;
+			sourceVertex: Vertex;
+			targetVertex: Vertex;
+		};
+		const lines: DistortedLine[] = [];
+		const findVertexAtFlatIndex = (vs: Vertex[], idx: number): Vertex | undefined =>
+			vs.find((v) => v.refs.some((r) => r.index === idx));
 		for (const rule of rules) {
 			const t = distortedGhost.mainPath[rule.target];
 			const s = distortedGhost.ghostPath[rule.source];
@@ -105,7 +115,10 @@
 			const sx = (s as any)[1];
 			const sy = (s as any)[2];
 			if (typeof tx !== 'number' || typeof sx !== 'number') continue;
-			lines.push({ x1: tx, y1: ty, x2: sx, y2: sy });
+			const targetVertex = findVertexAtFlatIndex(distortedMainVertices, rule.target);
+			const sourceVertex = findVertexAtFlatIndex(distortedGhostVertices, rule.source);
+			if (!targetVertex || !sourceVertex) continue;
+			lines.push({ x1: tx, y1: ty, x2: sx, y2: sy, sourceVertex, targetVertex });
 		}
 		return lines;
 	});
@@ -203,14 +216,21 @@
 				style="stroke-width: {0.4 * distortedScale}"
 			/>
 
-			{#each distortedConnections as line, i (i)}
+			{#each distortedConnections as conn, i (i)}
 				<line
-					x1={line.x1}
-					y1={line.y1}
-					x2={line.x2}
-					y2={line.y2}
+					x1={conn.x1}
+					y1={conn.y1}
+					x2={conn.x2}
+					y2={conn.y2}
 					class="connection"
+					class:selected={selectedConnection?.sourceVertex === conn.sourceVertex &&
+						selectedConnection?.targetVertex === conn.targetVertex}
 					style="stroke-width: {0.3 * distortedScale}"
+					onclick={() =>
+						onSelectConnectionLine({
+							sourceVertex: conn.sourceVertex,
+							targetVertex: conn.targetVertex
+						})}
 				/>
 			{/each}
 
