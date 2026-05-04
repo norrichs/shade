@@ -380,7 +380,7 @@
 			/>
 		{/each}
 
-		{#each allConnections as conn (conn.partner.role + ':' + conn.x1 + ':' + conn.y1 + ':' + conn.x2 + ':' + conn.y2)}
+		{#each allConnections as conn, i (i)}
 			<line
 				x1={conn.x1}
 				y1={conn.y1}
