@@ -376,7 +376,20 @@
 								onSelectConnectionLine={handleSelectConnectionLine}
 							/>
 						</div>
-						<RuleList rules={getRulesForMode()} onDelete={handleDeleteRuleByIndex} />
+						<RuleList
+							rules={getRulesForMode()}
+							onDelete={handleDeleteRuleByIndex}
+							sourceColor={mode === 'partnerStart'
+								? 'rgb(180,0,0)'
+								: mode === 'partnerEnd'
+									? 'rgb(0,140,0)'
+									: undefined}
+							targetColor={mode === 'partnerStart'
+								? 'rgb(0,140,0)'
+								: mode === 'partnerEnd'
+									? 'rgb(180,0,0)'
+									: undefined}
+						/>
 					</div>
 				{:else if mode === 'skipRemove'}
 					<div class="viewport-wrap">

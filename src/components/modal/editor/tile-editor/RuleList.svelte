@@ -3,10 +3,14 @@
 
 	let {
 		rules,
-		onDelete
+		onDelete,
+		sourceColor,
+		targetColor
 	}: {
 		rules: IndexPair[];
 		onDelete: (index: number) => void;
+		sourceColor?: string;
+		targetColor?: string;
 	} = $props();
 </script>
 
@@ -18,7 +22,11 @@
 		<ul>
 			{#each rules as rule, i (i + ':' + rule.source + ':' + rule.target)}
 				<li>
-					<code>{rule.source} → {rule.target}</code>
+					<code>
+						<span style:color={sourceColor ?? 'inherit'}>{rule.source}</span>
+						<span class="arrow">→</span>
+						<span style:color={targetColor ?? 'inherit'}>{rule.target}</span>
+					</code>
 					<button onclick={() => onDelete(i)}>×</button>
 				</li>
 			{/each}
@@ -53,6 +61,14 @@
 		align-items: center;
 		font-size: 0.85em;
 		padding: 2px 4px;
+	}
+	code {
+		font-weight: bold;
+	}
+	.arrow {
+		color: rgba(0, 0, 0, 0.5);
+		margin: 0 2px;
+		font-weight: normal;
 	}
 	li:hover {
 		background-color: rgba(0, 0, 0, 0.05);

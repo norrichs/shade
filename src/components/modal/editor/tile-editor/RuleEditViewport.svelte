@@ -180,6 +180,9 @@
 			: []
 	);
 
+	const mainColor = $derived(mode === 'partnerStart' ? 'rgb(0,140,0)' : 'rgb(180,0,0)');
+	const ghostColor = $derived(mode === 'partnerStart' ? 'rgb(180,0,0)' : 'rgb(0,140,0)');
+
 	$effect(() => {
 		const onKey = (e: KeyboardEvent) => {
 			if ((e.key === 'Delete' || e.key === 'Backspace') && selectedConnection) {
@@ -291,7 +294,7 @@
 					font-size={0.8 * distortedScale}
 					text-anchor="middle"
 					dominant-baseline="text-after-edge"
-					fill="rgba(0,0,0,0.6)"
+					fill={mainColor}
 					pointer-events="none"
 					style="user-select: none;">{vertex.refs[0]?.index ?? ''}</text
 				>
@@ -304,7 +307,7 @@
 					font-size={0.8 * distortedScale}
 					text-anchor="middle"
 					dominant-baseline="text-after-edge"
-					fill="rgba(0,0,0,0.6)"
+					fill={mainColor}
 					pointer-events="none"
 					style="user-select: none;">{corner.label}</text
 				>
@@ -317,7 +320,7 @@
 					font-size={0.8 * distortedScale}
 					text-anchor="middle"
 					dominant-baseline="text-before-edge"
-					fill="rgba(0,0,0,0.4)"
+					fill={ghostColor}
 					pointer-events="none"
 					style="user-select: none;">{vertex.refs[0]?.index ?? ''}</text
 				>
@@ -330,7 +333,7 @@
 					font-size={0.8 * distortedScale}
 					text-anchor="middle"
 					dominant-baseline="text-before-edge"
-					fill="rgba(0,0,0,0.4)"
+					fill={ghostColor}
 					pointer-events="none"
 					style="user-select: none;">{corner.label}</text
 				>
