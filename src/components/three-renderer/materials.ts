@@ -105,6 +105,24 @@ export const materials = {
 		transparent: true,
 		opacity: 0.95,
 		side: DoubleSide
+	}),
+	partnerBase: new MeshStandardMaterial({
+		color: 'rgb(80, 130, 200)',
+		transparent: true,
+		opacity: 0.7,
+		side: DoubleSide
+	}),
+	partnerWithinBand: new MeshStandardMaterial({
+		color: 'rgb(180, 140, 80)',
+		transparent: true,
+		opacity: 0.7,
+		side: DoubleSide
+	}),
+	partnerAcrossBands: new MeshStandardMaterial({
+		color: 'rgb(120, 120, 120)',
+		transparent: true,
+		opacity: 0.7,
+		side: DoubleSide
 	})
 };
 

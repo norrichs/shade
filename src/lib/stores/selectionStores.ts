@@ -470,17 +470,25 @@ export const rotateToSelection = () => {
 	cameraDirection.set({ x: x / len, y: y / len, z: z / len });
 };
 
-export type ChooserPairGeometry = {
-	startGeometry: BufferGeometry | null;
-	endGeometry: BufferGeometry | null;
-} | null;
+export type HighlightRole = 'base' | 'top' | 'bottom' | 'left' | 'right';
 
-export const chooserPairGeometry = derived(
+export type PartnerHighlightEntry = {
+	role: HighlightRole;
+	geometry: BufferGeometry;
+};
+
+export const partnerHighlightGeometry = derived(
 	[partnerHighlightStore, superGlobuleStore],
-	([$partnerHighlightStore, $superGlobuleStore]): ChooserPairGeometry => {
-		if (!$partnerHighlightStore.start && !$partnerHighlightStore.end) return null;
+	([$partnerHighlightStore, $superGlobuleStore]): PartnerHighlightEntry[] => {
+		const all = [
+			$partnerHighlightStore.base,
+			$partnerHighlightStore.top,
+			$partnerHighlightStore.bottom,
+			$partnerHighlightStore.left,
+			$partnerHighlightStore.right
+		];
+		if (all.every((a) => a === null)) return [];
 
-		// Pick the right 3D tube collection based on which cut-pattern source the chooser used.
 		const tubesForSource = (globuleIdx: number) => {
 			const proj = $superGlobuleStore.projections[globuleIdx];
 			if ($partnerHighlightStore.source === 'surface') return proj?.surfaceProjectionTubes;
@@ -488,8 +496,6 @@ export const chooserPairGeometry = derived(
 			return proj?.tubes;
 		};
 
-		// Cut-pattern facet index is a QUAD index (one CutPattern = one quad).
-		// 3D bands.facets are TRIANGLES — each quad maps to triangles 2n and 2n+1.
 		const facetToGeometry = (addr: GlobuleAddress_Facet | null): BufferGeometry | null => {
 			if (!addr) return null;
 			const tubes = tubesForSource(addr.globule);
@@ -498,22 +504,21 @@ export const chooserPairGeometry = derived(
 			const t1 = band.facets[addr.facet * 2];
 			const t2 = band.facets[addr.facet * 2 + 1];
 			const points = [];
-			if (t1?.triangle) {
-				points.push(t1.triangle.a, t1.triangle.b, t1.triangle.c);
-			}
-			if (t2?.triangle) {
-				points.push(t2.triangle.a, t2.triangle.b, t2.triangle.c);
-			}
+			if (t1?.triangle) points.push(t1.triangle.a, t1.triangle.b, t1.triangle.c);
+			if (t2?.triangle) points.push(t2.triangle.a, t2.triangle.b, t2.triangle.c);
 			if (points.length === 0) return null;
 			const geom = new BufferGeometry().setFromPoints(points);
 			geom.computeVertexNormals();
 			return geom;
 		};
 
-		return {
-			startGeometry: facetToGeometry($partnerHighlightStore.start),
-			endGeometry: facetToGeometry($partnerHighlightStore.end)
-		};
+		const entries: PartnerHighlightEntry[] = [];
+		const roles: HighlightRole[] = ['base', 'top', 'bottom', 'left', 'right'];
+		for (const role of roles) {
+			const g = facetToGeometry($partnerHighlightStore[role]);
+			if (g) entries.push({ role, geometry: g });
+		}
+		return entries;
 	}
 );
 

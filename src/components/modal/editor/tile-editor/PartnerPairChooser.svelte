@@ -76,13 +76,16 @@
 
 	const writeHighlight = (sourced: SourcedBand | undefined, fresh: ResolvedPair | null) => {
 		if (!sourced || !fresh) {
-			partnerHighlightStore.set({ source: 'projection', start: null, end: null });
+			partnerHighlightStore.set({ source: 'projection', base: null, top: null, bottom: null, left: null, right: null });
 			return;
 		}
 		partnerHighlightStore.set({
 			source: sourced.source,
-			start: mode === 'partnerStart' ? fresh.mainAddress : fresh.ghostAddress,
-			end: mode === 'partnerEnd' ? fresh.mainAddress : fresh.ghostAddress
+			base: null,
+			top: null,
+			bottom: null,
+			left: null,
+			right: null
 		});
 	};
 
@@ -132,7 +135,7 @@
 	};
 
 	onDestroy(() => {
-		partnerHighlightStore.set({ source: 'projection', start: null, end: null });
+		partnerHighlightStore.set({ source: 'projection', base: null, top: null, bottom: null, left: null, right: null });
 	});
 </script>
 

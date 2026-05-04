@@ -5,12 +5,18 @@ export type PartnerHighlightSource = 'projection' | 'surface' | 'globuleTube';
 
 export type PartnerHighlight = {
 	source: PartnerHighlightSource;
-	start: GlobuleAddress_Facet | null;
-	end: GlobuleAddress_Facet | null;
+	base: GlobuleAddress_Facet | null;
+	top: GlobuleAddress_Facet | null;
+	bottom: GlobuleAddress_Facet | null;
+	left: GlobuleAddress_Facet | null;
+	right: GlobuleAddress_Facet | null;
 };
 
 export const partnerHighlightStore = writable<PartnerHighlight>({
 	source: 'projection',
-	start: null,
-	end: null
+	base: null,
+	top: null,
+	bottom: null,
+	left: null,
+	right: null
 });
