@@ -4,6 +4,7 @@
 	import type { IndexPair } from '$lib/patterns/spec-types';
 	import { svgPathStringFromSegments } from '$lib/patterns/utils';
 	import type { Vertex } from '../segment-vertices';
+	import { computeVerticesFromFlatPath } from '../segment-vertices';
 	import type { PartnerBundle, PartnerRole, ResolvedPartner } from './partner-neighbors';
 
 	export type PartnerSelection = {
@@ -170,6 +171,75 @@
 	const partnersList = $derived(
 		[tTop, tBottom, tLeft, tRight].filter((p): p is NonNullable<typeof tTop> => p !== null)
 	);
+
+	const baseVertices = $derived(computeVerticesFromFlatPath(tBasePath));
+	const partnerVertices = $derived(
+		new Map(partnersList.map((p) => [p.role, computeVerticesFromFlatPath(p.path)]))
+	);
+
+	let selectedConnection: {
+		partnerRole: PartnerRole;
+		baseVertex: Vertex;
+		partnerVertex: Vertex;
+	} | null = $state(null);
+
+	const findVertexAtFlatIndex = (vs: Vertex[], idx: number): Vertex | undefined =>
+		vs.find((v) => v.refs.some((r) => r.index === idx));
+
+	type ConnectionLine = {
+		partner: ResolvedPartner;
+		baseVertex: Vertex;
+		partnerVertex: Vertex;
+		x1: number;
+		y1: number;
+		x2: number;
+		y2: number;
+	};
+
+	const connectionsFor = (rules: IndexPair[], partner: ResolvedPartner | null): ConnectionLine[] => {
+		if (!partner) return [];
+		const pVerts = partnerVertices.get(partner.role) ?? [];
+		const out: ConnectionLine[] = [];
+		for (const rule of rules) {
+			const t = tBasePath[rule.target];
+			const s = partner.path[rule.source];
+			if (!t || !s) continue;
+			const tx = (t as any)[1];
+			const ty = (t as any)[2];
+			const sx = (s as any)[1];
+			const sy = (s as any)[2];
+			if (typeof tx !== 'number' || typeof sx !== 'number') continue;
+			const baseV = findVertexAtFlatIndex(baseVertices, rule.target);
+			const partnerV = findVertexAtFlatIndex(pVerts, rule.source);
+			if (!baseV || !partnerV) continue;
+			out.push({ partner, baseVertex: baseV, partnerVertex: partnerV, x1: tx, y1: ty, x2: sx, y2: sy });
+		}
+		return out;
+	};
+
+	const allConnections = $derived.by(() => {
+		const out: ConnectionLine[] = [];
+		if (tTop) out.push(...connectionsFor(tTop.ruleSet === 'withinBand' ? withinBand : partnerEndEnd, tTop));
+		if (tBottom) out.push(...connectionsFor(tBottom.ruleSet === 'withinBand' ? withinBand : partnerStartEnd, tBottom));
+		if (tLeft) out.push(...connectionsFor(acrossBands, tLeft));
+		if (tRight) out.push(...connectionsFor(acrossBands, tRight));
+		return out;
+	});
+
+	$effect(() => {
+		const onKey = (e: KeyboardEvent) => {
+			if ((e.key === 'Delete' || e.key === 'Backspace') && selectedConnection) {
+				const partner = partnersList.find((p) => p.role === selectedConnection!.partnerRole);
+				if (partner) {
+					onDeleteConnection(partner, selectedConnection.baseVertex, selectedConnection.partnerVertex);
+					selectedConnection = null;
+				}
+			}
+			if (e.key === 'Escape') selectedConnection = null;
+		};
+		window.addEventListener('keydown', onKey);
+		return () => window.removeEventListener('keydown', onKey);
+	});
 </script>
 
 <div class="container" style:width="{size.width}px" style:height="{size.height}px">
@@ -224,6 +294,26 @@
 				style:stroke-width="{0.4 * scale}"
 			/>
 		{/each}
+
+		{#each allConnections as conn (conn.partner.role + ':' + conn.x1 + ':' + conn.y1 + ':' + conn.x2 + ':' + conn.y2)}
+			<line
+				x1={conn.x1}
+				y1={conn.y1}
+				x2={conn.x2}
+				y2={conn.y2}
+				class="connection"
+				class:selected={selectedConnection?.partnerRole === conn.partner.role &&
+					selectedConnection?.baseVertex === conn.baseVertex &&
+					selectedConnection?.partnerVertex === conn.partnerVertex}
+				style:stroke-width="{0.3 * scale}"
+				onclick={() =>
+					(selectedConnection = {
+						partnerRole: conn.partner.role,
+						baseVertex: conn.baseVertex,
+						partnerVertex: conn.partnerVertex
+					})}
+			/>
+		{/each}
 	</svg>
 </div>
 
@@ -238,5 +328,16 @@
 	.canvas {
 		background-color: beige;
 		display: block;
+	}
+	.connection {
+		stroke: rgba(0, 100, 200, 0.7);
+		stroke-width: 0.3;
+		cursor: pointer;
+	}
+	.connection:hover {
+		stroke: rgba(0, 100, 200, 1);
+	}
+	.connection.selected {
+		stroke: red;
 	}
 </style>
