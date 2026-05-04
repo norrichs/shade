@@ -43,26 +43,25 @@
 	let pendingBand: number | null = $state(null);
 	let pendingFacet: number | null = $state(null);
 
-	// Sync pending state from external value (e.g. parent reset). Guard against
-	// no-op writes so we don't fire onChange in a loop.
+	// Sync pending state from external value only when value transitions externally
+	// (e.g. parent reset via the Clear button, or an external set). Don't fight our
+	// own partial-selection state — `setSelections` calls `onChange(null)` during
+	// partial selection, and we must not echo that back into pending.
+	let lastValue: BaseQuadAddress | null = null;
 	$effect(() => {
-		const next = {
-			source: value?.source ?? null,
-			tube: value?.tube ?? null,
-			band: value?.band ?? null,
-			facet: value?.facet ?? null
-		};
-		if (
-			next.source !== pendingSource ||
-			next.tube !== pendingTube ||
-			next.band !== pendingBand ||
-			next.facet !== pendingFacet
-		) {
-			pendingSource = next.source;
-			pendingTube = next.tube;
-			pendingBand = next.band;
-			pendingFacet = next.facet;
+		if (value === lastValue) return;
+		if (value === null) {
+			pendingSource = null;
+			pendingTube = null;
+			pendingBand = null;
+			pendingFacet = null;
+		} else {
+			pendingSource = value.source;
+			pendingTube = value.tube;
+			pendingBand = value.band;
+			pendingFacet = value.facet;
 		}
+		lastValue = value;
 	});
 
 	const setSelections = (
