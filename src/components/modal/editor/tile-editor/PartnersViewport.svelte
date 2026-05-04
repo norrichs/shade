@@ -147,6 +147,26 @@
 		return ROLE_FILL[role];
 	};
 
+	const ORIGINAL_STROKE: Record<PartnerRole | 'base', string> = {
+		base: 'rgba(40, 70, 130, 0.3)',
+		top: 'rgba(120, 80, 30, 0.3)',
+		bottom: 'rgba(120, 80, 30, 0.3)',
+		left: 'rgba(60, 60, 60, 0.3)',
+		right: 'rgba(60, 60, 60, 0.3)'
+	};
+	const ORIGINAL_STROKE_CROSS_TUBE_TOP = 'rgba(0, 90, 0, 0.3)';
+	const ORIGINAL_STROKE_CROSS_TUBE_BOTTOM = 'rgba(90, 0, 0, 0.3)';
+
+	const originalStrokeFor = (
+		role: PartnerRole | 'base',
+		partner: ResolvedPartner | null
+	): string => {
+		if (role === 'base') return ORIGINAL_STROKE.base;
+		if (partner?.ruleSet === 'partner.endEnd') return ORIGINAL_STROKE_CROSS_TUBE_TOP;
+		if (partner?.ruleSet === 'partner.startEnd') return ORIGINAL_STROKE_CROSS_TUBE_BOTTOM;
+		return ORIGINAL_STROKE[role];
+	};
+
 	const partnersList = $derived(
 		[tTop, tBottom, tLeft, tRight].filter((p): p is NonNullable<typeof tTop> => p !== null)
 	);
@@ -168,6 +188,40 @@
 				stroke="rgba(0,0,0,0.1)"
 				stroke-width={0.2 * scale}
 				stroke-dasharray="{0.5 * scale},{0.5 * scale}"
+			/>
+		{/each}
+
+		{#if tBaseOriginal}
+			<path
+				d={svgPathStringFromSegments(tBaseOriginal)}
+				fill="none"
+				stroke={originalStrokeFor('base', null)}
+				style:stroke-width="{0.4 * scale}"
+			/>
+		{/if}
+		{#each partnersList as p (p.role + ':orig')}
+			{#if p.originalPath}
+				<path
+					d={svgPathStringFromSegments(p.originalPath)}
+					fill="none"
+					stroke={originalStrokeFor(p.role, p)}
+					style:stroke-width="{0.4 * scale}"
+				/>
+			{/if}
+		{/each}
+
+		<path
+			d={svgPathStringFromSegments(tBasePath)}
+			fill="none"
+			stroke="black"
+			style:stroke-width="{0.4 * scale}"
+		/>
+		{#each partnersList as p (p.role + ':path')}
+			<path
+				d={svgPathStringFromSegments(p.path)}
+				fill="none"
+				stroke="black"
+				style:stroke-width="{0.4 * scale}"
 			/>
 		{/each}
 	</svg>
