@@ -5,13 +5,21 @@
 		rules,
 		onDelete,
 		sourceColor,
-		targetColor
+		targetColor,
+		hoveredKeys = new Set(),
+		onHoverRule,
+		onClearHover
 	}: {
 		rules: IndexPair[];
 		onDelete: (index: number) => void;
 		sourceColor?: string;
 		targetColor?: string;
+		hoveredKeys?: Set<string>;
+		onHoverRule?: (rule: IndexPair) => void;
+		onClearHover?: () => void;
 	} = $props();
+
+	const ruleKey = (target: number, source: number): string => `${target}:${source}`;
 </script>
 
 <div class="rule-list">
@@ -21,7 +29,12 @@
 	{:else}
 		<ul>
 			{#each rules as rule, i (i + ':' + rule.source + ':' + rule.target)}
-				<li>
+				<li
+					class:highlighted={hoveredKeys.has(ruleKey(rule.target, rule.source))}
+					onmouseenter={() => onHoverRule?.(rule)}
+					onmouseleave={() => onClearHover?.()}
+					role="presentation"
+				>
 					<code>
 						<span style:color={sourceColor ?? 'inherit'}>{rule.source}</span>
 						<span class="arrow">→</span>
@@ -72,6 +85,10 @@
 	}
 	li:hover {
 		background-color: rgba(0, 0, 0, 0.05);
+	}
+	li.highlighted {
+		border: 1px solid rgba(255, 0, 255, 0.3);
+		padding: 1px 3px;
 	}
 	button {
 		background: none;

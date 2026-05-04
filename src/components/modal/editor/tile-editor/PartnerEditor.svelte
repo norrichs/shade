@@ -136,6 +136,17 @@
 		setRuleArray(key, arr.filter((_, i) => i !== index));
 	};
 
+	let hoveredKeys: Set<string> = $state(new Set());
+	const handleHoverLine = (keys: string[]) => {
+		hoveredKeys = new Set(keys);
+	};
+	const handleHoverRule = (rule: IndexPair) => {
+		hoveredKeys = new Set([`${rule.target}:${rule.source}`]);
+	};
+	const handleClearHover = () => {
+		hoveredKeys = new Set();
+	};
+
 	onDestroy(() => {
 		partnerHighlightStore.set({ source: 'projection', base: null, top: null, bottom: null, left: null, right: null });
 	});
@@ -163,6 +174,9 @@
 					acrossBands={spec.adjustments.acrossBands}
 					partnerStartEnd={spec.adjustments.partner.startEnd}
 					partnerEndEnd={spec.adjustments.partner.endEnd}
+					{hoveredKeys}
+					onHoverLine={handleHoverLine}
+					onClearHover={handleClearHover}
 					onAddRule={handleAddRule}
 					onDeleteConnection={handleDeleteConnection}
 				/>
@@ -175,6 +189,9 @@
 			acrossBands={spec.adjustments.acrossBands}
 			partnerStartEnd={spec.adjustments.partner.startEnd}
 			partnerEndEnd={spec.adjustments.partner.endEnd}
+			{hoveredKeys}
+			onHoverRule={handleHoverRule}
+			onClearHover={handleClearHover}
 			onDelete={handleDeleteIndex}
 		/>
 	</div>

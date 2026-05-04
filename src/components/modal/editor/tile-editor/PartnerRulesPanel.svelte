@@ -8,12 +8,18 @@
 		acrossBands,
 		partnerStartEnd,
 		partnerEndEnd,
+		hoveredKeys = new Set(),
+		onHoverRule,
+		onClearHover,
 		onDelete
 	}: {
 		withinBand: IndexPair[];
 		acrossBands: IndexPair[];
 		partnerStartEnd: IndexPair[];
 		partnerEndEnd: IndexPair[];
+		hoveredKeys?: Set<string>;
+		onHoverRule?: (rule: IndexPair) => void;
+		onClearHover?: () => void;
 		onDelete: (ruleSet: RuleSetKey, index: number) => void;
 	} = $props();
 </script>
@@ -26,6 +32,9 @@
 			onDelete={(i) => onDelete('withinBand', i)}
 			sourceColor="rgb(120, 80, 30)"
 			targetColor="rgb(80, 130, 200)"
+			{hoveredKeys}
+			{onHoverRule}
+			{onClearHover}
 		/>
 	</div>
 	<div class="section">
@@ -35,6 +44,9 @@
 			onDelete={(i) => onDelete('acrossBands', i)}
 			sourceColor="rgb(60, 60, 60)"
 			targetColor="rgb(80, 130, 200)"
+			{hoveredKeys}
+			{onHoverRule}
+			{onClearHover}
 		/>
 	</div>
 	<div class="section">
@@ -44,6 +56,9 @@
 			onDelete={(i) => onDelete('partner.startEnd', i)}
 			sourceColor="rgb(180, 0, 0)"
 			targetColor="rgb(80, 130, 200)"
+			{hoveredKeys}
+			{onHoverRule}
+			{onClearHover}
 		/>
 	</div>
 	<div class="section">
@@ -53,6 +68,9 @@
 			onDelete={(i) => onDelete('partner.endEnd', i)}
 			sourceColor="rgb(0, 140, 0)"
 			targetColor="rgb(80, 130, 200)"
+			{hoveredKeys}
+			{onHoverRule}
+			{onClearHover}
 		/>
 	</div>
 </div>

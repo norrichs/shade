@@ -19,6 +19,9 @@
 		partnerStartEnd,
 		partnerEndEnd,
 		size = { width: 800, height: 500 },
+		hoveredKeys = new Set(),
+		onHoverLine,
+		onClearHover,
 		onAddRule,
 		onDeleteConnection
 	}: {
@@ -28,6 +31,9 @@
 		partnerStartEnd: IndexPair[];
 		partnerEndEnd: IndexPair[];
 		size?: { width: number; height: number };
+		hoveredKeys?: Set<string>;
+		onHoverLine?: (keys: string[]) => void;
+		onClearHover?: () => void;
 		onAddRule: (partner: ResolvedPartner, baseVertex: Vertex, partnerVertex: Vertex) => void;
 		onDeleteConnection: (
 			partner: ResolvedPartner,
@@ -35,6 +41,8 @@
 			partnerVertex: Vertex
 		) => void;
 	} = $props();
+
+	const ruleKey = (target: number, source: number): string => `${target}:${source}`;
 
 	type Pt = { x: number; y: number };
 
@@ -190,6 +198,8 @@
 		partner: ResolvedPartner;
 		baseVertex: Vertex;
 		partnerVertex: Vertex;
+		target: number;
+		source: number;
 		x1: number;
 		y1: number;
 		x2: number;
@@ -212,7 +222,17 @@
 			const baseV = findVertexAtFlatIndex(baseVertices, rule.target);
 			const partnerV = findVertexAtFlatIndex(pVerts, rule.source);
 			if (!baseV || !partnerV) continue;
-			out.push({ partner, baseVertex: baseV, partnerVertex: partnerV, x1: tx, y1: ty, x2: sx, y2: sy });
+			out.push({
+				partner,
+				baseVertex: baseV,
+				partnerVertex: partnerV,
+				target: rule.target,
+				source: rule.source,
+				x1: tx,
+				y1: ty,
+				x2: sx,
+				y2: sy
+			});
 		}
 		return out;
 	};
@@ -381,6 +401,7 @@
 		{/each}
 
 		{#each allConnections as conn, i (i)}
+			{@const highlighted = hoveredKeys.has(ruleKey(conn.target, conn.source))}
 			<line
 				x1={conn.x1}
 				y1={conn.y1}
@@ -390,13 +411,22 @@
 				class:selected={selectedConnection?.partnerRole === conn.partner.role &&
 					selectedConnection?.baseVertex === conn.baseVertex &&
 					selectedConnection?.partnerVertex === conn.partnerVertex}
-				style:stroke-width="{0.3 * scale}"
+				class:highlighted
+				style:stroke-width={highlighted ? 0.6 * scale : 0.3 * scale}
 				onclick={() =>
 					(selectedConnection = {
 						partnerRole: conn.partner.role,
 						baseVertex: conn.baseVertex,
 						partnerVertex: conn.partnerVertex
 					})}
+				onmouseenter={() => {
+					const matches = allConnections.filter(
+						(c) =>
+							c.x1 === conn.x1 && c.y1 === conn.y1 && c.x2 === conn.x2 && c.y2 === conn.y2
+					);
+					onHoverLine?.(matches.map((c) => ruleKey(c.target, c.source)));
+				}}
+				onmouseleave={() => onClearHover?.()}
 			/>
 		{/each}
 
@@ -497,6 +527,9 @@
 	}
 	.connection.selected {
 		stroke: red;
+	}
+	.connection.highlighted {
+		stroke: magenta;
 	}
 	.base-vertex {
 		fill: white;
