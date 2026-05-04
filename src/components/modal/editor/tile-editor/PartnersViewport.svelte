@@ -126,11 +126,50 @@
 		const span = Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys));
 		return Math.max(span / 42, 0.5);
 	});
+
+	const ROLE_FILL: Record<PartnerRole | 'base', string> = {
+		base: 'rgba(80, 130, 200, 0.1)',
+		top: 'rgba(180, 140, 80, 0.1)',
+		bottom: 'rgba(180, 140, 80, 0.1)',
+		left: 'rgba(120, 120, 120, 0.1)',
+		right: 'rgba(120, 120, 120, 0.1)'
+	};
+	const ROLE_FILL_CROSS_TUBE_TOP = 'rgba(0, 200, 0, 0.1)';
+	const ROLE_FILL_CROSS_TUBE_BOTTOM = 'rgba(220, 0, 0, 0.1)';
+
+	const fillFor = (
+		role: PartnerRole | 'base',
+		partner: ResolvedPartner | null
+	): string => {
+		if (role === 'base') return ROLE_FILL.base;
+		if (partner?.ruleSet === 'partner.endEnd') return ROLE_FILL_CROSS_TUBE_TOP;
+		if (partner?.ruleSet === 'partner.startEnd') return ROLE_FILL_CROSS_TUBE_BOTTOM;
+		return ROLE_FILL[role];
+	};
+
+	const partnersList = $derived(
+		[tTop, tBottom, tLeft, tRight].filter((p): p is NonNullable<typeof tTop> => p !== null)
+	);
 </script>
 
 <div class="container" style:width="{size.width}px" style:height="{size.height}px">
 	<svg width={size.width} height={size.height} {viewBox} class="canvas">
-		<!-- placeholder; quads, paths, vertices added in subsequent tasks -->
+		<polygon
+			points="{tBaseQuad.a.x},{tBaseQuad.a.y} {tBaseQuad.b.x},{tBaseQuad.b.y} {tBaseQuad.c.x},{tBaseQuad.c.y} {tBaseQuad.d.x},{tBaseQuad.d.y}"
+			style:fill={fillFor('base', null)}
+			stroke="rgba(0,0,0,0.15)"
+			stroke-width={0.2 * scale}
+			stroke-dasharray="{0.5 * scale},{0.5 * scale}"
+		/>
+		{#each partnersList as p (p.role)}
+			<polygon
+				points="{p.quad.a.x},{p.quad.a.y} {p.quad.b.x},{p.quad.b.y} {p.quad.c.x},{p.quad.c.y} {p.quad.d.x},{p.quad.d.y}"
+				style:fill={fillFor(p.role, p)}
+				stroke="rgba(0,0,0,0.1)"
+				stroke-width={0.2 * scale}
+				stroke-dasharray="{0.5 * scale},{0.5 * scale}"
+			/>
+		{/each}
 	</svg>
 </div>
 
