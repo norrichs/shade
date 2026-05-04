@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { IndexPair, TiledPatternSpec } from '$lib/patterns/spec-types';
+	import type { PathSegment, Quadrilateral } from '$lib/types';
 	import { svgPathStringFromSegments } from '$lib/patterns/utils';
 	import { getCanvas, type PathEditorConfig } from '../path-editor-shared';
 	import { computeVertices, computeVerticesFromFlatPath, type Vertex } from '../segment-vertices';
@@ -58,49 +59,99 @@
 		{ label: 'd', ...ghostTransform(mode, spec.unit, { x: 0, y: 0 }) }
 	]);
 
-	const distortedViewBox = $derived.by(() => {
+	// Re-orient the distorted geometry so the shared edge between the two quads
+	// is horizontal and centered on (0, 0). Labels read upright because we
+	// transform coordinates here in JS — no SVG-level rotation that would also
+	// rotate the text.
+	const viewportTransform = $derived.by(() => {
 		if (!distortedGhost) return null;
+		const q = distortedGhost.mainQuad;
+		const [p1, p2] = mode === 'partnerStart' ? [q.a, q.b] : [q.c, q.d];
+		const refX = (p1.x + p2.x) / 2;
+		const refY = (p1.y + p2.y) / 2;
+		const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+		return { refX, refY, cos: Math.cos(-angle), sin: Math.sin(-angle) };
+	});
+
+	const tp = (x: number, y: number): { x: number; y: number } => {
+		if (!viewportTransform) return { x, y };
+		const dx = x - viewportTransform.refX;
+		const dy = y - viewportTransform.refY;
+		return {
+			x: viewportTransform.cos * dx - viewportTransform.sin * dy,
+			y: viewportTransform.sin * dx + viewportTransform.cos * dy
+		};
+	};
+
+	const transformPath = (path: PathSegment[]): PathSegment[] =>
+		path.map((seg) => {
+			if (seg[0] === 'M' || seg[0] === 'L') {
+				const p = tp(seg[1], seg[2]);
+				return [seg[0], p.x, p.y];
+			}
+			return seg;
+		});
+
+	const transformViewportQuad = (q: Quadrilateral): Quadrilateral =>
+		({
+			a: { ...tp(q.a.x, q.a.y), z: q.a.z },
+			b: { ...tp(q.b.x, q.b.y), z: q.b.z },
+			c: { ...tp(q.c.x, q.c.y), z: q.c.z },
+			d: { ...tp(q.d.x, q.d.y), z: q.d.z }
+		}) as unknown as Quadrilateral;
+
+	const tMainQuad = $derived(
+		distortedGhost ? transformViewportQuad(distortedGhost.mainQuad) : null
+	);
+	const tGhostQuad = $derived(
+		distortedGhost ? transformViewportQuad(distortedGhost.ghostQuad) : null
+	);
+	const tMainPath = $derived(distortedGhost ? transformPath(distortedGhost.mainPath) : []);
+	const tGhostPath = $derived(distortedGhost ? transformPath(distortedGhost.ghostPath) : []);
+	const tMainOriginalPath = $derived(
+		distortedGhost?.mainOriginalPath ? transformPath(distortedGhost.mainOriginalPath) : null
+	);
+	const tGhostOriginalPath = $derived(
+		distortedGhost?.ghostOriginalPath ? transformPath(distortedGhost.ghostOriginalPath) : null
+	);
+
+	const distortedViewBox = $derived.by(() => {
+		if (!tMainQuad || !tGhostQuad) return null;
 		const allCorners = [
-			distortedGhost.mainQuad.a,
-			distortedGhost.mainQuad.b,
-			distortedGhost.mainQuad.c,
-			distortedGhost.mainQuad.d,
-			distortedGhost.ghostQuad.a,
-			distortedGhost.ghostQuad.b,
-			distortedGhost.ghostQuad.c,
-			distortedGhost.ghostQuad.d
+			tMainQuad.a,
+			tMainQuad.b,
+			tMainQuad.c,
+			tMainQuad.d,
+			tGhostQuad.a,
+			tGhostQuad.b,
+			tGhostQuad.c,
+			tGhostQuad.d
 		];
 		const xs = allCorners.map((p: any) => p.x);
 		const ys = allCorners.map((p: any) => p.y);
 		const padding = 4;
-		const left = Math.min(...xs) - padding;
-		const top = Math.min(...ys) - padding;
-		const width = Math.max(...xs) - Math.min(...xs) + padding * 2;
-		const height = Math.max(...ys) - Math.min(...ys) + padding * 2;
-		return `${left} ${top} ${width} ${height}`;
+		const halfWidth = Math.max(Math.abs(Math.min(...xs)), Math.abs(Math.max(...xs))) + padding;
+		const halfHeight = Math.max(Math.abs(Math.min(...ys)), Math.abs(Math.max(...ys))) + padding;
+		return `${-halfWidth} ${-halfHeight} ${halfWidth * 2} ${halfHeight * 2}`;
 	});
 
 	const distortedMainPathStr = $derived(
-		distortedGhost ? svgPathStringFromSegments(distortedGhost.mainPath) : ''
+		tMainPath.length > 0 ? svgPathStringFromSegments(tMainPath) : ''
 	);
 	const distortedGhostPathStr = $derived(
-		distortedGhost ? svgPathStringFromSegments(distortedGhost.ghostPath) : ''
+		tGhostPath.length > 0 ? svgPathStringFromSegments(tGhostPath) : ''
 	);
 	const distortedMainOriginalPathStr = $derived(
-		distortedGhost?.mainOriginalPath
-			? svgPathStringFromSegments(distortedGhost.mainOriginalPath)
-			: ''
+		tMainOriginalPath ? svgPathStringFromSegments(tMainOriginalPath) : ''
 	);
 	const distortedGhostOriginalPathStr = $derived(
-		distortedGhost?.ghostOriginalPath
-			? svgPathStringFromSegments(distortedGhost.ghostOriginalPath)
-			: ''
+		tGhostOriginalPath ? svgPathStringFromSegments(tGhostOriginalPath) : ''
 	);
 	const distortedMainVertices = $derived(
-		distortedGhost ? computeVerticesFromFlatPath(distortedGhost.mainPath) : []
+		tMainPath.length > 0 ? computeVerticesFromFlatPath(tMainPath) : []
 	);
 	const distortedGhostVertices = $derived(
-		distortedGhost ? computeVerticesFromFlatPath(distortedGhost.ghostPath) : []
+		tGhostPath.length > 0 ? computeVerticesFromFlatPath(tGhostPath) : []
 	);
 
 	const distortedConnections = $derived.by(() => {
@@ -117,8 +168,8 @@
 		const findVertexAtFlatIndex = (vs: Vertex[], idx: number): Vertex | undefined =>
 			vs.find((v) => v.refs.some((r) => r.index === idx));
 		for (const rule of rules) {
-			const t = distortedGhost.mainPath[rule.target];
-			const s = distortedGhost.ghostPath[rule.source];
+			const t = tMainPath[rule.target];
+			const s = tGhostPath[rule.source];
 			if (!t || !s) continue;
 			const tx = (t as any)[1];
 			const ty = (t as any)[2];
@@ -138,16 +189,16 @@
 	// viewBox can be much larger or smaller, so without scaling, paths look
 	// either hairline-thin or excessively thick.
 	const distortedScale = $derived.by(() => {
-		if (!distortedGhost) return 1;
+		if (!tMainQuad || !tGhostQuad) return 1;
 		const allCorners = [
-			distortedGhost.mainQuad.a,
-			distortedGhost.mainQuad.b,
-			distortedGhost.mainQuad.c,
-			distortedGhost.mainQuad.d,
-			distortedGhost.ghostQuad.a,
-			distortedGhost.ghostQuad.b,
-			distortedGhost.ghostQuad.c,
-			distortedGhost.ghostQuad.d
+			tMainQuad.a,
+			tMainQuad.b,
+			tMainQuad.c,
+			tMainQuad.d,
+			tGhostQuad.a,
+			tGhostQuad.b,
+			tGhostQuad.c,
+			tGhostQuad.d
 		];
 		const xs = allCorners.map((p: any) => p.x);
 		const ys = allCorners.map((p: any) => p.y);
@@ -160,22 +211,22 @@
 	});
 
 	const distortedMainCorners = $derived(
-		distortedGhost
+		tMainQuad
 			? [
-					{ label: 'a', x: distortedGhost.mainQuad.a.x, y: distortedGhost.mainQuad.a.y },
-					{ label: 'b', x: distortedGhost.mainQuad.b.x, y: distortedGhost.mainQuad.b.y },
-					{ label: 'c', x: distortedGhost.mainQuad.c.x, y: distortedGhost.mainQuad.c.y },
-					{ label: 'd', x: distortedGhost.mainQuad.d.x, y: distortedGhost.mainQuad.d.y }
+					{ label: 'a', x: tMainQuad.a.x, y: tMainQuad.a.y },
+					{ label: 'b', x: tMainQuad.b.x, y: tMainQuad.b.y },
+					{ label: 'c', x: tMainQuad.c.x, y: tMainQuad.c.y },
+					{ label: 'd', x: tMainQuad.d.x, y: tMainQuad.d.y }
 				]
 			: []
 	);
 	const distortedGhostCorners = $derived(
-		distortedGhost
+		tGhostQuad
 			? [
-					{ label: 'a', x: distortedGhost.ghostQuad.a.x, y: distortedGhost.ghostQuad.a.y },
-					{ label: 'b', x: distortedGhost.ghostQuad.b.x, y: distortedGhost.ghostQuad.b.y },
-					{ label: 'c', x: distortedGhost.ghostQuad.c.x, y: distortedGhost.ghostQuad.c.y },
-					{ label: 'd', x: distortedGhost.ghostQuad.d.x, y: distortedGhost.ghostQuad.d.y }
+					{ label: 'a', x: tGhostQuad.a.x, y: tGhostQuad.a.y },
+					{ label: 'b', x: tGhostQuad.b.x, y: tGhostQuad.b.y },
+					{ label: 'c', x: tGhostQuad.c.x, y: tGhostQuad.c.y },
+					{ label: 'd', x: tGhostQuad.d.x, y: tGhostQuad.d.y }
 				]
 			: []
 	);
@@ -203,21 +254,22 @@
 			viewBox={distortedViewBox}
 			class="canvas"
 		>
-			<polygon
-				points="{distortedGhost.mainQuad.a.x},{distortedGhost.mainQuad.a.y} {distortedGhost.mainQuad
-					.b.x},{distortedGhost.mainQuad.b.y} {distortedGhost.mainQuad.c.x},{distortedGhost.mainQuad
-					.c.y} {distortedGhost.mainQuad.d.x},{distortedGhost.mainQuad.d.y}"
-				class="unit-bounds"
-				style="fill: {mode === 'partnerStart' ? 'rgba(0,255,0,0.1)' : 'rgba(255,0,0,0.1)'}"
-			/>
-			<polygon
-				points="{distortedGhost.ghostQuad.a.x},{distortedGhost.ghostQuad.a.y} {distortedGhost
-					.ghostQuad.b.x},{distortedGhost.ghostQuad.b.y} {distortedGhost.ghostQuad.c
-					.x},{distortedGhost.ghostQuad.c.y} {distortedGhost.ghostQuad.d.x},{distortedGhost
-					.ghostQuad.d.y}"
-				class="ghost-bounds"
-				style="fill: {mode === 'partnerStart' ? 'rgba(255,0,0,0.1)' : 'rgba(0,255,0,0.1)'}"
-			/>
+			{#if tMainQuad}
+				<polygon
+					points="{tMainQuad.a.x},{tMainQuad.a.y} {tMainQuad.b.x},{tMainQuad.b.y} {tMainQuad.c
+						.x},{tMainQuad.c.y} {tMainQuad.d.x},{tMainQuad.d.y}"
+					class="unit-bounds"
+					style="fill: {mode === 'partnerStart' ? 'rgba(0,255,0,0.1)' : 'rgba(255,0,0,0.1)'}"
+				/>
+			{/if}
+			{#if tGhostQuad}
+				<polygon
+					points="{tGhostQuad.a.x},{tGhostQuad.a.y} {tGhostQuad.b.x},{tGhostQuad.b.y} {tGhostQuad.c
+						.x},{tGhostQuad.c.y} {tGhostQuad.d.x},{tGhostQuad.d.y}"
+					class="ghost-bounds"
+					style="fill: {mode === 'partnerStart' ? 'rgba(255,0,0,0.1)' : 'rgba(0,255,0,0.1)'}"
+				/>
+			{/if}
 			{#if distortedMainOriginalPathStr}
 				<path
 					d={distortedMainOriginalPathStr}
