@@ -242,6 +242,53 @@
 		selectedBaseVertex = null;
 	};
 
+	const ROLE_LABEL_COLOR: Record<PartnerRole | 'base', string> = {
+		base: 'rgb(80, 130, 200)',
+		top: 'rgb(120, 80, 30)',
+		bottom: 'rgb(120, 80, 30)',
+		left: 'rgb(60, 60, 60)',
+		right: 'rgb(60, 60, 60)'
+	};
+	const ROLE_LABEL_CROSS_TOP = 'rgb(0, 140, 0)';
+	const ROLE_LABEL_CROSS_BOTTOM = 'rgb(180, 0, 0)';
+
+	const labelColorFor = (
+		role: PartnerRole | 'base',
+		partner: ResolvedPartner | null
+	): string => {
+		if (role === 'base') return ROLE_LABEL_COLOR.base;
+		if (partner?.ruleSet === 'partner.endEnd') return ROLE_LABEL_CROSS_TOP;
+		if (partner?.ruleSet === 'partner.startEnd') return ROLE_LABEL_CROSS_BOTTOM;
+		return ROLE_LABEL_COLOR[role];
+	};
+
+	const baseRuleTargetIndices = $derived.by(() => {
+		const set = new Set<number>();
+		for (const r of withinBand) set.add(r.target);
+		for (const r of acrossBands) set.add(r.target);
+		for (const r of partnerStartEnd) set.add(r.target);
+		for (const r of partnerEndEnd) set.add(r.target);
+		return set;
+	});
+
+	const partnerRuleSourceIndices = (partner: ResolvedPartner): Set<number> => {
+		const rules =
+			partner.ruleSet === 'withinBand'
+				? withinBand
+				: partner.ruleSet === 'acrossBands'
+					? acrossBands
+					: partner.ruleSet === 'partner.startEnd'
+						? partnerStartEnd
+						: partnerEndEnd;
+		return new Set(rules.map((r) => r.source));
+	};
+
+	const baseLabeledVertices = $derived(
+		baseVertices.filter((v) =>
+			v.refs.some((r) => baseRuleTargetIndices.has(r.index))
+		)
+	);
+
 	$effect(() => {
 		const onKey = (e: KeyboardEvent) => {
 			if ((e.key === 'Delete' || e.key === 'Backspace') && selectedConnection) {
@@ -352,6 +399,41 @@
 					style:stroke-width="{0.15 * scale}"
 					onclick={() => handlePartnerVertexClick(p, v)}
 				/>
+			{/each}
+		{/each}
+
+		{#each baseLabeledVertices as v (v.x + ':' + v.y + ':blbl')}
+			<text
+				x={v.x}
+				y={v.y - 0.7 * scale}
+				font-size={0.8 * scale}
+				text-anchor="middle"
+				dominant-baseline="text-after-edge"
+				fill={labelColorFor('base', null)}
+				pointer-events="none"
+				style="user-select: none;"
+			>
+				{v.refs[0]?.index ?? ''}
+			</text>
+		{/each}
+		{#each partnersList as p (p.role + ':lbl')}
+			{@const sources = partnerRuleSourceIndices(p)}
+			{@const verts = (partnerVertices.get(p.role) ?? []).filter((v) =>
+				v.refs.some((r) => sources.has(r.index))
+			)}
+			{#each verts as v (v.x + ':' + v.y + ':' + p.role + ':lbl')}
+				<text
+					x={v.x}
+					y={v.y + 0.7 * scale}
+					font-size={0.8 * scale}
+					text-anchor="middle"
+					dominant-baseline="text-before-edge"
+					fill={labelColorFor(p.role, p)}
+					pointer-events="none"
+					style="user-select: none;"
+				>
+					{v.refs[0]?.index ?? ''}
+				</text>
 			{/each}
 		{/each}
 	</svg>
