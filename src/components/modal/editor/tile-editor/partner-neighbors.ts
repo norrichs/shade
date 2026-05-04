@@ -53,5 +53,39 @@ export const resolveBaseAndPartners = (
 			: undefined
 	};
 
-	return { base, top: null, bottom: null, left: null, right: null };
+	const sameBandTop = (): ResolvedPartner | null => {
+		const next = baseBand.facets[baseAddress.facet + 1];
+		if (!next?.quad) return null;
+		return {
+			role: 'top',
+			ruleSet: 'withinBand',
+			address: { ...baseAddress, facet: baseAddress.facet + 1 },
+			quad: next.quad,
+			path: structuredClone(next.path),
+			originalPath: next.meta?.originalPath
+				? structuredClone(next.meta.originalPath)
+				: undefined
+		};
+	};
+
+	const sameBandBottom = (): ResolvedPartner | null => {
+		if (baseAddress.facet === 0) return null;
+		const prev = baseBand.facets[baseAddress.facet - 1];
+		if (!prev?.quad) return null;
+		return {
+			role: 'bottom',
+			ruleSet: 'withinBand',
+			address: { ...baseAddress, facet: baseAddress.facet - 1 },
+			quad: prev.quad,
+			path: structuredClone(prev.path),
+			originalPath: prev.meta?.originalPath
+				? structuredClone(prev.meta.originalPath)
+				: undefined
+		};
+	};
+
+	const top = sameBandTop();
+	const bottom = sameBandBottom();
+
+	return { base, top, bottom, left: null, right: null };
 };
