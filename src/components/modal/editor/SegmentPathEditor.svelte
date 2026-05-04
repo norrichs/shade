@@ -7,27 +7,37 @@
 	import DraggablePoint from './DraggablePoint.svelte';
 	import type { UnitTool } from './tile-editor/UnitToolbar.svelte';
 	import UnitLabels from './tile-editor/UnitLabels.svelte';
+	import { flatIndexes } from './vertex-addressing';
 
 	let {
 		unit,
 		config,
 		tool = 'drag',
+		skipRemove = [],
 		onChangeUnit,
 		onAddVertex,
-		onRemoveVertex
+		onRemoveVertex,
+		onToggleSkip
 	}: {
 		unit: UnitDefinition;
 		config: PathEditorConfig;
 		tool?: UnitTool;
+		skipRemove?: number[];
 		onChangeUnit: (unit: UnitDefinition) => void;
 		onAddVertex?: (x: number, y: number) => void;
 		onRemoveVertex?: (vertex: Vertex) => void;
+		onToggleSkip?: (vertex: Vertex) => void;
 	} = $props();
 
 	const canv = $derived(getCanvas(config));
 	const vertices = $derived(computeVertices(unit));
 	const allSegments = $derived<PathSegment[]>([...unit.start, ...unit.middle, ...unit.end]);
 	const pathString = $derived(svgPathStringFromSegments(allSegments));
+	const skipSet = $derived(new Set(skipRemove));
+	const isVertexSkipped = (v: Vertex): boolean => {
+		const idxs = flatIndexes(unit, v);
+		return idxs.every((i) => skipSet.has(i));
+	};
 
 	const handleDrag = (vertex: Vertex, newX: number, newY: number) => {
 		if (tool !== 'drag') return;
@@ -77,6 +87,23 @@
 					onclick={(e) => {
 						e.stopPropagation();
 						handleVertexClick(vertex);
+					}}
+				/>
+			{/each}
+		{/if}
+		{#if tool === 'skipRemove'}
+			{#each vertices as v (v.x + ':' + v.y + ':skip')}
+				<circle
+					cx={v.x}
+					cy={v.y}
+					r="0.6"
+					fill={isVertexSkipped(v) ? 'rgba(220, 0, 0, 0.6)' : 'white'}
+					stroke={isVertexSkipped(v) ? 'rgb(160, 0, 0)' : 'rgb(80, 80, 80)'}
+					stroke-width="0.15"
+					style="cursor: pointer"
+					onclick={(e) => {
+						e.stopPropagation();
+						onToggleSkip?.(v);
 					}}
 				/>
 			{/each}

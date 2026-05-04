@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Group } from '../vertex-topology';
 
-	export type UnitTool = 'drag' | 'add' | 'remove';
+	export type UnitTool = 'drag' | 'add' | 'remove' | 'skipRemove';
 
 	let {
 		tool,
@@ -18,7 +18,8 @@
 	const tools: { id: UnitTool; label: string }[] = [
 		{ id: 'drag', label: 'Drag' },
 		{ id: 'add', label: 'Add' },
-		{ id: 'remove', label: 'Remove' }
+		{ id: 'remove', label: 'Remove' },
+		{ id: 'skipRemove', label: 'Skip Remove' }
 	];
 	const groups: Group[] = ['start', 'middle', 'end'];
 </script>

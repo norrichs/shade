@@ -18,6 +18,7 @@
 	import type { Vertex } from './segment-vertices';
 	import type { Group } from './vertex-topology';
 	import { addVertex, removeVertex } from './vertex-topology';
+	import { flatIndexes } from './vertex-addressing';
 
 	let draft: TiledPatternSpec | null = $state(null);
 	let mode: EditorMode = $state('unit');
@@ -83,6 +84,21 @@
 		if (!draft) return;
 		const next = removeVertex($state.snapshot(draft) as TiledPatternSpec, vertex);
 		draft = next;
+		isDirty = true;
+	};
+
+	const handleToggleSkip = (vertex: Vertex) => {
+		if (!draft) return;
+		const indices = flatIndexes(draft.unit, vertex);
+		const current = new Set(draft.adjustments.skipRemove);
+		const allIn = indices.every((i) => current.has(i));
+		for (const i of indices) {
+			if (allIn) current.delete(i);
+			else current.add(i);
+		}
+		const updated: TiledPatternSpec = $state.snapshot(draft) as TiledPatternSpec;
+		updated.adjustments.skipRemove = Array.from(current).sort((a, b) => a - b);
+		draft = updated;
 		isDirty = true;
 	};
 
@@ -235,9 +251,11 @@
 							unit={draft.unit}
 							config={editorConfig}
 							{tool}
+							skipRemove={draft.adjustments.skipRemove}
 							onChangeUnit={handleUnitChange}
 							onAddVertex={handleAddVertex}
 							onRemoveVertex={handleRemoveVertex}
+							onToggleSkip={handleToggleSkip}
 						/>
 					</div>
 				{:else}
