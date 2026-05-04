@@ -72,3 +72,44 @@ describe('same-band top/bottom resolution', () => {
 		expect(result?.bottom).toBeNull();
 	});
 });
+
+describe('cross-tube partner resolution', () => {
+	it('resolves bottom as cross-tube partnerStart when base.facet === 0', () => {
+		const bands = [
+			makeBand(0, 0, 3, {
+				meta: {
+					startPartnerBand: { globule: 0, tube: 1, band: 0 }
+				}
+			}),
+			makeBand(0, 1, 3, {
+				meta: {
+					endPartnerBand: { globule: 0, tube: 0, band: 0 }
+				}
+			})
+		];
+		const result = resolveBaseAndPartners(bands, { globule: 0, tube: 0, band: 0, facet: 0 });
+		expect(result?.bottom?.role).toBe('bottom');
+		expect(result?.bottom?.ruleSet).toBe('partner.startEnd');
+		expect(result?.bottom?.address.tube).toBe(1);
+		expect(result?.bottom?.address.band).toBe(0);
+	});
+
+	it('resolves top as cross-tube partnerEnd when base is the last facet', () => {
+		const bands = [
+			makeBand(0, 0, 3, {
+				meta: {
+					endPartnerBand: { globule: 0, tube: 1, band: 0 }
+				}
+			}),
+			makeBand(0, 1, 3, {
+				meta: {
+					startPartnerBand: { globule: 0, tube: 0, band: 0 }
+				}
+			})
+		];
+		const result = resolveBaseAndPartners(bands, { globule: 0, tube: 0, band: 0, facet: 2 });
+		expect(result?.top?.role).toBe('top');
+		expect(result?.top?.ruleSet).toBe('partner.endEnd');
+		expect(result?.top?.address.tube).toBe(1);
+	});
+});

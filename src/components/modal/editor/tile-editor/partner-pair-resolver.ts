@@ -77,7 +77,8 @@ export const resolvePair = (
 
 	const facetIndex = mode === 'partnerStart' ? 0 : mainBand.facets.length - 1;
 	const ghostFacetIndex =
-		partnerBand.meta && isSameAddress(partnerBand.meta.startPartnerBand, mainBand.address)
+		partnerBand.meta?.startPartnerBand &&
+		isSameAddress(partnerBand.meta.startPartnerBand, mainBand.address)
 			? 0
 			: partnerBand.facets.length - 1;
 

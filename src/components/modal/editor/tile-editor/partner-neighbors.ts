@@ -1,5 +1,6 @@
 import type { BandCutPattern, PathSegment, Quadrilateral } from '$lib/types';
 import type { GlobuleAddress_Facet } from '$lib/projection-geometry/types';
+import { resolvePair } from './partner-pair-resolver';
 
 export type PartnerRole = 'top' | 'bottom' | 'left' | 'right';
 export type RuleSetKey = 'withinBand' | 'acrossBands' | 'partner.startEnd' | 'partner.endEnd';
@@ -84,8 +85,36 @@ export const resolveBaseAndPartners = (
 		};
 	};
 
-	const top = sameBandTop();
-	const bottom = sameBandBottom();
+	const crossTubeBottom = (): ResolvedPartner | null => {
+		if (baseAddress.facet !== 0) return null;
+		const pair = resolvePair(allBands, baseAddress, 'partnerStart');
+		if (!pair) return null;
+		return {
+			role: 'bottom',
+			ruleSet: 'partner.startEnd',
+			address: pair.ghostAddress,
+			quad: pair.ghostQuad,
+			path: pair.ghostPath,
+			originalPath: pair.ghostOriginalPath
+		};
+	};
+
+	const crossTubeTop = (): ResolvedPartner | null => {
+		if (baseAddress.facet !== baseBand.facets.length - 1) return null;
+		const pair = resolvePair(allBands, baseAddress, 'partnerEnd');
+		if (!pair) return null;
+		return {
+			role: 'top',
+			ruleSet: 'partner.endEnd',
+			address: pair.ghostAddress,
+			quad: pair.ghostQuad,
+			path: pair.ghostPath,
+			originalPath: pair.ghostOriginalPath
+		};
+	};
+
+	const top = sameBandTop() ?? crossTubeTop();
+	const bottom = sameBandBottom() ?? crossTubeBottom();
 
 	return { base, top, bottom, left: null, right: null };
 };
