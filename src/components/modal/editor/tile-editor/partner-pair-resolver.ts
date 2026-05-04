@@ -35,6 +35,8 @@ export type ResolvedPair = {
 	ghostQuad: Quadrilateral;
 	mainPath: PathSegment[];
 	ghostPath: PathSegment[];
+	mainOriginalPath?: PathSegment[];
+	ghostOriginalPath?: PathSegment[];
 };
 
 export const getEligibleBands = (
@@ -89,13 +91,25 @@ export const resolvePair = (
 		: structuredClone(ghostFacet.path);
 	const ghostQuad = transform ? transformQuad(ghostFacet.quad, transform) : ghostFacet.quad;
 
+	const mainOriginalPath = mainFacet.meta?.originalPath
+		? structuredClone(mainFacet.meta.originalPath)
+		: undefined;
+	const ghostOriginalRaw = ghostFacet.meta?.originalPath;
+	const ghostOriginalPath = ghostOriginalRaw
+		? transform
+			? newTransformPS(structuredClone(ghostOriginalRaw), transform)
+			: structuredClone(ghostOriginalRaw)
+		: undefined;
+
 	return {
 		mainAddress: { ...mainAddress, facet: facetIndex },
 		ghostAddress: { ...partnerBandAddress, facet: ghostFacetIndex },
 		mainQuad: mainFacet.quad,
 		ghostQuad,
 		mainPath: structuredClone(mainFacet.path),
-		ghostPath
+		ghostPath,
+		mainOriginalPath,
+		ghostOriginalPath
 	};
 };
 

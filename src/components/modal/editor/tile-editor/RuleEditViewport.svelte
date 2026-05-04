@@ -86,6 +86,16 @@
 	const distortedGhostPathStr = $derived(
 		distortedGhost ? svgPathStringFromSegments(distortedGhost.ghostPath) : ''
 	);
+	const distortedMainOriginalPathStr = $derived(
+		distortedGhost?.mainOriginalPath
+			? svgPathStringFromSegments(distortedGhost.mainOriginalPath)
+			: ''
+	);
+	const distortedGhostOriginalPathStr = $derived(
+		distortedGhost?.ghostOriginalPath
+			? svgPathStringFromSegments(distortedGhost.ghostOriginalPath)
+			: ''
+	);
 	const distortedMainVertices = $derived(
 		distortedGhost ? computeVerticesFromFlatPath(distortedGhost.mainPath) : []
 	);
@@ -205,6 +215,22 @@
 				class="ghost-bounds"
 				style="fill: {mode === 'partnerStart' ? 'rgba(255,0,0,0.1)' : 'rgba(0,255,0,0.1)'}"
 			/>
+			{#if distortedMainOriginalPathStr}
+				<path
+					d={distortedMainOriginalPathStr}
+					fill="none"
+					stroke={mode === 'partnerStart' ? 'rgba(0,90,0,0.3)' : 'rgba(90,0,0,0.3)'}
+					style="stroke-width: {0.4 * distortedScale}"
+				/>
+			{/if}
+			{#if distortedGhostOriginalPathStr}
+				<path
+					d={distortedGhostOriginalPathStr}
+					fill="none"
+					stroke={mode === 'partnerStart' ? 'rgba(90,0,0,0.3)' : 'rgba(0,90,0,0.3)'}
+					style="stroke-width: {0.4 * distortedScale}"
+				/>
+			{/if}
 			<path
 				d={distortedMainPathStr}
 				class="segments"
