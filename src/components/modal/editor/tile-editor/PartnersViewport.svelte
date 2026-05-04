@@ -226,6 +226,22 @@
 		return out;
 	});
 
+	let selectedBaseVertex: Vertex | null = $state(null);
+
+	const handleBaseVertexClick = (v: Vertex) => {
+		if (selectedBaseVertex === v) {
+			selectedBaseVertex = null;
+		} else {
+			selectedBaseVertex = v;
+		}
+	};
+
+	const handlePartnerVertexClick = (partner: ResolvedPartner, v: Vertex) => {
+		if (!selectedBaseVertex) return;
+		onAddRule(partner, selectedBaseVertex, v);
+		selectedBaseVertex = null;
+	};
+
 	$effect(() => {
 		const onKey = (e: KeyboardEvent) => {
 			if ((e.key === 'Delete' || e.key === 'Backspace') && selectedConnection) {
@@ -314,6 +330,30 @@
 					})}
 			/>
 		{/each}
+
+		{#each baseVertices as v (v.x + ':' + v.y + ':base')}
+			<circle
+				cx={v.x}
+				cy={v.y}
+				r={0.5 * scale}
+				class="base-vertex"
+				class:selected={selectedBaseVertex === v}
+				style:stroke-width="{0.15 * scale}"
+				onclick={() => handleBaseVertexClick(v)}
+			/>
+		{/each}
+		{#each partnersList as p (p.role + ':vs')}
+			{#each partnerVertices.get(p.role) ?? [] as v (v.x + ':' + v.y + ':' + p.role)}
+				<circle
+					cx={v.x}
+					cy={v.y}
+					r={0.5 * scale}
+					class="partner-vertex"
+					style:stroke-width="{0.15 * scale}"
+					onclick={() => handlePartnerVertexClick(p, v)}
+				/>
+			{/each}
+		{/each}
 	</svg>
 </div>
 
@@ -339,5 +379,18 @@
 	}
 	.connection.selected {
 		stroke: red;
+	}
+	.base-vertex {
+		fill: white;
+		stroke: rgb(80, 130, 200);
+		cursor: pointer;
+	}
+	.base-vertex.selected {
+		fill: orange;
+	}
+	.partner-vertex {
+		fill: rgba(255, 255, 255, 0.6);
+		stroke: rgba(0, 0, 0, 0.5);
+		cursor: pointer;
 	}
 </style>
