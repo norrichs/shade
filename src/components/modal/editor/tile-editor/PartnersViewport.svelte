@@ -289,6 +289,28 @@
 		)
 	);
 
+	let tooltip: {
+		x: number;
+		y: number;
+		indices: number[];
+		color: string;
+	} | null = $state(null);
+
+	const tooltipFor = (v: Vertex, color: string) => {
+		const all = new Set<number>();
+		for (const r of v.refs) all.add(r.index);
+		tooltip = {
+			x: v.x,
+			y: v.y,
+			indices: Array.from(all).sort((a, b) => a - b),
+			color
+		};
+	};
+
+	const clearTooltip = () => {
+		tooltip = null;
+	};
+
 	$effect(() => {
 		const onKey = (e: KeyboardEvent) => {
 			if ((e.key === 'Delete' || e.key === 'Backspace') && selectedConnection) {
@@ -387,6 +409,8 @@
 				class:selected={selectedBaseVertex === v}
 				style:stroke-width="{0.15 * scale}"
 				onclick={() => handleBaseVertexClick(v)}
+				onmouseenter={() => tooltipFor(v, labelColorFor('base', null))}
+				onmouseleave={clearTooltip}
 			/>
 		{/each}
 		{#each partnersList as p (p.role + ':vs')}
@@ -398,6 +422,8 @@
 					class="partner-vertex"
 					style:stroke-width="{0.15 * scale}"
 					onclick={() => handlePartnerVertexClick(p, v)}
+					onmouseenter={() => tooltipFor(v, labelColorFor(p.role, p))}
+					onmouseleave={clearTooltip}
 				/>
 			{/each}
 		{/each}
@@ -437,6 +463,16 @@
 			{/each}
 		{/each}
 	</svg>
+	{#if tooltip}
+		<div
+			class="tooltip"
+			style:left="{((tooltip.x + parseFloat(viewBox.split(' ')[2]) / 2) / parseFloat(viewBox.split(' ')[2])) * size.width + 8}px"
+			style:top="{((tooltip.y + parseFloat(viewBox.split(' ')[3]) / 2) / parseFloat(viewBox.split(' ')[3])) * size.height + 8}px"
+			style:border-left-color={tooltip.color}
+		>
+			{tooltip.indices.join(', ')}
+		</div>
+	{/if}
 </div>
 
 <style>
@@ -474,5 +510,15 @@
 		fill: rgba(255, 255, 255, 0.6);
 		stroke: rgba(0, 0, 0, 0.5);
 		cursor: pointer;
+	}
+	.tooltip {
+		position: absolute;
+		background: white;
+		border: 1px solid rgba(0, 0, 0, 0.3);
+		border-left-width: 3px;
+		padding: 2px 6px;
+		font-size: 0.8em;
+		pointer-events: none;
+		white-space: nowrap;
 	}
 </style>
