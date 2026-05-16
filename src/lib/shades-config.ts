@@ -468,8 +468,8 @@ export const defaultTiledPatternConfig = (): TiledPatternConfig => {
 	return {
 		...tiledPatternConfigs[pattern],
 		labels: {
-			scale: 0.1,
-			angle: Math.PI
+			externalTag: { enabled: true, scale: 0.1, angle: Math.PI },
+			onTab: { enabled: false, padding: 0.1 }
 		}
 	};
 };

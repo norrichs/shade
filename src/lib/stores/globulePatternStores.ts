@@ -6,6 +6,7 @@ import type {
 	PatternTypeConfig,
 	PixelScale
 } from '$lib/types';
+import { migrateGlobulePatternConfig } from '$lib/validators';
 import type { ProjectionRange } from '$lib/projection-geometry/filters';
 import { derived } from 'svelte/store';
 import { loadPersistedOrDefault } from './stores';
@@ -16,7 +17,7 @@ export const patternConfigStore = persistable<GlobulePatternConfig>(
 			bootstrapShouldUsePersisted(),
 			generateDefaultGlobulePatternConfig
 		);
-		return config;
+		return migrateGlobulePatternConfig(config as GlobulePatternConfig);
 	})(),
 	'GlobulePatternConfig',
 	AUTO_PERSIST_KEY,
