@@ -262,7 +262,7 @@ export const generateTiling = ({
 			svgPath: undefined, //cuttablePattern.map((p) => p.svgPath).join(),
 			id: `${tiledPatternConfig.type}-band-${globalBandIndex}`,
 			tagAnchorPoint,
-			tagAngle: tiledPatternConfig.labels?.angle ?? tagAnchor.angle ?? 0,
+			tagAngle: tiledPatternConfig.labels?.externalTag?.angle ?? tagAnchor.angle ?? 0,
 			projectionType: 'patterned',
 			address: { ...address, band: globalBandIndex },
 			bounds: bands[bandIndex].bounds,

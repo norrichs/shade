@@ -124,9 +124,9 @@
 			{#each tube.bands || [] as band, b (concatAddress(band.address))}
 				<BandComponent
 					{band}
+					{tube}
 					index={b}
 					origin={origins.tubes[t].bands[b]}
-					showLabel
 					portal={true}
 					tagAnchorPoint={minPoint(band.facets)}
 					tagAngle={band.tagAngle}

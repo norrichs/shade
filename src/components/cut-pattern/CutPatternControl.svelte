@@ -1,21 +1,15 @@
 <script lang="ts">
 	import type { ProjectionRange } from '$lib/projection-geometry/filters';
 	import { patternConfigStore } from '$lib/stores';
-	import { isClose } from '$lib/util';
 	import CheckboxInput from '../controls/CheckboxInput.svelte';
 	import NumberInput from '../controls/super-control/NumberInput.svelte';
 	import PanControl from './PanControl.svelte';
-
-	let labelScale = 0.1;
-	let labelAngle = $patternConfigStore.patternTypeConfig.labels?.angle ?? 0;
 
 	let rangeTubes: ProjectionRange['tubes'] = $patternConfigStore.patternViewConfig.range?.tubes;
 	let rangeBands: ProjectionRange['bands'] = $patternConfigStore.patternViewConfig.range?.bands;
 	let rangeFacets: ProjectionRange['facets'] = $patternConfigStore.patternViewConfig.range?.facets;
 
 	const updateStore = (
-		scale?: number,
-		angle?: number,
 		rangeTubes?: ProjectionRange['tubes'] | undefined,
 		rangeBands?: ProjectionRange['bands'] | undefined,
 		rangeFacets?: ProjectionRange['facets'] | undefined
@@ -25,24 +19,8 @@
 			bands: rangeBands,
 			facets: rangeFacets
 		};
-
-		if (!$patternConfigStore.patternTypeConfig.labels) {
-			$patternConfigStore.patternTypeConfig.labels = { scale: labelScale, angle: labelAngle };
-			return;
-		}
-		const newLabelParams: { scale: number; angle: number } = {
-			scale: 0.1,
-			angle: Math.PI
-		};
-		if (!isClose(scale, $patternConfigStore.patternTypeConfig.labels.scale)) {
-			newLabelParams.scale = labelScale;
-		}
-		if (!isClose(angle, $patternConfigStore.patternTypeConfig.labels.angle)) {
-			newLabelParams.angle = labelAngle;
-		}
-		$patternConfigStore.patternTypeConfig.labels = newLabelParams;
 	};
-	$: updateStore(labelScale, labelAngle, rangeTubes, rangeBands, rangeFacets);
+	$: updateStore(rangeTubes, rangeBands, rangeFacets);
 </script>
 
 <div class="view-control-box">
@@ -57,11 +35,6 @@
 				hasButtons
 				bind:value={$patternConfigStore.patternViewConfig.zoom}
 			/>
-		</div>
-		<div>
-			<span>Label</span>
-			<NumberInput min={-2} max={2} step={0.1} hasButtons bind:value={labelScale} />
-			<NumberInput min={-180} max={180} step={1} hasButtons bind:value={labelAngle} />
 		</div>
 		<div>
 			<CheckboxInput
