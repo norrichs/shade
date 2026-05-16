@@ -463,7 +463,7 @@ export const tiledPatternConfigs: { [key: string]: TiledPatternConfig } = {
 	}
 };
 
-const defaultTiledPatternConfig = (): TiledPatternConfig => {
+export const defaultTiledPatternConfig = (): TiledPatternConfig => {
 	const pattern: TiledPattern = 'tiledShieldTesselationPattern';
 	return {
 		...tiledPatternConfigs[pattern],
@@ -540,12 +540,12 @@ export const defaultPatternViewConfig = (): PatternViewConfig => ({
 	showQuads: false,
 	showTriangles: false,
 	showLabels: false,
-	range: { tubes: [0, 1], bands: [0, 6] },
+	range: { tubes: [0, 30], bands: [0, 2] },
 	width: 800,
 	height: 600,
 	zoom: -1.2,
 	centerOffset: { x: 0, y: 0 },
-	patternSource: 'projection'
+	patternSource: 'surfaceProjection'
 });
 
 export const getLevels = (sampleMethod: CurveSampleMethod, curveCount: number) => {
@@ -667,7 +667,7 @@ export const generateDefaultGlobulePatternConfig = (): GlobulePatternConfig => {
 		cutoutConfig: defaultCutoutConfig()[1],
 		patternConfig: defaultPatternConfig(),
 		patternViewConfig: defaultPatternViewConfig(),
-		patternTypeConfig: defaultOutlinedPatternConfig()
+		patternTypeConfig: defaultTiledPatternConfig()
 	};
 	return globulePatternConfig;
 };
