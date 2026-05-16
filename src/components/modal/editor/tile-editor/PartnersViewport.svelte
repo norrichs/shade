@@ -18,6 +18,7 @@
 		acrossBands,
 		partnerStartEnd,
 		partnerEndEnd,
+		skipRemove = [],
 		size = { width: 800, height: 500 },
 		hoveredKeys = new Set(),
 		onHoverLine,
@@ -30,6 +31,11 @@
 		acrossBands: IndexPair[];
 		partnerStartEnd: IndexPair[];
 		partnerEndEnd: IndexPair[];
+		// Unit-space indices that the runtime adjuster removes via removeInPlace. The stored
+		// `path` for affected facets is shorter than `originalPath` by exactly skipRemove.length;
+		// we use this to map rule indices (which live in the original 80-entry space) onto the
+		// shrunk rendered path.
+		skipRemove?: number[];
 		size?: { width: number; height: number };
 		hoveredKeys?: Set<string>;
 		onHoverLine?: (keys: string[]) => void;
@@ -180,9 +186,63 @@
 		[tTop, tBottom, tLeft, tRight].filter((p): p is NonNullable<typeof tTop> => p !== null)
 	);
 
-	const baseVertices = $derived(computeVerticesFromFlatPath(tBasePath));
+	// Detect whether removeInPlace ran on this facet's path (compares against its originalPath).
+	// If yes and the length delta matches skipRemove.length, treat skipRemove as the dropped set.
+	const removedSetFor = (
+		path: { length: number } | undefined,
+		originalPath: { length: number } | undefined
+	): Set<number> => {
+		if (!path || !originalPath || path.length === originalPath.length) return new Set();
+		if (originalPath.length - skipRemove.length === path.length) return new Set(skipRemove);
+		return new Set();
+	};
+
+	// Build vertices whose ref.index lives in the spec's UNIT (original) index space — even when
+	// the rendered path has been shrunk by removeInPlace. We walk the originalPath and pair each
+	// non-removed original index with its corresponding entry in the post-shrink path. Coordinates
+	// come from the post-shrink path (so vertices sit on the actually-rendered geometry), but the
+	// stored ref.index matches what the spec's adjustment rules reference.
+	const verticesWithOriginalRefs = (
+		originalPath: PathSegment[] | undefined,
+		path: PathSegment[],
+		removedSet: Set<number>
+	): Vertex[] => {
+		if (!originalPath || removedSet.size === 0 || path.length === originalPath.length) {
+			return computeVerticesFromFlatPath(path);
+		}
+		const byKey = new Map<string, Vertex>();
+		let shrunkIdx = 0;
+		for (let i = 0; i < originalPath.length; i++) {
+			if (removedSet.has(i)) continue;
+			const seg = path[shrunkIdx];
+			shrunkIdx++;
+			if (!seg) continue;
+			if (seg[0] !== 'M' && seg[0] !== 'L') continue;
+			const x = seg[1] as number;
+			const y = seg[2] as number;
+			const key = `${x}::${y}`;
+			const existing = byKey.get(key);
+			if (existing) existing.refs.push({ group: 'start', index: i });
+			else byKey.set(key, { x, y, refs: [{ group: 'start', index: i }] });
+		}
+		return Array.from(byKey.values());
+	};
+
+	const baseRemovedSet = $derived(removedSetFor(bundle.base.path, bundle.base.originalPath));
+	const baseVertices = $derived(
+		verticesWithOriginalRefs(tBaseOriginal ?? undefined, tBasePath, baseRemovedSet)
+	);
 	const partnerVertices = $derived(
-		new Map(partnersList.map((p) => [p.role, computeVerticesFromFlatPath(p.path)]))
+		new Map(
+			partnersList.map((p) => [
+				p.role,
+				verticesWithOriginalRefs(
+					p.originalPath,
+					p.path,
+					removedSetFor(p.path, p.originalPath)
+				)
+			])
+		)
 	);
 
 	let selectedConnection: {
@@ -198,8 +258,13 @@
 		partner: ResolvedPartner;
 		baseVertex: Vertex;
 		partnerVertex: Vertex;
+		// Canonical rule fields (always the stored {source, target}, regardless of partner direction).
 		target: number;
 		source: number;
+		// Path-index resolution after applying partner direction. baseIndex points into base.path;
+		// partnerIndex points into partner.path.
+		baseIndex: number;
+		partnerIndex: number;
 		x1: number;
 		y1: number;
 		x2: number;
@@ -211,16 +276,13 @@
 		const pVerts = partnerVertices.get(partner.role) ?? [];
 		const out: ConnectionLine[] = [];
 		for (const rule of rules) {
-			const t = tBasePath[rule.target];
-			const s = partner.path[rule.source];
-			if (!t || !s) continue;
-			const tx = (t as any)[1];
-			const ty = (t as any)[2];
-			const sx = (s as any)[1];
-			const sy = (s as any)[2];
-			if (typeof tx !== 'number' || typeof sx !== 'number') continue;
-			const baseV = findVertexAtFlatIndex(baseVertices, rule.target);
-			const partnerV = findVertexAtFlatIndex(pVerts, rule.source);
+			const baseIndex = partner.baseIsTarget ? rule.target : rule.source;
+			const partnerIndex = partner.baseIsTarget ? rule.source : rule.target;
+			// Vertices are now keyed by ORIGINAL (unit-space) index, so rule indices look up directly.
+			// If an index falls in skipRemove for its facet, no vertex exists → skip the connection
+			// (the rule's effect was wiped by removeInPlace at runtime, so it has nothing to show).
+			const baseV = findVertexAtFlatIndex(baseVertices, baseIndex);
+			const partnerV = findVertexAtFlatIndex(pVerts, partnerIndex);
 			if (!baseV || !partnerV) continue;
 			out.push({
 				partner,
@@ -228,10 +290,12 @@
 				partnerVertex: partnerV,
 				target: rule.target,
 				source: rule.source,
-				x1: tx,
-				y1: ty,
-				x2: sx,
-				y2: sy
+				baseIndex,
+				partnerIndex,
+				x1: baseV.x,
+				y1: baseV.y,
+				x2: partnerV.x,
+				y2: partnerV.y
 			});
 		}
 		return out;
@@ -282,31 +346,29 @@
 		return ROLE_LABEL_COLOR[role];
 	};
 
-	const baseRuleTargetIndices = $derived.by(() => {
+	// Labels render on path indices that participate in a visible connection in this bundle.
+	// Derived from `allConnections` so per-partner direction (baseIsTarget) is already resolved.
+	const baseLabeledIndices = $derived.by(() => {
 		const set = new Set<number>();
-		for (const r of withinBand) set.add(r.target);
-		for (const r of acrossBands) set.add(r.target);
-		for (const r of partnerStartEnd) set.add(r.target);
-		for (const r of partnerEndEnd) set.add(r.target);
+		for (const c of allConnections) set.add(c.baseIndex);
 		return set;
 	});
 
-	const partnerRuleSourceIndices = (partner: ResolvedPartner): Set<number> => {
-		const rules =
-			partner.ruleSet === 'withinBand'
-				? withinBand
-				: partner.ruleSet === 'acrossBands'
-					? acrossBands
-					: partner.ruleSet === 'partner.startEnd'
-						? partnerStartEnd
-						: partnerEndEnd;
-		return new Set(rules.map((r) => r.source));
-	};
+	const partnerLabeledIndicesByRole = $derived.by(() => {
+		const map = new Map<PartnerRole, Set<number>>();
+		for (const c of allConnections) {
+			let set = map.get(c.partner.role);
+			if (!set) {
+				set = new Set<number>();
+				map.set(c.partner.role, set);
+			}
+			set.add(c.partnerIndex);
+		}
+		return map;
+	});
 
 	const baseLabeledVertices = $derived(
-		baseVertices.filter((v) =>
-			v.refs.some((r) => baseRuleTargetIndices.has(r.index))
-		)
+		baseVertices.filter((v) => v.refs.some((r) => baseLabeledIndices.has(r.index)))
 	);
 
 	let tooltip: {
@@ -473,9 +535,9 @@
 			</text>
 		{/each}
 		{#each partnersList as p (p.role + ':lbl')}
-			{@const sources = partnerRuleSourceIndices(p)}
+			{@const indices = partnerLabeledIndicesByRole.get(p.role) ?? new Set()}
 			{@const verts = (partnerVertices.get(p.role) ?? []).filter((v) =>
-				v.refs.some((r) => sources.has(r.index))
+				v.refs.some((r) => indices.has(r.index))
 			)}
 			{#each verts as v (v.x + ':' + v.y + ':' + p.role + ':lbl')}
 				<text

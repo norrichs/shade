@@ -118,7 +118,13 @@
 	};
 
 	const handleAddRule = (partner: ResolvedPartner, baseVertex: Vertex, partnerVertex: Vertex) => {
-		const next = addRuleForPairing(ruleArray(partner.ruleSet), spec.unit, baseVertex, partnerVertex);
+		// addRuleForPairing(rules, unit, targetVertex, sourceVertex):
+		// when partner.baseIsTarget, base is the runtime "current" facet → rule.target on base.
+		// otherwise, partner is current → rule.target on partner, rule.source on base.
+		const [targetVertex, sourceVertex] = partner.baseIsTarget
+			? [baseVertex, partnerVertex]
+			: [partnerVertex, baseVertex];
+		const next = addRuleForPairing(ruleArray(partner.ruleSet), spec.unit, targetVertex, sourceVertex);
 		setRuleArray(partner.ruleSet, next);
 	};
 
@@ -127,7 +133,10 @@
 		baseVertex: Vertex,
 		partnerVertex: Vertex
 	) => {
-		const next = removeRulesForPairing(ruleArray(partner.ruleSet), spec.unit, baseVertex, partnerVertex);
+		const [targetVertex, sourceVertex] = partner.baseIsTarget
+			? [baseVertex, partnerVertex]
+			: [partnerVertex, baseVertex];
+		const next = removeRulesForPairing(ruleArray(partner.ruleSet), spec.unit, targetVertex, sourceVertex);
 		setRuleArray(partner.ruleSet, next);
 	};
 
@@ -174,6 +183,7 @@
 					acrossBands={spec.adjustments.acrossBands}
 					partnerStartEnd={spec.adjustments.partner.startEnd}
 					partnerEndEnd={spec.adjustments.partner.endEnd}
+					skipRemove={spec.adjustments.skipRemove}
 					{hoveredKeys}
 					onHoverLine={handleHoverLine}
 					onClearHover={handleClearHover}

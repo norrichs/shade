@@ -15,6 +15,11 @@ export type ResolvedBase = {
 export type ResolvedPartner = {
 	role: PartnerRole;
 	ruleSet: RuleSetKey;
+	// True when the rule's `target` index lives on the base path and `source` lives on this
+	// partner's path. False when the runtime adjuster treats this partner as the "current"
+	// facet (i.e. its path is the one being mutated) — in that case `target` lives on the
+	// partner and `source` lives on base. Drives both rule rendering and rule authoring.
+	baseIsTarget: boolean;
 	address: GlobuleAddress_Facet;
 	quad: Quadrilateral;
 	path: PathSegment[];
@@ -97,9 +102,11 @@ export const resolveBaseAndPartners = (
 	const sameBandTop = (): ResolvedPartner | null => {
 		const next = baseBand.facets[baseAddress.facet + 1];
 		if (!next?.quad) return null;
+		// Runtime processes base (facet f) with `nextPath` as source → base IS current; baseIsTarget=true.
 		return {
 			role: 'top',
 			ruleSet: 'withinBand',
+			baseIsTarget: true,
 			address: { ...baseAddress, facet: baseAddress.facet + 1 },
 			quad: next.quad,
 			path: structuredClone(next.path),
@@ -113,9 +120,12 @@ export const resolveBaseAndPartners = (
 		if (baseAddress.facet === 0) return null;
 		const prev = baseBand.facets[baseAddress.facet - 1];
 		if (!prev?.quad) return null;
+		// Runtime processes bottom (facet f-1) with base (facet f) as its source → bottom is current,
+		// base is neighbor. So rule.target lives on the bottom path; baseIsTarget=false.
 		return {
 			role: 'bottom',
 			ruleSet: 'withinBand',
+			baseIsTarget: false,
 			address: { ...baseAddress, facet: baseAddress.facet - 1 },
 			quad: prev.quad,
 			path: structuredClone(prev.path),
@@ -132,6 +142,7 @@ export const resolveBaseAndPartners = (
 		return {
 			role: 'bottom',
 			ruleSet: 'partner.startEnd',
+			baseIsTarget: true,
 			address: pair.ghostAddress,
 			quad: pair.ghostQuad,
 			path: pair.ghostPath,
@@ -146,6 +157,7 @@ export const resolveBaseAndPartners = (
 		return {
 			role: 'top',
 			ruleSet: 'partner.endEnd',
+			baseIsTarget: true,
 			address: pair.ghostAddress,
 			quad: pair.ghostQuad,
 			path: pair.ghostPath,
@@ -163,9 +175,11 @@ export const resolveBaseAndPartners = (
 		if (!facet?.quad) return null;
 		// partner's right edge (b-c) coincides with base's left edge (a-d):
 		const fn = rigidFromTwoPoints(facet.quad.b, facet.quad.c, baseFacet.quad.a, baseFacet.quad.d);
+		// Runtime processes base with prevBand=left as source → base IS current; baseIsTarget=true.
 		return {
 			role: 'left',
 			ruleSet: 'acrossBands',
+			baseIsTarget: true,
 			address: { globule: baseAddress.globule, tube: baseAddress.tube, band: baseAddress.band - 1, facet: baseAddress.facet },
 			quad: transformQuadFn(facet.quad, fn),
 			path: transformPathFn(structuredClone(facet.path), fn),
@@ -182,9 +196,12 @@ export const resolveBaseAndPartners = (
 		if (!facet?.quad) return null;
 		// partner's left edge (a-d) coincides with base's right edge (b-c):
 		const fn = rigidFromTwoPoints(facet.quad.a, facet.quad.d, baseFacet.quad.b, baseFacet.quad.c);
+		// Runtime processes right (band+1) with base (band) as its source → right is current,
+		// base is neighbor. rule.target lives on the right partner; baseIsTarget=false.
 		return {
 			role: 'right',
 			ruleSet: 'acrossBands',
+			baseIsTarget: false,
 			address: { globule: baseAddress.globule, tube: baseAddress.tube, band: baseAddress.band + 1, facet: baseAddress.facet },
 			quad: transformQuadFn(facet.quad, fn),
 			path: transformPathFn(structuredClone(facet.path), fn),
