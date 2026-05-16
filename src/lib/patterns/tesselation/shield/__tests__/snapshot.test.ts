@@ -1,4 +1,4 @@
-import { generateShieldTesselationTile } from '../generator';
+import { generateTesselationTile } from '../../shared/generator';
 import { defaultShieldSpec } from '../default-spec';
 import type { Band } from '$lib/types';
 
@@ -11,7 +11,7 @@ describe('shield-tesselation generator snapshot', () => {
 		for (const columns of columnsList) {
 			for (const sideOrientation of sideOrientations) {
 				it(`generator output snapshot: size=${size} columns=${columns} side=${sideOrientation}`, () => {
-					const result = generateShieldTesselationTile(defaultShieldSpec, {
+					const result = generateTesselationTile(defaultShieldSpec, {
 						size,
 						rows: 1,
 						columns,

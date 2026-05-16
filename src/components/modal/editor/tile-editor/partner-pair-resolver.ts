@@ -1,7 +1,7 @@
 import type { BandCutPattern, PathSegment, Quadrilateral } from '$lib/types';
 import type { GlobuleAddress_Band, GlobuleAddress_Facet } from '$lib/projection-geometry/types';
 import type { TransformConfig } from '$lib/projection-geometry/types';
-import { newTransformPS } from '$lib/patterns/tesselation/shield/helpers';
+import { newTransformPS } from '$lib/patterns/tesselation/shared/helpers';
 import { isSameAddress } from '$lib/util';
 
 const transformQuad = (quad: Quadrilateral, transform: TransformConfig): Quadrilateral => {

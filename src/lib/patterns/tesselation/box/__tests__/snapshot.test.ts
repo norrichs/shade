@@ -1,4 +1,4 @@
-import { generateBoxTile } from '../generator';
+import { generateTesselationTile } from '../../shared/generator';
 import { defaultBoxSpec } from '../default-spec';
 
 describe('box generator snapshot', () => {
@@ -10,7 +10,7 @@ describe('box generator snapshot', () => {
 		for (const height of heightList) {
 			for (const width of widthList) {
 				it(`generateBoxPattern size=${size} height=${height} width=${width}`, () => {
-					const result = generateBoxTile(defaultBoxSpec, {
+					const result = generateTesselationTile(defaultBoxSpec, {
 						size,
 						rows: height,
 						columns: width,

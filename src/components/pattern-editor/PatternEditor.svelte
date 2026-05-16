@@ -42,10 +42,6 @@
 		generateTiling,
 		type GenerateTilingProps
 	} from '$lib/cut-pattern/generate-tiled-pattern';
-	import {
-		adjustShieldTesselation as adjustShieldTesselationAfterTiling,
-		defaultShieldSpec
-	} from '$lib/patterns/tesselation/shield';
 
 	let quadBand: Quadrilateral[] = [
 		{
@@ -255,10 +251,7 @@
 	};
 
 	const generateTiledBands = ({ quadBands, tiledPatternConfig, address }: GenerateTilingProps) => {
-		let { adjustAfterTiling } = resolvePatternEntry(tiledPatternConfig.type);
-		if (tiledPatternConfig.type === 'tiledShieldTesselationPattern') {
-			adjustAfterTiling = adjustShieldTesselationAfterTiling;
-		}
+		const { adjustAfterTiling } = resolvePatternEntry(tiledPatternConfig.type);
 
 		const tiling = generateTiling({
 			quadBands,
@@ -266,10 +259,7 @@
 			address
 		});
 		if (adjustAfterTiling) {
-			const adjusted =
-				tiledPatternConfig.type === 'tiledShieldTesselationPattern'
-					? adjustAfterTiling(tiling, tiledPatternConfig, [], defaultShieldSpec)
-					: adjustAfterTiling(tiling, tiledPatternConfig);
+			const adjusted = adjustAfterTiling(tiling, tiledPatternConfig, []);
 			adjacentBands = adjusted.adjacentBands;
 			return adjusted.bands;
 		}

@@ -41,14 +41,20 @@ const retargetPairs = (
 	return sources.map((s, i) => ({ source: s, target: targets[i] }));
 };
 
-export const adjustShieldTesselation = (
+export const adjustTesselation = (
 	bands: BandCutPattern[],
 	tiledPatternConfig: TiledPatternConfig,
 	tubes: TubeCutPattern[],
 	spec: TiledPatternSpec
 ) => {
 	const {
-		config: { endLooped, endsMatched, rowCount: rows = 1, columnCount: columns = 1 }
+		config: {
+			endLooped,
+			endsMatched,
+			endsTrimmed,
+			rowCount: rows = 1,
+			columnCount: columns = 1
+		}
 	} = tiledPatternConfig;
 	const startCount = spec.unit.start.length;
 	const middleCount = spec.unit.middle.length;
@@ -168,6 +174,39 @@ export const adjustShieldTesselation = (
 
 			if (shouldRemove) {
 				removeInPlace({ indices: skipRemoveIndices, target: newBands[b].facets[f].path });
+			}
+		}
+
+		if (endsTrimmed && band.facets.length > 0) {
+			if (startCount > 0) {
+				const allStartCanonical = Array.from({ length: startCount }, (_, i) => i);
+				const expanded = retarget(
+					allStartCanonical,
+					rows,
+					columns,
+					startCount,
+					middleCount,
+					endCount
+				);
+				removeInPlace({ indices: expanded, target: newBands[b].facets[0].path });
+			}
+			if (endCount > 0) {
+				const allEndCanonical = Array.from(
+					{ length: endCount },
+					(_, i) => startCount + middleCount + i
+				);
+				const expanded = retarget(
+					allEndCanonical,
+					rows,
+					columns,
+					startCount,
+					middleCount,
+					endCount
+				);
+				removeInPlace({
+					indices: expanded,
+					target: newBands[b].facets[band.facets.length - 1].path
+				});
 			}
 		}
 	}

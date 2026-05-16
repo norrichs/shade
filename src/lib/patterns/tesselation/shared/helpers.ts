@@ -9,6 +9,31 @@ import type {
 import { isSameAddress } from '$lib/util';
 import type { IndexPair } from '../../spec-types';
 
+export const scaleSegment = (seg: PathSegment, w: number, h: number): PathSegment => {
+	switch (seg[0]) {
+		case 'M':
+			return ['M', seg[1] * w, seg[2] * h];
+		case 'L':
+			return ['L', seg[1] * w, seg[2] * h];
+		case 'Q':
+			return ['Q', seg[1] * w, seg[2] * h, seg[3] * w, seg[4] * h];
+		case 'C':
+			return [
+				'C',
+				seg[1] * w,
+				seg[2] * h,
+				seg[3] * w,
+				seg[4] * h,
+				seg[5] * w,
+				seg[6] * h
+			];
+		case 'A':
+			return ['A', seg[1] * w, seg[2] * h, seg[3], seg[4], seg[5], seg[6] * w, seg[7] * h];
+		case 'Z':
+			return ['Z'];
+	}
+};
+
 export const retarget = (
 	indices: number[],
 	rows: number,

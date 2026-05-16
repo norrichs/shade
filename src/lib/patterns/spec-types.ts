@@ -8,6 +8,8 @@ export type UnitDefinition = {
 	start: PathSegment[];
 	middle: PathSegment[];
 	end: PathSegment[];
+	firstColumn?: PathSegment[];
+	lastColumn?: PathSegment[];
 };
 
 export type AdjustmentRules = {
