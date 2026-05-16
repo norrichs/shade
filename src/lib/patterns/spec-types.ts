@@ -20,6 +20,13 @@ export type AdjustmentRules = {
 		endEnd: IndexPair[];
 	};
 	skipRemove: number[];
+	/**
+	 * Opt-in: when true, the shared adjuster honors `tiledPatternConfig.config.endsTrimmed`
+	 * by removing the start-group from the band's first facet and the end-group from
+	 * the band's last facet. When false/omitted, `endsTrimmed` is a no-op for this spec
+	 * (preserves pre-migration shield behavior, where the trim flag was ignored).
+	 */
+	trimsEnds?: boolean;
 };
 
 export type TiledPatternAlgorithm =
