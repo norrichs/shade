@@ -12,14 +12,13 @@
 	function refreshPatterns() {
 		pausePatternUpdates.set(false);
 		// Force derived store to re-evaluate by subscribing and immediately unsubscribing.
-		// This relies on Svelte's synchronous derived store execution during subscribe.
+		// Relies on Svelte's synchronous derived store execution during subscribe.
 		superGlobulePatternStore.subscribe(() => {})();
 	}
 </script>
 
 <Editor>
 	<section>
-		<header>Computation Mode</header>
 		<Container direction="column">
 			<label>
 				Mode
@@ -31,14 +30,14 @@
 			</label>
 			<label>
 				<input type="checkbox" bind:checked={$isManualMode} />
-				Manual Mode
+				Manual
 				{#if $isManualMode && $hasPendingChanges}
 					<span class="pending-indicator">⚠ pending</span>
 				{/if}
 			</label>
 			<label>
 				<input type="checkbox" bind:checked={$pausePatternUpdates} />
-				Pause Pattern Updates
+				Pause Patterns
 			</label>
 			{#if $pausePatternUpdates}
 				<button onclick={refreshPatterns}>Refresh</button>
@@ -59,5 +58,16 @@
 		color: #ff9800;
 		font-size: 0.75rem;
 		font-weight: 600;
+		animation: pulse 1.5s ease-in-out infinite;
+	}
+
+	@keyframes pulse {
+		0%,
+		100% {
+			opacity: 1;
+		}
+		50% {
+			opacity: 0.5;
+		}
 	}
 </style>
