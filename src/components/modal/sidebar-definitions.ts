@@ -11,6 +11,7 @@ import PatternScale from './editor/PatternScale.svelte';
 import TileEditor from './editor/TileEditor.svelte';
 import Selection from './editor/Selection.svelte';
 import ConfigManager from './editor/ConfigManager.svelte';
+import Rendering from './editor/Rendering.svelte';
 
 export type FloaterContent = {
 	shortTitle: string;
@@ -44,6 +45,14 @@ export const utilities: SidebarDefinition = new Map([
 			shortTitle: 'CF',
 			title: 'Configs',
 			content: ConfigManager
+		}
+	],
+	[
+		'Rendering',
+		{
+			shortTitle: 'RN',
+			title: 'Rendering',
+			content: Rendering
 		}
 	]
 ]);
