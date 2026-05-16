@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Point } from '$lib/types';
-	import { onMount, tick } from 'svelte';
+	import { tick } from 'svelte';
 
 	export let outer: Point[];
 	export let base: [Point, Point];
@@ -36,6 +36,8 @@
 		c: Point,
 		theta: number
 	): { w: number; h: number } => {
+		// Rotate points into the label-local frame so the axis-aligned bbox
+		// matches the area the rotated text will actually occupy.
 		const cos = Math.cos(-theta);
 		const sin = Math.sin(-theta);
 		let minX = Infinity;
@@ -88,7 +90,7 @@
 		measured = true;
 	};
 
-	$: if (text && outer && base) {
+	$: if (text && outer && base && padding !== undefined) {
 		recomputeGeometry();
 	}
 
@@ -96,15 +98,13 @@
 		// Re-fit whenever inputs change after mount
 		void fitFontSize();
 	}
-
-	onMount(() => {
-		recomputeGeometry();
-		void fitFontSize();
-	});
 </script>
 
 {#if text && fontSize >= MIN_FONT_SIZE}
-	<g transform="translate({centroid.x} {centroid.y}) rotate({angleDeg})">
+	<g
+		transform="translate({centroid.x} {centroid.y}) rotate({angleDeg})"
+		style="visibility: {measured ? 'visible' : 'hidden'};"
+	>
 		<text
 			bind:this={textEl}
 			text-anchor="middle"
