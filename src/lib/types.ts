@@ -334,6 +334,13 @@ export type BandCutPattern = {
 		translatedStartPartnerFacet?: CutPattern;
 		translatedEndPartnerFacet?: CutPattern;
 	};
+	tabs?: Array<{
+		outer: Point[]; // 2D points in pattern-flatten space
+		base: [Point, Point]; // the edge attached to the band (used for rotation)
+		position: 'start' | 'end' | 'mid';
+		midIndex?: number; // 0..midCount-1 for mid tabs
+		midCount?: number; // total mid tabs on this band
+	}>;
 };
 
 export type TubeCutPattern = {
@@ -545,8 +552,8 @@ export type TiledPatternConfig = {
 	type: TiledPattern;
 	tiling: TilingBasis;
 	labels?: {
-		scale: number;
-		angle: number;
+		externalTag?: { enabled: boolean; scale: number; angle: number };
+		onTab?: { enabled: boolean; padding: number; color?: string };
 	};
 	config: {
 		rowCount?: number;
