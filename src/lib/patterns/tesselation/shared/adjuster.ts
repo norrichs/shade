@@ -177,7 +177,7 @@ export const adjustTesselation = (
 			}
 		}
 
-		if (endsTrimmed && band.facets.length > 0) {
+		if (endsTrimmed && spec.adjustments.trimsEnds && band.facets.length > 0) {
 			if (startCount > 0) {
 				const allStartCanonical = Array.from({ length: startCount }, (_, i) => i);
 				const expanded = retarget(

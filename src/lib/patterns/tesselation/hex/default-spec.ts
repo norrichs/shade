@@ -41,6 +41,7 @@ export const defaultHexSpec: TiledPatternSpec = {
 			startEnd: [],
 			endEnd: []
 		},
-		skipRemove: []
+		skipRemove: [],
+		trimsEnds: true
 	}
 };
