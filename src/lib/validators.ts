@@ -1,5 +1,10 @@
 import type { CutoutConfig } from './cut-pattern/generate-cut-pattern';
-import type { GlobulePatternConfig, TiledPatternConfig } from './types';
+import type {
+	GlobulePatternConfig,
+	OutlinedPatternConfig,
+	PatternLabelsConfig,
+	TiledPatternConfig
+} from './types';
 
 export type Validity = {
 	isValid: boolean;
@@ -7,21 +12,21 @@ export type Validity = {
 };
 
 /**
- * Migrate a legacy-shape `TiledPatternConfig.labels` to the current shape.
+ * Migrate a legacy-shape pattern `labels` to the current shape.
  *
  * Legacy shape: `{ scale: number; angle: number }`
  * Current shape: `{ externalTag?: { enabled, scale, angle }; onTab?: { enabled, padding, color? } }`
  *
+ * Applies to both `TiledPatternConfig.labels` and `OutlinedPatternConfig.labels`.
+ *
  * Returns a new labels object if migration was needed; otherwise returns the input unchanged.
  */
-const migrateTiledPatternLabels = (
-	labels: unknown
-): TiledPatternConfig['labels'] | undefined => {
+const migratePatternLabels = (labels: unknown): PatternLabelsConfig | undefined => {
 	if (!labels || typeof labels !== 'object') return undefined;
 	const obj = labels as Record<string, unknown>;
 	// Already new shape: has externalTag or onTab keys
 	if ('externalTag' in obj || 'onTab' in obj) {
-		return obj as TiledPatternConfig['labels'];
+		return obj as PatternLabelsConfig;
 	}
 	// Legacy shape: flat scale/angle
 	if (typeof obj.scale === 'number' && typeof obj.angle === 'number') {
@@ -30,7 +35,7 @@ const migrateTiledPatternLabels = (
 			onTab: { enabled: false, padding: 0.1 }
 		};
 	}
-	return obj as TiledPatternConfig['labels'];
+	return obj as PatternLabelsConfig;
 };
 
 /**
@@ -42,10 +47,10 @@ export const migrateGlobulePatternConfig = <T extends Partial<GlobulePatternConf
 ): T => {
 	if (!config || typeof config !== 'object') return config;
 	const patternTypeConfig = config.patternTypeConfig as
-		| (TiledPatternConfig & { labels?: unknown })
+		| ((TiledPatternConfig | OutlinedPatternConfig) & { labels?: unknown })
 		| undefined;
-	if (patternTypeConfig && patternTypeConfig.type !== 'outlined' && patternTypeConfig.labels) {
-		const migrated = migrateTiledPatternLabels(patternTypeConfig.labels);
+	if (patternTypeConfig && patternTypeConfig.labels) {
+		const migrated = migratePatternLabels(patternTypeConfig.labels);
 		if (migrated) {
 			patternTypeConfig.labels = migrated;
 		}

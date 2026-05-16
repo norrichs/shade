@@ -8,6 +8,7 @@ import Utilities from './editor/Utilities.svelte';
 import Silhouette from './editor/Silhouette.svelte';
 import GlobuleCrossSection from './editor/GlobuleCrossSection.svelte';
 import PatternScale from './editor/PatternScale.svelte';
+import LabelEditor from './editor/LabelEditor.svelte';
 import TileEditor from './editor/TileEditor.svelte';
 import Selection from './editor/Selection.svelte';
 import ConfigManager from './editor/ConfigManager.svelte';
@@ -53,6 +54,15 @@ export const utilities: SidebarDefinition = new Map([
 			shortTitle: 'RN',
 			title: 'Rendering',
 			content: Rendering
+		}
+	],
+	[
+		'Label Editor',
+		{
+			shortTitle: 'LB',
+			title: 'Label Editor',
+			content: LabelEditor,
+			closeOnClickAway: true
 		}
 	]
 ]);

@@ -480,6 +480,10 @@ export const defaultOutlinedPatternConfig = (): OutlinedPatternConfig => ({
 		tabWidth: 20,
 		shape: 'partner',
 		bandEdge: 'after'
+	},
+	labels: {
+		externalTag: { enabled: true, scale: 0.1, angle: Math.PI },
+		onTab: { enabled: false, padding: 0.1 }
 	}
 });
 

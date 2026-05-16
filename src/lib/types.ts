@@ -548,13 +548,15 @@ export type TilingBasis = 'quadrilateral' | 'band' | 'triangle';
 export type DynamicStrokeBasis = 'quadWidth' | 'quadHeight' | 'ranked';
 export type SkipEdges = 'all' | 'not-both' | 'not-first' | 'not-last' | 'none';
 
+export type PatternLabelsConfig = {
+	externalTag?: { enabled: boolean; scale: number; angle: number };
+	onTab?: { enabled: boolean; padding: number; color?: string };
+};
+
 export type TiledPatternConfig = {
 	type: TiledPattern;
 	tiling: TilingBasis;
-	labels?: {
-		externalTag?: { enabled: boolean; scale: number; angle: number };
-		onTab?: { enabled: boolean; padding: number; color?: string };
-	};
+	labels?: PatternLabelsConfig;
 	config: {
 		rowCount?: number;
 		columnCount?: number;
@@ -590,6 +592,7 @@ export type OutlinedTabConfig = {
 export type OutlinedPatternConfig = {
 	type: 'outlined';
 	tabConfig?: OutlinedTabConfig;
+	labels?: PatternLabelsConfig;
 };
 
 export type PatternTypeConfig = TiledPatternConfig | OutlinedPatternConfig;

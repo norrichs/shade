@@ -1,5 +1,9 @@
 import { migrateGlobulePatternConfig } from '../validators';
-import type { GlobulePatternConfig, TiledPatternConfig } from '../types';
+import type {
+	GlobulePatternConfig,
+	OutlinedPatternConfig,
+	TiledPatternConfig
+} from '../types';
 
 // Minimal stub for a TiledPatternConfig - only the fields the migration touches matter.
 const makeTiledConfig = (labels: unknown): TiledPatternConfig =>
@@ -10,7 +14,16 @@ const makeTiledConfig = (labels: unknown): TiledPatternConfig =>
 		config: {}
 	}) as unknown as TiledPatternConfig;
 
-const wrap = (patternTypeConfig: TiledPatternConfig): Partial<GlobulePatternConfig> =>
+const makeOutlinedConfig = (labels: unknown): OutlinedPatternConfig =>
+	({
+		type: 'outlined',
+		tabConfig: { tabWidth: 20, shape: 'partner', bandEdge: 'after' },
+		labels
+	}) as unknown as OutlinedPatternConfig;
+
+const wrap = (
+	patternTypeConfig: TiledPatternConfig | OutlinedPatternConfig
+): Partial<GlobulePatternConfig> =>
 	({
 		type: 'GlobulePatternConfig',
 		patternTypeConfig
@@ -50,6 +63,20 @@ describe('migrateGlobulePatternConfig', () => {
 			const labels = (result.patternTypeConfig as TiledPatternConfig).labels;
 
 			expect(labels).toBeUndefined();
+		});
+	});
+
+	describe('OutlinedPatternConfig.labels', () => {
+		it('migrates legacy { scale, angle } shape to nested externalTag/onTab', () => {
+			const legacy = wrap(makeOutlinedConfig({ scale: 0.25, angle: Math.PI / 2 }));
+
+			const result = migrateGlobulePatternConfig(legacy);
+			const labels = (result.patternTypeConfig as OutlinedPatternConfig).labels;
+
+			expect(labels).toEqual({
+				externalTag: { enabled: true, scale: 0.25, angle: Math.PI / 2 },
+				onTab: { enabled: false, padding: 0.1 }
+			});
 		});
 	});
 });
