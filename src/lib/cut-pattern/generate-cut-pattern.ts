@@ -66,6 +66,7 @@ import {
 } from '$lib/projection-geometry/generate-projection';
 import type { GlobuleAddress_Band, GlobuleAddress_FacetEdge } from '$lib/projection-geometry/types';
 import { concatAddress } from '$lib/util';
+import { collectBandTabs } from './collect-band-tabs';
 
 export const expandStroke = (rawPathString?: string, strokeWidth?: number) => {
 	if (!rawPathString) {
@@ -289,7 +290,12 @@ export const generateBandPatterns = (
 					? { globule: endPartner.globule, tube: endPartner.tube, band: endPartner.band }
 					: undefined;
 
-				const bandPattern = {
+				const bandPattern: {
+					svgPath: string;
+					facets: CutPattern[];
+					meta: { startPartnerBand?: GlobuleAddress_Band; endPartnerBand?: GlobuleAddress_Band };
+					tabs?: BandCutPattern['tabs'];
+				} = {
 					svgPath: '',
 					facets: flatBand.facets.map((facet, i) => {
 						const pattern: CutPattern = {
@@ -301,6 +307,9 @@ export const generateBandPatterns = (
 					}),
 					meta: { startPartnerBand, endPartnerBand }
 				};
+
+				const tabs = collectBandTabs(flatBand.facets);
+				if (tabs) bandPattern.tabs = tabs;
 
 				// Convert prototype facets deformed by transforms into new svg paths
 				const transformedFacets: PathSegment[][] = [];
@@ -426,6 +435,7 @@ const generateFacetTabPattern = (facetTab: FacetTab | FacetTab[] | undefined) =>
 		} as unknown as MultiFacetTrapTabPattern;
 	}
 };
+
 
 export const generateLevelSetPatterns = (
 	levels: Level[],
