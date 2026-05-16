@@ -1,6 +1,7 @@
 import { Triangle, Vector3 } from 'three';
 import { collectBandTabs } from '../collect-band-tabs';
 import type { Facet, FullTab, TrapTab } from '$lib/types';
+import type { GlobuleAddress_Band, GlobuleAddress_FacetEdge } from '$lib/projection-geometry/types';
 
 // Helpers --------------------------------------------------------------------
 
@@ -54,6 +55,40 @@ const makeTrapTab = (outer: {
 	}
 });
 
+// Build a Facet whose ab/bc/ac partner addresses can be assigned.
+const facetWithMeta = (
+	t: Triangle,
+	partners: Partial<Record<'ab' | 'bc' | 'ac', GlobuleAddress_FacetEdge>>
+): Facet => {
+	const blank: GlobuleAddress_FacetEdge = { globule: 0, tube: 0, band: 0, facet: 0, edge: 'ab' };
+	return {
+		triangle: t,
+		orientation: 'circumferential',
+		meta: {
+			ab: { partner: partners.ab ?? blank },
+			bc: { partner: partners.bc ?? blank },
+			ac: { partner: partners.ac ?? blank }
+		}
+	};
+};
+
+const addr = (band: number, opts: { tube?: number; globule?: number } = {}): GlobuleAddress_Band => ({
+	globule: opts.globule ?? 0,
+	tube: opts.tube ?? 0,
+	band
+});
+
+const facetEdgeAddr = (
+	band: number,
+	opts: { tube?: number; globule?: number; facet?: number; edge?: 'ab' | 'bc' | 'ac' } = {}
+): GlobuleAddress_FacetEdge => ({
+	globule: opts.globule ?? 0,
+	tube: opts.tube ?? 0,
+	band,
+	facet: opts.facet ?? 0,
+	edge: opts.edge ?? 'ab'
+});
+
 // Tests ----------------------------------------------------------------------
 
 describe('collectBandTabs', () => {
@@ -66,7 +101,9 @@ describe('collectBandTabs', () => {
 		expect(collectBandTabs(facets)).toBeUndefined();
 	});
 
-	it('classifies tabs as start / mid / end by facet position', () => {
+	// Positional (fallback) behavior — no meta passed -------------------------
+
+	it('classifies tabs as start / mid / end by facet position when meta absent', () => {
 		// 5 facets, all with full tabs. Expect: start, mid(0), mid(1), mid(2), end.
 		const fullTabOuter = { a: [0, 0] as [number, number], b: [1, 0] as [number, number], c: [0.5, 1] as [number, number] };
 		const facets: Facet[] = [0, 1, 2, 3, 4].map((i) => ({
@@ -151,7 +188,7 @@ describe('collectBandTabs', () => {
 		expect(outerSet.has(`${tab.base[1].x},${tab.base[1].y}`)).toBe(true);
 	});
 
-	it('skips facets without tabs but still classifies present tabs by index', () => {
+	it('skips facets without tabs but still classifies present tabs by index (no meta)', () => {
 		// 3 facets, only the middle one has a tab → it must be 'mid'.
 		const fullTabOuter = { a: [0, 0] as [number, number], b: [1, 0] as [number, number], c: [0.5, 1] as [number, number] };
 		const facets: Facet[] = [
@@ -166,5 +203,134 @@ describe('collectBandTabs', () => {
 		expect(tabs![0].position).toBe('mid');
 		expect(tabs![0].midIndex).toBe(0);
 		expect(tabs![0].midCount).toBe(1);
+	});
+
+	// Semantic classification — meta + facet partners -------------------------
+
+	it('semantic: facet whose seam partner matches startPartnerBand is classified start', () => {
+		// FullTab with free='c' → seam edge = 'ab'.
+		// We wire the facet's meta.ab.partner to band 7 and pass startPartnerBand={band:7}.
+		const fullTab = makeFullTab({ a: [0, 0], b: [1, 0], c: [0.5, 1] }, 'c');
+		const facets: Facet[] = [
+			{
+				...facetWithMeta(tri([0, 0], [1, 0], [0, 1]), { ab: facetEdgeAddr(7) }),
+				tab: fullTab
+			},
+			{
+				...facetWithMeta(tri([1, 0], [2, 0], [1, 1]), { ab: facetEdgeAddr(99) }),
+				tab: makeFullTab({ a: [1, 0], b: [2, 0], c: [1.5, 1] }, 'c')
+			}
+		];
+
+		const tabs = collectBandTabs(facets, {
+			startPartnerBand: addr(7),
+			endPartnerBand: addr(8)
+		});
+		expect(tabs).toBeDefined();
+		expect(tabs![0].position).toBe('start');
+		// Second facet's partner (band 99) matches neither → 'mid'.
+		expect(tabs![1].position).toBe('mid');
+	});
+
+	it('semantic: facet whose seam partner matches endPartnerBand is classified end', () => {
+		const fullTab = makeFullTab({ a: [0, 0], b: [1, 0], c: [0.5, 1] }, 'c');
+		const facets: Facet[] = [
+			{
+				...facetWithMeta(tri([0, 0], [1, 0], [0, 1]), { ab: facetEdgeAddr(99) }),
+				tab: fullTab
+			},
+			{
+				...facetWithMeta(tri([1, 0], [2, 0], [1, 1]), { ab: facetEdgeAddr(8) }),
+				tab: makeFullTab({ a: [1, 0], b: [2, 0], c: [1.5, 1] }, 'c')
+			}
+		];
+
+		const tabs = collectBandTabs(facets, {
+			startPartnerBand: addr(7),
+			endPartnerBand: addr(8)
+		});
+		expect(tabs).toBeDefined();
+		// First facet's partner band (99) matches neither → 'mid'.
+		expect(tabs![0].position).toBe('mid');
+		expect(tabs![1].position).toBe('end');
+	});
+
+	it('semantic: facet whose seam partner matches neither is classified mid', () => {
+		const fullTab = makeFullTab({ a: [0, 0], b: [1, 0], c: [0.5, 1] }, 'c');
+		const facets: Facet[] = [
+			{
+				...facetWithMeta(tri([0, 0], [1, 0], [0, 1]), { ab: facetEdgeAddr(42) }),
+				tab: fullTab
+			}
+		];
+
+		const tabs = collectBandTabs(facets, {
+			startPartnerBand: addr(7),
+			endPartnerBand: addr(8)
+		});
+		expect(tabs).toBeDefined();
+		// Single facet but partner address doesn't match either → 'mid', not
+		// positional 'start'.
+		expect(tabs![0].position).toBe('mid');
+		expect(tabs![0].midIndex).toBe(0);
+		expect(tabs![0].midCount).toBe(1);
+	});
+
+	it('semantic: TrapTab seam classification uses footprint.free → edge mapping', () => {
+		// TrapTab footprint.free = 'b' → seam edge = 'ac'.
+		const trapTab = makeTrapTab({ a: [0, 0], b: [1, 1], c: [2, 1], d: [3, 0] });
+		const facets: Facet[] = [
+			{
+				...facetWithMeta(tri([0, 0], [3, 0], [1.5, 2]), { ac: facetEdgeAddr(7) }),
+				tab: trapTab
+			}
+		];
+
+		const tabs = collectBandTabs(facets, {
+			startPartnerBand: addr(7),
+			endPartnerBand: addr(8)
+		});
+		expect(tabs).toBeDefined();
+		expect(tabs![0].position).toBe('start');
+	});
+
+	it('semantic: tube/globule must also match (not just band index)', () => {
+		// Same band index 7 but different tube → no match → 'mid'.
+		const fullTab = makeFullTab({ a: [0, 0], b: [1, 0], c: [0.5, 1] }, 'c');
+		const facets: Facet[] = [
+			{
+				...facetWithMeta(tri([0, 0], [1, 0], [0, 1]), {
+					ab: facetEdgeAddr(7, { tube: 1 })
+				}),
+				tab: fullTab
+			}
+		];
+
+		const tabs = collectBandTabs(facets, {
+			startPartnerBand: addr(7, { tube: 0 }),
+			endPartnerBand: addr(8, { tube: 0 })
+		});
+		expect(tabs).toBeDefined();
+		expect(tabs![0].position).toBe('mid');
+	});
+
+	it('semantic: falls back to positional when meta is passed but partner metadata is missing on the facet', () => {
+		// Meta provided but facet has no .meta — fallback should kick in so we
+		// still get a sensible (positional) classification.
+		const fullTabOuter = { a: [0, 0] as [number, number], b: [1, 0] as [number, number], c: [0.5, 1] as [number, number] };
+		const facets: Facet[] = [0, 1, 2].map((i) => ({
+			...bareFacet(tri([i, 0], [i + 1, 0], [i, 1])),
+			tab: makeFullTab(fullTabOuter, 'c')
+		}));
+
+		const tabs = collectBandTabs(facets, {
+			startPartnerBand: addr(7),
+			endPartnerBand: addr(8)
+		});
+		expect(tabs).toBeDefined();
+		expect(tabs!.length).toBe(3);
+		expect(tabs![0].position).toBe('start');
+		expect(tabs![1].position).toBe('mid');
+		expect(tabs![2].position).toBe('end');
 	});
 });

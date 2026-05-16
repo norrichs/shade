@@ -308,7 +308,7 @@ export const generateBandPatterns = (
 					meta: { startPartnerBand, endPartnerBand }
 				};
 
-				const tabs = collectBandTabs(flatBand.facets);
+				const tabs = collectBandTabs(flatBand.facets, bandPattern.meta);
 				if (tabs) bandPattern.tabs = tabs;
 
 				// Convert prototype facets deformed by transforms into new svg paths
@@ -435,7 +435,6 @@ const generateFacetTabPattern = (facetTab: FacetTab | FacetTab[] | undefined) =>
 		} as unknown as MultiFacetTrapTabPattern;
 	}
 };
-
 
 export const generateLevelSetPatterns = (
 	levels: Level[],

@@ -51,18 +51,10 @@ import {
 
 // Rotated Shape Levels are 2d.  How can I enforce that?
 
-export const isFullTab = (tab: FacetTab | FacetTab[] | undefined): tab is FullTab =>
-	!Array.isArray(tab) && tab?.style === 'full';
-
-export const isTrapTab = (tab: FacetTab | FacetTab[] | undefined): tab is TrapTab =>
-	!Array.isArray(tab) && tab?.style === 'trapezoid';
-
-export const isMultiFacetFullTab = (
-	tab: FacetTab | FacetTab[] | undefined
-): tab is MultiFacetFullTab => !Array.isArray(tab) && tab?.style === 'multi-facet-full';
-export const isMultiFacetTrapTab = (
-	tab: FacetTab | FacetTab[] | undefined
-): tab is MultiFacetTrapTab => !Array.isArray(tab) && tab?.style === 'multi-facet-trapezoid';
+// Tab type guards live in $lib/tab-guards so they can be imported without
+// pulling generate-shape (and its cut-pattern transitive deps) into modules
+// that Jest's transform can't handle. Re-exported here for backward compat.
+export { isFullTab, isTrapTab, isMultiFacetFullTab, isMultiFacetTrapTab } from './tab-guards';
 
 export const isBezierCurveConfig = (curve: BezierConfig | PointConfig2): curve is BezierConfig =>
 	Object.hasOwn(curve, 'p0') &&
