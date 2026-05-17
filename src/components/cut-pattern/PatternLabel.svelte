@@ -11,7 +11,7 @@
 	import { get } from 'svelte/store';
 	import { numberPathSegments } from './number-path-segments';
 	import SvgText from './SvgText/SvgText.svelte';
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import { LABEL_TAG_PORTAL_ID, LABEL_TEXT_PORTAL_ID } from './constants';
 	import LabelText from './LabelText.svelte';
 
@@ -108,6 +108,15 @@
 				lableTagContainer.appendChild(tagElement);
 			}
 		}
+	});
+
+	onDestroy(() => {
+		// Elements were moved into the portal containers via appendChild on mount,
+		// so they are no longer cleaned up automatically when this component is
+		// destroyed. Remove them explicitly to avoid stale labels persisting after
+		// toggles or pattern range changes.
+		tagElement?.remove();
+		textElement?.remove();
 	});
 
 	let path = $derived(
