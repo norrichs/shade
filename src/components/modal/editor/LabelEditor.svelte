@@ -13,7 +13,14 @@
 
 	const defaultLabels = (): PatternLabelsConfig => ({
 		onTab: { enabled: false, padding: 0.1 },
-		selfTag: { enabled: true, height: 14, angle: Math.PI, padding: 10 }
+		selfTag: {
+			enabled: true,
+			height: 14,
+			angle: Math.PI,
+			padding: 10,
+			stemLength: 20,
+			stemWidth: 4
+		}
 	});
 
 	const defaultOnTab = (): OnTab => ({ enabled: false, padding: 0.1 });
@@ -21,7 +28,9 @@
 		enabled: true,
 		height: 14,
 		angle: Math.PI,
-		padding: 10
+		padding: 10,
+		stemLength: 20,
+		stemWidth: 4
 	});
 
 	let patternTypeConfig = $derived($patternConfigStore.patternTypeConfig);
@@ -102,6 +111,20 @@
 			selfTag: { ...(labels.selfTag ?? defaultSelfTag()), padding: newValue }
 		});
 	};
+
+	const handleSelfTagStemLength = (newValue: number) => {
+		writeLabels({
+			...labels,
+			selfTag: { ...(labels.selfTag ?? defaultSelfTag()), stemLength: newValue }
+		});
+	};
+
+	const handleSelfTagStemWidth = (newValue: number) => {
+		writeLabels({
+			...labels,
+			selfTag: { ...(labels.selfTag ?? defaultSelfTag()), stemWidth: newValue }
+		});
+	};
 </script>
 
 <Editor>
@@ -173,6 +196,26 @@
 					step={0.1}
 					value={selfTag.angle}
 					onChange={handleSelfTagAngle}
+				/>
+			</LabeledControl>
+			<LabeledControl label="Stem Length">
+				<NumberInput
+					hasButtons
+					min={0}
+					max={200}
+					step={1}
+					value={selfTag.stemLength ?? 20}
+					onChange={handleSelfTagStemLength}
+				/>
+			</LabeledControl>
+			<LabeledControl label="Stem Width">
+				<NumberInput
+					hasButtons
+					min={0}
+					max={200}
+					step={1}
+					value={selfTag.stemWidth ?? 4}
+					onChange={handleSelfTagStemWidth}
 				/>
 			</LabeledControl>
 		</Container>

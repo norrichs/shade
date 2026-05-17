@@ -552,7 +552,15 @@ export type PatternLabelsConfig = {
 	onTab?: { enabled: boolean; padding: number; color?: string };
 	// `height` is the px font height for the rendered LabelText glyphs.
 	// `padding` (default 10) is the px margin between the SvgText bbox and the outline rect.
-	selfTag?: { enabled: boolean; height: number; angle: number; padding?: number };
+	// `stemLength` (default 20) and `stemWidth` (default 4) control the callout stem dims.
+	selfTag?: {
+		enabled: boolean;
+		height: number;
+		angle: number;
+		padding?: number;
+		stemLength?: number;
+		stemWidth?: number;
+	};
 };
 
 export type TiledPatternConfig = {

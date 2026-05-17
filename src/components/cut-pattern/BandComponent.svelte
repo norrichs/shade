@@ -105,12 +105,14 @@
 			id={`band-self-${band.id}`}
 			{color}
 			value={index}
-			radius={20}
+			radius={(labels?.selfTag?.height ?? 16) /4}
 			height={labels?.selfTag?.height ?? 14}
 			angle={band.tagAngle ?? labels?.selfTag?.angle ?? Math.PI}
 			anchor={tagAnchorPoint || { x: -50, y: -50 }}
 			addressStrings={[concatAddress(band.address, 'tb-slash')]}
 			padding={labels?.selfTag?.padding ?? 10}
+			stemLength={labels?.selfTag?.stemLength ?? 20}
+			stemWidth={labels?.selfTag?.stemWidth ?? 4}
 			portal={isTiled ? { transform: `translate(${origin.x} ${origin.y})` } : undefined}
 		/>
 	{/if}

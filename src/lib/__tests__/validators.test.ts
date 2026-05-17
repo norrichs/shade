@@ -39,7 +39,14 @@ describe('migrateGlobulePatternConfig', () => {
 
 			expect(labels).toEqual({
 				onTab: { enabled: false, padding: 0.1 },
-				selfTag: { enabled: true, height: 14, angle: Math.PI / 2, padding: 10 }
+				selfTag: {
+					enabled: true,
+					height: 14,
+					angle: Math.PI / 2,
+					padding: 10,
+					stemLength: 20,
+					stemWidth: 4
+				}
 			});
 		});
 
@@ -75,7 +82,14 @@ describe('migrateGlobulePatternConfig', () => {
 
 			expect(labels).toEqual({
 				onTab: { enabled: false, padding: 0.1 },
-				selfTag: { enabled: true, height: 14, angle: Math.PI / 2, padding: 10 }
+				selfTag: {
+					enabled: true,
+					height: 14,
+					angle: Math.PI / 2,
+					padding: 10,
+					stemLength: 20,
+					stemWidth: 4
+				}
 			});
 		});
 	});

@@ -15,7 +15,7 @@ export type Validity = {
  * Migrate a legacy-shape pattern `labels` to the current shape.
  *
  * Legacy shape: `{ scale: number; angle: number }`
- * Current shape: `{ onTab?: { enabled, padding, color? }; selfTag?: { enabled, height, angle, padding? } }`
+ * Current shape: `{ onTab?: { enabled, padding, color? }; selfTag?: { enabled, height, angle, padding?, stemLength?, stemWidth? } }`
  *
  * NOTE: the legacy `scale` value is dropped — the new pipeline sizes the label by an
  * explicit pixel `height` rather than scaling the whole path, so the prior value has
@@ -39,7 +39,14 @@ const migratePatternLabels = (labels: unknown): PatternLabelsConfig | undefined 
 	if (typeof obj.scale === 'number' && typeof obj.angle === 'number') {
 		return {
 			onTab: { enabled: false, padding: 0.1 },
-			selfTag: { enabled: true, height: 14, angle: obj.angle, padding: 10 }
+			selfTag: {
+				enabled: true,
+				height: 14,
+				angle: obj.angle,
+				padding: 10,
+				stemLength: 20,
+				stemWidth: 4
+			}
 		};
 	}
 	return obj as PatternLabelsConfig;
