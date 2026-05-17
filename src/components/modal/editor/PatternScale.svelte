@@ -10,14 +10,34 @@
 	const handleChangeUnit = (event: Event) => {
 		const target = event.target as HTMLSelectElement;
 		const config = get(patternConfigStore);
-		config.patternTypeConfig.config.scaleConfig.unit = target.value as ScaleUnit;
-		patternConfigStore.set(config);
+		const patternTypeConfig = config.patternTypeConfig;
+		const inner = patternTypeConfig.config;
+		patternConfigStore.set({
+			...config,
+			patternTypeConfig: {
+				...patternTypeConfig,
+				config: {
+					...inner,
+					scaleConfig: { ...inner.scaleConfig, unit: target.value as ScaleUnit }
+				}
+			}
+		});
 	};
 
 	const handleChangeQuantity = (newValue: number) => {
 		const config = get(patternConfigStore);
-		config.patternTypeConfig.config.scaleConfig.quantity = newValue;
-		patternConfigStore.set(config);
+		const patternTypeConfig = config.patternTypeConfig;
+		const inner = patternTypeConfig.config;
+		patternConfigStore.set({
+			...config,
+			patternTypeConfig: {
+				...patternTypeConfig,
+				config: {
+					...inner,
+					scaleConfig: { ...inner.scaleConfig, quantity: newValue }
+				}
+			}
+		});
 	};
 </script>
 
