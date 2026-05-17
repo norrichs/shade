@@ -1,3 +1,10 @@
+<!--
+	Currently unused: BandComponent's self-tag now renders via SelfTagLabel
+	(text-fitted, outline-only). PatternLabel is kept intact for the upcoming
+	"external partner tags" mode, which may want this template-based callout
+	(fixed-shape shell + arrow stem) styling. Remove only when external partner
+	tags ship with their own renderer and confirm this template is unwanted.
+-->
 <script lang="ts">
 	import {
 		getPathSize,

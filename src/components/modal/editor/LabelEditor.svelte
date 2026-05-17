@@ -13,11 +13,16 @@
 
 	const defaultLabels = (): PatternLabelsConfig => ({
 		onTab: { enabled: false, padding: 0.1 },
-		selfTag: { enabled: true, scale: 0.1, angle: Math.PI }
+		selfTag: { enabled: true, scale: 0.1, angle: Math.PI, padding: 10 }
 	});
 
 	const defaultOnTab = (): OnTab => ({ enabled: false, padding: 0.1 });
-	const defaultSelfTag = (): SelfTag => ({ enabled: true, scale: 0.1, angle: Math.PI });
+	const defaultSelfTag = (): SelfTag => ({
+		enabled: true,
+		scale: 0.1,
+		angle: Math.PI,
+		padding: 10
+	});
 
 	let patternTypeConfig = $derived($patternConfigStore.patternTypeConfig);
 	let isOutlined = $derived(isOutlinedPatternConfig(patternTypeConfig));
@@ -85,6 +90,13 @@
 			selfTag: { ...(labels.selfTag ?? defaultSelfTag()), angle: newValue }
 		});
 	};
+
+	const handleSelfTagPadding = (newValue: number) => {
+		writeLabels({
+			...labels,
+			selfTag: { ...(labels.selfTag ?? defaultSelfTag()), padding: newValue }
+		});
+	};
 </script>
 
 <Editor>
@@ -136,6 +148,16 @@
 					step={0.1}
 					value={selfTag.scale}
 					onChange={handleSelfTagScale}
+				/>
+			</LabeledControl>
+			<LabeledControl label="Padding">
+				<NumberInput
+					hasButtons
+					min={0}
+					max={50}
+					step={1}
+					value={selfTag.padding ?? 10}
+					onChange={handleSelfTagPadding}
 				/>
 			</LabeledControl>
 			<LabeledControl label="Angle (rad)">

@@ -550,7 +550,9 @@ export type SkipEdges = 'all' | 'not-both' | 'not-first' | 'not-last' | 'none';
 
 export type PatternLabelsConfig = {
 	onTab?: { enabled: boolean; padding: number; color?: string };
-	selfTag?: { enabled: boolean; scale: number; angle: number };
+	// `scale` is the overall group scale multiplier on the rendered tag (text + outline).
+	// `padding` (default 10) is the px margin between the SvgText bbox and the outline rect.
+	selfTag?: { enabled: boolean; scale: number; angle: number; padding?: number };
 };
 
 export type TiledPatternConfig = {
