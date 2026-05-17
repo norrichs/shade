@@ -203,6 +203,13 @@
 		measurementHost?.remove();
 	});
 
+	// The full path (including the padding gap added inside
+	// getLabelPathSegments) is scaled by `scale` in `adjust` below. If we
+	// passed the raw `padding` through, the visible padding would shrink
+	// with scale (e.g. padding=10 + scale=0.1 → ~1px rendered). Pre-divide
+	// by |scale| so the post-scale gap matches the user's value.
+	let compensatedPadding = $derived(scale !== 0 ? padding / Math.abs(scale) : padding);
+
 	let path = $derived(
 		svgPathStringFromSegments(
 			adjust(
@@ -212,7 +219,7 @@
 					addressStrings,
 					measuredWidth: textBbox.width,
 					measuredHeight: textBbox.height,
-					padding
+					padding: compensatedPadding
 				}),
 				anchor,
 				angle,
