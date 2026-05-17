@@ -106,7 +106,7 @@
 			{color}
 			value={index}
 			radius={20}
-			scale={labels?.selfTag?.scale ?? 0.1}
+			height={labels?.selfTag?.height ?? 14}
 			angle={band.tagAngle ?? labels?.selfTag?.angle ?? Math.PI}
 			anchor={tagAnchorPoint || { x: -50, y: -50 }}
 			addressStrings={[concatAddress(band.address, 'tb-slash')]}

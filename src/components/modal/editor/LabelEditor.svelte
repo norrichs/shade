@@ -13,13 +13,13 @@
 
 	const defaultLabels = (): PatternLabelsConfig => ({
 		onTab: { enabled: false, padding: 0.1 },
-		selfTag: { enabled: true, scale: 0.1, angle: Math.PI, padding: 10 }
+		selfTag: { enabled: true, height: 14, angle: Math.PI, padding: 10 }
 	});
 
 	const defaultOnTab = (): OnTab => ({ enabled: false, padding: 0.1 });
 	const defaultSelfTag = (): SelfTag => ({
 		enabled: true,
-		scale: 0.1,
+		height: 14,
 		angle: Math.PI,
 		padding: 10
 	});
@@ -81,10 +81,10 @@
 		});
 	};
 
-	const handleSelfTagScale = (newValue: number) => {
+	const handleSelfTagHeight = (newValue: number) => {
 		writeLabels({
 			...labels,
-			selfTag: { ...(labels.selfTag ?? defaultSelfTag()), scale: newValue }
+			selfTag: { ...(labels.selfTag ?? defaultSelfTag()), height: newValue }
 		});
 	};
 
@@ -145,14 +145,14 @@
 					onchange={handleSelfTagEnabled}
 				/>
 			</LabeledControl>
-			<LabeledControl label="Scale">
+			<LabeledControl label="Height">
 				<NumberInput
 					hasButtons
-					min={-2}
-					max={2}
-					step={0.1}
-					value={selfTag.scale}
-					onChange={handleSelfTagScale}
+					min={4}
+					max={200}
+					step={1}
+					value={selfTag.height}
+					onChange={handleSelfTagHeight}
 				/>
 			</LabeledControl>
 			<LabeledControl label="Padding">

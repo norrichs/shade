@@ -2,7 +2,6 @@
 	import {
 		getPathSize,
 		rotatePS,
-		scalePS,
 		svgPathStringFromSegments,
 		translatePS
 	} from '$lib/patterns/utils';
@@ -20,7 +19,7 @@
 		value,
 		addressStrings = undefined,
 		radius = 10,
-		scale = 1,
+		height = 14,
 		angle = 0,
 		anchor = { x: 0, y: 0 },
 		padding = 10,
@@ -31,7 +30,7 @@
 		value: number;
 		addressStrings?: string[] | undefined;
 		radius?: number;
-		scale?: number;
+		height?: number;
 		angle?: number;
 		anchor?: Point;
 		padding?: number;
@@ -152,11 +151,10 @@
 		];
 	};
 
-	const adjust = (segments: PathSegment[], anchor: Point, angle: number, scale: number) => {
+	const adjust = (segments: PathSegment[], anchor: Point, angle: number) => {
 		let adjusted = segments;
 		adjusted = translatePS(adjusted, anchor.x, anchor.y);
 		adjusted = rotatePS(adjusted, angle, anchor);
-		adjusted = scalePS(adjusted, -scale, anchor);
 		return adjusted;
 	};
 
@@ -203,13 +201,6 @@
 		measurementHost?.remove();
 	});
 
-	// The full path (including the padding gap added inside
-	// getLabelPathSegments) is scaled by `scale` in `adjust` below. If we
-	// passed the raw `padding` through, the visible padding would shrink
-	// with scale (e.g. padding=10 + scale=0.1 → ~1px rendered). Pre-divide
-	// by |scale| so the post-scale gap matches the user's value.
-	let compensatedPadding = $derived(scale !== 0 ? padding / Math.abs(scale) : padding);
-
 	let path = $derived(
 		svgPathStringFromSegments(
 			adjust(
@@ -219,11 +210,10 @@
 					addressStrings,
 					measuredWidth: textBbox.width,
 					measuredHeight: textBbox.height,
-					padding: compensatedPadding
+					padding
 				}),
 				anchor,
-				angle,
-				scale
+				angle
 			)
 		)
 	);
@@ -248,7 +238,7 @@
 		style="visibility: hidden; pointer-events: none;"
 		aria-hidden="true"
 	>
-		<LabelText lines={addressStrings} anchor={{ x: 0, y: 0 }} size={5} bind:element={measurementText} />
+		<LabelText lines={addressStrings} anchor={{ x: 0, y: 0 }} size={height} bind:element={measurementText} />
 	</g>
 {/if}
 
@@ -265,13 +255,13 @@
 	<LabelText
 		lines={addressStrings}
 		{anchor}
-		size={5}
+		size={height}
 		bind:element={textElement}
 		transform={portal.transform}
 	/>
 {:else}
 	<g id={`band-label${id ? `-${id}` : ''}`} style="visibility: {visible ? 'visible' : 'hidden'};">
 		<path d={path} fill-rule="evenodd" fill="none" stroke={color} />
-		<LabelText lines={addressStrings} {anchor} size={5} color="black" bind:element={labelTextElement} />
+		<LabelText lines={addressStrings} {anchor} size={height} color="black" bind:element={labelTextElement} />
 	</g>
 {/if}
