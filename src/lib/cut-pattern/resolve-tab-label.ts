@@ -10,11 +10,11 @@ type BandTab = NonNullable<BandCutPattern['tabs']>[number];
  *  - start tab → partner band at start (if any), else ''
  *  - end tab   → partner band at end (if any), else ''
  *  - mid tab, midIndex === 0 → next band in the tube (wraps around)
- *  - mid tab, midIndex === floor(midCount/2) → the band itself
- *  - otherwise → ''
+ *  - other mid tabs → ''
  *
- * If midIndex === 0 and also equals floor(midCount/2) (i.e. a single mid tab),
- * the first-tab rule wins and we return the next band.
+ * Note: the current band's own identity is rendered separately via the
+ * `selfTag` external callout (see `BandComponent` + `PatternLabel`), so there
+ * is no longer a middle-mid rule that points back at the current band.
  */
 export const resolveTabLabel = (
 	tab: BandTab,
@@ -33,9 +33,8 @@ export const resolveTabLabel = (
 
 	if (tab.position === 'mid') {
 		const midIndex = tab.midIndex ?? 0;
-		const midCount = tab.midCount ?? 0;
 
-		// First mid tab → next band in tube (wraps). Wins over middle rule when both match.
+		// First mid tab → next band in tube (wraps).
 		if (midIndex === 0) {
 			const bands = tube.bands;
 			if (bands.length === 0) return '';
@@ -43,11 +42,6 @@ export const resolveTabLabel = (
 			const baseIdx = currentIdx >= 0 ? currentIdx : band.address.band;
 			const nextBand = bands[(baseIdx + 1) % bands.length];
 			return concatAddress(nextBand.address, 'tb-slash');
-		}
-
-		// Middle mid tab → current band's own address.
-		if (midIndex === Math.floor(midCount / 2)) {
-			return concatAddress(band.address, 'tb-slash');
 		}
 
 		return '';

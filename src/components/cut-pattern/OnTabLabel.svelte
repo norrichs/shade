@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Point } from '$lib/types';
 	import { tick } from 'svelte';
+	import SvgText from './SvgText/SvgText.svelte';
 
 	export let outer: Point[];
 	export let base: [Point, Point];
@@ -11,7 +12,10 @@
 	const DEFAULT_FONT_SIZE = 8;
 	const MIN_FONT_SIZE = 1;
 
-	let textEl: SVGTextElement | undefined;
+	// SvgText renders character paths under its own transform. We wrap it in a
+	// <g> so we can measure the rendered geometry via getBBox() and drive the
+	// same font-fit behavior the old <text>-based implementation had.
+	let textEl: SVGGElement | undefined;
 	let fontSize = DEFAULT_FONT_SIZE;
 	let centroid: Point = { x: 0, y: 0 };
 	let angleRad = 0;
@@ -105,13 +109,14 @@
 		transform="translate({centroid.x} {centroid.y}) rotate({angleDeg})"
 		style="visibility: {measured ? 'visible' : 'hidden'};"
 	>
-		<text
-			bind:this={textEl}
-			text-anchor="middle"
-			dominant-baseline="central"
-			fill={color}
-			font-size={fontSize}
-			style="user-select: none; pointer-events: none;"
-		>{text}</text>
+		<g bind:this={textEl} style="pointer-events: none;">
+			<SvgText
+				string={text}
+				size={fontSize}
+				{color}
+				anchor={{ x: 0, y: 0 }}
+				offset={{ x: 'center', y: 'center' }}
+			/>
+		</g>
 	</g>
 {/if}

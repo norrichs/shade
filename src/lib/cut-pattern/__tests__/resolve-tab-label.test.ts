@@ -98,8 +98,9 @@ describe('resolveTabLabel', () => {
 		expect(result).toBe('t1/b0');
 	});
 
-	it('mid tab at middle index returns current band address', () => {
-		// midCount=5 → floor(5/2)=2 → midIndex 2 is the middle
+	it('mid tab at a non-first index returns empty string (self-tag is rendered separately)', () => {
+		// Previously the middle index returned the current band; that rule has been
+		// removed in favor of an independent `selfTag` external callout.
 		const tube = makeTube(2, 6);
 		const band = tube.bands[4];
 		const result = resolveTabLabel(
@@ -107,11 +108,10 @@ describe('resolveTabLabel', () => {
 			band,
 			tube
 		);
-		expect(result).toBe('t2/b4');
+		expect(result).toBe('');
 	});
 
-	it('mid tab that is neither first nor middle returns empty string', () => {
-		// midCount=5 → middle is index 2. index 1 is neither first nor middle.
+	it('mid tab that is not the first mid returns empty string', () => {
 		const tube = makeTube(1, 5);
 		const band = tube.bands[2];
 		const result = resolveTabLabel(
@@ -122,8 +122,7 @@ describe('resolveTabLabel', () => {
 		expect(result).toBe('');
 	});
 
-	it('mid tab with only one mid (midCount=1, midIndex=0): first-tab rule wins, returns next band', () => {
-		// floor(1/2) === 0, so both rules match. First-tab rule must win.
+	it('mid tab with only one mid (midCount=1, midIndex=0) still resolves to next band', () => {
 		const tube = makeTube(1, 4);
 		const band = tube.bands[1];
 		const result = resolveTabLabel(

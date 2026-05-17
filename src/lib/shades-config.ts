@@ -469,7 +469,8 @@ export const defaultTiledPatternConfig = (): TiledPatternConfig => {
 		...tiledPatternConfigs[pattern],
 		labels: {
 			externalTag: { enabled: true, scale: 0.1, angle: Math.PI },
-			onTab: { enabled: false, padding: 0.1 }
+			onTab: { enabled: false, padding: 0.1 },
+			selfTag: { enabled: false, scale: 0.1, angle: Math.PI }
 		}
 	};
 };
@@ -483,7 +484,8 @@ export const defaultOutlinedPatternConfig = (): OutlinedPatternConfig => ({
 	},
 	labels: {
 		externalTag: { enabled: true, scale: 0.1, angle: Math.PI },
-		onTab: { enabled: false, padding: 0.1 }
+		onTab: { enabled: false, padding: 0.1 },
+		selfTag: { enabled: true, scale: 0.1, angle: Math.PI }
 	}
 });
 

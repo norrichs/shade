@@ -36,6 +36,7 @@
 	let labels = $derived($patternConfigStore.patternTypeConfig.labels);
 	let externalTagEnabled = $derived(labels?.externalTag?.enabled ?? false);
 	let onTabEnabled = $derived(labels?.onTab?.enabled ?? false);
+	let selfTagEnabled = $derived(labels?.selfTag?.enabled ?? false);
 	let hasTabs = $derived(!!band.tabs && band.tabs.length > 0);
 
 	let colors = {
@@ -118,5 +119,18 @@
 				color={labels?.onTab?.color ?? 'black'}
 			/>
 		{/each}
+	{/if}
+	{#if selfTagEnabled}
+		<PatternLabel
+			id={`band-self-${band.id}`}
+			{color}
+			value={index}
+			radius={20}
+			scale={labels?.selfTag?.scale ?? 0.1}
+			angle={band.tagAngle ?? labels?.selfTag?.angle ?? Math.PI}
+			anchor={tagAnchorPoint || { x: -50, y: -50 }}
+			addressStrings={[concatAddress(band.address, 'tb-slash')]}
+			portal={portal ? { transform: `translate(${origin.x} ${origin.y})` } : undefined}
+		/>
 	{/if}
 </g>
