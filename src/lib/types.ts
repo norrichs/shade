@@ -549,7 +549,6 @@ export type DynamicStrokeBasis = 'quadWidth' | 'quadHeight' | 'ranked';
 export type SkipEdges = 'all' | 'not-both' | 'not-first' | 'not-last' | 'none';
 
 export type PatternLabelsConfig = {
-	externalTag?: { enabled: boolean; scale: number; angle: number };
 	onTab?: { enabled: boolean; padding: number; color?: string };
 	selfTag?: { enabled: boolean; scale: number; angle: number };
 };

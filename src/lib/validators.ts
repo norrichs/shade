@@ -15,7 +15,7 @@ export type Validity = {
  * Migrate a legacy-shape pattern `labels` to the current shape.
  *
  * Legacy shape: `{ scale: number; angle: number }`
- * Current shape: `{ externalTag?: { enabled, scale, angle }; onTab?: { enabled, padding, color? }; selfTag?: { enabled, scale, angle } }`
+ * Current shape: `{ onTab?: { enabled, padding, color? }; selfTag?: { enabled, scale, angle } }`
  *
  * Applies to both `TiledPatternConfig.labels` and `OutlinedPatternConfig.labels`.
  *
@@ -25,15 +25,15 @@ export type Validity = {
 const migratePatternLabels = (labels: unknown): PatternLabelsConfig | undefined => {
 	if (!labels || typeof labels !== 'object') return undefined;
 	const obj = labels as Record<string, unknown>;
-	// Already new shape: has externalTag, onTab, or selfTag keys
-	if ('externalTag' in obj || 'onTab' in obj || 'selfTag' in obj) {
+	// Already new shape: has onTab or selfTag keys
+	if ('onTab' in obj || 'selfTag' in obj) {
 		return obj as PatternLabelsConfig;
 	}
-	// Legacy shape: flat scale/angle
+	// Legacy shape: flat scale/angle — retarget at selfTag (the new self-only callout)
 	if (typeof obj.scale === 'number' && typeof obj.angle === 'number') {
 		return {
-			externalTag: { enabled: true, scale: obj.scale, angle: obj.angle },
-			onTab: { enabled: false, padding: 0.1 }
+			onTab: { enabled: false, padding: 0.1 },
+			selfTag: { enabled: true, scale: obj.scale, angle: obj.angle }
 		};
 	}
 	return obj as PatternLabelsConfig;

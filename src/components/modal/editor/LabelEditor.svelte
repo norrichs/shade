@@ -8,17 +8,14 @@
 	import { isOutlinedPatternConfig } from '$lib/types';
 	import type { PatternLabelsConfig } from '$lib/types';
 
-	type ExternalTag = NonNullable<PatternLabelsConfig['externalTag']>;
 	type OnTab = NonNullable<PatternLabelsConfig['onTab']>;
 	type SelfTag = NonNullable<PatternLabelsConfig['selfTag']>;
 
 	const defaultLabels = (): PatternLabelsConfig => ({
-		externalTag: { enabled: true, scale: 0.1, angle: Math.PI },
 		onTab: { enabled: false, padding: 0.1 },
 		selfTag: { enabled: true, scale: 0.1, angle: Math.PI }
 	});
 
-	const defaultExternalTag = (): ExternalTag => ({ enabled: true, scale: 0.1, angle: Math.PI });
 	const defaultOnTab = (): OnTab => ({ enabled: false, padding: 0.1 });
 	const defaultSelfTag = (): SelfTag => ({ enabled: true, scale: 0.1, angle: Math.PI });
 
@@ -34,7 +31,6 @@
 	let onTabAvailable = $derived(isOutlined && hasTabs);
 
 	let labels = $derived(patternTypeConfig.labels ?? defaultLabels());
-	let externalTag = $derived(labels.externalTag ?? defaultExternalTag());
 	let onTab = $derived(labels.onTab ?? defaultOnTab());
 	let selfTag = $derived(labels.selfTag ?? defaultSelfTag());
 
@@ -42,29 +38,6 @@
 		const config = get(patternConfigStore);
 		config.patternTypeConfig.labels = next;
 		patternConfigStore.set(config);
-	};
-
-	const handleExternalEnabled = (event: Event) => {
-		const checked = (event.target as HTMLInputElement).checked;
-		writeLabels({
-			...labels,
-			externalTag: { ...(labels.externalTag ?? defaultExternalTag()), enabled: checked }
-		});
-	};
-
-	const handleExternalScale = (newValue: number) => {
-		writeLabels({
-			...labels,
-			externalTag: { ...(labels.externalTag ?? defaultExternalTag()), scale: newValue }
-		});
-	};
-
-	// Angle stored & edited in radians to match TiledPatternConfig.labels.externalTag.angle.
-	const handleExternalAngle = (newValue: number) => {
-		writeLabels({
-			...labels,
-			externalTag: { ...(labels.externalTag ?? defaultExternalTag()), angle: newValue }
-		});
 	};
 
 	const handleOnTabEnabled = (event: Event) => {
@@ -105,7 +78,7 @@
 		});
 	};
 
-	// Angle stored & edited in radians to match externalTag.angle.
+	// Angle stored & edited in radians to match selfTag.angle.
 	const handleSelfTagAngle = (newValue: number) => {
 		writeLabels({
 			...labels,
@@ -115,38 +88,6 @@
 </script>
 
 <Editor>
-	<section>
-		<header>External Tag</header>
-		<Container direction="column">
-			<LabeledControl label="Enabled">
-				<input
-					type="checkbox"
-					checked={externalTag.enabled}
-					onchange={handleExternalEnabled}
-				/>
-			</LabeledControl>
-			<LabeledControl label="Scale">
-				<NumberInput
-					hasButtons
-					min={-2}
-					max={2}
-					step={0.1}
-					value={externalTag.scale}
-					onChange={handleExternalScale}
-				/>
-			</LabeledControl>
-			<LabeledControl label="Angle (rad)">
-				<NumberInput
-					hasButtons
-					min={-Math.PI * 2}
-					max={Math.PI * 2}
-					step={0.1}
-					value={externalTag.angle}
-					onChange={handleExternalAngle}
-				/>
-			</LabeledControl>
-		</Container>
-	</section>
 	<section>
 		<header>On Tab</header>
 		<Container direction="column">

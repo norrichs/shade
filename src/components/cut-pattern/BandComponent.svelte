@@ -34,7 +34,6 @@
 	} = $props();
 
 	let labels = $derived($patternConfigStore.patternTypeConfig.labels);
-	let externalTagEnabled = $derived(labels?.externalTag?.enabled ?? false);
 	let onTabEnabled = $derived(labels?.onTab?.enabled ?? false);
 	let selfTagEnabled = $derived(labels?.selfTag?.enabled ?? false);
 	let hasTabs = $derived(!!band.tabs && band.tabs.length > 0);
@@ -88,27 +87,6 @@
 			stroke-width={0.1}
 		/>{/if}
 	{@render children?.()}
-	{#if externalTagEnabled}
-		<PatternLabel
-			id={`band-${band.id}`}
-			{color}
-			value={index}
-			radius={20}
-			scale={labels?.externalTag?.scale ?? 0.1}
-			angle={labels?.externalTag?.angle ?? band.tagAngle ?? 0}
-			anchor={tagAnchorPoint || { x: -50, y: -50 }}
-			addressStrings={[
-				concatAddress(band.address, 'tb'),
-				...(band.meta?.startPartnerBand
-					? [` > ${concatAddress(band.meta?.startPartnerBand, 'tb')}`]
-					: []),
-				...(band.meta?.endPartnerBand
-					? [` > ${concatAddress(band.meta?.endPartnerBand, 'tb')}`]
-					: [])
-			]}
-			portal={portal ? { transform: `translate(${origin.x} ${origin.y})` } : undefined}
-		/>
-	{/if}
 	{#if onTabEnabled && hasTabs}
 		{#each band.tabs ?? [] as tab, tabIndex (tabIndex)}
 			<OnTabLabel
