@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { BandCutPattern, Point, TubeCutPattern } from '$lib/types';
 	import type { Snippet } from 'svelte';
-	import SelfTagLabel from './SelfTagLabel.svelte';
+	import PatternLabel from './PatternLabel.svelte';
 	import OnTabLabel from './OnTabLabel.svelte';
 	import { resolveTabLabel } from '$lib/cut-pattern/resolve-tab-label';
 	import { patternConfigStore, selectedProjection, selectedSurfaceProjection } from '$lib/stores';
@@ -99,13 +99,17 @@
 		{/each}
 	{/if}
 	{#if selfTagEnabled}
-		<SelfTagLabel
-			text={concatAddress(band.address, 'tb-slash')}
-			anchor={tagAnchorPoint || { x: -50, y: -50 }}
-			angle={band.tagAngle ?? labels?.selfTag?.angle ?? Math.PI}
-			scale={labels?.selfTag?.scale ?? 0.1}
-			padding={labels?.selfTag?.padding ?? 10}
+		<PatternLabel
+			id={`band-self-${band.id}`}
 			{color}
+			value={index}
+			radius={20}
+			scale={labels?.selfTag?.scale ?? 0.1}
+			angle={band.tagAngle ?? labels?.selfTag?.angle ?? Math.PI}
+			anchor={tagAnchorPoint || { x: -50, y: -50 }}
+			addressStrings={[concatAddress(band.address, 'tb-slash')]}
+			padding={labels?.selfTag?.padding ?? 10}
+			portal={portal ? { transform: `translate(${origin.x} ${origin.y})` } : undefined}
 		/>
 	{/if}
 </g>
