@@ -33,7 +33,9 @@
 		children?: Snippet;
 	} = $props();
 
-	let labels = $derived($patternConfigStore.patternTypeConfig.labels);
+	let patternTypeConfig = $derived($patternConfigStore.patternTypeConfig);
+	let labels = $derived(patternTypeConfig.labels);
+	let isTiled = $derived(patternTypeConfig?.type !== 'outlined');
 	let onTabEnabled = $derived(labels?.onTab?.enabled ?? false);
 	let selfTagEnabled = $derived(labels?.selfTag?.enabled ?? false);
 	let hasTabs = $derived(!!band.tabs && band.tabs.length > 0);
@@ -109,7 +111,7 @@
 			anchor={tagAnchorPoint || { x: -50, y: -50 }}
 			addressStrings={[concatAddress(band.address, 'tb-slash')]}
 			padding={labels?.selfTag?.padding ?? 10}
-			portal={portal ? { transform: `translate(${origin.x} ${origin.y})` } : undefined}
+			portal={isTiled ? { transform: `translate(${origin.x} ${origin.y})` } : undefined}
 		/>
 	{/if}
 </g>
