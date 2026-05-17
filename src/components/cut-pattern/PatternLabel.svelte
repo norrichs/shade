@@ -97,15 +97,26 @@
 	let tagElement: SVGGElement;
 	let textElement: SVGGElement;
 
+	// Snapshots captured at portal-mount time. The live bindings above can be
+	// reset by the time onDestroy fires (LabelText resets its `$bindable`
+	// element on unmount, and Svelte may already have torn things down). The
+	// snapshots give us stable handles for the elements we relocated so we can
+	// remove them and any children they own (e.g. SvgText glyphs inside the
+	// LabelText <g>) in lock step with this component's destruction.
+	let portaledTag: SVGElement | undefined;
+	let portaledText: SVGElement | undefined;
+
 	onMount(() => {
 		if (portal) {
 			const lableTagContainer = document.getElementById(LABEL_TAG_PORTAL_ID);
 			const labelTextContainer = document.getElementById(LABEL_TEXT_PORTAL_ID);
 			if (labelTextContainer && textElement) {
 				labelTextContainer.appendChild(textElement);
+				portaledText = textElement;
 			}
 			if (lableTagContainer && tagElement) {
 				lableTagContainer.appendChild(tagElement);
+				portaledTag = tagElement;
 			}
 		}
 	});
@@ -113,10 +124,11 @@
 	onDestroy(() => {
 		// Elements were moved into the portal containers via appendChild on mount,
 		// so they are no longer cleaned up automatically when this component is
-		// destroyed. Remove them explicitly to avoid stale labels persisting after
-		// toggles or pattern range changes.
-		tagElement?.remove();
-		textElement?.remove();
+		// destroyed. Remove the snapshots (and via DOM tree-removal, every child
+		// rendered inside them — including the SvgText glyphs LabelText renders)
+		// to avoid stale labels persisting after toggles or pattern range changes.
+		(portaledTag ?? tagElement)?.remove();
+		(portaledText ?? textElement)?.remove();
 	});
 
 	let path = $derived(
