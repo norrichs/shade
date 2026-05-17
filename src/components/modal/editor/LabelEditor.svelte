@@ -41,8 +41,13 @@
 
 	const writeLabels = (next: PatternLabelsConfig) => {
 		const config = get(patternConfigStore);
-		config.patternTypeConfig.labels = next;
-		patternConfigStore.set(config);
+		patternConfigStore.set({
+			...config,
+			patternTypeConfig: {
+				...config.patternTypeConfig,
+				labels: next
+			}
+		});
 	};
 
 	const handleOnTabEnabled = (event: Event) => {
