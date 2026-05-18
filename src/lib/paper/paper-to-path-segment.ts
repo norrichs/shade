@@ -25,8 +25,7 @@ type PaperSegmentLike = {
 type PaperPathLike = {
 	segments?: PaperSegmentLike[];
 	closed?: boolean;
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	children?: any[];
+	children?: PaperPathLike[];
 };
 
 const emitContour = (path: PaperPathLike, out: PathSegment[]): void => {
@@ -77,6 +76,7 @@ const emitContour = (path: PaperPathLike, out: PathSegment[]): void => {
 		}
 		out.push(['Z']);
 	}
+	// If !path.closed, no Z is emitted and the last point is not connected back.
 };
 
 export const paperToPathSegments = (item: PaperPathLike): PathSegment[] => {

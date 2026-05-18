@@ -16,6 +16,8 @@ export const pathSegmentsToPaper = (segments: PathSegment[]): any => {
 	if (segments.length === 0 || segments[0][0] !== 'M') {
 		throw new Error("PathSegment[] must begin with 'M'");
 	}
+	// Note: multi-contour inputs (multiple 'M's) pass this check; paper will
+	// create a CompoundPath from them. Single-'M' validation only.
 	const paper = getPaperScope();
 	const svg = svgPathStringFromSegments(segments);
 	return paper.PathItem.create(svg);

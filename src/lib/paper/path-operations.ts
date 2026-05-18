@@ -1,12 +1,9 @@
 import type { PathSegment } from '$lib/types';
 import { pathSegmentsToPaper } from './path-segment-to-paper';
 import { paperToPathSegments } from './paper-to-path-segment';
-import { getPaperScope } from './scope';
-
 type Op = 'unite' | 'subtract' | 'intersect' | 'exclude';
 
 const apply = (a: PathSegment[], b: PathSegment[], op: Op): PathSegment[] => {
-	getPaperScope();
 	const pa = pathSegmentsToPaper(a) as unknown as {
 		unite: (other: unknown, options?: { insert?: boolean }) => unknown;
 		subtract: (other: unknown, options?: { insert?: boolean }) => unknown;
@@ -22,6 +19,9 @@ const apply = (a: PathSegment[], b: PathSegment[], op: Op): PathSegment[] => {
 	// Normalize winding so all sub-paths have consistent (positive) area.
 	// Paper's boolean ops can produce CompoundPaths with opposite-winding
 	// children (e.g. exclude), causing signed areas to cancel.
+	// Note: for subtract producing a hole (donut), the relative winding
+	// between outer + inner contours is preserved by paper internally;
+	// reorient does not collapse the hole.
 	if (typeof result.reorient === 'function') {
 		result.reorient(false, true);
 	}
