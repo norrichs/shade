@@ -25,12 +25,13 @@
 	// config changes. User must re-click "Prepare Download" (or just click
 	// Download SVG, which auto-preps) to refresh.
 	$: {
-		// Reference each dep so Svelte tracks it.
+		// Reference each dep so Svelte tracks it. Only clear the merged paths —
+		// `labelTextDimensions` is owned by PatternLabel and updates reactively
+		// when the rendered text bbox changes.
 		void $superGlobulePatternStore;
 		void $patternConfigStore.patternTypeConfig.type;
 		void $patternConfigStore.patternTypeConfig.labels?.selfTag;
 		mergedBandPaths.set(new Map());
-		labelTextDimensions.set(new Map());
 	}
 
 	let showModal = false;

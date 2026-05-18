@@ -99,9 +99,14 @@
 
 	$effect(() => {
 		if (textMeasured && bandId) {
+			// Read textBbox synchronously so Svelte tracks it as a dep — without
+			// this, the effect would only fire once when textMeasured flips true
+			// (often with a stale 0-size bbox) and never refresh.
+			const width = textBbox.width;
+			const height = textBbox.height;
 			labelTextDimensions.update((m) => {
 				const next = new Map(m);
-				next.set(bandId, { width: textBbox.width, height: textBbox.height });
+				next.set(bandId, { width, height });
 				return next;
 			});
 		}
