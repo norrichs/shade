@@ -8,9 +8,11 @@
 	import { LABEL_TAG_PORTAL_ID } from './constants';
 	import LabelText from './LabelText.svelte';
 	import { buildLabelOutlinePath } from '$lib/cut-pattern/label-outline-path';
+	import { mergedBandPaths, labelTextDimensions } from '$lib/stores';
 
 	let {
 		id = undefined,
+		bandId = undefined,
 		color = 'black',
 		value,
 		addressStrings = undefined,
@@ -25,6 +27,7 @@
 		portal = undefined
 	}: {
 		id?: string | undefined;
+		bandId?: string | undefined;
 		color?: string;
 		value: number;
 		addressStrings?: string[] | undefined;
@@ -100,6 +103,16 @@
 		void measurementText;
 		void labelTextElement;
 		void measureText();
+	});
+
+	$effect(() => {
+		if (textMeasured && bandId) {
+			labelTextDimensions.update((m) => {
+				const next = new Map(m);
+				next.set(bandId, { width: textBbox.width, height: textBbox.height });
+				return next;
+			});
+		}
 	});
 
 	const getLabelPathSegments = ({
@@ -286,7 +299,9 @@
 		transform={wrapperTransform}
 		style="visibility: {visible ? 'visible' : 'hidden'};"
 	>
-		<path d={path} fill-rule="evenodd" stroke={color} fill="none" />
+		{#if !bandId || !$mergedBandPaths.has(bandId)}
+			<path d={path} fill-rule="evenodd" stroke={color} fill="none" />
+		{/if}
 		<g transform={`translate(${textTranslate.x} ${textTranslate.y})`}>
 			<LabelText
 				lines={addressStrings}
@@ -302,7 +317,9 @@
 		transform={wrapperTransform}
 		style="visibility: {visible ? 'visible' : 'hidden'};"
 	>
-		<path d={path} fill-rule="evenodd" fill="none" stroke={color} />
+		{#if !bandId || !$mergedBandPaths.has(bandId)}
+			<path d={path} fill-rule="evenodd" fill="none" stroke={color} />
+		{/if}
 		<g transform={`translate(${textTranslate.x} ${textTranslate.y})`}>
 			<LabelText
 				lines={addressStrings}
