@@ -150,7 +150,12 @@
 			<Button onclick={runPrepare}>Prepare Download</Button>
 			<Button
 				onclick={() => {
-					if ($mergedBandPaths.size === 0) runPrepare();
+					if (
+						$patternConfigStore.patternTypeConfig.type === 'outlined' &&
+						$mergedBandPaths.size === 0
+					) {
+						runPrepare();
+					}
 					downloadSvg('pattern-svg', `globule-pattern ${$superGlobuleStore.name}.svg`);
 				}}
 				>Download SVG</Button

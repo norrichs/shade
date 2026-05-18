@@ -93,4 +93,26 @@ describe('computeMergedBandPaths', () => {
 		const result = computeMergedBandPaths([makeTube(band)], labels, 'outlined', new Map());
 		expect(result.has('band-1')).toBe(true);
 	});
+
+	test('respects per-band tagAngle override', () => {
+		// Two bands at the same location, one with tagAngle override, one without.
+		// The override should shift the renderAnchor and produce a different merged path.
+		const baseBand = makeBand({ id: 'band-base', tagAngle: undefined });
+		const overrideBand = makeBand({ id: 'band-override', tagAngle: Math.PI / 4 });
+		const result = computeMergedBandPaths(
+			[makeTube(baseBand), makeTube(overrideBand)],
+			labels,
+			'outlined',
+			new Map([
+				['band-base', { width: 50, height: 20 }],
+				['band-override', { width: 50, height: 20 }]
+			])
+		);
+		expect(result.has('band-base')).toBe(true);
+		expect(result.has('band-override')).toBe(true);
+		// The two merged paths should differ in geometry due to different effective angles.
+		const baseMerged = JSON.stringify(result.get('band-base'));
+		const overrideMerged = JSON.stringify(result.get('band-override'));
+		expect(baseMerged).not.toBe(overrideMerged);
+	});
 });

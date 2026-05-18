@@ -7,7 +7,7 @@
 	import { onDestroy, onMount } from 'svelte';
 	import { LABEL_TAG_PORTAL_ID } from './constants';
 	import LabelText from './LabelText.svelte';
-	import { buildLabelOutlinePath } from '$lib/cut-pattern/label-outline-path';
+	import { buildLabelOutlinePath, FALLBACK_TEXT_WIDTH, FALLBACK_TEXT_HEIGHT } from '$lib/cut-pattern/label-outline-path';
 	import { mergedBandPaths, labelTextDimensions } from '$lib/stores';
 
 	let {
@@ -42,14 +42,6 @@
 		portal?: { transform: string } | undefined;
 	} = $props();
 
-	// Default body dimensions used (a) for the numeric/non-addressStrings branch
-	// (computed from rendered glyph paths via getPathSize) and (b) as a fallback
-	// for the addressStrings branch on the very first render before the SvgText
-	// bbox has been measured. The addressStrings branch keeps visibility hidden
-	// until measurement completes to avoid a flash at the fallback size.
-	const FALLBACK_WIDTH = 350;
-	const FALLBACK_HEIGHT = 280;
-
 	// Bbox of the rendered LabelText (the addressStrings) — measured via
 	// getBBox() on the wrapping <g>. Width/height feed into the outline
 	// path so the callout body sizes to the actual rendered text + padding.
@@ -58,8 +50,8 @@
 	let textBbox: { x: number; y: number; width: number; height: number } = $state({
 		x: 0,
 		y: 0,
-		width: FALLBACK_WIDTH,
-		height: FALLBACK_HEIGHT
+		width: FALLBACK_TEXT_WIDTH,
+		height: FALLBACK_TEXT_HEIGHT
 	});
 	let textMeasured = $state(false);
 

@@ -1,5 +1,13 @@
 import type { PathSegment } from '$lib/types';
 
+/**
+ * Default text dimensions used when a label has not yet been measured.
+ * Used by PatternLabel before getBBox() settles, and by prepare-merge when
+ * a band's measured dims aren't in labelTextDimensions yet.
+ */
+export const FALLBACK_TEXT_WIDTH = 350;
+export const FALLBACK_TEXT_HEIGHT = 280;
+
 export type LabelOutlineInput = {
 	measuredWidth: number;
 	measuredHeight: number;
@@ -38,7 +46,6 @@ export const buildLabelOutlinePath = (input: LabelOutlineInput): PathSegment[] =
 		['Q', -halfWidth, bodyHeight + stemLength, -halfWidth, bodyHeight - r + stemLength],
 		['L', -halfWidth, r + stemLength],
 		['Q', -halfWidth, stemLength, r - halfWidth, stemLength],
-		['L', -stemWidth / 2, stemLength],
 		['L', -stemWidth / 2, stemLength],
 		['L', -stemWidth / 2, 0],
 		['Z']
