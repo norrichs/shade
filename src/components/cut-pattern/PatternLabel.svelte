@@ -7,9 +7,12 @@
 	import { onDestroy, onMount } from 'svelte';
 	import { LABEL_TAG_PORTAL_ID } from './constants';
 	import LabelText from './LabelText.svelte';
+	import { buildLabelOutlinePath, FALLBACK_TEXT_WIDTH, FALLBACK_TEXT_HEIGHT } from '$lib/cut-pattern/label-outline-path';
+	import { mergedBandPaths, labelTextDimensions } from '$lib/stores';
 
 	let {
 		id = undefined,
+		bandId = undefined,
 		color = 'black',
 		value,
 		addressStrings = undefined,
@@ -24,6 +27,7 @@
 		portal = undefined
 	}: {
 		id?: string | undefined;
+		bandId?: string | undefined;
 		color?: string;
 		value: number;
 		addressStrings?: string[] | undefined;
@@ -38,14 +42,6 @@
 		portal?: { transform: string } | undefined;
 	} = $props();
 
-	// Default body dimensions used (a) for the numeric/non-addressStrings branch
-	// (computed from rendered glyph paths via getPathSize) and (b) as a fallback
-	// for the addressStrings branch on the very first render before the SvgText
-	// bbox has been measured. The addressStrings branch keeps visibility hidden
-	// until measurement completes to avoid a flash at the fallback size.
-	const FALLBACK_WIDTH = 350;
-	const FALLBACK_HEIGHT = 280;
-
 	// Bbox of the rendered LabelText (the addressStrings) — measured via
 	// getBBox() on the wrapping <g>. Width/height feed into the outline
 	// path so the callout body sizes to the actual rendered text + padding.
@@ -54,8 +50,8 @@
 	let textBbox: { x: number; y: number; width: number; height: number } = $state({
 		x: 0,
 		y: 0,
-		width: FALLBACK_WIDTH,
-		height: FALLBACK_HEIGHT
+		width: FALLBACK_TEXT_WIDTH,
+		height: FALLBACK_TEXT_HEIGHT
 	});
 	let textMeasured = $state(false);
 
@@ -101,6 +97,21 @@
 		void measureText();
 	});
 
+	$effect(() => {
+		if (textMeasured && bandId) {
+			// Read textBbox synchronously so Svelte tracks it as a dep — without
+			// this, the effect would only fire once when textMeasured flips true
+			// (often with a stale 0-size bbox) and never refresh.
+			const width = textBbox.width;
+			const height = textBbox.height;
+			labelTextDimensions.update((m) => {
+				const next = new Map(m);
+				next.set(bandId, { width, height });
+				return next;
+			});
+		}
+	});
+
 	const getLabelPathSegments = ({
 		value,
 		r,
@@ -132,24 +143,14 @@
 			: getPathSize(labelTextPathSegments);
 
 		const halfWidth = (width + padding * 2) / 2;
-		const bodyHeight = height + padding * 2;
-		const labelOutlinePathSegments: PathSegment[] = [
-			['M', 0, 0],
-			['L', stemWidth / 2, 0],
-			['L', stemWidth / 2, stemLength],
-			['L', halfWidth - r, stemLength],
-			['Q', halfWidth, stemLength, halfWidth, r + stemLength],
-			['L', halfWidth, stemLength + bodyHeight - r],
-			['Q', halfWidth, bodyHeight + stemLength, halfWidth - r, bodyHeight + stemLength],
-			['L', r - halfWidth, bodyHeight + stemLength],
-			['Q', -halfWidth, bodyHeight + stemLength, -halfWidth, bodyHeight - r + stemLength],
-			['L', -halfWidth, r + stemLength],
-			['Q', -halfWidth, stemLength, r - halfWidth, stemLength],
-			['L', -stemWidth / 2, stemLength],
-			['L', -stemWidth / 2, stemLength],
-			['L', -stemWidth / 2, 0],
-			['Z']
-		];
+		const labelOutlinePathSegments: PathSegment[] = buildLabelOutlinePath({
+			measuredWidth: width,
+			measuredHeight: height,
+			radius: r,
+			padding,
+			stemLength,
+			stemWidth
+		});
 
 		return [
 			...labelOutlinePathSegments,
@@ -295,7 +296,9 @@
 		transform={wrapperTransform}
 		style="visibility: {visible ? 'visible' : 'hidden'};"
 	>
-		<path d={path} fill-rule="evenodd" stroke={color} fill="none" />
+		{#if !bandId || !$mergedBandPaths.has(bandId)}
+			<path d={path} fill-rule="evenodd" stroke={color} fill="none" />
+		{/if}
 		<g transform={`translate(${textTranslate.x} ${textTranslate.y})`}>
 			<LabelText
 				lines={addressStrings}
@@ -311,7 +314,9 @@
 		transform={wrapperTransform}
 		style="visibility: {visible ? 'visible' : 'hidden'};"
 	>
-		<path d={path} fill-rule="evenodd" fill="none" stroke={color} />
+		{#if !bandId || !$mergedBandPaths.has(bandId)}
+			<path d={path} fill-rule="evenodd" fill="none" stroke={color} />
+		{/if}
 		<g transform={`translate(${textTranslate.x} ${textTranslate.y})`}>
 			<LabelText
 				lines={addressStrings}

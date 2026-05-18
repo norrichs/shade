@@ -1,5 +1,13 @@
 <script lang="ts">
-	import { shouldUsePersisted, uiStore, superGlobuleStore } from '$lib/stores';
+	import {
+		shouldUsePersisted,
+		uiStore,
+		superGlobuleStore,
+		mergedBandPaths,
+		labelTextDimensions,
+		superGlobulePatternStore,
+		patternConfigStore
+	} from '$lib/stores';
 	import { isManualMode, hasPendingChanges } from '$lib/stores/uiStores';
 	import { triggerManualRegeneration, isGenerating } from '$lib/stores/superGlobuleStores';
 	import { selectedSurfaceProjection, rotateToSelection } from '$lib/stores/selectionStores';
@@ -8,8 +16,23 @@
 	import Button from '../design-system/Button.svelte';
 	import WorkingIndicator from './WorkingIndicator.svelte';
 	import ViewMenu from './ViewMenu.svelte';
+	import { computeMergedBandPaths } from '$lib/cut-pattern/prepare-merge';
+	import { get } from 'svelte/store';
 
 	$: regenerateDisabled = !$isManualMode || $isGenerating || !$hasPendingChanges;
+
+	// Invalidate prepared merge state whenever underlying geometry or label
+	// config changes. User must re-click "Prepare Download" (or just click
+	// Download SVG, which auto-preps) to refresh.
+	$: {
+		// Reference each dep so Svelte tracks it. Only clear the merged paths —
+		// `labelTextDimensions` is owned by PatternLabel and updates reactively
+		// when the rendered text bbox changes.
+		void $superGlobulePatternStore;
+		void $patternConfigStore.patternTypeConfig.type;
+		void $patternConfigStore.patternTypeConfig.labels?.selfTag;
+		mergedBandPaths.set(new Map());
+	}
 
 	let showModal = false;
 	const toggleModal = () => {
@@ -38,6 +61,21 @@
 	$: selectedBandLabel = $selectedSurfaceProjection
 		? `t${$selectedSurfaceProjection.tube}b${$selectedSurfaceProjection.band}`
 		: '';
+
+	const runPrepare = () => {
+		const patternState = get(superGlobulePatternStore) as any;
+		const config = get(patternConfigStore);
+		const labelDims = get(labelTextDimensions);
+		const tubes =
+			patternState.projectionPattern?.projectionCutPattern?.tubes ??
+			patternState.globuleTubePattern?.projectionCutPattern?.tubes ??
+			patternState.surfaceProjectionPattern?.projectionCutPattern?.tubes ??
+			[];
+		const labels = config.patternTypeConfig.labels;
+		const patternType = config.patternTypeConfig.type;
+		const merged = computeMergedBandPaths(tubes, labels, patternType, labelDims);
+		mergedBandPaths.set(merged);
+	};
 
 	function handleBandSelect(event: Event) {
 		const target = event.target as HTMLSelectElement;
@@ -110,8 +148,17 @@
 					$interactionMode = { type: 'band-select-multiple', data: { bands: [] } };
 				}}>Select Bands</Button
 			>
+			<Button onclick={runPrepare}>Prepare Download</Button>
 			<Button
-				onclick={() => downloadSvg('pattern-svg', `globule-pattern ${$superGlobuleStore.name}.svg`)}
+				onclick={() => {
+					if (
+						$patternConfigStore.patternTypeConfig.type === 'outlined' &&
+						$mergedBandPaths.size === 0
+					) {
+						runPrepare();
+					}
+					downloadSvg('pattern-svg', `globule-pattern ${$superGlobuleStore.name}.svg`);
+				}}
 				>Download SVG</Button
 			>
 			<Button

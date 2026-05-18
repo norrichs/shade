@@ -128,7 +128,7 @@
 					index={b}
 					origin={origins.tubes[t].bands[b]}
 					portal={true}
-					tagAnchorPoint={minPoint(band.facets)}
+					tagAnchorPoint={band.tagAnchorPoint ?? minPoint(band.facets)}
 					tagAngle={band.tagAngle}
 					showBounds={false}
 					{selectionTarget}

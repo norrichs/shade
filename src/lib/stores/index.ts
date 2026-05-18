@@ -6,3 +6,4 @@ export * from '$lib/stores/uiStores';
 export * from '$lib/stores/viewControlStore';
 export * from '$lib/stores/workerStore';
 export * from '$lib/stores/partnerHighlightStore';
+export * from '$lib/stores/mergedPathStore';
