@@ -108,6 +108,7 @@
 			radius={(labels?.selfTag?.height ?? 16) /4}
 			height={labels?.selfTag?.height ?? 14}
 			angle={band.tagAngle ?? labels?.selfTag?.angle ?? 0}
+			autoAngle={band.tagAnchorAutoAngle}
 			anchor={tagAnchorPoint || { x: -50, y: -50 }}
 			addressStrings={[concatAddress(band.address, 'tb-slash')]}
 			padding={labels?.selfTag?.padding ?? 10}
