@@ -131,8 +131,10 @@
 			next = { ...next, config: existing.config };
 		}
 
-		store.patternTypeConfig = next as PatternTypeConfig;
-		patternConfigStore.set(store);
+		patternConfigStore.set({
+			...store,
+			patternTypeConfig: next as PatternTypeConfig
+		});
 	};
 
 	const handleSaveAs = async (newName: string) => {

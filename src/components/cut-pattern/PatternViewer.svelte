@@ -10,9 +10,6 @@
 	} from '$lib/stores';
 	import CutPatternControl from './CutPatternControl.svelte';
 	import CutPatternSvg from './CutPatternSvg.svelte';
-	import BandCutPatternComponent from './BandCutPatternComponent.svelte';
-	import BandComponent from './BandComponent.svelte';
-	import QuadPattern from '../pattern-svg/QuadPattern.svelte';
 
 	import ProjectionPanelPatterns from './ProjectionPanelPatterns.svelte';
 	import { mmFromInches } from '$lib/patterns/utils';
@@ -98,21 +95,6 @@
 					verbose={true}
 				/>
 			{/if}
-
-			<!-- {#if $viewControlStore.showGlobuleGeometry.any}
-				{#each $superGlobulePatternStore.superGlobulePattern?.bandPatterns || [] as band, index}
-					<BandComponent {band} {index} showLabel>
-						{#if band.projectionType === 'patterned'}
-							<BandCutPatternComponent {band} />
-						{/if}
-						<QuadPattern
-							{band}
-							showQuads={$patternConfigStore.patternViewConfig.showQuads}
-							showLabels={$patternConfigStore.patternViewConfig.showLabels}
-						/>
-					</BandComponent>
-				{/each}
-			{/if} -->
 
 			<!-- <SvgLogger /> -->
 		</CutPatternSvg>

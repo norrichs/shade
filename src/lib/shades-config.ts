@@ -468,8 +468,8 @@ export const defaultTiledPatternConfig = (): TiledPatternConfig => {
 	return {
 		...tiledPatternConfigs[pattern],
 		labels: {
-			scale: 0.1,
-			angle: Math.PI
+			onTab: { enabled: false, padding: 0.1 },
+			selfTag: { enabled: false, height: 14, angle: 0, padding: 10, stemLength: 20, stemWidth: 4 }
 		}
 	};
 };
@@ -480,6 +480,10 @@ export const defaultOutlinedPatternConfig = (): OutlinedPatternConfig => ({
 		tabWidth: 20,
 		shape: 'partner',
 		bandEdge: 'after'
+	},
+	labels: {
+		onTab: { enabled: false, padding: 0.1 },
+		selfTag: { enabled: true, height: 14, angle: 0, padding: 10, stemLength: 20, stemWidth: 4 }
 	}
 });
 

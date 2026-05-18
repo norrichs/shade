@@ -1,5 +1,5 @@
 import { Vector3 } from 'three';
-import type { Tube } from '$lib/projection-geometry/types';
+import type { GlobuleAddress_Band, Tube } from '$lib/projection-geometry/types';
 import type {
 	Band,
 	BandCutPattern,
@@ -27,6 +27,7 @@ import {
 	correctTabOverlaps,
 	type TabGeometry
 } from './generate-tab-geometry';
+import { collectOutlinedBandTabs, type OutlinedTabEdge } from './collect-outlined-band-tabs';
 
 /**
  * Compute bounding box from all coordinates in a path.
@@ -84,6 +85,13 @@ type OutlineEdge = {
 	partnerOuter?: { start: Vector3; end: Vector3 };
 	/** For end edges: the tube index of the partner at this end */
 	endPartnerTube?: number;
+	/**
+	 * For 'end' edges only. `true` for the near-end cap (which corresponds to the
+	 * band's `startPartnerBand`), `false` for the far-end cap (which corresponds
+	 * to `endPartnerBand`). Used by `collectOutlinedBandTabs` to map tabs onto
+	 * the start/end positions consumed by `resolveTabLabel`.
+	 */
+	endIsStartCap?: boolean;
 };
 
 /**
@@ -210,7 +218,8 @@ const getOutlineEdges = (
 		end: quads[quads.length - 1].c.clone(),
 		side: 'end',
 		interiorPoint: farEndInterior,
-		endPartnerTube: endPartnerTube
+		endPartnerTube: endPartnerTube,
+		endIsStartCap: false
 	});
 
 	// "after" side: c→b edge of each quad, walked backward
@@ -248,7 +257,8 @@ const getOutlineEdges = (
 		end: quads[0].a.clone(),
 		side: 'end',
 		interiorPoint: nearEndInterior,
-		endPartnerTube: startPartnerTube
+		endPartnerTube: startPartnerTube,
+		endIsStartCap: true
 	});
 
 	return edges;
@@ -364,12 +374,17 @@ const shouldHaveTab = (
 
 /**
  * Build the outline path from edges, inserting tab geometry where configured.
+ *
+ * If `tabsOut` is provided, the per-edge TabGeometry map is written into it as
+ * a side-effect so callers can introspect the generated tabs (e.g. to populate
+ * `BandCutPattern.tabs` for label rendering).
  */
 const buildOutlinePath = (
 	edges: OutlineEdge[],
 	tabConfig?: OutlinedTabConfig,
 	hasPartners?: { after: boolean; before: boolean },
-	currentTube?: number
+	currentTube?: number,
+	tabsOut?: Map<number, TabGeometry>
 ): PathSegment[] => {
 	if (edges.length === 0) return [];
 
@@ -378,7 +393,7 @@ const buildOutlinePath = (
 	// Collect tabs per side for overlap correction
 	const afterEdgeIndices: number[] = [];
 	const beforeEdgeIndices: number[] = [];
-	const tabsByIndex = new Map<number, TabGeometry>();
+	const tabsByIndex = tabsOut ?? new Map<number, TabGeometry>();
 
 	const partners = hasPartners ?? { after: true, before: true };
 
@@ -435,7 +450,14 @@ const generateOutlinedBandPattern = (
 ): BandCutPattern => {
 	const edges = getOutlineEdges(quads, band, neighborBefore, neighborAfter);
 	const hasPartners = bandHasPartners(band);
-	const outlinePath = buildOutlinePath(edges, config.tabConfig, hasPartners, tubeAddress.tube);
+	const tabsByIndex = new Map<number, TabGeometry>();
+	const outlinePath = buildOutlinePath(
+		edges,
+		config.tabConfig,
+		hasPartners,
+		tubeAddress.tube,
+		tabsByIndex
+	);
 
 	const outlineFacet: CutPattern = {
 		path: outlinePath,
@@ -454,15 +476,43 @@ const generateOutlinedBandPattern = (
 	// Compute bounds from all path coordinates (includes tab geometry)
 	const bounds = getBoundsFromPath(outlinePath);
 
-	return {
+	// Compute the band's start/end partner bands from facet edge metadata so
+	// `resolveTabLabel` can render addresses on the 'start' and 'end' cap tabs.
+	// Outlined uses 'helical-right' (axial-right) band style, which puts both
+	// cap edges on the 'ab' edge of the first and last facets (mirroring
+	// generate-tiled-pattern.ts:213-227).
+	const startPartner = band.facets[0]?.meta?.ab?.partner;
+	const endPartner = band.facets[band.facets.length - 1]?.meta?.ab?.partner;
+	const startPartnerBand: GlobuleAddress_Band | undefined = startPartner
+		? { globule: startPartner.globule, tube: startPartner.tube, band: startPartner.band }
+		: undefined;
+	const endPartnerBand: GlobuleAddress_Band | undefined = endPartner
+		? { globule: endPartner.globule, tube: endPartner.tube, band: endPartner.band }
+		: undefined;
+	const meta =
+		startPartnerBand && endPartnerBand ? { startPartnerBand, endPartnerBand } : undefined;
+
+	// Extract structured tab records for label rendering. We only pass the two
+	// fields collectOutlinedBandTabs needs — `side` and `endIsStartCap` — so the
+	// helper stays decoupled from the Vector3-heavy OutlineEdge shape.
+	const tabEdges: OutlinedTabEdge[] = edges.map((e) => ({
+		side: e.side,
+		endIsStartCap: e.endIsStartCap
+	}));
+	const tabs = collectOutlinedBandTabs(tabEdges, tabsByIndex);
+
+	const result: BandCutPattern = {
 		projectionType: 'patterned',
 		facets: [outlineFacet, ...quadFacets],
 		svgPath: outlineFacet.svgPath,
 		id: `outlined-band-${bandIndex}`,
 		tagAnchorPoint: { x: 0, y: 0 },
 		address: { ...tubeAddress, band: bandIndex },
-		bounds
+		bounds,
+		meta
 	};
+	if (tabs) result.tabs = tabs;
+	return result;
 };
 
 /**

@@ -201,7 +201,16 @@ export const addressIsInArray = (
 	return arr.some((a) => a && concatAddress_Facet(a) === a0str);
 };
 
-export type AddressFormat = 'gtbf' | 'gtb' | 'gt' | 'tbf' | 'tb' | 't' | 'b' | 'f';
+export type AddressFormat =
+	| 'gtbf'
+	| 'gtb'
+	| 'gt'
+	| 'tbf'
+	| 'tb'
+	| 'tb-slash'
+	| 't'
+	| 'b'
+	| 'f';
 
 export const isGlobuleAddress_FacetEdge = (a: GlobuleAddress): a is GlobuleAddress_FacetEdge =>
 	isGlobuleAddress_Facet(a) && Object.hasOwn(a, 'edge');
@@ -220,6 +229,8 @@ export const concatAddress_Facet = (a: GlobuleAddress_Facet, format: AddressForm
 			return `t${a.tube}b${a.band}f${a.facet}`;
 		case 'tb':
 			return `t${a.tube}b${a.band}`;
+		case 'tb-slash':
+			return `t${a.tube}/b${a.band}`;
 		case 't':
 			return `t${a.tube}`;
 		case 'b':
@@ -235,6 +246,8 @@ export const concatAddress_Band = (a: GlobuleAddress_Band, format: AddressFormat
 	switch (format) {
 		case 'tb':
 			return `t${a.tube}b${a.band}`;
+		case 'tb-slash':
+			return `t${a.tube}/b${a.band}`;
 		case 't':
 			return `t${a.tube}`;
 		case 'b':
