@@ -59,7 +59,7 @@ Expected output: `ok function`. This confirms paper-core loads without a DOM and
 Create `src/lib/paper/scope.ts`:
 
 ```ts
-// @ts-expect-error - paper-core has no bundled types; we treat the default export as `any`
+// paper-core has no bundled types; the default export is treated as `any`.
 import paper from 'paper/dist/paper-core';
 
 let initialized = false;
