@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { getMidPoint, svgPathStringFromSegments } from '$lib/patterns/utils';
 	import type { TransformConfig } from '$lib/projection-geometry/types';
-	import { patternConfigStore } from '$lib/stores';
+	import { patternConfigStore, mergedBandPaths } from '$lib/stores';
 	import type { BandCutPattern, CutPattern, Quadrilateral } from '$lib/types';
 	import QuadPattern from '../pattern-svg/QuadPattern.svelte';
 	import BoundsPattern from './BoundsPattern.svelte';
@@ -73,7 +73,9 @@
 <BoundsPattern {showBounds} bounds={band.bounds} />
 {#if renderAsSinglePath}
 	<path
-		d={band.svgPath}
+		d={$mergedBandPaths.has(band.id)
+			? svgPathStringFromSegments($mergedBandPaths.get(band.id)!)
+			: band.svgPath}
 		fill="none"
 		stroke-width={band.facets[0].strokeWidth}
 		stroke-linecap="round"
