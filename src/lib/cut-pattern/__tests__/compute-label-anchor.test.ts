@@ -9,7 +9,7 @@ describe('computeOutlinedLabelAnchor', () => {
 			edgeStart: { x: 0, y: 0 },
 			edgeEnd: { x: 10, y: 0 },
 			interiorPoint: { x: 5, y: -5 },
-			tab: undefined,
+			hasTab: false,
 			tabWidth: 0
 		});
 
@@ -26,7 +26,7 @@ describe('computeOutlinedLabelAnchor', () => {
 			edgeStart: { x: 0, y: 0 },
 			edgeEnd: { x: 10, y: 0 },
 			interiorPoint: { x: 5, y: -5 },
-			tab: { tabWidth: 4 }, // tab present, outward shift = 4
+			hasTab: true, // tab present, outward shift = 4
 			tabWidth: 4
 		});
 
@@ -43,7 +43,7 @@ describe('computeOutlinedLabelAnchor', () => {
 			edgeStart: { x: 0, y: 0 },
 			edgeEnd: { x: 0, y: 10 },
 			interiorPoint: { x: -5, y: 5 },
-			tab: undefined,
+			hasTab: false,
 			tabWidth: 0
 		});
 

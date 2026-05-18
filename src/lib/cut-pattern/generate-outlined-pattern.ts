@@ -528,7 +528,7 @@ const generateOutlinedBandPattern = (
 			edgeStart: { x: capEdge.start.x, y: capEdge.start.y },
 			edgeEnd: { x: capEdge.end.x, y: capEdge.end.y },
 			interiorPoint: { x: capEdge.interiorPoint.x, y: capEdge.interiorPoint.y },
-			tab: capTab ? { tabWidth: capTabWidth } : undefined,
+			hasTab: capTab !== undefined,
 			tabWidth: capTabWidth
 		});
 	}
