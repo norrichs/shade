@@ -16,6 +16,7 @@
 		radius = 10,
 		height = 14,
 		angle = 0,
+		autoAngle = undefined,
 		anchor = { x: 0, y: 0 },
 		padding = 10,
 		stemLength = 20,
@@ -29,6 +30,7 @@
 		radius?: number;
 		height?: number;
 		angle?: number;
+		autoAngle?: number | undefined;
 		anchor?: Point;
 		padding?: number;
 		stemLength?: number;
@@ -235,17 +237,37 @@
 		y: bodyCenter.y - (textBbox.y + textBbox.height / 2)
 	});
 
-	// Convert radians to degrees for SVG transform.
-	let angleDeg = $derived((angle * 180) / Math.PI);
+	// When `autoAngle` is provided (outlined bands), `angle` is interpreted as
+	// a relative offset added to it. For tiled bands and any legacy caller,
+	// `autoAngle` is undefined and `angle` keeps its previous absolute-rotation
+	// behavior.
+	let effectiveAngle = $derived(angle + (autoAngle ?? 0));
+	let effectiveAngleDeg = $derived((effectiveAngle * 180) / Math.PI);
 
-	// Wrapper transform: position the path-space origin at `anchor`, then
+	// Stem-width/2 shift: the path-space stem has its two long sides at internal
+	// x = ±stemWidth/2. We want the +x side to land exactly on `anchor` (so one
+	// long side passes through M and the other is offset by stemWidth along the
+	// edge direction). The wrapper translate must therefore be shifted by
+	// −R(θ) · (stemWidth/2, 0) where θ is the effective angle. Only apply this
+	// when autoAngle is defined; otherwise preserve the legacy "anchor = stem
+	// tip center" behavior.
+	let renderAnchor = $derived(
+		autoAngle === undefined
+			? anchor
+			: {
+					x: anchor.x - (stemWidth / 2) * Math.cos(effectiveAngle),
+					y: anchor.y - (stemWidth / 2) * Math.sin(effectiveAngle)
+				}
+	);
+
+	// Wrapper transform: position the path-space origin at `renderAnchor`, then
 	// rotate around it. For the portal branch, prepend the portal transform
 	// so the portal positioning still applies but the rotation is local to
 	// the label coords.
 	let wrapperTransform = $derived(
 		portal
-			? `${portal.transform} translate(${anchor.x} ${anchor.y}) rotate(${angleDeg})`
-			: `translate(${anchor.x} ${anchor.y}) rotate(${angleDeg})`
+			? `${portal.transform} translate(${renderAnchor.x} ${renderAnchor.y}) rotate(${effectiveAngleDeg})`
+			: `translate(${renderAnchor.x} ${renderAnchor.y}) rotate(${effectiveAngleDeg})`
 	);
 </script>
 
