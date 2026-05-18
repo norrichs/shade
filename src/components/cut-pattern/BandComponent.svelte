@@ -1,7 +1,9 @@
 <script lang="ts">
-	import type { BandCutPattern, Point } from '$lib/types';
+	import type { BandCutPattern, Point, TubeCutPattern } from '$lib/types';
 	import type { Snippet } from 'svelte';
 	import PatternLabel from './PatternLabel.svelte';
+	import OnTabLabel from './OnTabLabel.svelte';
+	import { resolveTabLabel } from '$lib/cut-pattern/resolve-tab-label';
 	import { patternConfigStore, selectedProjection, selectedSurfaceProjection } from '$lib/stores';
 	import type { Vector3 } from 'three';
 	import type { GlobuleAddress_Band } from '$lib/projection-geometry/types';
@@ -11,7 +13,7 @@
 		band,
 		index,
 		origin,
-		showLabel = false,
+		tube,
 		showBounds = false,
 		portal = false,
 		tagAnchorPoint,
@@ -22,7 +24,7 @@
 		band: BandCutPattern;
 		index: number;
 		origin: Vector3;
-		showLabel?: boolean;
+		tube: TubeCutPattern;
 		showBounds?: boolean;
 		portal?: boolean;
 		tagAnchorPoint: Point;
@@ -30,6 +32,13 @@
 		selectionTarget?: 'projection' | 'surfaceProjection';
 		children?: Snippet;
 	} = $props();
+
+	let patternTypeConfig = $derived($patternConfigStore.patternTypeConfig);
+	let labels = $derived(patternTypeConfig.labels);
+	let isTiled = $derived(patternTypeConfig?.type !== 'outlined');
+	let onTabEnabled = $derived(labels?.onTab?.enabled ?? false);
+	let selfTagEnabled = $derived(labels?.selfTag?.enabled ?? false);
+	let hasTabs = $derived(!!band.tabs && band.tabs.length > 0);
 
 	let colors = {
 		default: 'orange',
@@ -80,25 +89,31 @@
 			stroke-width={0.1}
 		/>{/if}
 	{@render children?.()}
-	{#if showLabel}
+	{#if onTabEnabled && hasTabs}
+		{#each band.tabs ?? [] as tab, tabIndex (tabIndex)}
+			<OnTabLabel
+				outer={tab.outer}
+				base={tab.base}
+				text={resolveTabLabel(tab, band, tube)}
+				padding={labels?.onTab?.padding ?? 0.1}
+				color={labels?.onTab?.color ?? 'black'}
+			/>
+		{/each}
+	{/if}
+	{#if selfTagEnabled}
 		<PatternLabel
-			id={`band-${band.id}`}
+			id={`band-self-${band.id}`}
 			{color}
 			value={index}
-			radius={20}
-			scale={$patternConfigStore.patternTypeConfig.labels?.scale || 0.1}
-			angle={$patternConfigStore.patternTypeConfig.labels?.angle ?? band.tagAngle ?? 0}
+			radius={(labels?.selfTag?.height ?? 16) /4}
+			height={labels?.selfTag?.height ?? 14}
+			angle={band.tagAngle ?? labels?.selfTag?.angle ?? 0}
 			anchor={tagAnchorPoint || { x: -50, y: -50 }}
-			addressStrings={[
-				concatAddress(band.address, 'tb'),
-				...(band.meta?.startPartnerBand
-					? [` > ${concatAddress(band.meta?.startPartnerBand, 'tb')}`]
-					: []),
-				...(band.meta?.endPartnerBand
-					? [` > ${concatAddress(band.meta?.endPartnerBand, 'tb')}`]
-					: [])
-			]}
-			portal={portal ? { transform: `translate(${origin.x} ${origin.y})` } : undefined}
+			addressStrings={[concatAddress(band.address, 'tb-slash')]}
+			padding={labels?.selfTag?.padding ?? 10}
+			stemLength={labels?.selfTag?.stemLength ?? 20}
+			stemWidth={labels?.selfTag?.stemWidth ?? 4}
+			portal={isTiled ? { transform: `translate(${origin.x} ${origin.y})` } : undefined}
 		/>
 	{/if}
 </g>

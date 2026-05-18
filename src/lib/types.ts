@@ -334,6 +334,13 @@ export type BandCutPattern = {
 		translatedStartPartnerFacet?: CutPattern;
 		translatedEndPartnerFacet?: CutPattern;
 	};
+	tabs?: Array<{
+		outer: Point[]; // 2D points in pattern-flatten space
+		base: [Point, Point]; // the edge attached to the band (used for rotation)
+		position: 'start' | 'end' | 'mid';
+		midIndex?: number; // 0..midCount-1 for mid tabs
+		midCount?: number; // total mid tabs on this band
+	}>;
 };
 
 export type TubeCutPattern = {
@@ -541,13 +548,25 @@ export type TilingBasis = 'quadrilateral' | 'band' | 'triangle';
 export type DynamicStrokeBasis = 'quadWidth' | 'quadHeight' | 'ranked';
 export type SkipEdges = 'all' | 'not-both' | 'not-first' | 'not-last' | 'none';
 
+export type PatternLabelsConfig = {
+	onTab?: { enabled: boolean; padding: number; color?: string };
+	// `height` is the px font height for the rendered LabelText glyphs.
+	// `padding` (default 10) is the px margin between the SvgText bbox and the outline rect.
+	// `stemLength` (default 20) and `stemWidth` (default 4) control the callout stem dims.
+	selfTag?: {
+		enabled: boolean;
+		height: number;
+		angle: number;
+		padding?: number;
+		stemLength?: number;
+		stemWidth?: number;
+	};
+};
+
 export type TiledPatternConfig = {
 	type: TiledPattern;
 	tiling: TilingBasis;
-	labels?: {
-		scale: number;
-		angle: number;
-	};
+	labels?: PatternLabelsConfig;
 	config: {
 		rowCount?: number;
 		columnCount?: number;
@@ -583,6 +602,7 @@ export type OutlinedTabConfig = {
 export type OutlinedPatternConfig = {
 	type: 'outlined';
 	tabConfig?: OutlinedTabConfig;
+	labels?: PatternLabelsConfig;
 };
 
 export type PatternTypeConfig = TiledPatternConfig | OutlinedPatternConfig;
