@@ -7,6 +7,7 @@
 	import { onDestroy, onMount } from 'svelte';
 	import { LABEL_TAG_PORTAL_ID } from './constants';
 	import LabelText from './LabelText.svelte';
+	import { buildLabelOutlinePath } from '$lib/cut-pattern/label-outline-path';
 
 	let {
 		id = undefined,
@@ -132,24 +133,14 @@
 			: getPathSize(labelTextPathSegments);
 
 		const halfWidth = (width + padding * 2) / 2;
-		const bodyHeight = height + padding * 2;
-		const labelOutlinePathSegments: PathSegment[] = [
-			['M', 0, 0],
-			['L', stemWidth / 2, 0],
-			['L', stemWidth / 2, stemLength],
-			['L', halfWidth - r, stemLength],
-			['Q', halfWidth, stemLength, halfWidth, r + stemLength],
-			['L', halfWidth, stemLength + bodyHeight - r],
-			['Q', halfWidth, bodyHeight + stemLength, halfWidth - r, bodyHeight + stemLength],
-			['L', r - halfWidth, bodyHeight + stemLength],
-			['Q', -halfWidth, bodyHeight + stemLength, -halfWidth, bodyHeight - r + stemLength],
-			['L', -halfWidth, r + stemLength],
-			['Q', -halfWidth, stemLength, r - halfWidth, stemLength],
-			['L', -stemWidth / 2, stemLength],
-			['L', -stemWidth / 2, stemLength],
-			['L', -stemWidth / 2, 0],
-			['Z']
-		];
+		const labelOutlinePathSegments: PathSegment[] = buildLabelOutlinePath({
+			measuredWidth: width,
+			measuredHeight: height,
+			radius: r,
+			padding,
+			stemLength,
+			stemWidth
+		});
 
 		return [
 			...labelOutlinePathSegments,
