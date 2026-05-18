@@ -103,6 +103,7 @@
 	{#if selfTagEnabled}
 		<PatternLabel
 			id={`band-self-${band.id}`}
+			bandId={band.id}
 			{color}
 			value={index}
 			radius={(labels?.selfTag?.height ?? 16) /4}
