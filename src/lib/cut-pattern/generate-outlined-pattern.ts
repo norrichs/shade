@@ -28,6 +28,7 @@ import {
 	type TabGeometry
 } from './generate-tab-geometry';
 import { collectOutlinedBandTabs, type OutlinedTabEdge } from './collect-outlined-band-tabs';
+import { computeOutlinedLabelAnchor } from './compute-label-anchor';
 
 /**
  * Compute bounding box from all coordinates in a path.
@@ -501,12 +502,44 @@ const generateOutlinedBandPattern = (
 	}));
 	const tabs = collectOutlinedBandTabs(tabEdges, tabsByIndex);
 
+	// Locate the start-cap edge (the one with endIsStartCap === true) so the
+	// self-tag label can attach near its midpoint (or the outer midpoint of its
+	// tab, if any). For outlined bands the start cap is the LAST edge in the
+	// walk order (see getOutlineEdges: it's appended after the 'after' side and
+	// closes the loop back to quads[0].a). We scan rather than hardcode the
+	// index so any future reordering of the walk doesn't silently break this.
+	let startCapIndex = -1;
+	for (let i = 0; i < edges.length; i++) {
+		if (edges[i].side === 'end' && edges[i].endIsStartCap === true) {
+			startCapIndex = i;
+			break;
+		}
+	}
+
+	let labelAnchor: { anchor: { x: number; y: number }; autoAngle: number } | undefined;
+	if (startCapIndex >= 0) {
+		const capEdge = edges[startCapIndex];
+		const capTab = tabsByIndex.get(startCapIndex);
+		// tabConfig is typed as optional on OutlinedPatternConfig, though in
+		// practice buildOutlinePath above will have already required it if any
+		// tab was generated. Guard with ?? 0 to keep the types honest.
+		const capTabWidth = config.tabConfig?.tabWidth ?? 0;
+		labelAnchor = computeOutlinedLabelAnchor({
+			edgeStart: { x: capEdge.start.x, y: capEdge.start.y },
+			edgeEnd: { x: capEdge.end.x, y: capEdge.end.y },
+			interiorPoint: { x: capEdge.interiorPoint.x, y: capEdge.interiorPoint.y },
+			hasTab: capTab !== undefined,
+			tabWidth: capTabWidth
+		});
+	}
+
 	const result: BandCutPattern = {
 		projectionType: 'patterned',
 		facets: [outlineFacet, ...quadFacets],
 		svgPath: outlineFacet.svgPath,
 		id: `outlined-band-${bandIndex}`,
-		tagAnchorPoint: { x: 0, y: 0 },
+		tagAnchorPoint: labelAnchor ? labelAnchor.anchor : { x: 0, y: 0 },
+		tagAnchorAutoAngle: labelAnchor?.autoAngle,
 		address: { ...tubeAddress, band: bandIndex },
 		bounds,
 		meta

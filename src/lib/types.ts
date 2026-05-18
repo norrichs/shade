@@ -317,6 +317,14 @@ export type BandCutPattern = {
 	id: string;
 	tagAnchorPoint: Point;
 	tagAngle?: number;
+	/**
+	 * For outlined bands: the auto-computed perpendicular-outward angle (radians)
+	 * derived from the start-cap edge orientation. The configured `tagAngle` (or
+	 * `labels.selfTag.angle`) is treated as a relative offset added to this base.
+	 * Undefined for tiled bands and any band where no auto-positioning has been
+	 * computed; PatternLabel falls back to the previous absolute-angle behavior.
+	 */
+	tagAnchorAutoAngle?: number;
 	projectionType: 'patterned';
 	address: GlobuleAddress_Band;
 	bounds?: {
