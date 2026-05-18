@@ -469,7 +469,7 @@ export const defaultTiledPatternConfig = (): TiledPatternConfig => {
 		...tiledPatternConfigs[pattern],
 		labels: {
 			onTab: { enabled: false, padding: 0.1 },
-			selfTag: { enabled: false, height: 14, angle: Math.PI, padding: 10, stemLength: 20, stemWidth: 4 }
+			selfTag: { enabled: false, height: 14, angle: 0, padding: 10, stemLength: 20, stemWidth: 4 }
 		}
 	};
 };
@@ -483,7 +483,7 @@ export const defaultOutlinedPatternConfig = (): OutlinedPatternConfig => ({
 	},
 	labels: {
 		onTab: { enabled: false, padding: 0.1 },
-		selfTag: { enabled: true, height: 14, angle: Math.PI, padding: 10, stemLength: 20, stemWidth: 4 }
+		selfTag: { enabled: true, height: 14, angle: 0, padding: 10, stemLength: 20, stemWidth: 4 }
 	}
 });
 

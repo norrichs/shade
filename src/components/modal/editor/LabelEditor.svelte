@@ -16,7 +16,7 @@
 		selfTag: {
 			enabled: true,
 			height: 14,
-			angle: Math.PI,
+			angle: 0,
 			padding: 10,
 			stemLength: 20,
 			stemWidth: 4
@@ -27,7 +27,7 @@
 	const defaultSelfTag = (): SelfTag => ({
 		enabled: true,
 		height: 14,
-		angle: Math.PI,
+		angle: 0,
 		padding: 10,
 		stemLength: 20,
 		stemWidth: 4
