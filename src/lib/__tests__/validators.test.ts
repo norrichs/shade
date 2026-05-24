@@ -38,7 +38,7 @@ describe('migrateGlobulePatternConfig', () => {
 			const labels = (result.patternTypeConfig as TiledPatternConfig).labels;
 
 			expect(labels).toEqual({
-				onTab: { enabled: false, padding: 0.1 },
+				onTab: { enabled: false, padding: 1 },
 				selfTag: {
 					enabled: true,
 					height: 14,
@@ -81,7 +81,7 @@ describe('migrateGlobulePatternConfig', () => {
 			const labels = (result.patternTypeConfig as OutlinedPatternConfig).labels;
 
 			expect(labels).toEqual({
-				onTab: { enabled: false, padding: 0.1 },
+				onTab: { enabled: false, padding: 1 },
 				selfTag: {
 					enabled: true,
 					height: 14,

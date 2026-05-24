@@ -95,7 +95,7 @@
 				outer={tab.outer}
 				base={tab.base}
 				text={resolveTabLabel(tab, band, tube)}
-				padding={labels?.onTab?.padding ?? 0.1}
+				padding={labels?.onTab?.padding ?? 1}
 				color={labels?.onTab?.color ?? 'black'}
 			/>
 		{/each}

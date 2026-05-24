@@ -38,7 +38,7 @@ const migratePatternLabels = (labels: unknown): PatternLabelsConfig | undefined 
 	// `padding` rather than scaling the whole path, so the old value has no mapping.
 	if (typeof obj.scale === 'number' && typeof obj.angle === 'number') {
 		return {
-			onTab: { enabled: false, padding: 0.1 },
+			onTab: { enabled: false, padding: 1 },
 			selfTag: {
 				enabled: true,
 				height: 14,

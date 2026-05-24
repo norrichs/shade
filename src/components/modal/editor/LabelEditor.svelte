@@ -12,7 +12,7 @@
 	type SelfTag = NonNullable<PatternLabelsConfig['selfTag']>;
 
 	const defaultLabels = (): PatternLabelsConfig => ({
-		onTab: { enabled: false, padding: 0.1 },
+		onTab: { enabled: false, padding: 1 },
 		selfTag: {
 			enabled: true,
 			height: 14,
@@ -23,7 +23,7 @@
 		}
 	});
 
-	const defaultOnTab = (): OnTab => ({ enabled: false, padding: 0.1 });
+	const defaultOnTab = (): OnTab => ({ enabled: false, padding: 1 });
 	const defaultSelfTag = (): SelfTag => ({
 		enabled: true,
 		height: 14,
@@ -146,8 +146,8 @@
 					<NumberInput
 						hasButtons
 						min={0}
-						max={0.5}
-						step={0.01}
+						max={20}
+						step={0.5}
 						value={onTab.padding}
 						onChange={handleOnTabPadding}
 					/>
