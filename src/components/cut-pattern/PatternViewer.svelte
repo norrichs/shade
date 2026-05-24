@@ -2,11 +2,7 @@
 	import {
 		superGlobulePatternStore,
 		patternConfigStore,
-		viewControlStore,
-		type ShowGlobuleTubeGeometries,
-		type ShowProjectionGeometries,
-		type SuperGlobuleProjectionPattern,
-		isSuperGlobuleProjectionCutPattern
+		viewControlStore
 	} from '$lib/stores';
 	import CutPatternControl from './CutPatternControl.svelte';
 	import CutPatternSvg from './CutPatternSvg.svelte';
@@ -14,6 +10,7 @@
 	import ProjectionPanelPatterns from './ProjectionPanelPatterns.svelte';
 	import { mmFromInches } from '$lib/patterns/utils';
 	import CutPatternRenderer from './CutPatternRenderer.svelte';
+	import { collateTubes } from '$lib/cut-pattern/collate-tubes';
 	import type { TubeCutPattern } from '$lib/types';
 
 	let showBands = true;
@@ -27,54 +24,19 @@
 		return colors[index % 6];
 	};
 
-	const collatePatterns = (
-		globuleTubePattern: SuperGlobuleProjectionPattern | null,
-		projectionPattern: SuperGlobuleProjectionPattern | undefined,
-		surfaceProjectionPattern: SuperGlobuleProjectionPattern | undefined,
-		showGlobuleTubeGeometry: ShowGlobuleTubeGeometries,
-		showProjectionGeometry: ShowProjectionGeometries
-	) => {
-		const hasGlobuleTubePattern =
-			globuleTubePattern &&
-			isSuperGlobuleProjectionCutPattern(globuleTubePattern) &&
-			globuleTubePattern.projectionCutPattern.tubes.length > 0;
-		const hasProjectionPattern =
-			projectionPattern &&
-			isSuperGlobuleProjectionCutPattern(projectionPattern) &&
-			projectionPattern.projectionCutPattern.tubes.length > 0;
-		const hasSurfaceProjectionPattern =
-			surfaceProjectionPattern &&
-			isSuperGlobuleProjectionCutPattern(surfaceProjectionPattern) &&
-			surfaceProjectionPattern.projectionCutPattern.tubes.length > 0;
-
-		const patternSource = $patternConfigStore.patternViewConfig.patternSource ?? 'projection';
-		collatedPatterns = [
-			...(hasGlobuleTubePattern && showGlobuleTubeGeometry.any
-				? globuleTubePattern.projectionCutPattern.tubes
-				: []),
-			...(hasProjectionPattern && showProjectionGeometry.any && patternSource === 'projection'
-				? projectionPattern.projectionCutPattern.tubes
-				: []),
-			...(hasSurfaceProjectionPattern &&
-			showProjectionGeometry.any &&
-			patternSource === 'surfaceProjection'
-				? surfaceProjectionPattern.projectionCutPattern.tubes
-				: [])
-		];
-	};
-
 	type FlattenMode = 'native-replace' | 'recombine'; // WTF is this. Still relevant?
 
 	let flattenedPatternedSVG: { bands: string[] } = { bands: [] };
 
 	let collatedPatterns: TubeCutPattern[] = [];
-	$: collatePatterns(
-		$superGlobulePatternStore.globuleTubePattern,
-		$superGlobulePatternStore.projectionPattern,
-		$superGlobulePatternStore.surfaceProjectionPattern,
-		$viewControlStore.showGlobuleTubeGeometry,
-		$viewControlStore.showProjectionGeometry
-	);
+	$: collatedPatterns = collateTubes({
+		globuleTubePattern: $superGlobulePatternStore.globuleTubePattern,
+		projectionPattern: $superGlobulePatternStore.projectionPattern,
+		surfaceProjectionPattern: $superGlobulePatternStore.surfaceProjectionPattern,
+		showGlobuleTubeGeometry: $viewControlStore.showGlobuleTubeGeometry,
+		showProjectionGeometry: $viewControlStore.showProjectionGeometry,
+		patternSource: $patternConfigStore.patternViewConfig.patternSource ?? 'projection'
+	});
 </script>
 
 <div class="container-svg scroll-container" class:showBands>

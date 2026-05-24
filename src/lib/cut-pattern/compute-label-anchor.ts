@@ -51,11 +51,23 @@ export const computeOutlinedLabelAnchor = (
 		y: (edgeStart.y + edgeEnd.y) / 2
 	};
 
-	// Outward unit normal: direction from band interior toward the edge midpoint.
-	const nx = edgeMid.x - interiorPoint.x;
-	const ny = edgeMid.y - interiorPoint.y;
-	const nLen = Math.hypot(nx, ny) || 1;
-	const N: Point = { x: nx / nLen, y: ny / nLen };
+	// Outward unit normal: perpendicular to the cap edge, pointing away from
+	// the band interior. MUST match the convention used by `getOutwardNormal`
+	// in generate-tab-geometry.ts so that the tab's outer face and the label
+	// anchor land on the same line — otherwise the label outline and the
+	// band's tab outline don't meet, and paper.js's `unite` returns a compound
+	// path (label not touching) for skewed/curved cap edges.
+	const edgeDx = edgeEnd.x - edgeStart.x;
+	const edgeDy = edgeEnd.y - edgeStart.y;
+	const perpLen = Math.hypot(edgeDx, edgeDy) || 1;
+	let Nx = -edgeDy / perpLen;
+	let Ny = edgeDx / perpLen;
+	// Flip if the perpendicular candidate points toward the interior.
+	if (Nx * (interiorPoint.x - edgeStart.x) + Ny * (interiorPoint.y - edgeStart.y) > 0) {
+		Nx = -Nx;
+		Ny = -Ny;
+	}
+	const N: Point = { x: Nx, y: Ny };
 
 	// Anchor: edge midpoint, optionally shifted outward by tab width for tabbed bands.
 	const anchor: Point = hasTab

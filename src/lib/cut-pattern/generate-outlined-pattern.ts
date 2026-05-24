@@ -537,7 +537,7 @@ const generateOutlinedBandPattern = (
 		projectionType: 'patterned',
 		facets: [outlineFacet, ...quadFacets],
 		svgPath: outlineFacet.svgPath,
-		id: `outlined-band-${bandIndex}`,
+		id: `outlined-band-${tubeAddress.globule}-${tubeAddress.tube}-${bandIndex}`,
 		tagAnchorPoint: labelAnchor ? labelAnchor.anchor : { x: 0, y: 0 },
 		tagAnchorAutoAngle: labelAnchor?.autoAngle,
 		address: { ...tubeAddress, band: bandIndex },

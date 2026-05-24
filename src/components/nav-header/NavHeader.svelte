@@ -6,7 +6,8 @@
 		mergedBandPaths,
 		labelTextDimensions,
 		superGlobulePatternStore,
-		patternConfigStore
+		patternConfigStore,
+		viewControlStore
 	} from '$lib/stores';
 	import { isManualMode, hasPendingChanges } from '$lib/stores/uiStores';
 	import { triggerManualRegeneration, isGenerating } from '$lib/stores/superGlobuleStores';
@@ -17,6 +18,7 @@
 	import WorkingIndicator from './WorkingIndicator.svelte';
 	import ViewMenu from './ViewMenu.svelte';
 	import { computeMergedBandPaths } from '$lib/cut-pattern/prepare-merge';
+	import { collateTubes } from '$lib/cut-pattern/collate-tubes';
 	import { get } from 'svelte/store';
 
 	$: regenerateDisabled = !$isManualMode || $isGenerating || !$hasPendingChanges;
@@ -65,12 +67,16 @@
 	const runPrepare = () => {
 		const patternState = get(superGlobulePatternStore) as any;
 		const config = get(patternConfigStore);
+		const view = get(viewControlStore);
 		const labelDims = get(labelTextDimensions);
-		const tubes =
-			patternState.projectionPattern?.projectionCutPattern?.tubes ??
-			patternState.globuleTubePattern?.projectionCutPattern?.tubes ??
-			patternState.surfaceProjectionPattern?.projectionCutPattern?.tubes ??
-			[];
+		const tubes = collateTubes({
+			globuleTubePattern: patternState.globuleTubePattern,
+			projectionPattern: patternState.projectionPattern,
+			surfaceProjectionPattern: patternState.surfaceProjectionPattern,
+			showGlobuleTubeGeometry: view.showGlobuleTubeGeometry,
+			showProjectionGeometry: view.showProjectionGeometry,
+			patternSource: config.patternViewConfig.patternSource ?? 'projection'
+		});
 		const labels = config.patternTypeConfig.labels;
 		const patternType = config.patternTypeConfig.type;
 		const merged = computeMergedBandPaths(tubes, labels, patternType, labelDims);
