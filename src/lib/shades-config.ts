@@ -689,7 +689,14 @@ export const defaultVoronoiConfig: VoronoiConfig = {
 			rotate: { x: 0, y: 0, z: 0 }
 		}
 	},
-	surfaceConfig: getDefaultSurfaceConfig(),
+	surfaceConfig: {
+		...getDefaultSurfaceConfig(),
+		transform: {
+			translate: { x: 0, y: 0, z: 0 },
+			scale: { x: 1, y: 1, z: 1 },
+			rotate: { x: 0, y: 0, z: 0 }
+		}
+	},
 	seedConfig: {
 		type: 'VoronoiSeedConfig',
 		seedMethod: {
