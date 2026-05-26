@@ -85,17 +85,37 @@ function makeDummyEdgeConfig(
 	};
 }
 
-function sampleEdgeInUV(
+function sampleEdgeAsDirections(
 	v0: [number, number],
 	v1: [number, number],
-	divisions: number
-): [number, number][] {
-	const points: [number, number][] = [];
+	divisions: number,
+	coordToDirection: CoordToDirection
+): Vector3[] {
+	const dir0 = coordToDirection(v0[0], v0[1]).normalize();
+	const dir1 = coordToDirection(v1[0], v1[1]).normalize();
+	const directions: Vector3[] = [];
 	for (let i = 0; i <= divisions; i++) {
 		const t = i / divisions;
-		points.push([v0[0] + (v1[0] - v0[0]) * t, v0[1] + (v1[1] - v0[1]) * t]);
+		const dir = slerp(dir0, dir1, t);
+		directions.push(dir);
 	}
-	return points;
+	return directions;
+}
+
+function slerp(a: Vector3, b: Vector3, t: number): Vector3 {
+	const dot = Math.max(-1, Math.min(1, a.dot(b)));
+	const omega = Math.acos(dot);
+	if (omega < 1e-10) {
+		return a.clone().lerp(b, t);
+	}
+	const sinOmega = Math.sin(omega);
+	const sa = Math.sin((1 - t) * omega) / sinOmega;
+	const sb = Math.sin(t * omega) / sinOmega;
+	return new Vector3(
+		sa * a.x + sb * b.x,
+		sa * a.y + sb * b.y,
+		sa * a.z + sb * b.z
+	);
 }
 
 function matchTubeEnds(tubes: Tube[]): void {
@@ -295,21 +315,21 @@ export function makeVoronoi(
 		const cellCenterA = relaxedSeeds[cellIdxA];
 		const cellCenterB = relaxedSeeds[cellIdxB];
 
-		// Sample points along the Voronoi edge in UV space
-		const uvSamples = sampleEdgeInUV(
+		// Sample directions along the great circle arc between edge vertices
+		const edgeDirections = sampleEdgeAsDirections(
 			voronoiEdge.vertices[0],
 			voronoiEdge.vertices[1],
-			config.edgeDivisions
+			config.edgeDivisions,
+			coordToDirection
 		);
 
-		// Map each UV sample to 3D, compute normals and curve offsets
+		// Map each direction to 3D surface point, compute normals and curve offsets
 		const edgePoints3d: Vector3[] = [];
 		const curvePointsA: Vector3[] = [];
 		const curvePointsB: Vector3[] = [];
 		const normals: Vector3[] = [];
 
-		for (const [u, v] of uvSamples) {
-			const dir = coordToDirection(u, v);
+		for (const dir of edgeDirections) {
 			const point3d = intersect(dir);
 			if (!point3d) continue;
 
