@@ -86,7 +86,7 @@
 				<input
 					type="range"
 					min="4"
-					max="50"
+					max="300"
 					value={config.seedConfig.seedMethod.pointCount}
 					oninput={(e) => updateConfig(i, 'pointCount', Number(e.currentTarget.value))}
 				/>
