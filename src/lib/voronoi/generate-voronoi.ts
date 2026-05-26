@@ -32,7 +32,7 @@ import {
 
 const CURVE_OFFSET_FACTOR = 0.3;
 
-function getSurfaceCenter(surfaceConfig: VoronoiConfig['surfaceConfig']): Vector3 {
+function getSurfaceCenter(surfaceConfig: SurfaceConfig): Vector3 {
 	if (surfaceConfig.type === 'GlobuleConfig') {
 		return new Vector3(0, 0, 0);
 	}
@@ -282,15 +282,16 @@ function computeVoronoiFromSeeds(
 
 export function makeVoronoi(
 	config: VoronoiConfig,
-	address: GlobuleAddress
+	address: GlobuleAddress,
+	surfaceConfig: SurfaceConfig
 ): { tubes: Tube[]; surface: Object3D } {
 	const resolvedSurfaceConfig =
-		config.surfaceConfig.transform === 'inherit'
-			? ({ ...config.surfaceConfig, transform: config.meta.transform } as SurfaceConfig)
-			: config.surfaceConfig;
+		surfaceConfig.transform === 'inherit'
+			? ({ ...surfaceConfig, transform: config.meta.transform } as SurfaceConfig)
+			: surfaceConfig;
 
 	const surface = generateSurface(resolvedSurfaceConfig);
-	const center = getSurfaceCenter(config.surfaceConfig);
+	const center = getSurfaceCenter(surfaceConfig);
 	const intersect = createSurfaceIntersector(surface, center);
 
 	// Step 1: Generate seeds on surface

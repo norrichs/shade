@@ -147,19 +147,20 @@ jest.mock('$lib/stores/selectionStores', () => ({}));
 
 import { makeVoronoi } from '../generate-voronoi';
 
+const testSurfaceConfig = {
+	type: 'SphereConfig' as const,
+	radius: 400,
+	center: { x: 0.001, y: 0.001, z: 0.001 },
+	transform: {
+		translate: { x: 0, y: 0, z: 0 },
+		scale: { x: 1, y: 1, z: 1 },
+		rotate: { x: 0, y: 0, z: 0 }
+	}
+};
+
 const makeTestConfig = (): VoronoiConfig => ({
 	type: 'VoronoiConfig',
 	meta: {
-		transform: {
-			translate: { x: 0, y: 0, z: 0 },
-			scale: { x: 1, y: 1, z: 1 },
-			rotate: { x: 0, y: 0, z: 0 }
-		}
-	},
-	surfaceConfig: {
-		type: 'SphereConfig',
-		radius: 400,
-		center: { x: 0.001, y: 0.001, z: 0.001 },
 		transform: {
 			translate: { x: 0, y: 0, z: 0 },
 			scale: { x: 1, y: 1, z: 1 },
@@ -203,7 +204,7 @@ const makeTestConfig = (): VoronoiConfig => ({
 describe('makeVoronoi', () => {
 	it('returns tubes and surface', () => {
 		const address: GlobuleAddress = { globule: 0 };
-		const result = makeVoronoi(makeTestConfig(), address);
+		const result = makeVoronoi(makeTestConfig(), address, testSurfaceConfig);
 		expect(result.tubes).toBeDefined();
 		expect(result.surface).toBeDefined();
 		expect(Array.isArray(result.tubes)).toBe(true);
@@ -211,13 +212,13 @@ describe('makeVoronoi', () => {
 
 	it('generates at least one tube', () => {
 		const address: GlobuleAddress = { globule: 0 };
-		const result = makeVoronoi(makeTestConfig(), address);
+		const result = makeVoronoi(makeTestConfig(), address, testSurfaceConfig);
 		expect(result.tubes.length).toBeGreaterThan(0);
 	});
 
 	it('each tube has bands with facets', () => {
 		const address: GlobuleAddress = { globule: 0 };
-		const result = makeVoronoi(makeTestConfig(), address);
+		const result = makeVoronoi(makeTestConfig(), address, testSurfaceConfig);
 		result.tubes.forEach((tube) => {
 			expect(tube.bands.length).toBeGreaterThan(0);
 			tube.bands.forEach((band) => {
@@ -228,7 +229,7 @@ describe('makeVoronoi', () => {
 
 	it('each tube has sections with points', () => {
 		const address: GlobuleAddress = { globule: 0 };
-		const result = makeVoronoi(makeTestConfig(), address);
+		const result = makeVoronoi(makeTestConfig(), address, testSurfaceConfig);
 		result.tubes.forEach((tube) => {
 			expect(tube.sections.length).toBeGreaterThan(0);
 			tube.sections.forEach((section) => {
@@ -239,7 +240,7 @@ describe('makeVoronoi', () => {
 
 	it('facets have triangle geometry', () => {
 		const address: GlobuleAddress = { globule: 0 };
-		const result = makeVoronoi(makeTestConfig(), address);
+		const result = makeVoronoi(makeTestConfig(), address, testSurfaceConfig);
 		const facet = result.tubes[0].bands[0].facets[0];
 		expect(facet.triangle).toBeDefined();
 		expect(facet.triangle.a).toBeDefined();

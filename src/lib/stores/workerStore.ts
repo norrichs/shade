@@ -218,16 +218,19 @@ function getWorker(): Worker {
 					}
 				});
 
-				// Regenerate Voronoi surfaces
-				(resolver.config.voronoiConfigs ?? []).forEach((voronoiConfig, i) => {
-					if (rehydrated.voronoiResults?.[i]) {
-						const resolvedSurfaceConfig =
-						voronoiConfig.surfaceConfig.transform === 'inherit'
-							? { ...voronoiConfig.surfaceConfig, transform: voronoiConfig.meta.transform }
-							: voronoiConfig.surfaceConfig;
-					rehydrated.voronoiResults[i].surface = generateSurface(resolvedSurfaceConfig);
-					}
-				});
+				// Regenerate Voronoi surfaces (uses projection's surface config)
+				const projSurfaceConfig = resolver.config.projectionConfigs[0]?.surfaceConfig;
+				if (projSurfaceConfig) {
+					(resolver.config.voronoiConfigs ?? []).forEach((voronoiConfig, i) => {
+						if (rehydrated.voronoiResults?.[i]) {
+							const resolvedSurfaceConfig =
+								projSurfaceConfig.transform === 'inherit'
+									? { ...projSurfaceConfig, transform: voronoiConfig.meta.transform }
+									: projSurfaceConfig;
+							rehydrated.voronoiResults[i].surface = generateSurface(resolvedSurfaceConfig);
+						}
+					});
+				}
 
 				resolver.resolve(rehydrated);
 			} else if (type === 'error') {

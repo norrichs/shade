@@ -30,7 +30,6 @@ import { defaultProjectionConfig } from './projection-geometry/configs';
 import type { PanelHoleConfig } from './cut-pattern/generate-pattern';
 import type { DistributionConfig } from '../components/cut-pattern/distrubute-panels';
 import type { VoronoiConfig } from './voronoi/types';
-import { getDefaultSurfaceConfig } from './projection-geometry/surface-definitions';
 
 const defaultEndCapConfig = (): EndCapConfig => ({
 	enabled: true,
@@ -683,14 +682,6 @@ export const generateDefaultGlobulePatternConfig = (): GlobulePatternConfig => {
 export const defaultVoronoiConfig: VoronoiConfig = {
 	type: 'VoronoiConfig',
 	meta: {
-		transform: {
-			translate: { x: 0, y: 0, z: 0 },
-			scale: { x: 1, y: 1, z: 1 },
-			rotate: { x: 0, y: 0, z: 0 }
-		}
-	},
-	surfaceConfig: {
-		...getDefaultSurfaceConfig(),
 		transform: {
 			translate: { x: 0, y: 0, z: 0 },
 			scale: { x: 1, y: 1, z: 1 },

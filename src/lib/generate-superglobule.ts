@@ -36,9 +36,12 @@ export const generateSuperGlobule = (superConfig: SuperGlobuleConfig): SuperGlob
 	});
 
 	// Voronoi Tube pipeline
-	const voronoiResults = (superConfig.voronoiConfigs ?? []).map((config, i) => {
-		return makeVoronoi(config, { globule: i });
-	});
+	const projectionSurfaceConfig = superConfig.projectionConfigs[0]?.surfaceConfig;
+	const voronoiResults = projectionSurfaceConfig
+		? (superConfig.voronoiConfigs ?? []).map((config, i) => {
+				return makeVoronoi(config, { globule: i }, projectionSurfaceConfig);
+			})
+		: [];
 
 	const superGlobule: SuperGlobule = {
 		type: 'SuperGlobule',
