@@ -40,7 +40,8 @@ export const generateSuperGlobule = (superConfig: SuperGlobuleConfig): SuperGlob
 		name: superConfig.name,
 		globuleTubes,
 		subGlobules,
-		projections
+		projections,
+		voronoiResults: []
 	};
 	return superGlobule;
 };

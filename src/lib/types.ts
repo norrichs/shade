@@ -12,6 +12,7 @@ import type {
 	Tube,
 	TransformConfig
 } from './projection-geometry/types';
+import type { VoronoiConfig } from './voronoi/types';
 import type { PanelHoleConfig } from './cut-pattern/generate-pattern';
 import type { DistributionConfig } from '../components/cut-pattern/distrubute-panels';
 import type { ProjectionRange } from './projection-geometry/filters';
@@ -889,6 +890,7 @@ export type SuperGlobuleConfig = {
 	name?: string;
 	subGlobuleConfigs: SubGlobuleConfig[];
 	projectionConfigs: BaseProjectionConfig[];
+	voronoiConfigs: VoronoiConfig[];
 };
 
 export type SuperGlobule = {
@@ -902,6 +904,10 @@ export type SuperGlobule = {
 		polyhedron: Polyhedron;
 		tubes: Tube[];
 		surfaceProjectionTubes: Tube[];
+		surface: Object3D;
+	}[];
+	voronoiResults: {
+		tubes: Tube[];
 		surface: Object3D;
 	}[];
 };

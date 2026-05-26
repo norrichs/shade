@@ -53,6 +53,7 @@
 		"@threlte/extras": "^9.7.1",
 		"@types/three": "^0.182.0",
 		"bezier-js": "^6.1.4",
+		"d3-delaunay": "^6.0.4",
 		"drizzle-orm": "^0.45.1",
 		"paper": "^0.12.18",
 		"svelte-drag-and-drop-actions": "^1.0.0",

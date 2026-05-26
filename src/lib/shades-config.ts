@@ -604,7 +604,8 @@ export const generateSuperGlobuleConfigWrapper = (globule: GlobuleConfig) => {
 		id: generateTempId(SUPER_GLOBULE_CONFIG),
 		name: 'Default Super Globule',
 		subGlobuleConfigs: [generateSubGlobuleConfigWrapper(globule)],
-		projectionConfigs: []
+		projectionConfigs: [],
+		voronoiConfigs: []
 	};
 
 	return superGlobuleConfig;
@@ -657,7 +658,8 @@ export const generateDefaultSuperGlobuleConfig = (): SuperGlobuleConfig => {
 				]
 			})
 		],
-		projectionConfigs: [defaultProjectionConfig]
+		projectionConfigs: [defaultProjectionConfig],
+		voronoiConfigs: []
 	};
 
 	return superGlobuleConfig;

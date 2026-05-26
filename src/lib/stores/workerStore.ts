@@ -155,7 +155,8 @@ function rehydrateSuperGlobule(result: SuperGlobule): SuperGlobule {
 		...result,
 		projections,
 		globuleTubes,
-		subGlobules
+		subGlobules,
+		voronoiResults: []
 	};
 }
 
