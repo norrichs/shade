@@ -151,12 +151,32 @@ function rehydrateSuperGlobule(result: SuperGlobule): SuperGlobule {
 		}))
 	}));
 
+	// Rehydrate voronoiResults
+	const voronoiResults = (result.voronoiResults ?? []).map((voronoiResult) => ({
+		...voronoiResult,
+		tubes: voronoiResult.tubes.map((tube) => ({
+			...tube,
+			sections: tube.sections.map((section) => ({
+				points: section.points.map(rehydrateVector3)
+			})),
+			bands: tube.bands.map((band) => ({
+				...band,
+				facets: band.facets.map((facet) => ({
+					...facet,
+					triangle: rehydrateTriangle(
+						facet.triangle as unknown as Parameters<typeof rehydrateTriangle>[0]
+					)
+				}))
+			}))
+		}))
+	}));
+
 	return {
 		...result,
 		projections,
 		globuleTubes,
 		subGlobules,
-		voronoiResults: []
+		voronoiResults
 	};
 }
 
@@ -195,6 +215,13 @@ function getWorker(): Worker {
 					if (rehydrated.projections[i]) {
 						const prepared = prepareProjectionConfig(JSON.parse(JSON.stringify(projConfig)));
 						rehydrated.projections[i].surface = generateSurface(prepared.surfaceConfig);
+					}
+				});
+
+				// Regenerate Voronoi surfaces
+				(resolver.config.voronoiConfigs ?? []).forEach((voronoiConfig, i) => {
+					if (rehydrated.voronoiResults?.[i]) {
+						rehydrated.voronoiResults[i].surface = generateSurface(voronoiConfig.surfaceConfig);
 					}
 				});
 

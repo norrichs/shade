@@ -29,6 +29,8 @@ import { degToRad, mmFromInches } from './patterns/utils';
 import { defaultProjectionConfig } from './projection-geometry/configs';
 import type { PanelHoleConfig } from './cut-pattern/generate-pattern';
 import type { DistributionConfig } from '../components/cut-pattern/distrubute-panels';
+import type { VoronoiConfig } from './voronoi/types';
+import { getDefaultSurfaceConfig } from './projection-geometry/surface-definitions';
 
 const defaultEndCapConfig = (): EndCapConfig => ({
 	enabled: true,
@@ -676,4 +678,47 @@ export const generateDefaultGlobulePatternConfig = (): GlobulePatternConfig => {
 		patternTypeConfig: defaultTiledPatternConfig()
 	};
 	return globulePatternConfig;
+};
+
+export const defaultVoronoiConfig: VoronoiConfig = {
+	type: 'VoronoiConfig',
+	meta: {
+		transform: {
+			translate: { x: 0, y: 0, z: 0 },
+			scale: { x: 1, y: 1, z: 1 },
+			rotate: { x: 0, y: 0, z: 0 }
+		}
+	},
+	surfaceConfig: getDefaultSurfaceConfig(),
+	seedConfig: {
+		type: 'VoronoiSeedConfig',
+		seedMethod: {
+			type: 'centerProjection',
+			pointCount: 12,
+			seed: 42
+		},
+		relaxationIterations: 5
+	},
+	crossSectionConfig: {
+		curves: [
+			{
+				type: 'BezierConfig',
+				points: [
+					{ type: 'PointConfig2', x: 0, y: 0 },
+					{ type: 'PointConfig2', x: 0.33, y: 0 },
+					{ type: 'PointConfig2', x: 0.66, y: 0 },
+					{ type: 'PointConfig2', x: 1, y: 0 }
+				]
+			}
+		],
+		center: { x: 0.5, y: 0 },
+		sampleMethod: { method: 'divideCurvePath', divisions: 4 },
+		scaling: { width: 8, height: 8 },
+		shouldSkewCurve: false
+	},
+	bandConfig: {
+		orientation: 'axial-right',
+		tubeSymmetry: 'lateral'
+	},
+	edgeDivisions: 6
 };

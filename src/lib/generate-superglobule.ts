@@ -2,6 +2,7 @@ import { generateGlobuleData, generateGlobuleTube } from './generate-shape';
 import { generateTempId } from './id-handler';
 import { makeProjection } from './projection-geometry/generate-projection';
 import type { Tube } from './projection-geometry/types';
+import { makeVoronoi } from './voronoi/generate-voronoi';
 import { recombineSubGlobules } from './recombination';
 import { generateTransformedGlobules } from './transform-globule';
 import type {
@@ -34,6 +35,11 @@ export const generateSuperGlobule = (superConfig: SuperGlobuleConfig): SuperGlob
 		return makeProjection(config, { globule: i });
 	});
 
+	// Voronoi Tube pipeline
+	const voronoiResults = (superConfig.voronoiConfigs ?? []).map((config, i) => {
+		return makeVoronoi(config, { globule: i });
+	});
+
 	const superGlobule: SuperGlobule = {
 		type: 'SuperGlobule',
 		superGlobuleConfigId: superConfig.id,
@@ -41,7 +47,7 @@ export const generateSuperGlobule = (superConfig: SuperGlobuleConfig): SuperGlob
 		globuleTubes,
 		subGlobules,
 		projections,
-		voronoiResults: []
+		voronoiResults
 	};
 	return superGlobule;
 };
