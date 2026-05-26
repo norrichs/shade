@@ -11,9 +11,15 @@ export default {
 			{
 				useESM: true
 			}
+		],
+		'^.+\\.js$': [
+			'ts-jest',
+			{
+				useESM: true
+			}
 		]
 	},
-	transformIgnorePatterns: ['node_modules/(?!(svelte|three)/)'],
+	transformIgnorePatterns: ['node_modules/(?!(svelte|three|d3-delaunay|delaunator|robust-predicates)/)'],
 	collectCoverageFrom: ['src/**/*.ts', '!src/**/*.d.ts'],
 	moduleNameMapper: {
 		'^\\$lib/(.*)$': '<rootDir>/src/lib/$1',
