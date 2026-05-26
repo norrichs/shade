@@ -5,6 +5,8 @@ import type {
 	TransformConfig
 } from '$lib/projection-geometry/types';
 
+export type VoronoiMethod = 'spherical' | 'uv';
+
 export type VoronoiConfig = {
 	type: 'VoronoiConfig';
 	meta: { transform: TransformConfig };
@@ -13,6 +15,7 @@ export type VoronoiConfig = {
 	crossSectionConfig: CrossSectionConfig;
 	bandConfig: ProjectionBandConfig;
 	edgeDivisions: number;
+	voronoiMethod: VoronoiMethod;
 };
 
 export type VoronoiSeedConfig = {

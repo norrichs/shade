@@ -727,5 +727,6 @@ export const defaultVoronoiConfig: VoronoiConfig = {
 		orientation: 'axial-right',
 		tubeSymmetry: 'lateral'
 	},
-	edgeDivisions: 6
+	edgeDivisions: 6,
+	voronoiMethod: 'spherical'
 };

@@ -12,10 +12,16 @@ import type {
 	TriangleEdge,
 	Tube
 } from '$lib/projection-geometry/types';
-import type { VoronoiConfig } from './types';
+import type { VoronoiConfig, VoronoiResult } from './types';
 import { generateSeeds } from './generate-seeds';
 import { toUV, fromUVToDirection } from './uv-mapping';
 import { computeVoronoi, lloydRelax } from './compute-voronoi';
+import {
+	computeVoronoiSpherical,
+	lloydRelaxSpherical,
+	toLonLat,
+	fromLonLat
+} from './compute-voronoi-spherical';
 import { applyCrossSectionsToEdge } from './apply-cross-sections';
 import {
 	generateSurface,
@@ -232,6 +238,28 @@ function matchFacets(tubes: Tube[]): void {
 	});
 }
 
+type CoordToDirection = (a: number, b: number) => Vector3;
+
+function computeVoronoiFromSeeds(
+	seeds3d: Vector3[],
+	center: Vector3,
+	config: VoronoiConfig
+): { voronoiResult: VoronoiResult; relaxedSeeds: [number, number][]; coordToDirection: CoordToDirection } {
+	const method = config.voronoiMethod ?? 'spherical';
+
+	if (method === 'spherical') {
+		const seedsLonLat = seeds3d.map((p) => toLonLat(p, center));
+		const relaxedSeeds = lloydRelaxSpherical(seedsLonLat, config.seedConfig.relaxationIterations);
+		const voronoiResult = computeVoronoiSpherical(relaxedSeeds);
+		return { voronoiResult, relaxedSeeds, coordToDirection: fromLonLat };
+	} else {
+		const seedsUV = seeds3d.map((p) => toUV(p, center));
+		const relaxedSeeds = lloydRelax(seedsUV, config.seedConfig.relaxationIterations);
+		const voronoiResult = computeVoronoi(relaxedSeeds);
+		return { voronoiResult, relaxedSeeds, coordToDirection: fromUVToDirection };
+	}
+}
+
 export function makeVoronoi(
 	config: VoronoiConfig,
 	address: GlobuleAddress
@@ -248,14 +276,12 @@ export function makeVoronoi(
 	// Step 1: Generate seeds on surface
 	const seeds3d = generateSeeds(config.seedConfig.seedMethod, center, intersect);
 
-	// Step 2: Project seeds to UV space
-	const seedsUV = seeds3d.map((p) => toUV(p, center));
-
-	// Step 3: Lloyd relaxation
-	const relaxedSeeds = lloydRelax(seedsUV, config.seedConfig.relaxationIterations);
-
-	// Step 4: Compute Voronoi diagram
-	const voronoiResult = computeVoronoi(relaxedSeeds);
+	// Steps 2-4: Branch on voronoi method
+	const { voronoiResult, relaxedSeeds, coordToDirection } = computeVoronoiFromSeeds(
+		seeds3d,
+		center,
+		config
+	);
 
 	// Step 5: Process each Voronoi edge into tube geometry
 	const tubes: Tube[] = [];
@@ -283,7 +309,7 @@ export function makeVoronoi(
 		const normals: Vector3[] = [];
 
 		for (const [u, v] of uvSamples) {
-			const dir = fromUVToDirection(u, v);
+			const dir = coordToDirection(u, v);
 			const point3d = intersect(dir);
 			if (!point3d) continue;
 
@@ -304,9 +330,9 @@ export function makeVoronoi(
 			normals.push(normal);
 
 			// Compute curve offset points toward each adjacent cell center
-			const dirA = fromUVToDirection(cellCenterA[0], cellCenterA[1]);
+			const dirA = coordToDirection(cellCenterA[0], cellCenterA[1]);
 			const cellPoint3dA = intersect(dirA);
-			const dirB = fromUVToDirection(cellCenterB[0], cellCenterB[1]);
+			const dirB = coordToDirection(cellCenterB[0], cellCenterB[1]);
 			const cellPoint3dB = intersect(dirB);
 
 			if (cellPoint3dA) {

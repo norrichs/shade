@@ -196,7 +196,8 @@ const makeTestConfig = (): VoronoiConfig => ({
 		orientation: 'axial-right',
 		tubeSymmetry: 'lateral'
 	},
-	edgeDivisions: 4
+	edgeDivisions: 4,
+	voronoiMethod: 'spherical'
 });
 
 describe('makeVoronoi', () => {

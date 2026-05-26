@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { superConfigStore } from '$lib/stores/superGlobuleStores';
 	import { defaultVoronoiConfig } from '$lib/shades-config';
-	import type { VoronoiConfig } from '$lib/voronoi/types';
+	import type { VoronoiConfig, VoronoiMethod } from '$lib/voronoi/types';
 
 	let configs: VoronoiConfig[] = $derived($superConfigStore.voronoiConfigs ?? []);
 
@@ -21,7 +21,7 @@
 		};
 	}
 
-	function updateConfig(index: number, field: string, value: number) {
+	function updateConfig(index: number, field: string, value: number | string) {
 		const updated = [...($superConfigStore.voronoiConfigs ?? [])];
 		if (field === 'pointCount') {
 			updated[index] = {
@@ -46,6 +46,8 @@
 			};
 		} else if (field === 'edgeDivisions') {
 			updated[index] = { ...updated[index], edgeDivisions: value };
+		} else if (field === 'voronoiMethod') {
+			updated[index] = { ...updated[index], voronoiMethod: value as VoronoiMethod };
 		}
 		$superConfigStore = { ...$superConfigStore, voronoiConfigs: updated };
 	}
@@ -67,6 +69,17 @@
 				<span>Voronoi {i}</span>
 				<button onclick={() => removeVoronoi(i)}>Remove</button>
 			</div>
+
+			<label>
+				Method
+				<select
+					value={config.voronoiMethod ?? 'spherical'}
+					onchange={(e) => updateConfig(i, 'voronoiMethod', e.currentTarget.value)}
+				>
+					<option value="spherical">Spherical</option>
+					<option value="uv">UV</option>
+				</select>
+			</label>
 
 			<label>
 				Point Count
