@@ -4,7 +4,8 @@
 	import { BufferGeometry, Object3D, Vector3 } from 'three';
 	import {
 		collateGeometry,
-		collateGlobuleTubeGeometry
+		collateGlobuleTubeGeometry,
+		collateVoronoiGeometry
 	} from '$lib/projection-geometry/collate-geometry';
 	import {
 		viewControlStore,
@@ -132,11 +133,13 @@
 		);
 	});
 	$effect(() => {
+		updateGlobuleTubeGeometry($viewControlStore.showGlobuleTubeGeometry, $superGlobuleStore.globuleTubes);
+	});
+
+	let voronoiGeometry: ReturnType<typeof collateVoronoiGeometry> = $state({});
+	$effect(() => {
 		const voronoiTubes = ($superGlobuleStore.voronoiResults ?? []).flatMap((r) => r.tubes);
-		updateGlobuleTubeGeometry($viewControlStore.showGlobuleTubeGeometry, [
-			...$superGlobuleStore.globuleTubes,
-			...voronoiTubes
-		]);
+		voronoiGeometry = collateVoronoiGeometry(voronoiTubes, $viewControlStore.showVoronoiGeometry);
 	});
 </script>
 
@@ -214,6 +217,24 @@
 				/>
 			{/each}
 		{/if}
+	</T.Group>
+{/if}
+
+{#if $viewControlStore.showVoronoiGeometry.any}
+	<T.Group position={[0, 0, 0]}>
+		{#if voronoiGeometry.sections}
+			<T.Mesh geometry={voronoiGeometry.sections} material={materials.numbered[4]} />
+		{/if}
+		{#each voronoiGeometry.bands || [] as band}
+			<T.Mesh geometry={band} material={materials.default} />
+		{/each}
+		{#each voronoiGeometry.facets || [] as facet}
+			<T.Mesh
+				geometry={facet.geometry}
+				material={getMaterial(facet.address, $selectedProjectionGeometry)}
+				onclick={(ev) => onClick(ev, facet.address)}
+			/>
+		{/each}
 	</T.Group>
 {/if}
 

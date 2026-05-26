@@ -11,7 +11,8 @@ import type {
 import type { Band, Facet } from '$lib/types';
 import {
 	type ShowGlobuleTubeGeometries,
-	type ShowProjectionGeometries
+	type ShowProjectionGeometries,
+	type ShowVoronoiGeometries
 } from '$lib/stores/viewControlStore';
 
 export const collateGeometry = (
@@ -69,6 +70,24 @@ export const collateGlobuleTubeGeometry = (
 			: undefined,
 		facets: show.facets
 			? collateFacetGeometry(globuleTubes.map((tube) => tube.bands).flat())
+			: undefined
+	};
+};
+
+export const collateVoronoiGeometry = (
+	voronoiTubes: Tube[],
+	show: ShowVoronoiGeometries
+) => {
+	if (!show.any) return {};
+	return {
+		sections: show.sections
+			? collateSectionGeometry(voronoiTubes.map((tube) => tube.sections).flat(1))
+			: undefined,
+		bands: show.bands
+			? collateBandGeometry(voronoiTubes.map((tube) => tube.bands).flat())
+			: undefined,
+		facets: show.facets
+			? collateFacetGeometry(voronoiTubes.map((tube) => tube.bands).flat())
 			: undefined
 	};
 };

@@ -30,6 +30,13 @@
 			<span>{key}</span>
 		</div>
 	{/each}
+	<header>Show Voronoi:</header>
+	{#each Object.keys($viewControlStore.showVoronoiGeometry) as key}
+		<div class="entry">
+			<input type="checkbox" bind:checked={$viewControlStore.showVoronoiGeometry[key]} />
+			<span>{key}</span>
+		</div>
+	{/each}
 </PopoverMenu>
 
 <style>

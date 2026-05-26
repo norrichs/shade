@@ -24,10 +24,19 @@ export type ShowGlobuleTubeGeometries = {
 	sections: boolean;
 };
 
+export type ShowVoronoiGeometries = {
+	[key: string]: boolean;
+	any: boolean;
+	bands: boolean;
+	facets: boolean;
+	sections: boolean;
+};
+
 export type ViewControls = {
 	showProjectionGeometry: ShowProjectionGeometries;
 	showGlobuleGeometry: ShowGlobuleGeometries;
 	showGlobuleTubeGeometry: ShowGlobuleTubeGeometries;
+	showVoronoiGeometry: ShowVoronoiGeometries;
 };
 
 const defaultViewControls = (): ViewControls => ({
@@ -45,6 +54,12 @@ const defaultViewControls = (): ViewControls => ({
 		any: false
 	},
 	showGlobuleTubeGeometry: {
+		any: false,
+		bands: true,
+		facets: false,
+		sections: false
+	},
+	showVoronoiGeometry: {
 		any: false,
 		bands: true,
 		facets: false,
