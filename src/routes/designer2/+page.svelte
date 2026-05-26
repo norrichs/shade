@@ -12,6 +12,7 @@
 	import SuperControl from '../../components/controls/super-control/SuperControl.svelte';
 	import { uiStore, type ViewModeSetting, computationMode } from '$lib/stores/uiStores';
 	import ProjectionControl from '../../components/projection/ProjectionControl.svelte';
+	import VoronoiControl from '../../components/controls/VoronoiControl.svelte';
 	import HoverSidebar from '../../components/modal/HoverSidebar.svelte';
 	import { projectionConfigs } from '../../components/modal/sidebar-definitions';
 	import Toast from '../../components/Toast.svelte';
@@ -51,6 +52,7 @@
 					{ name: 'Spine', value: 'SpineCurveConfig' },
 					{ name: 'Shape', value: 'ShapeConfig' },
 					{ name: 'Projection' },
+					{ name: 'Voronoi' },
 					{ name: 'Levels' },
 					{ name: 'Struts' },
 					{ name: 'Cut' },
@@ -68,6 +70,8 @@
 				/>
 			{:else if showControl?.name === 'Projection'}
 				<ProjectionControl />
+			{:else if showControl?.name === 'Voronoi'}
+				<VoronoiControl />
 			{:else if showControl?.name === 'Struts'}
 				<StrutControl />
 			{:else if showControl?.name === 'Levels'}

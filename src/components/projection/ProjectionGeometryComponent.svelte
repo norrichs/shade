@@ -132,10 +132,11 @@
 		);
 	});
 	$effect(() => {
-		updateGlobuleTubeGeometry(
-			$viewControlStore.showGlobuleTubeGeometry,
-			$superGlobuleStore.globuleTubes
-		);
+		const voronoiTubes = ($superGlobuleStore.voronoiResults ?? []).flatMap((r) => r.tubes);
+		updateGlobuleTubeGeometry($viewControlStore.showGlobuleTubeGeometry, [
+			...$superGlobuleStore.globuleTubes,
+			...voronoiTubes
+		]);
 	});
 </script>
 
