@@ -30,7 +30,7 @@ import {
 	getEdgeMatchedTriangles
 } from '$lib/projection-geometry/generate-projection';
 
-const CURVE_OFFSET_FACTOR = 0.3;
+const DEFAULT_CURVE_OFFSET_FACTOR = 0.3;
 
 function getSurfaceCenter(surfaceConfig: SurfaceConfig): Vector3 {
 	if (surfaceConfig.type === 'GlobuleConfig') {
@@ -308,6 +308,7 @@ export function makeVoronoi(
 	const tubes: Tube[] = [];
 	const surfaceProjectionTubes: Tube[] = [];
 	const crossSectionConfig = config.crossSectionConfig;
+	const curveOffsetFactor = config.curveOffsetFactor ?? DEFAULT_CURVE_OFFSET_FACTOR;
 	const dummyEdgeConfig = makeDummyEdgeConfig(crossSectionConfig);
 
 	const normalRaycaster = new Raycaster(undefined, undefined, undefined, 2000);
@@ -359,7 +360,7 @@ export function makeVoronoi(
 
 			if (cellPoint3dA) {
 				const offsetA = cellPoint3dA.clone().sub(point3d).normalize();
-				const curveDistA = point3d.distanceTo(cellPoint3dA) * CURVE_OFFSET_FACTOR;
+				const curveDistA = point3d.distanceTo(cellPoint3dA) * curveOffsetFactor;
 				curvePointsA.push(point3d.clone().addScaledVector(offsetA, curveDistA));
 			} else {
 				curvePointsA.push(point3d.clone());
@@ -367,7 +368,7 @@ export function makeVoronoi(
 
 			if (cellPoint3dB) {
 				const offsetB = cellPoint3dB.clone().sub(point3d).normalize();
-				const curveDistB = point3d.distanceTo(cellPoint3dB) * CURVE_OFFSET_FACTOR;
+				const curveDistB = point3d.distanceTo(cellPoint3dB) * curveOffsetFactor;
 				curvePointsB.push(point3d.clone().addScaledVector(offsetB, curveDistB));
 			} else {
 				curvePointsB.push(point3d.clone());

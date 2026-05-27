@@ -46,6 +46,8 @@
 			};
 		} else if (field === 'edgeDivisions') {
 			updated[index] = { ...updated[index], edgeDivisions: value };
+		} else if (field === 'curveOffsetFactor') {
+			updated[index] = { ...updated[index], curveOffsetFactor: value as number };
 		} else if (field === 'voronoiMethod') {
 			updated[index] = { ...updated[index], voronoiMethod: value as VoronoiMethod };
 		}
@@ -113,6 +115,19 @@
 					oninput={(e) => updateConfig(i, 'relaxationIterations', Number(e.currentTarget.value))}
 				/>
 				<span>{config.seedConfig.relaxationIterations}</span>
+			</label>
+
+			<label>
+				Curve Offset
+				<input
+					type="range"
+					min="0.05"
+					max="0.95"
+					step="0.05"
+					value={config.curveOffsetFactor ?? 0.3}
+					oninput={(e) => updateConfig(i, 'curveOffsetFactor', Number(e.currentTarget.value))}
+				/>
+				<span>{(config.curveOffsetFactor ?? 0.3).toFixed(2)}</span>
 			</label>
 
 			<label>

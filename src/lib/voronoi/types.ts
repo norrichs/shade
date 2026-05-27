@@ -13,6 +13,7 @@ export type VoronoiConfig = {
 	crossSectionConfig: CrossSectionConfig;
 	bandConfig: ProjectionBandConfig;
 	edgeDivisions: number;
+	curveOffsetFactor: number;
 	voronoiMethod: VoronoiMethod;
 };
 

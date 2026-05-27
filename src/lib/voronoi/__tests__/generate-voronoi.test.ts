@@ -198,6 +198,7 @@ const makeTestConfig = (): VoronoiConfig => ({
 		tubeSymmetry: 'lateral'
 	},
 	edgeDivisions: 4,
+	curveOffsetFactor: 0.3,
 	voronoiMethod: 'spherical'
 });
 
