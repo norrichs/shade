@@ -237,11 +237,9 @@
 			/>
 		{/each}
 		{#each voronoiGeometry.surfaceProjectionFacets || [] as facet}
-			<T.Mesh
-				geometry={facet.geometry}
-				material={getMaterial(facet.address, $selectedSurfaceProjectionGeometry)}
-				onclick={(ev) => onClick(ev, facet.address)}
-			/>
+			<T.Mesh geometry={facet.geometry} onclick={(ev) => onClick(ev, facet.address)}>
+				<T.MeshStandardMaterial color="red" side={2} />
+			</T.Mesh>
 		{/each}
 	</T.Group>
 {/if}
