@@ -386,7 +386,7 @@ const superGlobulePatternStoreInternal = derived(
 		$pausePatternUpdates,
 		$isManualMode,
 		$hasPendingChanges
-	]): { superGlobulePattern: any; projectionPattern: any; globuleTubePattern: any } | 'paused' => {
+	]): { superGlobulePattern: any; projectionPattern: any; globuleTubePattern: any; surfaceProjectionPattern: any; voronoiPattern: any; voronoiSurfacePattern: any } | 'paused' => {
 		// Skip pattern generation if paused - return 'paused' marker
 		if ($pausePatternUpdates) {
 			console.log('PATTERN STORE: Updates paused');
@@ -523,7 +523,9 @@ let lastPatternResult: any = {
 	superGlobulePattern: null,
 	projectionPattern: undefined,
 	globuleTubePattern: null,
-	surfaceProjectionPattern: undefined
+	surfaceProjectionPattern: undefined,
+	voronoiPattern: undefined,
+	voronoiSurfacePattern: undefined
 };
 
 export const superGlobulePatternStore = derived(
@@ -555,7 +557,9 @@ export const superGlobulePatternStore = derived(
 		superGlobulePattern: null,
 		projectionPattern: undefined,
 		globuleTubePattern: null,
-		surfaceProjectionPattern: undefined
+		surfaceProjectionPattern: undefined,
+		voronoiPattern: undefined,
+		voronoiSurfacePattern: undefined
 	}
 );
 
