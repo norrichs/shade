@@ -30,6 +30,7 @@ import { defaultProjectionConfig } from './projection-geometry/configs';
 import type { PanelHoleConfig } from './cut-pattern/generate-pattern';
 import type { DistributionConfig } from '../components/cut-pattern/distrubute-panels';
 import type { VoronoiConfig } from './voronoi/types';
+import { defaultCrossSection } from './projection-geometry/curve-definitions';
 
 const defaultEndCapConfig = (): EndCapConfig => ({
 	enabled: true,
@@ -697,23 +698,7 @@ export const defaultVoronoiConfig: VoronoiConfig = {
 		},
 		relaxationIterations: 5
 	},
-	crossSectionConfig: {
-		curves: [
-			{
-				type: 'BezierConfig',
-				points: [
-					{ type: 'PointConfig2', x: 0, y: 0 },
-					{ type: 'PointConfig2', x: 0.33, y: 0 },
-					{ type: 'PointConfig2', x: 0.66, y: 0 },
-					{ type: 'PointConfig2', x: 1, y: 0 }
-				]
-			}
-		],
-		center: { x: 0.5, y: 0 },
-		sampleMethod: { method: 'divideCurvePath', divisions: 4 },
-		scaling: { width: 8, height: 8 },
-		shouldSkewCurve: false
-	},
+	crossSectionConfig: defaultCrossSection,
 	bandConfig: {
 		orientation: 'axial-right',
 		tubeSymmetry: 'lateral'
