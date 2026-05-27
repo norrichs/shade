@@ -422,15 +422,46 @@ export function makeVoronoi(
 
 		tubes.push(tube);
 
-		// Surface projection: flat 3-point sections [curveA, edge, curveB]
+		// Surface projection: [curveA, ...divA_reversed, edge, ...divB, curveB]
 		const spTubeAddress: GlobuleAddress_Tube = { ...address, tube: surfaceProjectionTubes.length };
-		const spSections: Section[] = edgePoints3d.map((edgePoint, idx): Section => ({
-			points: [
-				curvePointsA[idx].clone(),
-				edgePoint.clone(),
-				curvePointsB[idx].clone()
-			]
-		}));
+		const spDivisions = config.surfaceProjectionDivisions ?? 0;
+		const spSections: Section[] = edgePoints3d.map((edgePoint, idx): Section => {
+			const cA = curvePointsA[idx];
+			const cB = curvePointsB[idx];
+			const divA: Vector3[] = [];
+			const divB: Vector3[] = [];
+
+			if (spDivisions > 0) {
+				for (let d = 1; d <= spDivisions; d++) {
+					const t = d / (spDivisions + 1);
+					const dirA = slerp(
+						cA.clone().sub(center).normalize(),
+						edgePoint.clone().sub(center).normalize(),
+						t
+					);
+					const hitA = intersect(dirA);
+					if (hitA) divA.push(hitA);
+
+					const dirB = slerp(
+						edgePoint.clone().sub(center).normalize(),
+						cB.clone().sub(center).normalize(),
+						t
+					);
+					const hitB = intersect(dirB);
+					if (hitB) divB.push(hitB);
+				}
+			}
+
+			return {
+				points: [
+					cA.clone(),
+					...divA.reverse(),
+					edgePoint.clone(),
+					...divB,
+					cB.clone()
+				]
+			};
+		});
 
 		const spCenter = getSurfaceCenter(surfaceConfig);
 		const p0 = spSections[0].points[0];

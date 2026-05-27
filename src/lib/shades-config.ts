@@ -705,5 +705,6 @@ export const defaultVoronoiConfig: VoronoiConfig = {
 	},
 	edgeDivisions: 6,
 	curveOffsetFactor: 0.3,
+	surfaceProjectionDivisions: 0,
 	voronoiMethod: 'spherical'
 };

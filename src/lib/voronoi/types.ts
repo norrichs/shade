@@ -14,6 +14,7 @@ export type VoronoiConfig = {
 	bandConfig: ProjectionBandConfig;
 	edgeDivisions: number;
 	curveOffsetFactor: number;
+	surfaceProjectionDivisions: number;
 	voronoiMethod: VoronoiMethod;
 };
 

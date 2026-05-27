@@ -48,6 +48,8 @@
 			updated[index] = { ...updated[index], edgeDivisions: value };
 		} else if (field === 'curveOffsetFactor') {
 			updated[index] = { ...updated[index], curveOffsetFactor: value as number };
+		} else if (field === 'surfaceProjectionDivisions') {
+			updated[index] = { ...updated[index], surfaceProjectionDivisions: value as number };
 		} else if (field === 'voronoiMethod') {
 			updated[index] = { ...updated[index], voronoiMethod: value as VoronoiMethod };
 		}
@@ -128,6 +130,19 @@
 					oninput={(e) => updateConfig(i, 'curveOffsetFactor', Number(e.currentTarget.value))}
 				/>
 				<span>{(config.curveOffsetFactor ?? 0.3).toFixed(2)}</span>
+			</label>
+
+			<label>
+				Surface Divisions
+				<input
+					type="range"
+					min="0"
+					max="5"
+					step="1"
+					value={config.surfaceProjectionDivisions ?? 0}
+					oninput={(e) => updateConfig(i, 'surfaceProjectionDivisions', Number(e.currentTarget.value))}
+				/>
+				<span>{config.surfaceProjectionDivisions ?? 0}</span>
 			</label>
 
 			<label>
