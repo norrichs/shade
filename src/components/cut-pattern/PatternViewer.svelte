@@ -33,8 +33,11 @@
 		globuleTubePattern: $superGlobulePatternStore.globuleTubePattern,
 		projectionPattern: $superGlobulePatternStore.projectionPattern,
 		surfaceProjectionPattern: $superGlobulePatternStore.surfaceProjectionPattern,
+		voronoiPattern: $superGlobulePatternStore.voronoiPattern,
+		voronoiSurfacePattern: $superGlobulePatternStore.voronoiSurfacePattern,
 		showGlobuleTubeGeometry: $viewControlStore.showGlobuleTubeGeometry,
 		showProjectionGeometry: $viewControlStore.showProjectionGeometry,
+		showVoronoiGeometry: $viewControlStore.showVoronoiGeometry,
 		patternSource: $patternConfigStore.patternViewConfig.patternSource ?? 'projection'
 	});
 </script>

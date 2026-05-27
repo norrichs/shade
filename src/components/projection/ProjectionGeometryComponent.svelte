@@ -139,7 +139,8 @@
 	let voronoiGeometry: ReturnType<typeof collateVoronoiGeometry> = $state({});
 	$effect(() => {
 		const voronoiTubes = ($superGlobuleStore.voronoiResults ?? []).flatMap((r) => r.tubes);
-		voronoiGeometry = collateVoronoiGeometry(voronoiTubes, $viewControlStore.showVoronoiGeometry);
+		const voronoiSurfaceProjectionTubes = ($superGlobuleStore.voronoiResults ?? []).flatMap((r) => r.surfaceProjectionTubes ?? []);
+		voronoiGeometry = collateVoronoiGeometry(voronoiTubes, voronoiSurfaceProjectionTubes, $viewControlStore.showVoronoiGeometry);
 	});
 </script>
 
@@ -232,6 +233,13 @@
 			<T.Mesh
 				geometry={facet.geometry}
 				material={getMaterial(facet.address, $selectedProjectionGeometry)}
+				onclick={(ev) => onClick(ev, facet.address)}
+			/>
+		{/each}
+		{#each voronoiGeometry.surfaceProjectionFacets || [] as facet}
+			<T.Mesh
+				geometry={facet.geometry}
+				material={getMaterial(facet.address, $selectedSurfaceProjectionGeometry)}
 				onclick={(ev) => onClick(ev, facet.address)}
 			/>
 		{/each}

@@ -30,6 +30,7 @@ export type ShowVoronoiGeometries = {
 	bands: boolean;
 	facets: boolean;
 	sections: boolean;
+	surfaceProjection: boolean;
 };
 
 export type ViewControls = {
@@ -63,7 +64,8 @@ const defaultViewControls = (): ViewControls => ({
 		any: false,
 		bands: true,
 		facets: false,
-		sections: false
+		sections: false,
+		surfaceProjection: false
 	}
 });
 

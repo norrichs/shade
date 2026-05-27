@@ -405,7 +405,9 @@ const superGlobulePatternStoreInternal = derived(
 				superGlobulePattern: null,
 				projectionPattern: undefined,
 				globuleTubePattern: null,
-				surfaceProjectionPattern: undefined
+				surfaceProjectionPattern: undefined,
+				voronoiPattern: undefined,
+				voronoiSurfacePattern: undefined
 			};
 		}
 
@@ -473,18 +475,45 @@ const superGlobulePatternStoreInternal = derived(
 					)
 				: undefined;
 
+		const voronoiResult = $superGlobuleStore.voronoiResults?.[0];
+		const voronoiTubes = voronoiResult?.tubes ?? [];
+		const voronoiSurfaceProjectionTubes = voronoiResult?.surfaceProjectionTubes ?? [];
+
+		const voronoiPattern =
+			patternSource === 'voronoi' &&
+			$genConfig.showBands &&
+			voronoiTubes.length
+				? generateProjectionPattern(
+						voronoiTubes,
+						$superConfigStore.id,
+						patternConfigForGeneration,
+						$genConfig.range
+					)
+				: undefined;
+
+		const voronoiSurfacePattern =
+			patternSource === 'voronoiSurface' &&
+			$genConfig.showBands &&
+			voronoiSurfaceProjectionTubes.length
+				? generateProjectionPattern(
+						voronoiSurfaceProjectionTubes,
+						$superConfigStore.id,
+						patternConfigForGeneration,
+						$genConfig.range
+					)
+				: undefined;
+
 		const metaInfo = getMetaInfo(projectionPattern);
 
 		console.timeEnd('PATTERN_GENERATION');
-		console.log('SUPER GLOBULE PATTERN STORE', {
-			$superGlobuleStore,
-			$genConfig,
-			$overrideStore,
+		return {
 			superGlobulePattern,
 			projectionPattern,
-			surfaceProjectionPattern
-		});
-		return { superGlobulePattern, projectionPattern, globuleTubePattern, surfaceProjectionPattern };
+			globuleTubePattern,
+			surfaceProjectionPattern,
+			voronoiPattern,
+			voronoiSurfacePattern
+		};
 	}
 );
 

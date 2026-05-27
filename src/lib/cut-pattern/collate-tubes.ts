@@ -1,16 +1,14 @@
 import type {
 	ShowGlobuleTubeGeometries,
-	ShowProjectionGeometries
+	ShowProjectionGeometries,
+	ShowVoronoiGeometries
 } from '$lib/stores/viewControlStore';
 import type {
 	SuperGlobuleProjectionPattern,
 	SuperGlobuleProjectionCutPattern
 } from '$lib/stores/superGlobuleStores';
-import type { TubeCutPattern } from '$lib/types';
+import type { PatternSource, TubeCutPattern } from '$lib/types';
 
-// Mirrors `isSuperGlobuleProjectionCutPattern` from superGlobuleStores.ts.
-// Inlined so this module stays runtime-clean of `$lib/stores` (whose barrel
-// pulls in svelte/store and breaks the Jest transform chain).
 const isCutPattern = (
 	pattern: SuperGlobuleProjectionPattern | null | undefined
 ): pattern is SuperGlobuleProjectionCutPattern =>
@@ -21,9 +19,12 @@ export type CollateTubesInput = {
 	globuleTubePattern: SuperGlobuleProjectionPattern | null | undefined;
 	projectionPattern: SuperGlobuleProjectionPattern | undefined;
 	surfaceProjectionPattern: SuperGlobuleProjectionPattern | undefined;
+	voronoiPattern: SuperGlobuleProjectionPattern | undefined;
+	voronoiSurfacePattern: SuperGlobuleProjectionPattern | undefined;
 	showGlobuleTubeGeometry: ShowGlobuleTubeGeometries;
 	showProjectionGeometry: ShowProjectionGeometries;
-	patternSource: 'projection' | 'surfaceProjection';
+	showVoronoiGeometry: ShowVoronoiGeometries;
+	patternSource: PatternSource;
 };
 
 /**
@@ -43,35 +44,32 @@ export const collateTubes = (input: CollateTubesInput): TubeCutPattern[] => {
 		globuleTubePattern,
 		projectionPattern,
 		surfaceProjectionPattern,
+		voronoiPattern,
+		voronoiSurfacePattern,
 		showGlobuleTubeGeometry,
 		showProjectionGeometry,
+		showVoronoiGeometry,
 		patternSource
 	} = input;
 
-	const hasGlobuleTube =
-		globuleTubePattern &&
-		isCutPattern(globuleTubePattern) &&
-		globuleTubePattern.projectionCutPattern.tubes.length > 0;
-	const hasProjection =
-		projectionPattern &&
-		isCutPattern(projectionPattern) &&
-		projectionPattern.projectionCutPattern.tubes.length > 0;
-	const hasSurfaceProjection =
-		surfaceProjectionPattern &&
-		isCutPattern(surfaceProjectionPattern) &&
-		surfaceProjectionPattern.projectionCutPattern.tubes.length > 0;
+	const getTubes = (pattern: SuperGlobuleProjectionPattern | null | undefined) =>
+		pattern && isCutPattern(pattern) && pattern.projectionCutPattern.tubes.length > 0
+			? pattern.projectionCutPattern.tubes
+			: [];
 
 	return [
-		...(hasGlobuleTube && showGlobuleTubeGeometry.any
-			? globuleTubePattern.projectionCutPattern.tubes
+		...(showGlobuleTubeGeometry.any ? getTubes(globuleTubePattern) : []),
+		...(showProjectionGeometry.any && patternSource === 'projection'
+			? getTubes(projectionPattern)
 			: []),
-		...(hasProjection && showProjectionGeometry.any && patternSource === 'projection'
-			? projectionPattern.projectionCutPattern.tubes
+		...(showProjectionGeometry.any && patternSource === 'surfaceProjection'
+			? getTubes(surfaceProjectionPattern)
 			: []),
-		...(hasSurfaceProjection &&
-		showProjectionGeometry.any &&
-		patternSource === 'surfaceProjection'
-			? surfaceProjectionPattern.projectionCutPattern.tubes
+		...(showVoronoiGeometry.any && patternSource === 'voronoi'
+			? getTubes(voronoiPattern)
+			: []),
+		...(showVoronoiGeometry.any && patternSource === 'voronoiSurface'
+			? getTubes(voronoiSurfacePattern)
 			: [])
 	];
 };

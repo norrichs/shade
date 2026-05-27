@@ -76,6 +76,7 @@ export const collateGlobuleTubeGeometry = (
 
 export const collateVoronoiGeometry = (
 	voronoiTubes: Tube[],
+	surfaceProjectionTubes: Tube[],
 	show: ShowVoronoiGeometries
 ) => {
 	if (!show.any) return {};
@@ -88,6 +89,9 @@ export const collateVoronoiGeometry = (
 			: undefined,
 		facets: show.facets
 			? collateFacetGeometry(voronoiTubes.map((tube) => tube.bands).flat())
+			: undefined,
+		surfaceProjectionFacets: show.surfaceProjection
+			? collateFacetGeometry(surfaceProjectionTubes.map((tube) => tube.bands).flat())
 			: undefined
 	};
 };

@@ -18,7 +18,7 @@ import type { DistributionConfig } from '../components/cut-pattern/distrubute-pa
 import type { ProjectionRange } from './projection-geometry/filters';
 import type { EndCapConfig, EndCapGeometry } from './geometry/end-caps';
 
-export type PatternSource = 'projection' | 'surfaceProjection';
+export type PatternSource = 'projection' | 'surfaceProjection' | 'voronoi' | 'voronoiSurface';
 export type PatternViewConfig = {
 	showBands: boolean;
 	showQuads: boolean;
@@ -908,6 +908,7 @@ export type SuperGlobule = {
 	}[];
 	voronoiResults: {
 		tubes: Tube[];
+		surfaceProjectionTubes: Tube[];
 		surface: Object3D;
 	}[];
 };

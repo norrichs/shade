@@ -73,8 +73,11 @@
 			globuleTubePattern: patternState.globuleTubePattern,
 			projectionPattern: patternState.projectionPattern,
 			surfaceProjectionPattern: patternState.surfaceProjectionPattern,
+			voronoiPattern: patternState.voronoiPattern,
+			voronoiSurfacePattern: patternState.voronoiSurfacePattern,
 			showGlobuleTubeGeometry: view.showGlobuleTubeGeometry,
 			showProjectionGeometry: view.showProjectionGeometry,
+			showVoronoiGeometry: view.showVoronoiGeometry,
 			patternSource: config.patternViewConfig.patternSource ?? 'projection'
 		});
 		const labels = config.patternTypeConfig.labels;

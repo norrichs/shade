@@ -79,6 +79,8 @@
 			<select bind:value={$patternConfigStore.patternViewConfig.patternSource}>
 				<option value="projection">Projection</option>
 				<option value="surfaceProjection">Surface</option>
+				<option value="voronoi">Voronoi</option>
+				<option value="voronoiSurface">Voronoi Surface</option>
 			</select>
 		</div>
 	</div>

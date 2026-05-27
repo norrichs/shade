@@ -151,10 +151,8 @@ function rehydrateSuperGlobule(result: SuperGlobule): SuperGlobule {
 		}))
 	}));
 
-	// Rehydrate voronoiResults
-	const voronoiResults = (result.voronoiResults ?? []).map((voronoiResult) => ({
-		...voronoiResult,
-		tubes: voronoiResult.tubes.map((tube) => ({
+	const rehydrateTubes = (tubes: Tube[]) =>
+		tubes.map((tube) => ({
 			...tube,
 			sections: tube.sections.map((section) => ({
 				points: section.points.map(rehydrateVector3)
@@ -168,7 +166,13 @@ function rehydrateSuperGlobule(result: SuperGlobule): SuperGlobule {
 					)
 				}))
 			}))
-		}))
+		}));
+
+	// Rehydrate voronoiResults
+	const voronoiResults = (result.voronoiResults ?? []).map((voronoiResult) => ({
+		...voronoiResult,
+		tubes: rehydrateTubes(voronoiResult.tubes),
+		surfaceProjectionTubes: rehydrateTubes(voronoiResult.surfaceProjectionTubes ?? [])
 	}));
 
 	return {

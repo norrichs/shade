@@ -284,7 +284,7 @@ export function makeVoronoi(
 	config: VoronoiConfig,
 	address: GlobuleAddress,
 	surfaceConfig: SurfaceConfig
-): { tubes: Tube[]; surface: Object3D } {
+): { tubes: Tube[]; surfaceProjectionTubes: Tube[]; surface: Object3D } {
 	const resolvedSurfaceConfig =
 		surfaceConfig.transform === 'inherit'
 			? ({ ...surfaceConfig, transform: config.meta.transform } as SurfaceConfig)
@@ -306,6 +306,7 @@ export function makeVoronoi(
 
 	// Step 5: Process each Voronoi edge into tube geometry
 	const tubes: Tube[] = [];
+	const surfaceProjectionTubes: Tube[] = [];
 	const crossSectionConfig = config.crossSectionConfig;
 	const dummyEdgeConfig = makeDummyEdgeConfig(crossSectionConfig);
 
@@ -419,6 +420,37 @@ export function makeVoronoi(
 		};
 
 		tubes.push(tube);
+
+		// Surface projection: flat 3-point sections [curveA, edge, curveB]
+		const spTubeAddress: GlobuleAddress_Tube = { ...address, tube: surfaceProjectionTubes.length };
+		const spSections: Section[] = edgePoints3d.map((edgePoint, idx): Section => ({
+			points: [
+				curvePointsA[idx].clone(),
+				edgePoint.clone(),
+				curvePointsB[idx].clone()
+			]
+		}));
+
+		const spCenter = getSurfaceCenter(surfaceConfig);
+		const p0 = spSections[0].points[0];
+		const p1 = spSections[0].points[1];
+		const p2 = spSections[1].points[0];
+		const testV1 = new Vector3().subVectors(p1, p0);
+		const testV2 = new Vector3().subVectors(p2, p0);
+		const testNormal = new Vector3().crossVectors(testV1, testV2);
+		const centroid = new Vector3().addVectors(p0, p1).add(p2).divideScalar(3);
+		const toFacet = new Vector3().subVectors(centroid, spCenter);
+		if (testNormal.dot(toFacet) < 0) {
+			spSections.forEach((s) => s.points.reverse());
+		}
+
+		const spBands = generateProjectionBands(spSections, 'axial-right', spTubeAddress);
+		surfaceProjectionTubes.push({
+			bands: spBands,
+			sections: spSections,
+			orientation: 'axial-right',
+			address: spTubeAddress
+		});
 	}
 
 	// Partner matching
@@ -429,5 +461,12 @@ export function makeVoronoi(
 		console.error('Voronoi partner matching error:', error);
 	}
 
-	return { tubes, surface };
+	try {
+		matchTubeEnds(surfaceProjectionTubes);
+		matchFacets(surfaceProjectionTubes);
+	} catch (error) {
+		console.error('Voronoi surface projection partner matching error:', error);
+	}
+
+	return { tubes, surfaceProjectionTubes, surface };
 }
