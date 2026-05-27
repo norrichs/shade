@@ -67,7 +67,8 @@ function rehydrateSuperGlobule(result: SuperGlobule): SuperGlobule {
 						...section,
 						intersections: {
 							edge: rehydrateVector3(section.intersections.edge),
-							curve: rehydrateVector3(section.intersections.curve)
+							curve: rehydrateVector3(section.intersections.curve),
+							divisions: (section.intersections.divisions || []).map(rehydrateVector3)
 						},
 						crossSectionPoints: section.crossSectionPoints.map(rehydrateVector3)
 					}))

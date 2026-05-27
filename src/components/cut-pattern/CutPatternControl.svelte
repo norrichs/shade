@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { ProjectionRange } from '$lib/projection-geometry/filters';
-	import { patternConfigStore } from '$lib/stores';
+	import { patternConfigStore, superConfigStore } from '$lib/stores';
 	import CheckboxInput from '../controls/CheckboxInput.svelte';
 	import NumberInput from '../controls/super-control/NumberInput.svelte';
 	import PanControl from './PanControl.svelte';
@@ -21,6 +21,13 @@
 		};
 	};
 	$: updateStore(rangeTubes, rangeBands, rangeFacets);
+
+	$: {
+		const pc = $superConfigStore.projectionConfigs[0];
+		if (pc && !pc.surfaceProjectionConfig) {
+			pc.surfaceProjectionConfig = { divisions: 0 };
+		}
+	}
 </script>
 
 <div class="view-control-box">
@@ -80,6 +87,15 @@
 				<option value="projection">Projection</option>
 				<option value="surfaceProjection">Surface</option>
 			</select>
+			{#if $patternConfigStore.patternViewConfig.patternSource === 'surfaceProjection' && $superConfigStore.projectionConfigs[0]?.surfaceProjectionConfig}
+				<NumberInput
+					label="divisions"
+					min={0}
+					max={5}
+					step={1}
+					bind:value={$superConfigStore.projectionConfigs[0].surfaceProjectionConfig.divisions}
+				/>
+			{/if}
 		</div>
 	</div>
 	<label for="svg-width">width</label>

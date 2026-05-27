@@ -469,6 +469,10 @@ export const generateProjection = ({
 	const nearestPoint = new Vector3();
 	const tempVec = new Vector3();
 
+	const spDivisionsCount = projectionConfig.surfaceProjectionConfig?.divisions ?? 0;
+	const divRaycaster = spDivisionsCount > 0 ? new Raycaster(undefined, undefined, undefined, 2000) : null;
+	const divDirection = spDivisionsCount > 0 ? new Vector3() : null;
+
 	// Cache for cross-section definition points (optimization)
 	// Many edges share the same cross-section config, so cache the normalized points
 	const crossSectionCache = new Map<CrossSectionConfig, Vector2[]>();
@@ -491,7 +495,7 @@ export const generateProjection = ({
 					const crossSectionDefinitionPoints = getCachedCrossSectionPoints(crossSectionConfig);
 					const sectionGeometry = edge.edgePoints.map((p, i) => {
 						const c = edge.curvePoints[i];
-						const int = { edge: new Vector3(), curve: new Vector3() };
+						const int = { edge: new Vector3(), curve: new Vector3(), divisions: [] as Vector3[] };
 
 						// Reuse Vector3 objects and raycasters instead of creating new ones
 						yDirection.copy(center).addScaledVector(p, 1).normalize();
@@ -529,6 +533,19 @@ export const generateProjection = ({
 
 						int.edge = edgeIntersections[0].point.clone();
 						int.curve = curveIntersections[0].point.clone();
+
+						if (spDivisionsCount > 0 && divRaycaster && divDirection) {
+							for (let d = 1; d <= spDivisionsCount; d++) {
+								const t = d / (spDivisionsCount + 1);
+								divDirection.lerpVectors(yDirection, curveDirection, t).normalize();
+								divRaycaster.set(center, divDirection);
+								const divHits = divRaycaster.intersectObject(surface, true);
+								if (divHits[0]) {
+									int.divisions.push(divHits[0].point.clone());
+								}
+							}
+						}
+
 						const edgeRay = edgeRaycaster.ray;
 
 						let baseScalingLength: number;
@@ -1195,10 +1212,12 @@ export const isSameVector3 = (v0: Vector3, v1: Vector3, precision = 1 / 10_000) 
 /**
  * Generate bands from the surface projection geometry using paired-edge tubes.
  * Uses sortEdges to pair edges sharing the same polyhedron edge (from different polygons)
- * into a single Tube with 2 bands. Each sorted pair produces 3-point sections:
- * [edge0.curve, shared_edge_point, edge1.curve] → 2 bands per tube.
+ * into a single Tube. Each sorted pair produces (3 + 2*divisions)-point sections:
+ * [curve0, ...div0_reversed, edge, ...div1, curve1] → (2 + 2*divisions) bands per tube.
  *
- * Icosahedron: 30 tubes × 2 bands = 60 bands (was 60 tubes × 1 band).
+ * divisions=0: 3 points → 2 bands (default)
+ * divisions=1: 5 points → 4 bands
+ * divisions=2: 7 points → 6 bands
  */
 export const generateSurfaceProjectionBands = (
 	projection: Projection,
@@ -1249,14 +1268,19 @@ export const generateSurfaceProjectionBands = (
 			e0First.distanceToSquared(e1Last) < e0First.distanceToSquared(e1First);
 		const edge1Sections = shouldReverseEdge1 ? [...edge1.sections].reverse() : edge1.sections;
 
-		// Build combined sections: [edge0.curve, shared_edge, edge1.curve]
-		// shared_edge ≈ edge0.intersections.edge ≈ edge1.intersections.edge
+		// Build combined sections: [curve0, ...div0_reversed, edge, ...div1, curve1]
+		// div0 = divisions between edge0's edge and curve (reversed so they go curve→edge)
+		// div1 = divisions between edge1's edge and curve (in order, edge→curve)
 		const sections: Section[] = edge0.sections.map((s0, idx): Section => {
 			const s1 = edge1Sections[idx];
+			const div0 = (s0.intersections.divisions || []).map((v) => v.clone()).reverse();
+			const div1 = (s1.intersections.divisions || []).map((v) => v.clone());
 			return {
 				points: [
 					s0.intersections.curve.clone(),
+					...div0,
 					s0.intersections.edge.clone(),
+					...div1,
 					s1.intersections.curve.clone()
 				]
 			};
