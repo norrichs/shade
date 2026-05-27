@@ -181,6 +181,10 @@ export type ProjectorConfig<
 	polyhedron: PolyhedronConfig<S, T, U, V>;
 };
 
+export type SurfaceProjectionConfig = {
+	divisions: number;
+};
+
 export type ProjectionConfig<
 	S extends undefined | Point3,
 	T extends VertexIndex | Point3,
@@ -191,6 +195,7 @@ export type ProjectionConfig<
 	surfaceConfig: SurfaceConfig;
 	projectorConfig: ProjectorConfig<S, T, U, V>;
 	bandConfig: ProjectionBandConfig;
+	surfaceProjectionConfig?: SurfaceProjectionConfig;
 };
 
 export type BaseProjectionConfig = ProjectionConfig<undefined, number, number, number>;
@@ -240,7 +245,7 @@ export type TubePartnerAddresses = {
 export type ProjectionEdge = {
 	config: EdgeConfig<Point3, Point3, EdgeCurveConfig, CrossSectionConfig>;
 	sections: {
-		intersections: { edge: Vector3; curve: Vector3 };
+		intersections: { edge: Vector3; curve: Vector3; divisions: Vector3[] };
 		crossSectionPoints: Vector3[];
 	}[];
 	tubeAddress?: GlobuleAddress_Tube;
