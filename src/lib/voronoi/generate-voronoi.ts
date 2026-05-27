@@ -352,27 +352,18 @@ export function makeVoronoi(
 			}
 			normals.push(normal);
 
-			// Compute curve offset points toward each adjacent cell center
-			const dirA = coordToDirection(cellCenterA[0], cellCenterA[1]);
-			const cellPoint3dA = intersect(dirA);
-			const dirB = coordToDirection(cellCenterB[0], cellCenterB[1]);
-			const cellPoint3dB = intersect(dirB);
+			// Compute curve offset points by slerping toward cell centers and raycasting
+			const edgeDir = point3d.clone().sub(center).normalize();
+			const cellDirA = coordToDirection(cellCenterA[0], cellCenterA[1]).normalize();
+			const cellDirB = coordToDirection(cellCenterB[0], cellCenterB[1]).normalize();
 
-			if (cellPoint3dA) {
-				const offsetA = cellPoint3dA.clone().sub(point3d).normalize();
-				const curveDistA = point3d.distanceTo(cellPoint3dA) * curveOffsetFactor;
-				curvePointsA.push(point3d.clone().addScaledVector(offsetA, curveDistA));
-			} else {
-				curvePointsA.push(point3d.clone());
-			}
+			const curveDirA = slerp(edgeDir, cellDirA, curveOffsetFactor);
+			const curveHitA = intersect(curveDirA);
+			curvePointsA.push(curveHitA ?? point3d.clone());
 
-			if (cellPoint3dB) {
-				const offsetB = cellPoint3dB.clone().sub(point3d).normalize();
-				const curveDistB = point3d.distanceTo(cellPoint3dB) * curveOffsetFactor;
-				curvePointsB.push(point3d.clone().addScaledVector(offsetB, curveDistB));
-			} else {
-				curvePointsB.push(point3d.clone());
-			}
+			const curveDirB = slerp(edgeDir, cellDirB, curveOffsetFactor);
+			const curveHitB = intersect(curveDirB);
+			curvePointsB.push(curveHitB ?? point3d.clone());
 		}
 
 		if (edgePoints3d.length < 2) continue;
