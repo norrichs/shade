@@ -1,7 +1,6 @@
 import type {
 	ShowGlobuleTubeGeometries,
-	ShowProjectionGeometries,
-	ShowVoronoiGeometries
+	ShowProjectionGeometries
 } from '$lib/stores/viewControlStore';
 import type {
 	SuperGlobuleProjectionPattern,
@@ -23,7 +22,6 @@ export type CollateTubesInput = {
 	voronoiSurfacePattern: SuperGlobuleProjectionPattern | undefined;
 	showGlobuleTubeGeometry: ShowGlobuleTubeGeometries;
 	showProjectionGeometry: ShowProjectionGeometries;
-	showVoronoiGeometry: ShowVoronoiGeometries;
 	patternSource: PatternSource;
 };
 
@@ -65,11 +63,7 @@ export const collateTubes = (input: CollateTubesInput): TubeCutPattern[] => {
 		...(showProjectionGeometry.any && patternSource === 'surfaceProjection'
 			? getTubes(surfaceProjectionPattern)
 			: []),
-		...(showVoronoiGeometry.any && patternSource === 'voronoi'
-			? getTubes(voronoiPattern)
-			: []),
-		...(showVoronoiGeometry.any && patternSource === 'voronoiSurface'
-			? getTubes(voronoiSurfacePattern)
-			: [])
+		...(patternSource === 'voronoi' ? getTubes(voronoiPattern) : []),
+		...(patternSource === 'voronoiSurface' ? getTubes(voronoiSurfacePattern) : [])
 	];
 };

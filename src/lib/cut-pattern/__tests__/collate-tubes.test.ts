@@ -22,13 +22,11 @@ const makeCutPattern = (tubeIds: string[]): SuperGlobuleProjectionPattern =>
 const allOff = {
 	showGlobuleTubeGeometry: { any: false, bands: false, facets: false, sections: false } as never,
 	showProjectionGeometry: { any: false, bands: false, facets: false } as never,
-	showVoronoiGeometry: { any: false, bands: false, facets: false, sections: false, surfaceProjection: false } as never
 };
 
 const allOn = {
 	showGlobuleTubeGeometry: { any: true, bands: true, facets: true, sections: true } as never,
 	showProjectionGeometry: { any: true, bands: true, facets: true } as never,
-	showVoronoiGeometry: { any: true, bands: true, facets: true, sections: true, surfaceProjection: true } as never
 };
 
 const voronoiDefaults = {
@@ -95,7 +93,6 @@ describe('collateTubes', () => {
 			...voronoiDefaults,
 			showGlobuleTubeGeometry: { any: false, bands: false, facets: false, sections: false } as never,
 			showProjectionGeometry: { any: true, bands: true, facets: true } as never,
-			showVoronoiGeometry: { any: false, bands: false, facets: false, sections: false, surfaceProjection: false } as never,
 			patternSource: 'surfaceProjection'
 		});
 		expect(out.map((t) => t.bands[0].id)).toEqual(['surf-0']);

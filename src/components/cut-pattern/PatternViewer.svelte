@@ -37,7 +37,6 @@
 		voronoiSurfacePattern: $superGlobulePatternStore.voronoiSurfacePattern,
 		showGlobuleTubeGeometry: $viewControlStore.showGlobuleTubeGeometry,
 		showProjectionGeometry: $viewControlStore.showProjectionGeometry,
-		showVoronoiGeometry: $viewControlStore.showVoronoiGeometry,
 		patternSource: $patternConfigStore.patternViewConfig.patternSource ?? 'projection'
 	});
 </script>
