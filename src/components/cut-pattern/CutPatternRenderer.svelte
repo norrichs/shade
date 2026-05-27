@@ -19,7 +19,7 @@
 		selectionTarget = 'projection'
 	}: {
 		tubes?: TubeCutPattern[];
-		selectionTarget?: 'projection' | 'surfaceProjection';
+		selectionTarget?: string;
 	} = $props();
 
 	const GAP_BETWEEN_BANDS = 20;
@@ -107,11 +107,19 @@
 	let range = $derived($patternConfigStore.patternViewConfig.range);
 
 	let showPattern = $derived.by(() => {
-		const { showGlobuleTubeGeometry, showProjectionGeometry } = $viewControlStore;
-		const any = showGlobuleTubeGeometry.any || showProjectionGeometry.any;
-		const bands = showGlobuleTubeGeometry.bands || showProjectionGeometry.bands;
-		const facets = showGlobuleTubeGeometry.facets || showProjectionGeometry.facets;
-		return any && (bands || facets);
+		const { showGlobuleTubeGeometry, showProjectionGeometry, showVoronoiGeometry } =
+			$viewControlStore;
+		const any =
+			showGlobuleTubeGeometry.any || showProjectionGeometry.any || showVoronoiGeometry.any;
+		const bands =
+			showGlobuleTubeGeometry.bands || showProjectionGeometry.bands || showVoronoiGeometry.bands;
+		const facets =
+			showGlobuleTubeGeometry.facets ||
+			showProjectionGeometry.facets ||
+			showVoronoiGeometry.facets;
+		const isVoronoiSource =
+			selectionTarget === 'voronoi' || selectionTarget === 'voronoiSurface';
+		return (any || isVoronoiSource) && (bands || facets || isVoronoiSource);
 	});
 
 	let filteredTubes = $derived(filtered({ tubes, range }));
