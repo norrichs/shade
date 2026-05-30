@@ -910,7 +910,7 @@ export type SuperGlobuleConfig = {
 	name?: string;
 	subGlobuleConfigs: SubGlobuleConfig[];
 	projectionConfigs: BaseProjectionConfig[];
-	voronoiConfigs: VoronoiConfig[];
+	voronoiConfig?: VoronoiConfig;
 };
 
 export type SuperGlobule = {
@@ -926,11 +926,11 @@ export type SuperGlobule = {
 		surfaceProjectionTubes: Tube[];
 		surface: Object3D;
 	}[];
-	voronoiResults: {
+	voronoiResult?: {
 		tubes: Tube[];
 		surfaceProjectionTubes: Tube[];
 		surface: Object3D;
-	}[];
+	};
 };
 
 export type SuperGlobuleMesh = {
