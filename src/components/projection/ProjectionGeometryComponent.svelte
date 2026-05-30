@@ -23,7 +23,9 @@
 	import {
 		selectedProjectionGeometry,
 		selectedSurfaceProjection,
-		selectedSurfaceProjectionGeometry
+		selectedSurfaceProjectionGeometry,
+		selectedVoronoiSurface,
+		selectedVoronoiSurfaceGeometry
 	} from '$lib/stores';
 
 	let {
@@ -245,9 +247,16 @@
 			/>
 		{/each}
 		{#each voronoiGeometry.surfaceProjectionFacets || [] as facet}
-			<T.Mesh geometry={facet.geometry} onclick={(ev) => onClick(ev, facet.address)}>
-				<T.MeshStandardMaterial color="red" side={2} />
-			</T.Mesh>
+			<T.Mesh
+				geometry={facet.geometry}
+				material={getMaterial(facet.address, $selectedVoronoiSurfaceGeometry, { colorByBand })}
+				onclick={(ev) => {
+					// Only process nearest intersection (front facet, not back)
+					if (ev.intersections?.[0]?.object !== ev.object) return;
+					ev.stopPropagation();
+					$selectedVoronoiSurface = facet.address;
+				}}
+			/>
 		{/each}
 	</T.Group>
 {/if}

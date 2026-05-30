@@ -4,7 +4,12 @@
 	import PatternLabel from './PatternLabel.svelte';
 	import OnTabLabel from './OnTabLabel.svelte';
 	import { resolveTabLabel } from '$lib/cut-pattern/resolve-tab-label';
-	import { patternConfigStore, selectedProjection, selectedSurfaceProjection } from '$lib/stores';
+	import {
+		patternConfigStore,
+		selectedProjection,
+		selectedSurfaceProjection,
+		selectedVoronoiSurface
+	} from '$lib/stores';
 	import type { Vector3 } from 'three';
 	import type { GlobuleAddress_Band } from '$lib/projection-geometry/types';
 	import { concatAddress } from '$lib/util';
@@ -32,7 +37,7 @@
 		tagAnchorPoint: Point;
 		tagAngle: number | undefined;
 		groupCode?: string;
-		selectionTarget?: 'projection' | 'surfaceProjection';
+		selectionTarget?: 'projection' | 'surfaceProjection' | 'voronoi' | 'voronoiSurface';
 		children?: Snippet;
 	} = $props();
 
@@ -65,7 +70,9 @@
 	};
 
 	const handleClick = (address: GlobuleAddress_Band) => {
-		if (selectionTarget === 'surfaceProjection') {
+		if (selectionTarget === 'voronoiSurface') {
+			$selectedVoronoiSurface = { ...address, facet: 0 };
+		} else if (selectionTarget === 'surfaceProjection') {
 			$selectedSurfaceProjection = { ...address, facet: 0 };
 		} else {
 			$selectedProjection = { ...address, facet: 0 };

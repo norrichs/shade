@@ -17,7 +17,8 @@ import {
 import type {
 	GlobuleAddress_Band,
 	GlobuleAddress_Facet,
-	GlobuleAddress_Tube
+	GlobuleAddress_Tube,
+	Tube
 } from '$lib/projection-geometry/types';
 import { BufferGeometry } from 'three';
 import { partnerHighlightStore } from './partnerHighlightStore';
@@ -292,11 +293,10 @@ export const selectedSurfaceProjection = writable<GlobuleAddress_Facet | null>(n
 
 const getSurfaceProjectionSelectedFacet = (
 	address: GlobuleAddress_Facet,
-	sg: SuperGlobule,
+	spTubes: Tube[] | undefined,
 	mode: SelectionMode
 ) => {
 	const facets = new Set<Facet>([]);
-	const spTubes = sg.projections[address.globule]?.surfaceProjectionTubes;
 	if (!spTubes?.[address.tube]?.bands?.[address.band]) return [];
 	if (mode.includes.tube) {
 		spTubes[address.tube].bands.forEach((band) =>
@@ -312,7 +312,7 @@ const getSurfaceProjectionSelectedFacet = (
 
 const getSurfaceProjectionPartnerFacets = (
 	facets: Facet[],
-	sg: SuperGlobule,
+	spTubes: Tube[] | undefined,
 	mode: SelectionMode
 ) => {
 	if (!mode.includes.partners)
@@ -322,8 +322,6 @@ const getSurfaceProjectionPartnerFacets = (
 			partnerFacets: [] as Facet[]
 		};
 
-	const globuleIdx = facets[0]?.address?.globule ?? 0;
-	const spTubes = sg.projections[globuleIdx]?.surfaceProjectionTubes;
 	if (!spTubes)
 		return {
 			startPartnerFacets: [] as Facet[],
@@ -375,19 +373,22 @@ const getSurfaceProjectionPartnerFacets = (
 	};
 };
 
-export const selectedSurfaceProjectionGeometry = derived(
-	[selectedSurfaceProjection, superGlobuleStore, selectMode],
-	([$selectedSurfaceProjection, $superGlobuleStore, $selectMode]): SelectedProjectionGeometry => {
-		if (!$selectedSurfaceProjection) return null;
+// Shared geometry builder for any "surface projection" tube source (the
+// projection pipeline's surfaceProjectionTubes OR the voronoi result's). Keeps
+// the projection-surface and voronoi-surface selections identical apart from
+// which tube array they resolve against.
+const buildSurfaceSelectionGeometry = (
+	address: GlobuleAddress_Facet,
+	spTubes: Tube[] | undefined,
+	mode: SelectionMode
+): SelectedProjectionGeometry => {
+	const selectedFacets: Facet[] = getSurfaceProjectionSelectedFacet(address, spTubes, mode);
 
-		const selectedFacets: Facet[] = getSurfaceProjectionSelectedFacet(
-			$selectedSurfaceProjection,
-			$superGlobuleStore,
-			$selectMode
-		);
-
-		const { startPartnerFacets, endPartnerFacets, partnerFacets } =
-			getSurfaceProjectionPartnerFacets(selectedFacets, $superGlobuleStore, $selectMode);
+	const { startPartnerFacets, endPartnerFacets, partnerFacets } = getSurfaceProjectionPartnerFacets(
+		selectedFacets,
+		spTubes,
+		mode
+	);
 
 		const facetPoints = selectedFacets
 			.map(({ triangle }) => [triangle.a, triangle.b, triangle.c])
@@ -440,6 +441,29 @@ export const selectedSurfaceProjectionGeometry = derived(
 			selectedStartPartners,
 			selectedEndPartners
 		};
+};
+
+export const selectedSurfaceProjectionGeometry = derived(
+	[selectedSurfaceProjection, superGlobuleStore, selectMode],
+	([$selectedSurfaceProjection, $superGlobuleStore, $selectMode]): SelectedProjectionGeometry => {
+		if (!$selectedSurfaceProjection) return null;
+		const spTubes =
+			$superGlobuleStore.projections[$selectedSurfaceProjection.globule]?.surfaceProjectionTubes;
+		return buildSurfaceSelectionGeometry($selectedSurfaceProjection, spTubes, $selectMode);
+	}
+);
+
+// Selection for the voronoi result's surface-projection geometry. Resolves
+// against `voronoiResult.surfaceProjectionTubes` (distinct from the projection
+// pipeline's surfaceProjectionTubes).
+export const selectedVoronoiSurface = writable<GlobuleAddress_Facet | null>(null);
+
+export const selectedVoronoiSurfaceGeometry = derived(
+	[selectedVoronoiSurface, superGlobuleStore, selectMode],
+	([$selectedVoronoiSurface, $superGlobuleStore, $selectMode]): SelectedProjectionGeometry => {
+		if (!$selectedVoronoiSurface) return null;
+		const spTubes = $superGlobuleStore.voronoiResult?.surfaceProjectionTubes;
+		return buildSurfaceSelectionGeometry($selectedVoronoiSurface, spTubes, $selectMode);
 	}
 );
 
