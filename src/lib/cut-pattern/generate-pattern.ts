@@ -124,11 +124,11 @@ export const generateProjectionPattern = (
 		patternConfig: { pixelScale }
 	} = globulePatternConfig;
 
-	// fillAll produces interior fan tubes with one degenerate facet per quad.
-	// Tiled/panel patterns cannot tile degenerate facets — keep fill tubes for outlined only.
+	// fillAll produces interior fill BANDS (one degenerate facet per quad) inside normal tubes.
+	// Tiled/panel patterns cannot tile degenerate facets — keep fill bands for outlined only.
 	const effectiveTubes = isOutlinedPatternConfig(patternTypeConfig)
 		? tubes
-		: tubes.filter((t) => !t.isFill);
+		: tubes.map((t) => ({ ...t, bands: t.bands.filter((b) => !b.isFill) }));
 
 	if (isOutlinedPatternConfig(patternTypeConfig)) {
 		return generateOutlinedProjectionPattern(
