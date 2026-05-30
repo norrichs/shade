@@ -85,6 +85,12 @@ export type OutlineEdge = {
 	interiorPoint: Vector3;
 	/** For partner tabs: the two outer points from the adjacent band's quad */
 	partnerOuter?: { start: Vector3; end: Vector3 };
+	/**
+	 * Band number of the adjacent band sharing this edge, read from facet `ac`
+	 * partner metadata. Only set for 'before'/'after' edges that have a partner.
+	 * Used by the middle-quad self-tag edge selection.
+	 */
+	partnerBand?: number;
 	/** For end edges: the tube index of the partner at this end */
 	endPartnerTube?: number;
 	/**
@@ -205,7 +211,8 @@ const getOutlineEdges = (
 			end: q.d.clone(),
 			side: 'before',
 			interiorPoint: beforeInterior,
-			partnerOuter
+			partnerOuter,
+			partnerBand: band.facets[2 * i]?.meta?.ac?.partner?.band
 		});
 	}
 
@@ -247,7 +254,8 @@ const getOutlineEdges = (
 			end: q.b.clone(),
 			side: 'after',
 			interiorPoint: afterInterior,
-			partnerOuter
+			partnerOuter,
+			partnerBand: band.facets[2 * i + 1]?.meta?.ac?.partner?.band
 		});
 	}
 
