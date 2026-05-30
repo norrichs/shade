@@ -68,6 +68,7 @@ import {
 import { generateGlobuleTube, generateGlobuleData } from '$lib/generate-shape';
 import { collateGlobuleTubeGeometry } from './collate-geometry';
 import { auditSides, auditSurfaceProjectionSides } from './audit';
+import { buildFillBand, outerBorderPolyline, reindexBandAddresses } from './fill-bands';
 
 export const preparePolygonConfig = (
 	polygonConfig: PolygonConfig<undefined, number, number, number>,
@@ -862,6 +863,7 @@ const matchFacets = (tubes: Tube[]) => {
 	tubes.forEach((tube, tubeIndex) => {
 		tube.bands.forEach((band, bandIndex) => {
 			band.facets.forEach((facet, facetIndex) => {
+				if (facet.isDegenerate) return; // synthetic fill facet — never partner-matched
 				if (!facet.address) {
 					throw Error(
 						`facet does not have address at tube:${tubeIndex}, band:${bandIndex}, facet:${facetIndex}`
@@ -1227,6 +1229,9 @@ export const generateSurfaceProjectionBands = (
 ): { tubes: Tube[] } => {
 	const tubes: Tube[] = [];
 
+	// For fillAll: which polygon each tube's first/last outer band borders.
+	const fillMeta: { firstPolygon: number; lastPolygon: number }[] = [];
+
 	// Build sorted edge map (same logic as sortEdges) but retain polygon/edge indices
 	const { polygons } = projectionConfig.projectorConfig.polyhedron;
 	const edgeMap: { polygonIndex: number; edgeIndex: number; vertices: [number, number] }[] = [];
@@ -1301,7 +1306,8 @@ export const generateSurfaceProjectionBands = (
 		const centroid = new Vector3().addVectors(p0, p1).add(p2).divideScalar(3);
 		const toFacet = new Vector3().subVectors(centroid, projCenter);
 
-		if (testNormal.dot(toFacet) < 0) {
+		const reversed = testNormal.dot(toFacet) < 0;
+		if (reversed) {
 			// Reverse point order in each section to fix winding
 			sections.forEach((s) => s.points.reverse());
 		}
@@ -1317,6 +1323,64 @@ export const generateSurfaceProjectionBands = (
 		};
 
 		tubes.push(tube);
+
+		// After winding, band 0 = sections.points[0]; if reversed that is em1's polygon.
+		fillMeta.push({
+			firstPolygon: reversed ? em1.polygonIndex : em0.polygonIndex,
+			lastPolygon: reversed ? em0.polygonIndex : em1.polygonIndex
+		});
+	}
+
+	// Interior fill bands (fillAll). One fill band per outer (open-space-bordering) band,
+	// prepended before band 0 and appended after the last band of each tube, sharing one
+	// per-polygon center point on the surface. Built before partner matching so the fill
+	// bands are addressed and partnered as first-class bands.
+	if (projectionConfig.surfaceProjectionConfig?.fillAll) {
+		const fillRay = new Raycaster(undefined, undefined, undefined, 2000);
+
+		// Per-polygon apex: average the polygon's inner-curve points, ray-cast onto the surface.
+		const polygonApex: (Vector3 | undefined)[] = projection.polygons.map((poly) => {
+			const pts = poly.edges.flatMap((e) => e.sections.map((s) => s.intersections.curve));
+			if (pts.length === 0) return undefined;
+			const avg = pts.reduce((acc, p) => acc.add(p), new Vector3()).divideScalar(pts.length);
+			fillRay.set(projCenter, avg.clone().sub(projCenter).normalize());
+			const hit = fillRay.intersectObject(surface, true)[0];
+			if (!hit) console.warn('fillAll: polygon centroid ray missed surface; using averaged point');
+			return hit ? hit.point.clone() : avg;
+		});
+
+		tubes.forEach((tube, t) => {
+			const meta = fillMeta[t];
+			const firstApex = polygonApex[meta.firstPolygon];
+			const lastApex = polygonApex[meta.lastPolygon];
+			const firstEdge = outerBorderPolyline(tube.sections, 'first');
+			const lastEdge = outerBorderPolyline(tube.sections, 'last');
+
+			const newBands: Band[] = [];
+			if (firstApex && firstEdge.length >= 2) {
+				newBands.push(
+					buildFillBand({
+						borderEdge: firstEdge,
+						center: firstApex,
+						address: { ...tube.address, band: 0 },
+						projCenter
+					})
+				);
+			}
+			newBands.push(...tube.bands);
+			if (lastApex && lastEdge.length >= 2) {
+				newBands.push(
+					buildFillBand({
+						borderEdge: lastEdge,
+						center: lastApex,
+						address: { ...tube.address, band: 0 },
+						projCenter
+					})
+				);
+			}
+			tube.bands = newBands;
+			reindexBandAddresses(tube.bands, tube.address);
+		});
 	}
 
 	// Partner matching for flat surface projection geometry.
@@ -1346,7 +1410,6 @@ export const generateSurfaceProjectionBands = (
  */
 const matchSurfaceProjectionCrossBandPartners = (tubes: Tube[]) => {
 	tubes.forEach((tube) => {
-		if (tube.isFill) return; // fill tubes have degenerate facets; skip partner matching
 		if (tube.bands.length < 2) return;
 		// Match every facet in band i against every facet in band j (i≠j)
 		for (let i = 0; i < tube.bands.length; i++) {
@@ -1384,9 +1447,9 @@ const matchSurfaceProjectionCrossBandPartners = (tubes: Tube[]) => {
  */
 const matchSurfaceProjectionSequentialPartners = (tubes: Tube[]) => {
 	tubes.forEach((tube) => {
-		if (tube.isFill) return; // fill tubes have degenerate facets; skip partner matching
 		tube.bands.forEach((band) => {
 			band.facets.forEach((facet, f) => {
+				if (facet.isDegenerate) return;
 				if (!facet.address) return;
 
 				const edgeMeta = { ab: {}, bc: {}, ac: {} } as NonNullable<Facet['meta']>;
@@ -1442,11 +1505,12 @@ const matchSurfaceProjectionTubeEnds = (tubes: Tube[]) => {
 	// Collect all end facets: { facet, tubeIdx, bandIdx, position: 'first'|'last' }
 	const endFacets: { facet: Facet; tube: number; band: number; pos: 'first' | 'last' }[] = [];
 	tubes.forEach((tube, t) => {
-		if (tube.isFill) return; // fill tubes have degenerate facets; skip partner matching
 		tube.bands.forEach((band, b) => {
 			const fc = band.facets.length;
-			if (fc > 0) endFacets.push({ facet: band.facets[0], tube: t, band: b, pos: 'first' });
-			if (fc > 0) endFacets.push({ facet: band.facets[fc - 1], tube: t, band: b, pos: 'last' });
+			if (fc > 0 && !band.facets[0].isDegenerate)
+				endFacets.push({ facet: band.facets[0], tube: t, band: b, pos: 'first' });
+			if (fc > 0 && !band.facets[fc - 1].isDegenerate)
+				endFacets.push({ facet: band.facets[fc - 1], tube: t, band: b, pos: 'last' });
 		});
 	});
 
