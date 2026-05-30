@@ -26,6 +26,7 @@
 	const defaultOnTab = (): OnTab => ({ enabled: false, padding: 1 });
 	const defaultSelfTag = (): SelfTag => ({
 		enabled: true,
+		externalTag: false,
 		height: 14,
 		angle: 0,
 		padding: 10,
@@ -87,6 +88,14 @@
 		writeLabels({
 			...labels,
 			selfTag: { ...(labels.selfTag ?? defaultSelfTag()), enabled: checked }
+		});
+	};
+
+	const handleSelfTagExternalTag = (event: Event) => {
+		const checked = (event.target as HTMLInputElement).checked;
+		writeLabels({
+			...labels,
+			selfTag: { ...(labels.selfTag ?? defaultSelfTag()), externalTag: checked }
 		});
 	};
 
@@ -166,6 +175,13 @@
 					type="checkbox"
 					checked={selfTag.enabled}
 					onchange={handleSelfTagEnabled}
+				/>
+			</LabeledControl>
+			<LabeledControl label="External Tag">
+				<input
+					type="checkbox"
+					checked={selfTag.externalTag ?? false}
+					onchange={handleSelfTagExternalTag}
 				/>
 			</LabeledControl>
 			<LabeledControl label="Height">
