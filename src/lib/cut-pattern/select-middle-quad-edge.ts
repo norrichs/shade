@@ -61,3 +61,30 @@ export const selectMiddleQuadEdgeIndex = (
 	// 4. deterministic fallback
 	return before.index;
 };
+
+/**
+ * Resolve which outer edge of the middle quad the self-tag should anchor to.
+ * `edges` only needs a `partnerBand?: number` per index; `tabbedIndices` is the
+ * set of edge indices that received a tab. Returns the chosen edge index, or -1
+ * when there are no quads (caller falls back to no anchor).
+ */
+export const chooseMiddleQuadEdge = (
+	quadCount: number,
+	edges: ReadonlyArray<{ partnerBand?: number }>,
+	tabbedIndices: ReadonlySet<number>
+): number => {
+	if (quadCount <= 0) return -1;
+	const { beforeIndex, afterIndex } = middleQuadEdgeIndices(quadCount);
+	return selectMiddleQuadEdgeIndex(
+		{
+			index: beforeIndex,
+			hasTab: tabbedIndices.has(beforeIndex),
+			partnerBand: edges[beforeIndex]?.partnerBand
+		},
+		{
+			index: afterIndex,
+			hasTab: tabbedIndices.has(afterIndex),
+			partnerBand: edges[afterIndex]?.partnerBand
+		}
+	);
+};

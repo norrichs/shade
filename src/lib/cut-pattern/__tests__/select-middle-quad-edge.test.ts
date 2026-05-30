@@ -1,4 +1,4 @@
-import { middleQuadIndex, middleQuadEdgeIndices, selectMiddleQuadEdgeIndex } from '../select-middle-quad-edge';
+import { middleQuadIndex, middleQuadEdgeIndices, selectMiddleQuadEdgeIndex, chooseMiddleQuadEdge } from '../select-middle-quad-edge';
 
 describe('middleQuadIndex', () => {
 	test.each([
@@ -73,5 +73,42 @@ describe('selectMiddleQuadEdgeIndex', () => {
 		const before = candidate(2, true, 7);
 		const after = candidate(8, true, 7);
 		expect(selectMiddleQuadEdgeIndex(before, after)).toBe(2);
+	});
+});
+
+describe('chooseMiddleQuadEdge', () => {
+	// 5 quads -> midQuad 2, beforeIndex 2, afterIndex 8.
+	const edgesWithPartnerBands = (byIndex: Record<number, number | undefined>) =>
+		Array.from({ length: 12 }, (_, i) => ({ partnerBand: byIndex[i] }));
+
+	test('no tabs, no partners -> before edge (index 2)', () => {
+		const chosen = chooseMiddleQuadEdge(
+			5,
+			edgesWithPartnerBands({}),
+			new Set<number>()
+		);
+		expect(chosen).toBe(2);
+	});
+
+	test('before edge tabbed -> after edge wins (index 8)', () => {
+		const chosen = chooseMiddleQuadEdge(
+			5,
+			edgesWithPartnerBands({}),
+			new Set<number>([2])
+		);
+		expect(chosen).toBe(8);
+	});
+
+	test('both untabbed, after has higher partner band -> after edge (index 8)', () => {
+		const chosen = chooseMiddleQuadEdge(
+			5,
+			edgesWithPartnerBands({ 2: 1, 8: 4 }),
+			new Set<number>()
+		);
+		expect(chosen).toBe(8);
+	});
+
+	test('quadCount 0 -> returns -1 (no anchor)', () => {
+		expect(chooseMiddleQuadEdge(0, [], new Set<number>())).toBe(-1);
 	});
 });
