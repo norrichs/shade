@@ -16,6 +16,7 @@ import type {
 import type { GlobuleAddress_Facet } from '$lib/projection-geometry/types';
 import { derived, writable, get } from 'svelte/store';
 import { loadPersistedOrDefault } from './stores';
+import { normalizeVoronoiConfig } from '$lib/voronoi/migrate-voronoi-config';
 import { generateSuperGlobule } from '$lib/generate-superglobule';
 import {
 	generateSuperGlobuleBandGeometry,
@@ -135,9 +136,11 @@ export function extractMeshData(superGlobule: SuperGlobule): SuperGlobuleMesh {
 // SUPER CONFIGS
 export const superConfigStore = persistable<SuperGlobuleConfig>(
 	((): SuperGlobuleConfig => {
-		const config = loadPersistedOrDefault(
-			bootstrapShouldUsePersisted(),
-			generateDefaultSuperGlobuleConfig
+		const config = normalizeVoronoiConfig(
+			loadPersistedOrDefault(
+				bootstrapShouldUsePersisted(),
+				generateDefaultSuperGlobuleConfig
+			) as SuperGlobuleConfig
 		);
 		console.log('SUPER GLOBULE CONFIG STORE', { config });
 		return config;
