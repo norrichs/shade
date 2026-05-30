@@ -200,6 +200,7 @@ function matchFacets(tubes: Tube[]): void {
 	tubes.forEach((tube) => {
 		tube.bands.forEach((band) => {
 			band.facets.forEach((facet, f) => {
+				if (facet.isDegenerate) return; // synthetic fill facet — never partner-matched
 				if (!facet.address) return;
 
 				const edgeMeta = { ab: {}, bc: {}, ac: {} } as NonNullable<Facet['meta']>;
@@ -503,9 +504,11 @@ export function makeVoronoi(
 			pts.reduce((acc, p) => acc.add(p.clone()), new Vector3()).divideScalar(pts.length);
 
 		// Per-cell apex: ray-cast the seed direction onto the surface.
-		const cellApex: (Vector3 | undefined)[] = relaxedSeeds.map(
-			(seed) => intersect(coordToDirection(seed[0], seed[1])) ?? undefined
-		);
+		const cellApex: (Vector3 | undefined)[] = relaxedSeeds.map((seed) => {
+			const hit = intersect(coordToDirection(seed[0], seed[1]));
+			if (!hit) console.warn('fillAll: cell seed ray missed surface; using averaged border point');
+			return hit ?? undefined;
+		});
 
 		surfaceProjectionTubes.forEach((tube, t) => {
 			const meta = spFillMeta[t];
