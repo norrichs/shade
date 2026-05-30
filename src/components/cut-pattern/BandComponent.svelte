@@ -8,6 +8,7 @@
 	import type { Vector3 } from 'three';
 	import type { GlobuleAddress_Band } from '$lib/projection-geometry/types';
 	import { concatAddress } from '$lib/util';
+	import { buildSelfTagLines } from '$lib/cut-pattern/build-self-tag-lines';
 
 	let {
 		band,
@@ -18,6 +19,7 @@
 		portal = false,
 		tagAnchorPoint,
 		tagAngle,
+		groupCode = undefined,
 		selectionTarget = 'projection',
 		children
 	}: {
@@ -29,6 +31,7 @@
 		portal?: boolean;
 		tagAnchorPoint: Point;
 		tagAngle: number | undefined;
+		groupCode?: string;
 		selectionTarget?: 'projection' | 'surfaceProjection';
 		children?: Snippet;
 	} = $props();
@@ -38,6 +41,10 @@
 	let isTiled = $derived(patternTypeConfig?.type !== 'outlined');
 	let onTabEnabled = $derived(labels?.onTab?.enabled ?? false);
 	let selfTagEnabled = $derived(labels?.selfTag?.enabled ?? false);
+	let externalTagEnabled = $derived(labels?.selfTag?.externalTag ?? false);
+	let selfTagLines = $derived(
+		buildSelfTagLines(concatAddress(band.address, 'tb-slash'), groupCode, externalTagEnabled)
+	);
 	let hasTabs = $derived(!!band.tabs && band.tabs.length > 0);
 
 	let colors = {
@@ -111,7 +118,7 @@
 			angle={band.tagAngle ?? labels?.selfTag?.angle ?? 0}
 			autoAngle={band.tagAnchorAutoAngle}
 			anchor={tagAnchorPoint || { x: -50, y: -50 }}
-			addressStrings={[concatAddress(band.address, 'tb-slash')]}
+			addressStrings={selfTagLines}
 			padding={labels?.selfTag?.padding ?? 10}
 			stemLength={labels?.selfTag?.stemLength ?? 20}
 			stemWidth={labels?.selfTag?.stemWidth ?? 4}

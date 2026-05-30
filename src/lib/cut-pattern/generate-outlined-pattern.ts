@@ -29,6 +29,7 @@ import {
 } from './generate-tab-geometry';
 import { collectOutlinedBandTabs, type OutlinedTabEdge } from './collect-outlined-band-tabs';
 import { computeOutlinedLabelAnchor } from './compute-label-anchor';
+import { chooseMiddleQuadEdge } from './select-middle-quad-edge';
 import { seamTabOwner } from './seam-tab-layout';
 
 /**
@@ -85,6 +86,12 @@ export type OutlineEdge = {
 	interiorPoint: Vector3;
 	/** For partner tabs: the two outer points from the adjacent band's quad */
 	partnerOuter?: { start: Vector3; end: Vector3 };
+	/**
+	 * Band number of the adjacent band sharing this edge, read from facet `ac`
+	 * partner metadata. Only set for 'before'/'after' edges that have a partner.
+	 * Used by the middle-quad self-tag edge selection.
+	 */
+	partnerBand?: number;
 	/** For end edges: the tube index of the partner at this end */
 	endPartnerTube?: number;
 	/**
@@ -205,7 +212,8 @@ const getOutlineEdges = (
 			end: q.d.clone(),
 			side: 'before',
 			interiorPoint: beforeInterior,
-			partnerOuter
+			partnerOuter,
+			partnerBand: band.facets[2 * i]?.meta?.ac?.partner?.band
 		});
 	}
 
@@ -247,7 +255,8 @@ const getOutlineEdges = (
 			end: q.b.clone(),
 			side: 'after',
 			interiorPoint: afterInterior,
-			partnerOuter
+			partnerOuter,
+			partnerBand: band.facets[2 * i + 1]?.meta?.ac?.partner?.band
 		});
 	}
 
@@ -531,34 +540,26 @@ const generateOutlinedBandPattern = (
 	}));
 	const tabs = collectOutlinedBandTabs(tabEdges, tabsByIndex);
 
-	// Locate the start-cap edge (the one with endIsStartCap === true) so the
-	// self-tag label can attach near its midpoint (or the outer midpoint of its
-	// tab, if any). For outlined bands the start cap is the LAST edge in the
-	// walk order (see getOutlineEdges: it's appended after the 'after' side and
-	// closes the loop back to quads[0].a). We scan rather than hardcode the
-	// index so any future reordering of the walk doesn't silently break this.
-	let startCapIndex = -1;
-	for (let i = 0; i < edges.length; i++) {
-		if (edges[i].side === 'end' && edges[i].endIsStartCap === true) {
-			startCapIndex = i;
-			break;
-		}
-	}
+	// Anchor the self-tag to the band's middle quad rather than the start cap.
+	// `chooseMiddleQuadEdge` selects the better of the middle quad's two outer
+	// edges (before a->d / after c->b) by priority: no-tab > no-partner >
+	// higher-partner-band-number, with a deterministic fallback to the before
+	// edge. Returns -1 when there are no quads.
+	const tabbedIndices = new Set<number>(tabsByIndex.keys());
+	const chosenEdgeIndex = chooseMiddleQuadEdge(quads.length, edges, tabbedIndices);
 
 	let labelAnchor: { anchor: { x: number; y: number }; autoAngle: number } | undefined;
-	if (startCapIndex >= 0) {
-		const capEdge = edges[startCapIndex];
-		const capTab = tabsByIndex.get(startCapIndex);
-		// tabConfig is typed as optional on OutlinedPatternConfig, though in
-		// practice buildOutlinePath above will have already required it if any
-		// tab was generated. Guard with ?? 0 to keep the types honest.
-		const capTabWidth = config.tabConfig?.tabWidth ?? 0;
+	if (chosenEdgeIndex >= 0) {
+		const chosenEdge = edges[chosenEdgeIndex];
+		const chosenTab = tabsByIndex.get(chosenEdgeIndex);
+		// tabConfig is optional on OutlinedPatternConfig; guard with ?? 0.
+		const chosenTabWidth = config.tabConfig?.tabWidth ?? 0;
 		labelAnchor = computeOutlinedLabelAnchor({
-			edgeStart: { x: capEdge.start.x, y: capEdge.start.y },
-			edgeEnd: { x: capEdge.end.x, y: capEdge.end.y },
-			interiorPoint: { x: capEdge.interiorPoint.x, y: capEdge.interiorPoint.y },
-			hasTab: capTab !== undefined,
-			tabWidth: capTabWidth
+			edgeStart: { x: chosenEdge.start.x, y: chosenEdge.start.y },
+			edgeEnd: { x: chosenEdge.end.x, y: chosenEdge.end.y },
+			interiorPoint: { x: chosenEdge.interiorPoint.x, y: chosenEdge.interiorPoint.y },
+			hasTab: chosenTab !== undefined,
+			tabWidth: chosenTabWidth
 		});
 	}
 
