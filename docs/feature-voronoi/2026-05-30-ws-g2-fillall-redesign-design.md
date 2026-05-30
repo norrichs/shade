@@ -35,6 +35,11 @@ open polygon/cell **interiors** are empty. `fillAll` fills them.
   - **real** facet: the 2 vectors of the border facet's open-space edge (cloned) + the center point,
   - **degenerate** facet: 1 border vector + center + center (zero area). Exists only to preserve
     even/odd facet indexing and the `axial-right` orientation so downstream code is unchanged.
+- **Explicit degenerate tagging.** Degenerate facets are marked at construction with an explicit
+  `Facet.isDegenerate = true` flag — they are NOT detected geometrically downstream. Every guard
+  (flatten path, partner matchers) reads the flag, not vertex coincidence. This avoids epsilon
+  tuning and prevents a legitimately thin real facet from being misclassified. (A geometric
+  `isDegenerateTriangle` helper may exist for tests, but production guards use the tag.)
 - Because each fill band is a **normal band**, the outlined renderer draws each as its own
   silhouette → one visible triangle per real facet. This is what fixes the collapse.
 - Fill remains **outlined-only**: degenerate facets break tiling. The existing outlined-only drop
@@ -112,9 +117,10 @@ the existing partner passes treat them as first-class:
 
 Per tube, final band order: `[fill(curve0), band0, …divisions…, bandLast, fill(curve1)]`.
 
-**Degenerate-facet guard in partner matchers:** zero-length collapsed edges must be skipped so the
-matchers neither crash nor produce false matches on the centroid-collapsed edges. (The matchers
-previously skipped whole `isFill` tubes; now fill is a band, so guard at the edge/facet level.)
+**Degenerate-facet guard in partner matchers:** facets explicitly tagged `isDegenerate` must be
+skipped so the matchers neither crash nor produce false matches on the centroid-collapsed edges.
+(The matchers previously skipped whole `isFill` tubes; now fill is a band, so guard at the facet
+level by reading `facet.isDegenerate`.)
 
 ---
 
@@ -148,10 +154,10 @@ is chained facet-to-facet, **one degenerate facet poisons the entire band's 2D c
 is the real reason the naive degenerate approach is fragile.
 
 Add a **degenerate-facet guard in the flatten path** (`getFlatStripV2` / its per-facet helper):
-when a facet has a zero-length edge (within epsilon), place the collapsed vertex coincident with its
-neighbor and contribute **zero rotation**, so the degenerate facet occupies its quad slot without
-emitting NaN. The guard is gated strictly to the degenerate case, so normal bands are byte-for-byte
-unchanged. Contract: flattening a fill band produces only finite coordinates.
+when a facet is explicitly tagged `isDegenerate`, skip the law-of-cosines flatten and instead place
+the collapsed vertices coincident (zero rotation), so the degenerate facet occupies its quad slot
+without emitting NaN. The guard is gated strictly to tagged facets, so normal bands are
+byte-for-byte unchanged. Contract: flattening a fill band produces only finite coordinates.
 
 ---
 
