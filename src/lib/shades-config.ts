@@ -552,7 +552,9 @@ export const defaultPatternViewConfig = (): PatternViewConfig => ({
 	zoom: -1.2,
 	centerOffset: { x: 0, y: 0 },
 	patternSource: 'surfaceProjection',
-	bandSortMode: 'tube-order'
+	bandSortMode: 'tube-order',
+	lineWrap: false,
+	wrapWidth: 800
 });
 
 export const getLevels = (sampleMethod: CurveSampleMethod, curveCount: number) => {
