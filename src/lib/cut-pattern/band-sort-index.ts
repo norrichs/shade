@@ -23,24 +23,49 @@ const buildEndConnectionIndex = (tubes: TubeCutPattern[]): BandSortIndex => {
 		}
 	}
 
-	const walkRing = (startRef: BandRef): BandRef[] => {
-		const ring: BandRef[] = [];
-		let current: BandRef = startRef;
+	// A band connects to neighbours at BOTH of its ends: `startPartnerBand` and
+	// `endPartnerBand`. Treat those as undirected edges (each band has at most one
+	// partner per end, so degree <= 2 — the connected component is a simple path or
+	// cycle). Walking only `endPartnerBand` (the previous behaviour) dropped any
+	// band linked solely through the start end, so a member with two end partners
+	// only surfaced one of them.
+	const neighboursOf = (ref: BandRef): BandRef[] => {
+		const meta = bandLookup.get(bandKey(ref))?.meta;
+		return [meta?.startPartnerBand, meta?.endPartnerBand].filter((p): p is BandRef => !!p);
+	};
 
-		while (true) {
+	// Walk one direction from `first` (arriving from `cameFromKey`), following the
+	// single not-yet-seen neighbour at each step. `claimed` guards against cycles.
+	const walkChain = (first: BandRef, cameFromKey: string): BandRef[] => {
+		const chain: BandRef[] = [];
+		let current: BandRef | undefined = first;
+		let prevKey = cameFromKey;
+		while (current) {
 			const key = bandKey(current);
-			if (ring.length > 0 && key === bandKey(startRef)) break;
 			if (claimed.has(key)) break;
-
 			claimed.add(key);
-			ring.push(current);
-
-			const band = bandLookup.get(key);
-			if (!band?.meta?.endPartnerBand) break;
-			current = band.meta.endPartnerBand;
+			chain.push(current);
+			const next = neighboursOf(current).find((n) => {
+				const nk = bandKey(n);
+				return nk !== prevKey && !claimed.has(nk);
+			});
+			prevKey = key;
+			current = next;
 		}
+		return chain;
+	};
 
-		return ring;
+	const walkRing = (startRef: BandRef): BandRef[] => {
+		const startKey = bandKey(startRef);
+		if (claimed.has(startKey)) return [];
+		claimed.add(startKey);
+
+		// Walk both sides of the start band so the whole ring/chain is captured,
+		// then splice them around the start in linear order.
+		const [sideA, sideB] = neighboursOf(startRef);
+		const right = sideA ? walkChain(sideA, startKey) : [];
+		const left = sideB ? walkChain(sideB, startKey) : [];
+		return [...left.reverse(), startRef, ...right];
 	};
 
 	let ringIndex = 0;

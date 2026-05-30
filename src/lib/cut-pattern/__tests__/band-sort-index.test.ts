@@ -81,6 +81,55 @@ describe('buildBandSortIndex code assignment', () => {
 	});
 });
 
+// A band addressed (0,0,1) connected to a different neighbour at EACH end:
+// startPartnerBand -> (0,20,1), endPartnerBand -> (0,19,1). All three belong to
+// one ring. (Regression: the old walk followed only endPartnerBand and dropped
+// the start-side partner.)
+const bandWithPartners = (
+	globule: number,
+	tubeIdx: number,
+	bandIndex: number,
+	partners: {
+		start?: { globule: number; tube: number; band: number };
+		end?: { globule: number; tube: number; band: number };
+	}
+) =>
+	({
+		address: { globule, tube: tubeIdx, band: bandIndex },
+		meta: {
+			...(partners.start ? { startPartnerBand: partners.start } : {}),
+			...(partners.end ? { endPartnerBand: partners.end } : {})
+		}
+	}) as unknown as TubeCutPattern['bands'][number];
+
+const twoEndPartnerTubes = (): TubeCutPattern[] => [
+	tube(0, 0, [
+		bandWithPartners(0, 0, 1, {
+			start: { globule: 0, tube: 20, band: 1 },
+			end: { globule: 0, tube: 19, band: 1 }
+		})
+	]),
+	tube(0, 19, [bandWithPartners(0, 19, 1, { start: { globule: 0, tube: 0, band: 1 } })]),
+	tube(0, 20, [bandWithPartners(0, 20, 1, { end: { globule: 0, tube: 0, band: 1 } })])
+];
+
+describe('buildEndConnectionIndex with both start and end partners', () => {
+	test('groups a band with two end partners into a single ring', () => {
+		const index = buildBandSortIndex(twoEndPartnerTubes(), 'end-connection-tube');
+		expect(index.groups.length).toBe(1);
+		const memberKeys = index.groups[0].bands.map((b) => `${b.globule}-${b.tube}-${b.band}`);
+		expect(new Set(memberKeys)).toEqual(new Set(['0-0-1', '0-19-1', '0-20-1']));
+	});
+
+	test('the central band sits between its two partners in ring order', () => {
+		const index = buildBandSortIndex(twoEndPartnerTubes(), 'end-connection-tube');
+		const keys = index.groups[0].bands.map((b) => `${b.globule}-${b.tube}-${b.band}`);
+		const centerIdx = keys.indexOf('0-0-1');
+		const neighbourKeys = [keys[centerIdx - 1], keys[centerIdx + 1]];
+		expect(new Set(neighbourKeys)).toEqual(new Set(['0-19-1', '0-20-1']));
+	});
+});
+
 describe('buildBandCodeMap', () => {
 	test('maps every band in coded groups keyed by bandKey', () => {
 		const index = buildBandSortIndex(twoRingTubes(), 'end-connection-tube');
