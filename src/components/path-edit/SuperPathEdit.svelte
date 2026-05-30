@@ -78,11 +78,16 @@
 
 	const updateStores = () => {
 		const newGlobuleConfig = getGlobuleConfig();
-		(newGlobuleConfig[curveConfigByType[curveStoreType]] as CurveConfig).curves = curves;
+		const configKey = curveConfigByType[curveStoreType];
+		const config = newGlobuleConfig[configKey] as CurveConfig;
+		config.curves = curves;
+		if (curveStore.type === 'ShapeConfig' && config.type === 'ShapeConfig') {
+			config.sampleMethod = curveStore.sampleMethod;
+		}
 		const newSuperGlobuleConfig = updateGlobuleConfigs($superConfigStore, newGlobuleConfig);
 		$superConfigStore = newSuperGlobuleConfig;
 
-		curves = (newGlobuleConfig[curveConfigByType[curveStoreType]] as CurveConfig).curves;
+		curves = (newGlobuleConfig[configKey] as CurveConfig).curves;
 	};
 
 	let sgIndex = $state(0);

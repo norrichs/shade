@@ -1,7 +1,7 @@
 import { generateGlobuleData, generateGlobuleTube } from './generate-shape';
 import { generateTempId } from './id-handler';
 import { makeProjection } from './projection-geometry/generate-projection';
-import type { Tube } from './projection-geometry/types';
+import type { SurfaceConfig, Tube } from './projection-geometry/types';
 import { makeVoronoi } from './voronoi/generate-voronoi';
 import { recombineSubGlobules } from './recombination';
 import { generateTransformedGlobules } from './transform-globule';
@@ -30,13 +30,26 @@ export const generateSuperGlobule = (superConfig: SuperGlobuleConfig): SuperGlob
 		.flat();
 
 	// Projection Tube pipeline
+	const globuleConfig = superConfig.subGlobuleConfigs[0]?.globuleConfig;
+	const resolvedProjectionConfigs = superConfig.projectionConfigs.map((config) => {
+		if (config.surfaceConfig.type === 'GlobuleConfig' && globuleConfig) {
+			return {
+				...config,
+				surfaceConfig: {
+					...globuleConfig,
+					transform: config.surfaceConfig.transform
+				} as SurfaceConfig
+			};
+		}
+		return config;
+	});
 
-	const projections = superConfig.projectionConfigs.map((config, i) => {
+	const projections = resolvedProjectionConfigs.map((config, i) => {
 		return makeProjection(config, { globule: i });
 	});
 
 	// Voronoi Tube pipeline
-	const projectionSurfaceConfig = superConfig.projectionConfigs[0]?.surfaceConfig;
+	const projectionSurfaceConfig = resolvedProjectionConfigs[0]?.surfaceConfig;
 	const voronoiResults = projectionSurfaceConfig
 		? (superConfig.voronoiConfigs ?? []).map((config, i) => {
 				return makeVoronoi(config, { globule: i }, projectionSurfaceConfig);
@@ -160,6 +173,18 @@ export const updateGlobuleConfigs = (
 						? newGlobuleConfig
 						: subGlobuleConfig.globuleConfig
 			};
+		}),
+		projectionConfigs: superGlobuleConfig.projectionConfigs.map((pc) => {
+			if (pc.surfaceConfig.type === 'GlobuleConfig') {
+				return {
+					...pc,
+					surfaceConfig: {
+						...newGlobuleConfig,
+						transform: pc.surfaceConfig.transform
+					} as SurfaceConfig
+				};
+			}
+			return pc;
 		})
 	};
 };

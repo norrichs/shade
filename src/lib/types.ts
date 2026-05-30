@@ -19,6 +19,25 @@ import type { ProjectionRange } from './projection-geometry/filters';
 import type { EndCapConfig, EndCapGeometry } from './geometry/end-caps';
 
 export type PatternSource = 'projection' | 'surfaceProjection' | 'voronoi' | 'voronoiSurface';
+export type BandSortMode = 'tube-order' | 'end-connection-tube';
+
+export type BandRef = GlobuleAddress_Band;
+
+export type BandSortGroup = {
+	label: string;
+	bands: BandRef[];
+};
+
+export type BandSortIndex = {
+	mode: BandSortMode;
+	groups: BandSortGroup[];
+};
+
+export type IndexRange = {
+	groups?: [number, number];
+	bandsInGroup?: [number, number];
+};
+
 export type PatternViewConfig = {
 	showBands: boolean;
 	showQuads: boolean;
@@ -33,6 +52,7 @@ export type PatternViewConfig = {
 	};
 	range: ProjectionRange;
 	patternSource: PatternSource;
+	bandSortMode: BandSortMode;
 };
 export type PatternStyle = 'faceted' | 'outlined' | 'patterned' | 'none' | 'layered';
 

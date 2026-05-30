@@ -226,12 +226,13 @@ function getWorker(): Worker {
 				// Regenerate Voronoi surfaces (uses projection's surface config)
 				const projSurfaceConfig = resolver.config.projectionConfigs[0]?.surfaceConfig;
 				if (projSurfaceConfig) {
+					const plainSurfaceConfig = JSON.parse(JSON.stringify(projSurfaceConfig));
 					(resolver.config.voronoiConfigs ?? []).forEach((voronoiConfig, i) => {
 						if (rehydrated.voronoiResults?.[i]) {
 							const resolvedSurfaceConfig =
-								projSurfaceConfig.transform === 'inherit'
-									? { ...projSurfaceConfig, transform: voronoiConfig.meta.transform }
-									: projSurfaceConfig;
+								plainSurfaceConfig.transform === 'inherit'
+									? { ...plainSurfaceConfig, transform: voronoiConfig.meta.transform }
+									: plainSurfaceConfig;
 							rehydrated.voronoiResults[i].surface = generateSurface(resolvedSurfaceConfig);
 						}
 					});

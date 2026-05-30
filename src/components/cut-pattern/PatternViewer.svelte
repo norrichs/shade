@@ -11,7 +11,8 @@
 	import { mmFromInches } from '$lib/patterns/utils';
 	import CutPatternRenderer from './CutPatternRenderer.svelte';
 	import { collateTubes } from '$lib/cut-pattern/collate-tubes';
-	import type { TubeCutPattern } from '$lib/types';
+	import { buildBandSortIndex } from '$lib/cut-pattern/band-sort-index';
+	import type { BandSortIndex, TubeCutPattern } from '$lib/types';
 
 	let showBands = true;
 	let showQuadPattern = false;
@@ -39,6 +40,14 @@
 		showProjectionGeometry: $viewControlStore.showProjectionGeometry,
 		patternSource: $patternConfigStore.patternViewConfig.patternSource ?? 'projection'
 	});
+
+	let sortMode = $patternConfigStore.patternViewConfig.bandSortMode ?? 'tube-order';
+	$: sortMode = $patternConfigStore.patternViewConfig.bandSortMode ?? 'tube-order';
+
+	let sortIndex: BandSortIndex | undefined;
+	$: sortIndex = sortMode === 'tube-order'
+		? undefined
+		: buildBandSortIndex(collatedPatterns, sortMode);
 </script>
 
 <div class="container-svg scroll-container" class:showBands>
@@ -46,6 +55,7 @@
 		<CutPatternSvg width={6000} height={6000}>
 			<CutPatternRenderer
 				tubes={collatedPatterns}
+				{sortIndex}
 				selectionTarget={$patternConfigStore.patternViewConfig.patternSource ?? 'projection'}
 			/>
 

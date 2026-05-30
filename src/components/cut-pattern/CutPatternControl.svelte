@@ -56,6 +56,13 @@
 		<div>
 			<div>
 				<span>Range</span>
+				<button
+					on:click={() => {
+						rangeTubes = undefined;
+						rangeBands = undefined;
+						rangeFacets = undefined;
+					}}>all</button
+				>
 				<div class="range-inputs">
 					{#if Array.isArray(rangeTubes) && rangeTubes.length == 2}
 						<NumberInput label="tubes" min={0} max={1} step={1} bind:value={rangeTubes[0]} />
@@ -83,6 +90,10 @@
 			</div>
 		</div>
 		<div>
+			<select bind:value={$patternConfigStore.patternViewConfig.bandSortMode}>
+				<option value="tube-order">Tube order</option>
+				<option value="end-connection-tube">End connection</option>
+			</select>
 			<select bind:value={$patternConfigStore.patternViewConfig.patternSource}>
 				<option value="projection">Projection</option>
 				<option value="surfaceProjection">Surface</option>
