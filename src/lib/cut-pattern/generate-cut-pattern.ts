@@ -691,7 +691,15 @@ export const getFlatStripV2 = <T extends Strut | Band>(
 		}
 
 		// Use getFlatTriangle to get the aligned triangle
-		alignedFacet.triangle = getFlatTriangle({ triangle: facet.triangle, base });
+		if (facet.isDegenerate) {
+			// Synthetic zero-area fill facet: do not run law-of-cosines (it divides by a
+			// zero-length edge → NaN, poisoning the whole strip). Place the two collapsed
+			// vertices coincident on the shared base edge so the facet occupies its quad
+			// slot with finite coordinates and contributes zero rotation.
+			alignedFacet.triangle = new Triangle(base.v0.clone(), base.v1.clone(), base.v1.clone());
+		} else {
+			alignedFacet.triangle = getFlatTriangle({ triangle: facet.triangle, base });
+		}
 
 		// Handle tabs
 		if (facet.tab && tabStyle) {
