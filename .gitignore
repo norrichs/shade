@@ -21,3 +21,4 @@ vite.config.ts.timestamp-*
 
 .worktree/
 .superpowers/
+.worktrees/
