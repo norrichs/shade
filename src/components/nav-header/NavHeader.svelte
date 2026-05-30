@@ -20,6 +20,9 @@
 	import { computeMergedBandPaths } from '$lib/cut-pattern/prepare-merge';
 	import { collateTubes } from '$lib/cut-pattern/collate-tubes';
 	import { get } from 'svelte/store';
+	import { buildBandSortIndex } from '$lib/cut-pattern/band-sort-index';
+	import { buildPatternCsv } from '$lib/cut-pattern/build-pattern-csv';
+	import { downloadTextFile } from '$lib/util';
 
 	$: regenerateDisabled = !$isManualMode || $isGenerating || !$hasPendingChanges;
 
@@ -34,6 +37,9 @@
 		void $patternConfigStore.patternTypeConfig.type;
 		void $patternConfigStore.patternTypeConfig.labels?.selfTag;
 		mergedBandPaths.set(new Map());
+		void $patternConfigStore.patternViewConfig.bandSortMode;
+		csvState = 'idle';
+		csvText = '';
 	}
 
 	let showModal = false;
@@ -83,6 +89,43 @@
 		const patternType = config.patternTypeConfig.type;
 		const merged = computeMergedBandPaths(tubes, labels, patternType, labelDims);
 		mergedBandPaths.set(merged);
+	};
+
+	type CsvState = 'idle' | 'ready';
+	let csvState: CsvState = 'idle';
+	let csvText = '';
+
+	const buildTubesForCsv = () => {
+		const patternState = get(superGlobulePatternStore) as any;
+		const config = get(patternConfigStore);
+		const view = get(viewControlStore);
+		return collateTubes({
+			globuleTubePattern: patternState.globuleTubePattern,
+			projectionPattern: patternState.projectionPattern,
+			surfaceProjectionPattern: patternState.surfaceProjectionPattern,
+			voronoiPattern: patternState.voronoiPattern,
+			voronoiSurfacePattern: patternState.voronoiSurfacePattern,
+			showGlobuleTubeGeometry: view.showGlobuleTubeGeometry,
+			showProjectionGeometry: view.showProjectionGeometry,
+			patternSource: config.patternViewConfig.patternSource ?? 'projection'
+		});
+	};
+
+	const handleCsvClick = () => {
+		if (csvState === 'idle') {
+			const config = get(patternConfigStore);
+			const mode = config.patternViewConfig.bandSortMode ?? 'tube-order';
+			const tubes = buildTubesForCsv();
+			const index = buildBandSortIndex(tubes, mode);
+			csvText = buildPatternCsv(index, tubes);
+			csvState = 'ready';
+		} else {
+			downloadTextFile(
+				csvText,
+				`pattern-map ${get(superGlobuleStore).name}.csv`,
+				'text/csv'
+			);
+		}
 	};
 
 	function handleBandSelect(event: Event) {
@@ -169,6 +212,9 @@
 				}}
 				>Download SVG</Button
 			>
+			<Button onclick={handleCsvClick}>
+				{csvState === 'idle' ? 'Make CSV' : 'Download CSV'}
+			</Button>
 			<Button
 				onclick={() =>
 					($uiStore.designer.viewMode =
