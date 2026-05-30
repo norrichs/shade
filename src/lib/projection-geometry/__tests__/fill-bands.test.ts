@@ -4,7 +4,8 @@ import type { Section } from '../types';
 import {
 	isDegenerateTriangle,
 	outerBorderPolyline,
-	FILL_DEGENERATE_EPSILON
+	FILL_DEGENERATE_EPSILON,
+	buildFillBand
 } from '../fill-bands';
 
 describe('isDegenerateTriangle', () => {
@@ -58,5 +59,63 @@ describe('outerBorderPolyline', () => {
 	it('returns clones, not aliases', () => {
 		const edge = outerBorderPolyline(sections, 'first');
 		expect(edge[0]).not.toBe(sections[0].points[0]);
+	});
+});
+
+describe('buildFillBand', () => {
+	// Perimeter on the z=1 plane, center below it so outward (= away from origin projCenter) is +z.
+	const P0 = new Vector3(-1, -1, 1);
+	const P1 = new Vector3(1, -1, 1);
+	const P2 = new Vector3(1, 1, 1);
+	const center = new Vector3(0, 0, 1);
+	const projCenter = new Vector3(0, 0, 0);
+	const address = { globule: 0, tube: 3, band: 0 };
+
+	it('produces alternating real and degenerate facets, 2 per segment', () => {
+		const band = buildFillBand({ borderEdge: [P0, P1, P2], center, address, projCenter });
+		// 2 segments → 4 facets
+		expect(band.facets).toHaveLength(4);
+		// Geometric reality matches the explicit tag.
+		expect(isDegenerateTriangle(band.facets[0].triangle)).toBe(false);
+		expect(isDegenerateTriangle(band.facets[1].triangle)).toBe(true);
+		expect(isDegenerateTriangle(band.facets[2].triangle)).toBe(false);
+		expect(isDegenerateTriangle(band.facets[3].triangle)).toBe(true);
+	});
+
+	it('tags degenerate facets explicitly and leaves real facets untagged', () => {
+		const band = buildFillBand({ borderEdge: [P0, P1, P2], center, address, projCenter });
+		expect(band.facets[0].isDegenerate).toBeFalsy();
+		expect(band.facets[1].isDegenerate).toBe(true);
+		expect(band.facets[2].isDegenerate).toBeFalsy();
+		expect(band.facets[3].isDegenerate).toBe(true);
+	});
+
+	it('marks the band isFill and uses axial-right orientation', () => {
+		const band = buildFillBand({ borderEdge: [P0, P1, P2], center, address, projCenter });
+		expect(band.isFill).toBe(true);
+		expect(band.orientation).toBe('axial-right');
+		expect(band.facets[0].orientation).toBe('axial-right');
+	});
+
+	it('real facets include the center as the third vertex', () => {
+		const band = buildFillBand({ borderEdge: [P0, P1, P2], center, address, projCenter });
+		expect(band.facets[0].triangle.c.toArray()).toEqual(center.toArray());
+	});
+
+	it('assigns sequential facet addresses', () => {
+		const band = buildFillBand({ borderEdge: [P0, P1, P2], center, address, projCenter });
+		expect(band.facets[0].address).toEqual({ ...address, facet: 0 });
+		expect(band.facets[3].address).toEqual({ ...address, facet: 3 });
+	});
+
+	it('winds real-facet normals outward (away from projCenter)', () => {
+		const band = buildFillBand({ borderEdge: [P0, P1, P2], center, address, projCenter });
+		const t = band.facets[0].triangle;
+		const normal = new Vector3()
+			.subVectors(t.b, t.a)
+			.cross(new Vector3().subVectors(t.c, t.a));
+		const facetCentroid = new Vector3().addVectors(t.a, t.b).add(t.c).divideScalar(3);
+		const toFacet = new Vector3().subVectors(facetCentroid, projCenter);
+		expect(normal.dot(toFacet)).toBeGreaterThan(0);
 	});
 });
