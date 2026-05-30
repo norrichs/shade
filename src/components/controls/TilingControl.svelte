@@ -166,6 +166,22 @@
 						</select>
 					</div>
 					<div class="row">
+						<span>Adjacent Tab Layout</span>
+						<select
+							value={$patternConfigStore.patternTypeConfig.tabConfig.tabLayout ?? 'none'}
+							on:change={(e) => {
+								const val = e.target.value;
+								$patternConfigStore.patternTypeConfig.tabConfig.tabLayout =
+									val === 'none' ? undefined : val;
+								$patternConfigStore = $patternConfigStore;
+							}}
+						>
+							<option value="none">none (legacy)</option>
+							<option value="inner">inner</option>
+							<option value="outer">outer</option>
+						</select>
+					</div>
+					<div class="row">
 						<span>Band End Tabs</span>
 						<select
 							value={$patternConfigStore.patternTypeConfig.tabConfig.bandEnd ?? 'none'}
