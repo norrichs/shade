@@ -16,6 +16,7 @@ export type VoronoiConfig = {
 	curveOffsetFactor: number;
 	surfaceProjectionDivisions: number;
 	voronoiMethod: VoronoiMethod;
+	fillAll?: boolean;
 };
 
 export type VoronoiSeedConfig = {

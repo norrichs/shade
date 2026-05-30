@@ -744,6 +744,12 @@ export type Facet = {
 	};
 	orientation: FacetOrientation;
 	tab?: FacetTab; // | FacetTab[];
+	/**
+	 * True for the synthetic zero-area facets in interior fill bands (fillAll).
+	 * Set explicitly at construction; read by the flatten path and partner matchers
+	 * to skip them. NOT inferred from geometry.
+	 */
+	isDegenerate?: boolean;
 };
 
 export type FacetOrientation = 'circumferential' | 'axial-right' | 'axial-left';
@@ -798,6 +804,8 @@ export type Band = {
 	selected?: BandSelection;
 	visible?: boolean;
 	address?: GeometryAddress<BandAddressed> | GlobuleAddress_Band;
+	/** True for synthetic interior fill bands (fillAll). Drives outlined-only gating. */
+	isFill?: boolean;
 };
 export type BezierConfig = {
 	[key: string]: PointConfig2[] | string;
