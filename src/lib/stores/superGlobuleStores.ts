@@ -475,7 +475,7 @@ const superGlobulePatternStoreInternal = derived(
 					)
 				: undefined;
 
-		const voronoiResult = $superGlobuleStore.voronoiResults?.[0];
+		const voronoiResult = $superGlobuleStore.voronoiResult;
 		const voronoiTubes = voronoiResult?.tubes ?? [];
 		const voronoiSurfaceProjectionTubes = voronoiResult?.surfaceProjectionTubes ?? [];
 
