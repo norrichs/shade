@@ -53,6 +53,8 @@ export type PatternViewConfig = {
 	range: ProjectionRange;
 	patternSource: PatternSource;
 	bandSortMode: BandSortMode;
+	lineWrap?: boolean;
+	wrapWidth?: number;
 };
 export type PatternStyle = 'faceted' | 'outlined' | 'patterned' | 'none' | 'layered';
 
