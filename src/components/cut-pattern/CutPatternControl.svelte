@@ -127,23 +127,33 @@
 						type="checkbox"
 						checked={$superConfigStore.projectionConfigs[0].surfaceProjectionConfig.fillAll ?? false}
 						on:change={(e) => {
-							const cfg = $superConfigStore.projectionConfigs[0];
-							if (cfg?.surfaceProjectionConfig) {
-								$superConfigStore = {
-									...$superConfigStore,
-									projectionConfigs: $superConfigStore.projectionConfigs.map((pc, i) =>
-										i === 0
-											? {
-													...pc,
-													surfaceProjectionConfig: {
-														...pc.surfaceProjectionConfig!,
-														fillAll: (e.currentTarget as HTMLInputElement).checked
-													}
-												}
-											: pc
-									)
-								};
-							}
+							const checked = (e.currentTarget as HTMLInputElement).checked;
+							$superConfigStore = {
+								...$superConfigStore,
+								projectionConfigs: $superConfigStore.projectionConfigs.map((pc, i) =>
+									i === 0
+										? {
+												...pc,
+												surfaceProjectionConfig: { ...pc.surfaceProjectionConfig!, fillAll: checked }
+											}
+										: pc
+								)
+							};
+						}}
+					/>
+				</label>
+			{:else if $patternConfigStore.patternViewConfig.patternSource === 'voronoiSurface' && $superConfigStore.voronoiConfig}
+				<label>
+					fill all
+					<input
+						type="checkbox"
+						checked={$superConfigStore.voronoiConfig.fillAll ?? false}
+						on:change={(e) => {
+							const checked = (e.currentTarget as HTMLInputElement).checked;
+							$superConfigStore = {
+								...$superConfigStore,
+								voronoiConfig: { ...$superConfigStore.voronoiConfig!, fillAll: checked }
+							};
 						}}
 					/>
 				</label>
