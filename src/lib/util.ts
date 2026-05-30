@@ -103,6 +103,22 @@ export const downloadSvg = (id: string, filename?: string) => {
 	}
 };
 
+export const downloadTextFile = (
+	text: string,
+	filename: string,
+	mimeType: string = 'text/plain'
+) => {
+	const blob = new Blob([text], { type: mimeType });
+	const url = URL.createObjectURL(blob);
+	const a = document.createElement('a');
+	a.href = url;
+	a.download = filename;
+	document.body.appendChild(a);
+	a.click();
+	document.body.removeChild(a);
+	URL.revokeObjectURL(url);
+};
+
 export const round = (n: number, decimals?: number) => {
 	const x = decimals && decimals > 0 ? Math.pow(10, decimals - 1) : 1;
 	return Math.round(n * x) / x;
