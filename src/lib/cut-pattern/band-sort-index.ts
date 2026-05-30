@@ -2,6 +2,8 @@ import type { BandSortIndex, BandSortMode, BandSortGroup, BandRef, IndexRange, T
 
 const bandKey = (ref: BandRef): string => `${ref.globule}-${ref.tube}-${ref.band}`;
 
+export const formatGroupCode = (n: number): string => String(n).padStart(4, '0');
+
 const buildTubeOrderIndex = (tubes: TubeCutPattern[]): BandSortIndex => ({
 	mode: 'tube-order',
 	groups: tubes.map((tube, t) => ({
@@ -49,7 +51,7 @@ const buildEndConnectionIndex = (tubes: TubeCutPattern[]): BandSortIndex => {
 
 			const ring = walkRing(band.address);
 			if (ring.length > 0) {
-				groups.push({ label: `Ring ${ringIndex}`, bands: ring });
+				groups.push({ label: `Ring ${ringIndex}`, code: formatGroupCode(ringIndex), bands: ring });
 				ringIndex++;
 			}
 		}
@@ -82,4 +84,13 @@ export const sliceBandSortIndex = (index: BandSortIndex, range: IndexRange): Ban
 			bands: group.bands.slice(bandStart, bandEnd)
 		}))
 	};
+};
+
+export const buildBandCodeMap = (index: BandSortIndex): Map<string, string> => {
+	const map = new Map<string, string>();
+	for (const group of index.groups) {
+		if (group.code === undefined) continue;
+		for (const ref of group.bands) map.set(bandKey(ref), group.code);
+	}
+	return map;
 };
