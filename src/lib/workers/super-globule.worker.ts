@@ -64,10 +64,12 @@ function stripNonSerializable(superGlobule: SuperGlobule): SuperGlobule {
 				}
 			}))
 		})),
-		voronoiResults: (superGlobule.voronoiResults ?? []).map((result) => ({
-			...result,
-			surface: null as unknown as typeof result.surface
-		}))
+		voronoiResult: superGlobule.voronoiResult
+			? {
+					...superGlobule.voronoiResult,
+					surface: null as unknown as typeof superGlobule.voronoiResult.surface
+				}
+			: undefined
 	};
 }
 
