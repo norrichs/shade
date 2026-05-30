@@ -21,3 +21,43 @@ export const middleQuadEdgeIndices = (
 		afterIndex: 2 * quadCount - midQuad
 	};
 };
+
+export type EdgeCandidate = {
+	/** Index of this edge in the OutlineEdge[] walk array. */
+	index: number;
+	/** Whether this edge has a tab (its index is present in tabsByIndex). */
+	hasTab: boolean;
+	/** Partner band number if an adjacent band shares this edge, else undefined. */
+	partnerBand: number | undefined;
+};
+
+/**
+ * Pick the better of the middle quad's two outer edges. Lower tier wins:
+ *  1. no tab over tab
+ *  2. no partner over partner (when tab status ties)
+ *  3. higher partner band number (when both still tie with partners)
+ *  4. deterministic fallback to the `before` candidate (passed first)
+ */
+export const selectMiddleQuadEdgeIndex = (
+	before: EdgeCandidate,
+	after: EdgeCandidate
+): number => {
+	// 1. no tab over tab
+	if (before.hasTab !== after.hasTab) {
+		return before.hasTab ? after.index : before.index;
+	}
+	// 2. no partner over partner
+	const beforeHasPartner = before.partnerBand !== undefined;
+	const afterHasPartner = after.partnerBand !== undefined;
+	if (beforeHasPartner !== afterHasPartner) {
+		return beforeHasPartner ? after.index : before.index;
+	}
+	// 3. higher partner band number (only meaningful when both have partners)
+	if (beforeHasPartner && afterHasPartner && before.partnerBand !== after.partnerBand) {
+		return (before.partnerBand as number) > (after.partnerBand as number)
+			? before.index
+			: after.index;
+	}
+	// 4. deterministic fallback
+	return before.index;
+};
