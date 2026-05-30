@@ -126,7 +126,7 @@
 					<input
 						type="checkbox"
 						checked={$superConfigStore.projectionConfigs[0].surfaceProjectionConfig.fillAll ?? false}
-						onchange={(e) => {
+						on:change={(e) => {
 							const cfg = $superConfigStore.projectionConfigs[0];
 							if (cfg?.surfaceProjectionConfig) {
 								$superConfigStore = {
