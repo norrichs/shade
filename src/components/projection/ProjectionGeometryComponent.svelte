@@ -138,8 +138,8 @@
 
 	let voronoiGeometry: ReturnType<typeof collateVoronoiGeometry> = $state({});
 	$effect(() => {
-		const voronoiTubes = ($superGlobuleStore.voronoiResults ?? []).flatMap((r) => r.tubes);
-		const voronoiSurfaceProjectionTubes = ($superGlobuleStore.voronoiResults ?? []).flatMap((r) => r.surfaceProjectionTubes ?? []);
+		const voronoiTubes = $superGlobuleStore.voronoiResult?.tubes ?? [];
+		const voronoiSurfaceProjectionTubes = $superGlobuleStore.voronoiResult?.surfaceProjectionTubes ?? [];
 		voronoiGeometry = collateVoronoiGeometry(voronoiTubes, voronoiSurfaceProjectionTubes, $viewControlStore.showVoronoiGeometry);
 	});
 </script>
