@@ -26,7 +26,7 @@
 	const defaultOnTab = (): OnTab => ({ enabled: false, padding: 1 });
 	const defaultSelfTag = (): SelfTag => ({
 		enabled: true,
-		externalTag: false,
+		externalTag: true,
 		height: 14,
 		angle: 0,
 		padding: 10,
