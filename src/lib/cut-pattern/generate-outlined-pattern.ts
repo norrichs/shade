@@ -395,7 +395,9 @@ const buildOutlinePath = (
 	tabConfig?: OutlinedTabConfig,
 	hasPartners?: { after: boolean; before: boolean },
 	currentTube?: number,
-	tabsOut?: Map<number, TabGeometry>
+	tabsOut?: Map<number, TabGeometry>,
+	bandIndex = 0,
+	bandCount = 0
 ): PathSegment[] => {
 	if (edges.length === 0) return [];
 
@@ -411,7 +413,7 @@ const buildOutlinePath = (
 	if (tabConfig) {
 		// First pass: generate tabs
 		for (let i = 0; i < edges.length; i++) {
-			if (shouldHaveTab(edges[i], tabConfig, partners, currentTube ?? 0)) {
+			if (shouldHaveTab(edges[i], tabConfig, partners, currentTube ?? 0, bandIndex, bandCount)) {
 				const tab = generateTabForEdge(edges[i], tabConfig);
 				tabsByIndex.set(i, tab);
 				if (edges[i].side === 'after') afterEdgeIndices.push(i);
@@ -451,13 +453,15 @@ const buildOutlinePath = (
  */
 const generateOutlinedBandPattern = (
 	band: Band,
-	bandIndex: number,
+	bandIndex: number, // GLOBAL: used for labels/address (unchanged)
 	config: OutlinedPatternConfig,
 	pixelScale: PixelScale,
 	tubeAddress: { globule: number; tube: number },
 	quads: Quadrilateral[],
 	neighborBefore?: Quadrilateral[],
-	neighborAfter?: Quadrilateral[]
+	neighborAfter?: Quadrilateral[],
+	bandCount = 0,
+	localBandIndex = bandIndex // LOCAL: index within the aligned/selected set
 ): BandCutPattern => {
 	const edges = getOutlineEdges(quads, band, neighborBefore, neighborAfter);
 	const hasPartners = bandHasPartners(band);
@@ -467,7 +471,9 @@ const generateOutlinedBandPattern = (
 		config.tabConfig,
 		hasPartners,
 		tubeAddress.tube,
-		tabsByIndex
+		tabsByIndex,
+		localBandIndex,
+		bandCount
 	);
 
 	const outlineFacet: CutPattern = {
@@ -581,6 +587,7 @@ const generateOutlinedTubePattern = (
 	const scale = pixelScale?.value || 1;
 	const allQuads = alignedBands.map((band) => getQuadrilaterals(band, scale, band.sideOrientation));
 
+	const bandCount = alignedBands.length;
 	const bandPatterns = alignedBands.map((band, i) =>
 		generateOutlinedBandPattern(
 			band,
@@ -590,7 +597,9 @@ const generateOutlinedTubePattern = (
 			address,
 			allQuads[i],
 			allQuads[i - 1],
-			allQuads[i + 1]
+			allQuads[i + 1],
+			bandCount,
+			i
 		)
 	);
 
