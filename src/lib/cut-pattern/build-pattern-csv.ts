@@ -1,4 +1,4 @@
-import type { BandSortIndex, TubeCutPattern, GlobuleAddress_Band } from '$lib/types';
+import type { BandSortIndex, TubeCutPattern, BandRef as GlobuleAddress_Band } from '$lib/types';
 import { buildBandCodeMap } from './band-sort-index';
 
 /** Local key builder. WS-B's `bandKey` is module-private; we mirror its shape. */
