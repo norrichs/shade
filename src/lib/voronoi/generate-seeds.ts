@@ -77,14 +77,65 @@ function generateCenterProjectionSeeds(
 	return seeds;
 }
 
+function findEntry(entries: AreaTableEntry[], r: number): AreaTableEntry {
+	let lo = 0;
+	let hi = entries.length - 1;
+	while (lo < hi) {
+		const mid = (lo + hi) >> 1;
+		const entry = entries[mid];
+		if (r < entry.keyStart) {
+			hi = mid - 1;
+		} else if (r >= entry.keyStart + entry.width) {
+			lo = mid + 1;
+		} else {
+			return entry;
+		}
+	}
+	return entries[lo];
+}
+
+function barycentricPoint(triangle: SurfaceTriangle, t: number): Vector3 {
+	const [a, b, c] = triangle;
+	let u = t;
+	let v = (t * 7919) % 1;
+	if (u + v > 1) {
+		u = 1 - u;
+		v = 1 - v;
+	}
+	return a
+		.clone()
+		.addScaledVector(b.clone().sub(a), u)
+		.addScaledVector(c.clone().sub(a), v);
+}
+
+export function generateAreaWeightedSeeds(
+	method: AreaWeightedSeedMethod,
+	surfaceTriangles: SurfaceTriangle[]
+): Vector3[] {
+	if (surfaceTriangles.length === 0) return [];
+	const { entries, totalArea } = buildAreaTable(surfaceTriangles);
+	const random = mulberry32(method.seed);
+	const seeds: Vector3[] = [];
+	for (let i = 0; i < method.pointCount; i++) {
+		const r = Math.floor(random() * totalArea);
+		const entry = findEntry(entries, r);
+		const t = (r - entry.keyStart) / entry.width;
+		seeds.push(barycentricPoint(entry.triangle, t));
+	}
+	return seeds;
+}
+
 export function generateSeeds(
 	method: SeedMethod,
 	center: Vector3,
-	intersect: SurfaceIntersector
+	intersect: SurfaceIntersector,
+	surfaceTriangles: SurfaceTriangle[]
 ): Vector3[] {
 	switch (method.type) {
 		case 'centerProjection':
 			return generateCenterProjectionSeeds(method, center, intersect);
+		case 'areaWeighted':
+			return generateAreaWeightedSeeds(method, surfaceTriangles);
 		default:
 			throw new Error(`Unknown seed method: ${(method as SeedMethod).type}`);
 	}
