@@ -1,5 +1,39 @@
 import { Vector3 } from 'three';
-import type { SeedMethod, CenterProjectionSeedMethod } from './types';
+import type {
+	SeedMethod,
+	CenterProjectionSeedMethod,
+	AreaWeightedSeedMethod,
+	SurfaceTriangle
+} from './types';
+
+export const AREA_SCALE = 1000;
+
+export type AreaTableEntry = {
+	keyStart: number;
+	width: number;
+	triangle: SurfaceTriangle;
+};
+
+export function triangleArea(triangle: SurfaceTriangle): number {
+	const [a, b, c] = triangle;
+	const ab = b.clone().sub(a);
+	const ac = c.clone().sub(a);
+	return ab.cross(ac).length() / 2;
+}
+
+export function buildAreaTable(triangles: SurfaceTriangle[]): {
+	entries: AreaTableEntry[];
+	totalArea: number;
+} {
+	const entries: AreaTableEntry[] = [];
+	let cumulative = 0;
+	for (const triangle of triangles) {
+		const width = Math.max(1, Math.floor(triangleArea(triangle) * AREA_SCALE));
+		entries.push({ keyStart: cumulative, width, triangle });
+		cumulative += width;
+	}
+	return { entries, totalArea: cumulative };
+}
 
 type SurfaceIntersector = (direction: Vector3) => Vector3 | null;
 

@@ -1,6 +1,6 @@
 import { Vector3 } from 'three';
-import { generateSeeds } from '../generate-seeds';
-import type { CenterProjectionSeedMethod } from '../types';
+import { generateSeeds, buildAreaTable, AREA_SCALE } from '../generate-seeds';
+import type { CenterProjectionSeedMethod, SurfaceTriangle } from '../types';
 
 const makeSphereIntersector = (radius: number) => {
 	return (direction: Vector3): Vector3 | null => {
@@ -52,5 +52,42 @@ describe('generateSeeds', () => {
 				Math.abs(s.z - seeds2[i].z) < 1e-10
 		);
 		expect(allSame).toBe(false);
+	});
+});
+
+const tri = (
+	ax: number, ay: number, az: number,
+	bx: number, by: number, bz: number,
+	cx: number, cy: number, cz: number
+): SurfaceTriangle => [
+	new Vector3(ax, ay, az),
+	new Vector3(bx, by, bz),
+	new Vector3(cx, cy, cz)
+];
+
+describe('buildAreaTable', () => {
+	// Right triangle in XY plane with legs 2 and 2 -> area 2.
+	const small = tri(0, 0, 0, 2, 0, 0, 0, 2, 0);
+	// Right triangle in XY plane with legs 4 and 4 -> area 8.
+	const large = tri(0, 0, 0, 4, 0, 0, 0, 4, 0);
+
+	it('produces one entry per triangle with width = floor(area * AREA_SCALE), min 1', () => {
+		const { entries } = buildAreaTable([small, large]);
+		expect(entries).toHaveLength(2);
+		expect(entries[0].width).toBe(Math.floor(2 * AREA_SCALE));
+		expect(entries[1].width).toBe(Math.floor(8 * AREA_SCALE));
+	});
+
+	it('produces monotonically increasing keyStart values and a totalArea equal to the sum of widths', () => {
+		const { entries, totalArea } = buildAreaTable([small, large]);
+		expect(entries[0].keyStart).toBe(0);
+		expect(entries[1].keyStart).toBe(entries[0].width);
+		expect(totalArea).toBe(entries[0].width + entries[1].width);
+	});
+
+	it('floors degenerate (zero-area) triangles to width 1', () => {
+		const degenerate = tri(0, 0, 0, 1, 0, 0, 2, 0, 0); // collinear -> area 0
+		const { entries } = buildAreaTable([degenerate]);
+		expect(entries[0].width).toBe(1);
 	});
 });
