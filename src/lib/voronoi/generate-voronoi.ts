@@ -30,6 +30,12 @@ import {
 	getEdge,
 	getEdgeMatchedTriangles
 } from '$lib/projection-geometry/generate-projection';
+import {
+	buildFillBand,
+	outerBorderPolyline,
+	reindexBandAddresses
+} from '$lib/projection-geometry/fill-bands';
+import type { Band } from '$lib/types';
 
 const DEFAULT_CURVE_OFFSET_FACTOR = 0.3;
 
@@ -310,6 +316,8 @@ export function makeVoronoi(
 	// Step 5: Process each Voronoi edge into tube geometry
 	const tubes: Tube[] = [];
 	const surfaceProjectionTubes: Tube[] = [];
+	// For fillAll: which cell each spTube's first/last outer band borders.
+	const spFillMeta: { firstCell: number; lastCell: number }[] = [];
 	const crossSectionConfig = config.crossSectionConfig;
 	const curveOffsetFactor = config.curveOffsetFactor ?? DEFAULT_CURVE_OFFSET_FACTOR;
 	const dummyEdgeConfig = makeDummyEdgeConfig(crossSectionConfig);
@@ -460,7 +468,8 @@ export function makeVoronoi(
 		const testNormal = new Vector3().crossVectors(testV1, testV2);
 		const centroid = new Vector3().addVectors(p0, p1).add(p2).divideScalar(3);
 		const toFacet = new Vector3().subVectors(centroid, spCenter);
-		if (testNormal.dot(toFacet) < 0) {
+		const spReversed = testNormal.dot(toFacet) < 0;
+		if (spReversed) {
 			spSections.forEach((s) => s.points.reverse());
 		}
 
@@ -471,6 +480,11 @@ export function makeVoronoi(
 			orientation: 'axial-right',
 			address: spTubeAddress
 		});
+		// After winding, band 0 = spSections.points[0]; if reversed that is cell B.
+		spFillMeta.push({
+			firstCell: spReversed ? cellIdxB : cellIdxA,
+			lastCell: spReversed ? cellIdxA : cellIdxB
+		});
 	}
 
 	// Partner matching
@@ -479,6 +493,54 @@ export function makeVoronoi(
 		matchFacets(tubes);
 	} catch (error) {
 		console.error('Voronoi partner matching error:', error);
+	}
+
+	// Interior fill bands (fillAll). One fill band per outer (open-space-bordering) band of each
+	// spTube, sharing one per-cell center (the cell seed ray-cast onto the surface). Built before
+	// partner matching so fill bands are addressed and partnered as first-class bands.
+	if (config.fillAll) {
+		const averageOf = (pts: Vector3[]): Vector3 =>
+			pts.reduce((acc, p) => acc.add(p.clone()), new Vector3()).divideScalar(pts.length);
+
+		// Per-cell apex: ray-cast the seed direction onto the surface.
+		const cellApex: (Vector3 | undefined)[] = relaxedSeeds.map(
+			(seed) => intersect(coordToDirection(seed[0], seed[1])) ?? undefined
+		);
+
+		surfaceProjectionTubes.forEach((tube, t) => {
+			const meta = spFillMeta[t];
+			const firstEdge = outerBorderPolyline(tube.sections, 'first');
+			const lastEdge = outerBorderPolyline(tube.sections, 'last');
+			const firstApex =
+				cellApex[meta.firstCell] ?? (firstEdge.length ? averageOf(firstEdge) : undefined);
+			const lastApex =
+				cellApex[meta.lastCell] ?? (lastEdge.length ? averageOf(lastEdge) : undefined);
+
+			const newBands: Band[] = [];
+			if (firstApex && firstEdge.length >= 2) {
+				newBands.push(
+					buildFillBand({
+						borderEdge: firstEdge,
+						center: firstApex,
+						address: { ...tube.address, band: 0 },
+						projCenter: center
+					})
+				);
+			}
+			newBands.push(...tube.bands);
+			if (lastApex && lastEdge.length >= 2) {
+				newBands.push(
+					buildFillBand({
+						borderEdge: lastEdge,
+						center: lastApex,
+						address: { ...tube.address, band: 0 },
+						projCenter: center
+					})
+				);
+			}
+			tube.bands = newBands;
+			reindexBandAddresses(tube.bands, tube.address);
+		});
 	}
 
 	try {
