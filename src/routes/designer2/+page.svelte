@@ -14,10 +14,12 @@
 	import ProjectionControl from '../../components/projection/ProjectionControl.svelte';
 	import VoronoiControl from '../../components/controls/VoronoiControl.svelte';
 	import HoverSidebar from '../../components/modal/HoverSidebar.svelte';
+	import Floater from '../../components/modal/Floater.svelte';
 	import { projectionConfigs } from '../../components/modal/sidebar-definitions';
 	import Toast from '../../components/Toast.svelte';
 
 	let viewMode: ViewModeSetting = $uiStore.designer.viewMode;
+	let showVoronoiFloater = false;
 
 	let showControl: { name: string; value?: unknown } = { name: 'None' };
 	type ShowControlCurveValue = 'ShapeConfig' | 'DepthCurveConfig' | 'SilhouetteConfig';
@@ -28,6 +30,9 @@
 	};
 
 	$: viewMode = $uiStore.designer.viewMode;
+	$: if (showControl?.name === 'Voronoi') {
+		showVoronoiFloater = true;
+	}
 </script>
 
 <main>
@@ -70,8 +75,6 @@
 				/>
 			{:else if showControl?.name === 'Projection'}
 				<ProjectionControl />
-			{:else if showControl?.name === 'Voronoi'}
-				<VoronoiControl />
 			{:else if showControl?.name === 'Struts'}
 				<StrutControl />
 			{:else if showControl?.name === 'Levels'}
@@ -86,6 +89,13 @@
 		</div>
 	</section>
 	<HoverSidebar sidebarDefinition={projectionConfigs} />
+	<Floater
+		title="Voronoi"
+		showFloater={showVoronoiFloater}
+		onClose={() => (showVoronoiFloater = false)}
+		content={VoronoiControl}
+		closeOnClickAway={false}
+	/>
 </main>
 
 <style>

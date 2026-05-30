@@ -609,8 +609,7 @@ export const generateSuperGlobuleConfigWrapper = (globule: GlobuleConfig) => {
 		id: generateTempId(SUPER_GLOBULE_CONFIG),
 		name: 'Default Super Globule',
 		subGlobuleConfigs: [generateSubGlobuleConfigWrapper(globule)],
-		projectionConfigs: [],
-		voronoiConfigs: []
+		projectionConfigs: []
 	};
 
 	return superGlobuleConfig;
@@ -663,8 +662,7 @@ export const generateDefaultSuperGlobuleConfig = (): SuperGlobuleConfig => {
 				]
 			})
 		],
-		projectionConfigs: [defaultProjectionConfig],
-		voronoiConfigs: []
+		projectionConfigs: [defaultProjectionConfig]
 	};
 
 	return superGlobuleConfig;
@@ -695,7 +693,7 @@ export const defaultVoronoiConfig: VoronoiConfig = {
 	seedConfig: {
 		type: 'VoronoiSeedConfig',
 		seedMethod: {
-			type: 'centerProjection',
+			type: 'areaWeighted',
 			pointCount: 12,
 			seed: 42
 		},

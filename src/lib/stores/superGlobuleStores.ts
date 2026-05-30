@@ -16,6 +16,7 @@ import type {
 import type { GlobuleAddress_Facet } from '$lib/projection-geometry/types';
 import { derived, writable, get } from 'svelte/store';
 import { loadPersistedOrDefault } from './stores';
+import { normalizeVoronoiConfig } from '$lib/voronoi/migrate-voronoi-config';
 import { generateSuperGlobule } from '$lib/generate-superglobule';
 import {
 	generateSuperGlobuleBandGeometry,
@@ -135,9 +136,11 @@ export function extractMeshData(superGlobule: SuperGlobule): SuperGlobuleMesh {
 // SUPER CONFIGS
 export const superConfigStore = persistable<SuperGlobuleConfig>(
 	((): SuperGlobuleConfig => {
-		const config = loadPersistedOrDefault(
-			bootstrapShouldUsePersisted(),
-			generateDefaultSuperGlobuleConfig
+		const config = normalizeVoronoiConfig(
+			loadPersistedOrDefault(
+				bootstrapShouldUsePersisted(),
+				generateDefaultSuperGlobuleConfig
+			) as SuperGlobuleConfig
 		);
 		console.log('SUPER GLOBULE CONFIG STORE', { config });
 		return config;
@@ -386,7 +389,16 @@ const superGlobulePatternStoreInternal = derived(
 		$pausePatternUpdates,
 		$isManualMode,
 		$hasPendingChanges
-	]): { superGlobulePattern: any; projectionPattern: any; globuleTubePattern: any; surfaceProjectionPattern: any; voronoiPattern: any; voronoiSurfacePattern: any } | 'paused' => {
+	]):
+		| {
+				superGlobulePattern: any;
+				projectionPattern: any;
+				globuleTubePattern: any;
+				surfaceProjectionPattern: any;
+				voronoiPattern: any;
+				voronoiSurfacePattern: any;
+		  }
+		| 'paused' => {
 		// Skip pattern generation if paused - return 'paused' marker
 		if ($pausePatternUpdates) {
 			console.log('PATTERN STORE: Updates paused');
@@ -475,14 +487,12 @@ const superGlobulePatternStoreInternal = derived(
 					)
 				: undefined;
 
-		const voronoiResult = $superGlobuleStore.voronoiResults?.[0];
+		const voronoiResult = $superGlobuleStore.voronoiResult;
 		const voronoiTubes = voronoiResult?.tubes ?? [];
 		const voronoiSurfaceProjectionTubes = voronoiResult?.surfaceProjectionTubes ?? [];
 
 		const voronoiPattern =
-			patternSource === 'voronoi' &&
-			$genConfig.showBands &&
-			voronoiTubes.length
+			patternSource === 'voronoi' && $genConfig.showBands && voronoiTubes.length
 				? generateProjectionPattern(
 						voronoiTubes,
 						$superConfigStore.id,

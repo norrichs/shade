@@ -169,19 +169,21 @@ function rehydrateSuperGlobule(result: SuperGlobule): SuperGlobule {
 			}))
 		}));
 
-	// Rehydrate voronoiResults
-	const voronoiResults = (result.voronoiResults ?? []).map((voronoiResult) => ({
-		...voronoiResult,
-		tubes: rehydrateTubes(voronoiResult.tubes),
-		surfaceProjectionTubes: rehydrateTubes(voronoiResult.surfaceProjectionTubes ?? [])
-	}));
+	// Rehydrate voronoiResult (single)
+	const voronoiResult = result.voronoiResult
+		? {
+				...result.voronoiResult,
+				tubes: rehydrateTubes(result.voronoiResult.tubes),
+				surfaceProjectionTubes: rehydrateTubes(result.voronoiResult.surfaceProjectionTubes ?? [])
+			}
+		: undefined;
 
 	return {
 		...result,
 		projections,
 		globuleTubes,
 		subGlobules,
-		voronoiResults
+		voronoiResult
 	};
 }
 
@@ -223,19 +225,16 @@ function getWorker(): Worker {
 					}
 				});
 
-				// Regenerate Voronoi surfaces (uses projection's surface config)
+				// Regenerate Voronoi surface (uses projection's surface config)
 				const projSurfaceConfig = resolver.config.projectionConfigs[0]?.surfaceConfig;
-				if (projSurfaceConfig) {
+				const voronoiConfig = resolver.config.voronoiConfig;
+				if (projSurfaceConfig && voronoiConfig && rehydrated.voronoiResult) {
 					const plainSurfaceConfig = JSON.parse(JSON.stringify(projSurfaceConfig));
-					(resolver.config.voronoiConfigs ?? []).forEach((voronoiConfig, i) => {
-						if (rehydrated.voronoiResults?.[i]) {
-							const resolvedSurfaceConfig =
-								plainSurfaceConfig.transform === 'inherit'
-									? { ...plainSurfaceConfig, transform: voronoiConfig.meta.transform }
-									: plainSurfaceConfig;
-							rehydrated.voronoiResults[i].surface = generateSurface(resolvedSurfaceConfig);
-						}
-					});
+					const resolvedSurfaceConfig =
+						plainSurfaceConfig.transform === 'inherit'
+							? { ...plainSurfaceConfig, transform: voronoiConfig.meta.transform }
+							: plainSurfaceConfig;
+					rehydrated.voronoiResult.surface = generateSurface(resolvedSurfaceConfig);
 				}
 
 				resolver.resolve(rehydrated);
