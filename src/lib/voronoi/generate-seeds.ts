@@ -102,10 +102,7 @@ function barycentricPoint(triangle: SurfaceTriangle, t: number): Vector3 {
 		u = 1 - u;
 		v = 1 - v;
 	}
-	return a
-		.clone()
-		.addScaledVector(b.clone().sub(a), u)
-		.addScaledVector(c.clone().sub(a), v);
+	return a.clone().addScaledVector(b.clone().sub(a), u).addScaledVector(c.clone().sub(a), v);
 }
 
 export function generateAreaWeightedSeeds(

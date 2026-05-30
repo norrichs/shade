@@ -1,5 +1,10 @@
 import { Vector3 } from 'three';
-import { generateSeeds, buildAreaTable, AREA_SCALE, generateAreaWeightedSeeds } from '../generate-seeds';
+import {
+	generateSeeds,
+	buildAreaTable,
+	AREA_SCALE,
+	generateAreaWeightedSeeds
+} from '../generate-seeds';
 import type { CenterProjectionSeedMethod, SurfaceTriangle, AreaWeightedSeedMethod } from '../types';
 
 const makeSphereIntersector = (radius: number) => {
@@ -56,14 +61,16 @@ describe('generateSeeds', () => {
 });
 
 const tri = (
-	ax: number, ay: number, az: number,
-	bx: number, by: number, bz: number,
-	cx: number, cy: number, cz: number
-): SurfaceTriangle => [
-	new Vector3(ax, ay, az),
-	new Vector3(bx, by, bz),
-	new Vector3(cx, cy, cz)
-];
+	ax: number,
+	ay: number,
+	az: number,
+	bx: number,
+	by: number,
+	bz: number,
+	cx: number,
+	cy: number,
+	cz: number
+): SurfaceTriangle => [new Vector3(ax, ay, az), new Vector3(bx, by, bz), new Vector3(cx, cy, cz)];
 
 describe('buildAreaTable', () => {
 	// Right triangle in XY plane with legs 2 and 2 -> area 2.

@@ -133,14 +133,22 @@
 		);
 	});
 	$effect(() => {
-		updateGlobuleTubeGeometry($viewControlStore.showGlobuleTubeGeometry, $superGlobuleStore.globuleTubes);
+		updateGlobuleTubeGeometry(
+			$viewControlStore.showGlobuleTubeGeometry,
+			$superGlobuleStore.globuleTubes
+		);
 	});
 
 	let voronoiGeometry: ReturnType<typeof collateVoronoiGeometry> = $state({});
 	$effect(() => {
 		const voronoiTubes = $superGlobuleStore.voronoiResult?.tubes ?? [];
-		const voronoiSurfaceProjectionTubes = $superGlobuleStore.voronoiResult?.surfaceProjectionTubes ?? [];
-		voronoiGeometry = collateVoronoiGeometry(voronoiTubes, voronoiSurfaceProjectionTubes, $viewControlStore.showVoronoiGeometry);
+		const voronoiSurfaceProjectionTubes =
+			$superGlobuleStore.voronoiResult?.surfaceProjectionTubes ?? [];
+		voronoiGeometry = collateVoronoiGeometry(
+			voronoiTubes,
+			voronoiSurfaceProjectionTubes,
+			$viewControlStore.showVoronoiGeometry
+		);
 	});
 </script>
 

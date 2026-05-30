@@ -3,14 +3,7 @@ import { extractSurfaceTriangles } from '../extract-surface-triangles';
 
 function makeQuadMesh(): Mesh {
 	// Two triangles forming a unit quad in the XY plane.
-	const positions = new Float32Array([
-		0, 0, 0,
-		1, 0, 0,
-		1, 1, 0,
-		0, 0, 0,
-		1, 1, 0,
-		0, 1, 0
-	]);
+	const positions = new Float32Array([0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0]);
 	const geometry = new BufferGeometry();
 	geometry.setAttribute('position', new BufferAttribute(positions, 3));
 	return new Mesh(geometry);

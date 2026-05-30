@@ -76,7 +76,12 @@ function combineSections(edge0: ProjectionEdge, edge1: ProjectionEdge): Section[
 
 function makeDummyEdgeConfig(
 	crossSectionConfig: CrossSectionConfig
-): EdgeConfig<{ x: number; y: number; z: number }, { x: number; y: number; z: number }, EdgeCurveConfig, CrossSectionConfig> {
+): EdgeConfig<
+	{ x: number; y: number; z: number },
+	{ x: number; y: number; z: number },
+	EdgeCurveConfig,
+	CrossSectionConfig
+> {
 	return {
 		vertex0: { x: 0, y: 0, z: 0 },
 		vertex1: { x: 0, y: 0, z: 0 },
@@ -112,11 +117,7 @@ function slerp(a: Vector3, b: Vector3, t: number): Vector3 {
 	const sinOmega = Math.sin(omega);
 	const sa = Math.sin((1 - t) * omega) / sinOmega;
 	const sb = Math.sin(t * omega) / sinOmega;
-	return new Vector3(
-		sa * a.x + sb * b.x,
-		sa * a.y + sb * b.y,
-		sa * a.z + sb * b.z
-	);
+	return new Vector3(sa * a.x + sb * b.x, sa * a.y + sb * b.y, sa * a.z + sb * b.z);
 }
 
 function matchTubeEnds(tubes: Tube[]): void {
@@ -175,11 +176,7 @@ function findPartner(
 	edgeToMatch: TriangleEdge
 ): { partner: Facet; partnerEdge: TriangleEdge; edge: TriangleEdge } | null {
 	for (const facet of facets) {
-		if (
-			facet0.address &&
-			facet.address &&
-			facet0.address.tube !== facet.address.tube
-		) {
+		if (facet0.address && facet.address && facet0.address.tube !== facet.address.tube) {
 			const match = getEdgeMatchedTriangles(facet0.triangle, facet.triangle, edgeToMatch);
 			if (match) {
 				return { partner: facet, partnerEdge: match.t1, edge: match.t0 };
@@ -265,7 +262,11 @@ function computeVoronoiFromSeeds(
 	seeds3d: Vector3[],
 	center: Vector3,
 	config: VoronoiConfig
-): { voronoiResult: VoronoiResult; relaxedSeeds: [number, number][]; coordToDirection: CoordToDirection } {
+): {
+	voronoiResult: VoronoiResult;
+	relaxedSeeds: [number, number][];
+	coordToDirection: CoordToDirection;
+} {
 	const method = config.voronoiMethod ?? 'spherical';
 
 	if (method === 'spherical') {
@@ -297,12 +298,7 @@ export function makeVoronoi(
 
 	// Step 1: Generate seeds on surface
 	const surfaceTriangles = extractSurfaceTriangles(surface);
-	const seeds3d = generateSeeds(
-		config.seedConfig.seedMethod,
-		center,
-		intersect,
-		surfaceTriangles
-	);
+	const seeds3d = generateSeeds(config.seedConfig.seedMethod, center, intersect, surfaceTriangles);
 
 	// Steps 2-4: Branch on voronoi method
 	const { voronoiResult, relaxedSeeds, coordToDirection } = computeVoronoiFromSeeds(
@@ -451,13 +447,7 @@ export function makeVoronoi(
 			}
 
 			return {
-				points: [
-					cA.clone(),
-					...divA.reverse(),
-					edgePoint.clone(),
-					...divB,
-					cB.clone()
-				]
+				points: [cA.clone(), ...divA.reverse(), edgePoint.clone(), ...divB, cB.clone()]
 			};
 		});
 

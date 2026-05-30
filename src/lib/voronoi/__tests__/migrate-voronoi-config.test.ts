@@ -72,16 +72,14 @@ describe('normalizeVoronoiConfig', () => {
 		const b = { ...inlineDefaultVoronoiConfig, edgeDivisions: 9 };
 		const result = normalizeVoronoiConfig(
 			baseConfig({ voronoiConfigs: [a, b] }) as SuperGlobuleConfig & {
-				voronoiConfigs: typeof a[];
+				voronoiConfigs: (typeof a)[];
 			}
 		);
 		expect(result.voronoiConfig?.edgeDivisions).toBe(3);
 	});
 
 	it('injects the default when a legacy voronoiConfigs array is empty', () => {
-		const result = normalizeVoronoiConfig(
-			baseConfig({ voronoiConfigs: [] }) as SuperGlobuleConfig
-		);
+		const result = normalizeVoronoiConfig(baseConfig({ voronoiConfigs: [] }) as SuperGlobuleConfig);
 		expect(result.voronoiConfig).toBeDefined();
 	});
 

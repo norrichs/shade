@@ -6,7 +6,15 @@
 	let config: VoronoiConfig = $derived($superConfigStore.voronoiConfig ?? defaultVoronoiConfig);
 
 	function update(
-		field: 'pointCount' | 'seed' | 'seedMethodType' | 'relaxationIterations' | 'edgeDivisions' | 'curveOffsetFactor' | 'surfaceProjectionDivisions' | 'voronoiMethod',
+		field:
+			| 'pointCount'
+			| 'seed'
+			| 'seedMethodType'
+			| 'relaxationIterations'
+			| 'edgeDivisions'
+			| 'curveOffsetFactor'
+			| 'surfaceProjectionDivisions'
+			| 'voronoiMethod',
 		value: number | string
 	) {
 		let next: VoronoiConfig = config;

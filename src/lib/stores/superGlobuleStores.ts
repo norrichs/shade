@@ -389,7 +389,16 @@ const superGlobulePatternStoreInternal = derived(
 		$pausePatternUpdates,
 		$isManualMode,
 		$hasPendingChanges
-	]): { superGlobulePattern: any; projectionPattern: any; globuleTubePattern: any; surfaceProjectionPattern: any; voronoiPattern: any; voronoiSurfacePattern: any } | 'paused' => {
+	]):
+		| {
+				superGlobulePattern: any;
+				projectionPattern: any;
+				globuleTubePattern: any;
+				surfaceProjectionPattern: any;
+				voronoiPattern: any;
+				voronoiSurfacePattern: any;
+		  }
+		| 'paused' => {
 		// Skip pattern generation if paused - return 'paused' marker
 		if ($pausePatternUpdates) {
 			console.log('PATTERN STORE: Updates paused');
@@ -483,9 +492,7 @@ const superGlobulePatternStoreInternal = derived(
 		const voronoiSurfaceProjectionTubes = voronoiResult?.surfaceProjectionTubes ?? [];
 
 		const voronoiPattern =
-			patternSource === 'voronoi' &&
-			$genConfig.showBands &&
-			voronoiTubes.length
+			patternSource === 'voronoi' && $genConfig.showBands && voronoiTubes.length
 				? generateProjectionPattern(
 						voronoiTubes,
 						$superConfigStore.id,
