@@ -29,6 +29,7 @@ import {
 } from './generate-tab-geometry';
 import { collectOutlinedBandTabs, type OutlinedTabEdge } from './collect-outlined-band-tabs';
 import { computeOutlinedLabelAnchor } from './compute-label-anchor';
+import { seamTabOwner } from './seam-tab-layout';
 
 /**
  * Compute bounding box from all coordinates in a path.
@@ -345,23 +346,32 @@ const bandHasPartners = (band: Band): { after: boolean; before: boolean } => {
  * - 'beforeAndAfter': add tab in both cases
  * This ensures only one side of a tube-to-tube connection gets a tab (no redundancy).
  */
-const shouldHaveTab = (
+export const shouldHaveTab = (
 	edge: OutlineEdge,
 	tabConfig: OutlinedTabConfig,
 	hasPartners: { after: boolean; before: boolean },
-	currentTube: number
+	currentTube: number,
+	bandIndex = 0,
+	bandCount = 0
 ): boolean => {
-	if (edge.side === 'after') {
-		return (
-			hasPartners.after &&
-			(tabConfig.bandEdge === 'after' || tabConfig.bandEdge === 'beforeAndAfter')
-		);
-	}
-	if (edge.side === 'before') {
-		return (
-			hasPartners.before &&
-			(tabConfig.bandEdge === 'before' || tabConfig.bandEdge === 'beforeAndAfter')
-		);
+	if (edge.side === 'after' || edge.side === 'before') {
+		const side = edge.side;
+		if (!hasPartners[side]) return false;
+
+		if (tabConfig.tabLayout) {
+			// Map edge -> seam. before edge of band b => seam b-1; after => seam b.
+			const seam = side === 'before' ? bandIndex - 1 : bandIndex;
+			const seamValid = side === 'before' ? bandIndex > 0 : bandIndex < bandCount - 1;
+			if (!seamValid) return false;
+			const owners = seamTabOwner(seam, bandCount, tabConfig.tabLayout, tabConfig.bandEdge);
+			return owners.some((o) => o.band === bandIndex && o.edge === side);
+		}
+
+		// Legacy global allocation (unchanged behavior).
+		if (side === 'after') {
+			return tabConfig.bandEdge === 'after' || tabConfig.bandEdge === 'beforeAndAfter';
+		}
+		return tabConfig.bandEdge === 'before' || tabConfig.bandEdge === 'beforeAndAfter';
 	}
 	if (edge.side === 'end') {
 		if (edge.endPartnerTube === undefined) return false;
