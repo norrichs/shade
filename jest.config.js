@@ -19,7 +19,7 @@ export default {
 			}
 		]
 	},
-	transformIgnorePatterns: ['node_modules/(?!(svelte|three|d3-.*|delaunator|robust-predicates|internmap)/)'],
+	transformIgnorePatterns: ['node_modules/(?!(svelte|three|d3-.*|delaunator|robust-predicates|internmap|esm-env|uuid)/)'],
 	collectCoverageFrom: ['src/**/*.ts', '!src/**/*.d.ts'],
 	moduleNameMapper: {
 		'^\\$lib/(.*)$': '<rootDir>/src/lib/$1',
