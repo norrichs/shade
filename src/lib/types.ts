@@ -25,6 +25,7 @@ export type BandRef = GlobuleAddress_Band;
 
 export type BandSortGroup = {
 	label: string;
+	code?: string;
 	bands: BandRef[];
 };
 
