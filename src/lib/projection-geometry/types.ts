@@ -183,6 +183,7 @@ export type ProjectorConfig<
 
 export type SurfaceProjectionConfig = {
 	divisions: number;
+	fillAll?: boolean;
 };
 
 export type ProjectionConfig<
@@ -227,6 +228,7 @@ export type Tube = {
 	sections: Section[];
 	orientation: FacetOrientation;
 	address: GlobuleAddress_Tube;
+	isFill?: boolean;
 	// refers to matching points and 'start of tube array', 'start of band'
 	// for: tube = [band0, band1];  band0 = [facet0, facet1, facet2, facet3]; band1 = [facet4, facet5, facet6, facet7]
 	// startStart === facet0, startEnd === facet1, endStart === facet4, endEnd === facet7

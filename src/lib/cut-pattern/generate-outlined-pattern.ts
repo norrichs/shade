@@ -77,7 +77,7 @@ const getBoundsFromPath = (
  * - 'before': the side facing bands with lower band index (quad a→d edges)
  * - 'end': the two short edges at band start/end connecting the two sides
  */
-type OutlineEdge = {
+export type OutlineEdge = {
 	start: Vector3;
 	end: Vector3;
 	side: 'after' | 'before' | 'end';
@@ -390,7 +390,7 @@ export const shouldHaveTab = (
  * a side-effect so callers can introspect the generated tabs (e.g. to populate
  * `BandCutPattern.tabs` for label rendering).
  */
-const buildOutlinePath = (
+export const buildOutlinePath = (
 	edges: OutlineEdge[],
 	tabConfig?: OutlinedTabConfig,
 	hasPartners?: { after: boolean; before: boolean },
@@ -432,15 +432,28 @@ const buildOutlinePath = (
 		// correctSide(beforeEdgeIndices);
 	}
 
-	// Second pass: build path
+	// Second pass: build path (skip zero-length collapsed edges, e.g. fillAll centroid edges)
+	const EPS_SQ = 1e-12;
+	let penX = edges[0].start.x;
+	let penY = edges[0].start.y;
 	for (let i = 0; i < edges.length; i++) {
 		const tab = tabsByIndex.get(i);
 		if (tab) {
 			for (const seg of tab.path) {
 				path.push(seg);
 			}
+			// Tabs reshape the pen; reset pen to the edge end they terminate on.
+			penX = edges[i].end.x;
+			penY = edges[i].end.y;
 		} else {
-			path.push(['L', edges[i].end.x, edges[i].end.y]);
+			const ex = edges[i].end.x;
+			const ey = edges[i].end.y;
+			const dx = ex - penX;
+			const dy = ey - penY;
+			if (dx * dx + dy * dy < EPS_SQ) continue; // collapsed/degenerate edge — skip
+			path.push(['L', ex, ey]);
+			penX = ex;
+			penY = ey;
 		}
 	}
 

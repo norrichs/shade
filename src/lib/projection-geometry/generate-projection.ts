@@ -59,6 +59,7 @@ import type {
 	VerticesConfig
 } from './types';
 import { materials } from '../../components/three-renderer/materials';
+import { buildFanSections, windFanSectionsOutward } from './fill-fan';
 import { getLength } from '$lib/patterns/utils';
 import {
 	corrected,
@@ -1222,7 +1223,8 @@ export const isSameVector3 = (v0: Vector3, v1: Vector3, precision = 1 / 10_000) 
 export const generateSurfaceProjectionBands = (
 	projection: Projection,
 	projectionConfig: ProjectionConfig<undefined, number, number, number>,
-	projectionAddress: GlobuleAddress
+	projectionAddress: GlobuleAddress,
+	surface: Object3D
 ): { tubes: Tube[] } => {
 	const tubes: Tube[] = [];
 
@@ -1318,6 +1320,49 @@ export const generateSurfaceProjectionBands = (
 		tubes.push(tube);
 	}
 
+	// Interior fill bands (fillAll). Each polygon → one dedicated fan Tube (isFill).
+	// Gated to outlined pattern mode downstream (generateProjectionPattern drops isFill
+	// tubes for tiled/panel). Degenerate facets are intentional and never partner-matched.
+	if (projectionConfig.surfaceProjectionConfig?.fillAll) {
+		const fillRaycaster = new Raycaster(undefined, undefined, undefined, 2000);
+		projection.polygons.forEach((polygon) => {
+			// Outer ring = each edge's first-section inner-curve point, in edge (winding) order.
+			const perimeter = polygon.edges
+				.filter((edge) => edge.sections.length > 0)
+				.map((edge) => edge.sections[0].intersections.curve.clone());
+			if (perimeter.length < 3) return;
+
+			// Centroid surface point: ray-cast from projCenter through the averaged perimeter.
+			const avg = perimeter
+				.reduce((acc, p) => acc.add(p), new Vector3())
+				.divideScalar(perimeter.length);
+			fillRaycaster.set(projCenter, avg.clone().sub(projCenter).normalize());
+			const hits = fillRaycaster.intersectObject(surface, true);
+			let centroidPoint: Vector3;
+			if (hits[0]) {
+				centroidPoint = hits[0].point.clone();
+			} else {
+				console.warn('fillAll: centroid ray missed surface; falling back to averaged perimeter point');
+				centroidPoint = avg.clone();
+			}
+
+			const fillTubeIndex = tubes.length;
+			const fillTubeAddress: GlobuleAddress_Tube = { ...projectionAddress, tube: fillTubeIndex };
+			const fanSections = windFanSectionsOutward(
+				buildFanSections(perimeter, centroidPoint),
+				projCenter
+			);
+			const fillBands = generateProjectionBands(fanSections, 'axial-right', fillTubeAddress);
+			tubes.push({
+				bands: fillBands,
+				sections: fanSections,
+				orientation: 'axial-right',
+				address: fillTubeAddress,
+				isFill: true
+			});
+		});
+	}
+
 	// Partner matching for flat surface projection geometry.
 	// Cannot use standard matchFacets/getFacetEdgeMeta — the "outer" edge formula
 	// assumes tube geometry where bands wrap around, which doesn't hold here.
@@ -1345,6 +1390,7 @@ export const generateSurfaceProjectionBands = (
  */
 const matchSurfaceProjectionCrossBandPartners = (tubes: Tube[]) => {
 	tubes.forEach((tube) => {
+		if (tube.isFill) return; // fill tubes have degenerate facets; skip partner matching
 		if (tube.bands.length < 2) return;
 		// Match every facet in band i against every facet in band j (i≠j)
 		for (let i = 0; i < tube.bands.length; i++) {
@@ -1382,6 +1428,7 @@ const matchSurfaceProjectionCrossBandPartners = (tubes: Tube[]) => {
  */
 const matchSurfaceProjectionSequentialPartners = (tubes: Tube[]) => {
 	tubes.forEach((tube) => {
+		if (tube.isFill) return; // fill tubes have degenerate facets; skip partner matching
 		tube.bands.forEach((band) => {
 			band.facets.forEach((facet, f) => {
 				if (!facet.address) return;
@@ -1439,6 +1486,7 @@ const matchSurfaceProjectionTubeEnds = (tubes: Tube[]) => {
 	// Collect all end facets: { facet, tubeIdx, bandIdx, position: 'first'|'last' }
 	const endFacets: { facet: Facet; tube: number; band: number; pos: 'first' | 'last' }[] = [];
 	tubes.forEach((tube, t) => {
+		if (tube.isFill) return; // fill tubes have degenerate facets; skip partner matching
 		tube.bands.forEach((band, b) => {
 			const fc = band.facets.length;
 			if (fc > 0) endFacets.push({ facet: band.facets[0], tube: t, band: b, pos: 'first' });
@@ -1498,7 +1546,8 @@ export const makeProjection = (projectionConfig: BaseProjectionConfig, address: 
 	const { tubes: surfaceProjectionTubes } = generateSurfaceProjectionBands(
 		projection,
 		projectionConfig,
-		address
+		address,
+		surface
 	);
 	const auditCenter =
 		preparedProjectionConfig.surfaceConfig.type === 'GlobuleConfig'

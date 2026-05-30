@@ -121,6 +121,32 @@
 					step={1}
 					bind:value={$superConfigStore.projectionConfigs[0].surfaceProjectionConfig.divisions}
 				/>
+				<label>
+					fill all
+					<input
+						type="checkbox"
+						checked={$superConfigStore.projectionConfigs[0].surfaceProjectionConfig.fillAll ?? false}
+						onchange={(e) => {
+							const cfg = $superConfigStore.projectionConfigs[0];
+							if (cfg?.surfaceProjectionConfig) {
+								$superConfigStore = {
+									...$superConfigStore,
+									projectionConfigs: $superConfigStore.projectionConfigs.map((pc, i) =>
+										i === 0
+											? {
+													...pc,
+													surfaceProjectionConfig: {
+														...pc.surfaceProjectionConfig!,
+														fillAll: (e.currentTarget as HTMLInputElement).checked
+													}
+												}
+											: pc
+									)
+								};
+							}
+						}}
+					/>
+				</label>
 			{/if}
 		</div>
 	</div>

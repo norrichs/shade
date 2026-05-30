@@ -124,9 +124,15 @@ export const generateProjectionPattern = (
 		patternConfig: { pixelScale }
 	} = globulePatternConfig;
 
+	// fillAll produces interior fan tubes with one degenerate facet per quad.
+	// Tiled/panel patterns cannot tile degenerate facets — keep fill tubes for outlined only.
+	const effectiveTubes = isOutlinedPatternConfig(patternTypeConfig)
+		? tubes
+		: tubes.filter((t) => !t.isFill);
+
 	if (isOutlinedPatternConfig(patternTypeConfig)) {
 		return generateOutlinedProjectionPattern(
-			tubes,
+			effectiveTubes,
 			id,
 			patternTypeConfig,
 			pixelScale,
@@ -134,7 +140,7 @@ export const generateProjectionPattern = (
 		);
 	} else if (shouldUsePanelPattern(patternTypeConfig)) {
 		const projectionPanelPattern = generateProjectionPanelPattern({
-			tubes,
+			tubes: effectiveTubes,
 			range: projectionRange as any,
 			tiledPatternConfig: patternTypeConfig
 		});
@@ -149,17 +155,17 @@ export const generateProjectionPattern = (
 		const hasAdjustAfterTiling = !!adjustAfterTiling;
 
 		// Resolve tube range
-		const [tubeStart, tubeEnd] = resolveRangeIndices(projectionRange?.tubes, tubes.length);
+		const [tubeStart, tubeEnd] = resolveRangeIndices(projectionRange?.tubes, effectiveTubes.length);
 
 		// Resolve band range — expand by 1 on each side if adjustAfterTiling needs neighbors
 		const bandExpand = hasAdjustAfterTiling ? 1 : 0;
 
 		// Generate tube patterns, but only for in-range tubes
 		// Use a sparse array so that adjustAfterTiling index lookups still work
-		let tubePatterns: (TubeCutPattern | undefined)[] = new Array(tubes.length);
+		let tubePatterns: (TubeCutPattern | undefined)[] = new Array(effectiveTubes.length);
 
 		for (let t = tubeStart; t < tubeEnd; t++) {
-			const { bands, address } = tubes[t];
+			const { bands, address } = effectiveTubes[t];
 			const totalBands = bands.filter((b) => b.visible).length;
 			const [bandStart, bandEnd] = resolveRangeIndices(
 				projectionRange?.bands,
@@ -192,8 +198,8 @@ export const generateProjectionPattern = (
 
 		// Generate any referenced tubes that weren't already generated
 		for (const t of referencedTubeIndices) {
-			if (t >= 0 && t < tubes.length && tubePatterns[t] === undefined) {
-				const { bands, address } = tubes[t];
+			if (t >= 0 && t < effectiveTubes.length && tubePatterns[t] === undefined) {
+				const { bands, address } = effectiveTubes[t];
 				tubePatterns[t] = generateTubeCutPattern({
 					address,
 					bands,
@@ -229,7 +235,7 @@ export const generateProjectionPattern = (
 			for (let t = tubeStart; t < tubeEnd; t++) {
 				const tp = tubePatterns[t];
 				if (!tp) continue;
-				const totalVisibleBands = tubes[t].bands.filter((b) => b.visible).length;
+				const totalVisibleBands = effectiveTubes[t].bands.filter((b) => b.visible).length;
 				const [exactStart, exactEnd] = resolveRangeIndices(
 					projectionRange.bands,
 					totalVisibleBands
