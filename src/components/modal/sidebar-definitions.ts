@@ -13,6 +13,7 @@ import TileEditor from './editor/TileEditor.svelte';
 import Selection from './editor/Selection.svelte';
 import ConfigManager from './editor/ConfigManager.svelte';
 import Rendering from './editor/Rendering.svelte';
+import VoronoiControl from '../controls/VoronoiControl.svelte';
 
 export type FloaterContent = {
 	shortTitle: string;
@@ -148,6 +149,15 @@ export const projectionConfigs: SidebarDefinition = new Map([
 			shortTitle: 'Su',
 			title: 'Surface',
 			content: Surface
+		}
+	],
+	[
+		'Voronoi',
+		{
+			shortTitle: 'Vr',
+			title: 'Voronoi',
+			content: VoronoiControl,
+			closeOnClickAway: false
 		}
 	]
 ]);

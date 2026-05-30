@@ -12,14 +12,11 @@
 	import SuperControl from '../../components/controls/super-control/SuperControl.svelte';
 	import { uiStore, type ViewModeSetting, computationMode } from '$lib/stores/uiStores';
 	import ProjectionControl from '../../components/projection/ProjectionControl.svelte';
-	import VoronoiControl from '../../components/controls/VoronoiControl.svelte';
 	import HoverSidebar from '../../components/modal/HoverSidebar.svelte';
-	import Floater from '../../components/modal/Floater.svelte';
 	import { projectionConfigs } from '../../components/modal/sidebar-definitions';
 	import Toast from '../../components/Toast.svelte';
 
 	let viewMode: ViewModeSetting = $uiStore.designer.viewMode;
-	let showVoronoiFloater = false;
 
 	let showControl: { name: string; value?: unknown } = { name: 'None' };
 	type ShowControlCurveValue = 'ShapeConfig' | 'DepthCurveConfig' | 'SilhouetteConfig';
@@ -30,9 +27,6 @@
 	};
 
 	$: viewMode = $uiStore.designer.viewMode;
-	$: if (showControl?.name === 'Voronoi') {
-		showVoronoiFloater = true;
-	}
 </script>
 
 <main>
@@ -57,7 +51,6 @@
 					{ name: 'Spine', value: 'SpineCurveConfig' },
 					{ name: 'Shape', value: 'ShapeConfig' },
 					{ name: 'Projection' },
-					{ name: 'Voronoi' },
 					{ name: 'Levels' },
 					{ name: 'Struts' },
 					{ name: 'Cut' },
@@ -89,13 +82,6 @@
 		</div>
 	</section>
 	<HoverSidebar sidebarDefinition={projectionConfigs} />
-	<Floater
-		title="Voronoi"
-		showFloater={showVoronoiFloater}
-		onClose={() => (showVoronoiFloater = false)}
-		content={VoronoiControl}
-		closeOnClickAway={false}
-	/>
 </main>
 
 <style>
