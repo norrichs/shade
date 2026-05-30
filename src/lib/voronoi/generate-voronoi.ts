@@ -14,6 +14,7 @@ import type {
 } from '$lib/projection-geometry/types';
 import type { VoronoiConfig, VoronoiResult } from './types';
 import { generateSeeds } from './generate-seeds';
+import { extractSurfaceTriangles } from './extract-surface-triangles';
 import { toUV, fromUVToDirection } from './uv-mapping';
 import { computeVoronoi, lloydRelax } from './compute-voronoi';
 import {
@@ -295,7 +296,13 @@ export function makeVoronoi(
 	const intersect = createSurfaceIntersector(surface, center);
 
 	// Step 1: Generate seeds on surface
-	const seeds3d = generateSeeds(config.seedConfig.seedMethod, center, intersect);
+	const surfaceTriangles = extractSurfaceTriangles(surface);
+	const seeds3d = generateSeeds(
+		config.seedConfig.seedMethod,
+		center,
+		intersect,
+		surfaceTriangles
+	);
 
 	// Steps 2-4: Branch on voronoi method
 	const { voronoiResult, relaxedSeeds, coordToDirection } = computeVoronoiFromSeeds(
