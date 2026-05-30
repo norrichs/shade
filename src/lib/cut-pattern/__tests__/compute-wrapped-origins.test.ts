@@ -38,6 +38,16 @@ describe('computeWrappedOrigins', () => {
 		expect(origins[2].y).toBe(90 + GAP_BETWEEN_BANDS); // 110, from row max 90 not last band 20
 	});
 
+	it('wrapping is continuous across a flattened multi-tube sequence', () => {
+		// Simulate two tubes flattened in order: tubeA=[w=100], tubeB=[w=100, w=100]. wrapWidth 250, gap 20.
+		// x: b0@0 -> 120; b1@120 (120+100=220<=250) -> 240; b2: 240>0, 240+100=340>250 -> new row @0.
+		const flat = [band(100, 30), band(100, 30), band(100, 50)];
+		const origins = computeWrappedOrigins(flat, { lineWrap: true, wrapWidth: 250 });
+		expect(origins.map((o) => o.x)).toEqual([0, 120, 0]);
+		// row0 max height = max(30,30) = 30, so b2 row offset = 30 + gap = 50
+		expect(origins[2].y).toBe(30 + GAP_BETWEEN_BANDS);
+	});
+
 	it('a band wider than wrapWidth gets its own row with no empty leading row', () => {
 		// wrapWidth 100. b0 w=500 (oversized): x=0 so x>0 guard keeps it on row0 at x=0.
 		// b1 w=50: x=500+20=520>0, 520+50>100 -> new row. row0 max height = 80.
