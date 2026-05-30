@@ -59,7 +59,6 @@ import type {
 	VerticesConfig
 } from './types';
 import { materials } from '../../components/three-renderer/materials';
-import { buildFanSections, windFanSectionsOutward } from './fill-fan';
 import { getLength } from '$lib/patterns/utils';
 import {
 	corrected,
@@ -1318,49 +1317,6 @@ export const generateSurfaceProjectionBands = (
 		};
 
 		tubes.push(tube);
-	}
-
-	// Interior fill bands (fillAll). Each polygon → one dedicated fan Tube (isFill).
-	// Gated to outlined pattern mode downstream (generateProjectionPattern drops isFill
-	// tubes for tiled/panel). Degenerate facets are intentional and never partner-matched.
-	if (projectionConfig.surfaceProjectionConfig?.fillAll) {
-		const fillRaycaster = new Raycaster(undefined, undefined, undefined, 2000);
-		projection.polygons.forEach((polygon) => {
-			// Outer ring = each edge's first-section inner-curve point, in edge (winding) order.
-			const perimeter = polygon.edges
-				.filter((edge) => edge.sections.length > 0)
-				.map((edge) => edge.sections[0].intersections.curve.clone());
-			if (perimeter.length < 3) return;
-
-			// Centroid surface point: ray-cast from projCenter through the averaged perimeter.
-			const avg = perimeter
-				.reduce((acc, p) => acc.add(p), new Vector3())
-				.divideScalar(perimeter.length);
-			fillRaycaster.set(projCenter, avg.clone().sub(projCenter).normalize());
-			const hits = fillRaycaster.intersectObject(surface, true);
-			let centroidPoint: Vector3;
-			if (hits[0]) {
-				centroidPoint = hits[0].point.clone();
-			} else {
-				console.warn('fillAll: centroid ray missed surface; falling back to averaged perimeter point');
-				centroidPoint = avg.clone();
-			}
-
-			const fillTubeIndex = tubes.length;
-			const fillTubeAddress: GlobuleAddress_Tube = { ...projectionAddress, tube: fillTubeIndex };
-			const fanSections = windFanSectionsOutward(
-				buildFanSections(perimeter, centroidPoint),
-				projCenter
-			);
-			const fillBands = generateProjectionBands(fanSections, 'axial-right', fillTubeAddress);
-			tubes.push({
-				bands: fillBands,
-				sections: fanSections,
-				orientation: 'axial-right',
-				address: fillTubeAddress,
-				isFill: true
-			});
-		});
 	}
 
 	// Partner matching for flat surface projection geometry.
