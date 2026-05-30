@@ -3,165 +3,162 @@
 	import { defaultVoronoiConfig } from '$lib/shades-config';
 	import type { VoronoiConfig, VoronoiMethod } from '$lib/voronoi/types';
 
-	let configs: VoronoiConfig[] = $derived($superConfigStore.voronoiConfigs ?? []);
+	let config: VoronoiConfig = $derived($superConfigStore.voronoiConfig ?? defaultVoronoiConfig);
 
-	function addVoronoi() {
-		$superConfigStore = {
-			...$superConfigStore,
-			voronoiConfigs: [...($superConfigStore.voronoiConfigs ?? []), { ...defaultVoronoiConfig }]
-		};
-	}
-
-	function removeVoronoi(index: number) {
-		const updated = [...($superConfigStore.voronoiConfigs ?? [])];
-		updated.splice(index, 1);
-		$superConfigStore = {
-			...$superConfigStore,
-			voronoiConfigs: updated
-		};
-	}
-
-	function updateConfig(index: number, field: string, value: number | string) {
-		const updated = [...($superConfigStore.voronoiConfigs ?? [])];
+	function update(
+		field: 'pointCount' | 'seed' | 'seedMethodType' | 'relaxationIterations' | 'edgeDivisions' | 'curveOffsetFactor' | 'surfaceProjectionDivisions' | 'voronoiMethod',
+		value: number | string
+	) {
+		let next: VoronoiConfig = config;
 		if (field === 'pointCount') {
-			updated[index] = {
-				...updated[index],
+			next = {
+				...config,
 				seedConfig: {
-					...updated[index].seedConfig,
-					seedMethod: { ...updated[index].seedConfig.seedMethod, pointCount: value }
+					...config.seedConfig,
+					seedMethod: { ...config.seedConfig.seedMethod, pointCount: value as number }
 				}
 			};
 		} else if (field === 'seed') {
-			updated[index] = {
-				...updated[index],
+			next = {
+				...config,
 				seedConfig: {
-					...updated[index].seedConfig,
-					seedMethod: { ...updated[index].seedConfig.seedMethod, seed: value }
+					...config.seedConfig,
+					seedMethod: { ...config.seedConfig.seedMethod, seed: value as number }
+				}
+			};
+		} else if (field === 'seedMethodType') {
+			next = {
+				...config,
+				seedConfig: {
+					...config.seedConfig,
+					seedMethod: {
+						...config.seedConfig.seedMethod,
+						type: value as VoronoiConfig['seedConfig']['seedMethod']['type']
+					}
 				}
 			};
 		} else if (field === 'relaxationIterations') {
-			updated[index] = {
-				...updated[index],
-				seedConfig: { ...updated[index].seedConfig, relaxationIterations: value }
+			next = {
+				...config,
+				seedConfig: { ...config.seedConfig, relaxationIterations: value as number }
 			};
 		} else if (field === 'edgeDivisions') {
-			updated[index] = { ...updated[index], edgeDivisions: value };
+			next = { ...config, edgeDivisions: value as number };
 		} else if (field === 'curveOffsetFactor') {
-			updated[index] = { ...updated[index], curveOffsetFactor: value as number };
+			next = { ...config, curveOffsetFactor: value as number };
 		} else if (field === 'surfaceProjectionDivisions') {
-			updated[index] = { ...updated[index], surfaceProjectionDivisions: value as number };
+			next = { ...config, surfaceProjectionDivisions: value as number };
 		} else if (field === 'voronoiMethod') {
-			updated[index] = { ...updated[index], voronoiMethod: value as VoronoiMethod };
+			next = { ...config, voronoiMethod: value as VoronoiMethod };
 		}
-		$superConfigStore = { ...$superConfigStore, voronoiConfigs: updated };
+		$superConfigStore = { ...$superConfigStore, voronoiConfig: next };
 	}
 
-	function randomizeSeed(index: number) {
-		updateConfig(index, 'seed', Math.floor(Math.random() * 100000));
+	function randomizeSeed() {
+		update('seed', Math.floor(Math.random() * 2 ** 31));
 	}
 </script>
 
 <section>
 	<header>
-		<h3>Voronoi Configs</h3>
-		<button onclick={addVoronoi}>Add Voronoi</button>
+		<h3>Voronoi</h3>
 	</header>
 
-	{#each configs as config, i}
-		<div class="config-block">
-			<div class="config-header">
-				<span>Voronoi {i}</span>
-				<button onclick={() => removeVoronoi(i)}>Remove</button>
-			</div>
+	<div class="config-block">
+		<label>
+			Seed Method
+			<select
+				value={config.seedConfig.seedMethod.type}
+				onchange={(e) => update('seedMethodType', e.currentTarget.value)}
+			>
+				<option value="areaWeighted">Area Weighted</option>
+				<option value="centerProjection">Center Projection</option>
+			</select>
+		</label>
 
-			<label>
-				Method
-				<select
-					value={config.voronoiMethod ?? 'spherical'}
-					onchange={(e) => updateConfig(i, 'voronoiMethod', e.currentTarget.value)}
-				>
-					<option value="spherical">Spherical</option>
-					<option value="uv">UV</option>
-				</select>
-			</label>
+		<label>
+			Method
+			<select
+				value={config.voronoiMethod ?? 'spherical'}
+				onchange={(e) => update('voronoiMethod', e.currentTarget.value)}
+			>
+				<option value="spherical">Spherical</option>
+				<option value="uv">UV</option>
+			</select>
+		</label>
 
-			<label>
-				Point Count
-				<input
-					type="range"
-					min="4"
-					max="300"
-					value={config.seedConfig.seedMethod.pointCount}
-					oninput={(e) => updateConfig(i, 'pointCount', Number(e.currentTarget.value))}
-				/>
-				<span>{config.seedConfig.seedMethod.pointCount}</span>
-			</label>
+		<label>
+			Point Count
+			<input
+				type="range"
+				min="4"
+				max="300"
+				value={config.seedConfig.seedMethod.pointCount}
+				oninput={(e) => update('pointCount', Number(e.currentTarget.value))}
+			/>
+			<span>{config.seedConfig.seedMethod.pointCount}</span>
+		</label>
 
-			<label>
-				Seed
-				<input
-					type="number"
-					value={config.seedConfig.seedMethod.seed}
-					oninput={(e) => updateConfig(i, 'seed', Number(e.currentTarget.value))}
-				/>
-				<button onclick={() => randomizeSeed(i)}>Randomize</button>
-			</label>
+		<label>
+			Seed
+			<input
+				type="number"
+				value={config.seedConfig.seedMethod.seed}
+				oninput={(e) => update('seed', Number(e.currentTarget.value))}
+			/>
+			<button onclick={randomizeSeed}>Randomize</button>
+		</label>
 
-			<label>
-				Relaxation Iterations
-				<input
-					type="range"
-					min="0"
-					max="20"
-					value={config.seedConfig.relaxationIterations}
-					oninput={(e) => updateConfig(i, 'relaxationIterations', Number(e.currentTarget.value))}
-				/>
-				<span>{config.seedConfig.relaxationIterations}</span>
-			</label>
+		<label>
+			Relaxation Iterations
+			<input
+				type="range"
+				min="0"
+				max="20"
+				value={config.seedConfig.relaxationIterations}
+				oninput={(e) => update('relaxationIterations', Number(e.currentTarget.value))}
+			/>
+			<span>{config.seedConfig.relaxationIterations}</span>
+		</label>
 
-			<label>
-				Curve Offset
-				<input
-					type="range"
-					min="0.05"
-					max="0.95"
-					step="0.05"
-					value={config.curveOffsetFactor ?? 0.3}
-					oninput={(e) => updateConfig(i, 'curveOffsetFactor', Number(e.currentTarget.value))}
-				/>
-				<span>{(config.curveOffsetFactor ?? 0.3).toFixed(2)}</span>
-			</label>
+		<label>
+			Curve Offset
+			<input
+				type="range"
+				min="0.05"
+				max="0.95"
+				step="0.05"
+				value={config.curveOffsetFactor ?? 0.3}
+				oninput={(e) => update('curveOffsetFactor', Number(e.currentTarget.value))}
+			/>
+			<span>{(config.curveOffsetFactor ?? 0.3).toFixed(2)}</span>
+		</label>
 
-			<label>
-				Surface Divisions
-				<input
-					type="range"
-					min="0"
-					max="5"
-					step="1"
-					value={config.surfaceProjectionDivisions ?? 0}
-					oninput={(e) => updateConfig(i, 'surfaceProjectionDivisions', Number(e.currentTarget.value))}
-				/>
-				<span>{config.surfaceProjectionDivisions ?? 0}</span>
-			</label>
+		<label>
+			Surface Divisions
+			<input
+				type="range"
+				min="0"
+				max="5"
+				step="1"
+				value={config.surfaceProjectionDivisions ?? 0}
+				oninput={(e) => update('surfaceProjectionDivisions', Number(e.currentTarget.value))}
+			/>
+			<span>{config.surfaceProjectionDivisions ?? 0}</span>
+		</label>
 
-			<label>
-				Edge Divisions
-				<input
-					type="range"
-					min="2"
-					max="20"
-					value={config.edgeDivisions}
-					oninput={(e) => updateConfig(i, 'edgeDivisions', Number(e.currentTarget.value))}
-				/>
-				<span>{config.edgeDivisions}</span>
-			</label>
-		</div>
-	{/each}
-
-	{#if configs.length === 0}
-		<p>No Voronoi configs. Click "Add Voronoi" to start.</p>
-	{/if}
+		<label>
+			Edge Divisions
+			<input
+				type="range"
+				min="2"
+				max="20"
+				value={config.edgeDivisions}
+				oninput={(e) => update('edgeDivisions', Number(e.currentTarget.value))}
+			/>
+			<span>{config.edgeDivisions}</span>
+		</label>
+	</div>
 </section>
 
 <style>
