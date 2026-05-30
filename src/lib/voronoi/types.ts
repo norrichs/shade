@@ -24,10 +24,16 @@ export type VoronoiSeedConfig = {
 	relaxationIterations: number;
 };
 
-export type SeedMethod = CenterProjectionSeedMethod;
+export type SeedMethod = CenterProjectionSeedMethod | AreaWeightedSeedMethod;
 
 export type CenterProjectionSeedMethod = {
 	type: 'centerProjection';
+	pointCount: number;
+	seed: number;
+};
+
+export type AreaWeightedSeedMethod = {
+	type: 'areaWeighted';
 	pointCount: number;
 	seed: number;
 };
@@ -42,3 +48,11 @@ export type VoronoiResult = {
 	seeds: [number, number][];
 	vertices: [number, number][];
 };
+
+// A surface facet as three world-space corners. Used only inside the geometry
+// worker for area-weighted seed sampling; never serialized across postMessage.
+export type SurfaceTriangle = [
+	import('three').Vector3,
+	import('three').Vector3,
+	import('three').Vector3
+];
