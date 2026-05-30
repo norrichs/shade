@@ -42,7 +42,7 @@ export type ViewControls = {
 
 const defaultViewControls = (): ViewControls => ({
 	showProjectionGeometry: {
-		any: true,
+		any: false,
 		surface: false,
 		polygons: false,
 		projection: false,
@@ -61,11 +61,11 @@ const defaultViewControls = (): ViewControls => ({
 		sections: false
 	},
 	showVoronoiGeometry: {
-		any: false,
-		bands: true,
+		any: true,
+		bands: false,
 		facets: false,
 		sections: false,
-		surfaceProjection: false
+		surfaceProjection: true
 	}
 });
 
