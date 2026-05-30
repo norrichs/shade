@@ -18,6 +18,7 @@
 	import { getTransform } from './distrubute-panels';
 	import { concatAddress, isSameAddress } from '$lib/util';
 	import { PATTERN_PORTAL_ID, LABEL_TEXT_PORTAL_ID, LABEL_TAG_PORTAL_ID } from './constants';
+	import { buildBandCodeMap } from '$lib/cut-pattern/band-sort-index';
 
 	let {
 		tubes = [],
@@ -45,6 +46,10 @@
 		);
 
 	let indexedBands = $derived(sortIndex ? resolveIndexBands(sortIndex) : undefined);
+
+	let codeMap = $derived(sortIndex ? buildBandCodeMap(sortIndex) : undefined);
+	const groupCodeFor = (address: { globule: number; tube: number; band: number }) =>
+		codeMap?.get(`${address.globule}-${address.tube}-${address.band}`);
 
 	const alignedY = (band: BandCutPattern, verticalAlignment: 'top' | 'bottom' | 'center') => {
 		switch (verticalAlignment) {
@@ -181,6 +186,7 @@
 				portal={true}
 				tagAnchorPoint={band.tagAnchorPoint ?? minPoint(band.facets)}
 				tagAngle={band.tagAngle}
+				groupCode={groupCodeFor(band.address)}
 				showBounds={false}
 				{selectionTarget}
 			>
@@ -215,6 +221,7 @@
 						portal={true}
 						tagAnchorPoint={band.tagAnchorPoint ?? minPoint(band.facets)}
 						tagAngle={band.tagAngle}
+						groupCode={groupCodeFor(band.address)}
 						showBounds={false}
 						{selectionTarget}
 					>
