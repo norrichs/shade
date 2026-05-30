@@ -52,6 +52,19 @@
 				label="show Labels"
 				bind:value={$patternConfigStore.patternViewConfig.showLabels}
 			/>
+			<CheckboxInput
+				label="line wrap"
+				bind:value={$patternConfigStore.patternViewConfig.lineWrap as boolean}
+			/>
+			{#if $patternConfigStore.patternViewConfig.lineWrap}
+				<NumberInput
+					label="wrap width"
+					min={50}
+					max={5000}
+					step={10}
+					bind:value={$patternConfigStore.patternViewConfig.wrapWidth as number}
+				/>
+			{/if}
 		</div>
 		<div>
 			<div>
