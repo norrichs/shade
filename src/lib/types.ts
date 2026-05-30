@@ -623,6 +623,7 @@ export type TabEdgeOption = 'before' | 'after' | 'beforeAndAfter';
 export type OutlinedTabConfig = {
 	bandEdge?: TabEdgeOption;
 	bandEnd?: TabEdgeOption;
+	tabLayout?: 'inner' | 'outer';
 	shape: TabShape;
 	tabWidth: number;
 	inset?: number;
