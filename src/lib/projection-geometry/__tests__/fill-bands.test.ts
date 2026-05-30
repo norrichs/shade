@@ -120,6 +120,31 @@ describe('buildFillBand', () => {
 		const toFacet = new Vector3().subVectors(facetCentroid, projCenter);
 		expect(normal.dot(toFacet)).toBeGreaterThan(0);
 	});
+
+	it('reverses the polyline so the fan winds outward regardless of input order', () => {
+		// Same geometry as the outward case, but with the perimeter listed in the
+		// opposite order so the *unreversed* first facet would face inward (dot < 0).
+		const Q0 = new Vector3(1, 1, 1);
+		const Q1 = new Vector3(1, -1, 1);
+		const Q2 = new Vector3(-1, -1, 1);
+		const c = new Vector3(0, 0, 1);
+		const pc = new Vector3(0, 0, 0);
+		const addr = { globule: 0, tube: 3, band: 0 };
+
+		const band = buildFillBand({ borderEdge: [Q0, Q1, Q2], center: c, address: addr, projCenter: pc });
+
+		// First real facet must wind outward after the internal reversal.
+		const t = band.facets[0].triangle;
+		const normal = new Vector3()
+			.subVectors(t.b, t.a)
+			.cross(new Vector3().subVectors(t.c, t.a));
+		const facetCentroid = new Vector3().addVectors(t.a, t.b).add(t.c).divideScalar(3);
+		const toFacet = new Vector3().subVectors(facetCentroid, pc);
+		expect(normal.dot(toFacet)).toBeGreaterThan(0);
+
+		// Proof of reversal: the first real facet's first vertex is the LAST input point.
+		expect(t.a.toArray()).toEqual(Q2.toArray());
+	});
 });
 
 describe('reindexBandAddresses', () => {
