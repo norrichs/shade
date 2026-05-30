@@ -1,11 +1,13 @@
 import { describe, it, expect } from '@jest/globals';
 import { Triangle, Vector3 } from 'three';
+import type { Band } from '$lib/types';
 import type { Section } from '../types';
 import {
 	isDegenerateTriangle,
 	outerBorderPolyline,
 	FILL_DEGENERATE_EPSILON,
-	buildFillBand
+	buildFillBand,
+	reindexBandAddresses
 } from '../fill-bands';
 
 describe('isDegenerateTriangle', () => {
@@ -117,5 +119,27 @@ describe('buildFillBand', () => {
 		const facetCentroid = new Vector3().addVectors(t.a, t.b).add(t.c).divideScalar(3);
 		const toFacet = new Vector3().subVectors(facetCentroid, projCenter);
 		expect(normal.dot(toFacet)).toBeGreaterThan(0);
+	});
+});
+
+describe('reindexBandAddresses', () => {
+	it('renumbers each band and its facets to match array position', () => {
+		const tubeAddress = { globule: 0, tube: 2 };
+		const mk = (): Band => ({
+			orientation: 'axial-right',
+			facets: [
+				{
+					triangle: new Triangle(new Vector3(), new Vector3(1, 0, 0), new Vector3(0, 1, 0)),
+					orientation: 'axial-right',
+					address: { ...tubeAddress, band: 99, facet: 0 }
+				}
+			],
+			address: { ...tubeAddress, band: 99 }
+		});
+		const bands = [mk(), mk(), mk()];
+		reindexBandAddresses(bands, tubeAddress);
+		expect(bands[0].address).toEqual({ ...tubeAddress, band: 0 });
+		expect(bands[2].address).toEqual({ ...tubeAddress, band: 2 });
+		expect(bands[2].facets[0].address).toEqual({ ...tubeAddress, band: 2, facet: 0 });
 	});
 });

@@ -1,6 +1,6 @@
 import { Triangle, Vector3 } from 'three';
 import type { Band, Facet, FacetOrientation } from '$lib/types';
-import type { Section, GlobuleAddress_Band } from './types';
+import type { Section, GlobuleAddress_Band, GlobuleAddress_Tube } from './types';
 
 /** Edges shorter than this (Euclidean) are treated as collapsed/degenerate. */
 export const FILL_DEGENERATE_EPSILON = 1e-6;
@@ -78,4 +78,17 @@ export const buildFillBand = ({
 	}
 
 	return { facets, orientation, visible: true, isFill: true, address };
+};
+
+/**
+ * Rewrite every band's address.band (and each facet's address.band) to match the
+ * band's position in the array. Call after inserting/removing bands in a tube.
+ */
+export const reindexBandAddresses = (bands: Band[], tubeAddress: GlobuleAddress_Tube): void => {
+	bands.forEach((band, b) => {
+		band.address = { ...tubeAddress, band: b };
+		band.facets.forEach((facet) => {
+			if (facet.address) facet.address = { ...facet.address, ...tubeAddress, band: b };
+		});
+	});
 };
