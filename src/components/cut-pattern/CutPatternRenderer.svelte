@@ -5,6 +5,11 @@
 	} from '$lib/projection-geometry/filters';
 	import { patternConfigStore, viewControlStore } from '$lib/stores';
 	import { Vector3 } from 'three';
+	import {
+		computeWrappedOrigins,
+		GAP_BETWEEN_BANDS,
+		type WrapInput
+	} from '$lib/cut-pattern/compute-wrapped-origins';
 	import type { BandCutPattern, BandSortIndex, CutPattern, Point, PointConfig2, TubeCutPattern } from '$lib/types';
 	import BandComponent from './BandComponent.svelte';
 	import BandCutPatternComponent from './BandCutPatternComponent.svelte';
@@ -41,8 +46,6 @@
 
 	let indexedBands = $derived(sortIndex ? resolveIndexBands(sortIndex) : undefined);
 
-	const GAP_BETWEEN_BANDS = 20;
-
 	const alignedY = (band: BandCutPattern, verticalAlignment: 'top' | 'bottom' | 'center') => {
 		switch (verticalAlignment) {
 			case 'bottom':
@@ -57,38 +60,40 @@
 
 	const getCumulativeOrigins = (
 		tubes: TubeCutPattern[],
-		gap: number = 20,
-		verticalAlignment: 'top' | 'bottom' | 'center' = 'center'
+		gap: number = GAP_BETWEEN_BANDS,
+		verticalAlignment: 'top' | 'bottom' | 'center' = 'center',
+		lineWrap = false,
+		wrapWidth?: number
 	) => {
-		const cumulativeOrigin = new Vector3(0, 0, 0);
+		const flatBands = tubes.flatMap((tube) => tube.bands);
+		const inputs: WrapInput[] = flatBands.map((band) => ({
+			width: band.bounds?.width || 0,
+			height: band.bounds?.height || 0,
+			alignedYOffset: alignedY(band, verticalAlignment)
+		}));
+		const flat = computeWrappedOrigins(inputs, { gap, lineWrap, wrapWidth });
 
-		const origins = {
+		let cursor = 0;
+		return {
 			tubes: tubes.map((tube) => ({
-				bands: tube.bands.map((band) => {
-					const y = alignedY(band, verticalAlignment);
-					const result = new Vector3(cumulativeOrigin.x, y, 0);
-					const x = cumulativeOrigin.x + (band.bounds?.width || 0) + gap;
-					cumulativeOrigin.set(x, y, 0);
-					return result;
-				})
+				bands: tube.bands.map(() => flat[cursor++])
 			}))
 		};
-
-		return origins;
 	};
 
 	const getFlatOrigins = (
 		bands: ResolvedBand[],
-		gap: number = 20,
-		verticalAlignment: 'top' | 'bottom' | 'center' = 'center'
+		gap: number = GAP_BETWEEN_BANDS,
+		verticalAlignment: 'top' | 'bottom' | 'center' = 'center',
+		lineWrap = false,
+		wrapWidth?: number
 	): Vector3[] => {
-		let x = 0;
-		return bands.map(({ band }) => {
-			const y = alignedY(band, verticalAlignment);
-			const origin = new Vector3(x, y, 0);
-			x += (band.bounds?.width || 0) + gap;
-			return origin;
-		});
+		const inputs: WrapInput[] = bands.map(({ band }) => ({
+			width: band.bounds?.width || 0,
+			height: band.bounds?.height || 0,
+			alignedYOffset: alignedY(band, verticalAlignment)
+		}));
+		return computeWrappedOrigins(inputs, { gap, lineWrap, wrapWidth });
 	};
 
 	const getPartnerBands = (originBand: BandCutPattern, tubes: TubeCutPattern[]) => {
@@ -137,6 +142,8 @@
 	};
 
 	let range = $derived($patternConfigStore.patternViewConfig.range);
+	let lineWrap = $derived($patternConfigStore.patternViewConfig.lineWrap ?? false);
+	let wrapWidth = $derived($patternConfigStore.patternViewConfig.wrapWidth ?? 800);
 
 	let showPattern = $derived.by(() => {
 		const { showGlobuleTubeGeometry, showProjectionGeometry, showVoronoiGeometry } =
@@ -155,8 +162,12 @@
 	});
 
 	let filteredTubes = $derived(filtered({ tubes, range }));
-	let origins = $derived(getCumulativeOrigins(filteredTubes, GAP_BETWEEN_BANDS, 'center'));
-	let flatOrigins = $derived(indexedBands ? getFlatOrigins(indexedBands, GAP_BETWEEN_BANDS, 'center') : undefined);
+	let origins = $derived(
+		getCumulativeOrigins(filteredTubes, GAP_BETWEEN_BANDS, 'center', lineWrap, wrapWidth)
+	);
+	let flatOrigins = $derived(
+		indexedBands ? getFlatOrigins(indexedBands, GAP_BETWEEN_BANDS, 'center', lineWrap, wrapWidth) : undefined
+	);
 </script>
 
 {#if showPattern}
