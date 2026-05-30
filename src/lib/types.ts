@@ -587,6 +587,7 @@ export type PatternLabelsConfig = {
 	// `stemLength` (default 20) and `stemWidth` (default 4) control the callout stem dims.
 	selfTag?: {
 		enabled: boolean;
+		externalTag?: boolean;
 		height: number;
 		angle: number;
 		padding?: number;
