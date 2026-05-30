@@ -48,13 +48,12 @@ export const generateSuperGlobule = (superConfig: SuperGlobuleConfig): SuperGlob
 		return makeProjection(config, { globule: i });
 	});
 
-	// Voronoi Tube pipeline
+	// Voronoi Tube pipeline (single config)
 	const projectionSurfaceConfig = resolvedProjectionConfigs[0]?.surfaceConfig;
-	const voronoiResults = projectionSurfaceConfig
-		? (superConfig.voronoiConfigs ?? []).map((config, i) => {
-				return makeVoronoi(config, { globule: i }, projectionSurfaceConfig);
-			})
-		: [];
+	const voronoiResult =
+		projectionSurfaceConfig && superConfig.voronoiConfig
+			? makeVoronoi(superConfig.voronoiConfig, { globule: 0 }, projectionSurfaceConfig)
+			: undefined;
 
 	const superGlobule: SuperGlobule = {
 		type: 'SuperGlobule',
@@ -63,7 +62,7 @@ export const generateSuperGlobule = (superConfig: SuperGlobuleConfig): SuperGlob
 		globuleTubes,
 		subGlobules,
 		projections,
-		voronoiResults
+		voronoiResult
 	};
 	return superGlobule;
 };
