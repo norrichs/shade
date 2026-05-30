@@ -49,7 +49,9 @@ export const windFanSectionsOutward = (sections: Section[], projCenter: Vector3)
 		// Reversed: [P_{m-1},C], [P_{m-2},C], ..., [P_0,C], [P_{m-1},C] (wrap)
 		// Achieved by reversing the perimeter sections (0..m-1) and appending a new wrap.
 		const perimeterSections = sections.slice(0, sections.length - 1).reverse();
-		const wrap = { points: [perimeterSections[0].points[0].clone(), perimeterSections[0].points[1].clone()] };
+		const wrap = {
+			points: [perimeterSections[0].points[0].clone(), perimeterSections[0].points[1].clone()]
+		};
 		return [...perimeterSections, wrap];
 	}
 	return sections;

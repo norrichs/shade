@@ -1,5 +1,10 @@
 import { Triangle, Vector3 } from 'three';
-import { isDegenerateEdge, FAN_DEGENERATE_EPSILON, buildFanSections, windFanSectionsOutward } from '../fill-fan';
+import {
+	isDegenerateEdge,
+	FAN_DEGENERATE_EPSILON,
+	buildFanSections,
+	windFanSectionsOutward
+} from '../fill-fan';
 
 describe('isDegenerateEdge', () => {
 	test('returns true for coincident points', () => {
@@ -83,9 +88,7 @@ describe('windFanSectionsOutward', () => {
 		const p0 = sections[0].points[0];
 		const p1 = sections[0].points[1];
 		const p2 = sections[1].points[0];
-		const n = new Vector3()
-			.subVectors(p1, p0)
-			.cross(new Vector3().subVectors(p2, p0));
+		const n = new Vector3().subVectors(p1, p0).cross(new Vector3().subVectors(p2, p0));
 		const c = new Vector3().addVectors(p0, p1).add(p2).divideScalar(3);
 		return n.dot(new Vector3().subVectors(c, projCenter));
 	};
