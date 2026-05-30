@@ -133,12 +133,25 @@ not outlined. Purpose unchanged: tiled/panel patterns must not receive degenerat
 
 ---
 
-## Renderer
+## Renderer / flatten path
 
-**No renderer change.** Because each fill band is its own band, its silhouette IS the real triangle
-(spoke → perimeter → spoke). The degenerate facet's collapsed edges are skipped harmlessly by the
-existing epsilon guard in `buildOutlinePath`. Spokes are real-facet edges and render. **Verify
-visually** that spokes survive; only add isFill-aware renderer logic if they do not.
+**Outline emission needs no change.** Because each fill band is its own band, its silhouette IS the
+real triangle (spoke → perimeter → spoke). The degenerate facet's collapsed edges are skipped
+harmlessly by the existing epsilon guard in `buildOutlinePath`. Spokes are real-facet edges and
+render. **Verify visually** that spokes survive.
+
+**Flatten path DOES need a guard (critical).** Investigation found `getFlatStripV2`
+(`src/lib/cut-pattern/generate-panel-pattern.ts`) flattens each facet via law-of-cosines —
+`Vector3.angleTo` on edge vectors and division by edge length. For a degenerate facet (two
+coincident vertices ⇒ a zero-length edge) this yields `NaN` angles/positions, and because the strip
+is chained facet-to-facet, **one degenerate facet poisons the entire band's 2D coordinates**. This
+is the real reason the naive degenerate approach is fragile.
+
+Add a **degenerate-facet guard in the flatten path** (`getFlatStripV2` / its per-facet helper):
+when a facet has a zero-length edge (within epsilon), place the collapsed vertex coincident with its
+neighbor and contribute **zero rotation**, so the degenerate facet occupies its quad slot without
+emitting NaN. The guard is gated strictly to the degenerate case, so normal bands are byte-for-byte
+unchanged. Contract: flattening a fill band produces only finite coordinates.
 
 ---
 
@@ -152,6 +165,8 @@ visually** that spokes survive; only add isFill-aware renderer logic if they do 
   - winding: real-facet normals point outward (dot with `center − projCenter` > 0).
 - Unit: degenerate-edge guard — partner matchers skip zero-length collapsed edges (no crash, no
   false partner).
+- Unit: flatten guard — `getFlatStripV2` on a band containing degenerate facets produces only
+  finite (non-NaN) 2D coordinates, and normal (non-degenerate) bands are unchanged.
 - Manual:
   - `fillAll` on, outlined, surfaceProjection — interiors render as proper triangle fans (one
     triangle per real facet), at divisions 0 and >0.
