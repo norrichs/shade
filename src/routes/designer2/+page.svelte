@@ -15,6 +15,7 @@
 	import HoverSidebar from '../../components/modal/HoverSidebar.svelte';
 	import { projectionConfigs } from '../../components/modal/sidebar-definitions';
 	import Toast from '../../components/Toast.svelte';
+	import BandSelectionPanel from '../../components/projection/BandSelectionPanel.svelte';
 
 	let viewMode: ViewModeSetting = $uiStore.designer.viewMode;
 
@@ -35,6 +36,7 @@
 		<ThreeRenderer>
 			<Scene />
 		</ThreeRenderer>
+		<BandSelectionPanel />
 	</section>
 	{#if $computationMode !== '3d-only'}
 		<section class={`container ${viewMode === 'pattern' ? 'primary' : 'secondary'}`}>

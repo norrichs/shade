@@ -38,7 +38,12 @@
 	import { cameraDirection } from '$lib/stores/selectionStores';
 	import type { Material } from './materials';
 
-	interactivity();
+	// Raise the click-distance tolerance: OrbitControls shares the canvas, and a
+	// touchpad tap drifts a few pixels between press and release. With the default
+	// 8px gate, that drift makes Threlte classify the tap as a drag (camera orbit)
+	// rather than a click, so facet selection never fires. 25px keeps real clicks
+	// working while still rejecting genuine drags.
+	interactivity({ clickDistanceThreshold: 25 });
 
 	const CLICK_DELTA_THRESHOLD = 10;
 

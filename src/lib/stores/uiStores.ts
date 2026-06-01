@@ -30,6 +30,11 @@ export const pausePatternUpdates = writable(false);
 // When camera is moving, we show simplified geometry for better performance
 export const isCameraInteracting = writable(false);
 
+// When true, OrbitControls is disabled so pointer events can't be claimed as camera
+// orbits — every click reaches the facet meshes for band selection/inspection.
+// Ephemeral (debug tooling); reset to false on reload so the camera is never left locked.
+export const selectModeActive = writable(false);
+
 // Manual mode: prevents auto-updates, requires explicit trigger via "Regenerate" button
 export const isManualMode = persistable<boolean>(false, 'ManualMode', AUTO_PERSIST_KEY, true);
 

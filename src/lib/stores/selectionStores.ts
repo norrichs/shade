@@ -22,6 +22,7 @@ import type {
 } from '$lib/projection-geometry/types';
 import { BufferGeometry } from 'three';
 import { partnerHighlightStore } from './partnerHighlightStore';
+import { getBandPartnerInfo, type BandPartnerInfo } from '$lib/cut-pattern/band-partner-info';
 import {
 	concatAddress_Band,
 	concatAddress_Tube,
@@ -465,6 +466,97 @@ export const selectedVoronoiSurfaceGeometry = derived(
 		const spTubes = $superGlobuleStore.voronoiResult?.surfaceProjectionTubes;
 		return buildSurfaceSelectionGeometry($selectedVoronoiSurface, spTubes, $selectMode);
 	}
+);
+
+// ---------------------------------------------------------------------------
+// Generalized band selection (works for ANY 3D geometry source)
+//
+// The per-source highlight stores above (selectedProjection /
+// selectedSurfaceProjection / selectedVoronoiSurface) drive in-scene material
+// highlighting. This section adds a source-agnostic *log* of clicked bands plus
+// a diagnostic readout of each band's end-connection partner metadata, so a
+// band's ring membership can be verified by eye + data. See
+// `band-partner-info.ts` for the partner reader.
+// ---------------------------------------------------------------------------
+
+/** Every 3D geometry source that can be rendered and clicked. */
+export type GeometrySource =
+	| 'globule' // old globule grid geometry (selectedBand)
+	| 'globuleTube'
+	| 'projection'
+	| 'surfaceProjection'
+	| 'voronoi'
+	| 'voronoiSurface';
+
+/** Resolve the `Tube[]` array backing a given geometry source. */
+export const tubesForGeometrySource = (
+	sg: SuperGlobule,
+	source: GeometrySource,
+	globule = 0
+): Tube[] | undefined => {
+	switch (source) {
+		case 'globuleTube':
+			return sg.globuleTubes;
+		case 'projection':
+			return sg.projections[globule]?.tubes;
+		case 'surfaceProjection':
+			return sg.projections[globule]?.surfaceProjectionTubes;
+		case 'voronoi':
+			return sg.voronoiResult?.tubes;
+		case 'voronoiSurface':
+			return sg.voronoiResult?.surfaceProjectionTubes;
+		case 'globule':
+			// Old globule grid is not a projection Tube[]; partner info N/A.
+			return undefined;
+	}
+};
+
+export type SelectedBandEntry = { source: GeometrySource; address: GlobuleAddress_Band };
+
+/**
+ * Ordered log of clicked bands. Appending in click order lets the user note the
+ * bands that visually form a ring, then read their partner metadata below.
+ */
+export const selectedBandLog = writable<SelectedBandEntry[]>([]);
+
+const sameBandEntry = (a: SelectedBandEntry, b: SelectedBandEntry) =>
+	a.source === b.source &&
+	a.address.globule === b.address.globule &&
+	a.address.tube === b.address.tube &&
+	a.address.band === b.address.band;
+
+/**
+ * Record a band selection from a clicked facet. Drops the facet index to a band
+ * address. Clicking an already-logged band toggles it off (so mis-clicks while
+ * tracing a ring are easy to undo).
+ */
+export const recordBandSelection = (source: GeometrySource, address: GlobuleAddress_Facet) => {
+	const entry: SelectedBandEntry = {
+		source,
+		address: { globule: address.globule, tube: address.tube, band: address.band }
+	};
+	selectedBandLog.update((log) => {
+		const existing = log.findIndex((e) => sameBandEntry(e, entry));
+		if (existing >= 0) return log.filter((_, i) => i !== existing);
+		return [...log, entry];
+	});
+};
+
+export const clearBandSelectionLog = () => selectedBandLog.set([]);
+
+export type SelectedBandLogItem = SelectedBandEntry & { info: BandPartnerInfo };
+
+/**
+ * The selection log enriched with each band's end-connection partner info,
+ * resolved against the correct tube source. Reactive to geometry regeneration.
+ */
+export const selectedBandLogInfo = derived(
+	[selectedBandLog, superGlobuleStore],
+	([$selectedBandLog, $superGlobuleStore]): SelectedBandLogItem[] =>
+		$selectedBandLog.map((entry) => {
+			const tubes = tubesForGeometrySource($superGlobuleStore, entry.source, entry.address.globule);
+			return { ...entry, info: getBandPartnerInfo(tubes, entry.address) };
+		})
 );
 
 // Camera direction store for "Rotate to selection"

@@ -21,12 +21,25 @@
 	} from '$lib/projection-geometry/types';
 	import ColorMapped from './ColorMapped.svelte';
 	import {
+		selectedProjection,
 		selectedProjectionGeometry,
 		selectedSurfaceProjection,
 		selectedSurfaceProjectionGeometry,
 		selectedVoronoiSurface,
 		selectedVoronoiSurfaceGeometry
 	} from '$lib/stores';
+	import { handleFacetSelect } from '../three-renderer/selection-helpers';
+
+	// Non-interactive visual meshes (bands, sections, the surface) must NOT
+	// participate in pointer raycasting — otherwise an opaque grey band/surface in
+	// front of a facet becomes the nearest hit, has no click handler, and swallows
+	// the click so the facet behind it can never be selected. A no-op raycast keeps
+	// these meshes visible while making only the facet meshes clickable.
+	const noRaycast = () => {};
+
+	// Stable key for {#each} blocks over facets, derived from the facet's address.
+	const facetKey = (a: GlobuleAddress_Facet) =>
+		`${a.globule}-${a.tube}-${a.band}-${a.facet}`;
 
 	let {
 		onClick,
@@ -158,7 +171,7 @@
 	<!-- // use negative y scale to match SVG coordinates -->
 	<T.Group position={[0, 0, 0]} scale={[1, 1, 1]}>
 		{#if projectionGeometry.surface}
-			<T is={projectionGeometry.surface} material={materials.selected} />
+			<T is={projectionGeometry.surface} material={materials.selected} raycast={noRaycast} />
 		{/if}
 
 		<ColorMapped
@@ -169,59 +182,73 @@
 		/>
 
 		{#if projectionGeometry.projection}
-			<T.Mesh geometry={projectionGeometry.projection} material={materials.highlightedSecondary} />
+			<T.Mesh
+				geometry={projectionGeometry.projection}
+				material={materials.highlightedSecondary}
+				raycast={noRaycast}
+			/>
 		{/if}
 		{#if projectionGeometry.surfaceProjectionFacets}
-			{#each projectionGeometry.surfaceProjectionFacets as facet}
+			{#each projectionGeometry.surfaceProjectionFacets as facet (facetKey(facet.address))}
 				<T.Mesh
 					geometry={facet.geometry}
 					material={getMaterial(facet.address, $selectedSurfaceProjectionGeometry, {
 						colorByBand
 					})}
-					onclick={(ev) => {
-						// Only process nearest intersection (front facet, not back)
-						if (ev.intersections?.[0]?.object !== ev.object) return;
-						ev.stopPropagation();
-						$selectedSurfaceProjection = facet.address;
-					}}
+					onclick={(ev) =>
+						handleFacetSelect(
+							ev,
+							'surfaceProjection',
+							facet.address,
+							(a) => ($selectedSurfaceProjection = a)
+						)}
 				/>
 			{/each}
 		{:else if projectionGeometry.surfaceProjection}
 			{#if Array.isArray(projectionGeometry.surfaceProjection)}
-				{#each projectionGeometry.surfaceProjection as band, i}
-					<T.Mesh geometry={band} material={materials.numbered[i % materials.numbered.length]} />
+				{#each projectionGeometry.surfaceProjection as band, i (band.id)}
+					<T.Mesh
+						geometry={band}
+						material={materials.numbered[i % materials.numbered.length]}
+						raycast={noRaycast}
+					/>
 				{/each}
 			{:else}
 				<T.Mesh
 					geometry={projectionGeometry.surfaceProjection}
 					material={materials.highlightedSecondary}
+					raycast={noRaycast}
 				/>
 			{/if}
 		{/if}
 		{#if showNormals && projectionGeometry.surfaceProjectionFacets}
-			{#each getSurfaceProjectionNormals($superGlobuleStore, 80) as normalGeometry}
+			{#each getSurfaceProjectionNormals($superGlobuleStore, 80) as normalGeometry (normalGeometry.id)}
 				<T.Mesh geometry={normalGeometry} material={materials.highlightedPrimary} />
 			{/each}
 		{/if}
 		{#if projectionGeometry.sections}
-			<T.Mesh geometry={projectionGeometry.sections} material={materials.numbered[4]} />
+			<T.Mesh
+				geometry={projectionGeometry.sections}
+				material={materials.numbered[4]}
+				raycast={noRaycast}
+			/>
 		{/if}
 
-		{#each projectionGeometry.bands || [] as band}
-			<T.Mesh geometry={band} material={materials.selected} />
+		{#each projectionGeometry.bands || [] as band (band.id)}
+			<T.Mesh geometry={band} material={materials.selected} raycast={noRaycast} />
 		{/each}
-		{#each projectionGeometry.facets || [] as facet}
+		{#each projectionGeometry.facets || [] as facet (facetKey(facet.address))}
 			<T.Mesh
 				geometry={facet.geometry}
 				material={getMaterial(facet.address, $selectedProjectionGeometry, {
-					colorByBand,
-					colorEndFacets
+					colorByBand
 				})}
-				onclick={(ev) => onClick(ev, facet.address)}
+				onclick={(ev) =>
+					handleFacetSelect(ev, 'projection', facet.address, (a) => selectedProjection.set(a))}
 			/>
 		{/each}
 		{#if showNormals && projectionGeometry.facets}
-			{#each projectionGeometry.facets as facet}
+			{#each projectionGeometry.facets as facet (facetKey(facet.address))}
 				<T.Mesh
 					geometry={getNormalIndicator(facet, $superGlobuleStore, { length: 80 })}
 					material={materials.highlightedPrimary}
@@ -234,28 +261,34 @@
 {#if $viewControlStore.showVoronoiGeometry.any}
 	<T.Group position={[0, 0, 0]}>
 		{#if voronoiGeometry.sections}
-			<T.Mesh geometry={voronoiGeometry.sections} material={materials.numbered[4]} />
+			<T.Mesh
+				geometry={voronoiGeometry.sections}
+				material={materials.numbered[4]}
+				raycast={noRaycast}
+			/>
 		{/if}
-		{#each voronoiGeometry.bands || [] as band}
-			<T.Mesh geometry={band} material={materials.default} />
+		{#each voronoiGeometry.bands || [] as band (band.id)}
+			<T.Mesh geometry={band} material={materials.default} raycast={noRaycast} />
 		{/each}
-		{#each voronoiGeometry.facets || [] as facet}
+		{#each voronoiGeometry.facets || [] as facet (facetKey(facet.address))}
 			<T.Mesh
 				geometry={facet.geometry}
 				material={getMaterial(facet.address, $selectedProjectionGeometry)}
-				onclick={(ev) => onClick(ev, facet.address)}
+				onclick={(ev) =>
+					handleFacetSelect(ev, 'voronoi', facet.address, (a) => selectedProjection.set(a))}
 			/>
 		{/each}
-		{#each voronoiGeometry.surfaceProjectionFacets || [] as facet}
+		{#each voronoiGeometry.surfaceProjectionFacets || [] as facet (facetKey(facet.address))}
 			<T.Mesh
 				geometry={facet.geometry}
 				material={getMaterial(facet.address, $selectedVoronoiSurfaceGeometry, { colorByBand })}
-				onclick={(ev) => {
-					// Only process nearest intersection (front facet, not back)
-					if (ev.intersections?.[0]?.object !== ev.object) return;
-					ev.stopPropagation();
-					$selectedVoronoiSurface = facet.address;
-				}}
+				onclick={(ev) =>
+					handleFacetSelect(
+						ev,
+						'voronoiSurface',
+						facet.address,
+						(a) => ($selectedVoronoiSurface = a)
+					)}
 			/>
 		{/each}
 	</T.Group>
@@ -264,20 +297,25 @@
 {#if $viewControlStore.showGlobuleTubeGeometry.any}
 	<T.Group position={[0, 0, 0]}>
 		{#if globuleTubeGeometry.sections}
-			<T.Mesh geometry={globuleTubeGeometry.sections} material={materials.numbered[4]} />
+			<T.Mesh
+				geometry={globuleTubeGeometry.sections}
+				material={materials.numbered[4]}
+				raycast={noRaycast}
+			/>
 		{/if}
-		{#each globuleTubeGeometry.bands || [] as band}
-			<T.Mesh geometry={band} material={materials.default} />
+		{#each globuleTubeGeometry.bands || [] as band (band.id)}
+			<T.Mesh geometry={band} material={materials.default} raycast={noRaycast} />
 		{/each}
-		{#each globuleTubeGeometry.facets || [] as facet}
+		{#each globuleTubeGeometry.facets || [] as facet (facetKey(facet.address))}
 			<T.Mesh
 				geometry={facet.geometry}
 				material={getMaterial(facet.address, $selectedProjectionGeometry)}
-				onclick={(ev) => onClick(ev, facet.address)}
+				onclick={(ev) =>
+					handleFacetSelect(ev, 'globuleTube', facet.address, (a) => selectedProjection.set(a))}
 			/>
 		{/each}
 		{#if showNormals && globuleTubeGeometry.facets}
-			{#each globuleTubeGeometry.facets as facet}
+			{#each globuleTubeGeometry.facets as facet (facetKey(facet.address))}
 				<T.Mesh
 					geometry={getNormalIndicator(facet, $superGlobuleStore, { length: 200 })}
 					material={materials.highlightedPrimary}
