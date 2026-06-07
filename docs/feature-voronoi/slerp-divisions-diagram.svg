@@ -1,0 +1,133 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="660" viewBox="0 0 920 660" font-family="ui-sans-serif, system-ui, sans-serif">
+  <rect width="920" height="660" fill="#fbfbfd"/>
+
+  <!-- Title -->
+  <text x="30" y="36" font-size="20" font-weight="700" fill="#1d1d1f">surfaceProjectionDivisions = 3 — one Section (one edge sample idx)</text>
+  <text x="30" y="58" font-size="13" fill="#6e6e73">slerp interpolates DIRECTIONS evenly by angle from center, then each is raycast onto the surface to choose the intersection point.</text>
+
+  <!-- ===================== Geometry panel ===================== -->
+  <!-- Surface arc (radius 440 about center 400,580) -->
+  <path d="M 180 199 A 440 440 0 0 1 620 199" fill="none" stroke="#34c759" stroke-width="3"/>
+  <text x="610" y="190" font-size="13" fill="#248a3d" font-weight="600">surface mesh</text>
+
+  <!-- Rays from center to each surface intersection -->
+  <g stroke="#c7c7cc" stroke-width="1.2">
+    <line x1="400" y1="580" x2="221.0" y2="178.0"/>
+    <line x1="400" y1="580" x2="264.0" y2="161.5"/>
+    <line x1="400" y1="580" x2="308.5" y2="149.6"/>
+    <line x1="400" y1="580" x2="354.0" y2="142.4"/>
+    <line x1="400" y1="580" x2="400.0" y2="140.0"/>
+    <line x1="400" y1="580" x2="446.0" y2="142.4"/>
+    <line x1="400" y1="580" x2="491.5" y2="149.6"/>
+    <line x1="400" y1="580" x2="536.0" y2="161.5"/>
+    <line x1="400" y1="580" x2="579.0" y2="178.0"/>
+  </g>
+
+  <!-- The three anchor rays emphasized (cA, edge, cB) -->
+  <g stroke="#ff9500" stroke-width="2.2">
+    <line x1="400" y1="580" x2="221.0" y2="178.0"/>
+    <line x1="400" y1="580" x2="400.0" y2="140.0"/>
+    <line x1="400" y1="580" x2="579.0" y2="178.0"/>
+  </g>
+
+  <!-- Chord cA->edge (what plain lerp would trace) -->
+  <line x1="221.0" y1="178.0" x2="400.0" y2="140.0" stroke="#ff3b30" stroke-width="1.4" stroke-dasharray="5 4"/>
+  <text x="250" y="150" font-size="11" fill="#d70015" transform="rotate(-12 250 150)">plain lerp chord (cuts under surface)</text>
+
+  <!-- Angular slerp fan indicator (radius 140) -->
+  <path d="M 343.1 452.1 A 140 140 0 0 1 456.9 452.1" fill="none" stroke="#0a84ff" stroke-width="1.5"/>
+  <g fill="#0a84ff">
+    <circle cx="343.1" cy="452.1" r="3"/>
+    <circle cx="356.7" cy="446.9" r="3"/>
+    <circle cx="370.9" cy="443.1" r="3"/>
+    <circle cx="385.4" cy="440.8" r="3"/>
+    <circle cx="400.0" cy="440.0" r="3"/>
+    <circle cx="414.6" cy="440.8" r="3"/>
+    <circle cx="429.1" cy="443.1" r="3"/>
+    <circle cx="443.3" cy="446.9" r="3"/>
+    <circle cx="456.9" cy="452.1" r="3"/>
+  </g>
+  <!-- t labels on the A side of the fan -->
+  <text x="349" y="474" font-size="10" fill="#0a40c0" text-anchor="middle">t=¼</text>
+  <text x="364" y="468" font-size="10" fill="#0a40c0" text-anchor="middle">t=½</text>
+  <text x="380" y="463" font-size="10" fill="#0a40c0" text-anchor="middle">t=¾</text>
+  <text x="400" y="505" font-size="11" fill="#0a84ff" text-anchor="middle" font-weight="600">equal angular steps (slerp)</text>
+
+  <!-- Projection center -->
+  <circle cx="400" cy="580" r="5" fill="#1d1d1f"/>
+  <text x="412" y="585" font-size="13" fill="#1d1d1f" font-weight="600">center</text>
+
+  <!-- Surface intersection points -->
+  <!-- anchors (orange) -->
+  <g>
+    <circle cx="221.0" cy="178.0" r="7" fill="#ff9500" stroke="#fff" stroke-width="1.5"/>
+    <circle cx="400.0" cy="140.0" r="7" fill="#ff9500" stroke="#fff" stroke-width="1.5"/>
+    <circle cx="579.0" cy="178.0" r="7" fill="#ff9500" stroke="#fff" stroke-width="1.5"/>
+  </g>
+  <!-- divisions (blue) -->
+  <g>
+    <circle cx="264.0" cy="161.5" r="6" fill="#0a84ff" stroke="#fff" stroke-width="1.5"/>
+    <circle cx="308.5" cy="149.6" r="6" fill="#0a84ff" stroke="#fff" stroke-width="1.5"/>
+    <circle cx="354.0" cy="142.4" r="6" fill="#0a84ff" stroke="#fff" stroke-width="1.5"/>
+    <circle cx="446.0" cy="142.4" r="6" fill="#0a84ff" stroke="#fff" stroke-width="1.5"/>
+    <circle cx="491.5" cy="149.6" r="6" fill="#0a84ff" stroke="#fff" stroke-width="1.5"/>
+    <circle cx="536.0" cy="161.5" r="6" fill="#0a84ff" stroke="#fff" stroke-width="1.5"/>
+  </g>
+
+  <!-- anchor labels -->
+  <text x="206" y="170" font-size="13" font-weight="700" fill="#c93400" text-anchor="end">cA</text>
+  <text x="400" y="126" font-size="13" font-weight="700" fill="#c93400" text-anchor="middle">edge</text>
+  <text x="594" y="170" font-size="13" font-weight="700" fill="#c93400">cB</text>
+  <!-- division labels -->
+  <text x="256" y="152" font-size="11" fill="#0a40c0" text-anchor="end">dA₁</text>
+  <text x="301" y="140" font-size="11" fill="#0a40c0" text-anchor="end">dA₂</text>
+  <text x="347" y="133" font-size="11" fill="#0a40c0" text-anchor="end">dA₃</text>
+  <text x="453" y="133" font-size="11" fill="#0a40c0">dB₁</text>
+  <text x="498" y="140" font-size="11" fill="#0a40c0">dB₂</text>
+  <text x="543" y="152" font-size="11" fill="#0a40c0">dB₃</text>
+
+  <!-- ===================== Side panel: array order ===================== -->
+  <rect x="650" y="80" width="248" height="470" rx="10" fill="#ffffff" stroke="#e3e3e8"/>
+  <text x="666" y="108" font-size="14" font-weight="700" fill="#1d1d1f">return { points: [...] }  (line 459)</text>
+  <text x="666" y="128" font-size="11" fill="#6e6e73">[cA, ...divA.reverse(), edge, ...divB, cB]</text>
+
+  <g font-size="12.5">
+    <text x="666" y="160" fill="#86868b">idx</text>
+    <text x="706" y="160" fill="#86868b">point</text>
+    <text x="800" y="160" fill="#86868b">source</text>
+
+    <text x="672" y="186" fill="#1d1d1f">0</text><text x="706" y="186" font-weight="700" fill="#c93400">cA</text><text x="800" y="186" fill="#6e6e73">curveA</text>
+    <text x="672" y="210" fill="#1d1d1f">1</text><text x="706" y="210" font-weight="700" fill="#0a40c0">dA₃</text><text x="800" y="210" fill="#6e6e73">t=¾</text>
+    <text x="672" y="234" fill="#1d1d1f">2</text><text x="706" y="234" font-weight="700" fill="#0a40c0">dA₂</text><text x="800" y="234" fill="#6e6e73">t=½</text>
+    <text x="672" y="258" fill="#1d1d1f">3</text><text x="706" y="258" font-weight="700" fill="#0a40c0">dA₁</text><text x="800" y="258" fill="#6e6e73">t=¼</text>
+    <text x="672" y="282" fill="#1d1d1f">4</text><text x="706" y="282" font-weight="700" fill="#c93400">edge</text><text x="800" y="282" fill="#6e6e73">edgePoints3d</text>
+    <text x="672" y="306" fill="#1d1d1f">5</text><text x="706" y="306" font-weight="700" fill="#0a40c0">dB₁</text><text x="800" y="306" fill="#6e6e73">t=¼</text>
+    <text x="672" y="330" fill="#1d1d1f">6</text><text x="706" y="330" font-weight="700" fill="#0a40c0">dB₂</text><text x="800" y="330" fill="#6e6e73">t=½</text>
+    <text x="672" y="354" fill="#1d1d1f">7</text><text x="706" y="354" font-weight="700" fill="#0a40c0">dB₃</text><text x="800" y="354" fill="#6e6e73">t=¾</text>
+    <text x="672" y="378" fill="#1d1d1f">8</text><text x="706" y="378" font-weight="700" fill="#c93400">cB</text><text x="800" y="378" fill="#6e6e73">curveB</text>
+  </g>
+
+  <!-- per-point pipeline note -->
+  <line x1="666" y1="398" x2="882" y2="398" stroke="#e3e3e8"/>
+  <text x="666" y="420" font-size="12" font-weight="700" fill="#1d1d1f">per division point (lines 440-454):</text>
+  <text x="666" y="440" font-size="11.5" fill="#3a3a3c">dir = slerp(dirCA, dirEdge, t)</text>
+  <text x="666" y="458" font-size="11.5" fill="#3a3a3c">hit = intersect(dir)   // ray onto surface</text>
+  <text x="666" y="476" font-size="11.5" fill="#3a3a3c">if (hit) divA.push(hit)</text>
+  <text x="666" y="500" font-size="11" fill="#6e6e73">slerp keeps it unit-length &amp; angularly even,</text>
+  <text x="666" y="516" font-size="11" fill="#6e6e73">so re-projected points sit ON the surface,</text>
+  <text x="666" y="532" font-size="11" fill="#6e6e73">evenly spaced — not on the lerp chord.</text>
+
+  <!-- ===================== Legend ===================== -->
+  <g>
+    <circle cx="40" cy="600" r="7" fill="#ff9500"/>
+    <text x="54" y="605" font-size="12.5" fill="#1d1d1f">anchors reused from the line-347 loop (cA, edge, cB)</text>
+    <circle cx="40" cy="624" r="6" fill="#0a84ff"/>
+    <text x="54" y="629" font-size="12.5" fill="#1d1d1f">NEW points: slerp direction + raycast onto surface</text>
+  </g>
+
+  <!-- ordering flag -->
+  <rect x="470" y="585" width="428" height="58" rx="8" fill="#fff8e6" stroke="#ffd60a"/>
+  <text x="486" y="606" font-size="11.5" font-weight="700" fill="#9a6700">⚠ ordering: divA is reversed, divB is not</text>
+  <text x="486" y="624" font-size="10.5" fill="#9a6700">A-side ends up cA, dA₃, dA₂, dA₁, edge (closest-to-edge first) while the</text>
+  <text x="486" y="638" font-size="10.5" fill="#9a6700">B-side runs edge, dB₁, dB₂, dB₃, cB. Worth confirming the reverse is intended.</text>
+</svg>

@@ -1,4 +1,12 @@
-import { Mesh, Object3D, SphereGeometry, MeshBasicMaterial, DoubleSide, Triangle, Vector3 } from 'three';
+import {
+	Mesh,
+	Object3D,
+	SphereGeometry,
+	MeshBasicMaterial,
+	DoubleSide,
+	Triangle,
+	Vector3
+} from 'three';
 import type { VoronoiConfig } from '../types';
 import type { GlobuleAddress } from '$lib/projection-geometry/types';
 import type { Band, Facet, FacetOrientation } from '$lib/types';
@@ -65,38 +73,27 @@ jest.mock('$lib/projection-geometry/generate-projection', () => {
 			}
 		),
 
-		getEdge: jest.fn(
-			(edgeType: string, parity: string | number, orientation: string) => {
-				const EDGE_MAP: Record<string, Record<string, Record<string, string>>> = {
-					'axial-right': {
-						even: { base: 'ab', second: 'bc', outer: 'ac' },
-						odd: { base: 'bc', second: 'ab', outer: 'ac' }
-					},
-					'axial-left': {
-						even: { base: 'ab', second: 'ac', outer: 'bc' },
-						odd: { base: 'ac', second: 'ab', outer: 'bc' }
-					},
-					circumferential: {
-						even: { base: 'ac', second: 'bc', outer: 'ab' },
-						odd: { base: 'bc', second: 'ac', outer: 'ab' }
-					}
-				};
-				const p =
-					typeof parity === 'number'
-						? parity % 2 === 0
-							? 'even'
-							: 'odd'
-						: parity;
-				return EDGE_MAP[orientation]?.[p]?.[edgeType] ?? 'ab';
-			}
-		),
+		getEdge: jest.fn((edgeType: string, parity: string | number, orientation: string) => {
+			const EDGE_MAP: Record<string, Record<string, Record<string, string>>> = {
+				'axial-right': {
+					even: { base: 'ab', second: 'bc', outer: 'ac' },
+					odd: { base: 'bc', second: 'ab', outer: 'ac' }
+				},
+				'axial-left': {
+					even: { base: 'ab', second: 'ac', outer: 'bc' },
+					odd: { base: 'ac', second: 'ab', outer: 'bc' }
+				},
+				circumferential: {
+					even: { base: 'ac', second: 'bc', outer: 'ab' },
+					odd: { base: 'bc', second: 'ac', outer: 'ab' }
+				}
+			};
+			const p = typeof parity === 'number' ? (parity % 2 === 0 ? 'even' : 'odd') : parity;
+			return EDGE_MAP[orientation]?.[p]?.[edgeType] ?? 'ab';
+		}),
 
 		getEdgeMatchedTriangles: jest.fn(
-			(
-				t0: typeof Triangle.prototype,
-				t1: typeof Triangle.prototype,
-				_edgeToMatch?: string
-			) => {
+			(t0: typeof Triangle.prototype, t1: typeof Triangle.prototype, _edgeToMatch?: string) => {
 				const PRECISION = 1 / 10_000;
 				const isSame = (v0: Vector3, v1: Vector3) =>
 					Math.abs(v0.x - v1.x) < PRECISION &&
@@ -248,5 +245,33 @@ describe('makeVoronoi', () => {
 		expect(facet.triangle.a).toBeDefined();
 		expect(facet.triangle.b).toBeDefined();
 		expect(facet.triangle.c).toBeDefined();
+	});
+
+	// Regression: a surfaceProjection section's profile (cA -> divA -> edge -> divB -> cB) must not
+	// fold back on itself. A fold-back makes generateProjectionBands emit overlapping bands
+	// (z-fighting), which happens at surfaceProjectionDivisions >= 2 when the cA-side division list
+	// is reversed. We measure the turn between consecutive profile segments: a benign bend (e.g. the
+	// ~95deg kink at the edge centerline) keeps the direction dot well above -0.5, whereas the
+	// reversal bug produces a ~180deg fold-back with a dot of -1. Threshold -0.5 (no turn sharper
+	// than 120deg) separates the two with large margin in both directions.
+	it('surfaceProjection sections do not fold back (no band overlap with divisions)', () => {
+		const address: GlobuleAddress = { globule: 0 };
+		const config: VoronoiConfig = { ...makeTestConfig(), surfaceProjectionDivisions: 3 };
+		const result = makeVoronoi(config, address, testSurfaceConfig);
+
+		expect(result.surfaceProjectionTubes.length).toBeGreaterThan(0);
+
+		result.surfaceProjectionTubes.forEach((tube) => {
+			tube.sections.forEach((section) => {
+				const pts = section.points;
+				for (let i = 2; i < pts.length; i++) {
+					const a = pts[i - 1].clone().sub(pts[i - 2]);
+					const b = pts[i].clone().sub(pts[i - 1]);
+					if (a.lengthSq() < 1e-12 || b.lengthSq() < 1e-12) continue;
+					const fold = a.normalize().dot(b.normalize());
+					expect(fold).toBeGreaterThan(-0.5);
+				}
+			});
+		});
 	});
 });

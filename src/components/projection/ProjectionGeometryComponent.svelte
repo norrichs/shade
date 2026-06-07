@@ -44,7 +44,7 @@
 	let {
 		onClick,
 		showNormals = false,
-		colorByBand = false
+		colorByBand = true
 	}: {
 		onClick: (event: any, address: GlobuleAddress_Facet) => void;
 		showNormals?: boolean;
@@ -281,7 +281,7 @@
 		{#each voronoiGeometry.surfaceProjectionFacets || [] as facet (facetKey(facet.address))}
 			<T.Mesh
 				geometry={facet.geometry}
-				material={getMaterial(facet.address, $selectedVoronoiSurfaceGeometry, { colorByBand })}
+				material={getMaterial(facet.address, $selectedVoronoiSurfaceGeometry, { zebraStriped: true })}
 				onclick={(ev) =>
 					handleFacetSelect(
 						ev,

@@ -56,11 +56,16 @@ const colorList: ThreeColor[] = [
 
 // Use Standard material for numbered colors (better performance)
 const numbered = colorList.map((color) => {
-	return new MeshStandardMaterial({ ...defaultStandardMaterialConfig, color });
+	return new MeshStandardMaterial({ ...defaultStandardMaterialConfig, opacity: 0.9, color });
 });
+
+const striped = ['magenta', 'cyan'].map((color) => {
+	return new MeshStandardMaterial({ ...defaultStandardMaterialConfig, opacity: 0.9, color})
+})
 
 export const materials = {
 	numbered,
+	striped,
 	// Use Standard material for default (5-8% faster rendering)
 	default: new MeshStandardMaterial({
 		color: theme.colorDefault,
@@ -134,10 +139,12 @@ export type Material = keyof typeof materials;
 
 export type MaterialSelectionConfig = {
 	colorByBand?: boolean;
+	zebraStriped?: boolean;
 };
 
 const defaultMaterialSelectionConfig: MaterialSelectionConfig = {
-	colorByBand: false
+	colorByBand: false,
+	zebraStriped: false
 };
 
 export const getMaterial = (
@@ -145,8 +152,6 @@ export const getMaterial = (
 	selectedGeometry: SelectedProjectionGeometry,
 	config: MaterialSelectionConfig = defaultMaterialSelectionConfig
 ) => {
-	const { colorByBand } = config;
-
 	if (!selectedGeometry?.selected) return materials.default;
 
 	if (selectedGeometry.isSelected(address)) return materials.selected;
@@ -157,7 +162,8 @@ export const getMaterial = (
 
 	if (selectedGeometry.isEndPartner(address)) return materials.numbered[1];
 
-	if (colorByBand) return materials.numbered[address.band];
+	if (config.colorByBand) return materials.numbered[address.band];
+	if (config.zebraStriped) return materials.striped[address.band % 2]
 
 	return materials.default;
 };

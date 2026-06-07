@@ -425,7 +425,7 @@ export function makeVoronoi(
 
 		tubes.push(tube);
 
-		// Surface projection: [curveA, ...divA_reversed, edge, ...divB, curveB]
+		// Surface projection: [curveA, ...divA, edge, ...divB, curveB]
 		const spTubeAddress: GlobuleAddress_Tube = { ...address, tube: surfaceProjectionTubes.length };
 		const spDivisions = config.surfaceProjectionDivisions ?? 0;
 		const spSections: Section[] = edgePoints3d.map((edgePoint, idx): Section => {
@@ -456,7 +456,11 @@ export function makeVoronoi(
 			}
 
 			return {
-				points: [cA.clone(), ...divA.reverse(), edgePoint.clone(), ...divB, cB.clone()]
+				// divA is already ordered cA -> edge by the slerp above; do NOT reverse it (that
+				// inverts the cA-side ordering and makes the band profile fold back on itself,
+				// producing overlapping bands at surfaceProjectionDivisions >= 2). divB is likewise
+				// built edge -> cB and left un-reversed.
+				points: [cA.clone(), ...divA, edgePoint.clone(), ...divB, cB.clone()]
 			};
 		});
 
