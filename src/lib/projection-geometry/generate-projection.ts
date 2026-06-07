@@ -471,7 +471,8 @@ export const generateProjection = ({
 	const tempVec = new Vector3();
 
 	const spDivisionsCount = projectionConfig.surfaceProjectionConfig?.divisions ?? 0;
-	const divRaycaster = spDivisionsCount > 0 ? new Raycaster(undefined, undefined, undefined, 2000) : null;
+	const divRaycaster =
+		spDivisionsCount > 0 ? new Raycaster(undefined, undefined, undefined, 2000) : null;
 	const divDirection = spDivisionsCount > 0 ? new Vector3() : null;
 
 	// Cache for cross-section definition points (optimization)

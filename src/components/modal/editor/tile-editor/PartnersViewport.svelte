@@ -152,10 +152,7 @@
 	const ROLE_FILL_CROSS_TUBE_TOP = 'rgba(0, 200, 0, 0.1)';
 	const ROLE_FILL_CROSS_TUBE_BOTTOM = 'rgba(220, 0, 0, 0.1)';
 
-	const fillFor = (
-		role: PartnerRole | 'base',
-		partner: ResolvedPartner | null
-	): string => {
+	const fillFor = (role: PartnerRole | 'base', partner: ResolvedPartner | null): string => {
 		if (role === 'base') return ROLE_FILL.base;
 		if (partner?.ruleSet === 'partner.endEnd') return ROLE_FILL_CROSS_TUBE_TOP;
 		if (partner?.ruleSet === 'partner.startEnd') return ROLE_FILL_CROSS_TUBE_BOTTOM;
@@ -236,11 +233,7 @@
 		new Map(
 			partnersList.map((p) => [
 				p.role,
-				verticesWithOriginalRefs(
-					p.originalPath,
-					p.path,
-					removedSetFor(p.path, p.originalPath)
-				)
+				verticesWithOriginalRefs(p.originalPath, p.path, removedSetFor(p.path, p.originalPath))
 			])
 		)
 	);
@@ -271,7 +264,10 @@
 		y2: number;
 	};
 
-	const connectionsFor = (rules: IndexPair[], partner: ResolvedPartner | null): ConnectionLine[] => {
+	const connectionsFor = (
+		rules: IndexPair[],
+		partner: ResolvedPartner | null
+	): ConnectionLine[] => {
 		if (!partner) return [];
 		const pVerts = partnerVertices.get(partner.role) ?? [];
 		const out: ConnectionLine[] = [];
@@ -303,8 +299,12 @@
 
 	const allConnections = $derived.by(() => {
 		const out: ConnectionLine[] = [];
-		if (tTop) out.push(...connectionsFor(tTop.ruleSet === 'withinBand' ? withinBand : partnerEndEnd, tTop));
-		if (tBottom) out.push(...connectionsFor(tBottom.ruleSet === 'withinBand' ? withinBand : partnerStartEnd, tBottom));
+		if (tTop)
+			out.push(...connectionsFor(tTop.ruleSet === 'withinBand' ? withinBand : partnerEndEnd, tTop));
+		if (tBottom)
+			out.push(
+				...connectionsFor(tBottom.ruleSet === 'withinBand' ? withinBand : partnerStartEnd, tBottom)
+			);
 		if (tLeft) out.push(...connectionsFor(acrossBands, tLeft));
 		if (tRight) out.push(...connectionsFor(acrossBands, tRight));
 		return out;
@@ -336,10 +336,7 @@
 	const ROLE_LABEL_CROSS_TOP = 'rgb(0, 140, 0)';
 	const ROLE_LABEL_CROSS_BOTTOM = 'rgb(180, 0, 0)';
 
-	const labelColorFor = (
-		role: PartnerRole | 'base',
-		partner: ResolvedPartner | null
-	): string => {
+	const labelColorFor = (role: PartnerRole | 'base', partner: ResolvedPartner | null): string => {
 		if (role === 'base') return ROLE_LABEL_COLOR.base;
 		if (partner?.ruleSet === 'partner.endEnd') return ROLE_LABEL_CROSS_TOP;
 		if (partner?.ruleSet === 'partner.startEnd') return ROLE_LABEL_CROSS_BOTTOM;
@@ -398,7 +395,11 @@
 			if ((e.key === 'Delete' || e.key === 'Backspace') && selectedConnection) {
 				const partner = partnersList.find((p) => p.role === selectedConnection!.partnerRole);
 				if (partner) {
-					onDeleteConnection(partner, selectedConnection.baseVertex, selectedConnection.partnerVertex);
+					onDeleteConnection(
+						partner,
+						selectedConnection.baseVertex,
+						selectedConnection.partnerVertex
+					);
 					selectedConnection = null;
 				}
 			}
@@ -412,7 +413,8 @@
 <div class="container" style:width="{size.width}px" style:height="{size.height}px">
 	<svg width={size.width} height={size.height} {viewBox} class="canvas">
 		<polygon
-			points="{tBaseQuad.a.x},{tBaseQuad.a.y} {tBaseQuad.b.x},{tBaseQuad.b.y} {tBaseQuad.c.x},{tBaseQuad.c.y} {tBaseQuad.d.x},{tBaseQuad.d.y}"
+			points="{tBaseQuad.a.x},{tBaseQuad.a.y} {tBaseQuad.b.x},{tBaseQuad.b.y} {tBaseQuad.c
+				.x},{tBaseQuad.c.y} {tBaseQuad.d.x},{tBaseQuad.d.y}"
 			style:fill={fillFor('base', null)}
 			stroke="rgba(0,0,0,0.15)"
 			stroke-width={0.2 * scale}
@@ -420,7 +422,8 @@
 		/>
 		{#each partnersList as p (p.role)}
 			<polygon
-				points="{p.quad.a.x},{p.quad.a.y} {p.quad.b.x},{p.quad.b.y} {p.quad.c.x},{p.quad.c.y} {p.quad.d.x},{p.quad.d.y}"
+				points="{p.quad.a.x},{p.quad.a.y} {p.quad.b.x},{p.quad.b.y} {p.quad.c.x},{p.quad.c.y} {p
+					.quad.d.x},{p.quad.d.y}"
 				style:fill={fillFor(p.role, p)}
 				stroke="rgba(0,0,0,0.1)"
 				stroke-width={0.2 * scale}
@@ -433,7 +436,7 @@
 				d={svgPathStringFromSegments(tBaseOriginal)}
 				fill="none"
 				stroke={originalStrokeFor('base', null)}
-				style:stroke-width="{0.4 * scale}"
+				style:stroke-width={0.4 * scale}
 			/>
 		{/if}
 		{#each partnersList as p (p.role + ':orig')}
@@ -442,7 +445,7 @@
 					d={svgPathStringFromSegments(p.originalPath)}
 					fill="none"
 					stroke={originalStrokeFor(p.role, p)}
-					style:stroke-width="{0.4 * scale}"
+					style:stroke-width={0.4 * scale}
 				/>
 			{/if}
 		{/each}
@@ -451,14 +454,14 @@
 			d={svgPathStringFromSegments(tBasePath)}
 			fill="none"
 			stroke="black"
-			style:stroke-width="{0.4 * scale}"
+			style:stroke-width={0.4 * scale}
 		/>
 		{#each partnersList as p (p.role + ':path')}
 			<path
 				d={svgPathStringFromSegments(p.path)}
 				fill="none"
 				stroke="black"
-				style:stroke-width="{0.4 * scale}"
+				style:stroke-width={0.4 * scale}
 			/>
 		{/each}
 
@@ -483,8 +486,7 @@
 					})}
 				onmouseenter={() => {
 					const matches = allConnections.filter(
-						(c) =>
-							c.x1 === conn.x1 && c.y1 === conn.y1 && c.x2 === conn.x2 && c.y2 === conn.y2
+						(c) => c.x1 === conn.x1 && c.y1 === conn.y1 && c.x2 === conn.x2 && c.y2 === conn.y2
 					);
 					onHoverLine?.(matches.map((c) => ruleKey(c.target, c.source)));
 				}}
@@ -499,7 +501,7 @@
 				r={0.5 * scale}
 				class="base-vertex"
 				class:selected={selectedBaseVertex === v}
-				style:stroke-width="{0.15 * scale}"
+				style:stroke-width={0.15 * scale}
 				onclick={() => handleBaseVertexClick(v)}
 				onmouseenter={() => tooltipFor(v, labelColorFor('base', null))}
 				onmouseleave={clearTooltip}
@@ -512,7 +514,7 @@
 					cy={v.y}
 					r={0.5 * scale}
 					class="partner-vertex"
-					style:stroke-width="{0.15 * scale}"
+					style:stroke-width={0.15 * scale}
 					onclick={() => handlePartnerVertexClick(p, v)}
 					onmouseenter={() => tooltipFor(v, labelColorFor(p.role, p))}
 					onmouseleave={clearTooltip}
@@ -558,8 +560,14 @@
 	{#if tooltip}
 		<div
 			class="tooltip"
-			style:left="{((tooltip.x + parseFloat(viewBox.split(' ')[2]) / 2) / parseFloat(viewBox.split(' ')[2])) * size.width + 8}px"
-			style:top="{((tooltip.y + parseFloat(viewBox.split(' ')[3]) / 2) / parseFloat(viewBox.split(' ')[3])) * size.height + 8}px"
+			style:left="{((tooltip.x + parseFloat(viewBox.split(' ')[2]) / 2) /
+				parseFloat(viewBox.split(' ')[2])) *
+				size.width +
+				8}px"
+			style:top="{((tooltip.y + parseFloat(viewBox.split(' ')[3]) / 2) /
+				parseFloat(viewBox.split(' ')[3])) *
+				size.height +
+				8}px"
 			style:border-left-color={tooltip.color}
 		>
 			{tooltip.indices.join(', ')}

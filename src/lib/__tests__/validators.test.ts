@@ -1,9 +1,5 @@
 import { migrateGlobulePatternConfig } from '../validators';
-import type {
-	GlobulePatternConfig,
-	OutlinedPatternConfig,
-	TiledPatternConfig
-} from '../types';
+import type { GlobulePatternConfig, OutlinedPatternConfig, TiledPatternConfig } from '../types';
 
 // Minimal stub for a TiledPatternConfig - only the fields the migration touches matter.
 const makeTiledConfig = (labels: unknown): TiledPatternConfig =>

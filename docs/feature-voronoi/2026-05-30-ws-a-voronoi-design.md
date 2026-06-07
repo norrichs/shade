@@ -44,7 +44,7 @@ control component), so they ship as one workstream.
 - `src/components/controls/VoronoiControl.svelte` — config UI with add/remove buttons,
   mounted via SelectBar option "Voronoi" (`src/routes/designer2/+page.svelte:55,73-74`).
 
-> Confirmed: multiple configs currently *do* render independently (each produces its own
+> Confirmed: multiple configs currently _do_ render independently (each produces its own
 > `voronoiResult`). Collapsing to one is a real behavior change, accepted.
 
 ---
@@ -59,9 +59,9 @@ control component), so they ship as one workstream.
 export type SeedMethod = CenterProjectionSeedMethod | AreaWeightedSeedMethod;
 
 export type AreaWeightedSeedMethod = {
-  type: 'areaWeighted';
-  pointCount: number;
-  seed: number;
+	type: 'areaWeighted';
+	pointCount: number;
+	seed: number;
 };
 ```
 
@@ -85,7 +85,7 @@ geometry. `makeVoronoi` builds the surface mesh used by `intersect`; expose its 
 list and thread it in:
 
 ```ts
-generateSeeds(method, center, intersect, surfaceTriangles)
+generateSeeds(method, center, intersect, surfaceTriangles);
 ```
 
 `centerProjection` ignores `surfaceTriangles`; `areaWeighted` ignores `intersect`. Pull the

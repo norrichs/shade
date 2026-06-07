@@ -12,14 +12,14 @@
 
 ## File Structure
 
-| File | Create/Modify | Responsibility |
-|------|---------------|----------------|
-| `src/lib/types.ts` | Modify (`OutlinedTabConfig` ~623-629) | Add `tabLayout?: 'inner' \| 'outer'` field. |
-| `src/lib/cut-pattern/seam-tab-layout.ts` | Create | PURE functions: `centerSeamIndex(bandCount)`, `seamTabOwner(seamIndex, bandCount, layout, bandEdge)`. No Three.js imports. |
-| `src/lib/cut-pattern/__tests__/seam-tab-layout.test.ts` | Create | Unit tests for the two pure functions, incl. the worked example and inner/outer mirror. |
-| `src/lib/cut-pattern/generate-outlined-pattern.ts` | Modify (`shouldHaveTab` ~348, `buildOutlinePath` ~383, `generateOutlinedBandPattern` ~442, `generateOutlinedTubePattern` ~554) | Thread `bandIndex`/`bandCount`; branch `shouldHaveTab` on `tabConfig.tabLayout`. |
-| `src/lib/cut-pattern/__tests__/shouldHaveTab-tab-layout.test.ts` | Create | Unit tests for the exported `shouldHaveTab` wrapper across a 6-band tube, plus the undefined-layout regression. |
-| `src/components/controls/TilingControl.svelte` | Modify (~150-167) | Add an inner/outer selector next to the existing Band Edge Tabs select. |
+| File                                                             | Create/Modify                                                                                                                  | Responsibility                                                                                                             |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| `src/lib/types.ts`                                               | Modify (`OutlinedTabConfig` ~623-629)                                                                                          | Add `tabLayout?: 'inner' \| 'outer'` field.                                                                                |
+| `src/lib/cut-pattern/seam-tab-layout.ts`                         | Create                                                                                                                         | PURE functions: `centerSeamIndex(bandCount)`, `seamTabOwner(seamIndex, bandCount, layout, bandEdge)`. No Three.js imports. |
+| `src/lib/cut-pattern/__tests__/seam-tab-layout.test.ts`          | Create                                                                                                                         | Unit tests for the two pure functions, incl. the worked example and inner/outer mirror.                                    |
+| `src/lib/cut-pattern/generate-outlined-pattern.ts`               | Modify (`shouldHaveTab` ~348, `buildOutlinePath` ~383, `generateOutlinedBandPattern` ~442, `generateOutlinedTubePattern` ~554) | Thread `bandIndex`/`bandCount`; branch `shouldHaveTab` on `tabConfig.tabLayout`.                                           |
+| `src/lib/cut-pattern/__tests__/shouldHaveTab-tab-layout.test.ts` | Create                                                                                                                         | Unit tests for the exported `shouldHaveTab` wrapper across a 6-band tube, plus the undefined-layout regression.            |
+| `src/components/controls/TilingControl.svelte`                   | Modify (~150-167)                                                                                                              | Add an inner/outer selector next to the existing Band Edge Tabs select.                                                    |
 
 ---
 
@@ -41,12 +41,14 @@
 ## Resolved definitions (concrete)
 
 ### `centerSeamIndex(bandCount: number): number`
+
 Seam `i` (0-based, `i ∈ 0..bandCount-2`) sits between bands `i` and `i+1` at position `i + 0.5`. Tube center = `(bandCount - 1) / 2`.
 
 - **Even `bandCount`** (e.g. 6): single middle seam at `bandCount/2 - 1` (6 → 2, between bands 2 and 3).
-- **Odd `bandCount`** (e.g. 5): there is a center *band* `(bandCount-1)/2`, and the two seams flanking it tie at distance 0.5. **Tie-break: pick the LOWER seam index.** Lower seam = `(bandCount-1)/2 - 1`. For `bandCount=5`: lower of seams 1 and 2 → `1`.
+- **Odd `bandCount`** (e.g. 5): there is a center _band_ `(bandCount-1)/2`, and the two seams flanking it tie at distance 0.5. **Tie-break: pick the LOWER seam index.** Lower seam = `(bandCount-1)/2 - 1`. For `bandCount=5`: lower of seams 1 and 2 → `1`.
 
 Both branches reduce to the same closed form: `Math.floor((bandCount - 1) / 2) - (bandCount % 2 === 0 ? 0 : 1) ... ` — DO NOT use a cute one-liner. Implement with an explicit `if (bandCount % 2 === 0)` branch for readability and so each branch is independently tested:
+
 ```ts
 export const centerSeamIndex = (bandCount: number): number => {
 	if (bandCount < 2) return -1; // no seams exist
@@ -56,9 +58,11 @@ export const centerSeamIndex = (bandCount: number): number => {
 	return centerBand - 1;
 };
 ```
+
 Verification table (tested): `N=2 → 0`, `N=3 → 0`, `N=4 → 1`, `N=5 → 1`, `N=6 → 2`.
 
 ### `seamTabOwner(seamIndex, bandCount, layout, bandEdge): { band: number; edge: 'before' | 'after' } | { band: number; edge: 'before' | 'after' }[]`
+
 For seam `s` between bands `s` and `s+1`:
 
 - **Center seam** (`s === centerSeamIndex(bandCount)`): allocate per `bandEdge`:
@@ -77,6 +81,7 @@ For seam `s` between bands `s` and `s+1`:
 Return type: a single owner or an array (only `beforeAndAfter` center yields an array). For uniform handling, ALWAYS return `Array<{ band; edge }>` (0, 1, or 2 entries). This keeps the consumer (`shouldHaveTab`) simple: "does any owner equal (this band, this edge)?".
 
 **Worked example check (`before` + `inner`, `N=6`, centerSeam=2), verified:**
+
 - seam0 → nearer=band1 → `{band:1, edge:'before'}`
 - seam1 → nearer=band2 → `{band:2, edge:'before'}`
 - seam2 (center, before) → `{band:3, edge:'before'}`
@@ -86,7 +91,9 @@ Return type: a single owner or an array (only `beforeAndAfter` center yields an 
 Per-band tabs: band0 none; band1 before; band2 before; band3 before+after; band4 after; band5 none. **Matches the spec example exactly.**
 
 ### `shouldHaveTab` integration (`before`/`after` edges only; `end` unchanged)
+
 When `tabConfig.tabLayout` is set, for a `before`/`after` edge of band `b` in a tube of `bandCount` bands:
+
 1. Map edge → seam:
    - `before` edge of band `b` → seam `b - 1` (shared with band `b-1`); valid only if `b > 0`.
    - `after` edge of band `b` → seam `b` (shared with band `b+1`); valid only if `b < bandCount - 1`.
@@ -100,6 +107,7 @@ When `tabConfig.tabLayout` is undefined → existing logic verbatim (regression)
 ## Task 1: Add `tabLayout` to `OutlinedTabConfig`
 
 **Files:**
+
 - Modify: `src/lib/types.ts:623-629`
 - Test: covered indirectly by Task 2/4 (a type-only field needs no dedicated runtime test); verify via `npm run check`.
 
@@ -126,10 +134,12 @@ When `tabConfig.tabLayout` is undefined → existing logic verbatim (regression)
 ## Task 2: PURE `centerSeamIndex` (TDD)
 
 **Files:**
+
 - Create: `src/lib/cut-pattern/seam-tab-layout.ts`
 - Test: `src/lib/cut-pattern/__tests__/seam-tab-layout.test.ts`
 
 - [ ] Write failing test file `src/lib/cut-pattern/__tests__/seam-tab-layout.test.ts`:
+
   ```ts
   import { centerSeamIndex } from '../seam-tab-layout';
 
@@ -149,6 +159,7 @@ When `tabConfig.tabLayout` is undefined → existing logic verbatim (regression)
   	});
   });
   ```
+
 - [ ] Run: `npm run test:unit -- src/lib/cut-pattern/__tests__/seam-tab-layout.test.ts` — expected: FAIL (module `../seam-tab-layout` does not exist / `centerSeamIndex` undefined).
 - [ ] Create `src/lib/cut-pattern/seam-tab-layout.ts` with ONLY `centerSeamIndex`:
   ```ts
@@ -182,14 +193,18 @@ When `tabConfig.tabLayout` is undefined → existing logic verbatim (regression)
 ## Task 3: PURE `seamTabOwner` (TDD)
 
 **Files:**
+
 - Modify: `src/lib/cut-pattern/seam-tab-layout.ts`
 - Test: `src/lib/cut-pattern/__tests__/seam-tab-layout.test.ts` (append)
 
 - [ ] Append failing tests to `seam-tab-layout.test.ts`. Add `seamTabOwner` to the import:
+
   ```ts
   import { centerSeamIndex, seamTabOwner } from '../seam-tab-layout';
   ```
+
   Then add:
+
   ```ts
   describe('seamTabOwner', () => {
   	// Worked example from the spec: before + inner, 6 bands (centerSeam = 2).
@@ -248,8 +263,10 @@ When `tabConfig.tabLayout` is undefined → existing logic verbatim (regression)
   	});
   });
   ```
+
 - [ ] Run: `npm run test:unit -- src/lib/cut-pattern/__tests__/seam-tab-layout.test.ts` — expected: FAIL (`seamTabOwner` undefined).
 - [ ] Append implementation to `seam-tab-layout.ts`:
+
   ```ts
   import type { TabEdgeOption } from '$lib/types';
 
@@ -293,7 +310,9 @@ When `tabConfig.tabLayout` is undefined → existing logic verbatim (regression)
   	return [{ band: owner, edge }];
   };
   ```
+
   Note: `centerSeamIndex` is already defined above in this file, so the reference resolves. The `import type { TabEdgeOption }` belongs at the TOP of the file — when editing, hoist it above `centerSeamIndex`.
+
 - [ ] Run: `npm run test:unit -- src/lib/cut-pattern/__tests__/seam-tab-layout.test.ts` — expected: PASS.
 - [ ] Run: `npm run check` — expected: no new errors.
 - [ ] Commit:
@@ -307,12 +326,14 @@ When `tabConfig.tabLayout` is undefined → existing logic verbatim (regression)
 ## Task 4: Export `shouldHaveTab` and branch it on `tabLayout` (TDD)
 
 **Files:**
+
 - Modify: `src/lib/cut-pattern/generate-outlined-pattern.ts` (`shouldHaveTab` ~348-374; add `bandIndex`/`bandCount` params)
 - Test: `src/lib/cut-pattern/__tests__/shouldHaveTab-tab-layout.test.ts`
 
 `shouldHaveTab` is currently module-private. To unit-test it we must export it AND extend its signature to accept `bandIndex` and `bandCount`. The existing OutlineEdge type already carries `side`. We build minimal `OutlineEdge`-shaped objects in tests (only `side`, plus dummy `start/end/interiorPoint` Vector3 to satisfy the type).
 
 - [ ] Write failing test `src/lib/cut-pattern/__tests__/shouldHaveTab-tab-layout.test.ts`:
+
   ```ts
   import { Vector3 } from 'three';
   import { shouldHaveTab } from '../generate-outlined-pattern';
@@ -360,9 +381,9 @@ When `tabConfig.tabLayout` is undefined → existing logic verbatim (regression)
 
   	it('returns false on an edge whose side lacks a partner', () => {
   		// band1 before would be true, but no before partner => no seam => no tab.
-  		expect(
-  			shouldHaveTab(edge('before'), conf, { after: true, before: false }, 0, 1, 6)
-  		).toBe(false);
+  		expect(shouldHaveTab(edge('before'), conf, { after: true, before: false }, 0, 1, 6)).toBe(
+  			false
+  		);
   	});
   });
 
@@ -385,18 +406,20 @@ When `tabConfig.tabLayout` is undefined → existing logic verbatim (regression)
   	});
   	it('respects hasPartners when layout undefined', () => {
   		const conf = cfg({ bandEdge: 'before' });
-  		expect(
-  			shouldHaveTab(edge('before'), conf, { after: true, before: false }, 0, 2, 6)
-  		).toBe(false);
+  		expect(shouldHaveTab(edge('before'), conf, { after: true, before: false }, 0, 2, 6)).toBe(
+  			false
+  		);
   	});
   });
   ```
+
 - [ ] Run: `npm run test:unit -- src/lib/cut-pattern/__tests__/shouldHaveTab-tab-layout.test.ts` — expected: FAIL (`shouldHaveTab` not exported / wrong arity).
 - [ ] Edit `generate-outlined-pattern.ts`. Add an import near the top (after the existing imports, line ~31):
   ```ts
   import { seamTabOwner } from './seam-tab-layout';
   ```
 - [ ] Replace the `shouldHaveTab` definition (lines 348-374) with the exported, extended version. The `before`/`after` legacy branches stay byte-identical when `tabConfig.tabLayout` is undefined; a new layout-aware branch runs first when set. `end` branch unchanged. New `bandIndex`/`bandCount` params are appended (optional with safe defaults so the `end` path and any other callers are unaffected):
+
   ```ts
   export const shouldHaveTab = (
   	edge: OutlineEdge,
@@ -435,7 +458,9 @@ When `tabConfig.tabLayout` is undefined → existing logic verbatim (regression)
   	return false;
   };
   ```
+
   Note: the legacy branch preserves the original `hasPartners[side] && (bandEdge match)` semantics — we hoisted the `!hasPartners[side] return false` guard so both legacy and layout paths share it, which is equivalent to the original (original returned `hasPartners.X && (...)`).
+
 - [ ] Run: `npm run test:unit -- src/lib/cut-pattern/__tests__/shouldHaveTab-tab-layout.test.ts` — expected: PASS.
 - [ ] Run the existing outlined tests to confirm no regression: `npm run test:unit -- src/lib/cut-pattern/__tests__/collect-outlined-band-tabs.test.ts` — expected: PASS (this file does not call `shouldHaveTab` directly but exercises the module; confirms no import/break).
 - [ ] Run: `npm run check` — expected: no new errors.
@@ -450,6 +475,7 @@ When `tabConfig.tabLayout` is undefined → existing logic verbatim (regression)
 ## Task 5: Thread `bandCount`/`bandIndex` through the call chain
 
 **Files:**
+
 - Modify: `src/lib/cut-pattern/generate-outlined-pattern.ts` (`buildOutlinePath` ~383-437; `generateOutlinedBandPattern` ~442-461; `generateOutlinedTubePattern` ~574-585)
 - Test: covered by existing tests + `npm run check`; the wiring is exercised end-to-end in Task 6 manual verify. No new unit test (the decision logic is already fully tested in Task 4).
 
@@ -530,15 +556,11 @@ When `tabConfig.tabLayout` is undefined → existing logic verbatim (regression)
   ```
   and the `buildOutlinePath` call passes `localBandIndex` (not `bandIndex`):
   ```ts
-  	tabsByIndex,
-  	localBandIndex,
-  	bandCount
+  (tabsByIndex, localBandIndex, bandCount);
   ```
   and the tube fn passes `i` as `localBandIndex`:
   ```ts
-  		allQuads[i + 1],
-  		bandCount,
-  		i
+  (allQuads[i + 1], bandCount, i);
   ```
 - [ ] Run: `npm run test:unit -- src/lib/cut-pattern/__tests__/shouldHaveTab-tab-layout.test.ts` — expected: still PASS (signature of `shouldHaveTab` unchanged here).
 - [ ] Run the full cut-pattern test dir to catch fallout: `npm run test:unit -- src/lib/cut-pattern/__tests__` — expected: PASS.
@@ -554,6 +576,7 @@ When `tabConfig.tabLayout` is undefined → existing logic verbatim (regression)
 ## Task 6: UI selector for inner/outer
 
 **Files:**
+
 - Modify: `src/components/controls/TilingControl.svelte` (insert after the Band Edge Tabs `<select>` block, currently lines 151-167)
 - Test: no unit test (Svelte control wiring); verify with `npm run check` + manual smoke (`npm run dev`).
 
@@ -601,6 +624,7 @@ When `tabConfig.tabLayout` is undefined → existing logic verbatim (regression)
   - UI selector added (Task 6). ✓
 
 ## Out of scope (do not implement)
+
 - End-cap (tube-to-tube) tab logic — `end` branch left untouched.
 - Tab geometry/shape changes.
 - Tiled patterns.

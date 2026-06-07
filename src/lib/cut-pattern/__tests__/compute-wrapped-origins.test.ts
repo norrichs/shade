@@ -1,4 +1,8 @@
-import { computeWrappedOrigins, GAP_BETWEEN_BANDS, type WrapInput } from '../compute-wrapped-origins';
+import {
+	computeWrappedOrigins,
+	GAP_BETWEEN_BANDS,
+	type WrapInput
+} from '../compute-wrapped-origins';
 
 const band = (width: number, height: number, alignedYOffset = 0): WrapInput => ({
 	width,

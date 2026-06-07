@@ -38,8 +38,7 @@
 	const noRaycast = () => {};
 
 	// Stable key for {#each} blocks over facets, derived from the facet's address.
-	const facetKey = (a: GlobuleAddress_Facet) =>
-		`${a.globule}-${a.tube}-${a.band}-${a.facet}`;
+	const facetKey = (a: GlobuleAddress_Facet) => `${a.globule}-${a.tube}-${a.band}-${a.facet}`;
 
 	let {
 		onClick,
@@ -281,7 +280,9 @@
 		{#each voronoiGeometry.surfaceProjectionFacets || [] as facet (facetKey(facet.address))}
 			<T.Mesh
 				geometry={facet.geometry}
-				material={getMaterial(facet.address, $selectedVoronoiSurfaceGeometry, { zebraStriped: true })}
+				material={getMaterial(facet.address, $selectedVoronoiSurfaceGeometry, {
+					zebraStriped: true
+				})}
 				onclick={(ev) =>
 					handleFacetSelect(
 						ev,

@@ -73,6 +73,7 @@ When `fillAll` is true (and outlined), after the edge tubes are built, for **eac
    "inner" section points are all `C` (repeated) and "outer" section points are the
    `P_k`. Confirm the exact `Section.points` ordering the `axial-right` band builder expects
    (3 points per section ⇒ 2 facets) and supply the collapsed inner point accordingly.
+
 4. **Winding.** Apply the same outward-normal check used at `:1289-1306` to the first
    non-degenerate facet; reverse if needed so the fill band faces outward consistently with
    the edge tubes.

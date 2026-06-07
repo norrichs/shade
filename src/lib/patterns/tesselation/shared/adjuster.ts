@@ -48,13 +48,7 @@ export const adjustTesselation = (
 	spec: TiledPatternSpec
 ) => {
 	const {
-		config: {
-			endLooped,
-			endsMatched,
-			endsTrimmed,
-			rowCount: rows = 1,
-			columnCount: columns = 1
-		}
+		config: { endLooped, endsMatched, endsTrimmed, rowCount: rows = 1, columnCount: columns = 1 }
 	} = tiledPatternConfig;
 	const startCount = spec.unit.start.length;
 	const middleCount = spec.unit.middle.length;

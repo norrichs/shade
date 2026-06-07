@@ -18,15 +18,7 @@ export const scaleSegment = (seg: PathSegment, w: number, h: number): PathSegmen
 		case 'Q':
 			return ['Q', seg[1] * w, seg[2] * h, seg[3] * w, seg[4] * h];
 		case 'C':
-			return [
-				'C',
-				seg[1] * w,
-				seg[2] * h,
-				seg[3] * w,
-				seg[4] * h,
-				seg[5] * w,
-				seg[6] * h
-			];
+			return ['C', seg[1] * w, seg[2] * h, seg[3] * w, seg[4] * h, seg[5] * w, seg[6] * h];
 		case 'A':
 			return ['A', seg[1] * w, seg[2] * h, seg[3], seg[4], seg[5], seg[6] * w, seg[7] * h];
 		case 'Z':

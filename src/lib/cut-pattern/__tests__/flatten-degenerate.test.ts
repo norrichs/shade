@@ -4,7 +4,9 @@ import type { Band } from '$lib/types';
 import { getFlatStripV2 } from '../generate-cut-pattern';
 
 const allFinite = (t: Triangle): boolean =>
-	[t.a, t.b, t.c].every((v) => Number.isFinite(v.x) && Number.isFinite(v.y) && Number.isFinite(v.z));
+	[t.a, t.b, t.c].every(
+		(v) => Number.isFinite(v.x) && Number.isFinite(v.y) && Number.isFinite(v.z)
+	);
 
 describe('getFlatStripV2 with degenerate fill facets', () => {
 	// Fan band: real (P0,P1,C), degenerate (P1,C,C), real (P1,P2,C), degenerate (P2,C,C).

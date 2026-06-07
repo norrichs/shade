@@ -120,11 +120,7 @@
 			csvText = buildPatternCsv(index, tubes);
 			csvState = 'ready';
 		} else {
-			downloadTextFile(
-				csvText,
-				`pattern-map ${get(superGlobuleStore).name}.csv`,
-				'text/csv'
-			);
+			downloadTextFile(csvText, `pattern-map ${get(superGlobuleStore).name}.csv`, 'text/csv');
 		}
 	};
 
@@ -209,8 +205,7 @@
 						runPrepare();
 					}
 					downloadSvg('pattern-svg', `globule-pattern ${$superGlobuleStore.name}.svg`);
-				}}
-				>Download SVG</Button
+				}}>Download SVG</Button
 			>
 			<Button onclick={handleCsvClick}>
 				{csvState === 'idle' ? 'Make CSV' : 'Download CSV'}

@@ -13,9 +13,5 @@ export function fromUVToDirection(u: number, v: number): Vector3 {
 	const theta = u * 2 * Math.PI - Math.PI / 2;
 	const phi = v * Math.PI;
 	const sinPhi = Math.sin(phi);
-	return new Vector3(
-		sinPhi * Math.cos(theta),
-		sinPhi * Math.sin(theta),
-		Math.cos(phi)
-	);
+	return new Vector3(sinPhi * Math.cos(theta), sinPhi * Math.sin(theta), Math.cos(phi));
 }

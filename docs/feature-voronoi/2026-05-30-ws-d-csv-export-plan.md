@@ -12,16 +12,17 @@
 
 ## File Structure
 
-| File | Create/Modify | Responsibility |
-|------|---------------|----------------|
-| `src/lib/cut-pattern/build-pattern-csv.ts` | **Create** | PURE `buildPatternCsv(index, tubes)`; helpers `csvCell`, `formatBandAddress`, `withinTubeAdjacentPartners`, `endPartnerAddresses`. No DOM, no stores. |
-| `src/lib/cut-pattern/__tests__/build-pattern-csv.test.ts` | **Create** | Unit tests: end-connection layout, tube-order layout, CSV quoting/alignment. |
-| `src/lib/util.ts` | **Modify** | Add `downloadTextFile(text, filename, mimeType)` Blob+anchor helper (mirrors `downloadSvg`), reused by the CSV button. |
-| `src/components/nav-header/NavHeader.svelte` | **Modify** | Add the two-step "Make CSV" → "Download CSV" button; reset to idle when pattern/sort changes. UI glue only. |
+| File                                                      | Create/Modify | Responsibility                                                                                                                                        |
+| --------------------------------------------------------- | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/lib/cut-pattern/build-pattern-csv.ts`                | **Create**    | PURE `buildPatternCsv(index, tubes)`; helpers `csvCell`, `formatBandAddress`, `withinTubeAdjacentPartners`, `endPartnerAddresses`. No DOM, no stores. |
+| `src/lib/cut-pattern/__tests__/build-pattern-csv.test.ts` | **Create**    | Unit tests: end-connection layout, tube-order layout, CSV quoting/alignment.                                                                          |
+| `src/lib/util.ts`                                         | **Modify**    | Add `downloadTextFile(text, filename, mimeType)` Blob+anchor helper (mirrors `downloadSvg`), reused by the CSV button.                                |
+| `src/components/nav-header/NavHeader.svelte`              | **Modify**    | Add the two-step "Make CSV" → "Download CSV" button; reset to idle when pattern/sort changes. UI glue only.                                           |
 
 ### Contracted from WS-B (treat as existing — do NOT reimplement)
 
 In `src/lib/cut-pattern/band-sort-index.ts`:
+
 - `export const buildBandCodeMap = (index: BandSortIndex): Map<string, string>` — keyed by `` `${globule}-${tube}-${band}` ``, value is the group `code`.
 - `export const formatGroupCode = (n: number): string => String(n).padStart(4, '0')`.
 - `BandSortGroup` gains optional `code?: string`.
@@ -45,7 +46,7 @@ In `src/lib/cut-pattern/band-sort-index.ts`:
 
 ### How within-tube adjacency is derived (CRITICAL)
 
-The facet-level `meta.ab.partner` / `meta.ac.partner` referenced in `generate-outlined-pattern.ts:327-336` and `:485-494` lives on the **`Facet`** type (`src/lib/types.ts:722+`, the *input* to outlined generation). It is **NOT present** on the `CutPattern` facets stored in the final `BandCutPattern.facets` (that `CutPattern.meta` only has `originalPath`/`prevBandPath` — `src/lib/types.ts:218-221`). By the time we hold `TubeCutPattern[]`, the only band-relationship metadata preserved is `BandCutPattern.meta.startPartnerBand` / `endPartnerBand` (populated at `generate-outlined-pattern.ts:485-494` from that facet `ab.partner` data).
+The facet-level `meta.ab.partner` / `meta.ac.partner` referenced in `generate-outlined-pattern.ts:327-336` and `:485-494` lives on the **`Facet`** type (`src/lib/types.ts:722+`, the _input_ to outlined generation). It is **NOT present** on the `CutPattern` facets stored in the final `BandCutPattern.facets` (that `CutPattern.meta` only has `originalPath`/`prevBandPath` — `src/lib/types.ts:218-221`). By the time we hold `TubeCutPattern[]`, the only band-relationship metadata preserved is `BandCutPattern.meta.startPartnerBand` / `endPartnerBand` (populated at `generate-outlined-pattern.ts:485-494` from that facet `ab.partner` data).
 
 Therefore **within-tube adjacency is derived structurally, not from facet partner meta**: a band's adjacent partners are its **before/after neighbor bands in the same tube** — i.e. the entries at index `i-1` and `i+1` within the same `TubeCutPattern.bands` array (same `globule` + `tube`). This is exactly the ordering `buildTubeOrderIndex` uses (`band-sort-index.ts:5-11`), so it stays consistent with the rest of the system. End partners (cross-tube, the `meta.*PartnerBand` joins) are kept distinct from adjacency, matching `generate-outlined-pattern.ts`'s "end partner" notion.
 
@@ -66,13 +67,14 @@ Therefore **within-tube adjacency is derived structurally, not from facet partne
 ### Address / member formatting
 
 - Band address (tube-order col 1, ring members): `formatBandAddress(addr) = `t${addr.tube}/b${addr.band}``.
-  (Globule is omitted in display per the spec's `t{tube}/b{band}` format; the lookup key still includes globule.)
+(Globule is omitted in display per the spec's `t{tube}/b{band}` format; the lookup key still includes globule.)
 
 ---
 
 ## Task 1: Pure CSV builder — `tube-order` mode
 
 **Files:**
+
 - Create: `src/lib/cut-pattern/build-pattern-csv.ts`
 - Test: `src/lib/cut-pattern/__tests__/build-pattern-csv.test.ts`
 
@@ -141,8 +143,8 @@ describe('buildPatternCsv — tube-order', () => {
 ```
 
 - [ ] Run (expected FAIL — module does not exist):
-  `npm run test:unit -- src/lib/cut-pattern/__tests__/build-pattern-csv.test.ts`
-  Expect: `Cannot find module '../build-pattern-csv'`.
+      `npm run test:unit -- src/lib/cut-pattern/__tests__/build-pattern-csv.test.ts`
+      Expect: `Cannot find module '../build-pattern-csv'`.
 
 - [ ] Create `src/lib/cut-pattern/build-pattern-csv.ts` with the MINIMAL real implementation (tube-order only):
 
@@ -197,9 +199,7 @@ const withinTubeAdjacentPartners = (
  * End-partner addresses from `meta.startPartnerBand`/`endPartnerBand`,
  * deduped, missing entries omitted.
  */
-const endPartnerAddresses = (
-	band: TubeCutPattern['bands'][number]
-): GlobuleAddress_Band[] => {
+const endPartnerAddresses = (band: TubeCutPattern['bands'][number]): GlobuleAddress_Band[] => {
 	const partners: GlobuleAddress_Band[] = [];
 	if (band.meta?.startPartnerBand) partners.push(band.meta.startPartnerBand);
 	if (band.meta?.endPartnerBand) partners.push(band.meta.endPartnerBand);
@@ -240,10 +240,11 @@ export const buildPatternCsv = (index: BandSortIndex, tubes: TubeCutPattern[]): 
 ```
 
 - [ ] Run (expected PASS):
-  `npm run test:unit -- src/lib/cut-pattern/__tests__/build-pattern-csv.test.ts`
-  Expect: both `tube-order` tests green.
+      `npm run test:unit -- src/lib/cut-pattern/__tests__/build-pattern-csv.test.ts`
+      Expect: both `tube-order` tests green.
 
 - [ ] Commit:
+
 ```bash
 git add src/lib/cut-pattern/build-pattern-csv.ts src/lib/cut-pattern/__tests__/build-pattern-csv.test.ts
 git commit -m "feat(csv): pure buildPatternCsv tube-order mode
@@ -256,6 +257,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 ## Task 2: Pure CSV builder — `end-connection-tube` mode
 
 **Files:**
+
 - Modify: `src/lib/cut-pattern/build-pattern-csv.ts` (add `buildEndConnectionCsv`, wire the switch case)
 - Test: `src/lib/cut-pattern/__tests__/build-pattern-csv.test.ts` (add `end-connection` describe block)
 
@@ -343,8 +345,8 @@ describe('buildPatternCsv — end-connection-tube', () => {
 ```
 
 - [ ] Run (expected FAIL — current `end-connection-tube` case falls through to tube-order, wrong header/shape):
-  `npm run test:unit -- src/lib/cut-pattern/__tests__/build-pattern-csv.test.ts`
-  Expect: `end-connection-tube` tests fail on header `ringCode,...` mismatch.
+      `npm run test:unit -- src/lib/cut-pattern/__tests__/build-pattern-csv.test.ts`
+      Expect: `end-connection-tube` tests fail on header `ringCode,...` mismatch.
 
 - [ ] Add `buildEndConnectionCsv` and wire the switch in `build-pattern-csv.ts` (REAL code). Add the import of `buildBandCodeMap` at the top:
 
@@ -374,11 +376,7 @@ const buildEndConnectionCsv = (index: BandSortIndex, tubes: TubeCutPattern[]): s
 		}
 
 		const members = group.bands.map((b) => csvCell(formatBandAddress(b)));
-		const cells = [
-			csvCell(ringCode),
-			multiCell([...partnerCodes]),
-			...members
-		];
+		const cells = [csvCell(ringCode), multiCell([...partnerCodes]), ...members];
 		rows.push(cells.join(','));
 	}
 
@@ -394,12 +392,13 @@ Update the switch case:
 ```
 
 - [ ] Run (expected PASS): all four tests green.
-  `npm run test:unit -- src/lib/cut-pattern/__tests__/build-pattern-csv.test.ts`
+      `npm run test:unit -- src/lib/cut-pattern/__tests__/build-pattern-csv.test.ts`
 
 - [ ] Run type check (expected PASS):
-  `npm run check`
+      `npm run check`
 
 - [ ] Commit:
+
 ```bash
 git add src/lib/cut-pattern/build-pattern-csv.ts src/lib/cut-pattern/__tests__/build-pattern-csv.test.ts
 git commit -m "feat(csv): buildPatternCsv end-connection-tube ring map
@@ -412,6 +411,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 ## Task 3: `downloadTextFile` helper in `util.ts`
 
 **Files:**
+
 - Modify: `src/lib/util.ts` (add `downloadTextFile` after `downloadSvg`, around line 104)
 - Test: `src/lib/cut-pattern/__tests__/build-pattern-csv.test.ts` is NOT extended (this helper touches the DOM). Add a small focused test file instead: `src/lib/__tests__/download-text-file.test.ts`.
 
@@ -448,8 +448,8 @@ describe('downloadTextFile', () => {
 ```
 
 - [ ] Run (expected FAIL — `downloadTextFile` not exported):
-  `npm run test:unit -- src/lib/__tests__/download-text-file.test.ts`
-  Expect: `downloadTextFile is not a function` / import undefined.
+      `npm run test:unit -- src/lib/__tests__/download-text-file.test.ts`
+      Expect: `downloadTextFile is not a function` / import undefined.
 
 - [ ] Add `downloadTextFile` to `src/lib/util.ts` immediately after `downloadSvg` (ends at line 104) (REAL code):
 
@@ -472,9 +472,10 @@ export const downloadTextFile = (
 ```
 
 - [ ] Run (expected PASS):
-  `npm run test:unit -- src/lib/__tests__/download-text-file.test.ts`
+      `npm run test:unit -- src/lib/__tests__/download-text-file.test.ts`
 
 - [ ] Commit:
+
 ```bash
 git add src/lib/util.ts src/lib/__tests__/download-text-file.test.ts
 git commit -m "feat(util): downloadTextFile Blob+anchor helper
@@ -487,6 +488,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 ## Task 4: NavHeader "Make CSV" → "Download CSV" button (UI glue only)
 
 **Files:**
+
 - Modify: `src/components/nav-header/NavHeader.svelte`
   - imports block (~`:1-22`)
   - reactive invalidation block (~`:29-37`)
@@ -498,74 +500,70 @@ No new unit test (DOM/store glue). Acceptance = `npm run check` clean + the manu
 - [ ] Add imports to the top `import` block of `NavHeader.svelte`:
 
 ```ts
-	import { buildBandSortIndex } from '$lib/cut-pattern/band-sort-index';
-	import { buildPatternCsv } from '$lib/cut-pattern/build-pattern-csv';
-	import { downloadTextFile } from '$lib/util';
+import { buildBandSortIndex } from '$lib/cut-pattern/band-sort-index';
+import { buildPatternCsv } from '$lib/cut-pattern/build-pattern-csv';
+import { downloadTextFile } from '$lib/util';
 ```
 
-  (`collateTubes`, `get`, `patternConfigStore`, `superGlobulePatternStore`, `viewControlStore`, `superGlobuleStore` are already imported — verified at `:2-22`.)
+(`collateTubes`, `get`, `patternConfigStore`, `superGlobulePatternStore`, `viewControlStore`, `superGlobuleStore` are already imported — verified at `:2-22`.)
 
 - [ ] Add local state + handlers after `runPrepare` (which ends at `:86`):
 
 ```ts
-	type CsvState = 'idle' | 'ready';
-	let csvState: CsvState = 'idle';
-	let csvText = '';
+type CsvState = 'idle' | 'ready';
+let csvState: CsvState = 'idle';
+let csvText = '';
 
-	const buildTubesForCsv = () => {
-		const patternState = get(superGlobulePatternStore) as any;
+const buildTubesForCsv = () => {
+	const patternState = get(superGlobulePatternStore) as any;
+	const config = get(patternConfigStore);
+	const view = get(viewControlStore);
+	return collateTubes({
+		globuleTubePattern: patternState.globuleTubePattern,
+		projectionPattern: patternState.projectionPattern,
+		surfaceProjectionPattern: patternState.surfaceProjectionPattern,
+		voronoiPattern: patternState.voronoiPattern,
+		voronoiSurfacePattern: patternState.voronoiSurfacePattern,
+		showGlobuleTubeGeometry: view.showGlobuleTubeGeometry,
+		showProjectionGeometry: view.showProjectionGeometry,
+		patternSource: config.patternViewConfig.patternSource ?? 'projection'
+	});
+};
+
+const handleCsvClick = () => {
+	if (csvState === 'idle') {
 		const config = get(patternConfigStore);
-		const view = get(viewControlStore);
-		return collateTubes({
-			globuleTubePattern: patternState.globuleTubePattern,
-			projectionPattern: patternState.projectionPattern,
-			surfaceProjectionPattern: patternState.surfaceProjectionPattern,
-			voronoiPattern: patternState.voronoiPattern,
-			voronoiSurfacePattern: patternState.voronoiSurfacePattern,
-			showGlobuleTubeGeometry: view.showGlobuleTubeGeometry,
-			showProjectionGeometry: view.showProjectionGeometry,
-			patternSource: config.patternViewConfig.patternSource ?? 'projection'
-		});
-	};
-
-	const handleCsvClick = () => {
-		if (csvState === 'idle') {
-			const config = get(patternConfigStore);
-			const mode = config.patternViewConfig.bandSortMode ?? 'tube-order';
-			const tubes = buildTubesForCsv();
-			const index = buildBandSortIndex(tubes, mode);
-			csvText = buildPatternCsv(index, tubes);
-			csvState = 'ready';
-		} else {
-			downloadTextFile(
-				csvText,
-				`pattern-map ${get(superGlobuleStore).name}.csv`,
-				'text/csv'
-			);
-		}
-	};
+		const mode = config.patternViewConfig.bandSortMode ?? 'tube-order';
+		const tubes = buildTubesForCsv();
+		const index = buildBandSortIndex(tubes, mode);
+		csvText = buildPatternCsv(index, tubes);
+		csvState = 'ready';
+	} else {
+		downloadTextFile(csvText, `pattern-map ${get(superGlobuleStore).name}.csv`, 'text/csv');
+	}
+};
 ```
 
 - [ ] Reset CSV state to idle when the pattern/sort changes. Extend the existing invalidation reactive block (`:29-37`) — after `mergedBandPaths.set(new Map());` add a reference to the sort mode and reset:
 
 ```ts
-		void $patternConfigStore.patternViewConfig.bandSortMode;
-		csvState = 'idle';
-		csvText = '';
+void $patternConfigStore.patternViewConfig.bandSortMode;
+csvState = 'idle';
+csvText = '';
 ```
 
-  (This block already references `$superGlobulePatternStore`, so any geometry change re-runs it and resets the CSV — matching the SVG invalidation behavior.)
+(This block already references `$superGlobulePatternStore`, so any geometry change re-runs it and resets the CSV — matching the SVG invalidation behavior.)
 
 - [ ] Add the button after the "Download SVG" `<Button>` (closing tag at `:171`):
 
 ```svelte
-				<Button onclick={handleCsvClick}>
-					{csvState === 'idle' ? 'Make CSV' : 'Download CSV'}
-				</Button>
+<Button onclick={handleCsvClick}>
+	{csvState === 'idle' ? 'Make CSV' : 'Download CSV'}
+</Button>
 ```
 
 - [ ] Run type check (expected PASS):
-  `npm run check`
+      `npm run check`
 
 - [ ] Manual verification (described check; no automated test for UI glue):
   - `npm run dev`, open `/designer2`.
@@ -574,6 +572,7 @@ No new unit test (DOM/store glue). Acceptance = `npm run check` clean + the manu
   - Modify geometry → button resets to **Make CSV** (invalidation works).
 
 - [ ] Commit:
+
 ```bash
 git add src/components/nav-header/NavHeader.svelte
 git commit -m "feat(csv): NavHeader Make CSV / Download CSV button

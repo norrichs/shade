@@ -28,25 +28,26 @@ Expected: clean checkout, branch created.
 
 ## File Structure
 
-| File | Responsibility |
-|---|---|
-| `src/lib/stores/mergedPathStore.ts` | NEW. Two writable Map stores: `mergedBandPaths` (bandId → merged PathSegment[]) and `labelTextDimensions` (bandId → measured w/h). |
-| `src/lib/cut-pattern/label-outline-path.ts` | NEW. `buildLabelOutlinePath(input): PathSegment[]` — pure outline builder extracted from PatternLabel. |
-| `src/lib/cut-pattern/__tests__/label-outline-path.test.ts` | NEW. Shape/dimension assertions on the built outline. |
-| `src/lib/cut-pattern/transform-label-outline.ts` | NEW. `transformLabelOutlineToBandSpace(localPath, renderAnchor, angleRad): PathSegment[]`. |
-| `src/lib/cut-pattern/__tests__/transform-label-outline.test.ts` | NEW. Tests for identity, pure rotation, pure translation, combined. |
-| `src/lib/cut-pattern/prepare-merge.ts` | NEW. `computeMergedBandPaths(tubes, labels, patternType, labelTextDims): Map<string, PathSegment[]>` — pure function. |
-| `src/lib/cut-pattern/__tests__/prepare-merge.test.ts` | NEW. Eligibility filtering, fallback dims, end-to-end producing a single-contour result for an overlapping case. |
-| `src/components/cut-pattern/PatternLabel.svelte` | MODIFY. Replace inline outline builder with extracted helper, add `bandId` prop, write to `labelTextDimensions`, gate standalone outline `<path>` on absence-from-`mergedBandPaths`. |
-| `src/components/cut-pattern/BandComponent.svelte` | MODIFY. Pass `bandId={band.id}` to `<PatternLabel>`. |
-| `src/components/cut-pattern/BandCutPatternComponent.svelte` | MODIFY. In `renderAsSinglePath` branch, swap `d=` to merged path when `$mergedBandPaths.has(band.id)`. |
-| `src/components/nav-header/NavHeader.svelte` | MODIFY. Add "Prepare Download" button before "Download SVG", modify Download SVG handler to auto-prep, add invalidation `$effect`. |
+| File                                                            | Responsibility                                                                                                                                                                       |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `src/lib/stores/mergedPathStore.ts`                             | NEW. Two writable Map stores: `mergedBandPaths` (bandId → merged PathSegment[]) and `labelTextDimensions` (bandId → measured w/h).                                                   |
+| `src/lib/cut-pattern/label-outline-path.ts`                     | NEW. `buildLabelOutlinePath(input): PathSegment[]` — pure outline builder extracted from PatternLabel.                                                                               |
+| `src/lib/cut-pattern/__tests__/label-outline-path.test.ts`      | NEW. Shape/dimension assertions on the built outline.                                                                                                                                |
+| `src/lib/cut-pattern/transform-label-outline.ts`                | NEW. `transformLabelOutlineToBandSpace(localPath, renderAnchor, angleRad): PathSegment[]`.                                                                                           |
+| `src/lib/cut-pattern/__tests__/transform-label-outline.test.ts` | NEW. Tests for identity, pure rotation, pure translation, combined.                                                                                                                  |
+| `src/lib/cut-pattern/prepare-merge.ts`                          | NEW. `computeMergedBandPaths(tubes, labels, patternType, labelTextDims): Map<string, PathSegment[]>` — pure function.                                                                |
+| `src/lib/cut-pattern/__tests__/prepare-merge.test.ts`           | NEW. Eligibility filtering, fallback dims, end-to-end producing a single-contour result for an overlapping case.                                                                     |
+| `src/components/cut-pattern/PatternLabel.svelte`                | MODIFY. Replace inline outline builder with extracted helper, add `bandId` prop, write to `labelTextDimensions`, gate standalone outline `<path>` on absence-from-`mergedBandPaths`. |
+| `src/components/cut-pattern/BandComponent.svelte`               | MODIFY. Pass `bandId={band.id}` to `<PatternLabel>`.                                                                                                                                 |
+| `src/components/cut-pattern/BandCutPatternComponent.svelte`     | MODIFY. In `renderAsSinglePath` branch, swap `d=` to merged path when `$mergedBandPaths.has(band.id)`.                                                                               |
+| `src/components/nav-header/NavHeader.svelte`                    | MODIFY. Add "Prepare Download" button before "Download SVG", modify Download SVG handler to auto-prep, add invalidation `$effect`.                                                   |
 
 ---
 
 ## Task 1: Store module — `mergedBandPaths` + `labelTextDimensions`
 
 **Files:**
+
 - Create: `src/lib/stores/mergedPathStore.ts`
 - Modify: `src/lib/stores/index.ts` (add re-export)
 
@@ -120,6 +121,7 @@ git commit -m "feat(stores): add mergedBandPaths and labelTextDimensions stores"
 ## Task 2: `buildLabelOutlinePath` — pure outline builder + tests + PatternLabel refactor
 
 **Files:**
+
 - Create: `src/lib/cut-pattern/label-outline-path.ts`
 - Create: `src/lib/cut-pattern/__tests__/label-outline-path.test.ts`
 - Modify: `src/components/cut-pattern/PatternLabel.svelte`
@@ -261,20 +263,20 @@ Expected: PASS, 4 tests.
 In `src/components/cut-pattern/PatternLabel.svelte`, find the import block at the top (around lines 1-9):
 
 ```ts
-	import { getPathSize, svgPathStringFromSegments, translatePS } from '$lib/patterns/utils';
-	import type { PathSegment } from '$lib/types';
-	import type { Point } from 'bezier-js';
-	import { tick } from 'svelte';
-	import { numberPathSegments } from './number-path-segments';
-	import { onDestroy, onMount } from 'svelte';
-	import { LABEL_TAG_PORTAL_ID } from './constants';
-	import LabelText from './LabelText.svelte';
+import { getPathSize, svgPathStringFromSegments, translatePS } from '$lib/patterns/utils';
+import type { PathSegment } from '$lib/types';
+import type { Point } from 'bezier-js';
+import { tick } from 'svelte';
+import { numberPathSegments } from './number-path-segments';
+import { onDestroy, onMount } from 'svelte';
+import { LABEL_TAG_PORTAL_ID } from './constants';
+import LabelText from './LabelText.svelte';
 ```
 
 Add the new import below them:
 
 ```ts
-	import { buildLabelOutlinePath } from '$lib/cut-pattern/label-outline-path';
+import { buildLabelOutlinePath } from '$lib/cut-pattern/label-outline-path';
 ```
 
 Then find the `getLabelPathSegments` function (around lines 102-158). Currently it builds the outline inline. Replace the inner `labelOutlinePathSegments` array literal with a call to the extracted helper.
@@ -282,39 +284,39 @@ Then find the `getLabelPathSegments` function (around lines 102-158). Currently 
 Currently (around lines 134-152):
 
 ```ts
-		const halfWidth = (width + padding * 2) / 2;
-		const bodyHeight = height + padding * 2;
-		const labelOutlinePathSegments: PathSegment[] = [
-			['M', 0, 0],
-			['L', stemWidth / 2, 0],
-			['L', stemWidth / 2, stemLength],
-			['L', halfWidth - r, stemLength],
-			['Q', halfWidth, stemLength, halfWidth, r + stemLength],
-			['L', halfWidth, stemLength + bodyHeight - r],
-			['Q', halfWidth, bodyHeight + stemLength, halfWidth - r, bodyHeight + stemLength],
-			['L', r - halfWidth, bodyHeight + stemLength],
-			['Q', -halfWidth, bodyHeight + stemLength, -halfWidth, bodyHeight - r + stemLength],
-			['L', -halfWidth, r + stemLength],
-			['Q', -halfWidth, stemLength, r - halfWidth, stemLength],
-			['L', -stemWidth / 2, stemLength],
-			['L', -stemWidth / 2, stemLength],
-			['L', -stemWidth / 2, 0],
-			['Z']
-		];
+const halfWidth = (width + padding * 2) / 2;
+const bodyHeight = height + padding * 2;
+const labelOutlinePathSegments: PathSegment[] = [
+	['M', 0, 0],
+	['L', stemWidth / 2, 0],
+	['L', stemWidth / 2, stemLength],
+	['L', halfWidth - r, stemLength],
+	['Q', halfWidth, stemLength, halfWidth, r + stemLength],
+	['L', halfWidth, stemLength + bodyHeight - r],
+	['Q', halfWidth, bodyHeight + stemLength, halfWidth - r, bodyHeight + stemLength],
+	['L', r - halfWidth, bodyHeight + stemLength],
+	['Q', -halfWidth, bodyHeight + stemLength, -halfWidth, bodyHeight - r + stemLength],
+	['L', -halfWidth, r + stemLength],
+	['Q', -halfWidth, stemLength, r - halfWidth, stemLength],
+	['L', -stemWidth / 2, stemLength],
+	['L', -stemWidth / 2, stemLength],
+	['L', -stemWidth / 2, 0],
+	['Z']
+];
 ```
 
 Replace with:
 
 ```ts
-		const halfWidth = (width + padding * 2) / 2;
-		const labelOutlinePathSegments: PathSegment[] = buildLabelOutlinePath({
-			measuredWidth: width,
-			measuredHeight: height,
-			radius: r,
-			padding,
-			stemLength,
-			stemWidth
-		});
+const halfWidth = (width + padding * 2) / 2;
+const labelOutlinePathSegments: PathSegment[] = buildLabelOutlinePath({
+	measuredWidth: width,
+	measuredHeight: height,
+	radius: r,
+	padding,
+	stemLength,
+	stemWidth
+});
 ```
 
 (The `halfWidth` local is still needed for the text translation that follows on line ~156 — leave that line alone.)
@@ -337,6 +339,7 @@ git commit -m "refactor(cut-pattern): extract buildLabelOutlinePath as pure help
 ## Task 3: `transformLabelOutlineToBandSpace` — pure transform + tests
 
 **Files:**
+
 - Create: `src/lib/cut-pattern/transform-label-outline.ts`
 - Create: `src/lib/cut-pattern/__tests__/transform-label-outline.test.ts`
 
@@ -350,12 +353,7 @@ import { transformLabelOutlineToBandSpace } from '../transform-label-outline';
 
 describe('transformLabelOutlineToBandSpace', () => {
 	test('identity (zero angle, zero translation) leaves coords unchanged', () => {
-		const path: PathSegment[] = [
-			['M', 0, 0],
-			['L', 10, 0],
-			['L', 10, 10],
-			['Z']
-		];
+		const path: PathSegment[] = [['M', 0, 0], ['L', 10, 0], ['L', 10, 10], ['Z']];
 		const out = transformLabelOutlineToBandSpace(path, { x: 0, y: 0 }, 0);
 		expect(out[0]).toEqual(['M', 0, 0]);
 		expect(out[1]).toEqual(['L', 10, 0]);
@@ -364,22 +362,14 @@ describe('transformLabelOutlineToBandSpace', () => {
 	});
 
 	test('pure translation shifts every coord', () => {
-		const path: PathSegment[] = [
-			['M', 0, 0],
-			['L', 10, 0],
-			['Z']
-		];
+		const path: PathSegment[] = [['M', 0, 0], ['L', 10, 0], ['Z']];
 		const out = transformLabelOutlineToBandSpace(path, { x: 5, y: 7 }, 0);
 		expect(out[0]).toEqual(['M', 5, 7]);
 		expect(out[1]).toEqual(['L', 15, 7]);
 	});
 
 	test('pure rotation by π/2 around origin sends (1, 0) → (0, 1)', () => {
-		const path: PathSegment[] = [
-			['M', 0, 0],
-			['L', 1, 0],
-			['Z']
-		];
+		const path: PathSegment[] = [['M', 0, 0], ['L', 1, 0], ['Z']];
 		const out = transformLabelOutlineToBandSpace(path, { x: 0, y: 0 }, Math.PI / 2);
 		// rotate(π/2) takes (1, 0) to (cos(π/2)*1, sin(π/2)*1) = (0, 1)
 		expect(out[1][0]).toBe('L');
@@ -388,9 +378,7 @@ describe('transformLabelOutlineToBandSpace', () => {
 	});
 
 	test('rotate then translate: rotate first around origin, then translate', () => {
-		const path: PathSegment[] = [
-			['M', 1, 0]
-		];
+		const path: PathSegment[] = [['M', 1, 0]];
 		// rotate(π/2) takes (1, 0) → (0, 1); then translate by (5, 7) → (5, 8).
 		const out = transformLabelOutlineToBandSpace(path, { x: 5, y: 7 }, Math.PI / 2);
 		expect(out[0][0]).toBe('M');
@@ -454,6 +442,7 @@ git commit -m "feat(cut-pattern): add transformLabelOutlineToBandSpace pure help
 ## Task 4: `computeMergedBandPaths` — pure prep computation + tests
 
 **Files:**
+
 - Create: `src/lib/cut-pattern/prepare-merge.ts`
 - Create: `src/lib/cut-pattern/__tests__/prepare-merge.test.ts`
 
@@ -473,21 +462,19 @@ const rect = (x: number, y: number, w: number, h: number): PathSegment[] => [
 	['Z']
 ];
 
-const makeBand = (overrides: Partial<BandCutPattern> = {}): BandCutPattern => ({
-	id: 'band-1',
-	projectionType: 'patterned',
-	facets: [
-		{ path: rect(0, 0, 100, 60), svgPath: '', label: 'outline' }
-	],
-	svgPath: '',
-	tagAnchorPoint: { x: 50, y: 60 },
-	tagAnchorAutoAngle: 0,
-	address: { globule: 0, tube: 0, band: 0 },
-	...overrides
-}) as BandCutPattern;
+const makeBand = (overrides: Partial<BandCutPattern> = {}): BandCutPattern =>
+	({
+		id: 'band-1',
+		projectionType: 'patterned',
+		facets: [{ path: rect(0, 0, 100, 60), svgPath: '', label: 'outline' }],
+		svgPath: '',
+		tagAnchorPoint: { x: 50, y: 60 },
+		tagAnchorAutoAngle: 0,
+		address: { globule: 0, tube: 0, band: 0 },
+		...overrides
+	}) as BandCutPattern;
 
-const makeTube = (band: BandCutPattern): TubeCutPattern =>
-	({ bands: [band] } as TubeCutPattern);
+const makeTube = (band: BandCutPattern): TubeCutPattern => ({ bands: [band] }) as TubeCutPattern;
 
 const labels = {
 	selfTag: {
@@ -685,6 +672,7 @@ git commit -m "feat(cut-pattern): add computeMergedBandPaths prep function"
 ## Task 5: PatternLabel — `bandId` prop, dims write, conditional outline hide
 
 **Files:**
+
 - Modify: `src/components/cut-pattern/PatternLabel.svelte`
 
 - [ ] **Step 1: Add `bandId` prop**
@@ -692,71 +680,71 @@ git commit -m "feat(cut-pattern): add computeMergedBandPaths prep function"
 In the script block of `PatternLabel.svelte`, find the `$props()` block (around lines 11-37). Currently:
 
 ```ts
-	let {
-		id = undefined,
-		color = 'black',
-		value,
-		addressStrings = undefined,
-		radius = 10,
-		height = 14,
-		angle = 0,
-		autoAngle = undefined,
-		anchor = { x: 0, y: 0 },
-		padding = 10,
-		stemLength = 20,
-		stemWidth = 4,
-		portal = undefined
-	}: {
-		id?: string | undefined;
-		color?: string;
-		value: number;
-		addressStrings?: string[] | undefined;
-		radius?: number;
-		height?: number;
-		angle?: number;
-		autoAngle?: number | undefined;
-		anchor?: Point;
-		padding?: number;
-		stemLength?: number;
-		stemWidth?: number;
-		portal?: { transform: string } | undefined;
-	} = $props();
+let {
+	id = undefined,
+	color = 'black',
+	value,
+	addressStrings = undefined,
+	radius = 10,
+	height = 14,
+	angle = 0,
+	autoAngle = undefined,
+	anchor = { x: 0, y: 0 },
+	padding = 10,
+	stemLength = 20,
+	stemWidth = 4,
+	portal = undefined
+}: {
+	id?: string | undefined;
+	color?: string;
+	value: number;
+	addressStrings?: string[] | undefined;
+	radius?: number;
+	height?: number;
+	angle?: number;
+	autoAngle?: number | undefined;
+	anchor?: Point;
+	padding?: number;
+	stemLength?: number;
+	stemWidth?: number;
+	portal?: { transform: string } | undefined;
+} = $props();
 ```
 
 Add `bandId` next to `id`:
 
 ```ts
-	let {
-		id = undefined,
-		bandId = undefined,
-		color = 'black',
-		value,
-		addressStrings = undefined,
-		radius = 10,
-		height = 14,
-		angle = 0,
-		autoAngle = undefined,
-		anchor = { x: 0, y: 0 },
-		padding = 10,
-		stemLength = 20,
-		stemWidth = 4,
-		portal = undefined
-	}: {
-		id?: string | undefined;
-		bandId?: string | undefined;
-		color?: string;
-		value: number;
-		addressStrings?: string[] | undefined;
-		radius?: number;
-		height?: number;
-		angle?: number;
-		autoAngle?: number | undefined;
-		anchor?: Point;
-		padding?: number;
-		stemLength?: number;
-		stemWidth?: number;
-		portal?: { transform: string } | undefined;
-	} = $props();
+let {
+	id = undefined,
+	bandId = undefined,
+	color = 'black',
+	value,
+	addressStrings = undefined,
+	radius = 10,
+	height = 14,
+	angle = 0,
+	autoAngle = undefined,
+	anchor = { x: 0, y: 0 },
+	padding = 10,
+	stemLength = 20,
+	stemWidth = 4,
+	portal = undefined
+}: {
+	id?: string | undefined;
+	bandId?: string | undefined;
+	color?: string;
+	value: number;
+	addressStrings?: string[] | undefined;
+	radius?: number;
+	height?: number;
+	angle?: number;
+	autoAngle?: number | undefined;
+	anchor?: Point;
+	padding?: number;
+	stemLength?: number;
+	stemWidth?: number;
+	portal?: { transform: string } | undefined;
+} = $props();
 ```
 
 - [ ] **Step 2: Import the stores and add the dims-writing effect**
@@ -764,21 +752,21 @@ Add `bandId` next to `id`:
 In the imports block at the top of the `<script>` (after the existing imports), add:
 
 ```ts
-	import { mergedBandPaths, labelTextDimensions } from '$lib/stores';
+import { mergedBandPaths, labelTextDimensions } from '$lib/stores';
 ```
 
 Then, after the existing `$effect` that calls `measureText()` (around line 94-100), add a new effect that writes dims when measurement settles:
 
 ```ts
-	$effect(() => {
-		if (textMeasured && bandId) {
-			labelTextDimensions.update((m) => {
-				const next = new Map(m);
-				next.set(bandId, { width: textBbox.width, height: textBbox.height });
-				return next;
-			});
-		}
-	});
+$effect(() => {
+	if (textMeasured && bandId) {
+		labelTextDimensions.update((m) => {
+			const next = new Map(m);
+			next.set(bandId, { width: textBbox.width, height: textBbox.height });
+			return next;
+		});
+	}
+});
 ```
 
 - [ ] **Step 3: Gate the standalone outline path on absence-from-mergedBandPaths**
@@ -788,29 +776,29 @@ Find the two `<path d={path} ...>` elements in the template (around lines 298 an
 Currently the portal branch (around line 298):
 
 ```svelte
-		<path d={path} fill-rule="evenodd" stroke={color} fill="none" />
+<path d={path} fill-rule="evenodd" stroke={color} fill="none" />
 ```
 
 Wrap with `{#if}`:
 
 ```svelte
-		{#if !bandId || !$mergedBandPaths.has(bandId)}
-			<path d={path} fill-rule="evenodd" stroke={color} fill="none" />
-		{/if}
+{#if !bandId || !$mergedBandPaths.has(bandId)}
+	<path d={path} fill-rule="evenodd" stroke={color} fill="none" />
+{/if}
 ```
 
 And the non-portal branch (around line 314):
 
 ```svelte
-		<path d={path} fill-rule="evenodd" fill="none" stroke={color} />
+<path d={path} fill-rule="evenodd" fill="none" stroke={color} />
 ```
 
 Wrap identically:
 
 ```svelte
-		{#if !bandId || !$mergedBandPaths.has(bandId)}
-			<path d={path} fill-rule="evenodd" fill="none" stroke={color} />
-		{/if}
+{#if !bandId || !$mergedBandPaths.has(bandId)}
+	<path d={path} fill-rule="evenodd" fill="none" stroke={color} />
+{/if}
 ```
 
 - [ ] **Step 4: Type-check**
@@ -837,6 +825,7 @@ git commit -m "feat(pattern-label): add bandId prop, write measured dims, hide o
 ## Task 6: BandComponent passes `bandId` to PatternLabel
 
 **Files:**
+
 - Modify: `src/components/cut-pattern/BandComponent.svelte`
 
 - [ ] **Step 1: Pass `bandId={band.id}` through to PatternLabel**
@@ -844,46 +833,46 @@ git commit -m "feat(pattern-label): add bandId prop, write measured dims, hide o
 Find the `<PatternLabel ...>` block in `src/components/cut-pattern/BandComponent.svelte` (around lines 103-118). Currently:
 
 ```svelte
-		{#if selfTagEnabled}
-			<PatternLabel
-				id={`band-self-${band.id}`}
-				{color}
-				value={index}
-				radius={(labels?.selfTag?.height ?? 16) / 4}
-				height={labels?.selfTag?.height ?? 14}
-				angle={band.tagAngle ?? labels?.selfTag?.angle ?? 0}
-				autoAngle={band.tagAnchorAutoAngle}
-				anchor={tagAnchorPoint || { x: -50, y: -50 }}
-				addressStrings={[concatAddress(band.address, 'tb-slash')]}
-				padding={labels?.selfTag?.padding ?? 10}
-				stemLength={labels?.selfTag?.stemLength ?? 20}
-				stemWidth={labels?.selfTag?.stemWidth ?? 4}
-				portal={isTiled ? { transform: `translate(${origin.x} ${origin.y})` } : undefined}
-			/>
-		{/if}
+{#if selfTagEnabled}
+	<PatternLabel
+		id={`band-self-${band.id}`}
+		{color}
+		value={index}
+		radius={(labels?.selfTag?.height ?? 16) / 4}
+		height={labels?.selfTag?.height ?? 14}
+		angle={band.tagAngle ?? labels?.selfTag?.angle ?? 0}
+		autoAngle={band.tagAnchorAutoAngle}
+		anchor={tagAnchorPoint || { x: -50, y: -50 }}
+		addressStrings={[concatAddress(band.address, 'tb-slash')]}
+		padding={labels?.selfTag?.padding ?? 10}
+		stemLength={labels?.selfTag?.stemLength ?? 20}
+		stemWidth={labels?.selfTag?.stemWidth ?? 4}
+		portal={isTiled ? { transform: `translate(${origin.x} ${origin.y})` } : undefined}
+	/>
+{/if}
 ```
 
 Add `bandId={band.id}` after the `id=` line:
 
 ```svelte
-		{#if selfTagEnabled}
-			<PatternLabel
-				id={`band-self-${band.id}`}
-				bandId={band.id}
-				{color}
-				value={index}
-				radius={(labels?.selfTag?.height ?? 16) / 4}
-				height={labels?.selfTag?.height ?? 14}
-				angle={band.tagAngle ?? labels?.selfTag?.angle ?? 0}
-				autoAngle={band.tagAnchorAutoAngle}
-				anchor={tagAnchorPoint || { x: -50, y: -50 }}
-				addressStrings={[concatAddress(band.address, 'tb-slash')]}
-				padding={labels?.selfTag?.padding ?? 10}
-				stemLength={labels?.selfTag?.stemLength ?? 20}
-				stemWidth={labels?.selfTag?.stemWidth ?? 4}
-				portal={isTiled ? { transform: `translate(${origin.x} ${origin.y})` } : undefined}
-			/>
-		{/if}
+{#if selfTagEnabled}
+	<PatternLabel
+		id={`band-self-${band.id}`}
+		bandId={band.id}
+		{color}
+		value={index}
+		radius={(labels?.selfTag?.height ?? 16) / 4}
+		height={labels?.selfTag?.height ?? 14}
+		angle={band.tagAngle ?? labels?.selfTag?.angle ?? 0}
+		autoAngle={band.tagAnchorAutoAngle}
+		anchor={tagAnchorPoint || { x: -50, y: -50 }}
+		addressStrings={[concatAddress(band.address, 'tb-slash')]}
+		padding={labels?.selfTag?.padding ?? 10}
+		stemLength={labels?.selfTag?.stemLength ?? 20}
+		stemWidth={labels?.selfTag?.stemWidth ?? 4}
+		portal={isTiled ? { transform: `translate(${origin.x} ${origin.y})` } : undefined}
+	/>
+{/if}
 ```
 
 - [ ] **Step 2: Type-check + tests**
@@ -903,6 +892,7 @@ git commit -m "feat(band-component): pass bandId to PatternLabel for merged-path
 ## Task 7: BandCutPatternComponent swaps `d=` to merged path
 
 **Files:**
+
 - Modify: `src/components/cut-pattern/BandCutPatternComponent.svelte`
 
 - [ ] **Step 1: Import the store and the segments-to-string util**
@@ -910,20 +900,20 @@ git commit -m "feat(band-component): pass bandId to PatternLabel for merged-path
 In the script block of `src/components/cut-pattern/BandCutPatternComponent.svelte`, find the existing imports (around lines 1-9):
 
 ```ts
-	import { getMidPoint, svgPathStringFromSegments } from '$lib/patterns/utils';
-	import type { TransformConfig } from '$lib/projection-geometry/types';
-	import { patternConfigStore } from '$lib/stores';
-	import type { BandCutPattern, CutPattern, Quadrilateral } from '$lib/types';
-	import QuadPattern from '../pattern-svg/QuadPattern.svelte';
-	import BoundsPattern from './BoundsPattern.svelte';
-	import PathPointIndices from './PathPointIndices.svelte';
-	import QuadLabels from './QuadLabels.svelte';
+import { getMidPoint, svgPathStringFromSegments } from '$lib/patterns/utils';
+import type { TransformConfig } from '$lib/projection-geometry/types';
+import { patternConfigStore } from '$lib/stores';
+import type { BandCutPattern, CutPattern, Quadrilateral } from '$lib/types';
+import QuadPattern from '../pattern-svg/QuadPattern.svelte';
+import BoundsPattern from './BoundsPattern.svelte';
+import PathPointIndices from './PathPointIndices.svelte';
+import QuadLabels from './QuadLabels.svelte';
 ```
 
 Add `mergedBandPaths` to the `$lib/stores` import line:
 
 ```ts
-	import { patternConfigStore, mergedBandPaths } from '$lib/stores';
+import { patternConfigStore, mergedBandPaths } from '$lib/stores';
 ```
 
 (`svgPathStringFromSegments` is already imported.)
@@ -977,6 +967,7 @@ git commit -m "feat(band-cut-pattern): swap d= to merged path when available"
 ## Task 8: NavHeader — Prepare Download button + Download SVG auto-prep + invalidation effect
 
 **Files:**
+
 - Modify: `src/components/nav-header/NavHeader.svelte`
 
 - [ ] **Step 1: Add imports**
@@ -984,14 +975,14 @@ git commit -m "feat(band-cut-pattern): swap d= to merged path when available"
 Find the script block in `src/components/nav-header/NavHeader.svelte`. Add these imports near the existing imports:
 
 ```ts
-	import {
-		mergedBandPaths,
-		labelTextDimensions,
-		superGlobulePatternStore,
-		patternConfigStore
-	} from '$lib/stores';
-	import { computeMergedBandPaths } from '$lib/cut-pattern/prepare-merge';
-	import { get } from 'svelte/store';
+import {
+	mergedBandPaths,
+	labelTextDimensions,
+	superGlobulePatternStore,
+	patternConfigStore
+} from '$lib/stores';
+import { computeMergedBandPaths } from '$lib/cut-pattern/prepare-merge';
+import { get } from 'svelte/store';
 ```
 
 (Some of these may already be imported — confirm and dedupe.)
@@ -1001,19 +992,20 @@ Find the script block in `src/components/nav-header/NavHeader.svelte`. Add these
 In the script block, add a helper function:
 
 ```ts
-	const runPrepare = () => {
-		const patternState = get(superGlobulePatternStore);
-		const config = get(patternConfigStore);
-		const labelDims = get(labelTextDimensions);
-		const tubes = patternState.projectionPattern?.projectionCutPattern?.tubes
-			?? patternState.globuleTubePattern?.projectionCutPattern?.tubes
-			?? patternState.surfaceProjectionPattern?.projectionCutPattern?.tubes
-			?? [];
-		const labels = config.patternTypeConfig.labels;
-		const patternType = config.patternTypeConfig.type;
-		const merged = computeMergedBandPaths(tubes, labels, patternType, labelDims);
-		mergedBandPaths.set(merged);
-	};
+const runPrepare = () => {
+	const patternState = get(superGlobulePatternStore);
+	const config = get(patternConfigStore);
+	const labelDims = get(labelTextDimensions);
+	const tubes =
+		patternState.projectionPattern?.projectionCutPattern?.tubes ??
+		patternState.globuleTubePattern?.projectionCutPattern?.tubes ??
+		patternState.surfaceProjectionPattern?.projectionCutPattern?.tubes ??
+		[];
+	const labels = config.patternTypeConfig.labels;
+	const patternType = config.patternTypeConfig.type;
+	const merged = computeMergedBandPaths(tubes, labels, patternType, labelDims);
+	mergedBandPaths.set(merged);
+};
 ```
 
 - [ ] **Step 3: Add the invalidation reactive statement**
@@ -1021,17 +1013,17 @@ In the script block, add a helper function:
 NavHeader is in Svelte 4 style (`$:` reactive statements). After the existing `$:` statements (around line 12-40), add:
 
 ```ts
-	// Invalidate prepared merge state whenever underlying geometry or label
-	// config changes. User must re-click "Prepare Download" (or just click
-	// Download SVG, which auto-preps) to refresh.
-	$: {
-		// Reference each dep so Svelte tracks it.
-		void $superGlobulePatternStore;
-		void $patternConfigStore.patternTypeConfig.type;
-		void $patternConfigStore.patternTypeConfig.labels?.selfTag;
-		mergedBandPaths.set(new Map());
-		labelTextDimensions.set(new Map());
-	}
+// Invalidate prepared merge state whenever underlying geometry or label
+// config changes. User must re-click "Prepare Download" (or just click
+// Download SVG, which auto-preps) to refresh.
+$: {
+	// Reference each dep so Svelte tracks it.
+	void $superGlobulePatternStore;
+	void $patternConfigStore.patternTypeConfig.type;
+	void $patternConfigStore.patternTypeConfig.labels?.selfTag;
+	mergedBandPaths.set(new Map());
+	labelTextDimensions.set(new Map());
+}
 ```
 
 - [ ] **Step 4: Add "Prepare Download" button + auto-prep on Download SVG**
@@ -1039,23 +1031,21 @@ NavHeader is in Svelte 4 style (`$:` reactive statements). After the existing `$
 Find the existing "Download SVG" button (around lines 113-116):
 
 ```svelte
-				<Button
-					onclick={() => downloadSvg('pattern-svg', `globule-pattern ${$superGlobuleStore.name}.svg`)}
-					>Download SVG</Button
-				>
+<Button onclick={() => downloadSvg('pattern-svg', `globule-pattern ${$superGlobuleStore.name}.svg`)}
+	>Download SVG</Button
+>
 ```
 
 Replace with two buttons (Prepare Download placed BEFORE Download SVG):
 
 ```svelte
-				<Button onclick={runPrepare}>Prepare Download</Button>
-				<Button
-					onclick={() => {
-						if ($mergedBandPaths.size === 0) runPrepare();
-						downloadSvg('pattern-svg', `globule-pattern ${$superGlobuleStore.name}.svg`);
-					}}
-					>Download SVG</Button
-				>
+<Button onclick={runPrepare}>Prepare Download</Button>
+<Button
+	onclick={() => {
+		if ($mergedBandPaths.size === 0) runPrepare();
+		downloadSvg('pattern-svg', `globule-pattern ${$superGlobuleStore.name}.svg`);
+	}}>Download SVG</Button
+>
 ```
 
 - [ ] **Step 5: Type-check + tests**

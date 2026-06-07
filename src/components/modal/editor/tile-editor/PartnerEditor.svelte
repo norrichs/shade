@@ -57,7 +57,14 @@
 		address = next;
 		if (!next) {
 			snapshot = null;
-			partnerHighlightStore.set({ source: 'projection', base: null, top: null, bottom: null, left: null, right: null });
+			partnerHighlightStore.set({
+				source: 'projection',
+				base: null,
+				top: null,
+				bottom: null,
+				left: null,
+				right: null
+			});
 			return;
 		}
 		const bands = flattenBands(next.source);
@@ -124,7 +131,12 @@
 		const [targetVertex, sourceVertex] = partner.baseIsTarget
 			? [baseVertex, partnerVertex]
 			: [partnerVertex, baseVertex];
-		const next = addRuleForPairing(ruleArray(partner.ruleSet), spec.unit, targetVertex, sourceVertex);
+		const next = addRuleForPairing(
+			ruleArray(partner.ruleSet),
+			spec.unit,
+			targetVertex,
+			sourceVertex
+		);
 		setRuleArray(partner.ruleSet, next);
 	};
 
@@ -136,13 +148,21 @@
 		const [targetVertex, sourceVertex] = partner.baseIsTarget
 			? [baseVertex, partnerVertex]
 			: [partnerVertex, baseVertex];
-		const next = removeRulesForPairing(ruleArray(partner.ruleSet), spec.unit, targetVertex, sourceVertex);
+		const next = removeRulesForPairing(
+			ruleArray(partner.ruleSet),
+			spec.unit,
+			targetVertex,
+			sourceVertex
+		);
 		setRuleArray(partner.ruleSet, next);
 	};
 
 	const handleDeleteIndex = (key: RuleSetKey, index: number) => {
 		const arr = ruleArray(key);
-		setRuleArray(key, arr.filter((_, i) => i !== index));
+		setRuleArray(
+			key,
+			arr.filter((_, i) => i !== index)
+		);
 	};
 
 	let hoveredKeys: Set<string> = $state(new Set());
@@ -157,7 +177,14 @@
 	};
 
 	onDestroy(() => {
-		partnerHighlightStore.set({ source: 'projection', base: null, top: null, bottom: null, left: null, right: null });
+		partnerHighlightStore.set({
+			source: 'projection',
+			base: null,
+			top: null,
+			bottom: null,
+			left: null,
+			right: null
+		});
 	});
 </script>
 

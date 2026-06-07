@@ -1,5 +1,10 @@
 import type { BandSortGroup, TubeCutPattern } from '$lib/types';
-import { formatGroupCode, buildBandSortIndex, buildBandCodeMap, sliceBandSortIndex } from '../band-sort-index';
+import {
+	formatGroupCode,
+	buildBandSortIndex,
+	buildBandCodeMap,
+	sliceBandSortIndex
+} from '../band-sort-index';
 
 describe('BandSortGroup type', () => {
 	test('accepts an optional code string', () => {

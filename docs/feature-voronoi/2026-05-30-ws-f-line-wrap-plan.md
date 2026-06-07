@@ -12,14 +12,14 @@
 
 ## File Structure
 
-| File | Action | Responsibility |
-| --- | --- | --- |
-| `src/lib/cut-pattern/compute-wrapped-origins.ts` | **create** | Pure greedy layout accumulator returning `Vector3[]`; shared by both render branches. Exports `computeWrappedOrigins`, the `WrapInput` / `WrapOpts` types, and the `ROW_GAP` / `GAP_BETWEEN_BANDS` constants. |
-| `src/lib/cut-pattern/__tests__/compute-wrapped-origins.test.ts` | **create** | Jest unit tests for the pure function (single-row regression, wrapping, over-wide band, heterogeneous heights, continuous cross-tube wrapping). |
-| `src/lib/types.ts` | **modify** | Add `lineWrap?: boolean` and `wrapWidth?: number` to `PatternViewConfig` (`:41`–`:56`). |
-| `src/lib/shades-config.ts` | **modify** | Add defaults `lineWrap: false`, `wrapWidth: 800` to `defaultPatternViewConfig()` (`:544`). |
-| `src/components/cut-pattern/CutPatternRenderer.svelte` | **modify** | Replace inline `getFlatOrigins` / `getCumulativeOrigins` accumulation with calls to `computeWrappedOrigins`; read `lineWrap` / `wrapWidth` from the store. |
-| `src/components/cut-pattern/CutPatternControl.svelte` | **modify** | Add the `lineWrap` checkbox and conditional `wrapWidth` number input. |
+| File                                                            | Action     | Responsibility                                                                                                                                                                                                |
+| --------------------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/lib/cut-pattern/compute-wrapped-origins.ts`                | **create** | Pure greedy layout accumulator returning `Vector3[]`; shared by both render branches. Exports `computeWrappedOrigins`, the `WrapInput` / `WrapOpts` types, and the `ROW_GAP` / `GAP_BETWEEN_BANDS` constants. |
+| `src/lib/cut-pattern/__tests__/compute-wrapped-origins.test.ts` | **create** | Jest unit tests for the pure function (single-row regression, wrapping, over-wide band, heterogeneous heights, continuous cross-tube wrapping).                                                               |
+| `src/lib/types.ts`                                              | **modify** | Add `lineWrap?: boolean` and `wrapWidth?: number` to `PatternViewConfig` (`:41`–`:56`).                                                                                                                       |
+| `src/lib/shades-config.ts`                                      | **modify** | Add defaults `lineWrap: false`, `wrapWidth: 800` to `defaultPatternViewConfig()` (`:544`).                                                                                                                    |
+| `src/components/cut-pattern/CutPatternRenderer.svelte`          | **modify** | Replace inline `getFlatOrigins` / `getCumulativeOrigins` accumulation with calls to `computeWrappedOrigins`; read `lineWrap` / `wrapWidth` from the store.                                                    |
+| `src/components/cut-pattern/CutPatternControl.svelte`           | **modify** | Add the `lineWrap` checkbox and conditional `wrapWidth` number input.                                                                                                                                         |
 
 ---
 
@@ -64,6 +64,7 @@ Behavior: returns one `Vector3(x, rowY + alignedYOffset, 0)` per input band, in 
 ## Task 1: Pure `computeWrappedOrigins` — single-row regression (lineWrap off)
 
 **Files:**
+
 - Test: `src/lib/cut-pattern/__tests__/compute-wrapped-origins.test.ts` (create)
 - Impl: `src/lib/cut-pattern/compute-wrapped-origins.ts` (create)
 
@@ -77,11 +78,14 @@ Behavior: returns one `Vector3(x, rowY + alignedYOffset, 0)` per input band, in 
   (x: 0, then 0+100+20=120, then 120+200+20=340; gap defaults to `GAP_BETWEEN_BANDS=20`.)
 - [ ] Second test in same file, `'applies alignedYOffset within the (single) row'`:
   ```ts
-  const origins = computeWrappedOrigins([band(100, 50, -25), band(100, 50, -25)], { lineWrap: false });
+  const origins = computeWrappedOrigins([band(100, 50, -25), band(100, 50, -25)], {
+  	lineWrap: false
+  });
   expect(origins.map((o) => o.y)).toEqual([-25, -25]);
   ```
 - [ ] Run: `npm run test:unit -- src/lib/cut-pattern/__tests__/compute-wrapped-origins.test.ts` — expect FAIL (Cannot find module `../compute-wrapped-origins`).
 - [ ] Create `src/lib/cut-pattern/compute-wrapped-origins.ts` with the exact exports from the contract above. Minimal impl:
+
   ```ts
   import { Vector3 } from 'three';
 
@@ -119,8 +123,10 @@ Behavior: returns one `Vector3(x, rowY + alignedYOffset, 0)` per input band, in 
   	});
   };
   ```
+
 - [ ] Run: `npm run test:unit -- src/lib/cut-pattern/__tests__/compute-wrapped-origins.test.ts` — expect PASS.
 - [ ] Commit:
+
   ```bash
   git add src/lib/cut-pattern/compute-wrapped-origins.ts src/lib/cut-pattern/__tests__/compute-wrapped-origins.test.ts
   git commit -m "feat(cut-pattern): pure computeWrappedOrigins with single-row default
@@ -133,6 +139,7 @@ Behavior: returns one `Vector3(x, rowY + alignedYOffset, 0)` per input band, in 
 ## Task 2: Wrapping behavior — break, row height, over-wide band
 
 **Files:**
+
 - Test: `src/lib/cut-pattern/__tests__/compute-wrapped-origins.test.ts` (modify)
 - Impl: `src/lib/cut-pattern/compute-wrapped-origins.ts` (already correct from Task 1 — these tests verify it)
 
@@ -164,6 +171,7 @@ Behavior: returns one `Vector3(x, rowY + alignedYOffset, 0)` per input band, in 
   ```
 - [ ] Run: `npm run test:unit -- src/lib/cut-pattern/__tests__/compute-wrapped-origins.test.ts` — expect PASS (Task 1 impl already satisfies these; if any fail, the impl is wrong — fix the impl, not the tests).
 - [ ] Commit:
+
   ```bash
   git add src/lib/cut-pattern/__tests__/compute-wrapped-origins.test.ts
   git commit -m "test(cut-pattern): cover wrapping, row height, and over-wide band
@@ -176,6 +184,7 @@ Behavior: returns one `Vector3(x, rowY + alignedYOffset, 0)` per input band, in 
 ## Task 3: Add `lineWrap` / `wrapWidth` to the type and defaults
 
 **Files:**
+
 - Impl: `src/lib/types.ts` (`PatternViewConfig`, `:41`–`:56`)
 - Impl: `src/lib/shades-config.ts` (`defaultPatternViewConfig`, `:544`)
 - Test (type-level): `npm run check`
@@ -195,6 +204,7 @@ Behavior: returns one `Vector3(x, rowY + alignedYOffset, 0)` per input band, in 
   (Update the preceding line to add a trailing comma.)
 - [ ] Run: `npm run check` — expect PASS (no new type errors). Persisted configs without these fields stay valid because both are optional; `migrateGlobulePatternConfig` needs no change.
 - [ ] Commit:
+
   ```bash
   git add src/lib/types.ts src/lib/shades-config.ts
   git commit -m "feat(cut-pattern): add lineWrap/wrapWidth to PatternViewConfig
@@ -207,6 +217,7 @@ Behavior: returns one `Vector3(x, rowY + alignedYOffset, 0)` per input band, in 
 ## Task 4: Wire the renderer to the pure function (both branches)
 
 **Files:**
+
 - Impl: `src/components/cut-pattern/CutPatternRenderer.svelte` (`:44` constant, `:58`–`:92` accumulators, `:158`–`:159` derived)
 - Test: `npm run check` + described manual check
 
@@ -240,6 +251,7 @@ Behavior: returns one `Vector3(x, rowY + alignedYOffset, 0)` per input band, in 
   };
   ```
 - [ ] Replace `getCumulativeOrigins` (`:58`–`:78`) so it flattens, wraps once (continuous across tubes), then re-nests — preserving the `origins.tubes[t].bands[b]` shape the template at `:203` reads:
+
   ```ts
   const getCumulativeOrigins = (
   	tubes: TubeCutPattern[],
@@ -264,6 +276,7 @@ Behavior: returns one `Vector3(x, rowY + alignedYOffset, 0)` per input band, in 
   	};
   };
   ```
+
 - [ ] Add derived reads of the new config near `range` (`:139`):
   ```ts
   let lineWrap = $derived($patternConfigStore.patternViewConfig.lineWrap ?? false);
@@ -275,12 +288,15 @@ Behavior: returns one `Vector3(x, rowY + alignedYOffset, 0)` per input band, in 
   	getCumulativeOrigins(filteredTubes, GAP_BETWEEN_BANDS, 'center', lineWrap, wrapWidth)
   );
   let flatOrigins = $derived(
-  	indexedBands ? getFlatOrigins(indexedBands, GAP_BETWEEN_BANDS, 'center', lineWrap, wrapWidth) : undefined
+  	indexedBands
+  		? getFlatOrigins(indexedBands, GAP_BETWEEN_BANDS, 'center', lineWrap, wrapWidth)
+  		: undefined
   );
   ```
 - [ ] Run: `npm run check` — expect PASS. Confirm both template branches still index origins identically: `flatOrigins[i]` (`:169`) and `origins.tubes[t].bands[b]` (`:203`) are unchanged.
 - [ ] Manual check (described, no code): `npm run dev`, open the cut-pattern view (`/designer2`). With `lineWrap` off, layout is unchanged single-row. (Toggle UI lands in Task 5; for now temporarily confirm via Drizzle/localStorage or defer the visual wrap check to after Task 5.)
 - [ ] Commit:
+
   ```bash
   git add src/components/cut-pattern/CutPatternRenderer.svelte
   git commit -m "refactor(cut-pattern): route band origins through computeWrappedOrigins
@@ -293,6 +309,7 @@ Behavior: returns one `Vector3(x, rowY + alignedYOffset, 0)` per input band, in 
 ## Task 5: UI controls — `lineWrap` toggle + conditional `wrapWidth` input
 
 **Files:**
+
 - Impl: `src/components/cut-pattern/CutPatternControl.svelte` (controls block, near `:46`–`:55` checkboxes / `:92`–`:112` selects)
 - Test: `npm run check` + described manual check
 
@@ -300,10 +317,7 @@ Behavior: returns one `Vector3(x, rowY + alignedYOffset, 0)` per input band, in 
 
 - [ ] In `src/components/cut-pattern/CutPatternControl.svelte`, inside the existing checkbox `<div>` (`:46`–`:55`), add after the "show Labels" checkbox:
   ```svelte
-  <CheckboxInput
-  	label="line wrap"
-  	bind:value={$patternConfigStore.patternViewConfig.lineWrap}
-  />
+  <CheckboxInput label="line wrap" bind:value={$patternConfigStore.patternViewConfig.lineWrap} />
   {#if $patternConfigStore.patternViewConfig.lineWrap}
   	<NumberInput
   		label="wrap width"
@@ -319,6 +333,7 @@ Behavior: returns one `Vector3(x, rowY + alignedYOffset, 0)` per input band, in 
 - [ ] Run: `npm run check` — expect PASS.
 - [ ] Manual check (described): `npm run dev`, open the cut-pattern view. Toggle "line wrap" on → "wrap width" input appears. Set `wrapWidth` to a value smaller than the current single-row total → bands break into multiple rows; rows with mixed band heights do not overlap (the taller band in a row sets the next row's offset). Toggle off → layout returns to the original single row.
 - [ ] Commit:
+
   ```bash
   git add src/components/cut-pattern/CutPatternControl.svelte
   git commit -m "feat(cut-pattern): line-wrap toggle and wrap-width control
@@ -331,6 +346,7 @@ Behavior: returns one `Vector3(x, rowY + alignedYOffset, 0)` per input band, in 
 ## Task 6: Cross-tube continuity test for the cumulative wrapping path
 
 **Files:**
+
 - Test: `src/lib/cut-pattern/__tests__/compute-wrapped-origins.test.ts` (modify)
 - Impl: none (locks the Task 4 cumulative behavior at the pure-function level)
 
@@ -349,6 +365,7 @@ Behavior: returns one `Vector3(x, rowY + alignedYOffset, 0)` per input band, in 
 - [ ] Run: `npm run test:unit -- src/lib/cut-pattern/__tests__/compute-wrapped-origins.test.ts` — expect PASS.
 - [ ] Run the full suite once: `npm run test:unit` — expect PASS (no regressions in sibling `cut-pattern` tests).
 - [ ] Commit:
+
   ```bash
   git add src/lib/cut-pattern/__tests__/compute-wrapped-origins.test.ts
   git commit -m "test(cut-pattern): pin continuous cross-tube wrapping order

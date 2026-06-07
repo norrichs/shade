@@ -57,11 +57,7 @@ describe('fromUVToDirection', () => {
 
 	it('round-trips arbitrary 3D points', () => {
 		const center = new Vector3(0, 0, 0);
-		const points = [
-			new Vector3(1, 2, 3),
-			new Vector3(-4, 1, -2),
-			new Vector3(0.5, 0.5, 0.5)
-		];
+		const points = [new Vector3(1, 2, 3), new Vector3(-4, 1, -2), new Vector3(0.5, 0.5, 0.5)];
 		points.forEach((original) => {
 			const [u, v] = toUV(original, center);
 			const direction = fromUVToDirection(u, v);

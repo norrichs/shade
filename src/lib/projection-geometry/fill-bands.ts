@@ -21,9 +21,7 @@ export const isDegenerateTriangle = (t: Triangle): boolean => {
  * These are the polygon/cell-bordering ("open space") edges. Returns ordered clones.
  */
 export const outerBorderPolyline = (sections: Section[], side: 'first' | 'last'): Vector3[] =>
-	sections.map((s) =>
-		(side === 'first' ? s.points[0] : s.points[s.points.length - 1]).clone()
-	);
+	sections.map((s) => (side === 'first' ? s.points[0] : s.points[s.points.length - 1]).clone());
 
 const realFacetNormalDotOutward = (
 	p0: Vector3,

@@ -10,11 +10,7 @@ const addr = (tube: number, band: number, globule = 0): GlobuleAddress_Band => (
 	band
 });
 
-const makeBand = (
-	tube: number,
-	band: number,
-	meta?: BandCutPattern['meta']
-): BandCutPattern =>
+const makeBand = (tube: number, band: number, meta?: BandCutPattern['meta']): BandCutPattern =>
 	({
 		address: addr(tube, band),
 		meta
@@ -79,22 +75,14 @@ describe('resolveTabLabel', () => {
 		// band index 2 of a 5-band tube → next is band 3
 		const tube = makeTube(1, 5);
 		const band = tube.bands[2];
-		const result = resolveTabLabel(
-			tab({ position: 'mid', midIndex: 0, midCount: 5 }),
-			band,
-			tube
-		);
+		const result = resolveTabLabel(tab({ position: 'mid', midIndex: 0, midCount: 5 }), band, tube);
 		expect(result).toBe('t1/b3');
 	});
 
 	it('mid tab at midIndex 0 on last band in tube wraps to band 0', () => {
 		const tube = makeTube(1, 4);
 		const band = tube.bands[3];
-		const result = resolveTabLabel(
-			tab({ position: 'mid', midIndex: 0, midCount: 3 }),
-			band,
-			tube
-		);
+		const result = resolveTabLabel(tab({ position: 'mid', midIndex: 0, midCount: 3 }), band, tube);
 		expect(result).toBe('t1/b0');
 	});
 
@@ -103,33 +91,21 @@ describe('resolveTabLabel', () => {
 		// removed in favor of an independent `selfTag` external callout.
 		const tube = makeTube(2, 6);
 		const band = tube.bands[4];
-		const result = resolveTabLabel(
-			tab({ position: 'mid', midIndex: 2, midCount: 5 }),
-			band,
-			tube
-		);
+		const result = resolveTabLabel(tab({ position: 'mid', midIndex: 2, midCount: 5 }), band, tube);
 		expect(result).toBe('');
 	});
 
 	it('mid tab that is not the first mid returns empty string', () => {
 		const tube = makeTube(1, 5);
 		const band = tube.bands[2];
-		const result = resolveTabLabel(
-			tab({ position: 'mid', midIndex: 1, midCount: 5 }),
-			band,
-			tube
-		);
+		const result = resolveTabLabel(tab({ position: 'mid', midIndex: 1, midCount: 5 }), band, tube);
 		expect(result).toBe('');
 	});
 
 	it('mid tab with only one mid (midCount=1, midIndex=0) still resolves to next band', () => {
 		const tube = makeTube(1, 4);
 		const band = tube.bands[1];
-		const result = resolveTabLabel(
-			tab({ position: 'mid', midIndex: 0, midCount: 1 }),
-			band,
-			tube
-		);
+		const result = resolveTabLabel(tab({ position: 'mid', midIndex: 0, midCount: 1 }), band, tube);
 		expect(result).toBe('t1/b2');
 	});
 });

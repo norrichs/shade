@@ -2,8 +2,7 @@
  * Index of the "middle" quad in a band of `quadCount` quads, rounding down for
  * even counts (quadCount 1,2,3,4,5 -> 0,0,1,1,2).
  */
-export const middleQuadIndex = (quadCount: number): number =>
-	Math.floor((quadCount - 1) / 2);
+export const middleQuadIndex = (quadCount: number): number => Math.floor((quadCount - 1) / 2);
 
 /**
  * The middle quad's index plus the indices of its two outer edges in the
@@ -38,10 +37,7 @@ export type EdgeCandidate = {
  *  3. higher partner band number (when both still tie with partners)
  *  4. deterministic fallback to the `before` candidate (passed first)
  */
-export const selectMiddleQuadEdgeIndex = (
-	before: EdgeCandidate,
-	after: EdgeCandidate
-): number => {
+export const selectMiddleQuadEdgeIndex = (before: EdgeCandidate, after: EdgeCandidate): number => {
 	// 1. no tab over tab
 	if (before.hasTab !== after.hasTab) {
 		return before.hasTab ? after.index : before.index;

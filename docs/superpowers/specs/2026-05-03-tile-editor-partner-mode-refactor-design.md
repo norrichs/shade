@@ -86,14 +86,14 @@ A binary mode toggle (Unit / Partner) replaces the current 6-button mode bar. Th
 
 Each partner around a base quad carries a `ruleSet` tag determined by base position:
 
-| Partner | When it exists | Rule set |
-|---|---|---|
-| Top | base is not the last facet | `withinBand` |
-| Top | base IS the last facet | `partner.endEnd` (cross-tube to `endPartnerBand`) |
-| Bottom | base is not facet 0 | `withinBand` |
-| Bottom | base IS facet 0 | `partner.startEnd` (cross-tube to `startPartnerBand`) |
-| Left | adjacent band exists at `band - 1` (same tube) | `acrossBands` |
-| Right | adjacent band exists at `band + 1` (same tube) | `acrossBands` |
+| Partner | When it exists                                 | Rule set                                              |
+| ------- | ---------------------------------------------- | ----------------------------------------------------- |
+| Top     | base is not the last facet                     | `withinBand`                                          |
+| Top     | base IS the last facet                         | `partner.endEnd` (cross-tube to `endPartnerBand`)     |
+| Bottom  | base is not facet 0                            | `withinBand`                                          |
+| Bottom  | base IS facet 0                                | `partner.startEnd` (cross-tube to `startPartnerBand`) |
+| Left    | adjacent band exists at `band - 1` (same tube) | `acrossBands`                                         |
+| Right   | adjacent band exists at `band + 1` (same tube) | `acrossBands`                                         |
 
 ### Resolution
 
@@ -173,13 +173,13 @@ Stroke widths and font sizes scale by `assembly_span / 42` (matching the unit-mo
 
 All quad fills at α = 0.1 (90% transparent).
 
-| Role | Quad fill | Original-path stroke |
-|---|---|---|
-| Base | `rgba(80, 130, 200, 0.1)` (light blue) | `rgba(40, 70, 130, 0.3)` |
-| Same-band top/bottom (`withinBand`) | `rgba(180, 140, 80, 0.1)` (warm beige) | `rgba(120, 80, 30, 0.3)` |
-| Left/right (`acrossBands`) | `rgba(120, 120, 120, 0.1)` (gray) | `rgba(60, 60, 60, 0.3)` |
-| Cross-tube top (`partner.endEnd`) | `rgba(0, 200, 0, 0.1)` (green) | `rgba(0, 90, 0, 0.3)` |
-| Cross-tube bottom (`partner.startEnd`) | `rgba(220, 0, 0, 0.1)` (red) | `rgba(90, 0, 0, 0.3)` |
+| Role                                   | Quad fill                              | Original-path stroke     |
+| -------------------------------------- | -------------------------------------- | ------------------------ |
+| Base                                   | `rgba(80, 130, 200, 0.1)` (light blue) | `rgba(40, 70, 130, 0.3)` |
+| Same-band top/bottom (`withinBand`)    | `rgba(180, 140, 80, 0.1)` (warm beige) | `rgba(120, 80, 30, 0.3)` |
+| Left/right (`acrossBands`)             | `rgba(120, 120, 120, 0.1)` (gray)      | `rgba(60, 60, 60, 0.3)`  |
+| Cross-tube top (`partner.endEnd`)      | `rgba(0, 200, 0, 0.1)` (green)         | `rgba(0, 90, 0, 0.3)`    |
+| Cross-tube bottom (`partner.startEnd`) | `rgba(220, 0, 0, 0.1)` (red)           | `rgba(90, 0, 0, 0.3)`    |
 
 Cross-tube green/red follows the existing convention from today's Partner End / Partner Start ghost rendering.
 
@@ -226,7 +226,7 @@ Vertex circles drawn on every quad. **Labels are not drawn by default.** Only ve
 A vertex is "in a rule" if:
 
 - On the **base**: any rule's `target` matches its flat index (across all four rule sets).
-- On a **partner**: any rule in *that partner's rule set* has a `source` matching its flat index.
+- On a **partner**: any rule in _that partner's rule set_ has a `source` matching its flat index.
 
 ### Default Label Content
 

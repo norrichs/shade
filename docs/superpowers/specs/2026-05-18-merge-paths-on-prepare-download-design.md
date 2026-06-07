@@ -24,6 +24,7 @@ Add a user-triggered action that merges each outlined-band's outline with its se
 ## Eligibility (per band)
 
 A band is "merge-eligible" when ALL of these are true at prepare time:
+
 - `patternConfigStore.patternTypeConfig.type === 'outlined'`
 - `labels.selfTag.enabled === true`
 - `band.tagAnchorAutoAngle !== undefined` (computed in `generateOutlinedBandPattern` for start caps)
@@ -52,6 +53,7 @@ No separate `isPrepared` flag. Emptiness of `mergedBandPaths` is the signal.
 ### Invalidation
 
 A central `$effect` (lives in NavHeader or a small invalidation module) watches:
+
 - `superGlobuleStore` (band geometry changes → outlines change)
 - `patternConfigStore.patternTypeConfig.type` (switching outlined ↔ tiled)
 - `patternConfigStore.patternTypeConfig.labels.selfTag` (radius, padding, stemLength, stemWidth, height, angle — all affect label outline shape)
@@ -122,6 +124,7 @@ export const prepareMergedPaths = (): void;
 ```
 
 Algorithm per band:
+
 1. `localPath = buildLabelOutlinePath({ measuredWidth, measuredHeight, radius, padding, stemLength, stemWidth })`
 2. Compute `effectiveAngle = (band.tagAngle ?? labels.selfTag.angle ?? 0) + band.tagAnchorAutoAngle`
 3. Compute `renderAnchor = band.tagAnchorPoint - (cos θ, sin θ) · stemWidth/2`
@@ -177,8 +180,8 @@ Add a "Prepare Download" button immediately before the "Download SVG" button:
 	onclick={() => {
 		if ($mergedBandPaths.size === 0) prepareMergedPaths();
 		downloadSvg('pattern-svg', `globule-pattern ${$superGlobuleStore.name}.svg`);
-	}}
->Download SVG</Button>
+	}}>Download SVG</Button
+>
 ```
 
 Also add the invalidation `$effect` here:
@@ -255,16 +258,16 @@ User changes config:
 
 ## Files summary
 
-| File | Action |
-|---|---|
-| `src/lib/stores/mergedPathStore.ts` | New — two writable maps |
-| `src/lib/cut-pattern/label-outline-path.ts` | New — pure outline builder |
-| `src/lib/cut-pattern/transform-label-outline.ts` | New — pure transform |
-| `src/lib/cut-pattern/prepare-merge.ts` | New — action that populates `mergedBandPaths` |
-| `src/lib/cut-pattern/__tests__/label-outline-path.test.ts` | New — pure module tests |
-| `src/lib/cut-pattern/__tests__/transform-label-outline.test.ts` | New — pure module tests |
-| `src/lib/cut-pattern/__tests__/prepare-merge.test.ts` | New — eligibility + behavior tests |
-| `src/components/cut-pattern/PatternLabel.svelte` | Modify — use extracted outline builder, add `bandId` prop, write to `labelTextDimensions`, hide outline when merged |
-| `src/components/cut-pattern/BandComponent.svelte` | Modify — pass `bandId={band.id}` to `<PatternLabel>` |
-| `src/components/cut-pattern/BandCutPatternComponent.svelte` | Modify — swap `d=` to merged path when available |
-| `src/components/nav-header/NavHeader.svelte` | Modify — add Prepare Download button, modify Download SVG handler, add invalidation `$effect` |
+| File                                                            | Action                                                                                                              |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `src/lib/stores/mergedPathStore.ts`                             | New — two writable maps                                                                                             |
+| `src/lib/cut-pattern/label-outline-path.ts`                     | New — pure outline builder                                                                                          |
+| `src/lib/cut-pattern/transform-label-outline.ts`                | New — pure transform                                                                                                |
+| `src/lib/cut-pattern/prepare-merge.ts`                          | New — action that populates `mergedBandPaths`                                                                       |
+| `src/lib/cut-pattern/__tests__/label-outline-path.test.ts`      | New — pure module tests                                                                                             |
+| `src/lib/cut-pattern/__tests__/transform-label-outline.test.ts` | New — pure module tests                                                                                             |
+| `src/lib/cut-pattern/__tests__/prepare-merge.test.ts`           | New — eligibility + behavior tests                                                                                  |
+| `src/components/cut-pattern/PatternLabel.svelte`                | Modify — use extracted outline builder, add `bandId` prop, write to `labelTextDimensions`, hide outline when merged |
+| `src/components/cut-pattern/BandComponent.svelte`               | Modify — pass `bandId={band.id}` to `<PatternLabel>`                                                                |
+| `src/components/cut-pattern/BandCutPatternComponent.svelte`     | Modify — swap `d=` to merged path when available                                                                    |
+| `src/components/nav-header/NavHeader.svelte`                    | Modify — add Prepare Download button, modify Download SVG handler, add invalidation `$effect`                       |

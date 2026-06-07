@@ -12,15 +12,15 @@
 
 ## File Structure
 
-| File | Create/Modify | Responsibility |
-| --- | --- | --- |
-| `src/lib/projection-geometry/types.ts` | Modify | Add `fillAll?: boolean` to `SurfaceProjectionConfig`; add `isFill?: boolean` to `Tube`. |
-| `src/lib/projection-geometry/fill-fan.ts` | Create | Pure fan-construction helpers: `buildFanSections`, `windFanSectionsOutward`, `isDegenerateEdge`, `FAN_DEGENERATE_EPSILON`. |
-| `src/lib/projection-geometry/__tests__/fill-fan.test.ts` | Create | Unit tests for the pure fan helpers (layout, degeneracy, winding). |
-| `src/lib/projection-geometry/generate-projection.ts` | Modify | In `generateSurfaceProjectionBands`: accept `surface`; after edge tubes, when `fillAll`, build a fill `Tube` per polygon from `buildFanSections` + `generateProjectionBands`. Pass `surface` from `makeProjection`. |
-| `src/lib/cut-pattern/generate-pattern.ts` | Modify | In `generateProjectionPattern`, drop `isFill` tubes unless `isOutlinedPatternConfig(patternTypeConfig)`. |
-| `src/lib/cut-pattern/generate-outlined-pattern.ts` | Modify | In `buildOutlinePath`, skip emitting `L` segments to a point coincident (within epsilon) with the current pen position (degenerate collapsed edges). |
-| `src/lib/cut-pattern/__tests__/build-outline-path-degenerate.test.ts` | Create | Unit test that a degenerate fan quad produces a valid closed path with no zero-length `L`. |
+| File                                                                  | Create/Modify | Responsibility                                                                                                                                                                                                      |
+| --------------------------------------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/lib/projection-geometry/types.ts`                                | Modify        | Add `fillAll?: boolean` to `SurfaceProjectionConfig`; add `isFill?: boolean` to `Tube`.                                                                                                                             |
+| `src/lib/projection-geometry/fill-fan.ts`                             | Create        | Pure fan-construction helpers: `buildFanSections`, `windFanSectionsOutward`, `isDegenerateEdge`, `FAN_DEGENERATE_EPSILON`.                                                                                          |
+| `src/lib/projection-geometry/__tests__/fill-fan.test.ts`              | Create        | Unit tests for the pure fan helpers (layout, degeneracy, winding).                                                                                                                                                  |
+| `src/lib/projection-geometry/generate-projection.ts`                  | Modify        | In `generateSurfaceProjectionBands`: accept `surface`; after edge tubes, when `fillAll`, build a fill `Tube` per polygon from `buildFanSections` + `generateProjectionBands`. Pass `surface` from `makeProjection`. |
+| `src/lib/cut-pattern/generate-pattern.ts`                             | Modify        | In `generateProjectionPattern`, drop `isFill` tubes unless `isOutlinedPatternConfig(patternTypeConfig)`.                                                                                                            |
+| `src/lib/cut-pattern/generate-outlined-pattern.ts`                    | Modify        | In `buildOutlinePath`, skip emitting `L` segments to a point coincident (within epsilon) with the current pen position (degenerate collapsed edges).                                                                |
+| `src/lib/cut-pattern/__tests__/build-outline-path-degenerate.test.ts` | Create        | Unit test that a degenerate fan quad produces a valid closed path with no zero-length `L`.                                                                                                                          |
 
 ---
 
@@ -77,6 +77,7 @@ This preserves the 2-facets-per-quad contract with exactly one degenerate facet 
 ### Task 1: Config + Tube type additions
 
 **Files:**
+
 - Modify `src/lib/projection-geometry/types.ts:184-186` (`SurfaceProjectionConfig`) and `:225-234` (`Tube`).
 - Test: none (pure type change; covered by `npm run check`).
 
@@ -109,10 +110,12 @@ This preserves the 2-facets-per-quad contract with exactly one degenerate facet 
 ### Task 2: Pure `isDegenerateEdge` guard (TDD)
 
 **Files:**
+
 - Create `src/lib/projection-geometry/fill-fan.ts`.
 - Test: `src/lib/projection-geometry/__tests__/fill-fan.test.ts`.
 
 - [ ] Write failing test in `src/lib/projection-geometry/__tests__/fill-fan.test.ts`:
+
   ```ts
   import { Vector3 } from 'three';
   import { isDegenerateEdge, FAN_DEGENERATE_EPSILON } from '../fill-fan';
@@ -132,8 +135,10 @@ This preserves the 2-facets-per-quad contract with exactly one degenerate facet 
   	});
   });
   ```
+
 - [ ] Run: `npm run test:unit -- src/lib/projection-geometry/__tests__/fill-fan.test.ts` — expected: FAIL (`Cannot find module '../fill-fan'`).
 - [ ] Implement minimal `src/lib/projection-geometry/fill-fan.ts`:
+
   ```ts
   import { Vector3 } from 'three';
 
@@ -144,6 +149,7 @@ This preserves the 2-facets-per-quad contract with exactly one degenerate facet 
   export const isDegenerateEdge = (a: Vector3, b: Vector3): boolean =>
   	a.distanceToSquared(b) < FAN_DEGENERATE_EPSILON * FAN_DEGENERATE_EPSILON;
   ```
+
 - [ ] Run: `npm run test:unit -- src/lib/projection-geometry/__tests__/fill-fan.test.ts` — expected: PASS.
 - [ ] Commit:
   ```bash
@@ -156,10 +162,12 @@ This preserves the 2-facets-per-quad contract with exactly one degenerate facet 
 ### Task 3: Pure `buildFanSections` (TDD)
 
 **Files:**
+
 - Modify `src/lib/projection-geometry/fill-fan.ts`.
 - Test: append to `src/lib/projection-geometry/__tests__/fill-fan.test.ts`.
 
 - [ ] Append failing test:
+
   ```ts
   import { buildFanSections } from '../fill-fan';
   import { generateProjectionBands } from '../generate-projection';
@@ -201,8 +209,10 @@ This preserves the 2-facets-per-quad contract with exactly one degenerate facet 
   	});
   });
   ```
+
 - [ ] Run: `npm run test:unit -- src/lib/projection-geometry/__tests__/fill-fan.test.ts` — expected: FAIL (`buildFanSections` undefined).
 - [ ] Implement in `src/lib/projection-geometry/fill-fan.ts`:
+
   ```ts
   import type { Section } from './types';
 
@@ -221,6 +231,7 @@ This preserves the 2-facets-per-quad contract with exactly one degenerate facet 
   	return sections;
   };
   ```
+
 - [ ] Run: `npm run test:unit -- src/lib/projection-geometry/__tests__/fill-fan.test.ts` — expected: PASS.
 - [ ] Run: `npm run check` — expected: passes.
 - [ ] Commit:
@@ -234,10 +245,12 @@ This preserves the 2-facets-per-quad contract with exactly one degenerate facet 
 ### Task 4: Pure `windFanSectionsOutward` (TDD)
 
 **Files:**
+
 - Modify `src/lib/projection-geometry/fill-fan.ts`.
 - Test: append to `src/lib/projection-geometry/__tests__/fill-fan.test.ts`.
 
 - [ ] Append failing test (mirrors the winding logic at `generate-projection.ts:1289-1306` — first real facet normal must point away from projection center):
+
   ```ts
   import { windFanSectionsOutward } from '../fill-fan';
 
@@ -256,9 +269,7 @@ This preserves the 2-facets-per-quad contract with exactly one degenerate facet 
   		const p0 = sections[0].points[0];
   		const p1 = sections[0].points[1];
   		const p2 = sections[1].points[0];
-  		const n = new Vector3()
-  			.subVectors(p1, p0)
-  			.cross(new Vector3().subVectors(p2, p0));
+  		const n = new Vector3().subVectors(p1, p0).cross(new Vector3().subVectors(p2, p0));
   		const c = new Vector3().addVectors(p0, p1).add(p2).divideScalar(3);
   		return n.dot(new Vector3().subVectors(c, projCenter));
   	};
@@ -275,6 +286,7 @@ This preserves the 2-facets-per-quad contract with exactly one degenerate facet 
   	});
   });
   ```
+
 - [ ] Run: `npm run test:unit -- src/lib/projection-geometry/__tests__/fill-fan.test.ts` — expected: FAIL (`windFanSectionsOutward` undefined).
 - [ ] Implement in `src/lib/projection-geometry/fill-fan.ts` (reuse the exact pattern from `generate-projection.ts:1289-1306`; mutate-and-return is acceptable since `buildFanSections` returns fresh clones):
   ```ts
@@ -312,6 +324,7 @@ This preserves the 2-facets-per-quad contract with exactly one degenerate facet 
 ### Task 5: Wire fill tubes into `generateSurfaceProjectionBands`
 
 **Files:**
+
 - Modify `src/lib/projection-geometry/generate-projection.ts`:
   - signature `:1222-1226`, body after the edge-tube loop ends `:1319`, before/after partner matching `:1321-1335`, return `:1337`.
   - caller `makeProjection` `:1498-1502`.
@@ -331,6 +344,7 @@ This preserves the 2-facets-per-quad contract with exactly one degenerate facet 
   import { buildFanSections, windFanSectionsOutward } from './fill-fan';
   ```
 - [ ] After the edge-tube `for` loop closes (after `generate-projection.ts:1319`) and **before** the partner-matching `try` block (`:1321`), insert fill-tube generation. Reuse `projCenter` (already defined `:1246-1249`) and the surface-intersector pattern (`:504-507`):
+
   ```ts
   // Interior fill bands (fillAll). Each polygon → one dedicated fan Tube (isFill).
   // Gated to outlined pattern mode downstream (generateProjectionPattern drops isFill
@@ -354,7 +368,9 @@ This preserves the 2-facets-per-quad contract with exactly one degenerate facet 
   		if (hits[0]) {
   			centroidPoint = hits[0].point.clone();
   		} else {
-  			console.warn('fillAll: centroid ray missed surface; falling back to averaged perimeter point');
+  			console.warn(
+  				'fillAll: centroid ray missed surface; falling back to averaged perimeter point'
+  			);
   			centroidPoint = avg.clone();
   		}
 
@@ -375,6 +391,7 @@ This preserves the 2-facets-per-quad contract with exactly one degenerate facet 
   	});
   }
   ```
+
 - [ ] Confirm `GlobuleAddress_Tube` and `Raycaster` are imported in this file — both already are (`Raycaster` at `:25`; `GlobuleAddress_Tube` is used at `:1260`).
 - [ ] Ensure fill tubes are **excluded** from partner matching: the matchers iterate `tubes` (`:1327-1332`). Guard them so `isFill` tubes are skipped. In `matchSurfaceProjectionCrossBandPartners` (`:1346-1375`), `matchSurfaceProjectionTubeEnds`, and `matchSurfaceProjectionSequentialPartners`, add an early `if (tube.isFill) return;` / `continue;` at the start of each per-tube iteration. (Locate each `tubes.forEach((tube) => {` / `for` loop over tubes and add the guard.)
 - [ ] Update the caller in `makeProjection` (`generate-projection.ts:1498-1502`) to pass `surface`:
@@ -399,6 +416,7 @@ This preserves the 2-facets-per-quad contract with exactly one degenerate facet 
 ### Task 6: Gate fill tubes to outlined pattern in `generateProjectionPattern`
 
 **Files:**
+
 - Modify `src/lib/cut-pattern/generate-pattern.ts:116-134` (entry of `generateProjectionPattern`).
 - Test: none new (type-checked; visual gate). `isOutlinedPatternConfig` already imported (`generate-pattern.ts:22`).
 
@@ -423,6 +441,7 @@ This preserves the 2-facets-per-quad contract with exactly one degenerate facet 
 ### Task 7: Degenerate-edge guard in `buildOutlinePath` (TDD)
 
 **Files:**
+
 - Create test `src/lib/cut-pattern/__tests__/build-outline-path-degenerate.test.ts`.
 - Modify `src/lib/cut-pattern/generate-outlined-pattern.ts:383-437` (`buildOutlinePath`).
 
@@ -430,6 +449,7 @@ Note: `buildOutlinePath` is module-private. To TDD it directly, **export it** fr
 
 - [ ] Export `buildOutlinePath` and its `OutlineEdge` type: change `const buildOutlinePath = (` → `export const buildOutlinePath = (` (`:383`) and `type OutlineEdge = {` → `export type OutlineEdge = {` (`:79`).
 - [ ] Write failing test `src/lib/cut-pattern/__tests__/build-outline-path-degenerate.test.ts`:
+
   ```ts
   import { Vector3 } from 'three';
   import { buildOutlinePath, type OutlineEdge } from '../generate-outlined-pattern';
@@ -480,6 +500,7 @@ Note: `buildOutlinePath` is module-private. To TDD it directly, **export it** fr
   	});
   });
   ```
+
 - [ ] Run: `npm run test:unit -- src/lib/cut-pattern/__tests__/build-outline-path-degenerate.test.ts` — expected: FAIL on the first test (a zero-length `L` to the coincident centroid is currently emitted).
 - [ ] Implement the guard in `buildOutlinePath` second pass (`generate-outlined-pattern.ts:424-433`). Track the last emitted pen position and skip non-tab `L` segments that land within epsilon of it:
   ```ts
@@ -522,6 +543,7 @@ Note: `buildOutlinePath` is module-private. To TDD it directly, **export it** fr
 ### Task 8: UI toggle for `fillAll`
 
 **Files:**
+
 - Locate the surface-projection controls component and the config that backs `projectionConfig.surfaceProjectionConfig` (search controls directory). If `surfaceProjectionConfig` is not yet surfaced in the editing config/UI (it currently is never written — see Verified facts), add a minimal toggle bound to `surfaceProjectionConfig.fillAll`. Mirror the existing `surfaceProjectionDivisions` control's wiring.
 - Test: none (UI; behavior verified visually).
 

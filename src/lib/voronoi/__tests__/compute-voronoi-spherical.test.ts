@@ -35,11 +35,7 @@ describe('toLonLat', () => {
 describe('fromLonLat', () => {
 	it('round-trips arbitrary 3D points', () => {
 		const center = new Vector3(0, 0, 0);
-		const points = [
-			new Vector3(1, 2, 3),
-			new Vector3(-4, 1, -2),
-			new Vector3(0.5, 0.5, 0.5)
-		];
+		const points = [new Vector3(1, 2, 3), new Vector3(-4, 1, -2), new Vector3(0.5, 0.5, 0.5)];
 		points.forEach((original) => {
 			const [lon, lat] = toLonLat(original, center);
 			const direction = fromLonLat(lon, lat);
@@ -122,7 +118,10 @@ describe('lloydRelaxSpherical', () => {
 			[88, 44]
 		];
 		const relaxed = lloydRelaxSpherical(clustered, 20);
-		const distBefore = Math.hypot(clustered[0][0] - clustered[1][0], clustered[0][1] - clustered[1][1]);
+		const distBefore = Math.hypot(
+			clustered[0][0] - clustered[1][0],
+			clustered[0][1] - clustered[1][1]
+		);
 		const distAfter = Math.hypot(relaxed[0][0] - relaxed[1][0], relaxed[0][1] - relaxed[1][1]);
 		expect(distAfter).toBeGreaterThan(distBefore);
 	});

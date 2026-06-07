@@ -15,6 +15,7 @@
 ## File Structure
 
 ### New files
+
 ```
 src/lib/voronoi/
   types.ts                         # VoronoiConfig, VoronoiSeedConfig, SeedMethod, VoronoiEdgeGraph
@@ -34,6 +35,7 @@ src/components/controls/
 ```
 
 ### Modified files
+
 ```
 src/lib/types.ts                   # Add voronoiConfigs to SuperGlobuleConfig, SuperGlobule
 src/lib/generate-superglobule.ts   # Add Voronoi pipeline alongside projection pipeline
@@ -47,6 +49,7 @@ src/routes/designer2/+page.svelte  # Add "Voronoi" option to SelectBar
 ## Task 1: Install d3-delaunay and add Voronoi types
 
 **Files:**
+
 - Create: `src/lib/voronoi/types.ts`
 - Modify: `src/lib/types.ts:886-907`
 - Modify: `package.json`
@@ -182,6 +185,7 @@ git commit -m "feat(voronoi): add VoronoiConfig types and update SuperGlobuleCon
 ## Task 2: Seed point generation
 
 **Files:**
+
 - Create: `src/lib/voronoi/generate-seeds.ts`
 - Create: `src/lib/voronoi/__tests__/generate-seeds.test.ts`
 
@@ -340,6 +344,7 @@ git commit -m "feat(voronoi): add seed point generation with seeded PRNG"
 ## Task 3: UV mapping (3D ↔ spherical projection)
 
 **Files:**
+
 - Create: `src/lib/voronoi/uv-mapping.ts`
 - Create: `src/lib/voronoi/__tests__/uv-mapping.test.ts`
 
@@ -407,11 +412,7 @@ describe('fromUVToDirection', () => {
 
 	it('round-trips arbitrary 3D points', () => {
 		const center = new Vector3(0, 0, 0);
-		const points = [
-			new Vector3(1, 2, 3),
-			new Vector3(-4, 1, -2),
-			new Vector3(0.5, 0.5, 0.5)
-		];
+		const points = [new Vector3(1, 2, 3), new Vector3(-4, 1, -2), new Vector3(0.5, 0.5, 0.5)];
 		points.forEach((original) => {
 			const [u, v] = toUV(original, center);
 			const direction = fromUVToDirection(u, v);
@@ -452,11 +453,7 @@ export function fromUVToDirection(u: number, v: number): Vector3 {
 	const theta = u * 2 * Math.PI - Math.PI;
 	const phi = v * Math.PI;
 	const sinPhi = Math.sin(phi);
-	return new Vector3(
-		sinPhi * Math.cos(theta),
-		sinPhi * Math.sin(theta),
-		Math.cos(phi)
-	);
+	return new Vector3(sinPhi * Math.cos(theta), sinPhi * Math.sin(theta), Math.cos(phi));
 }
 ```
 
@@ -480,6 +477,7 @@ git commit -m "feat(voronoi): add spherical UV mapping with round-trip support"
 ## Task 4: Voronoi computation with d3-delaunay and Lloyd relaxation
 
 **Files:**
+
 - Create: `src/lib/voronoi/compute-voronoi.ts`
 - Create: `src/lib/voronoi/__tests__/compute-voronoi.test.ts`
 
@@ -566,10 +564,7 @@ describe('lloydRelax', () => {
 			clustered[0][0] - clustered[1][0],
 			clustered[0][1] - clustered[1][1]
 		);
-		const distanceAfter = Math.hypot(
-			relaxed[0][0] - relaxed[1][0],
-			relaxed[0][1] - relaxed[1][1]
-		);
+		const distanceAfter = Math.hypot(relaxed[0][0] - relaxed[1][0], relaxed[0][1] - relaxed[1][1]);
 		expect(distanceAfter).toBeGreaterThan(distanceBefore);
 	});
 });
@@ -677,10 +672,7 @@ function close(a: number, b: number): boolean {
 	return Math.abs(a - b) < EPSILON;
 }
 
-export function lloydRelax(
-	seeds: [number, number][],
-	iterations: number
-): [number, number][] {
+export function lloydRelax(seeds: [number, number][], iterations: number): [number, number][] {
 	if (iterations === 0) return seeds;
 
 	let current = seeds.slice();
@@ -746,6 +738,7 @@ git commit -m "feat(voronoi): add d3-delaunay Voronoi computation with Lloyd rel
 ## Task 5: Cross-section application for Voronoi edges
 
 **Files:**
+
 - Create: `src/lib/voronoi/apply-cross-sections.ts`
 - Create: `src/lib/voronoi/__tests__/apply-cross-sections.test.ts`
 
@@ -780,21 +773,9 @@ const makeSimpleCrossSection = (): CrossSectionConfig => ({
 
 describe('applyCrossSectionsToEdge', () => {
 	it('returns one section per sample point', () => {
-		const edgePoints = [
-			new Vector3(0, 0, 0),
-			new Vector3(1, 0, 0),
-			new Vector3(2, 0, 0)
-		];
-		const curvePoints = [
-			new Vector3(0, 1, 0),
-			new Vector3(1, 1, 0),
-			new Vector3(2, 1, 0)
-		];
-		const normals = [
-			new Vector3(0, 0, 1),
-			new Vector3(0, 0, 1),
-			new Vector3(0, 0, 1)
-		];
+		const edgePoints = [new Vector3(0, 0, 0), new Vector3(1, 0, 0), new Vector3(2, 0, 0)];
+		const curvePoints = [new Vector3(0, 1, 0), new Vector3(1, 1, 0), new Vector3(2, 1, 0)];
+		const normals = [new Vector3(0, 0, 1), new Vector3(0, 0, 1), new Vector3(0, 0, 1)];
 
 		const sections = applyCrossSectionsToEdge(
 			edgePoints,
@@ -859,10 +840,7 @@ Create `src/lib/voronoi/apply-cross-sections.ts`:
 ```typescript
 import { Vector3 } from 'three';
 import type { CrossSectionConfig, ProjectionEdge } from '$lib/projection-geometry/types';
-import {
-	getPoints,
-	getCrossSectionScale
-} from '$lib/projection-geometry/generate-projection';
+import { getPoints, getCrossSectionScale } from '$lib/projection-geometry/generate-projection';
 
 type EdgeSection = ProjectionEdge['sections'][number];
 
@@ -872,10 +850,7 @@ export function applyCrossSectionsToEdge(
 	normals: Vector3[],
 	crossSectionConfig: CrossSectionConfig
 ): EdgeSection[] {
-	const definitionPoints = getPoints(
-		crossSectionConfig.curves,
-		crossSectionConfig.sampleMethod
-	);
+	const definitionPoints = getPoints(crossSectionConfig.curves, crossSectionConfig.sampleMethod);
 	const xMax = definitionPoints.reduce((max, p) => Math.max(max, p.x), 0);
 	const normalizedPoints = definitionPoints.map((p) => p.clone().set(p.x / xMax, p.y));
 
@@ -897,10 +872,7 @@ export function applyCrossSectionsToEdge(
 		yDirection.copy(normal).normalize();
 
 		const baseScalingLength = edgePoint.distanceTo(curvePoint);
-		const { xScale, yScale } = getCrossSectionScale(
-			crossSectionConfig.scaling,
-			baseScalingLength
-		);
+		const { xScale, yScale } = getCrossSectionScale(crossSectionConfig.scaling, baseScalingLength);
 
 		const crossSectionPoints = normalizedPoints.map((p) =>
 			edgePoint
@@ -941,6 +913,7 @@ git commit -m "feat(voronoi): add cross-section application for Voronoi edges"
 ## Task 6: Main pipeline — `makeVoronoi`
 
 **Files:**
+
 - Create: `src/lib/voronoi/generate-voronoi.ts`
 - Create: `src/lib/voronoi/__tests__/generate-voronoi.test.ts`
 
@@ -1107,14 +1080,7 @@ export function makeVoronoi(
 
 	const voronoiResult = computeVoronoi(seedsUV);
 
-	const edgePairs = buildEdgePairs(
-		voronoiResult,
-		seedsUV,
-		center,
-		surface,
-		raycaster,
-		config
-	);
+	const edgePairs = buildEdgePairs(voronoiResult, seedsUV, center, surface, raycaster, config);
 
 	const { orientation, tubeSymmetry } = config.bandConfig;
 	const tubes: Tube[] = [];
@@ -1263,7 +1229,7 @@ function combineSections(edge0: ProjectionEdge, edge1: ProjectionEdge): Section[
 }
 
 function matchTubeEnds(tubes: Tube[]) {
-	const endFacets: { facet: typeof tubes[0]['bands'][0]['facets'][0]; tubeIdx: number }[] = [];
+	const endFacets: { facet: (typeof tubes)[0]['bands'][0]['facets'][0]; tubeIdx: number }[] = [];
 	tubes.forEach((tube, tubeIdx) =>
 		tube.bands.forEach((band) =>
 			band.facets.forEach((facet, f, facets) => {
@@ -1281,7 +1247,11 @@ function matchTubeEnds(tubes: Tube[]) {
 
 			[firstFacet, lastFacet].forEach((facet) => {
 				if (!facet.address) return;
-				const edgeToMatch = getEdge('base', facet === firstFacet ? 'even' : band.facets.length - 1, facet.orientation);
+				const edgeToMatch = getEdge(
+					'base',
+					facet === firstFacet ? 'even' : band.facets.length - 1,
+					facet.orientation
+				);
 
 				for (const { facet: candidate, tubeIdx } of endFacets) {
 					if (tubeIdx === t) continue;
@@ -1292,7 +1262,9 @@ function matchTubeEnds(tubes: Tube[]) {
 						newMeta[match.t0] = {
 							partner: { ...candidate.address, edge: match.t1 }
 						};
-						facet.meta = facet.meta ? { ...facet.meta, ...newMeta } : (newMeta as typeof facet.meta);
+						facet.meta = facet.meta
+							? { ...facet.meta, ...newMeta }
+							: (newMeta as typeof facet.meta);
 						break;
 					}
 				}
@@ -1309,7 +1281,11 @@ function matchFacets(tubes: Tube[]) {
 			band.facets.forEach((facet) => {
 				if (!facet.address) return;
 				if (!facet.meta) {
-					facet.meta = { ab: { partner: {} }, bc: { partner: {} }, ac: { partner: {} } } as typeof facet.meta;
+					facet.meta = {
+						ab: { partner: {} },
+						bc: { partner: {} },
+						ac: { partner: {} }
+					} as typeof facet.meta;
 				}
 				// Internal facet partners (within band) are computed by band position
 				const f = facet.address.facet;
@@ -1320,7 +1296,8 @@ function matchFacets(tubes: Tube[]) {
 				const bandOffset = (facet.orientation === 'axial-left' ? -1 : 1) * (isEven ? -1 : 1);
 				const partnerBand = (b + bandOffset + bandCount) % bandCount;
 				const partnerBandOrientation = tube.bands[partnerBand]?.orientation ?? facet.orientation;
-				const facetOffset = (isEven ? 1 : -1) * (partnerBandOrientation === facet.orientation ? 1 : 0);
+				const facetOffset =
+					(isEven ? 1 : -1) * (partnerBandOrientation === facet.orientation ? 1 : 0);
 				const partnerFacet = f + facetOffset;
 
 				const second = getEdge('second', f, facet.orientation);
@@ -1333,7 +1310,11 @@ function matchFacets(tubes: Tube[]) {
 				if (!isFirst && facet.meta) {
 					const base = getEdge('base', f, facet.orientation);
 					(facet.meta as Record<string, { partner: object }>)[base] = {
-						partner: { ...facet.address, facet: f - 1, edge: getEdge('second', f - 1, facet.orientation) }
+						partner: {
+							...facet.address,
+							facet: f - 1,
+							edge: getEdge('second', f - 1, facet.orientation)
+						}
 					};
 				}
 				if (!isLast && facet.meta) {
@@ -1371,6 +1352,7 @@ Expected: All tests PASS.
 - [ ] **Step 5: Fix any issues**
 
 If tests fail, debug by checking:
+
 - Surface generation works (check `getDefaultSurfaceConfig()` returns a valid sphere config)
 - Raycasting hits the surface (ensure BVH is applied)
 - UV mapping and Voronoi edge extraction produce valid edges
@@ -1388,6 +1370,7 @@ git commit -m "feat(voronoi): add makeVoronoi pipeline — full config to tubes 
 ## Task 7: Worker and store integration
 
 **Files:**
+
 - Modify: `src/lib/generate-superglobule.ts`
 - Modify: `src/lib/stores/workerStore.ts`
 - Modify: `src/lib/shades-config.ts`
@@ -1397,6 +1380,7 @@ git commit -m "feat(voronoi): add makeVoronoi pipeline — full config to tubes 
 In `src/lib/generate-superglobule.ts`, add the Voronoi pipeline alongside the projection pipeline:
 
 Add import at top:
+
 ```typescript
 import { makeVoronoi } from './voronoi/generate-voronoi';
 ```
@@ -1443,56 +1427,60 @@ export const generateSuperGlobule = (superConfig: SuperGlobuleConfig): SuperGlob
 In `rehydrateSuperGlobule` function (after the subGlobules rehydration, before the return):
 
 ```typescript
-	// Rehydrate voronoiResults
-	const voronoiResults = (result.voronoiResults ?? []).map((voronoiResult) => ({
-		...voronoiResult,
-		tubes: voronoiResult.tubes.map((tube) => ({
-			...tube,
-			sections: tube.sections.map((section) => ({
-				points: section.points.map(rehydrateVector3)
-			})),
-			bands: tube.bands.map((band) => ({
-				...band,
-				facets: band.facets.map((facet) => ({
-					...facet,
-					triangle: rehydrateTriangle(
-						facet.triangle as unknown as Parameters<typeof rehydrateTriangle>[0]
-					)
-				}))
+// Rehydrate voronoiResults
+const voronoiResults = (result.voronoiResults ?? []).map((voronoiResult) => ({
+	...voronoiResult,
+	tubes: voronoiResult.tubes.map((tube) => ({
+		...tube,
+		sections: tube.sections.map((section) => ({
+			points: section.points.map(rehydrateVector3)
+		})),
+		bands: tube.bands.map((band) => ({
+			...band,
+			facets: band.facets.map((facet) => ({
+				...facet,
+				triangle: rehydrateTriangle(
+					facet.triangle as unknown as Parameters<typeof rehydrateTriangle>[0]
+				)
 			}))
 		}))
-	}));
+	}))
+}));
 ```
 
 Update the return statement to include `voronoiResults`:
+
 ```typescript
-	return {
-		...result,
-		projections,
-		globuleTubes,
-		subGlobules,
-		voronoiResults
-	};
+return {
+	...result,
+	projections,
+	globuleTubes,
+	subGlobules,
+	voronoiResults
+};
 ```
 
 Also add surface regeneration after the projection surface regeneration (after line 197):
+
 ```typescript
-		// Regenerate Voronoi surfaces
-		(resolver.config.voronoiConfigs ?? []).forEach((voronoiConfig, i) => {
-			if (rehydrated.voronoiResults?.[i]) {
-				rehydrated.voronoiResults[i].surface = generateSurface(voronoiConfig.surfaceConfig);
-			}
-		});
+// Regenerate Voronoi surfaces
+(resolver.config.voronoiConfigs ?? []).forEach((voronoiConfig, i) => {
+	if (rehydrated.voronoiResults?.[i]) {
+		rehydrated.voronoiResults[i].surface = generateSurface(voronoiConfig.surfaceConfig);
+	}
+});
 ```
 
 - [ ] **Step 3: Add default VoronoiConfig to `shades-config.ts`**
 
 Add import:
+
 ```typescript
 import type { VoronoiConfig } from './voronoi/types';
 ```
 
 Add default config (near the projection defaults):
+
 ```typescript
 export const defaultVoronoiConfig: VoronoiConfig = {
 	type: 'VoronoiConfig',
@@ -1568,6 +1556,7 @@ git commit -m "feat(voronoi): integrate Voronoi pipeline into worker and stores"
 ## Task 8: UI — VoronoiControl and designer2 integration
 
 **Files:**
+
 - Create: `src/components/controls/VoronoiControl.svelte`
 - Modify: `src/routes/designer2/+page.svelte`
 
@@ -1744,11 +1733,13 @@ Create `src/components/controls/VoronoiControl.svelte`:
 Modify `src/routes/designer2/+page.svelte`:
 
 Add import (near other component imports):
+
 ```typescript
 import VoronoiControl from '../../components/controls/VoronoiControl.svelte';
 ```
 
 Add `{ name: 'Voronoi' }` to the SelectBar options array (after `{ name: 'Projection' }`):
+
 ```typescript
 options={[
 	{ name: 'Silhouette', value: 'SilhouetteConfig' },
@@ -1766,6 +1757,7 @@ options={[
 ```
 
 Add conditional render (after the ProjectionControl block):
+
 ```svelte
 {:else if showControl?.name === 'Voronoi'}
 	<VoronoiControl />
@@ -1783,8 +1775,8 @@ At the location where projection tubes are collected (e.g., `superGlobule.projec
 
 ```typescript
 const allTubes = [
-	...superGlobule.projections.flatMap(p => p.tubes),
-	...(superGlobule.voronoiResults ?? []).flatMap(r => r.tubes)
+	...superGlobule.projections.flatMap((p) => p.tubes),
+	...(superGlobule.voronoiResults ?? []).flatMap((r) => r.tubes)
 ];
 ```
 
@@ -1853,6 +1845,7 @@ npm run dev
 ```
 
 Verify:
+
 1. Default config (no voronoi) still works — projections render correctly
 2. Add a Voronoi config → tubes appear in 3D viewport
 3. Adjust point count → geometry changes (more/fewer cells)

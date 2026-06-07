@@ -24,7 +24,7 @@ Two changes to outlined-band labels:
 
 - `src/lib/cut-pattern/compute-label-anchor.ts` — `computeOutlinedLabelAnchor(input)` takes
   `edgeStart`, `edgeEnd`, `interiorPoint`, `hasTab`, `tabWidth` and returns `{ anchor,
-  autoAngle }`. **Edge-agnostic** — works for any edge, not just the start cap.
+autoAngle }`. **Edge-agnostic** — works for any edge, not just the start cap.
 - `src/lib/cut-pattern/generate-outlined-pattern.ts`:
   - `getOutlineEdges` (`:170`) builds `OutlineEdge[]` in walk order: **before** edges
     `[0..n-1]` (quad `a→d`), **far-end** at `n`, **after** edges `[n+1..2n]` (quad `c→b`,
@@ -38,7 +38,7 @@ Two changes to outlined-band labels:
   `BandComponent` with `tagAnchorPoint` / `tagAngle`. Self-tag text/rendering lives in
   `BandComponent` → `PatternLabel.svelte`.
 - Self-tag config (`types.ts` ~`:580-592`): `selfTag?: { enabled, height, angle, padding?,
-  stemLength?, stemWidth? }`.
+stemLength?, stemWidth? }`.
 
 ---
 

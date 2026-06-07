@@ -145,11 +145,7 @@
 			{/if}
 			<fieldset disabled={!onTabAvailable}>
 				<LabeledControl label="Enabled">
-					<input
-						type="checkbox"
-						checked={onTab.enabled}
-						onchange={handleOnTabEnabled}
-					/>
+					<input type="checkbox" checked={onTab.enabled} onchange={handleOnTabEnabled} />
 				</LabeledControl>
 				<LabeledControl label="Padding">
 					<NumberInput
@@ -171,11 +167,7 @@
 		<header>Self Tag</header>
 		<Container direction="column">
 			<LabeledControl label="Enabled">
-				<input
-					type="checkbox"
-					checked={selfTag.enabled}
-					onchange={handleSelfTagEnabled}
-				/>
+				<input type="checkbox" checked={selfTag.enabled} onchange={handleSelfTagEnabled} />
 			</LabeledControl>
 			<LabeledControl label="External Tag">
 				<input

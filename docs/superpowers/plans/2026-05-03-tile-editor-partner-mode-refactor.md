@@ -15,6 +15,7 @@
 ## File Inventory
 
 ### Created
+
 - `src/components/modal/editor/tile-editor/partner-neighbors.ts`
 - `src/components/modal/editor/tile-editor/PartnerEditor.svelte`
 - `src/components/modal/editor/tile-editor/BaseQuadSelector.svelte`
@@ -23,6 +24,7 @@
 - `src/components/modal/editor/tile-editor/__tests__/partner-neighbors.test.ts`
 
 ### Modified
+
 - `src/components/modal/editor/TileEditor.svelte`
 - `src/components/modal/editor/tile-editor/editor-mode.ts`
 - `src/components/modal/editor/tile-editor/partner-pair-resolver.ts`
@@ -35,6 +37,7 @@
 - `src/components/three-renderer/materials.ts`
 
 ### Deleted
+
 - `src/components/modal/editor/tile-editor/PartnerPairChooser.svelte`
 - `src/components/modal/editor/tile-editor/RuleEditViewport.svelte`
 - `src/components/modal/editor/tile-editor/ModeBar.svelte`
@@ -46,6 +49,7 @@
 ## Task 1: `partner-neighbors.ts` skeleton + types + first test
 
 **Files:**
+
 - Create: `src/components/modal/editor/tile-editor/partner-neighbors.ts`
 - Test: `src/components/modal/editor/tile-editor/__tests__/partner-neighbors.test.ts`
 
@@ -185,6 +189,7 @@ git push
 ## Task 2: Same-band top/bottom partner resolution
 
 **Files:**
+
 - Modify: `src/components/modal/editor/tile-editor/partner-neighbors.ts`
 - Test: `src/components/modal/editor/tile-editor/__tests__/partner-neighbors.test.ts`
 
@@ -245,9 +250,7 @@ const sameBandTop = (): ResolvedPartner | null => {
 		address: { ...baseAddress, facet: baseAddress.facet + 1 },
 		quad: next.quad,
 		path: structuredClone(next.path),
-		originalPath: next.meta?.originalPath
-			? structuredClone(next.meta.originalPath)
-			: undefined
+		originalPath: next.meta?.originalPath ? structuredClone(next.meta.originalPath) : undefined
 	};
 };
 
@@ -261,9 +264,7 @@ const sameBandBottom = (): ResolvedPartner | null => {
 		address: { ...baseAddress, facet: baseAddress.facet - 1 },
 		quad: prev.quad,
 		path: structuredClone(prev.path),
-		originalPath: prev.meta?.originalPath
-			? structuredClone(prev.meta.originalPath)
-			: undefined
+		originalPath: prev.meta?.originalPath ? structuredClone(prev.meta.originalPath) : undefined
 	};
 };
 
@@ -291,6 +292,7 @@ git push
 ## Task 3: Cross-tube partner resolution (Partner Start / End)
 
 **Files:**
+
 - Modify: `src/components/modal/editor/tile-editor/partner-neighbors.ts`
 - Test: `src/components/modal/editor/tile-editor/__tests__/partner-neighbors.test.ts`
 
@@ -403,6 +405,7 @@ git push
 ## Task 4: Left/right partner resolution with rigid 2-point transform
 
 **Files:**
+
 - Modify: `src/components/modal/editor/tile-editor/partner-neighbors.ts`
 - Test: `src/components/modal/editor/tile-editor/__tests__/partner-neighbors.test.ts`
 
@@ -445,7 +448,12 @@ describe('left/right partner resolution', () => {
 				['M', 0, 0],
 				['L', 5, 0]
 			],
-			quad: { a: { x: 0, y: 0, z: 0 }, b: { x: 5, y: 0, z: 0 }, c: { x: 5, y: 5, z: 0 }, d: { x: 0, y: 5, z: 0 } },
+			quad: {
+				a: { x: 0, y: 0, z: 0 },
+				b: { x: 5, y: 0, z: 0 },
+				c: { x: 5, y: 5, z: 0 },
+				d: { x: 0, y: 5, z: 0 }
+			},
 			label: '0'
 		} as any;
 		const rightFacet = {
@@ -453,7 +461,12 @@ describe('left/right partner resolution', () => {
 				['M', 100, 0],
 				['L', 105, 0]
 			],
-			quad: { a: { x: 100, y: 0, z: 0 }, b: { x: 105, y: 0, z: 0 }, c: { x: 105, y: 5, z: 0 }, d: { x: 100, y: 5, z: 0 } },
+			quad: {
+				a: { x: 100, y: 0, z: 0 },
+				b: { x: 105, y: 0, z: 0 },
+				c: { x: 105, y: 5, z: 0 },
+				d: { x: 100, y: 5, z: 0 }
+			},
 			label: '0'
 		} as any;
 		const baseBand = {
@@ -495,12 +508,7 @@ type Pt = { x: number; y: number };
 
 // Rigid 2-point transform: returns a function that maps src1→dst1, src2→dst2
 // (assumes |src2-src1| = |dst2-dst1|, true under isometric flattening).
-const rigidFromTwoPoints = (
-	src1: Pt,
-	src2: Pt,
-	dst1: Pt,
-	dst2: Pt
-): ((p: Pt) => Pt) => {
+const rigidFromTwoPoints = (src1: Pt, src2: Pt, dst1: Pt, dst2: Pt): ((p: Pt) => Pt) => {
 	const srcAng = Math.atan2(src2.y - src1.y, src2.x - src1.x);
 	const dstAng = Math.atan2(dst2.y - dst1.y, dst2.x - dst1.x);
 	const theta = dstAng - srcAng;
@@ -541,7 +549,12 @@ const resolveLeft = (): ResolvedPartner | null => {
 	return {
 		role: 'left',
 		ruleSet: 'acrossBands',
-		address: { globule: baseAddress.globule, tube: baseAddress.tube, band: baseAddress.band - 1, facet: baseAddress.facet },
+		address: {
+			globule: baseAddress.globule,
+			tube: baseAddress.tube,
+			band: baseAddress.band - 1,
+			facet: baseAddress.facet
+		},
 		quad: transformQuadFn(facet.quad, fn),
 		path: transformPathFn(structuredClone(facet.path), fn),
 		originalPath: facet.meta?.originalPath
@@ -560,7 +573,12 @@ const resolveRight = (): ResolvedPartner | null => {
 	return {
 		role: 'right',
 		ruleSet: 'acrossBands',
-		address: { globule: baseAddress.globule, tube: baseAddress.tube, band: baseAddress.band + 1, facet: baseAddress.facet },
+		address: {
+			globule: baseAddress.globule,
+			tube: baseAddress.tube,
+			band: baseAddress.band + 1,
+			facet: baseAddress.facet
+		},
 		quad: transformQuadFn(facet.quad, fn),
 		path: transformPathFn(structuredClone(facet.path), fn),
 		originalPath: facet.meta?.originalPath
@@ -592,6 +610,7 @@ git push
 ## Task 5: BaseQuadSelector cascading dropdowns
 
 **Files:**
+
 - Create: `src/components/modal/editor/tile-editor/BaseQuadSelector.svelte`
 
 - [ ] **Step 1: Create the component**
@@ -786,6 +805,7 @@ git push
 ## Task 6: PartnerRulesPanel
 
 **Files:**
+
 - Create: `src/components/modal/editor/tile-editor/PartnerRulesPanel.svelte`
 
 - [ ] **Step 1: Create the component**
@@ -886,6 +906,7 @@ git push
 ## Task 7: PartnersViewport scaffolding + viewport transform helper
 
 **Files:**
+
 - Create: `src/components/modal/editor/tile-editor/PartnersViewport.svelte`
 
 - [ ] **Step 1: Create the component scaffold with viewport transform**
@@ -1060,6 +1081,7 @@ git push
 ## Task 8: Render base + partner quads as filled polygons
 
 **Files:**
+
 - Modify: `src/components/modal/editor/tile-editor/PartnersViewport.svelte`
 
 - [ ] **Step 1: Add color map and quad polygons**
@@ -1077,10 +1099,7 @@ const ROLE_FILL: Record<PartnerRole | 'base', string> = {
 const ROLE_FILL_CROSS_TUBE_TOP = 'rgba(0, 200, 0, 0.1)';
 const ROLE_FILL_CROSS_TUBE_BOTTOM = 'rgba(220, 0, 0, 0.1)';
 
-const fillFor = (
-	role: PartnerRole | 'base',
-	partner: ResolvedPartner | null
-): string => {
+const fillFor = (role: PartnerRole | 'base', partner: ResolvedPartner | null): string => {
 	if (role === 'base') return ROLE_FILL.base;
 	if (partner?.ruleSet === 'partner.endEnd') return ROLE_FILL_CROSS_TUBE_TOP;
 	if (partner?.ruleSet === 'partner.startEnd') return ROLE_FILL_CROSS_TUBE_BOTTOM;
@@ -1097,7 +1116,8 @@ Replace the `<svg>` body's placeholder with:
 ```svelte
 <svg width={size.width} height={size.height} {viewBox} class="canvas">
 	<polygon
-		points="{tBaseQuad.a.x},{tBaseQuad.a.y} {tBaseQuad.b.x},{tBaseQuad.b.y} {tBaseQuad.c.x},{tBaseQuad.c.y} {tBaseQuad.d.x},{tBaseQuad.d.y}"
+		points="{tBaseQuad.a.x},{tBaseQuad.a.y} {tBaseQuad.b.x},{tBaseQuad.b.y} {tBaseQuad.c
+			.x},{tBaseQuad.c.y} {tBaseQuad.d.x},{tBaseQuad.d.y}"
 		style:fill={fillFor('base', null)}
 		stroke="rgba(0,0,0,0.15)"
 		stroke-width={0.2 * scale}
@@ -1105,7 +1125,8 @@ Replace the `<svg>` body's placeholder with:
 	/>
 	{#each partnersList as p (p.role)}
 		<polygon
-			points="{p.quad.a.x},{p.quad.a.y} {p.quad.b.x},{p.quad.b.y} {p.quad.c.x},{p.quad.c.y} {p.quad.d.x},{p.quad.d.y}"
+			points="{p.quad.a.x},{p.quad.a.y} {p.quad.b.x},{p.quad.b.y} {p.quad.c.x},{p.quad.c.y} {p.quad
+				.d.x},{p.quad.d.y}"
 			style:fill={fillFor(p.role, p)}
 			stroke="rgba(0,0,0,0.1)"
 			stroke-width={0.2 * scale}
@@ -1133,6 +1154,7 @@ git push
 ## Task 9: Render adjusted + original paths
 
 **Files:**
+
 - Modify: `src/components/modal/editor/tile-editor/PartnersViewport.svelte`
 
 - [ ] **Step 1: Add path rendering**
@@ -1150,10 +1172,7 @@ const ORIGINAL_STROKE: Record<PartnerRole | 'base', string> = {
 const ORIGINAL_STROKE_CROSS_TUBE_TOP = 'rgba(0, 90, 0, 0.3)';
 const ORIGINAL_STROKE_CROSS_TUBE_BOTTOM = 'rgba(90, 0, 0, 0.3)';
 
-const originalStrokeFor = (
-	role: PartnerRole | 'base',
-	partner: ResolvedPartner | null
-): string => {
+const originalStrokeFor = (role: PartnerRole | 'base', partner: ResolvedPartner | null): string => {
 	if (role === 'base') return ORIGINAL_STROKE.base;
 	if (partner?.ruleSet === 'partner.endEnd') return ORIGINAL_STROKE_CROSS_TUBE_TOP;
 	if (partner?.ruleSet === 'partner.startEnd') return ORIGINAL_STROKE_CROSS_TUBE_BOTTOM;
@@ -1169,7 +1188,7 @@ Inside the `<svg>`, add path rendering AFTER the polygons:
 		d={svgPathStringFromSegments(tBaseOriginal)}
 		fill="none"
 		stroke={originalStrokeFor('base', null)}
-		style:stroke-width="{0.4 * scale}"
+		style:stroke-width={0.4 * scale}
 	/>
 {/if}
 {#each partnersList as p (p.role + ':orig')}
@@ -1178,7 +1197,7 @@ Inside the `<svg>`, add path rendering AFTER the polygons:
 			d={svgPathStringFromSegments(p.originalPath)}
 			fill="none"
 			stroke={originalStrokeFor(p.role, p)}
-			style:stroke-width="{0.4 * scale}"
+			style:stroke-width={0.4 * scale}
 		/>
 	{/if}
 {/each}
@@ -1187,14 +1206,14 @@ Inside the `<svg>`, add path rendering AFTER the polygons:
 	d={svgPathStringFromSegments(tBasePath)}
 	fill="none"
 	stroke="black"
-	style:stroke-width="{0.4 * scale}"
+	style:stroke-width={0.4 * scale}
 />
 {#each partnersList as p (p.role + ':path')}
 	<path
 		d={svgPathStringFromSegments(p.path)}
 		fill="none"
 		stroke="black"
-		style:stroke-width="{0.4 * scale}"
+		style:stroke-width={0.4 * scale}
 	/>
 {/each}
 ```
@@ -1217,6 +1236,7 @@ git push
 ## Task 10: Render rule connection lines + click-to-select + Delete
 
 **Files:**
+
 - Modify: `src/components/modal/editor/tile-editor/PartnersViewport.svelte`
 
 - [ ] **Step 1: Add connection rendering and selection state**
@@ -1266,15 +1286,27 @@ const connectionsFor = (rules: IndexPair[], partner: ResolvedPartner | null): Co
 		const baseV = findVertexAtFlatIndex(baseVertices, rule.target);
 		const partnerV = findVertexAtFlatIndex(pVerts, rule.source);
 		if (!baseV || !partnerV) continue;
-		out.push({ partner, baseVertex: baseV, partnerVertex: partnerV, x1: tx, y1: ty, x2: sx, y2: sy });
+		out.push({
+			partner,
+			baseVertex: baseV,
+			partnerVertex: partnerV,
+			x1: tx,
+			y1: ty,
+			x2: sx,
+			y2: sy
+		});
 	}
 	return out;
 };
 
 const allConnections = $derived.by(() => {
 	const out: ConnectionLine[] = [];
-	if (tTop) out.push(...connectionsFor(tTop.ruleSet === 'withinBand' ? withinBand : partnerEndEnd, tTop));
-	if (tBottom) out.push(...connectionsFor(tBottom.ruleSet === 'withinBand' ? withinBand : partnerStartEnd, tBottom));
+	if (tTop)
+		out.push(...connectionsFor(tTop.ruleSet === 'withinBand' ? withinBand : partnerEndEnd, tTop));
+	if (tBottom)
+		out.push(
+			...connectionsFor(tBottom.ruleSet === 'withinBand' ? withinBand : partnerStartEnd, tBottom)
+		);
 	if (tLeft) out.push(...connectionsFor(acrossBands, tLeft));
 	if (tRight) out.push(...connectionsFor(acrossBands, tRight));
 	return out;
@@ -1285,7 +1317,11 @@ $effect(() => {
 		if ((e.key === 'Delete' || e.key === 'Backspace') && selectedConnection) {
 			const partner = partnersList.find((p) => p.role === selectedConnection!.partnerRole);
 			if (partner) {
-				onDeleteConnection(partner, selectedConnection.baseVertex, selectedConnection.partnerVertex);
+				onDeleteConnection(
+					partner,
+					selectedConnection.baseVertex,
+					selectedConnection.partnerVertex
+				);
 				selectedConnection = null;
 			}
 		}
@@ -1309,7 +1345,7 @@ In the `<svg>`, after the path rendering, add:
 		class:selected={selectedConnection?.partnerRole === conn.partner.role &&
 			selectedConnection?.baseVertex === conn.baseVertex &&
 			selectedConnection?.partnerVertex === conn.partnerVertex}
-		style:stroke-width="{0.3 * scale}"
+		style:stroke-width={0.3 * scale}
 		onclick={() =>
 			(selectedConnection = {
 				partnerRole: conn.partner.role,
@@ -1354,6 +1390,7 @@ git push
 ## Task 11: Render vertex circles + click flow for adding rules
 
 **Files:**
+
 - Modify: `src/components/modal/editor/tile-editor/PartnersViewport.svelte`
 
 - [ ] **Step 1: Add vertex rendering and selection state**
@@ -1388,7 +1425,7 @@ In the `<svg>`, after connections, add:
 		r={0.5 * scale}
 		class="base-vertex"
 		class:selected={selectedBaseVertex === v}
-		style:stroke-width="{0.15 * scale}"
+		style:stroke-width={0.15 * scale}
 		onclick={() => handleBaseVertexClick(v)}
 	/>
 {/each}
@@ -1399,7 +1436,7 @@ In the `<svg>`, after connections, add:
 			cy={v.y}
 			r={0.5 * scale}
 			class="partner-vertex"
-			style:stroke-width="{0.15 * scale}"
+			style:stroke-width={0.15 * scale}
 			onclick={() => handlePartnerVertexClick(p, v)}
 		/>
 	{/each}
@@ -1442,6 +1479,7 @@ git push
 ## Task 12: Rule-aware vertex labels
 
 **Files:**
+
 - Modify: `src/components/modal/editor/tile-editor/PartnersViewport.svelte`
 
 - [ ] **Step 1: Add labeled-vertex computation and rendering**
@@ -1459,10 +1497,7 @@ const ROLE_LABEL_COLOR: Record<PartnerRole | 'base', string> = {
 const ROLE_LABEL_CROSS_TOP = 'rgb(0, 140, 0)';
 const ROLE_LABEL_CROSS_BOTTOM = 'rgb(180, 0, 0)';
 
-const labelColorFor = (
-	role: PartnerRole | 'base',
-	partner: ResolvedPartner | null
-): string => {
+const labelColorFor = (role: PartnerRole | 'base', partner: ResolvedPartner | null): string => {
 	if (role === 'base') return ROLE_LABEL_COLOR.base;
 	if (partner?.ruleSet === 'partner.endEnd') return ROLE_LABEL_CROSS_TOP;
 	if (partner?.ruleSet === 'partner.startEnd') return ROLE_LABEL_CROSS_BOTTOM;
@@ -1491,9 +1526,7 @@ const partnerRuleSourceIndices = (partner: ResolvedPartner): Set<number> => {
 };
 
 const baseLabeledVertices = $derived(
-	baseVertices.filter((v) =>
-		v.refs.some((r) => baseRuleTargetIndices.has(r.index))
-	)
+	baseVertices.filter((v) => v.refs.some((r) => baseRuleTargetIndices.has(r.index)))
 );
 ```
 
@@ -1554,6 +1587,7 @@ git push
 ## Task 13: Hover tooltip with all flat indices
 
 **Files:**
+
 - Modify: `src/components/modal/editor/tile-editor/PartnersViewport.svelte`
 
 - [ ] **Step 1: Add tooltip state and rendering**
@@ -1594,7 +1628,7 @@ Update vertex circles to set tooltip on mouseenter:
 		r={0.5 * scale}
 		class="base-vertex"
 		class:selected={selectedBaseVertex === v}
-		style:stroke-width="{0.15 * scale}"
+		style:stroke-width={0.15 * scale}
 		onclick={() => handleBaseVertexClick(v)}
 		onmouseenter={() => tooltipFor(v, labelColorFor('base', null))}
 		onmouseleave={clearTooltip}
@@ -1607,7 +1641,7 @@ Update vertex circles to set tooltip on mouseenter:
 			cy={v.y}
 			r={0.5 * scale}
 			class="partner-vertex"
-			style:stroke-width="{0.15 * scale}"
+			style:stroke-width={0.15 * scale}
 			onclick={() => handlePartnerVertexClick(p, v)}
 			onmouseenter={() => tooltipFor(v, labelColorFor(p.role, p))}
 			onmouseleave={clearTooltip}
@@ -1622,8 +1656,14 @@ Render tooltip outside the SVG, inside the container:
 {#if tooltip}
 	<div
 		class="tooltip"
-		style:left="{((tooltip.x + parseFloat(viewBox.split(' ')[2]) / 2) / parseFloat(viewBox.split(' ')[2])) * size.width + 8}px"
-		style:top="{((tooltip.y + parseFloat(viewBox.split(' ')[3]) / 2) / parseFloat(viewBox.split(' ')[3])) * size.height + 8}px"
+		style:left="{((tooltip.x + parseFloat(viewBox.split(' ')[2]) / 2) /
+			parseFloat(viewBox.split(' ')[2])) *
+			size.width +
+			8}px"
+		style:top="{((tooltip.y + parseFloat(viewBox.split(' ')[3]) / 2) /
+			parseFloat(viewBox.split(' ')[3])) *
+			size.height +
+			8}px"
 		style:border-left-color={tooltip.color}
 	>
 		{tooltip.indices.join(', ')}
@@ -1664,6 +1704,7 @@ git push
 ## Task 14: PartnerEditor wiring (selector + viewport + panel) with snapshot
 
 **Files:**
+
 - Create: `src/components/modal/editor/tile-editor/PartnerEditor.svelte`
 
 - [ ] **Step 1: Create PartnerEditor**
@@ -1717,7 +1758,14 @@ git push
 		address = next;
 		if (!next) {
 			snapshot = null;
-			partnerHighlightStore.set({ source: 'projection', base: null, top: null, bottom: null, left: null, right: null });
+			partnerHighlightStore.set({
+				source: 'projection',
+				base: null,
+				top: null,
+				bottom: null,
+				left: null,
+				right: null
+			});
 			return;
 		}
 		const bands = flattenBands(next.source);
@@ -1760,7 +1808,12 @@ git push
 	};
 
 	const handleAddRule = (partner: ResolvedPartner, baseVertex: Vertex, partnerVertex: Vertex) => {
-		const next = addRuleForPairing(ruleArray(partner.ruleSet), spec.unit, baseVertex, partnerVertex);
+		const next = addRuleForPairing(
+			ruleArray(partner.ruleSet),
+			spec.unit,
+			baseVertex,
+			partnerVertex
+		);
 		setRuleArray(partner.ruleSet, next);
 	};
 
@@ -1769,17 +1822,32 @@ git push
 		baseVertex: Vertex,
 		partnerVertex: Vertex
 	) => {
-		const next = removeRulesForPairing(ruleArray(partner.ruleSet), spec.unit, baseVertex, partnerVertex);
+		const next = removeRulesForPairing(
+			ruleArray(partner.ruleSet),
+			spec.unit,
+			baseVertex,
+			partnerVertex
+		);
 		setRuleArray(partner.ruleSet, next);
 	};
 
 	const handleDeleteIndex = (key: RuleSetKey, index: number) => {
 		const arr = ruleArray(key);
-		setRuleArray(key, arr.filter((_, i) => i !== index));
+		setRuleArray(
+			key,
+			arr.filter((_, i) => i !== index)
+		);
 	};
 
 	onDestroy(() => {
-		partnerHighlightStore.set({ source: 'projection', base: null, top: null, bottom: null, left: null, right: null });
+		partnerHighlightStore.set({
+			source: 'projection',
+			base: null,
+			top: null,
+			bottom: null,
+			left: null,
+			right: null
+		});
 	});
 </script>
 
@@ -1851,6 +1919,7 @@ git push
 ## Task 15: PartnerEditor refresh banner with diff detection
 
 **Files:**
+
 - Modify: `src/components/modal/editor/tile-editor/PartnerEditor.svelte`
 
 - [ ] **Step 1: Add live-pair derivation, diff, and banner**
@@ -1938,6 +2007,7 @@ git push
 ## Task 16: Update partnerHighlightStore + selectionStores + Highlight + materials
 
 **Files:**
+
 - Modify: `src/lib/stores/partnerHighlightStore.ts`
 - Modify: `src/lib/stores/selectionStores.ts`
 - Modify: `src/lib/stores/index.ts`
@@ -2127,6 +2197,7 @@ git push
 ## Task 17: Replace ModeBar with binary toggle in TileEditor; mount PartnerEditor
 
 **Files:**
+
 - Modify: `src/components/modal/editor/TileEditor.svelte`
 - Modify: `src/components/modal/editor/tile-editor/editor-mode.ts`
 
@@ -2184,7 +2255,8 @@ Replace the template body:
 			/>
 			<div class="mode-toggle">
 				<button class:active={mode === 'unit'} onclick={() => (mode = 'unit')}>Unit</button>
-				<button class:active={mode === 'partner'} onclick={() => (mode = 'partner')}>Partner</button>
+				<button class:active={mode === 'partner'} onclick={() => (mode = 'partner')}>Partner</button
+				>
 			</div>
 			{#if draft}
 				{#if mode === 'unit'}
@@ -2207,7 +2279,13 @@ Replace the template body:
 						/>
 					</div>
 				{:else}
-					<PartnerEditor spec={draft} onChange={(next) => { draft = next; isDirty = true; }} />
+					<PartnerEditor
+						spec={draft}
+						onChange={(next) => {
+							draft = next;
+							isDirty = true;
+						}}
+					/>
 				{/if}
 			{:else}
 				<div class="empty">No variant selected.</div>
@@ -2292,6 +2370,7 @@ And remove `handleToggleSkip` for now (it'll come back in Task 18).
 
 Run: `npm run dev`
 Open the Tile Editor floater. Confirm:
+
 - Unit / Partner toggle is present.
 - Unit mode renders the segment path editor as before.
 - Partner mode renders the `BaseQuadSelector` with 4 dropdowns; viewport area shows "Select a base quad to begin." until source/tube/band/quad are picked.
@@ -2310,6 +2389,7 @@ git push
 ## Task 18: Migrate Skip Remove from top-level mode to Unit tool
 
 **Files:**
+
 - Modify: `src/components/modal/editor/tile-editor/UnitToolbar.svelte`
 - Modify: `src/components/modal/editor/SegmentPathEditor.svelte`
 - Modify: `src/components/modal/editor/TileEditor.svelte`
@@ -2423,6 +2503,7 @@ Pass the new props to `SegmentPathEditor`:
 
 Run: `npm run dev`
 Confirm:
+
 - Unit mode has a "Skip Remove" tool button alongside drag/add/remove.
 - Selecting it lets the user click vertices to toggle them in/out of `skipRemove`.
 
@@ -2439,6 +2520,7 @@ git push
 ## Task 19: Cleanup — delete deprecated files; trim editor-mode and resolver
 
 **Files:**
+
 - Delete: `src/components/modal/editor/tile-editor/PartnerPairChooser.svelte`
 - Delete: `src/components/modal/editor/tile-editor/RuleEditViewport.svelte`
 - Delete: `src/components/modal/editor/tile-editor/ModeBar.svelte`
@@ -2477,6 +2559,7 @@ npm run check
 ```
 
 Expected:
+
 - Unit tests: all pass (including the new `partner-neighbors.test.ts` and the trimmed `partner-pair-resolver.test.ts`).
 - Type check: no NEW errors compared to the pre-refactor baseline. (The 427-error baseline may have shifted slightly; the goal is no regressions related to this work.)
 
@@ -2487,6 +2570,7 @@ npm run dev
 ```
 
 Confirm:
+
 - Tile Editor opens; Unit / Partner toggle visible.
 - Unit mode: drag, add, remove, skipRemove all work as before.
 - Partner mode: cascade selectors work; selecting a quad shows base + partners; clicking base vertex then partner vertex adds a rule visible as a blue connection line and as an entry in the right-side panel; clicking a connection line + Delete removes it; the model-changed banner appears if the model is regenerated.

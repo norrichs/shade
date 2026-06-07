@@ -72,7 +72,10 @@ const facetWithMeta = (
 	};
 };
 
-const addr = (band: number, opts: { tube?: number; globule?: number } = {}): GlobuleAddress_Band => ({
+const addr = (
+	band: number,
+	opts: { tube?: number; globule?: number } = {}
+): GlobuleAddress_Band => ({
 	globule: opts.globule ?? 0,
 	tube: opts.tube ?? 0,
 	band
@@ -105,7 +108,11 @@ describe('collectBandTabs', () => {
 
 	it('classifies tabs as start / mid / end by facet position when meta absent', () => {
 		// 5 facets, all with full tabs. Expect: start, mid(0), mid(1), mid(2), end.
-		const fullTabOuter = { a: [0, 0] as [number, number], b: [1, 0] as [number, number], c: [0.5, 1] as [number, number] };
+		const fullTabOuter = {
+			a: [0, 0] as [number, number],
+			b: [1, 0] as [number, number],
+			c: [0.5, 1] as [number, number]
+		};
 		const facets: Facet[] = [0, 1, 2, 3, 4].map((i) => ({
 			...bareFacet(tri([i, 0], [i + 1, 0], [i, 1])),
 			tab: makeFullTab(fullTabOuter, 'c')
@@ -190,7 +197,11 @@ describe('collectBandTabs', () => {
 
 	it('skips facets without tabs but still classifies present tabs by index (no meta)', () => {
 		// 3 facets, only the middle one has a tab → it must be 'mid'.
-		const fullTabOuter = { a: [0, 0] as [number, number], b: [1, 0] as [number, number], c: [0.5, 1] as [number, number] };
+		const fullTabOuter = {
+			a: [0, 0] as [number, number],
+			b: [1, 0] as [number, number],
+			c: [0.5, 1] as [number, number]
+		};
 		const facets: Facet[] = [
 			bareFacet(tri([0, 0], [1, 0], [0, 1])),
 			{ ...bareFacet(tri([1, 0], [1, 1], [0, 1])), tab: makeFullTab(fullTabOuter, 'c') },
@@ -317,7 +328,11 @@ describe('collectBandTabs', () => {
 	it('semantic: falls back to positional when meta is passed but partner metadata is missing on the facet', () => {
 		// Meta provided but facet has no .meta — fallback should kick in so we
 		// still get a sensible (positional) classification.
-		const fullTabOuter = { a: [0, 0] as [number, number], b: [1, 0] as [number, number], c: [0.5, 1] as [number, number] };
+		const fullTabOuter = {
+			a: [0, 0] as [number, number],
+			b: [1, 0] as [number, number],
+			c: [0.5, 1] as [number, number]
+		};
 		const facets: Facet[] = [0, 1, 2].map((i) => ({
 			...bareFacet(tri([i, 0], [i + 1, 0], [i, 1])),
 			tab: makeFullTab(fullTabOuter, 'c')

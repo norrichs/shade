@@ -15,8 +15,8 @@ Both methods are toggleable via `voronoiMethod: 'spherical' | 'uv'` on `VoronoiC
 type VoronoiMethod = 'spherical' | 'uv';
 
 type VoronoiConfig = {
-  // ...existing fields
-  voronoiMethod: VoronoiMethod;
+	// ...existing fields
+	voronoiMethod: VoronoiMethod;
 };
 ```
 
@@ -57,6 +57,7 @@ Both paths converge at the same output: Voronoi edges with 3D sample points and 
 ## Edge Mapping (Spherical Path)
 
 `d3-geo-voronoi` returns cell polygons as arrays of `[lon, lat]` coordinates. Edge extraction follows the same pattern as the UV path:
+
 1. For each cell, iterate polygon edges
 2. Find the neighbor sharing each edge
 3. Deduplicate (only keep edge where `cellIdx < neighborIdx`)
@@ -67,6 +68,7 @@ The 3D edge sampling then works the same as the UV path: interpolate along the e
 ## UI
 
 Add a select/toggle to `VoronoiControl.svelte`:
+
 - Label: "Method"
 - Options: "Spherical" / "UV"
 - Default: "Spherical"

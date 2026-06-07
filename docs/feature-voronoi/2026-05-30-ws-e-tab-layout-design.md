@@ -55,7 +55,7 @@ center, on the edge facing the **farther** band.
 - This is **per-band**, with **no awareness of band index within the tube or the center
   seam** — so it can't express the inner/outer rule yet.
 - `OutlinedTabConfig` (`types.ts ~:620-629`): `{ bandEdge?, bandEnd?, shape, tabWidth,
-  inset? }`.
+inset? }`.
 - `generateOutlinedBandPattern` (`:442`) receives `bandIndex` and per-band quads; the tube
   total band count is known in `generateOutlinedTubePattern` (`:554`,
   `alignedBands.length`).
@@ -68,12 +68,12 @@ center, on the edge facing the **farther** band.
 
 ```ts
 export type OutlinedTabConfig = {
-  bandEdge?: TabEdgeOption;       // governs the CENTER seam only when tabLayout set
-  bandEnd?: TabEdgeOption;
-  tabLayout?: 'inner' | 'outer';  // NEW
-  shape: TabShape;
-  tabWidth: number;
-  inset?: number;
+	bandEdge?: TabEdgeOption; // governs the CENTER seam only when tabLayout set
+	bandEnd?: TabEdgeOption;
+	tabLayout?: 'inner' | 'outer'; // NEW
+	shape: TabShape;
+	tabWidth: number;
+	inset?: number;
 };
 ```
 
@@ -108,7 +108,7 @@ For seam `s` between bands `s` and `s+1`:
     (if `nearer === s` → its `after` edge; if `nearer === s+1` → its `before` edge).
   - `outer`: `farther` carries the tab (opposite side).
 
-`centerSeamIndex`: for even `N`, `N/2 - 1`. For odd `N` there is a center *band*
+`centerSeamIndex`: for even `N`, `N/2 - 1`. For odd `N` there is a center _band_
 (`(N-1)/2`), not a center seam; the two seams adjacent to that band tie at distance 0.5.
 **Tie-break:** treat the **lower** of the two tied seams as the center seam (deterministic),
 and document it. (The brief only specifies even `N`; this keeps odd `N` well-defined.)

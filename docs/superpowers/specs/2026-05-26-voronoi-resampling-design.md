@@ -13,14 +13,14 @@ Voronoi resampling is a new geometry generation method, sibling to the existing 
 
 The structural analogy is direct:
 
-| Projection | Voronoi |
-|---|---|
-| Polyhedron face (polygon) | Voronoi cell (polygon) |
-| Polyhedron vertex | Voronoi vertex |
-| Polyhedron edge → tube | Voronoi edge → tube |
-| Edge projected onto surface via raycasting | Edge mapped to 3D via UV → barycentric |
-| Edge divisions = sample count along tube | Edge divisions = sample count along tube |
-| 4 end partners per tube | 4 end partners per tube |
+| Projection                                 | Voronoi                                  |
+| ------------------------------------------ | ---------------------------------------- |
+| Polyhedron face (polygon)                  | Voronoi cell (polygon)                   |
+| Polyhedron vertex                          | Voronoi vertex                           |
+| Polyhedron edge → tube                     | Voronoi edge → tube                      |
+| Edge projected onto surface via raycasting | Edge mapped to 3D via UV → barycentric   |
+| Edge divisions = sample count along tube   | Edge divisions = sample count along tube |
+| 4 end partners per tube                    | 4 end partners per tube                  |
 
 ## Approach: Adapter Pattern
 
@@ -50,18 +50,18 @@ Sits alongside `BaseProjectionConfig` in `SuperGlobuleConfig` as a sibling array
 
 ```typescript
 type SuperGlobuleConfig = {
-  // ...existing fields
-  voronoiConfigs: VoronoiConfig[];
+	// ...existing fields
+	voronoiConfigs: VoronoiConfig[];
 };
 
 type VoronoiConfig = {
-  type: 'VoronoiConfig';
-  meta: { transform: TransformConfig };
-  surfaceConfig: SurfaceConfig;            // Reuse: Sphere | Capsule | Globule
-  seedConfig: VoronoiSeedConfig;
-  crossSectionConfig: CrossSectionConfig;  // Reuse from projection
-  bandConfig: ProjectionBandConfig;        // Reuse: orientation, symmetry
-  edgeDivisions: number;                   // Sample count along each Voronoi edge
+	type: 'VoronoiConfig';
+	meta: { transform: TransformConfig };
+	surfaceConfig: SurfaceConfig; // Reuse: Sphere | Capsule | Globule
+	seedConfig: VoronoiSeedConfig;
+	crossSectionConfig: CrossSectionConfig; // Reuse from projection
+	bandConfig: ProjectionBandConfig; // Reuse: orientation, symmetry
+	edgeDivisions: number; // Sample count along each Voronoi edge
 };
 ```
 
@@ -71,17 +71,17 @@ Seed generation is a pluggable strategy. Everything downstream receives `Vector3
 
 ```typescript
 type VoronoiSeedConfig = {
-  type: 'VoronoiSeedConfig';
-  seedMethod: SeedMethod;
-  relaxationIterations: number;    // Lloyd relaxation (0 = pure random)
+	type: 'VoronoiSeedConfig';
+	seedMethod: SeedMethod;
+	relaxationIterations: number; // Lloyd relaxation (0 = pure random)
 };
 
-type SeedMethod = CenterProjectionSeedMethod;  // Extensible union
+type SeedMethod = CenterProjectionSeedMethod; // Extensible union
 
 type CenterProjectionSeedMethod = {
-  type: 'centerProjection';
-  pointCount: number;
-  seed: number;                    // PRNG seed for reproducibility
+	type: 'centerProjection';
+	pointCount: number;
+	seed: number; // PRNG seed for reproducibility
 };
 ```
 
@@ -100,6 +100,7 @@ SeedMethod → generateSeeds(method, surface) → Vector3[]
 ### Step 1: Generate Seed Points
 
 Using the `centerProjection` method:
+
 - Initialize a seeded PRNG with `seedConfig.seedMethod.seed`
 - Generate `pointCount` random direction vectors
 - Cast rays from surface center in each direction
@@ -110,16 +111,19 @@ The seed method is independent from downstream processing. Future methods (manua
 ### Step 2: UV Mapping + Lloyd Relaxation
 
 **UV projection** (spherical mapping):
+
 - Normalize each 3D point relative to surface center → unit sphere direction
 - Convert to spherical coordinates `(theta, phi)` → UV `(u, v)`
 
 **Lloyd relaxation** (applied in UV space):
+
 - For `relaxationIterations` iterations:
   1. Compute Voronoi diagram of current UV seeds
   2. Move each seed to its cell's centroid
 - Produces more uniform cell sizes while preserving organic character
 
 **Polar distortion handling:**
+
 - Duplicate seed points across the UV boundary seam before computing Voronoi
 - Clip Voronoi edges to UV bounds
 - Handle wrap-around edges at the seam
@@ -136,6 +140,7 @@ The seed method is independent from downstream processing. Future methods (manua
 ### Step 4: Map Edges to 3D + Sample
 
 For each Voronoi edge:
+
 1. Interpolate `edgeDivisions` points along the edge in UV space
 2. Map each UV point back to 3D:
    - Find which surface mesh triangle the UV point falls in (UV-space triangle lookup)
@@ -149,6 +154,7 @@ For each Voronoi edge:
 ### Steps 5–7: Shared Pipeline
 
 Unchanged from projection:
+
 - Apply cross-sections at each sample point (perpendicular profiles)
 - `combineSections` pairs edges to form complete section rings
 - `generateProjectionBands` converts sections to bands and tubes
@@ -157,6 +163,7 @@ Unchanged from projection:
 ### Edge Topology
 
 Voronoi edge topology maps directly to the projection model:
+
 - Each Voronoi edge connects 2 Voronoi vertices → one tube
 - Each Voronoi vertex has valence 3 (always, by Voronoi properties)
 - Each tube has 4 end partners (2 per end)
@@ -165,9 +172,11 @@ Voronoi edge topology maps directly to the projection model:
 ## Dependencies
 
 **New:**
+
 - `d3-delaunay` — Voronoi/Delaunay computation (~15KB, tree-shakeable)
 
 **Existing (reused):**
+
 - Three.js — raycasting, Vector3, Triangle
 - bezier-js — cross-section curves
 

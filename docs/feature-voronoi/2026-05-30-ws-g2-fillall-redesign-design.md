@@ -65,7 +65,7 @@ no partner" (partners aren't assigned yet at fill-build time).
   `2 + 2·d` bands. **Only the two outermost bands border open space**: band 0's outer side is the
   `curve0` polyline, the last band's outer side is the `curve1` polyline. Interior division bands
   never touch open space. Polygon ownership comes from `projection.polygons[i].edges[...].sections[]
-  .intersections.curve`. Group border bands by polygon.
+.intersections.curve`. Group border bands by polygon.
 - **voronoi** (`makeVoronoi`): per tube the two outer sides map to cells A/B via the edge's
   `cellIndices` and `curvePointsA`/`curvePointsB`. Group border bands by cell.
 
@@ -134,7 +134,7 @@ level by reading `facet.isDegenerate`.)
 
 Keep the `isFill` marker and the outlined-only drop gate, but move `isFill` from **Tube-level to
 Band-level** (fill is now a band inside a normal tube). The drop in `generateProjectionPattern`
-changes from "filter fill *tubes*" to "filter fill *bands* within tubes" when the pattern type is
+changes from "filter fill _tubes_" to "filter fill _bands_ within tubes" when the pattern type is
 not outlined. Purpose unchanged: tiled/panel patterns must not receive degenerate fill geometry.
 
 ---

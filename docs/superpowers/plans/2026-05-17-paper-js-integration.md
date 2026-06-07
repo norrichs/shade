@@ -12,19 +12,19 @@
 
 ## File Structure
 
-| File | Responsibility |
-|---|---|
-| `src/lib/paper/scope.ts` | Lazy headless `PaperScope` setup. Exposes `getPaperScope()` returning the initialized `paper` object. |
-| `src/lib/paper/path-segment-to-paper.ts` | `pathSegmentsToPaper(segments): paper.PathItem`. Uses `svgPathStringFromSegments` + `paper.PathItem.create`. |
-| `src/lib/paper/paper-to-path-segment.ts` | `paperToPathSegments(item): PathSegment[]`. Walks paper segments/children and emits `M`/`L`/`C`/`Z`. |
-| `src/lib/paper/path-operations.ts` | `unitePaths`, `subtractPaths`, `intersectPaths`, `excludePaths` — `(a: PathSegment[], b: PathSegment[]) => PathSegment[]`. |
-| `src/lib/paper/index.ts` | Public re-exports for everything above. |
-| `src/lib/paper/__tests__/path-segment-to-paper.test.ts` | Round-trip and shape tests for the forward converter. |
-| `src/lib/paper/__tests__/paper-to-path-segment.test.ts` | Tests for emitting `L`/`C`/`Z` and handling compound paths. |
-| `src/lib/paper/__tests__/path-operations.test.ts` | Tests for `unitePaths` on overlapping rects, disjoint rects, identical shapes. |
-| `src/lib/cut-pattern/merge-outline-with-label.ts` | `mergeOutlineWithLabel(outline: PathSegment[], label: PathSegment[]): PathSegment[]` — thin wrapper over `unitePaths` with input validation. |
-| `src/lib/cut-pattern/__tests__/merge-outline-with-label.test.ts` | Two-rect "kissing" scenario producing one contour; label fully outside outline producing two contours (compound). |
-| `package.json` | Add `paper` to `dependencies`. |
+| File                                                             | Responsibility                                                                                                                               |
+| ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/lib/paper/scope.ts`                                         | Lazy headless `PaperScope` setup. Exposes `getPaperScope()` returning the initialized `paper` object.                                        |
+| `src/lib/paper/path-segment-to-paper.ts`                         | `pathSegmentsToPaper(segments): paper.PathItem`. Uses `svgPathStringFromSegments` + `paper.PathItem.create`.                                 |
+| `src/lib/paper/paper-to-path-segment.ts`                         | `paperToPathSegments(item): PathSegment[]`. Walks paper segments/children and emits `M`/`L`/`C`/`Z`.                                         |
+| `src/lib/paper/path-operations.ts`                               | `unitePaths`, `subtractPaths`, `intersectPaths`, `excludePaths` — `(a: PathSegment[], b: PathSegment[]) => PathSegment[]`.                   |
+| `src/lib/paper/index.ts`                                         | Public re-exports for everything above.                                                                                                      |
+| `src/lib/paper/__tests__/path-segment-to-paper.test.ts`          | Round-trip and shape tests for the forward converter.                                                                                        |
+| `src/lib/paper/__tests__/paper-to-path-segment.test.ts`          | Tests for emitting `L`/`C`/`Z` and handling compound paths.                                                                                  |
+| `src/lib/paper/__tests__/path-operations.test.ts`                | Tests for `unitePaths` on overlapping rects, disjoint rects, identical shapes.                                                               |
+| `src/lib/cut-pattern/merge-outline-with-label.ts`                | `mergeOutlineWithLabel(outline: PathSegment[], label: PathSegment[]): PathSegment[]` — thin wrapper over `unitePaths` with input validation. |
+| `src/lib/cut-pattern/__tests__/merge-outline-with-label.test.ts` | Two-rect "kissing" scenario producing one contour; label fully outside outline producing two contours (compound).                            |
+| `package.json`                                                   | Add `paper` to `dependencies`.                                                                                                               |
 
 No existing files are modified except `package.json`. The merge function is created but not yet wired into `generate-outlined-pattern.ts` or `PatternLabel.svelte` — wiring is a follow-up plan once the positioning question (where on the band outline the label attaches) is resolved.
 
@@ -33,12 +33,14 @@ No existing files are modified except `package.json`. The merge function is crea
 ## Task 1: Install `paper` and add headless scope helper
 
 **Files:**
+
 - Modify: `package.json`
 - Create: `src/lib/paper/scope.ts`
 
 - [ ] **Step 1: Install paper**
 
 Run:
+
 ```bash
 npm install paper
 ```
@@ -48,6 +50,7 @@ Expected: `paper` appears under `dependencies` in `package.json`.
 - [ ] **Step 2: Confirm paper-core is reachable**
 
 Run:
+
 ```bash
 node -e "const p = require('paper/dist/paper-core'); p.setup([1,1]); console.log('ok', typeof p.Path);"
 ```
@@ -92,6 +95,7 @@ git commit -m "chore(paper): install paper-core and add headless scope helper"
 ## Task 2: `pathSegmentsToPaper` — forward converter
 
 **Files:**
+
 - Create: `src/lib/paper/path-segment-to-paper.ts`
 - Create: `src/lib/paper/__tests__/path-segment-to-paper.test.ts`
 
@@ -110,13 +114,7 @@ describe('pathSegmentsToPaper', () => {
 	});
 
 	test('converts a closed unit square to a paper.Path with 4 segments', () => {
-		const square: PathSegment[] = [
-			['M', 0, 0],
-			['L', 10, 0],
-			['L', 10, 10],
-			['L', 0, 10],
-			['Z']
-		];
+		const square: PathSegment[] = [['M', 0, 0], ['L', 10, 0], ['L', 10, 10], ['L', 0, 10], ['Z']];
 		const item = pathSegmentsToPaper(square);
 		expect(item.closed).toBe(true);
 		expect(item.segments.length).toBe(4);
@@ -200,6 +198,7 @@ git commit -m "feat(paper): add PathSegment[] → paper.PathItem converter"
 ## Task 3: `paperToPathSegments` — reverse converter
 
 **Files:**
+
 - Create: `src/lib/paper/paper-to-path-segment.ts`
 - Create: `src/lib/paper/__tests__/paper-to-path-segment.test.ts`
 
@@ -219,13 +218,7 @@ describe('paperToPathSegments', () => {
 	});
 
 	test('round-trips a closed unit square as M + 3×L + Z', () => {
-		const square: PathSegment[] = [
-			['M', 0, 0],
-			['L', 10, 0],
-			['L', 10, 10],
-			['L', 0, 10],
-			['Z']
-		];
+		const square: PathSegment[] = [['M', 0, 0], ['L', 10, 0], ['L', 10, 10], ['L', 0, 10], ['Z']];
 		const item = pathSegmentsToPaper(square);
 		const out = paperToPathSegments(item);
 		item.remove();
@@ -240,12 +233,7 @@ describe('paperToPathSegments', () => {
 	});
 
 	test('emits C segments when paper has bezier handles', () => {
-		const curved: PathSegment[] = [
-			['M', 0, 0],
-			['C', 5, 0, 10, 5, 10, 10],
-			['L', 0, 10],
-			['Z']
-		];
+		const curved: PathSegment[] = [['M', 0, 0], ['C', 5, 0, 10, 5, 10, 10], ['L', 0, 10], ['Z']];
 		const item = pathSegmentsToPaper(curved);
 		const out = paperToPathSegments(item);
 		item.remove();
@@ -255,13 +243,7 @@ describe('paperToPathSegments', () => {
 
 	test('handles a CompoundPath as multiple M..Z runs', () => {
 		const paper = getPaperScope();
-		const a = pathSegmentsToPaper([
-			['M', 0, 0],
-			['L', 10, 0],
-			['L', 10, 10],
-			['L', 0, 10],
-			['Z']
-		]);
+		const a = pathSegmentsToPaper([['M', 0, 0], ['L', 10, 0], ['L', 10, 10], ['L', 0, 10], ['Z']]);
 		const b = pathSegmentsToPaper([
 			['M', 20, 0],
 			['L', 30, 0],
@@ -329,7 +311,12 @@ const emitContour = (path: PaperPathLike, out: PathSegment[]): void => {
 	for (let i = 1; i < path.segments.length; i++) {
 		const prev = path.segments[i - 1];
 		const curr = path.segments[i];
-		if (prev.handleOut.x === 0 && prev.handleOut.y === 0 && curr.handleIn.x === 0 && curr.handleIn.y === 0) {
+		if (
+			prev.handleOut.x === 0 &&
+			prev.handleOut.y === 0 &&
+			curr.handleIn.x === 0 &&
+			curr.handleIn.y === 0
+		) {
 			out.push(['L', curr.point.x, curr.point.y]);
 		} else {
 			out.push([
@@ -398,6 +385,7 @@ git commit -m "feat(paper): add paper.PathItem → PathSegment[] converter"
 ## Task 4: Boolean operation wrappers
 
 **Files:**
+
 - Create: `src/lib/paper/path-operations.ts`
 - Create: `src/lib/paper/__tests__/path-operations.test.ts`
 
@@ -407,12 +395,7 @@ Create `src/lib/paper/__tests__/path-operations.test.ts`:
 
 ```ts
 import type { PathSegment } from '$lib/types';
-import {
-	unitePaths,
-	subtractPaths,
-	intersectPaths,
-	excludePaths
-} from '../path-operations';
+import { unitePaths, subtractPaths, intersectPaths, excludePaths } from '../path-operations';
 import { getPaperScope } from '../scope';
 import { pathSegmentsToPaper } from '../path-segment-to-paper';
 
@@ -549,6 +532,7 @@ git commit -m "feat(paper): add boolean operation wrappers (unite/subtract/inter
 ## Task 5: Public barrel & sanity check
 
 **Files:**
+
 - Create: `src/lib/paper/index.ts`
 
 - [ ] **Step 1: Create the barrel**
@@ -559,12 +543,7 @@ Create `src/lib/paper/index.ts`:
 export { getPaperScope } from './scope';
 export { pathSegmentsToPaper } from './path-segment-to-paper';
 export { paperToPathSegments } from './paper-to-path-segment';
-export {
-	unitePaths,
-	subtractPaths,
-	intersectPaths,
-	excludePaths
-} from './path-operations';
+export { unitePaths, subtractPaths, intersectPaths, excludePaths } from './path-operations';
 ```
 
 - [ ] **Step 2: Verify type-check passes for the new module**
@@ -585,6 +564,7 @@ git commit -m "feat(paper): public barrel re-exporting paper utilities"
 ## Task 6: `mergeOutlineWithLabel` — pattern + label combiner
 
 **Files:**
+
 - Create: `src/lib/cut-pattern/merge-outline-with-label.ts`
 - Create: `src/lib/cut-pattern/__tests__/merge-outline-with-label.test.ts`
 
@@ -711,7 +691,7 @@ Expected: branch updated on remote.
 
 ## Notes / Out of scope
 
-- **Where the label gets positioned** — the consumer is responsible for translating/rotating the label `PathSegment[]` into the outline's coordinate space so the stem base intersects the outline. That positioning work is the subject of the original handoff (`specs/handoff-outlined-label-path-merge.md`) and is *not* covered here; this plan only delivers the path-combining primitive.
+- **Where the label gets positioned** — the consumer is responsible for translating/rotating the label `PathSegment[]` into the outline's coordinate space so the stem base intersects the outline. That positioning work is the subject of the original handoff (`specs/handoff-outlined-label-path-merge.md`) and is _not_ covered here; this plan only delivers the path-combining primitive.
 - **Worker compatibility** — paper-core is DOM-free and runs in Web Workers, but this plan does not wire the merge into the worker pipeline. The follow-up plan can decide whether merging happens at generation time (worker) or render time (component); both are viable. The utilities here work in either context.
 - **Curve representation loss** — paper normalizes `Q` and `A` segments to `C` on import. Output of `unitePaths`/`mergeOutlineWithLabel` will only contain `M`/`L`/`C`/`Z`. This is geometry-preserving but not representation-preserving. If a downstream consumer requires arcs to remain arcs, that consumer needs an arc-recognition pass on the output — out of scope here.
 - **CompoundPath inputs** — the converters handle CompoundPath outputs from boolean ops, but `pathSegmentsToPaper` only validates a single leading `M`. If a future need arises for multi-contour inputs, extend the validator.

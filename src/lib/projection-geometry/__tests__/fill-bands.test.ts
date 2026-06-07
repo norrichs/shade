@@ -113,9 +113,7 @@ describe('buildFillBand', () => {
 	it('winds real-facet normals outward (away from projCenter)', () => {
 		const band = buildFillBand({ borderEdge: [P0, P1, P2], center, address, projCenter });
 		const t = band.facets[0].triangle;
-		const normal = new Vector3()
-			.subVectors(t.b, t.a)
-			.cross(new Vector3().subVectors(t.c, t.a));
+		const normal = new Vector3().subVectors(t.b, t.a).cross(new Vector3().subVectors(t.c, t.a));
 		const facetCentroid = new Vector3().addVectors(t.a, t.b).add(t.c).divideScalar(3);
 		const toFacet = new Vector3().subVectors(facetCentroid, projCenter);
 		expect(normal.dot(toFacet)).toBeGreaterThan(0);
@@ -131,13 +129,16 @@ describe('buildFillBand', () => {
 		const pc = new Vector3(0, 0, 0);
 		const addr = { globule: 0, tube: 3, band: 0 };
 
-		const band = buildFillBand({ borderEdge: [Q0, Q1, Q2], center: c, address: addr, projCenter: pc });
+		const band = buildFillBand({
+			borderEdge: [Q0, Q1, Q2],
+			center: c,
+			address: addr,
+			projCenter: pc
+		});
 
 		// First real facet must wind outward after the internal reversal.
 		const t = band.facets[0].triangle;
-		const normal = new Vector3()
-			.subVectors(t.b, t.a)
-			.cross(new Vector3().subVectors(t.c, t.a));
+		const normal = new Vector3().subVectors(t.b, t.a).cross(new Vector3().subVectors(t.c, t.a));
 		const facetCentroid = new Vector3().addVectors(t.a, t.b).add(t.c).divideScalar(3);
 		const toFacet = new Vector3().subVectors(facetCentroid, pc);
 		expect(normal.dot(toFacet)).toBeGreaterThan(0);

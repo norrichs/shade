@@ -76,10 +76,7 @@ describe('lloydRelax', () => {
 			clustered[0][0] - clustered[1][0],
 			clustered[0][1] - clustered[1][1]
 		);
-		const distanceAfter = Math.hypot(
-			relaxed[0][0] - relaxed[1][0],
-			relaxed[0][1] - relaxed[1][1]
-		);
+		const distanceAfter = Math.hypot(relaxed[0][0] - relaxed[1][0], relaxed[0][1] - relaxed[1][1]);
 		expect(distanceAfter).toBeGreaterThan(distanceBefore);
 	});
 });

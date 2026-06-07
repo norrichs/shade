@@ -24,8 +24,7 @@ const facet = (edges: { ab?: Partner; bc?: Partner; ac?: Partner }) => ({
 });
 
 const band = (facets: ReturnType<typeof facet>[]) => ({ facets });
-const tubes = (bandsByTube: ReturnType<typeof band>[][]) =>
-	bandsByTube.map((bands) => ({ bands }));
+const tubes = (bandsByTube: ReturnType<typeof band>[][]) => bandsByTube.map((bands) => ({ bands }));
 
 const addr = (tube: number, b: number): GlobuleAddress_Band => ({ globule: 0, tube, band: b });
 

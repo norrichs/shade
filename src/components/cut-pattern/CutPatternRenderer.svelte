@@ -10,7 +10,14 @@
 		GAP_BETWEEN_BANDS,
 		type WrapInput
 	} from '$lib/cut-pattern/compute-wrapped-origins';
-	import type { BandCutPattern, BandSortIndex, CutPattern, Point, PointConfig2, TubeCutPattern } from '$lib/types';
+	import type {
+		BandCutPattern,
+		BandSortIndex,
+		CutPattern,
+		Point,
+		PointConfig2,
+		TubeCutPattern
+	} from '$lib/types';
 	import BandComponent from './BandComponent.svelte';
 	import BandCutPatternComponent from './BandCutPatternComponent.svelte';
 	import QuadPattern from '../pattern-svg/QuadPattern.svelte';
@@ -32,8 +39,14 @@
 
 	type ResolvedBand = { band: BandCutPattern; tube: TubeCutPattern };
 
-	const resolveBandWithTube = (ref: { globule: number; tube: number; band: number }): ResolvedBand | undefined => {
-		const tube = tubes.find((t) => t.address.tube === ref.tube && t.address.globule === ref.globule);
+	const resolveBandWithTube = (ref: {
+		globule: number;
+		tube: number;
+		band: number;
+	}): ResolvedBand | undefined => {
+		const tube = tubes.find(
+			(t) => t.address.tube === ref.tube && t.address.globule === ref.globule
+		);
 		if (!tube) return undefined;
 		const band = tube.bands.find((b) => b.address.band === ref.band);
 		if (!band) return undefined;
@@ -158,11 +171,8 @@
 		const bands =
 			showGlobuleTubeGeometry.bands || showProjectionGeometry.bands || showVoronoiGeometry.bands;
 		const facets =
-			showGlobuleTubeGeometry.facets ||
-			showProjectionGeometry.facets ||
-			showVoronoiGeometry.facets;
-		const isVoronoiSource =
-			selectionTarget === 'voronoi' || selectionTarget === 'voronoiSurface';
+			showGlobuleTubeGeometry.facets || showProjectionGeometry.facets || showVoronoiGeometry.facets;
+		const isVoronoiSource = selectionTarget === 'voronoi' || selectionTarget === 'voronoiSurface';
 		return (any || isVoronoiSource) && (bands || facets || isVoronoiSource);
 	});
 
@@ -171,7 +181,9 @@
 		getCumulativeOrigins(filteredTubes, GAP_BETWEEN_BANDS, 'center', lineWrap, wrapWidth)
 	);
 	let flatOrigins = $derived(
-		indexedBands ? getFlatOrigins(indexedBands, GAP_BETWEEN_BANDS, 'center', lineWrap, wrapWidth) : undefined
+		indexedBands
+			? getFlatOrigins(indexedBands, GAP_BETWEEN_BANDS, 'center', lineWrap, wrapWidth)
+			: undefined
 	);
 </script>
 

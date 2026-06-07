@@ -17,15 +17,15 @@ Follow-up grab-bag of upgrades after the Voronoi geometry feature. Source brief:
 
 ## Workstreams
 
-| WS | Spec | Brief item(s) | Depends on | Blocks |
-|----|------|---------------|-----------|--------|
-| A | [voronoi](./2026-05-30-ws-a-voronoi-design.md) | #2, #3 | — | — |
-| B | [grouping-codes](./2026-05-30-ws-b-grouping-codes-design.md) | #4 | — | C, D |
-| C | [pattern-tags](./2026-05-30-ws-c-pattern-tags-design.md) | #5 | B | — |
-| D | [csv-export](./2026-05-30-ws-d-csv-export-design.md) | #7 | B | — |
-| E | [tab-layout](./2026-05-30-ws-e-tab-layout-design.md) | #6 | — | — |
-| F | [line-wrap](./2026-05-30-ws-f-line-wrap-design.md) | #8 | — | — |
-| G | [fillall](./2026-05-30-ws-g-fillall-design.md) | #9 | — | — |
+| WS  | Spec                                                         | Brief item(s) | Depends on | Blocks |
+| --- | ------------------------------------------------------------ | ------------- | ---------- | ------ |
+| A   | [voronoi](./2026-05-30-ws-a-voronoi-design.md)               | #2, #3        | —          | —      |
+| B   | [grouping-codes](./2026-05-30-ws-b-grouping-codes-design.md) | #4            | —          | C, D   |
+| C   | [pattern-tags](./2026-05-30-ws-c-pattern-tags-design.md)     | #5            | B          | —      |
+| D   | [csv-export](./2026-05-30-ws-d-csv-export-design.md)         | #7            | B          | —      |
+| E   | [tab-layout](./2026-05-30-ws-e-tab-layout-design.md)         | #6            | —          | —      |
+| F   | [line-wrap](./2026-05-30-ws-f-line-wrap-design.md)           | #8            | —          | —      |
+| G   | [fillall](./2026-05-30-ws-g-fillall-design.md)               | #9            | —          | —      |
 
 ## Parallelization waves
 

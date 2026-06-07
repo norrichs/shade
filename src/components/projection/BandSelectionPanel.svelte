@@ -46,8 +46,8 @@
 							<button
 								class="remove"
 								title="remove"
-								onclick={() =>
-									recordBandSelection(item.source, { ...item.address, facet: 0 })}>×</button
+								onclick={() => recordBandSelection(item.source, { ...item.address, facet: 0 })}
+								>×</button
 							>
 						</div>
 						<div class="partners">

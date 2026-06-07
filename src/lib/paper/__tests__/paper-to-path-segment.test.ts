@@ -9,13 +9,7 @@ describe('paperToPathSegments', () => {
 	});
 
 	test('round-trips a closed unit square as M + 3×L + Z', () => {
-		const square: PathSegment[] = [
-			['M', 0, 0],
-			['L', 10, 0],
-			['L', 10, 10],
-			['L', 0, 10],
-			['Z']
-		];
+		const square: PathSegment[] = [['M', 0, 0], ['L', 10, 0], ['L', 10, 10], ['L', 0, 10], ['Z']];
 		const item = pathSegmentsToPaper(square);
 		const out = paperToPathSegments(item);
 		item.remove();
@@ -30,12 +24,7 @@ describe('paperToPathSegments', () => {
 	});
 
 	test('emits C segments when paper has bezier handles', () => {
-		const curved: PathSegment[] = [
-			['M', 0, 0],
-			['C', 5, 0, 10, 5, 10, 10],
-			['L', 0, 10],
-			['Z']
-		];
+		const curved: PathSegment[] = [['M', 0, 0], ['C', 5, 0, 10, 5, 10, 10], ['L', 0, 10], ['Z']];
 		const item = pathSegmentsToPaper(curved);
 		const out = paperToPathSegments(item);
 		item.remove();
@@ -45,13 +34,7 @@ describe('paperToPathSegments', () => {
 
 	test('handles a CompoundPath as multiple M..Z runs', () => {
 		const paper = getPaperScope();
-		const a = pathSegmentsToPaper([
-			['M', 0, 0],
-			['L', 10, 0],
-			['L', 10, 10],
-			['L', 0, 10],
-			['Z']
-		]);
+		const a = pathSegmentsToPaper([['M', 0, 0], ['L', 10, 0], ['L', 10, 10], ['L', 0, 10], ['Z']]);
 		const b = pathSegmentsToPaper([
 			['M', 20, 0],
 			['L', 30, 0],

@@ -391,57 +391,57 @@ const buildSurfaceSelectionGeometry = (
 		mode
 	);
 
-		const facetPoints = selectedFacets
-			.map(({ triangle }) => [triangle.a, triangle.b, triangle.c])
-			.flat();
-		const facetGeometry = new BufferGeometry().setFromPoints(facetPoints);
-		facetGeometry.computeVertexNormals();
+	const facetPoints = selectedFacets
+		.map(({ triangle }) => [triangle.a, triangle.b, triangle.c])
+		.flat();
+	const facetGeometry = new BufferGeometry().setFromPoints(facetPoints);
+	facetGeometry.computeVertexNormals();
 
-		const partnerPoints = partnerFacets
-			.map(({ triangle }) => [triangle.a, triangle.b, triangle.c])
-			.flat();
-		const partnerGeometry = new BufferGeometry().setFromPoints(partnerPoints);
-		partnerGeometry.computeVertexNormals();
+	const partnerPoints = partnerFacets
+		.map(({ triangle }) => [triangle.a, triangle.b, triangle.c])
+		.flat();
+	const partnerGeometry = new BufferGeometry().setFromPoints(partnerPoints);
+	partnerGeometry.computeVertexNormals();
 
-		const selected = selectedFacets.map((f) => f.address);
-		const selectedPartners = partnerFacets.map((f) => f.address);
-		const selectedStartPartners = startPartnerFacets.map((f) => f.address);
-		const selectedEndPartners = endPartnerFacets.map((f) => f.address);
+	const selected = selectedFacets.map((f) => f.address);
+	const selectedPartners = partnerFacets.map((f) => f.address);
+	const selectedStartPartners = startPartnerFacets.map((f) => f.address);
+	const selectedEndPartners = endPartnerFacets.map((f) => f.address);
 
-		const startPartnerPoints = startPartnerFacets
-			.map(({ triangle }) => [triangle.a, triangle.b, triangle.c])
-			.flat();
-		const startPartnerGeometry = new BufferGeometry().setFromPoints(startPartnerPoints);
-		startPartnerGeometry.computeVertexNormals();
+	const startPartnerPoints = startPartnerFacets
+		.map(({ triangle }) => [triangle.a, triangle.b, triangle.c])
+		.flat();
+	const startPartnerGeometry = new BufferGeometry().setFromPoints(startPartnerPoints);
+	startPartnerGeometry.computeVertexNormals();
 
-		const endPartnerPoints = endPartnerFacets
-			.map(({ triangle }) => [triangle.a, triangle.b, triangle.c])
-			.flat();
-		const endPartnerGeometry = new BufferGeometry().setFromPoints(endPartnerPoints);
-		endPartnerGeometry.computeVertexNormals();
+	const endPartnerPoints = endPartnerFacets
+		.map(({ triangle }) => [triangle.a, triangle.b, triangle.c])
+		.flat();
+	const endPartnerGeometry = new BufferGeometry().setFromPoints(endPartnerPoints);
+	endPartnerGeometry.computeVertexNormals();
 
-		return {
-			isSelected: ((a) => isSelected(a, selected)) as AddressSelector,
-			isPartner: ((a) => isSelected(a, selectedPartners)) as AddressSelector,
-			isSelectedOrPartner: ((a) =>
-				isSelected(a, [
-					...selectedStartPartners,
-					...selectedEndPartners,
-					...selected
-				])) as AddressSelector,
-			isStartPartner: ((a) => isSelected(a, selectedStartPartners)) as AddressSelector,
-			isEndPartner: ((a) => isSelected(a, selectedEndPartners)) as AddressSelector,
-			geometry: {
-				facet: facetGeometry,
-				partner: partnerGeometry,
-				startPartner: startPartnerGeometry,
-				endPartner: endPartnerGeometry
-			},
-			selected,
-			selectedPartners,
-			selectedStartPartners,
-			selectedEndPartners
-		};
+	return {
+		isSelected: ((a) => isSelected(a, selected)) as AddressSelector,
+		isPartner: ((a) => isSelected(a, selectedPartners)) as AddressSelector,
+		isSelectedOrPartner: ((a) =>
+			isSelected(a, [
+				...selectedStartPartners,
+				...selectedEndPartners,
+				...selected
+			])) as AddressSelector,
+		isStartPartner: ((a) => isSelected(a, selectedStartPartners)) as AddressSelector,
+		isEndPartner: ((a) => isSelected(a, selectedEndPartners)) as AddressSelector,
+		geometry: {
+			facet: facetGeometry,
+			partner: partnerGeometry,
+			startPartner: startPartnerGeometry,
+			endPartner: endPartnerGeometry
+		},
+		selected,
+		selectedPartners,
+		selectedStartPartners,
+		selectedEndPartners
+	};
 };
 
 export const selectedSurfaceProjectionGeometry = derived(

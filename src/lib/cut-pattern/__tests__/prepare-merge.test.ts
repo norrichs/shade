@@ -9,21 +9,19 @@ const rect = (x: number, y: number, w: number, h: number): PathSegment[] => [
 	['Z']
 ];
 
-const makeBand = (overrides: Partial<BandCutPattern> = {}): BandCutPattern => ({
-	id: 'band-1',
-	projectionType: 'patterned',
-	facets: [
-		{ path: rect(0, 0, 100, 60), svgPath: '', label: 'outline' }
-	],
-	svgPath: '',
-	tagAnchorPoint: { x: 50, y: 60 },
-	tagAnchorAutoAngle: 0,
-	address: { globule: 0, tube: 0, band: 0 },
-	...overrides
-}) as BandCutPattern;
+const makeBand = (overrides: Partial<BandCutPattern> = {}): BandCutPattern =>
+	({
+		id: 'band-1',
+		projectionType: 'patterned',
+		facets: [{ path: rect(0, 0, 100, 60), svgPath: '', label: 'outline' }],
+		svgPath: '',
+		tagAnchorPoint: { x: 50, y: 60 },
+		tagAnchorAutoAngle: 0,
+		address: { globule: 0, tube: 0, band: 0 },
+		...overrides
+	}) as BandCutPattern;
 
-const makeTube = (band: BandCutPattern): TubeCutPattern =>
-	({ bands: [band] } as TubeCutPattern);
+const makeTube = (band: BandCutPattern): TubeCutPattern => ({ bands: [band] }) as TubeCutPattern;
 
 const labels = {
 	selfTag: {

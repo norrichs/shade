@@ -125,7 +125,8 @@
 					fill all
 					<input
 						type="checkbox"
-						checked={$superConfigStore.projectionConfigs[0].surfaceProjectionConfig.fillAll ?? false}
+						checked={$superConfigStore.projectionConfigs[0].surfaceProjectionConfig.fillAll ??
+							false}
 						on:change={(e) => {
 							const checked = (e.currentTarget as HTMLInputElement).checked;
 							$superConfigStore = {
@@ -134,7 +135,10 @@
 									i === 0
 										? {
 												...pc,
-												surfaceProjectionConfig: { ...pc.surfaceProjectionConfig!, fillAll: checked }
+												surfaceProjectionConfig: {
+													...pc.surfaceProjectionConfig!,
+													fillAll: checked
+												}
 											}
 										: pc
 								)

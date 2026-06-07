@@ -1,5 +1,9 @@
 import { CurvePath, Vector2, Vector3 } from 'three';
-import type { CrossSectionConfig, CrossSectionScaling, ProjectionEdge } from '$lib/projection-geometry/types';
+import type {
+	CrossSectionConfig,
+	CrossSectionScaling,
+	ProjectionEdge
+} from '$lib/projection-geometry/types';
 import type { BezierConfig, ProjectionCurveSampleMethod } from '$lib/types';
 import { getCubicBezierCurvePath } from '$lib/util';
 
@@ -51,10 +55,7 @@ export function applyCrossSectionsToEdge(
 	normals: Vector3[],
 	crossSectionConfig: CrossSectionConfig
 ): EdgeSection[] {
-	const definitionPoints = getPoints(
-		crossSectionConfig.curves,
-		crossSectionConfig.sampleMethod
-	);
+	const definitionPoints = getPoints(crossSectionConfig.curves, crossSectionConfig.sampleMethod);
 	const xMax = definitionPoints.reduce((max, p) => Math.max(max, p.x), 0);
 	const normalizedPoints = definitionPoints.map((p) => p.clone().set(p.x / xMax, p.y));
 
@@ -75,10 +76,7 @@ export function applyCrossSectionsToEdge(
 		yDirection.copy(normal).normalize();
 
 		const baseScalingLength = edgePoint.distanceTo(curvePoint);
-		const { xScale, yScale } = getCrossSectionScale(
-			crossSectionConfig.scaling,
-			baseScalingLength
-		);
+		const { xScale, yScale } = getCrossSectionScale(crossSectionConfig.scaling, baseScalingLength);
 
 		const crossSectionPoints = normalizedPoints.map((p) =>
 			edgePoint

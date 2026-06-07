@@ -148,7 +148,12 @@ describe('left/right partner resolution', () => {
 				['M', 0, 0],
 				['L', 5, 0]
 			],
-			quad: { a: { x: 0, y: 0, z: 0 }, b: { x: 5, y: 0, z: 0 }, c: { x: 5, y: 5, z: 0 }, d: { x: 0, y: 5, z: 0 } },
+			quad: {
+				a: { x: 0, y: 0, z: 0 },
+				b: { x: 5, y: 0, z: 0 },
+				c: { x: 5, y: 5, z: 0 },
+				d: { x: 0, y: 5, z: 0 }
+			},
 			label: '0'
 		} as any;
 		const rightFacet = {
@@ -156,7 +161,12 @@ describe('left/right partner resolution', () => {
 				['M', 100, 0],
 				['L', 105, 0]
 			],
-			quad: { a: { x: 100, y: 0, z: 0 }, b: { x: 105, y: 0, z: 0 }, c: { x: 105, y: 5, z: 0 }, d: { x: 100, y: 5, z: 0 } },
+			quad: {
+				a: { x: 100, y: 0, z: 0 },
+				b: { x: 105, y: 0, z: 0 },
+				c: { x: 105, y: 5, z: 0 },
+				d: { x: 100, y: 5, z: 0 }
+			},
 			label: '0'
 		} as any;
 		const baseBand = {

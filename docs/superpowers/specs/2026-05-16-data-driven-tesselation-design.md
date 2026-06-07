@@ -50,31 +50,30 @@ src/lib/patterns/tesselation/
 
 ```typescript
 const makeAlgorithm = (
-  algorithmId: TiledPatternAlgorithm,
-  displayName: string,
-  defaultSpec: TiledPatternSpec,
-  tagAnchor: TagAnchor
+	algorithmId: TiledPatternAlgorithm,
+	displayName: string,
+	defaultSpec: TiledPatternSpec,
+	tagAnchor: TagAnchor
 ): PatternAlgorithm => ({
-  algorithmId,
-  displayName,
-  defaultSpec,
-  supportsEditing: true,
-  createPatternsEntry: (spec) => ({
-    getPattern: (rows, columns, _quadBand, variant = 'rect', sideOrientation) =>
-      generateTesselationTile(spec, { size: 1, rows, columns, variant, sideOrientation }),
-    tagAnchor,
-    adjustAfterTiling: (bands, cfg, tubes) =>
-      adjustTesselation(bands, cfg, tubes, spec)
-  })
+	algorithmId,
+	displayName,
+	defaultSpec,
+	supportsEditing: true,
+	createPatternsEntry: (spec) => ({
+		getPattern: (rows, columns, _quadBand, variant = 'rect', sideOrientation) =>
+			generateTesselationTile(spec, { size: 1, rows, columns, variant, sideOrientation }),
+		tagAnchor,
+		adjustAfterTiling: (bands, cfg, tubes) => adjustTesselation(bands, cfg, tubes, spec)
+	})
 });
 
 export const algorithms = [
-  makeAlgorithm('shield-tesselation', 'Shield', defaultShieldSpec,
-    { facetIndex: 0, segmentIndex: 3 }),
-  makeAlgorithm('hex', 'Hex', defaultHexSpec,
-    { facetIndex: 0, segmentIndex: 0 }),
-  makeAlgorithm('box', 'Box', defaultBoxSpec,
-    { facetIndex: 0, segmentIndex: 5, angle: 0 })
+	makeAlgorithm('shield-tesselation', 'Shield', defaultShieldSpec, {
+		facetIndex: 0,
+		segmentIndex: 3
+	}),
+	makeAlgorithm('hex', 'Hex', defaultHexSpec, { facetIndex: 0, segmentIndex: 0 }),
+	makeAlgorithm('box', 'Box', defaultBoxSpec, { facetIndex: 0, segmentIndex: 5, angle: 0 })
 ];
 ```
 
@@ -88,13 +87,13 @@ The `algorithm` field on the spec stays distinct (`'shield-tesselation' | 'hex' 
 
 ```typescript
 export type UnitDefinition = {
-  width: number;
-  height: number;
-  start: PathSegment[];
-  middle: PathSegment[];
-  end: PathSegment[];
-  firstColumn?: PathSegment[];  // NEW — appended to middle bucket only when c === 0
-  lastColumn?: PathSegment[];   // NEW — appended to middle bucket only when c === columns - 1
+	width: number;
+	height: number;
+	start: PathSegment[];
+	middle: PathSegment[];
+	end: PathSegment[];
+	firstColumn?: PathSegment[]; // NEW — appended to middle bucket only when c === 0
+	lastColumn?: PathSegment[]; // NEW — appended to middle bucket only when c === columns - 1
 };
 ```
 
@@ -108,38 +107,46 @@ Canonical unit at `width: 2, height: 3`. Coordinates expressed in `(w, h)` units
 
 ```typescript
 export const defaultHexSpec: TiledPatternSpec = {
-  id: 'tiledHexPattern-1',
-  name: 'Hex (default)',
-  algorithm: 'hex',
-  builtIn: true,
-  unit: {
-    width: 2,
-    height: 3,
-    start: [
-      ['M', 1, 0], ['L', 1, 0.5]               // top stem
-    ],
-    middle: [
-      ['M', 0, 1], ['L', 1, 0.5], ['L', 2, 1], // top zigzag
-      ['M', 0, 1], ['L', 0, 2],                // left edge
-      ['M', 0, 2], ['L', 1, 2.5], ['L', 2, 2]  // bottom zigzag
-    ],
-    end: [
-      ['M', 1, 2.5], ['L', 1, 3]               // bottom stem
-    ],
-    lastColumn: [
-      ['M', 2, 1], ['L', 2, 2]                 // right edge (only on last column)
-    ]
-  },
-  adjustments: {
-    // this.end-group ← next.start-group, pinning column stems contiguous
-    withinBand: [
-      { source: 0, target: 10 },  // start[0] of next → end[0] of this
-      { source: 1, target: 11 }   // start[1] of next → end[1] of this
-    ],
-    acrossBands: [],
-    partner: { startEnd: [], endEnd: [] },
-    skipRemove: []
-  }
+	id: 'tiledHexPattern-1',
+	name: 'Hex (default)',
+	algorithm: 'hex',
+	builtIn: true,
+	unit: {
+		width: 2,
+		height: 3,
+		start: [
+			['M', 1, 0],
+			['L', 1, 0.5] // top stem
+		],
+		middle: [
+			['M', 0, 1],
+			['L', 1, 0.5],
+			['L', 2, 1], // top zigzag
+			['M', 0, 1],
+			['L', 0, 2], // left edge
+			['M', 0, 2],
+			['L', 1, 2.5],
+			['L', 2, 2] // bottom zigzag
+		],
+		end: [
+			['M', 1, 2.5],
+			['L', 1, 3] // bottom stem
+		],
+		lastColumn: [
+			['M', 2, 1],
+			['L', 2, 2] // right edge (only on last column)
+		]
+	},
+	adjustments: {
+		// this.end-group ← next.start-group, pinning column stems contiguous
+		withinBand: [
+			{ source: 0, target: 10 }, // start[0] of next → end[0] of this
+			{ source: 1, target: 11 } // start[1] of next → end[1] of this
+		],
+		acrossBands: [],
+		partner: { startEnd: [], endEnd: [] },
+		skipRemove: []
+	}
 };
 ```
 
@@ -153,29 +160,49 @@ Canonical unit at `width: 2, height: 6`.
 
 ```typescript
 export const defaultBoxSpec: TiledPatternSpec = {
-  id: 'tiledBoxPattern-0',
-  name: 'Box (default)',
-  algorithm: 'box',
-  builtIn: true,
-  unit: {
-    width: 2,
-    height: 6,
-    start: [],
-    middle: [
-      ['M', 0, 1], ['L', 1, 0], ['L', 1, 2], ['L', 0, 3], ['Z'],
-      ['M', 1, 0], ['L', 2, 1], ['L', 2, 3], ['L', 1, 2], ['Z'],
-      ['M', 0, 3], ['L', 1, 2], ['L', 2, 3], ['L', 1, 4], ['Z'],
-      ['M', 0, 3], ['L', 1, 4], ['L', 1, 6], ['L', 0, 5], ['Z'],
-      ['M', 1, 4], ['L', 2, 3], ['L', 2, 5], ['L', 1, 6], ['Z']
-    ],
-    end: []
-  },
-  adjustments: {
-    withinBand: [],
-    acrossBands: [],
-    partner: { startEnd: [], endEnd: [] },
-    skipRemove: []
-  }
+	id: 'tiledBoxPattern-0',
+	name: 'Box (default)',
+	algorithm: 'box',
+	builtIn: true,
+	unit: {
+		width: 2,
+		height: 6,
+		start: [],
+		middle: [
+			['M', 0, 1],
+			['L', 1, 0],
+			['L', 1, 2],
+			['L', 0, 3],
+			['Z'],
+			['M', 1, 0],
+			['L', 2, 1],
+			['L', 2, 3],
+			['L', 1, 2],
+			['Z'],
+			['M', 0, 3],
+			['L', 1, 2],
+			['L', 2, 3],
+			['L', 1, 4],
+			['Z'],
+			['M', 0, 3],
+			['L', 1, 4],
+			['L', 1, 6],
+			['L', 0, 5],
+			['Z'],
+			['M', 1, 4],
+			['L', 2, 3],
+			['L', 2, 5],
+			['L', 1, 6],
+			['Z']
+		],
+		end: []
+	},
+	adjustments: {
+		withinBand: [],
+		acrossBands: [],
+		partner: { startEnd: [], endEnd: [] },
+		skipRemove: []
+	}
 };
 ```
 
@@ -193,20 +220,20 @@ Current shield code hardcodes M/L. The shared generator handles all `PathSegment
 
 ```typescript
 const scaleSegment = (seg: PathSegment, w: number, h: number): PathSegment => {
-  switch (seg[0]) {
-    case 'M': return ['M', seg[1] * w, seg[2] * h];
-    case 'L': return ['L', seg[1] * w, seg[2] * h];
-    case 'Q': return ['Q', seg[1] * w, seg[2] * h, seg[3] * w, seg[4] * h];
-    case 'C': return ['C',
-      seg[1] * w, seg[2] * h,
-      seg[3] * w, seg[4] * h,
-      seg[5] * w, seg[6] * h];
-    case 'A': return ['A',
-      seg[1] * w, seg[2] * h,
-      seg[3], seg[4], seg[5],
-      seg[6] * w, seg[7] * h];
-    case 'Z': return ['Z'];
-  }
+	switch (seg[0]) {
+		case 'M':
+			return ['M', seg[1] * w, seg[2] * h];
+		case 'L':
+			return ['L', seg[1] * w, seg[2] * h];
+		case 'Q':
+			return ['Q', seg[1] * w, seg[2] * h, seg[3] * w, seg[4] * h];
+		case 'C':
+			return ['C', seg[1] * w, seg[2] * h, seg[3] * w, seg[4] * h, seg[5] * w, seg[6] * h];
+		case 'A':
+			return ['A', seg[1] * w, seg[2] * h, seg[3], seg[4], seg[5], seg[6] * w, seg[7] * h];
+		case 'Z':
+			return ['Z'];
+	}
 };
 ```
 
@@ -224,57 +251,57 @@ Identical layout logic to today's shield generator, with the column-position gro
 
 ```typescript
 export const generateTesselationTile = (
-  spec: TiledPatternSpec,
-  props: TesselationGeneratorProps
+	spec: TiledPatternSpec,
+	props: TesselationGeneratorProps
 ): PathSegment[] => {
-  const { size, columns } = props;
-  const rows = 1;  // matches current hardcoded behavior in shield + hex generators
-  const row = size / rows;
-  const col = size / columns;
-  const w = col / spec.unit.width;
-  const h = row / spec.unit.height;
+	const { size, columns } = props;
+	const rows = 1; // matches current hardcoded behavior in shield + hex generators
+	const row = size / rows;
+	const col = size / columns;
+	const w = col / spec.unit.width;
+	const h = row / spec.unit.height;
 
-  const unit = buildUnit(spec, w, h, /* invert */ false);
+	const unit = buildUnit(spec, w, h, /* invert */ false);
 
-  const startSegments: PathSegment[] = [];
-  const middleSegments: PathSegment[] = [];
-  const endSegments: PathSegment[] = [];
+	const startSegments: PathSegment[] = [];
+	const middleSegments: PathSegment[] = [];
+	const endSegments: PathSegment[] = [];
 
-  for (let c = 0; c < columns; c++) {
-    for (let r = 0; r < rows; r++) {
-      const tx = col * c;
-      const ty = row * r;
+	for (let c = 0; c < columns; c++) {
+		for (let r = 0; r < rows; r++) {
+			const tx = col * c;
+			const ty = row * r;
 
-      if (r > 0 && r < rows - 1) {
-        middleSegments.push(
-          ...translatePS(unit.start, tx, ty),
-          ...translatePS(unit.middle, tx, ty),
-          ...translatePS(unit.end, tx, ty)
-        );
-      } else if (rows === 1) {
-        startSegments.push(...translatePS(unit.start, tx, ty));
-        middleSegments.push(...translatePS(unit.middle, tx, ty));
-        endSegments.push(...translatePS(unit.end, tx, ty));
-      } else if (r === 0) {
-        startSegments.push(...translatePS(unit.start, tx, ty));
-        middleSegments.push(...translatePS(unit.end, tx, ty));
-        middleSegments.push(...translatePS(unit.middle, tx, ty));
-      } else if (r === rows - 1) {
-        middleSegments.push(...translatePS(unit.start, tx, ty));
-        endSegments.push(...translatePS(unit.end, tx, ty));
-        middleSegments.push(...translatePS(unit.middle, tx, ty));
-      }
+			if (r > 0 && r < rows - 1) {
+				middleSegments.push(
+					...translatePS(unit.start, tx, ty),
+					...translatePS(unit.middle, tx, ty),
+					...translatePS(unit.end, tx, ty)
+				);
+			} else if (rows === 1) {
+				startSegments.push(...translatePS(unit.start, tx, ty));
+				middleSegments.push(...translatePS(unit.middle, tx, ty));
+				endSegments.push(...translatePS(unit.end, tx, ty));
+			} else if (r === 0) {
+				startSegments.push(...translatePS(unit.start, tx, ty));
+				middleSegments.push(...translatePS(unit.end, tx, ty));
+				middleSegments.push(...translatePS(unit.middle, tx, ty));
+			} else if (r === rows - 1) {
+				middleSegments.push(...translatePS(unit.start, tx, ty));
+				endSegments.push(...translatePS(unit.end, tx, ty));
+				middleSegments.push(...translatePS(unit.middle, tx, ty));
+			}
 
-      if (c === 0 && unit.firstColumn?.length) {
-        middleSegments.push(...translatePS(unit.firstColumn, tx, ty));
-      }
-      if (c === columns - 1 && unit.lastColumn?.length) {
-        middleSegments.push(...translatePS(unit.lastColumn, tx, ty));
-      }
-    }
-  }
+			if (c === 0 && unit.firstColumn?.length) {
+				middleSegments.push(...translatePS(unit.firstColumn, tx, ty));
+			}
+			if (c === columns - 1 && unit.lastColumn?.length) {
+				middleSegments.push(...translatePS(unit.lastColumn, tx, ty));
+			}
+		}
+	}
 
-  return [...startSegments, ...middleSegments, ...endSegments];
+	return [...startSegments, ...middleSegments, ...endSegments];
 };
 ```
 
@@ -295,22 +322,22 @@ When `tiledPatternConfig.config.endsTrimmed === true`, the adjuster automaticall
 
 ```typescript
 if (tiledPatternConfig.config.endsTrimmed) {
-  if (band.facets.length > 0 && startCount > 0) {
-    const allStartCanonical = Array.from({ length: startCount }, (_, i) => i);
-    const expanded = retarget(allStartCanonical, rows, columns, startCount, middleCount, endCount);
-    removeInPlace({ indices: expanded, target: newBands[b].facets[0].path });
-  }
-  if (band.facets.length > 0 && endCount > 0) {
-    const allEndCanonical = Array.from(
-      { length: endCount },
-      (_, i) => startCount + middleCount + i
-    );
-    const expanded = retarget(allEndCanonical, rows, columns, startCount, middleCount, endCount);
-    removeInPlace({
-      indices: expanded,
-      target: newBands[b].facets[band.facets.length - 1].path
-    });
-  }
+	if (band.facets.length > 0 && startCount > 0) {
+		const allStartCanonical = Array.from({ length: startCount }, (_, i) => i);
+		const expanded = retarget(allStartCanonical, rows, columns, startCount, middleCount, endCount);
+		removeInPlace({ indices: expanded, target: newBands[b].facets[0].path });
+	}
+	if (band.facets.length > 0 && endCount > 0) {
+		const allEndCanonical = Array.from(
+			{ length: endCount },
+			(_, i) => startCount + middleCount + i
+		);
+		const expanded = retarget(allEndCanonical, rows, columns, startCount, middleCount, endCount);
+		removeInPlace({
+			indices: expanded,
+			target: newBands[b].facets[band.facets.length - 1].path
+		});
+	}
 }
 ```
 

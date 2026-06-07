@@ -12,18 +12,18 @@
 
 ## File Structure
 
-| File | Create/Modify | Responsibility |
-| --- | --- | --- |
-| `src/lib/cut-pattern/select-middle-quad-edge.ts` | **Create** | Pure functions: `middleQuadIndex`, `middleQuadEdgeIndices`, `selectMiddleQuadEdgeIndex` (comparator). No Three.js, no I/O. |
-| `src/lib/cut-pattern/__tests__/select-middle-quad-edge.test.ts` | **Create** | Unit tests for the three pure functions above. |
-| `src/lib/cut-pattern/generate-outlined-pattern.ts` | **Modify** | Add `partnerBand?: number` to `OutlineEdge`; populate it in `getOutlineEdges`; replace start-cap anchor block (`:505-534`) with middle-quad selection. |
-| `src/lib/cut-pattern/build-self-tag-lines.ts` | **Create** | Pure helper: given the base address string, an optional group code, and whether the external tag is enabled, returns the `addressStrings: string[]` for the label. |
-| `src/lib/cut-pattern/__tests__/build-self-tag-lines.test.ts` | **Create** | Unit tests for `buildSelfTagLines`. |
-| `src/lib/types.ts` | **Modify** | Add `externalTag?: boolean` to the `selfTag` block (`:585-592`). |
-| `src/components/cut-pattern/PatternLabel.svelte` | **Modify** | Accept `addressStrings` already-resolved (no change to internals) — text composition moves up to `BandComponent`. (No code change required if BandComponent passes the composed lines; see Task 7.) |
-| `src/components/cut-pattern/BandComponent.svelte` | **Modify** | Accept `groupCode?: string` prop; compose self-tag lines via `buildSelfTagLines` and pass to `PatternLabel`. |
-| `src/components/cut-pattern/CutPatternRenderer.svelte` | **Modify** | Build `buildBandCodeMap(sortIndex)` (WS-B) and pass `groupCode` to `BandComponent` in both render branches. |
-| `src/components/modal/editor/LabelEditor.svelte` | **Modify** | Add an "External Tag" checkbox writing `selfTag.externalTag`. |
+| File                                                            | Create/Modify | Responsibility                                                                                                                                                                                      |
+| --------------------------------------------------------------- | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/lib/cut-pattern/select-middle-quad-edge.ts`                | **Create**    | Pure functions: `middleQuadIndex`, `middleQuadEdgeIndices`, `selectMiddleQuadEdgeIndex` (comparator). No Three.js, no I/O.                                                                          |
+| `src/lib/cut-pattern/__tests__/select-middle-quad-edge.test.ts` | **Create**    | Unit tests for the three pure functions above.                                                                                                                                                      |
+| `src/lib/cut-pattern/generate-outlined-pattern.ts`              | **Modify**    | Add `partnerBand?: number` to `OutlineEdge`; populate it in `getOutlineEdges`; replace start-cap anchor block (`:505-534`) with middle-quad selection.                                              |
+| `src/lib/cut-pattern/build-self-tag-lines.ts`                   | **Create**    | Pure helper: given the base address string, an optional group code, and whether the external tag is enabled, returns the `addressStrings: string[]` for the label.                                  |
+| `src/lib/cut-pattern/__tests__/build-self-tag-lines.test.ts`    | **Create**    | Unit tests for `buildSelfTagLines`.                                                                                                                                                                 |
+| `src/lib/types.ts`                                              | **Modify**    | Add `externalTag?: boolean` to the `selfTag` block (`:585-592`).                                                                                                                                    |
+| `src/components/cut-pattern/PatternLabel.svelte`                | **Modify**    | Accept `addressStrings` already-resolved (no change to internals) — text composition moves up to `BandComponent`. (No code change required if BandComponent passes the composed lines; see Task 7.) |
+| `src/components/cut-pattern/BandComponent.svelte`               | **Modify**    | Accept `groupCode?: string` prop; compose self-tag lines via `buildSelfTagLines` and pass to `PatternLabel`.                                                                                        |
+| `src/components/cut-pattern/CutPatternRenderer.svelte`          | **Modify**    | Build `buildBandCodeMap(sortIndex)` (WS-B) and pass `groupCode` to `BandComponent` in both render branches.                                                                                         |
+| `src/components/modal/editor/LabelEditor.svelte`                | **Modify**    | Add an "External Tag" checkbox writing `selfTag.externalTag`.                                                                                                                                       |
 
 ---
 
@@ -50,6 +50,7 @@
 ### Task 1: Pure middle-quad index + candidate edge indices
 
 **Files:**
+
 - Create: `src/lib/cut-pattern/select-middle-quad-edge.ts`
 - Test: `src/lib/cut-pattern/__tests__/select-middle-quad-edge.test.ts`
 
@@ -101,8 +102,7 @@ describe('middleQuadEdgeIndices', () => {
  * Index of the "middle" quad in a band of `quadCount` quads, rounding down for
  * even counts (quadCount 1,2,3,4,5 -> 0,0,1,1,2).
  */
-export const middleQuadIndex = (quadCount: number): number =>
-	Math.floor((quadCount - 1) / 2);
+export const middleQuadIndex = (quadCount: number): number => Math.floor((quadCount - 1) / 2);
 
 /**
  * The middle quad's index plus the indices of its two outer edges in the
@@ -138,6 +138,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 ### Task 2: Edge-selection comparator (`selectMiddleQuadEdgeIndex`)
 
 **Files:**
+
 - Modify: `src/lib/cut-pattern/select-middle-quad-edge.ts`
 - Test: `src/lib/cut-pattern/__tests__/select-middle-quad-edge.test.ts`
 
@@ -151,11 +152,11 @@ Steps:
 import { selectMiddleQuadEdgeIndex } from '../select-middle-quad-edge';
 
 describe('selectMiddleQuadEdgeIndex', () => {
-	const candidate = (
-		index: number,
-		hasTab: boolean,
-		partnerBand: number | undefined
-	) => ({ index, hasTab, partnerBand });
+	const candidate = (index: number, hasTab: boolean, partnerBand: number | undefined) => ({
+		index,
+		hasTab,
+		partnerBand
+	});
 
 	test('priority 1: prefers the edge with no tab', () => {
 		const before = candidate(2, true, 0);
@@ -215,10 +216,7 @@ export type EdgeCandidate = {
  *  3. higher partner band number (when both still tie with partners)
  *  4. deterministic fallback to the `before` candidate (passed first)
  */
-export const selectMiddleQuadEdgeIndex = (
-	before: EdgeCandidate,
-	after: EdgeCandidate
-): number => {
+export const selectMiddleQuadEdgeIndex = (before: EdgeCandidate, after: EdgeCandidate): number => {
 	// 1. no tab over tab
 	if (before.hasTab !== after.hasTab) {
 		return before.hasTab ? after.index : before.index;
@@ -256,6 +254,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 ### Task 3: Carry partner band number on `OutlineEdge`
 
 **Files:**
+
 - Modify: `src/lib/cut-pattern/generate-outlined-pattern.ts` (`OutlineEdge` type `:79-96`; `getOutlineEdges` `:170-266`)
 
 `OutlineEdge` currently has no band-number field. Add `partnerBand?: number` and populate it for `before`/`after` edges inside `getOutlineEdges` from facet `ac` partner metadata. There is no colocated unit test for `getOutlineEdges` (it is not exported); this task is verified via `npm run check` and exercised end-to-end by Task 5's test. Keep the change minimal and type-driven.
@@ -278,27 +277,27 @@ Steps:
 - [ ] In the `before` loop of `getOutlineEdges` (`:187-209`), set `partnerBand` from the even facet (`2*i`) `ac` partner. Change the `edges.push({...})` for the before edge to include:
 
 ```ts
-			edges.push({
-				start: q.a.clone(),
-				end: q.d.clone(),
-				side: 'before',
-				interiorPoint: beforeInterior,
-				partnerOuter,
-				partnerBand: band.facets[2 * i]?.meta?.ac?.partner?.band
-			});
+edges.push({
+	start: q.a.clone(),
+	end: q.d.clone(),
+	side: 'before',
+	interiorPoint: beforeInterior,
+	partnerOuter,
+	partnerBand: band.facets[2 * i]?.meta?.ac?.partner?.band
+});
 ```
 
 - [ ] In the `after` loop of `getOutlineEdges` (`:228-251`), set `partnerBand` from the odd facet (`2*i+1`) `ac` partner. Change the `edges.push({...})` for the after edge to include:
 
 ```ts
-			edges.push({
-				start: q.c.clone(),
-				end: q.b.clone(),
-				side: 'after',
-				interiorPoint: afterInterior,
-				partnerOuter,
-				partnerBand: band.facets[2 * i + 1]?.meta?.ac?.partner?.band
-			});
+edges.push({
+	start: q.c.clone(),
+	end: q.b.clone(),
+	side: 'after',
+	interiorPoint: afterInterior,
+	partnerOuter,
+	partnerBand: band.facets[2 * i + 1]?.meta?.ac?.partner?.band
+});
 ```
 
 - [ ] Run: `npm run check` — expect no new type errors (`FacetEdgeMeta.partner` is `GlobuleAddress_FacetEdge` which has `.band: number`; access guarded by `?.`).
@@ -316,6 +315,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 ### Task 4: Anchor selection helper that consumes `OutlineEdge[]` (pure, testable)
 
 **Files:**
+
 - Modify: `src/lib/cut-pattern/select-middle-quad-edge.ts`
 - Test: `src/lib/cut-pattern/__tests__/select-middle-quad-edge.test.ts`
 
@@ -334,20 +334,12 @@ describe('chooseMiddleQuadEdge', () => {
 		Array.from({ length: 12 }, (_, i) => ({ partnerBand: byIndex[i] }));
 
 	test('no tabs, no partners -> before edge (index 2)', () => {
-		const chosen = chooseMiddleQuadEdge(
-			5,
-			edgesWithPartnerBands({}),
-			new Set<number>()
-		);
+		const chosen = chooseMiddleQuadEdge(5, edgesWithPartnerBands({}), new Set<number>());
 		expect(chosen).toBe(2);
 	});
 
 	test('before edge tabbed -> after edge wins (index 8)', () => {
-		const chosen = chooseMiddleQuadEdge(
-			5,
-			edgesWithPartnerBands({}),
-			new Set<number>([2])
-		);
+		const chosen = chooseMiddleQuadEdge(5, edgesWithPartnerBands({}), new Set<number>([2]));
 		expect(chosen).toBe(8);
 	});
 
@@ -414,6 +406,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 ### Task 5: Rewire `generateOutlinedBandPattern` to anchor on the middle quad
 
 **Files:**
+
 - Modify: `src/lib/cut-pattern/generate-outlined-pattern.ts` (`generateOutlinedBandPattern` `:442-549`, specifically the start-cap block `:505-534`)
 
 Replace the start-cap edge location (`:505-517`) and the `labelAnchor` computation (`:519-534`) with a middle-quad selection using `chooseMiddleQuadEdge` (Task 4). The reuse of `computeOutlinedLabelAnchor` is unchanged — it already returns the outer-edge-midpoint anchor (shifted by tab width when tabbed) and a perpendicular `autoAngle`. `quads.length` is the `quadCount`; `tabsByIndex` (built at `:454-461`) is the tabbed-index source; `edges[i].partnerBand` (Task 3) supplies partner band numbers.
@@ -430,34 +423,34 @@ import { chooseMiddleQuadEdge } from './select-middle-quad-edge';
 - [ ] Replace the start-cap block (`generate-outlined-pattern.ts:505-534`, from the comment `// Locate the start-cap edge ...` through the end of the `if (startCapIndex >= 0) { ... }` block) with the middle-quad selection:
 
 ```ts
-	// Anchor the self-tag to the band's middle quad rather than the start cap.
-	// `chooseMiddleQuadEdge` selects the better of the middle quad's two outer
-	// edges (before a->d / after c->b) by priority: no-tab > no-partner >
-	// higher-partner-band-number, with a deterministic fallback to the before
-	// edge. Returns -1 when there are no quads.
-	const tabbedIndices = new Set<number>(tabsByIndex.keys());
-	const chosenEdgeIndex = chooseMiddleQuadEdge(quads.length, edges, tabbedIndices);
+// Anchor the self-tag to the band's middle quad rather than the start cap.
+// `chooseMiddleQuadEdge` selects the better of the middle quad's two outer
+// edges (before a->d / after c->b) by priority: no-tab > no-partner >
+// higher-partner-band-number, with a deterministic fallback to the before
+// edge. Returns -1 when there are no quads.
+const tabbedIndices = new Set<number>(tabsByIndex.keys());
+const chosenEdgeIndex = chooseMiddleQuadEdge(quads.length, edges, tabbedIndices);
 
-	let labelAnchor: { anchor: { x: number; y: number }; autoAngle: number } | undefined;
-	if (chosenEdgeIndex >= 0) {
-		const chosenEdge = edges[chosenEdgeIndex];
-		const chosenTab = tabsByIndex.get(chosenEdgeIndex);
-		// tabConfig is optional on OutlinedPatternConfig; guard with ?? 0.
-		const chosenTabWidth = config.tabConfig?.tabWidth ?? 0;
-		labelAnchor = computeOutlinedLabelAnchor({
-			edgeStart: { x: chosenEdge.start.x, y: chosenEdge.start.y },
-			edgeEnd: { x: chosenEdge.end.x, y: chosenEdge.end.y },
-			interiorPoint: { x: chosenEdge.interiorPoint.x, y: chosenEdge.interiorPoint.y },
-			hasTab: chosenTab !== undefined,
-			tabWidth: chosenTabWidth
-		});
-	}
+let labelAnchor: { anchor: { x: number; y: number }; autoAngle: number } | undefined;
+if (chosenEdgeIndex >= 0) {
+	const chosenEdge = edges[chosenEdgeIndex];
+	const chosenTab = tabsByIndex.get(chosenEdgeIndex);
+	// tabConfig is optional on OutlinedPatternConfig; guard with ?? 0.
+	const chosenTabWidth = config.tabConfig?.tabWidth ?? 0;
+	labelAnchor = computeOutlinedLabelAnchor({
+		edgeStart: { x: chosenEdge.start.x, y: chosenEdge.start.y },
+		edgeEnd: { x: chosenEdge.end.x, y: chosenEdge.end.y },
+		interiorPoint: { x: chosenEdge.interiorPoint.x, y: chosenEdge.interiorPoint.y },
+		hasTab: chosenTab !== undefined,
+		tabWidth: chosenTabWidth
+	});
+}
 ```
 
 - [ ] Confirm the `result` object below still reads `labelAnchor` (no change needed — `:541-542` already use `labelAnchor ? labelAnchor.anchor : { x: 0, y: 0 }` and `labelAnchor?.autoAngle`).
 - [ ] Run: `npm run check` — expect no new type errors. (`edges` rows now have an optional `partnerBand`, which structurally satisfies `chooseMiddleQuadEdge`'s `{ partnerBand?: number }[]` parameter.)
 - [ ] Run the existing outlined-pattern-adjacent suites to confirm no regression:
-  `npm run test:unit -- src/lib/cut-pattern/__tests__/collect-outlined-band-tabs.test.ts src/lib/cut-pattern/__tests__/compute-label-anchor.test.ts` — expect PASS.
+      `npm run test:unit -- src/lib/cut-pattern/__tests__/collect-outlined-band-tabs.test.ts src/lib/cut-pattern/__tests__/compute-label-anchor.test.ts` — expect PASS.
 - [ ] Manual check (UI glue not unit-testable): run `npm run dev`, open `/designer2`, enable an outlined pattern with self-tags, and confirm tags now sit on the middle quad with the stem perpendicular to the chosen edge and avoiding tabbed edges. (This is the only manual step; all selection logic is unit-tested in Tasks 1-4.)
 - [ ] Commit:
 
@@ -477,6 +470,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 ### Task 6: Add `externalTag` to the self-tag config type
 
 **Files:**
+
 - Modify: `src/lib/types.ts` (`selfTag` block `:585-592`)
 
 This is a type-only change; verified via `npm run check`.
@@ -512,6 +506,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 ### Task 7: Pure helper `buildSelfTagLines`
 
 **Files:**
+
 - Create: `src/lib/cut-pattern/build-self-tag-lines.ts`
 - Test: `src/lib/cut-pattern/__tests__/build-self-tag-lines.test.ts`
 
@@ -582,6 +577,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 ### Task 8: Thread `groupCode` through `BandComponent.svelte`
 
 **Files:**
+
 - Modify: `src/components/cut-pattern/BandComponent.svelte` (`$props` `:12-34`, derived `:36-41`, `PatternLabel` usage `:103-120`)
 
 Accept a `groupCode?: string` prop and use `buildSelfTagLines` to compose the `addressStrings` passed to `PatternLabel`. The base address string is the existing `concatAddress(band.address, 'tb-slash')`.
@@ -591,53 +587,53 @@ Steps:
 - [ ] Add the import (alongside `concatAddress` import `:10`):
 
 ```ts
-	import { concatAddress } from '$lib/util';
-	import { buildSelfTagLines } from '$lib/cut-pattern/build-self-tag-lines';
+import { concatAddress } from '$lib/util';
+import { buildSelfTagLines } from '$lib/cut-pattern/build-self-tag-lines';
 ```
 
 - [ ] Add `groupCode` to the `$props` destructuring and its type (`:12-34`):
 
 ```ts
-	let {
-		band,
-		index,
-		origin,
-		tube,
-		showBounds = false,
-		portal = false,
-		tagAnchorPoint,
-		tagAngle,
-		groupCode = undefined,
-		selectionTarget = 'projection',
-		children
-	}: {
-		band: BandCutPattern;
-		index: number;
-		origin: Vector3;
-		tube: TubeCutPattern;
-		showBounds?: boolean;
-		portal?: boolean;
-		tagAnchorPoint: Point;
-		tagAngle: number | undefined;
-		groupCode?: string;
-		selectionTarget?: 'projection' | 'surfaceProjection';
-		children?: Snippet;
-	} = $props();
+let {
+	band,
+	index,
+	origin,
+	tube,
+	showBounds = false,
+	portal = false,
+	tagAnchorPoint,
+	tagAngle,
+	groupCode = undefined,
+	selectionTarget = 'projection',
+	children
+}: {
+	band: BandCutPattern;
+	index: number;
+	origin: Vector3;
+	tube: TubeCutPattern;
+	showBounds?: boolean;
+	portal?: boolean;
+	tagAnchorPoint: Point;
+	tagAngle: number | undefined;
+	groupCode?: string;
+	selectionTarget?: 'projection' | 'surfaceProjection';
+	children?: Snippet;
+} = $props();
 ```
 
 - [ ] Add a derived for the external-tag flag and the composed lines (after `selfTagEnabled` `:40`):
 
 ```ts
-	let externalTagEnabled = $derived(labels?.selfTag?.externalTag ?? false);
-	let selfTagLines = $derived(
-		buildSelfTagLines(concatAddress(band.address, 'tb-slash'), groupCode, externalTagEnabled)
-	);
+let externalTagEnabled = $derived(labels?.selfTag?.externalTag ?? false);
+let selfTagLines = $derived(
+	buildSelfTagLines(concatAddress(band.address, 'tb-slash'), groupCode, externalTagEnabled)
+);
 ```
 
 - [ ] Replace the `addressStrings` prop on `PatternLabel` (`:114`) to use the composed lines:
 
 ```ts
-				addressStrings={selfTagLines}
+addressStrings = { selfTagLines };
 ```
 
 - [ ] Run: `npm run check` — expect no new type errors.
@@ -655,6 +651,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 ### Task 9: Build the band→code map in `CutPatternRenderer.svelte` and pass `groupCode`
 
 **Files:**
+
 - Modify: `src/components/cut-pattern/CutPatternRenderer.svelte` (imports `:1-15`, derived after `:42`, both `BandComponent` usages `:165-175` and `:199-208`)
 
 `buildBandCodeMap(sortIndex)` (WS-B) returns `Map<string, string>` keyed by `${globule}-${tube}-${band}`. `bandKey` is private to `band-sort-index.ts`; build the lookup key locally from `band.address`.
@@ -664,15 +661,15 @@ Steps:
 - [ ] Add the import (with the existing `band-sort-index` / store imports near the top, after `:14`):
 
 ```ts
-	import { buildBandCodeMap } from '$lib/cut-pattern/band-sort-index';
+import { buildBandCodeMap } from '$lib/cut-pattern/band-sort-index';
 ```
 
 - [ ] Add derived map + a local key helper after `indexedBands` (`:42`):
 
 ```ts
-	let codeMap = $derived(sortIndex ? buildBandCodeMap(sortIndex) : undefined);
-	const groupCodeFor = (address: { globule: number; tube: number; band: number }) =>
-		codeMap?.get(`${address.globule}-${address.tube}-${address.band}`);
+let codeMap = $derived(sortIndex ? buildBandCodeMap(sortIndex) : undefined);
+const groupCodeFor = (address: { globule: number; tube: number; band: number }) =>
+	codeMap?.get(`${address.globule}-${address.tube}-${address.band}`);
 ```
 
 - [ ] In the indexed render branch, add `groupCode` to `BandComponent` (`:165-175`, after `tagAngle={band.tagAngle}` `:172`):
@@ -705,6 +702,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 ### Task 10: External Tag UI control in `LabelEditor.svelte`
 
 **Files:**
+
 - Modify: `src/components/modal/editor/LabelEditor.svelte` (`defaultSelfTag()` `:27-34`, handlers `:85-91`, markup self-tag `Enabled` control `:164-170`)
 
 Add an "External Tag" checkbox under the Self Tag section, mirroring the existing "Enabled" checkbox pattern.
@@ -714,15 +712,15 @@ Steps:
 - [ ] Add `externalTag: false` to the `defaultSelfTag()` object (`:27-34`):
 
 ```ts
-	const defaultSelfTag = (): SelfTag => ({
-		enabled: true,
-		externalTag: false,
-		height: 14,
-		angle: 0,
-		padding: 10,
-		stemLength: 20,
-		stemWidth: 4
-	});
+const defaultSelfTag = (): SelfTag => ({
+	enabled: true,
+	externalTag: false,
+	height: 14,
+	angle: 0,
+	padding: 10,
+	stemLength: 20,
+	stemWidth: 4
+});
 ```
 
 (Only the `externalTag: false` line is new; the other fields are the file's existing defaults. `defaultLabels()` `:14-24` does NOT need `externalTag` since the field is optional and reads default to `false`.)
@@ -730,25 +728,25 @@ Steps:
 - [ ] Add a handler mirroring `handleSelfTagEnabled` (after `:91`):
 
 ```ts
-	const handleSelfTagExternalTag = (event: Event) => {
-		const checked = (event.target as HTMLInputElement).checked;
-		writeLabels({
-			...labels,
-			selfTag: { ...(labels.selfTag ?? defaultSelfTag()), externalTag: checked }
-		});
-	};
+const handleSelfTagExternalTag = (event: Event) => {
+	const checked = (event.target as HTMLInputElement).checked;
+	writeLabels({
+		...labels,
+		selfTag: { ...(labels.selfTag ?? defaultSelfTag()), externalTag: checked }
+	});
+};
 ```
 
 - [ ] Add an "External Tag" `LabeledControl` checkbox right after the Self Tag "Enabled" control (`:164-170`):
 
 ```svelte
-				<LabeledControl label="External Tag">
-					<input
-						type="checkbox"
-						checked={selfTag.externalTag ?? false}
-						onchange={handleSelfTagExternalTag}
-					/>
-				</LabeledControl>
+<LabeledControl label="External Tag">
+	<input
+		type="checkbox"
+		checked={selfTag.externalTag ?? false}
+		onchange={handleSelfTagExternalTag}
+	/>
+</LabeledControl>
 ```
 
 - [ ] Run: `npm run check` — expect no new type errors.
@@ -767,7 +765,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 ## Final verification
 
 - [ ] Run full unit suite for the touched modules:
-  `npm run test:unit -- src/lib/cut-pattern/__tests__/select-middle-quad-edge.test.ts src/lib/cut-pattern/__tests__/build-self-tag-lines.test.ts src/lib/cut-pattern/__tests__/compute-label-anchor.test.ts src/lib/cut-pattern/__tests__/collect-outlined-band-tabs.test.ts` — expect all PASS.
+      `npm run test:unit -- src/lib/cut-pattern/__tests__/select-middle-quad-edge.test.ts src/lib/cut-pattern/__tests__/build-self-tag-lines.test.ts src/lib/cut-pattern/__tests__/compute-label-anchor.test.ts src/lib/cut-pattern/__tests__/collect-outlined-band-tabs.test.ts` — expect all PASS.
 - [ ] Run `npm run check` — expect no new type errors.
 - [ ] Run `npm run lint` — expect clean (or only pre-existing warnings).
 - [ ] Manual end-to-end in `/designer2`: outlined pattern, self-tags enabled — tags sit on the middle quad with perpendicular stems avoiding tabbed edges; toggling External Tag in end-connection mode appends the group code; tube-order mode shows no code.

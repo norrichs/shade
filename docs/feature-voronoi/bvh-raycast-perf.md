@@ -15,27 +15,31 @@ There is one efficiency caveat worth noting (BVH is recomputed per `makeVoronoi`
 `three-mesh-bvh` is imported and the acceleration helper lives in `generate-projection.ts`:
 
 `src/lib/projection-geometry/generate-projection.ts:31`
+
 ```ts
 import { acceleratedRaycast, computeBoundsTree, disposeBoundsTree } from 'three-mesh-bvh';
 ```
 
 `src/lib/projection-geometry/generate-projection.ts:193-217` — `optimizeSurfaceForRaycasting` traverses an `Object3D`, computes a bounds tree on each mesh's geometry, and replaces that mesh's `raycast` method:
+
 ```ts
 const optimizeSurfaceForRaycasting = (object: Object3D): void => {
-  object.traverse((child) => {
-    if (child instanceof Mesh && child.geometry) {
-      if (!(child.geometry as any).boundsTree) {           // guard: skip if already built
-        (child.geometry as any).computeBoundsTree = computeBoundsTree.bind(child.geometry);
-        (child.geometry as any).disposeBoundsTree = disposeBoundsTree.bind(child.geometry);
-        (child.geometry as any).computeBoundsTree();        // build the BVH
-        child.raycast = acceleratedRaycast;                 // per-mesh, NOT prototype-wide
-      }
-    }
-  });
+	object.traverse((child) => {
+		if (child instanceof Mesh && child.geometry) {
+			if (!(child.geometry as any).boundsTree) {
+				// guard: skip if already built
+				(child.geometry as any).computeBoundsTree = computeBoundsTree.bind(child.geometry);
+				(child.geometry as any).disposeBoundsTree = disposeBoundsTree.bind(child.geometry);
+				(child.geometry as any).computeBoundsTree(); // build the BVH
+				child.raycast = acceleratedRaycast; // per-mesh, NOT prototype-wide
+			}
+		}
+	});
 };
 ```
 
 Two important properties of this implementation:
+
 - Acceleration is assigned **per-mesh** (`child.raycast = acceleratedRaycast`), not globally on `Mesh.prototype`. So a mesh is only accelerated if it has passed through this function.
 - The `boundsTree` guard means re-running on an already-accelerated mesh is a no-op.
 
@@ -44,6 +48,7 @@ Two important properties of this implementation:
 `optimizeSurfaceForRaycasting` is called **inside** `generateSurface`, at the very end, before returning:
 
 `src/lib/projection-geometry/generate-projection.ts:254-257`
+
 ```ts
 // Apply BVH acceleration for fast ray tracing
 optimizeSurfaceForRaycasting(surface);
@@ -53,6 +58,7 @@ return surface;
 Voronoi obtains its surface from this exact function:
 
 `src/lib/voronoi/generate-voronoi.ts:28-32, 302`
+
 ```ts
 import { generateSurface, ... } from '$lib/projection-geometry/generate-projection';
 ...
@@ -69,9 +75,9 @@ Therefore every mesh in the `surface` object that Voronoi raycasts against has a
   ```ts
   const raycaster = new Raycaster(undefined, undefined, undefined, 2000);
   return (direction) => {
-    raycaster.set(center, direction.clone().normalize());
-    const hits = raycaster.intersectObject(surface, true);   // -> acceleratedRaycast
-    return hits.length > 0 ? hits[0].point.clone() : null;
+  	raycaster.set(center, direction.clone().normalize());
+  	const hits = raycaster.intersectObject(surface, true); // -> acceleratedRaycast
+  	return hits.length > 0 ? hits[0].point.clone() : null;
   };
   ```
 - the separate normal raycaster — `src/lib/voronoi/generate-voronoi.ts:326, 354-355`
@@ -94,18 +100,19 @@ Defaults: `edgeDivisions: 6`, `surfaceProjectionDivisions: 0` (`src/lib/shades-c
 
 Per Voronoi edge, the inner loop runs over `edgeDivisions + 1` sampled directions (`src/lib/voronoi/generate-voronoi.ts:109` builds `divisions + 1` directions; loop at `:347`). For each sampled direction that hits the surface, the code performs:
 
-| Cast | Location | Purpose |
-|------|----------|---------|
-| `intersect(dir)` | `:348` | edge point on surface |
-| `normalRaycaster.intersectObject` | `:355` | surface normal at point |
-| `intersect(curveDirA)` | `:373` | curve offset toward cell A |
-| `intersect(curveDirB)` | `:377` | curve offset toward cell B |
+| Cast                              | Location | Purpose                    |
+| --------------------------------- | -------- | -------------------------- |
+| `intersect(dir)`                  | `:348`   | edge point on surface      |
+| `normalRaycaster.intersectObject` | `:355`   | surface normal at point    |
+| `intersect(curveDirA)`            | `:373`   | curve offset toward cell A |
+| `intersect(curveDirB)`            | `:377`   | curve offset toward cell B |
 
 = **4 raycasts per sampled point** (the task estimated ~3; the actual count is 4 because both the curve-A and curve-B offsets cast, plus the point and the normal).
 
 So per edge ≈ `(edgeDivisions + 1) × 4` = `7 × 4 = 28` raycasts at defaults.
 
 Additional per-edge casts:
+
 - Surface-projection divisions: `2 × spDivisions` casts per sampled point (`:445, :453`). Zero at default `surfaceProjectionDivisions = 0`. With `spDivisions = N` it adds `(edgeDivisions + 1) × 2N` casts per edge.
 - `fillAll`: one extra cast **per cell** (not per edge) for the cell apex (`:508`), gated behind `config.fillAll`.
 

@@ -44,9 +44,9 @@ describe('shouldHaveTab with tabLayout (before+inner, 6-band tube)', () => {
 
 	it('returns false on an edge whose side lacks a partner', () => {
 		// band1 before would be true, but no before partner => no seam => no tab.
-		expect(
-			shouldHaveTab(edge('before'), conf, { after: true, before: false }, 0, 1, 6)
-		).toBe(false);
+		expect(shouldHaveTab(edge('before'), conf, { after: true, before: false }, 0, 1, 6)).toBe(
+			false
+		);
 	});
 });
 
@@ -69,8 +69,8 @@ describe('shouldHaveTab regression: tabLayout undefined matches legacy', () => {
 	});
 	it('respects hasPartners when layout undefined', () => {
 		const conf = cfg({ bandEdge: 'before' });
-		expect(
-			shouldHaveTab(edge('before'), conf, { after: true, before: false }, 0, 2, 6)
-		).toBe(false);
+		expect(shouldHaveTab(edge('before'), conf, { after: true, before: false }, 0, 2, 6)).toBe(
+			false
+		);
 	});
 });

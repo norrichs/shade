@@ -12,11 +12,11 @@
 
 ## File Structure
 
-| File | Status | Responsibility |
-| --- | --- | --- |
-| `src/lib/types.ts` | Modify (`BandSortGroup`, line 26-29) | Add optional `code?: string` to `BandSortGroup`. |
-| `src/lib/cut-pattern/band-sort-index.ts` | Modify (lines 1-85) | Export `formatGroupCode`; set `code` on end-connection ring groups; add and export `buildBandCodeMap`. |
-| `src/lib/cut-pattern/__tests__/band-sort-index.test.ts` | Create | Unit tests for `formatGroupCode`, code assignment in `buildBandSortIndex`, `buildBandCodeMap`, and code preservation through `sliceBandSortIndex`. |
+| File                                                    | Status                               | Responsibility                                                                                                                                     |
+| ------------------------------------------------------- | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/lib/types.ts`                                      | Modify (`BandSortGroup`, line 26-29) | Add optional `code?: string` to `BandSortGroup`.                                                                                                   |
+| `src/lib/cut-pattern/band-sort-index.ts`                | Modify (lines 1-85)                  | Export `formatGroupCode`; set `code` on end-connection ring groups; add and export `buildBandCodeMap`.                                             |
+| `src/lib/cut-pattern/__tests__/band-sort-index.test.ts` | Create                               | Unit tests for `formatGroupCode`, code assignment in `buildBandSortIndex`, `buildBandCodeMap`, and code preservation through `sliceBandSortIndex`. |
 
 ### Interface contract delivered to WS-C and WS-D (final, do not change)
 
@@ -30,7 +30,9 @@ export type BandSortGroup = {
 
 // src/lib/cut-pattern/band-sort-index.ts
 export const formatGroupCode = (n: number): string => String(n).padStart(4, '0');
-export const buildBandCodeMap = (index: BandSortIndex): Map<string, string> => { /* ... */ };
+export const buildBandCodeMap = (index: BandSortIndex): Map<string, string> => {
+	/* ... */
+};
 ```
 
 `buildBandCodeMap` is keyed by `bandKey(ref)` = `` `${ref.globule}-${ref.tube}-${ref.band}` ``.
@@ -55,6 +57,7 @@ export const buildBandCodeMap = (index: BandSortIndex): Map<string, string> => {
 ### Task 1: Add `code?` to the `BandSortGroup` type
 
 **Files:**
+
 - Modify: `src/lib/types.ts` (lines 26-29)
 - Test: `src/lib/cut-pattern/__tests__/band-sort-index.test.ts` (create) — type-level assertion compiled by `npm run check`
 
@@ -131,6 +134,7 @@ git commit -m "feat(band-sort): add optional code to BandSortGroup type"
 ### Task 2: Export `formatGroupCode`
 
 **Files:**
+
 - Modify: `src/lib/cut-pattern/band-sort-index.ts` (add export near top, after line 3)
 - Test: `src/lib/cut-pattern/__tests__/band-sort-index.test.ts` (append a `describe`)
 
@@ -174,7 +178,14 @@ export const formatGroupCode = (n: number): string => String(n).padStart(4, '0')
 So the top of the file reads:
 
 ```ts
-import type { BandSortIndex, BandSortMode, BandSortGroup, BandRef, IndexRange, TubeCutPattern } from '$lib/types';
+import type {
+	BandSortIndex,
+	BandSortMode,
+	BandSortGroup,
+	BandRef,
+	IndexRange,
+	TubeCutPattern
+} from '$lib/types';
 
 const bandKey = (ref: BandRef): string => `${ref.globule}-${ref.tube}-${ref.band}`;
 
@@ -201,6 +212,7 @@ git commit -m "feat(band-sort): add formatGroupCode 4-wide zero-pad helper"
 ### Task 3: Assign sequential codes to end-connection ring groups (and leave tube-order uncoded)
 
 **Files:**
+
 - Modify: `src/lib/cut-pattern/band-sort-index.ts` (line 52, inside `buildEndConnectionIndex`)
 - Test: `src/lib/cut-pattern/__tests__/band-sort-index.test.ts` (append `describe`)
 
@@ -280,13 +292,13 @@ Expected failure: `expect(index.groups.map((g) => g.code)).toEqual(['0000', '000
 - [ ] In `src/lib/cut-pattern/band-sort-index.ts`, set the ring code in `buildEndConnectionIndex` (line 52). Replace:
 
 ```ts
-				groups.push({ label: `Ring ${ringIndex}`, bands: ring });
+groups.push({ label: `Ring ${ringIndex}`, bands: ring });
 ```
 
 with:
 
 ```ts
-				groups.push({ label: `Ring ${ringIndex}`, code: formatGroupCode(ringIndex), bands: ring });
+groups.push({ label: `Ring ${ringIndex}`, code: formatGroupCode(ringIndex), bands: ring });
 ```
 
 (`buildTubeOrderIndex` at lines 5-11 is intentionally left unchanged — it pushes groups without a `code`, so `code` stays `undefined`.)
@@ -319,6 +331,7 @@ git commit -m "feat(band-sort): assign sequential ring codes in end-connection m
 ### Task 4: Add `buildBandCodeMap` band→code lookup
 
 **Files:**
+
 - Modify: `src/lib/cut-pattern/band-sort-index.ts` (append exported helper after `sliceBandSortIndex`, end of file)
 - Test: `src/lib/cut-pattern/__tests__/band-sort-index.test.ts` (append `describe`)
 
@@ -357,7 +370,6 @@ Expected failure: `TypeError: (0 , _bandSortIndex.buildBandCodeMap) is not a fun
 - [ ] Append the exported helper to the end of `src/lib/cut-pattern/band-sort-index.ts` (after `sliceBandSortIndex`, currently ending at line 85):
 
 ```ts
-
 export const buildBandCodeMap = (index: BandSortIndex): Map<string, string> => {
 	const map = new Map<string, string>();
 	for (const group of index.groups) {
@@ -396,6 +408,7 @@ git commit -m "feat(band-sort): add buildBandCodeMap band-to-code lookup"
 ### Task 5: Verify `sliceBandSortIndex` preserves codes (regression guard)
 
 **Files:**
+
 - Modify: none (behavior already correct via `...group` spread at `band-sort-index.ts:80-83`)
 - Test: `src/lib/cut-pattern/__tests__/band-sort-index.test.ts` (append `describe`)
 
@@ -461,17 +474,17 @@ git commit -m "test(band-sort): guard code preservation through sliceBandSortInd
 
 ### Spec coverage
 
-| Spec requirement | Task |
-| --- | --- |
-| `BandSortGroup.code?: string` added | Task 1 |
-| `formatGroupCode(n) = String(n).padStart(4,'0')`, exported | Task 2 |
-| `formatGroupCode` cases `0→'0000'`, `1→'0001'`, `42→'0042'`, `10000→'10000'` | Task 2 |
-| `buildEndConnectionIndex` assigns `formatGroupCode(ringIndex)` | Task 3 |
-| `buildTubeOrderIndex` leaves `code` undefined | Task 3 |
-| `buildBandCodeMap(index): Map<bandKey, code>`, keyed by `bandKey`, exported | Task 4 |
-| `buildBandCodeMap` maps coded groups, omits uncoded | Task 4 |
-| `sliceBandSortIndex` preserves `code`, no renumbering | Task 5 |
-| Out of scope: rendering, new modes | Not implemented (correct) |
+| Spec requirement                                                             | Task                      |
+| ---------------------------------------------------------------------------- | ------------------------- |
+| `BandSortGroup.code?: string` added                                          | Task 1                    |
+| `formatGroupCode(n) = String(n).padStart(4,'0')`, exported                   | Task 2                    |
+| `formatGroupCode` cases `0→'0000'`, `1→'0001'`, `42→'0042'`, `10000→'10000'` | Task 2                    |
+| `buildEndConnectionIndex` assigns `formatGroupCode(ringIndex)`               | Task 3                    |
+| `buildTubeOrderIndex` leaves `code` undefined                                | Task 3                    |
+| `buildBandCodeMap(index): Map<bandKey, code>`, keyed by `bandKey`, exported  | Task 4                    |
+| `buildBandCodeMap` maps coded groups, omits uncoded                          | Task 4                    |
+| `sliceBandSortIndex` preserves `code`, no renumbering                        | Task 5                    |
+| Out of scope: rendering, new modes                                           | Not implemented (correct) |
 
 ### Placeholder scan
 

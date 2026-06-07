@@ -59,8 +59,8 @@ Branch on `index.mode`:
 
 #### Mode `end-connection-tube` — row per ring group
 
-| col 1 | col 2 | cols 3… |
-|-------|-------|---------|
+| col 1     | col 2                        | cols 3…                               |
+| --------- | ---------------------------- | ------------------------------------- |
 | ring code | partner ring codes (deduped) | constituent members `t{tube}/b{band}` |
 
 - **Ring code:** `group.code`.
@@ -73,8 +73,8 @@ Branch on `index.mode`:
 
 #### Mode `tube-order` — row per band
 
-| col 1 | col 2 | col 3 |
-|-------|-------|-------|
+| col 1             | col 2                    | col 3                       |
+| ----------------- | ------------------------ | --------------------------- |
 | `t{tube}/b{band}` | adjacent `t/b` addresses | end-partner `t/b` addresses |
 
 - **Address:** the band's own `t{tube}/b{band}`.

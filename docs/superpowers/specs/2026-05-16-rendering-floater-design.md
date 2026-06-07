@@ -17,15 +17,15 @@ The inline controls in `/designer2/+page.svelte`'s `<header>` (`mode-control`, `
 
 ### Label edits inside the component
 
-| Before | After |
-| --- | --- |
+| Before                                               | After            |
+| ---------------------------------------------------- | ---------------- |
 | `<header>Computation Mode</header>` (section header) | removed entirely |
-| Checkbox label `Manual Mode` | `Manual` |
-| Checkbox label `Pause Pattern Updates` | `Pause Patterns` |
-| Dropdown label `Mode` | unchanged |
-| Dropdown options `Continuous / 3D Only / 2D Only` | unchanged |
-| Pending tag `⚠ pending` | unchanged |
-| `Refresh` button (visible when paused) | unchanged |
+| Checkbox label `Manual Mode`                         | `Manual`         |
+| Checkbox label `Pause Pattern Updates`               | `Pause Patterns` |
+| Dropdown label `Mode`                                | unchanged        |
+| Dropdown options `Continuous / 3D Only / 2D Only`    | unchanged        |
+| Pending tag `⚠ pending`                              | unchanged        |
+| `Refresh` button (visible when paused)               | unchanged        |
 
 The `<section>…<Container>…</Container></section>` wrapper stays; only the `<header>` line inside `<section>` is removed.
 
@@ -34,7 +34,7 @@ The `<section>…<Container>…</Container></section>` wrapper stays; only the `
 Add to the `utilities` Map in `src/components/modal/sidebar-definitions.ts`:
 
 ```ts
-['Rendering', { shortTitle: 'RN', title: 'Rendering', content: Rendering }]
+['Rendering', { shortTitle: 'RN', title: 'Rendering', content: Rendering }];
 ```
 
 Placement: at the end of the existing `utilities` Map (after `Configs`). `utilities` is spread into both `projectionConfigs` and `globuleConfigs`, so the floater is automatically available in both designer modes.

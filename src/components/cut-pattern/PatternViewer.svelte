@@ -1,9 +1,5 @@
 <script lang="ts">
-	import {
-		superGlobulePatternStore,
-		patternConfigStore,
-		viewControlStore
-	} from '$lib/stores';
+	import { superGlobulePatternStore, patternConfigStore, viewControlStore } from '$lib/stores';
 	import CutPatternControl from './CutPatternControl.svelte';
 	import CutPatternSvg from './CutPatternSvg.svelte';
 
@@ -45,9 +41,8 @@
 	$: sortMode = $patternConfigStore.patternViewConfig.bandSortMode ?? 'tube-order';
 
 	let sortIndex: BandSortIndex | undefined;
-	$: sortIndex = sortMode === 'tube-order'
-		? undefined
-		: buildBandSortIndex(collatedPatterns, sortMode);
+	$: sortIndex =
+		sortMode === 'tube-order' ? undefined : buildBandSortIndex(collatedPatterns, sortMode);
 </script>
 
 <div class="container-svg scroll-container" class:showBands>

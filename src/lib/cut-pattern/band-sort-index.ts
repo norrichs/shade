@@ -1,4 +1,11 @@
-import type { BandSortIndex, BandSortMode, BandSortGroup, BandRef, IndexRange, TubeCutPattern } from '$lib/types';
+import type {
+	BandSortIndex,
+	BandSortMode,
+	BandSortGroup,
+	BandRef,
+	IndexRange,
+	TubeCutPattern
+} from '$lib/types';
 
 const bandKey = (ref: BandRef): string => `${ref.globule}-${ref.tube}-${ref.band}`;
 

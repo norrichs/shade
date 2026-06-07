@@ -14,20 +14,20 @@
 
 ## File Structure
 
-| File | Create/Modify | Responsibility |
-| --- | --- | --- |
-| `src/lib/projection-geometry/fill-bands.ts` | Create | Pure fill-band construction: `extractBorderEdge`, `buildFillBand`, `windFillBandOutward`, `isDegenerateTriangle`, `FILL_DEGENERATE_EPSILON`. |
-| `src/lib/projection-geometry/__tests__/fill-bands.test.ts` | Create | Unit tests for the pure helpers. |
-| `src/lib/projection-geometry/fill-fan.ts` | Delete | Old per-polygon fan builder (replaced). |
-| `src/lib/projection-geometry/__tests__/fill-fan.test.ts` | Delete | Old fan tests. |
-| `src/lib/projection-geometry/types.ts` | Modify | Add `fillAll` already present on `SurfaceProjectionConfig`; remove `isFill` from `Tube`. |
-| `src/lib/types.ts` | Modify | Add `isFill?: boolean` to `Band`; add `isDegenerate?: boolean` to `Facet`. |
-| `src/lib/voronoi/types.ts` | Modify | Add `fillAll?: boolean` to `VoronoiConfig`. |
-| `src/lib/projection-geometry/generate-projection.ts` | Modify | Remove old per-polygon fan block; build+insert fill bands per polygon before partner matching; guard partner matchers against degenerate edges. |
-| `src/lib/voronoi/generate-voronoi.ts` | Modify | Build+insert fill bands per cell (seed-based center) before partner matching. |
-| `src/lib/cut-pattern/generate-panel-pattern.ts` | Modify | Degenerate-facet guard in `getFlatStripV2` flatten path. |
-| `src/lib/cut-pattern/generate-pattern.ts` | Modify | Drop fill *bands* (not tubes) for non-outlined patterns. |
-| `src/components/cut-pattern/CutPatternControl.svelte` | Modify | One shared "fill all" toggle shown for both `surfaceProjection` and `voronoiSurface`. |
+| File                                                       | Create/Modify | Responsibility                                                                                                                                  |
+| ---------------------------------------------------------- | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/lib/projection-geometry/fill-bands.ts`                | Create        | Pure fill-band construction: `extractBorderEdge`, `buildFillBand`, `windFillBandOutward`, `isDegenerateTriangle`, `FILL_DEGENERATE_EPSILON`.    |
+| `src/lib/projection-geometry/__tests__/fill-bands.test.ts` | Create        | Unit tests for the pure helpers.                                                                                                                |
+| `src/lib/projection-geometry/fill-fan.ts`                  | Delete        | Old per-polygon fan builder (replaced).                                                                                                         |
+| `src/lib/projection-geometry/__tests__/fill-fan.test.ts`   | Delete        | Old fan tests.                                                                                                                                  |
+| `src/lib/projection-geometry/types.ts`                     | Modify        | Add `fillAll` already present on `SurfaceProjectionConfig`; remove `isFill` from `Tube`.                                                        |
+| `src/lib/types.ts`                                         | Modify        | Add `isFill?: boolean` to `Band`; add `isDegenerate?: boolean` to `Facet`.                                                                      |
+| `src/lib/voronoi/types.ts`                                 | Modify        | Add `fillAll?: boolean` to `VoronoiConfig`.                                                                                                     |
+| `src/lib/projection-geometry/generate-projection.ts`       | Modify        | Remove old per-polygon fan block; build+insert fill bands per polygon before partner matching; guard partner matchers against degenerate edges. |
+| `src/lib/voronoi/generate-voronoi.ts`                      | Modify        | Build+insert fill bands per cell (seed-based center) before partner matching.                                                                   |
+| `src/lib/cut-pattern/generate-panel-pattern.ts`            | Modify        | Degenerate-facet guard in `getFlatStripV2` flatten path.                                                                                        |
+| `src/lib/cut-pattern/generate-pattern.ts`                  | Modify        | Drop fill _bands_ (not tubes) for non-outlined patterns.                                                                                        |
+| `src/components/cut-pattern/CutPatternControl.svelte`      | Modify        | One shared "fill all" toggle shown for both `surfaceProjection` and `voronoiSurface`.                                                           |
 
 **Note on `isFill` granularity:** the marker moves from `Tube` to `Band`. A fill band lives inside an otherwise-normal tube.
 
@@ -47,6 +47,7 @@
 ## Task 1: Move `isFill` to band level; add `isDegenerate` to Facet; add `fillAll` to VoronoiConfig
 
 **Files:**
+
 - Modify: `src/lib/types.ts` (the `Band` type ~line 792, and the `Facet` type ~line 736)
 - Modify: `src/lib/projection-geometry/types.ts` (the `Tube` type, line 226-236)
 - Modify: `src/lib/voronoi/types.ts` (the `VoronoiConfig` type, lines 9-19)
@@ -181,10 +182,12 @@ git commit -m "feat(fillAll): move isFill to band; add Facet.isDegenerate; add f
 ## Task 2: `fill-bands.ts` — degeneracy helper + outer-border polyline
 
 **Files:**
+
 - Create: `src/lib/projection-geometry/fill-bands.ts`
 - Test: `src/lib/projection-geometry/__tests__/fill-bands.test.ts`
 
 **Background (verified facts — do not re-derive):**
+
 - Surface-projection tubes (both sources) are built from `sections: Section[]`, where each section is
   a column `{ points: Vector3[] }`. `generateProjectionBands` (axial-right) makes **band index =
   point index** within the column, and walks `sectionIndex` along the tube length. So:
@@ -197,7 +200,7 @@ git commit -m "feat(fillAll): move isFill to band; add Facet.isDegenerate; add f
   reverses each section's `points`), so reading `points[0]`/`points[last]` is always correct.
 - `Section` type: `src/lib/projection-geometry/types.ts:222` = `{ points: Vector3[] }`. `Facet`,
   `Band` shapes: `src/lib/types.ts`. `Facet = { triangle: ThreeTriangle; address?:
-  GlobuleAddress_Facet; meta?: {ab,bc,ac}; orientation: FacetOrientation }`.
+GlobuleAddress_Facet; meta?: {ab,bc,ac}; orientation: FacetOrientation }`.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -207,11 +210,7 @@ Create `src/lib/projection-geometry/__tests__/fill-bands.test.ts`:
 import { describe, it, expect } from '@jest/globals';
 import { Triangle, Vector3 } from 'three';
 import type { Section } from '../types';
-import {
-	isDegenerateTriangle,
-	outerBorderPolyline,
-	FILL_DEGENERATE_EPSILON
-} from '../fill-bands';
+import { isDegenerateTriangle, outerBorderPolyline, FILL_DEGENERATE_EPSILON } from '../fill-bands';
 
 describe('isDegenerateTriangle', () => {
 	it('is false for a normal triangle', () => {
@@ -300,9 +299,7 @@ export const isDegenerateTriangle = (t: Triangle): boolean => {
  * These are the polygon/cell-bordering ("open space") edges. Returns ordered clones.
  */
 export const outerBorderPolyline = (sections: Section[], side: 'first' | 'last'): Vector3[] =>
-	sections.map((s) =>
-		(side === 'first' ? s.points[0] : s.points[s.points.length - 1]).clone()
-	);
+	sections.map((s) => (side === 'first' ? s.points[0] : s.points[s.points.length - 1]).clone());
 ```
 
 - [ ] **Step 4: Run test to verify it passes**
@@ -322,11 +319,13 @@ git commit -m "feat(fillAll): add isDegenerateTriangle and outerBorderPolyline"
 ## Task 3: `fill-bands.ts` — `buildFillBand` (fan of real + degenerate facets, wound outward)
 
 **Files:**
+
 - Modify: `src/lib/projection-geometry/fill-bands.ts`
 - Test: `src/lib/projection-geometry/__tests__/fill-bands.test.ts`
 
 **Design:** Given a border polyline `[P0..Pk]`, a shared `center` C, and the band `address`, build a
 band whose facets, per segment `j`, are:
+
 - real facet `2j`: `Triangle(P_j, P_{j+1}, C)` (2 border vectors + center)
 - degenerate facet `2j+1`: `Triangle(P_{j+1}, C, C)` (1 border vector + 2 center; zero area, keeps
   indexing), **explicitly tagged `isDegenerate: true`**.
@@ -392,9 +391,7 @@ describe('buildFillBand', () => {
 	it('winds real-facet normals outward (away from projCenter)', () => {
 		const band = buildFillBand({ borderEdge: [P0, P1, P2], center, address, projCenter });
 		const t = band.facets[0].triangle;
-		const normal = new Vector3()
-			.subVectors(t.b, t.a)
-			.cross(new Vector3().subVectors(t.c, t.a));
+		const normal = new Vector3().subVectors(t.b, t.a).cross(new Vector3().subVectors(t.c, t.a));
 		const facetCentroid = new Vector3().addVectors(t.a, t.b).add(t.c).divideScalar(3);
 		const toFacet = new Vector3().subVectors(facetCentroid, projCenter);
 		expect(normal.dot(toFacet)).toBeGreaterThan(0);
@@ -490,6 +487,7 @@ git commit -m "feat(fillAll): add buildFillBand (outward-wound real+degenerate f
 ## Task 4: Remove the old fan implementation
 
 **Files:**
+
 - Delete: `src/lib/projection-geometry/fill-fan.ts`
 - Delete: `src/lib/projection-geometry/__tests__/fill-fan.test.ts`
 - Modify: `src/lib/projection-geometry/generate-projection.ts` (remove the per-polygon fan block, lines ~1323-1364, and its now-unused imports)
@@ -531,6 +529,7 @@ Inserting fill bands changes every band's array position. Band/facet addresses m
 partner matching and addressing stay consistent with position.
 
 **Files:**
+
 - Modify: `src/lib/projection-geometry/fill-bands.ts`
 - Test: `src/lib/projection-geometry/__tests__/fill-bands.test.ts`
 
@@ -611,6 +610,7 @@ git commit -m "feat(fillAll): add reindexBandAddresses helper"
 ## Task 6: surfaceProjection integration — build + insert fill bands (pre-partner)
 
 **Files:**
+
 - Modify: `src/lib/projection-geometry/generate-projection.ts` (`generateSurfaceProjectionBands`,
   function starts at line 1223)
 
@@ -638,8 +638,8 @@ Ensure `Raycaster` is imported from `three` (it may have been removed in Task 4;
 In `generateSurfaceProjectionBands`, just after `const tubes: Tube[] = [];` (line 1229), add:
 
 ```typescript
-	// For fillAll: which polygon each tube's first/last outer band borders.
-	const fillMeta: { firstPolygon: number; lastPolygon: number }[] = [];
+// For fillAll: which polygon each tube's first/last outer band borders.
+const fillMeta: { firstPolygon: number; lastPolygon: number }[] = [];
 ```
 
 - [ ] **Step 3: Capture the winding result and record polygon membership**
@@ -647,30 +647,30 @@ In `generateSurfaceProjectionBands`, just after `const tubes: Tube[] = [];` (lin
 In the tube loop, the current winding block (around lines 1305-1308) reads:
 
 ```typescript
-		if (testNormal.dot(toFacet) < 0) {
-			// Reverse point order in each section to fix winding
-			sections.forEach((s) => s.points.reverse());
-		}
+if (testNormal.dot(toFacet) < 0) {
+	// Reverse point order in each section to fix winding
+	sections.forEach((s) => s.points.reverse());
+}
 ```
 
 Change it to capture the boolean:
 
 ```typescript
-		const reversed = testNormal.dot(toFacet) < 0;
-		if (reversed) {
-			// Reverse point order in each section to fix winding
-			sections.forEach((s) => s.points.reverse());
-		}
+const reversed = testNormal.dot(toFacet) < 0;
+if (reversed) {
+	// Reverse point order in each section to fix winding
+	sections.forEach((s) => s.points.reverse());
+}
 ```
 
 Then, immediately after `tubes.push(tube);` (line 1320), add:
 
 ```typescript
-		// After winding, band 0 = sections.points[0]; if reversed that is em1's polygon.
-		fillMeta.push({
-			firstPolygon: reversed ? em1.polygonIndex : em0.polygonIndex,
-			lastPolygon: reversed ? em0.polygonIndex : em1.polygonIndex
-		});
+// After winding, band 0 = sections.points[0]; if reversed that is em1's polygon.
+fillMeta.push({
+	firstPolygon: reversed ? em1.polygonIndex : em0.polygonIndex,
+	lastPolygon: reversed ? em0.polygonIndex : em1.polygonIndex
+});
 ```
 
 - [ ] **Step 4: Build + insert fill bands after the loop, before partner matching**
@@ -679,57 +679,57 @@ Immediately after the tube loop closes (where the old fan block was removed in T
 the `// Partner matching for flat surface projection geometry.` try block, insert:
 
 ```typescript
-	// Interior fill bands (fillAll). One fill band per outer (open-space-bordering) band,
-	// prepended before band 0 and appended after the last band of each tube, sharing one
-	// per-polygon center point on the surface. Built before partner matching so the fill
-	// bands are addressed and partnered as first-class bands.
-	if (projectionConfig.surfaceProjectionConfig?.fillAll) {
-		const fillRay = new Raycaster(undefined, undefined, undefined, 2000);
+// Interior fill bands (fillAll). One fill band per outer (open-space-bordering) band,
+// prepended before band 0 and appended after the last band of each tube, sharing one
+// per-polygon center point on the surface. Built before partner matching so the fill
+// bands are addressed and partnered as first-class bands.
+if (projectionConfig.surfaceProjectionConfig?.fillAll) {
+	const fillRay = new Raycaster(undefined, undefined, undefined, 2000);
 
-		// Per-polygon apex: average the polygon's inner-curve points, ray-cast onto the surface.
-		const polygonApex: (Vector3 | undefined)[] = projection.polygons.map((poly) => {
-			const pts = poly.edges.flatMap((e) => e.sections.map((s) => s.intersections.curve));
-			if (pts.length === 0) return undefined;
-			const avg = pts.reduce((acc, p) => acc.add(p), new Vector3()).divideScalar(pts.length);
-			fillRay.set(projCenter, avg.clone().sub(projCenter).normalize());
-			const hit = fillRay.intersectObject(surface, true)[0];
-			if (!hit) console.warn('fillAll: polygon centroid ray missed surface; using averaged point');
-			return hit ? hit.point.clone() : avg;
-		});
+	// Per-polygon apex: average the polygon's inner-curve points, ray-cast onto the surface.
+	const polygonApex: (Vector3 | undefined)[] = projection.polygons.map((poly) => {
+		const pts = poly.edges.flatMap((e) => e.sections.map((s) => s.intersections.curve));
+		if (pts.length === 0) return undefined;
+		const avg = pts.reduce((acc, p) => acc.add(p), new Vector3()).divideScalar(pts.length);
+		fillRay.set(projCenter, avg.clone().sub(projCenter).normalize());
+		const hit = fillRay.intersectObject(surface, true)[0];
+		if (!hit) console.warn('fillAll: polygon centroid ray missed surface; using averaged point');
+		return hit ? hit.point.clone() : avg;
+	});
 
-		tubes.forEach((tube, t) => {
-			const meta = fillMeta[t];
-			const firstApex = polygonApex[meta.firstPolygon];
-			const lastApex = polygonApex[meta.lastPolygon];
-			const firstEdge = outerBorderPolyline(tube.sections, 'first');
-			const lastEdge = outerBorderPolyline(tube.sections, 'last');
+	tubes.forEach((tube, t) => {
+		const meta = fillMeta[t];
+		const firstApex = polygonApex[meta.firstPolygon];
+		const lastApex = polygonApex[meta.lastPolygon];
+		const firstEdge = outerBorderPolyline(tube.sections, 'first');
+		const lastEdge = outerBorderPolyline(tube.sections, 'last');
 
-			const newBands: Band[] = [];
-			if (firstApex && firstEdge.length >= 2) {
-				newBands.push(
-					buildFillBand({
-						borderEdge: firstEdge,
-						center: firstApex,
-						address: { ...tube.address, band: 0 },
-						projCenter
-					})
-				);
-			}
-			newBands.push(...tube.bands);
-			if (lastApex && lastEdge.length >= 2) {
-				newBands.push(
-					buildFillBand({
-						borderEdge: lastEdge,
-						center: lastApex,
-						address: { ...tube.address, band: 0 },
-						projCenter
-					})
-				);
-			}
-			tube.bands = newBands;
-			reindexBandAddresses(tube.bands, tube.address);
-		});
-	}
+		const newBands: Band[] = [];
+		if (firstApex && firstEdge.length >= 2) {
+			newBands.push(
+				buildFillBand({
+					borderEdge: firstEdge,
+					center: firstApex,
+					address: { ...tube.address, band: 0 },
+					projCenter
+				})
+			);
+		}
+		newBands.push(...tube.bands);
+		if (lastApex && lastEdge.length >= 2) {
+			newBands.push(
+				buildFillBand({
+					borderEdge: lastEdge,
+					center: lastApex,
+					address: { ...tube.address, band: 0 },
+					projCenter
+				})
+			);
+		}
+		tube.bands = newBands;
+		reindexBandAddresses(tube.bands, tube.address);
+	});
+}
 ```
 
 - [ ] **Step 5: Type-check and run geometry tests**
@@ -752,6 +752,7 @@ git commit -m "feat(fillAll): build and insert surfaceProjection fill bands befo
 ## Task 7: voronoiSurface integration — build + insert fill bands (pre-partner)
 
 **Files:**
+
 - Modify: `src/lib/voronoi/generate-voronoi.ts` (`makeVoronoi`, lines 285-492)
 
 **Approach:** identical shape to Task 6, but the per-cell center is the cell **seed** ray-cast onto
@@ -783,8 +784,8 @@ import type { Band } from '$lib/types';
 Just after `const surfaceProjectionTubes: Tube[] = [];` (line 312), add:
 
 ```typescript
-	// For fillAll: which cell each spTube's first/last outer band borders.
-	const spFillMeta: { firstCell: number; lastCell: number }[] = [];
+// For fillAll: which cell each spTube's first/last outer band borders.
+const spFillMeta: { firstCell: number; lastCell: number }[] = [];
 ```
 
 - [ ] **Step 3: Capture winding and record cell membership**
@@ -792,28 +793,28 @@ Just after `const surfaceProjectionTubes: Tube[] = [];` (line 312), add:
 The spTube winding block (lines 463-465) currently reads:
 
 ```typescript
-		if (testNormal.dot(toFacet) < 0) {
-			spSections.forEach((s) => s.points.reverse());
-		}
+if (testNormal.dot(toFacet) < 0) {
+	spSections.forEach((s) => s.points.reverse());
+}
 ```
 
 Change to capture the boolean:
 
 ```typescript
-		const spReversed = testNormal.dot(toFacet) < 0;
-		if (spReversed) {
-			spSections.forEach((s) => s.points.reverse());
-		}
+const spReversed = testNormal.dot(toFacet) < 0;
+if (spReversed) {
+	spSections.forEach((s) => s.points.reverse());
+}
 ```
 
 Then immediately after the `surfaceProjectionTubes.push({ … });` call (ends line 473), add:
 
 ```typescript
-		// After winding, band 0 = spSections.points[0]; if reversed that is cell B (cellIdxB).
-		spFillMeta.push({
-			firstCell: spReversed ? cellIdxB : cellIdxA,
-			lastCell: spReversed ? cellIdxA : cellIdxB
-		});
+// After winding, band 0 = spSections.points[0]; if reversed that is cell B (cellIdxB).
+spFillMeta.push({
+	firstCell: spReversed ? cellIdxB : cellIdxA,
+	lastCell: spReversed ? cellIdxA : cellIdxB
+});
 ```
 
 (`cellIdxA`/`cellIdxB` are in scope from line 320: `const [cellIdxA, cellIdxB] = voronoiEdge.cellIndices;`.)
@@ -823,64 +824,63 @@ Then immediately after the `surfaceProjectionTubes.push({ … });` call (ends li
 The current spTube partner-matching block is at lines 484-489:
 
 ```typescript
-	try {
-		matchTubeEnds(surfaceProjectionTubes);
-		matchFacets(surfaceProjectionTubes);
-	} catch (error) {
-		console.error('Voronoi surface projection partner matching error:', error);
-	}
+try {
+	matchTubeEnds(surfaceProjectionTubes);
+	matchFacets(surfaceProjectionTubes);
+} catch (error) {
+	console.error('Voronoi surface projection partner matching error:', error);
+}
 ```
 
 **Before** that block, insert:
 
 ```typescript
-	// Interior fill bands (fillAll). One fill band per outer (open-space-bordering) band of each
-	// spTube, sharing one per-cell center (the cell seed ray-cast onto the surface). Built before
-	// partner matching so fill bands are addressed and partnered as first-class bands.
-	if (config.fillAll) {
-		const averageOf = (pts: Vector3[]): Vector3 =>
-			pts.reduce((acc, p) => acc.add(p.clone()), new Vector3()).divideScalar(pts.length);
+// Interior fill bands (fillAll). One fill band per outer (open-space-bordering) band of each
+// spTube, sharing one per-cell center (the cell seed ray-cast onto the surface). Built before
+// partner matching so fill bands are addressed and partnered as first-class bands.
+if (config.fillAll) {
+	const averageOf = (pts: Vector3[]): Vector3 =>
+		pts.reduce((acc, p) => acc.add(p.clone()), new Vector3()).divideScalar(pts.length);
 
-		// Per-cell apex: ray-cast the seed direction onto the surface.
-		const cellApex: (Vector3 | undefined)[] = relaxedSeeds.map((seed) =>
-			intersect(coordToDirection(seed[0], seed[1]))
-		);
+	// Per-cell apex: ray-cast the seed direction onto the surface.
+	const cellApex: (Vector3 | undefined)[] = relaxedSeeds.map((seed) =>
+		intersect(coordToDirection(seed[0], seed[1]))
+	);
 
-		surfaceProjectionTubes.forEach((tube, t) => {
-			const meta = spFillMeta[t];
-			const firstEdge = outerBorderPolyline(tube.sections, 'first');
-			const lastEdge = outerBorderPolyline(tube.sections, 'last');
-			const firstApex =
-				cellApex[meta.firstCell] ?? (firstEdge.length ? averageOf(firstEdge) : undefined);
-			const lastApex =
-				cellApex[meta.lastCell] ?? (lastEdge.length ? averageOf(lastEdge) : undefined);
+	surfaceProjectionTubes.forEach((tube, t) => {
+		const meta = spFillMeta[t];
+		const firstEdge = outerBorderPolyline(tube.sections, 'first');
+		const lastEdge = outerBorderPolyline(tube.sections, 'last');
+		const firstApex =
+			cellApex[meta.firstCell] ?? (firstEdge.length ? averageOf(firstEdge) : undefined);
+		const lastApex = cellApex[meta.lastCell] ?? (lastEdge.length ? averageOf(lastEdge) : undefined);
 
-			const newBands: Band[] = [];
-			if (firstApex && firstEdge.length >= 2) {
-				newBands.push(
-					buildFillBand({
-						borderEdge: firstEdge,
-						center: firstApex,
-						address: { ...tube.address, band: 0 },
-						projCenter: center
-					})
-				);
-			}
-			newBands.push(...tube.bands);
-			if (lastApex && lastEdge.length >= 2) {
-				newBands.push(
-					buildFillBand({
-						borderEdge: lastEdge,
-						center: lastApex,
-						address: { ...tube.address, band: 0 },
-						projCenter: center
-					})
-				);
-			}
-			tube.bands = newBands;
-			reindexBandAddresses(tube.bands, tube.address);
-		});
-	}
+		const newBands: Band[] = [];
+		if (firstApex && firstEdge.length >= 2) {
+			newBands.push(
+				buildFillBand({
+					borderEdge: firstEdge,
+					center: firstApex,
+					address: { ...tube.address, band: 0 },
+					projCenter: center
+				})
+			);
+		}
+		newBands.push(...tube.bands);
+		if (lastApex && lastEdge.length >= 2) {
+			newBands.push(
+				buildFillBand({
+					borderEdge: lastEdge,
+					center: lastApex,
+					address: { ...tube.address, band: 0 },
+					projCenter: center
+				})
+			);
+		}
+		tube.bands = newBands;
+		reindexBandAddresses(tube.bands, tube.address);
+	});
+}
 ```
 
 - [ ] **Step 5: Type-check and run voronoi tests**
@@ -908,6 +908,7 @@ by reading the **explicit `facet.isDegenerate` tag** — when set, copy the prev
 geometry into the degenerate slot (zero rotation, no NaN) instead of flattening.
 
 **Files:**
+
 - Modify: `src/lib/cut-pattern/generate-cut-pattern.ts` (`getFlatStripV2`, lines 652-698)
 - Test: `src/lib/cut-pattern/__tests__/flatten-degenerate.test.ts` (create)
 
@@ -927,7 +928,9 @@ import type { Band } from '$lib/types';
 import { getFlatStripV2 } from '../generate-cut-pattern';
 
 const allFinite = (t: Triangle): boolean =>
-	[t.a, t.b, t.c].every((v) => Number.isFinite(v.x) && Number.isFinite(v.y) && Number.isFinite(v.z));
+	[t.a, t.b, t.c].every(
+		(v) => Number.isFinite(v.x) && Number.isFinite(v.y) && Number.isFinite(v.z)
+	);
 
 describe('getFlatStripV2 with degenerate fill facets', () => {
 	// Fan band: real (P0,P1,C), degenerate (P1,C,C), real (P1,P2,C), degenerate (P2,C,C).
@@ -986,33 +989,33 @@ Expected: FAIL — the degenerate-facet test produces NaN coordinates.
 In `src/lib/cut-pattern/generate-cut-pattern.ts`, the per-facet map body (lines 688-693) currently is:
 
 ```typescript
-		// Use getFlatTriangle to get the aligned triangle
-		const alignedFacet = { ...facet };
-		alignedFacet.triangle = getFlatTriangle({ triangle: facet.triangle, base });
-		previousFlatFacet = alignedFacet.triangle;
+// Use getFlatTriangle to get the aligned triangle
+const alignedFacet = { ...facet };
+alignedFacet.triangle = getFlatTriangle({ triangle: facet.triangle, base });
+previousFlatFacet = alignedFacet.triangle;
 
-		return alignedFacet;
+return alignedFacet;
 ```
 
 Replace with a tag-gated branch that collapses degenerate facets onto the shared base edge instead of
 flattening (no `getFlatTriangle`, no NaN):
 
 ```typescript
-		// Use getFlatTriangle to get the aligned triangle
-		const alignedFacet = { ...facet };
-		if (facet.isDegenerate) {
-			// Synthetic zero-area fill facet: do not run law-of-cosines (it divides by a
-			// zero-length edge → NaN, poisoning the whole strip). Place the two collapsed
-			// vertices coincident on the shared base edge so the facet occupies its quad
-			// slot with finite coordinates and contributes zero rotation.
-			const flat = new Triangle(base.v0.clone(), base.v1.clone(), base.v1.clone());
-			alignedFacet.triangle = flat;
-		} else {
-			alignedFacet.triangle = getFlatTriangle({ triangle: facet.triangle, base });
-		}
-		previousFlatFacet = alignedFacet.triangle;
+// Use getFlatTriangle to get the aligned triangle
+const alignedFacet = { ...facet };
+if (facet.isDegenerate) {
+	// Synthetic zero-area fill facet: do not run law-of-cosines (it divides by a
+	// zero-length edge → NaN, poisoning the whole strip). Place the two collapsed
+	// vertices coincident on the shared base edge so the facet occupies its quad
+	// slot with finite coordinates and contributes zero rotation.
+	const flat = new Triangle(base.v0.clone(), base.v1.clone(), base.v1.clone());
+	alignedFacet.triangle = flat;
+} else {
+	alignedFacet.triangle = getFlatTriangle({ triangle: facet.triangle, base });
+}
+previousFlatFacet = alignedFacet.triangle;
 
-		return alignedFacet;
+return alignedFacet;
 ```
 
 - [ ] **Step 4: Run test to verify it passes**
@@ -1035,6 +1038,7 @@ Partner matchers compare facet triangles; tagged-degenerate facets must be skipp
 crash nor produce false partners. Guard reads `facet.isDegenerate`.
 
 **Files:**
+
 - Modify: `src/lib/projection-geometry/generate-projection.ts`:
   - `matchFacets` (line 862) — used by voronoi spTubes
   - `matchSurfaceProjectionCrossBandPartners` (line ~1391), `matchSurfaceProjectionSequentialPartners`
@@ -1047,11 +1051,11 @@ In `matchFacets` (line 862), the body iterates `band.facets.forEach((facet, face
 Add an early return at the top of that callback:
 
 ```typescript
-			band.facets.forEach((facet, facetIndex) => {
-				if (facet.isDegenerate) return; // synthetic fill facet — never partner-matched
-				const { triangle } = facet;
-				// …existing body unchanged…
-			});
+band.facets.forEach((facet, facetIndex) => {
+	if (facet.isDegenerate) return; // synthetic fill facet — never partner-matched
+	const { triangle } = facet;
+	// …existing body unchanged…
+});
 ```
 
 - [ ] **Step 2: Replace the old tube-level `isFill` guards with facet-level guards**
@@ -1087,13 +1091,13 @@ In `matchSurfaceProjectionTubeEnds` (where end facets are collected: `tube.bands
 { … endFacets.push(...) })`), guard the pushes so degenerate end facets are not collected:
 
 ```typescript
-			tube.bands.forEach((band, b) => {
-				const fc = band.facets.length;
-				if (fc > 0 && !band.facets[0].isDegenerate)
-					endFacets.push({ facet: band.facets[0], tube: t, band: b, pos: 'first' });
-				if (fc > 0 && !band.facets[fc - 1].isDegenerate)
-					endFacets.push({ facet: band.facets[fc - 1], tube: t, band: b, pos: 'last' });
-			});
+tube.bands.forEach((band, b) => {
+	const fc = band.facets.length;
+	if (fc > 0 && !band.facets[0].isDegenerate)
+		endFacets.push({ facet: band.facets[0], tube: t, band: b, pos: 'first' });
+	if (fc > 0 && !band.facets[fc - 1].isDegenerate)
+		endFacets.push({ facet: band.facets[fc - 1], tube: t, band: b, pos: 'last' });
+});
 ```
 
 (Also delete the now-removed `if (tube.isFill) return;` line that was at the top of each of these
@@ -1118,12 +1122,13 @@ git commit -m "feat(fillAll): skip tagged-degenerate facets in partner matchers"
 
 ---
 
-## Task 10: Drop fill *bands* for non-outlined patterns
+## Task 10: Drop fill _bands_ for non-outlined patterns
 
-`generateProjectionPattern` previously filtered fill *tubes*. Fill is now a *band*; drop fill bands
+`generateProjectionPattern` previously filtered fill _tubes_. Fill is now a _band_; drop fill bands
 within tubes when the pattern type is not outlined.
 
 **Files:**
+
 - Modify: `src/lib/cut-pattern/generate-pattern.ts` (lines 127-131)
 
 - [ ] **Step 1: Replace the tube filter with a band filter**
@@ -1131,21 +1136,21 @@ within tubes when the pattern type is not outlined.
 The current block (lines 127-131) is:
 
 ```typescript
-	// fillAll produces interior fan tubes with one degenerate facet per quad.
-	// Tiled/panel patterns cannot tile degenerate facets — keep fill tubes for outlined only.
-	const effectiveTubes = isOutlinedPatternConfig(patternTypeConfig)
-		? tubes
-		: tubes.filter((t) => !t.isFill);
+// fillAll produces interior fan tubes with one degenerate facet per quad.
+// Tiled/panel patterns cannot tile degenerate facets — keep fill tubes for outlined only.
+const effectiveTubes = isOutlinedPatternConfig(patternTypeConfig)
+	? tubes
+	: tubes.filter((t) => !t.isFill);
 ```
 
 Replace with:
 
 ```typescript
-	// fillAll produces interior fill BANDS (one degenerate facet per quad) inside normal tubes.
-	// Tiled/panel patterns cannot tile degenerate facets — keep fill bands for outlined only.
-	const effectiveTubes = isOutlinedPatternConfig(patternTypeConfig)
-		? tubes
-		: tubes.map((t) => ({ ...t, bands: t.bands.filter((b) => !b.isFill) }));
+// fillAll produces interior fill BANDS (one degenerate facet per quad) inside normal tubes.
+// Tiled/panel patterns cannot tile degenerate facets — keep fill bands for outlined only.
+const effectiveTubes = isOutlinedPatternConfig(patternTypeConfig)
+	? tubes
+	: tubes.map((t) => ({ ...t, bands: t.bands.filter((b) => !b.isFill) }));
 ```
 
 - [ ] **Step 2: Type-check**
@@ -1173,6 +1178,7 @@ Show the existing "fill all" checkbox for **both** `surfaceProjection` and `voro
 to the matching config (`surfaceProjectionConfig.fillAll` or `voronoiConfig.fillAll`).
 
 **Files:**
+
 - Modify: `src/components/cut-pattern/CutPatternControl.svelte` (lines 116-150)
 
 **Verified facts:** `superConfigStore` is imported (line 4). `SuperGlobuleConfig.voronoiConfig` exists

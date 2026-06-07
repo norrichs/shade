@@ -15,7 +15,7 @@ Give each band-sort **group** a sequential, zero-padded code string: `'0000'`, `
 `'0002'`, … Expose a band→code lookup so downstream consumers (tags, CSV) can render and
 reference it. The mechanism is **grouping-mode-agnostic**: codes attach to whatever groups a
 mode produces. Today only end-connection mode produces meaningful groups, so only it
-*populates* codes; tube-order keeps its existing built-in addressing and gets no codes.
+_populates_ codes; tube-order keeps its existing built-in addressing and gets no codes.
 
 ---
 
@@ -66,12 +66,12 @@ Add a pure helper so consumers don't re-walk groups:
 
 ```ts
 export const buildBandCodeMap = (index: BandSortIndex): Map<string, string> => {
-  const map = new Map<string, string>();
-  for (const group of index.groups) {
-    if (group.code === undefined) continue;
-    for (const ref of group.bands) map.set(bandKey(ref), group.code);
-  }
-  return map;
+	const map = new Map<string, string>();
+	for (const group of index.groups) {
+		if (group.code === undefined) continue;
+		for (const ref of group.bands) map.set(bandKey(ref), group.code);
+	}
+	return map;
 };
 ```
 

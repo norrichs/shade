@@ -217,16 +217,7 @@ export const addressIsInArray = (
 	return arr.some((a) => a && concatAddress_Facet(a) === a0str);
 };
 
-export type AddressFormat =
-	| 'gtbf'
-	| 'gtb'
-	| 'gt'
-	| 'tbf'
-	| 'tb'
-	| 'tb-slash'
-	| 't'
-	| 'b'
-	| 'f';
+export type AddressFormat = 'gtbf' | 'gtb' | 'gt' | 'tbf' | 'tb' | 'tb-slash' | 't' | 'b' | 'f';
 
 export const isGlobuleAddress_FacetEdge = (a: GlobuleAddress): a is GlobuleAddress_FacetEdge =>
 	isGlobuleAddress_Facet(a) && Object.hasOwn(a, 'edge');

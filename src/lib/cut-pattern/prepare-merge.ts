@@ -1,9 +1,12 @@
 import type { PathSegment, PatternLabelsConfig, TubeCutPattern } from '$lib/types';
-import { buildLabelOutlinePath, FALLBACK_TEXT_WIDTH, FALLBACK_TEXT_HEIGHT } from './label-outline-path';
+import {
+	buildLabelOutlinePath,
+	FALLBACK_TEXT_WIDTH,
+	FALLBACK_TEXT_HEIGHT
+} from './label-outline-path';
 import { transformLabelOutlineToBandSpace } from './transform-label-outline';
 import { mergeOutlineWithLabel } from './merge-outline-with-label';
 import type { LabelTextDims } from '$lib/stores/mergedPathStore';
-
 
 /**
  * Compute merged outline+label paths for every eligible band in `tubes`.

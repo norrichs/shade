@@ -1,17 +1,6 @@
-import type {
-	BandCutPattern,
-	Facet,
-	FacetTab,
-	Point,
-	TriangleSide
-} from '$lib/types';
+import type { BandCutPattern, Facet, FacetTab, Point, TriangleSide } from '$lib/types';
 import type { GlobuleAddress_Band } from '$lib/projection-geometry/types';
-import {
-	isFullTab,
-	isMultiFacetFullTab,
-	isMultiFacetTrapTab,
-	isTrapTab
-} from '$lib/tab-guards';
+import { isFullTab, isMultiFacetFullTab, isMultiFacetTrapTab, isTrapTab } from '$lib/tab-guards';
 
 export type BandTabRecord = NonNullable<BandCutPattern['tabs']>[number];
 

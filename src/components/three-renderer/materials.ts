@@ -60,8 +60,8 @@ const numbered = colorList.map((color) => {
 });
 
 const striped = ['magenta', 'cyan'].map((color) => {
-	return new MeshStandardMaterial({ ...defaultStandardMaterialConfig, opacity: 0.9, color})
-})
+	return new MeshStandardMaterial({ ...defaultStandardMaterialConfig, opacity: 0.9, color });
+});
 
 export const materials = {
 	numbered,
@@ -163,7 +163,7 @@ export const getMaterial = (
 	if (selectedGeometry.isEndPartner(address)) return materials.numbered[1];
 
 	if (config.colorByBand) return materials.numbered[address.band];
-	if (config.zebraStriped) return materials.striped[address.band % 2]
+	if (config.zebraStriped) return materials.striped[address.band % 2];
 
 	return materials.default;
 };

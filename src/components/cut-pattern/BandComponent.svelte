@@ -120,7 +120,7 @@
 			bandId={band.id}
 			{color}
 			value={index}
-			radius={(labels?.selfTag?.height ?? 16) /4}
+			radius={(labels?.selfTag?.height ?? 16) / 4}
 			height={labels?.selfTag?.height ?? 14}
 			angle={band.tagAngle ?? labels?.selfTag?.angle ?? 0}
 			autoAngle={band.tagAnchorAutoAngle}

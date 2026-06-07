@@ -12,25 +12,25 @@
 
 ## File Structure
 
-| File | Change | Responsibility |
-| --- | --- | --- |
-| `src/lib/voronoi/types.ts` | Modify | Add `AreaWeightedSeedMethod`, widen `SeedMethod` union, add `SurfaceTriangle` type |
-| `src/lib/voronoi/generate-seeds.ts` | Modify | Add cumulative-area table builder + `generateAreaWeightedSeeds`; widen `generateSeeds` signature with `surfaceTriangles` |
-| `src/lib/voronoi/__tests__/generate-seeds.test.ts` | Modify | Add tests for area table builder + area-weighted seeds; update existing `generateSeeds` calls to new arity |
-| `src/lib/voronoi/extract-surface-triangles.ts` | Create | Pure helper: traverse an `Object3D` and return its world-space `SurfaceTriangle[]` |
-| `src/lib/voronoi/__tests__/extract-surface-triangles.test.ts` | Create | Tests for triangle extraction from a `Mesh` |
-| `src/lib/voronoi/generate-voronoi.ts` | Modify | Extract surface triangles, pass to `generateSeeds` |
-| `src/lib/voronoi/migrate-voronoi-config.ts` | Create | Pure normalizer: collapse `voronoiConfigs[]`/legacy into a single `voronoiConfig` + boot default |
-| `src/lib/voronoi/__tests__/migrate-voronoi-config.test.ts` | Create | Tests for the normalizer |
-| `src/lib/types.ts` | Modify | `SuperGlobuleConfig.voronoiConfigs` → `voronoiConfig?`; `SuperGlobule.voronoiResults` → `voronoiResult?` |
-| `src/lib/shades-config.ts` | Modify | `defaultVoronoiConfig` seed method → `areaWeighted`; drop `voronoiConfigs: []` from defaults |
-| `src/lib/generate-superglobule.ts` | Modify | Build single `voronoiResult` instead of mapping an array |
-| `src/lib/workers/super-globule.worker.ts` | Modify | Serialize single `voronoiResult` |
-| `src/lib/stores/workerStore.ts` | Modify | Rehydrate + regenerate surface for single `voronoiResult` |
-| `src/lib/stores/superGlobuleStores.ts` | Modify | Read `voronoiResult` directly; apply normalizer in hydration |
-| `src/components/projection/ProjectionGeometryComponent.svelte` | Modify | Read single `voronoiResult` |
-| `src/components/controls/VoronoiControl.svelte` | Modify | Edit single `voronoiConfig`; drop add/remove; expose seed-method selector |
-| `src/routes/designer2/+page.svelte` | Modify | Replace SelectBar `Voronoi` branch with a `Floater`-hosted `VoronoiControl` toggle |
+| File                                                           | Change | Responsibility                                                                                                           |
+| -------------------------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------ |
+| `src/lib/voronoi/types.ts`                                     | Modify | Add `AreaWeightedSeedMethod`, widen `SeedMethod` union, add `SurfaceTriangle` type                                       |
+| `src/lib/voronoi/generate-seeds.ts`                            | Modify | Add cumulative-area table builder + `generateAreaWeightedSeeds`; widen `generateSeeds` signature with `surfaceTriangles` |
+| `src/lib/voronoi/__tests__/generate-seeds.test.ts`             | Modify | Add tests for area table builder + area-weighted seeds; update existing `generateSeeds` calls to new arity               |
+| `src/lib/voronoi/extract-surface-triangles.ts`                 | Create | Pure helper: traverse an `Object3D` and return its world-space `SurfaceTriangle[]`                                       |
+| `src/lib/voronoi/__tests__/extract-surface-triangles.test.ts`  | Create | Tests for triangle extraction from a `Mesh`                                                                              |
+| `src/lib/voronoi/generate-voronoi.ts`                          | Modify | Extract surface triangles, pass to `generateSeeds`                                                                       |
+| `src/lib/voronoi/migrate-voronoi-config.ts`                    | Create | Pure normalizer: collapse `voronoiConfigs[]`/legacy into a single `voronoiConfig` + boot default                         |
+| `src/lib/voronoi/__tests__/migrate-voronoi-config.test.ts`     | Create | Tests for the normalizer                                                                                                 |
+| `src/lib/types.ts`                                             | Modify | `SuperGlobuleConfig.voronoiConfigs` → `voronoiConfig?`; `SuperGlobule.voronoiResults` → `voronoiResult?`                 |
+| `src/lib/shades-config.ts`                                     | Modify | `defaultVoronoiConfig` seed method → `areaWeighted`; drop `voronoiConfigs: []` from defaults                             |
+| `src/lib/generate-superglobule.ts`                             | Modify | Build single `voronoiResult` instead of mapping an array                                                                 |
+| `src/lib/workers/super-globule.worker.ts`                      | Modify | Serialize single `voronoiResult`                                                                                         |
+| `src/lib/stores/workerStore.ts`                                | Modify | Rehydrate + regenerate surface for single `voronoiResult`                                                                |
+| `src/lib/stores/superGlobuleStores.ts`                         | Modify | Read `voronoiResult` directly; apply normalizer in hydration                                                             |
+| `src/components/projection/ProjectionGeometryComponent.svelte` | Modify | Read single `voronoiResult`                                                                                              |
+| `src/components/controls/VoronoiControl.svelte`                | Modify | Edit single `voronoiConfig`; drop add/remove; expose seed-method selector                                                |
+| `src/routes/designer2/+page.svelte`                            | Modify | Replace SelectBar `Voronoi` branch with a `Floater`-hosted `VoronoiControl` toggle                                       |
 
 ---
 
@@ -57,6 +57,7 @@
 ### Task 1: Add area-weighted seed types
 
 **Files:**
+
 - Modify: `src/lib/voronoi/types.ts` (union at line 27; add new types after line 33)
 - Test path: type-checked via `npm run check` (pure type change; behavioral tests land in Task 3)
 
@@ -65,6 +66,7 @@ Steps:
 - [ ] Add the `SurfaceTriangle` type and `AreaWeightedSeedMethod`, and widen `SeedMethod`. Edit `src/lib/voronoi/types.ts`:
 
   Replace:
+
   ```ts
   export type SeedMethod = CenterProjectionSeedMethod;
 
@@ -74,7 +76,9 @@ Steps:
   	seed: number;
   };
   ```
+
   with:
+
   ```ts
   export type SeedMethod = CenterProjectionSeedMethod | AreaWeightedSeedMethod;
 
@@ -92,6 +96,7 @@ Steps:
   ```
 
 - [ ] Add a `SurfaceTriangle` type at the end of the file (after the `VoronoiResult` type, line 44). Append:
+
   ```ts
   // A surface facet as three world-space corners. Used only inside the geometry
   // worker for area-weighted seed sampling; never serialized across postMessage.
@@ -108,9 +113,11 @@ Steps:
   ```bash
   git add src/lib/voronoi/types.ts
   git commit -m "feat(voronoi): add AreaWeightedSeedMethod and SurfaceTriangle types
+  ```
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
-  ```
+
+````
 
 ---
 
@@ -123,55 +130,58 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 Steps:
 
 - [ ] Write the failing test. Append to `src/lib/voronoi/__tests__/generate-seeds.test.ts`:
-  ```ts
-  import { buildAreaTable, AREA_SCALE } from '../generate-seeds';
-  import type { SurfaceTriangle } from '../types';
+```ts
+import { buildAreaTable, AREA_SCALE } from '../generate-seeds';
+import type { SurfaceTriangle } from '../types';
 
-  const tri = (
-  	ax: number, ay: number, az: number,
-  	bx: number, by: number, bz: number,
-  	cx: number, cy: number, cz: number
-  ): SurfaceTriangle => [
-  	new Vector3(ax, ay, az),
-  	new Vector3(bx, by, bz),
-  	new Vector3(cx, cy, cz)
-  ];
+const tri = (
+	ax: number, ay: number, az: number,
+	bx: number, by: number, bz: number,
+	cx: number, cy: number, cz: number
+): SurfaceTriangle => [
+	new Vector3(ax, ay, az),
+	new Vector3(bx, by, bz),
+	new Vector3(cx, cy, cz)
+];
 
-  describe('buildAreaTable', () => {
-  	// Right triangle in XY plane with legs 2 and 2 -> area 2.
-  	const small = tri(0, 0, 0, 2, 0, 0, 0, 2, 0);
-  	// Right triangle in XY plane with legs 4 and 4 -> area 8.
-  	const large = tri(0, 0, 0, 4, 0, 0, 0, 4, 0);
+describe('buildAreaTable', () => {
+	// Right triangle in XY plane with legs 2 and 2 -> area 2.
+	const small = tri(0, 0, 0, 2, 0, 0, 0, 2, 0);
+	// Right triangle in XY plane with legs 4 and 4 -> area 8.
+	const large = tri(0, 0, 0, 4, 0, 0, 0, 4, 0);
 
-  	it('produces one entry per triangle with width = floor(area * AREA_SCALE), min 1', () => {
-  		const { entries } = buildAreaTable([small, large]);
-  		expect(entries).toHaveLength(2);
-  		expect(entries[0].width).toBe(Math.floor(2 * AREA_SCALE));
-  		expect(entries[1].width).toBe(Math.floor(8 * AREA_SCALE));
-  	});
+	it('produces one entry per triangle with width = floor(area * AREA_SCALE), min 1', () => {
+		const { entries } = buildAreaTable([small, large]);
+		expect(entries).toHaveLength(2);
+		expect(entries[0].width).toBe(Math.floor(2 * AREA_SCALE));
+		expect(entries[1].width).toBe(Math.floor(8 * AREA_SCALE));
+	});
 
-  	it('produces monotonically increasing keyStart values and a totalArea equal to the sum of widths', () => {
-  		const { entries, totalArea } = buildAreaTable([small, large]);
-  		expect(entries[0].keyStart).toBe(0);
-  		expect(entries[1].keyStart).toBe(entries[0].width);
-  		expect(totalArea).toBe(entries[0].width + entries[1].width);
-  	});
+	it('produces monotonically increasing keyStart values and a totalArea equal to the sum of widths', () => {
+		const { entries, totalArea } = buildAreaTable([small, large]);
+		expect(entries[0].keyStart).toBe(0);
+		expect(entries[1].keyStart).toBe(entries[0].width);
+		expect(totalArea).toBe(entries[0].width + entries[1].width);
+	});
 
-  	it('floors degenerate (zero-area) triangles to width 1', () => {
-  		const degenerate = tri(0, 0, 0, 1, 0, 0, 2, 0, 0); // collinear -> area 0
-  		const { entries } = buildAreaTable([degenerate]);
-  		expect(entries[0].width).toBe(1);
-  	});
-  });
-  ```
+	it('floors degenerate (zero-area) triangles to width 1', () => {
+		const degenerate = tri(0, 0, 0, 1, 0, 0, 2, 0, 0); // collinear -> area 0
+		const { entries } = buildAreaTable([degenerate]);
+		expect(entries[0].width).toBe(1);
+	});
+});
+````
 
 - [ ] Run it: `npm run test:unit -- src/lib/voronoi/__tests__/generate-seeds.test.ts` — expected failure: `Cannot find module '../generate-seeds'` exports `buildAreaTable`/`AREA_SCALE` (TS/Jest reports `buildAreaTable is not a function` / export not found).
 
 - [ ] Write the minimal implementation. In `src/lib/voronoi/generate-seeds.ts`, change the imports line 2 and add the builder. Replace:
+
   ```ts
   import type { SeedMethod, CenterProjectionSeedMethod } from './types';
   ```
+
   with:
+
   ```ts
   import type {
   	SeedMethod,
@@ -216,9 +226,11 @@ Steps:
   ```bash
   git add src/lib/voronoi/generate-seeds.ts src/lib/voronoi/__tests__/generate-seeds.test.ts
   git commit -m "feat(voronoi): add cumulative-area table builder for seed sampling
+  ```
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
-  ```
+
+````
 
 ---
 
@@ -231,23 +243,30 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 Steps:
 
 - [ ] Update the existing `generateSeeds` calls in the test for the new 4th argument, and add area-weighted tests. First, edit the existing `centerProjection` tests so each `generateSeeds(method, center, intersect)` call becomes `generateSeeds(method, center, intersect, [])`. Replace each of the five occurrences:
-  ```ts
-  generateSeeds(method, new Vector3(0, 0, 0), intersect)
-  ```
-  with:
-  ```ts
-  generateSeeds(method, new Vector3(0, 0, 0), intersect, [])
-  ```
-  and the one differing-seed occurrence:
-  ```ts
-  generateSeeds(differentMethod, new Vector3(0, 0, 0), intersect)
-  ```
-  with:
-  ```ts
-  generateSeeds(differentMethod, new Vector3(0, 0, 0), intersect, [])
-  ```
+```ts
+generateSeeds(method, new Vector3(0, 0, 0), intersect)
+````
+
+with:
+
+```ts
+generateSeeds(method, new Vector3(0, 0, 0), intersect, []);
+```
+
+and the one differing-seed occurrence:
+
+```ts
+generateSeeds(differentMethod, new Vector3(0, 0, 0), intersect);
+```
+
+with:
+
+```ts
+generateSeeds(differentMethod, new Vector3(0, 0, 0), intersect, []);
+```
 
 - [ ] Append the area-weighted tests to `src/lib/voronoi/__tests__/generate-seeds.test.ts`:
+
   ```ts
   import { generateAreaWeightedSeeds } from '../generate-seeds';
   import type { AreaWeightedSeedMethod } from '../types';
@@ -318,6 +337,7 @@ Steps:
 - [ ] Run it: `npm run test:unit -- src/lib/voronoi/__tests__/generate-seeds.test.ts` — expected failure: `generateAreaWeightedSeeds is not a function` / export not found; the centerProjection tests still pass.
 
 - [ ] Write the implementation. In `src/lib/voronoi/generate-seeds.ts`, add the binary search + sampler, then widen `generateSeeds`. Add after `buildAreaTable`:
+
   ```ts
   function findEntry(entries: AreaTableEntry[], r: number): AreaTableEntry {
   	let lo = 0;
@@ -344,10 +364,7 @@ Steps:
   		u = 1 - u;
   		v = 1 - v;
   	}
-  	return a
-  		.clone()
-  		.addScaledVector(b.clone().sub(a), u)
-  		.addScaledVector(c.clone().sub(a), v);
+  	return a.clone().addScaledVector(b.clone().sub(a), u).addScaledVector(c.clone().sub(a), v);
   }
 
   export function generateAreaWeightedSeeds(
@@ -369,6 +386,7 @@ Steps:
   ```
 
 - [ ] Widen `generateSeeds`. Replace:
+
   ```ts
   export function generateSeeds(
   	method: SeedMethod,
@@ -383,7 +401,9 @@ Steps:
   	}
   }
   ```
+
   with:
+
   ```ts
   export function generateSeeds(
   	method: SeedMethod,
@@ -410,9 +430,11 @@ Steps:
   ```bash
   git add src/lib/voronoi/generate-seeds.ts src/lib/voronoi/__tests__/generate-seeds.test.ts
   git commit -m "feat(voronoi): add area-weighted seed sampling
+  ```
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
-  ```
+
+````
 
 ---
 
@@ -425,68 +447,69 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 Steps:
 
 - [ ] Write the failing test. Create `src/lib/voronoi/__tests__/extract-surface-triangles.test.ts`:
-  ```ts
-  import { BufferGeometry, BufferAttribute, Mesh, Object3D, Vector3 } from 'three';
-  import { extractSurfaceTriangles } from '../extract-surface-triangles';
+```ts
+import { BufferGeometry, BufferAttribute, Mesh, Object3D, Vector3 } from 'three';
+import { extractSurfaceTriangles } from '../extract-surface-triangles';
 
-  function makeQuadMesh(): Mesh {
-  	// Two triangles forming a unit quad in the XY plane.
-  	const positions = new Float32Array([
-  		0, 0, 0,
-  		1, 0, 0,
-  		1, 1, 0,
-  		0, 0, 0,
-  		1, 1, 0,
-  		0, 1, 0
-  	]);
-  	const geometry = new BufferGeometry();
-  	geometry.setAttribute('position', new BufferAttribute(positions, 3));
-  	return new Mesh(geometry);
-  }
+function makeQuadMesh(): Mesh {
+	// Two triangles forming a unit quad in the XY plane.
+	const positions = new Float32Array([
+		0, 0, 0,
+		1, 0, 0,
+		1, 1, 0,
+		0, 0, 0,
+		1, 1, 0,
+		0, 1, 0
+	]);
+	const geometry = new BufferGeometry();
+	geometry.setAttribute('position', new BufferAttribute(positions, 3));
+	return new Mesh(geometry);
+}
 
-  describe('extractSurfaceTriangles', () => {
-  	it('extracts one SurfaceTriangle per geometry triangle', () => {
-  		const object = new Object3D();
-  		object.add(makeQuadMesh());
-  		object.updateMatrixWorld(true);
-  		const triangles = extractSurfaceTriangles(object);
-  		expect(triangles).toHaveLength(2);
-  		expect(triangles[0]).toHaveLength(3);
-  		expect(triangles[0][0]).toBeInstanceOf(Vector3);
-  	});
+describe('extractSurfaceTriangles', () => {
+	it('extracts one SurfaceTriangle per geometry triangle', () => {
+		const object = new Object3D();
+		object.add(makeQuadMesh());
+		object.updateMatrixWorld(true);
+		const triangles = extractSurfaceTriangles(object);
+		expect(triangles).toHaveLength(2);
+		expect(triangles[0]).toHaveLength(3);
+		expect(triangles[0][0]).toBeInstanceOf(Vector3);
+	});
 
-  	it('returns triangle corners in world space (applies parent transform)', () => {
-  		const object = new Object3D();
-  		const mesh = makeQuadMesh();
-  		mesh.position.set(10, 0, 0);
-  		object.add(mesh);
-  		object.updateMatrixWorld(true);
-  		const triangles = extractSurfaceTriangles(object);
-  		expect(triangles[0][0].x).toBeCloseTo(10, 5);
-  	});
+	it('returns triangle corners in world space (applies parent transform)', () => {
+		const object = new Object3D();
+		const mesh = makeQuadMesh();
+		mesh.position.set(10, 0, 0);
+		object.add(mesh);
+		object.updateMatrixWorld(true);
+		const triangles = extractSurfaceTriangles(object);
+		expect(triangles[0][0].x).toBeCloseTo(10, 5);
+	});
 
-  	it('supports indexed geometry', () => {
-  		const positions = new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0]);
-  		const geometry = new BufferGeometry();
-  		geometry.setAttribute('position', new BufferAttribute(positions, 3));
-  		geometry.setIndex([0, 1, 2, 1, 3, 2]);
-  		const mesh = new Mesh(geometry);
-  		const object = new Object3D();
-  		object.add(mesh);
-  		object.updateMatrixWorld(true);
-  		const triangles = extractSurfaceTriangles(object);
-  		expect(triangles).toHaveLength(2);
-  	});
+	it('supports indexed geometry', () => {
+		const positions = new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0]);
+		const geometry = new BufferGeometry();
+		geometry.setAttribute('position', new BufferAttribute(positions, 3));
+		geometry.setIndex([0, 1, 2, 1, 3, 2]);
+		const mesh = new Mesh(geometry);
+		const object = new Object3D();
+		object.add(mesh);
+		object.updateMatrixWorld(true);
+		const triangles = extractSurfaceTriangles(object);
+		expect(triangles).toHaveLength(2);
+	});
 
-  	it('returns an empty array for an object with no meshes', () => {
-  		expect(extractSurfaceTriangles(new Object3D())).toEqual([]);
-  	});
-  });
-  ```
+	it('returns an empty array for an object with no meshes', () => {
+		expect(extractSurfaceTriangles(new Object3D())).toEqual([]);
+	});
+});
+````
 
 - [ ] Run it: `npm run test:unit -- src/lib/voronoi/__tests__/extract-surface-triangles.test.ts` — expected failure: `Cannot find module '../extract-surface-triangles'`.
 
 - [ ] Write the implementation. Create `src/lib/voronoi/extract-surface-triangles.ts`:
+
   ```ts
   import { Mesh, Object3D, Vector3 } from 'three';
   import type { SurfaceTriangle } from './types';
@@ -535,9 +558,11 @@ Steps:
   ```bash
   git add src/lib/voronoi/extract-surface-triangles.ts src/lib/voronoi/__tests__/extract-surface-triangles.test.ts
   git commit -m "feat(voronoi): add world-space surface triangle extraction
+  ```
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
-  ```
+
+````
 
 ---
 
@@ -550,25 +575,23 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 Steps:
 
 - [ ] Add the import. In `src/lib/voronoi/generate-voronoi.ts`, after line 16 (`import { generateSeeds } from './generate-seeds';`) add:
-  ```ts
-  import { extractSurfaceTriangles } from './extract-surface-triangles';
-  ```
+```ts
+import { extractSurfaceTriangles } from './extract-surface-triangles';
+````
 
 - [ ] Pass extracted triangles into `generateSeeds`. Replace (line 297-298):
+
   ```ts
-  	// Step 1: Generate seeds on surface
-  	const seeds3d = generateSeeds(config.seedConfig.seedMethod, center, intersect);
+  // Step 1: Generate seeds on surface
+  const seeds3d = generateSeeds(config.seedConfig.seedMethod, center, intersect);
   ```
+
   with:
+
   ```ts
-  	// Step 1: Generate seeds on surface
-  	const surfaceTriangles = extractSurfaceTriangles(surface);
-  	const seeds3d = generateSeeds(
-  		config.seedConfig.seedMethod,
-  		center,
-  		intersect,
-  		surfaceTriangles
-  	);
+  // Step 1: Generate seeds on surface
+  const surfaceTriangles = extractSurfaceTriangles(surface);
+  const seeds3d = generateSeeds(config.seedConfig.seedMethod, center, intersect, surfaceTriangles);
   ```
 
 - [ ] Run the existing voronoi suite: `npm run test:unit -- src/lib/voronoi/__tests__/generate-voronoi.test.ts` — expected: passes (the existing default config uses `centerProjection` until Task 7, so behavior is unchanged here; the new arg is ignored by that method).
@@ -579,9 +602,11 @@ Steps:
   ```bash
   git add src/lib/voronoi/generate-voronoi.ts
   git commit -m "feat(voronoi): thread surface triangles into seed generation
+  ```
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
-  ```
+
+````
 
 ---
 
@@ -595,15 +620,18 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 Steps:
 
 - [ ] In `src/lib/types.ts`, change `SuperGlobuleConfig`. Replace:
-  ```ts
-  	voronoiConfigs: VoronoiConfig[];
-  ```
-  with:
-  ```ts
-  	voronoiConfig?: VoronoiConfig;
-  ```
+```ts
+	voronoiConfigs: VoronoiConfig[];
+````
+
+with:
+
+```ts
+	voronoiConfig?: VoronoiConfig;
+```
 
 - [ ] In `src/lib/types.ts`, change `SuperGlobule`. Replace:
+
   ```ts
   	voronoiResults: {
   		tubes: Tube[];
@@ -611,7 +639,9 @@ Steps:
   		surface: Object3D;
   	}[];
   ```
+
   with:
+
   ```ts
   	voronoiResult?: {
   		tubes: Tube[];
@@ -621,6 +651,7 @@ Steps:
   ```
 
 - [ ] In `src/lib/shades-config.ts`, switch the default seed method to area-weighted. Replace:
+
   ```ts
   		seedMethod: {
   			type: 'centerProjection',
@@ -628,7 +659,9 @@ Steps:
   			seed: 42
   		},
   ```
+
   with:
+
   ```ts
   		seedMethod: {
   			type: 'areaWeighted',
@@ -638,13 +671,16 @@ Steps:
   ```
 
 - [ ] In `src/lib/shades-config.ts`, drop `voronoiConfigs: []` from `generateSuperGlobuleConfigWrapper` (line 611). Replace:
+
   ```ts
   		subGlobuleConfigs: [generateSubGlobuleConfigWrapper(globule)],
   		projectionConfigs: [],
   		voronoiConfigs: []
   	};
   ```
+
   with:
+
   ```ts
   		subGlobuleConfigs: [generateSubGlobuleConfigWrapper(globule)],
   		projectionConfigs: []
@@ -652,12 +688,15 @@ Steps:
   ```
 
 - [ ] In `src/lib/shades-config.ts`, drop `voronoiConfigs: []` from `generateDefaultSuperGlobuleConfig` (line 665). Replace:
+
   ```ts
   		projectionConfigs: [defaultProjectionConfig],
   		voronoiConfigs: []
   	};
   ```
+
   with:
+
   ```ts
   		projectionConfigs: [defaultProjectionConfig]
   	};
@@ -669,9 +708,11 @@ Steps:
   ```bash
   git add src/lib/types.ts src/lib/shades-config.ts
   git commit -m "refactor(voronoi): collapse voronoiConfigs[] to single voronoiConfig in types
+  ```
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
-  ```
+
+````
 
 ---
 
@@ -684,46 +725,48 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 Steps:
 
 - [ ] Replace the array-based voronoi region (lines 51-67). Replace:
-  ```ts
-  	// Voronoi Tube pipeline
-  	const projectionSurfaceConfig = resolvedProjectionConfigs[0]?.surfaceConfig;
-  	const voronoiResults = projectionSurfaceConfig
-  		? (superConfig.voronoiConfigs ?? []).map((config, i) => {
-  				return makeVoronoi(config, { globule: i }, projectionSurfaceConfig);
-  			})
-  		: [];
+```ts
+	// Voronoi Tube pipeline
+	const projectionSurfaceConfig = resolvedProjectionConfigs[0]?.surfaceConfig;
+	const voronoiResults = projectionSurfaceConfig
+		? (superConfig.voronoiConfigs ?? []).map((config, i) => {
+				return makeVoronoi(config, { globule: i }, projectionSurfaceConfig);
+			})
+		: [];
 
-  	const superGlobule: SuperGlobule = {
-  		type: 'SuperGlobule',
-  		superGlobuleConfigId: superConfig.id,
-  		name: superConfig.name,
-  		globuleTubes,
-  		subGlobules,
-  		projections,
-  		voronoiResults
-  	};
-  	return superGlobule;
-  ```
-  with:
-  ```ts
-  	// Voronoi Tube pipeline (single config)
-  	const projectionSurfaceConfig = resolvedProjectionConfigs[0]?.surfaceConfig;
-  	const voronoiResult =
-  		projectionSurfaceConfig && superConfig.voronoiConfig
-  			? makeVoronoi(superConfig.voronoiConfig, { globule: 0 }, projectionSurfaceConfig)
-  			: undefined;
+	const superGlobule: SuperGlobule = {
+		type: 'SuperGlobule',
+		superGlobuleConfigId: superConfig.id,
+		name: superConfig.name,
+		globuleTubes,
+		subGlobules,
+		projections,
+		voronoiResults
+	};
+	return superGlobule;
+````
 
-  	const superGlobule: SuperGlobule = {
-  		type: 'SuperGlobule',
-  		superGlobuleConfigId: superConfig.id,
-  		name: superConfig.name,
-  		globuleTubes,
-  		subGlobules,
-  		projections,
-  		voronoiResult
-  	};
-  	return superGlobule;
-  ```
+with:
+
+```ts
+// Voronoi Tube pipeline (single config)
+const projectionSurfaceConfig = resolvedProjectionConfigs[0]?.surfaceConfig;
+const voronoiResult =
+	projectionSurfaceConfig && superConfig.voronoiConfig
+		? makeVoronoi(superConfig.voronoiConfig, { globule: 0 }, projectionSurfaceConfig)
+		: undefined;
+
+const superGlobule: SuperGlobule = {
+	type: 'SuperGlobule',
+	superGlobuleConfigId: superConfig.id,
+	name: superConfig.name,
+	globuleTubes,
+	subGlobules,
+	projections,
+	voronoiResult
+};
+return superGlobule;
+```
 
 - [ ] Run the type check: `npm run check` — expected: no errors in `generate-superglobule.ts`; remaining errors are in the worker, workerStore, stores, and components (Tasks 8–13).
 
@@ -731,9 +774,11 @@ Steps:
   ```bash
   git add src/lib/generate-superglobule.ts
   git commit -m "refactor(voronoi): build single voronoiResult in generateSuperGlobule
+  ```
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
-  ```
+
+````
 
 ---
 
@@ -746,21 +791,23 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 Steps:
 
 - [ ] Replace the `voronoiResults` serialization block. Replace:
-  ```ts
-  		voronoiResults: (superGlobule.voronoiResults ?? []).map((result) => ({
-  			...result,
-  			surface: null as unknown as typeof result.surface
-  		}))
-  ```
-  with:
-  ```ts
-  		voronoiResult: superGlobule.voronoiResult
-  			? {
-  					...superGlobule.voronoiResult,
-  					surface: null as unknown as typeof superGlobule.voronoiResult.surface
-  				}
-  			: undefined
-  ```
+```ts
+		voronoiResults: (superGlobule.voronoiResults ?? []).map((result) => ({
+			...result,
+			surface: null as unknown as typeof result.surface
+		}))
+````
+
+with:
+
+```ts
+voronoiResult: superGlobule.voronoiResult
+	? {
+			...superGlobule.voronoiResult,
+			surface: null as unknown as typeof superGlobule.voronoiResult.surface
+		}
+	: undefined;
+```
 
 - [ ] Run the type check: `npm run check` — expected: no errors in `super-globule.worker.ts`; remaining errors are in `workerStore.ts`, `superGlobuleStores.ts`, and the two components.
 
@@ -768,9 +815,11 @@ Steps:
   ```bash
   git add src/lib/workers/super-globule.worker.ts
   git commit -m "refactor(voronoi): serialize single voronoiResult across worker boundary
+  ```
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
-  ```
+
+````
 
 ---
 
@@ -783,72 +832,77 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 Steps:
 
 - [ ] Replace the rehydration block (lines 172-185). Replace:
-  ```ts
-  	// Rehydrate voronoiResults
-  	const voronoiResults = (result.voronoiResults ?? []).map((voronoiResult) => ({
-  		...voronoiResult,
-  		tubes: rehydrateTubes(voronoiResult.tubes),
-  		surfaceProjectionTubes: rehydrateTubes(voronoiResult.surfaceProjectionTubes ?? [])
-  	}));
+```ts
+	// Rehydrate voronoiResults
+	const voronoiResults = (result.voronoiResults ?? []).map((voronoiResult) => ({
+		...voronoiResult,
+		tubes: rehydrateTubes(voronoiResult.tubes),
+		surfaceProjectionTubes: rehydrateTubes(voronoiResult.surfaceProjectionTubes ?? [])
+	}));
 
-  	return {
-  		...result,
-  		projections,
-  		globuleTubes,
-  		subGlobules,
-  		voronoiResults
-  	};
-  ```
-  with:
-  ```ts
-  	// Rehydrate voronoiResult (single)
-  	const voronoiResult = result.voronoiResult
-  		? {
-  				...result.voronoiResult,
-  				tubes: rehydrateTubes(result.voronoiResult.tubes),
-  				surfaceProjectionTubes: rehydrateTubes(result.voronoiResult.surfaceProjectionTubes ?? [])
-  			}
-  		: undefined;
+	return {
+		...result,
+		projections,
+		globuleTubes,
+		subGlobules,
+		voronoiResults
+	};
+````
 
-  	return {
-  		...result,
-  		projections,
-  		globuleTubes,
-  		subGlobules,
-  		voronoiResult
-  	};
-  ```
+with:
+
+```ts
+// Rehydrate voronoiResult (single)
+const voronoiResult = result.voronoiResult
+	? {
+			...result.voronoiResult,
+			tubes: rehydrateTubes(result.voronoiResult.tubes),
+			surfaceProjectionTubes: rehydrateTubes(result.voronoiResult.surfaceProjectionTubes ?? [])
+		}
+	: undefined;
+
+return {
+	...result,
+	projections,
+	globuleTubes,
+	subGlobules,
+	voronoiResult
+};
+```
 
 - [ ] Replace the surface-regen block (lines 226-239). Replace:
+
   ```ts
-  				// Regenerate Voronoi surfaces (uses projection's surface config)
-  				const projSurfaceConfig = resolver.config.projectionConfigs[0]?.surfaceConfig;
-  				if (projSurfaceConfig) {
-  					const plainSurfaceConfig = JSON.parse(JSON.stringify(projSurfaceConfig));
-  					(resolver.config.voronoiConfigs ?? []).forEach((voronoiConfig, i) => {
-  						if (rehydrated.voronoiResults?.[i]) {
-  							const resolvedSurfaceConfig =
-  								plainSurfaceConfig.transform === 'inherit'
-  									? { ...plainSurfaceConfig, transform: voronoiConfig.meta.transform }
-  									: plainSurfaceConfig;
-  							rehydrated.voronoiResults[i].surface = generateSurface(resolvedSurfaceConfig);
-  						}
-  					});
-  				}
+  // Regenerate Voronoi surfaces (uses projection's surface config)
+  const projSurfaceConfig = resolver.config.projectionConfigs[0]?.surfaceConfig;
+  if (projSurfaceConfig) {
+  	const plainSurfaceConfig = JSON.parse(JSON.stringify(projSurfaceConfig));
+  	(resolver.config.voronoiConfigs ?? []).forEach((voronoiConfig, i) => {
+  		if (rehydrated.voronoiResults?.[i]) {
+  			const resolvedSurfaceConfig =
+  				plainSurfaceConfig.transform === 'inherit'
+  					? { ...plainSurfaceConfig, transform: voronoiConfig.meta.transform }
+  					: plainSurfaceConfig;
+  			rehydrated.voronoiResults[i].surface = generateSurface(resolvedSurfaceConfig);
+  		}
+  	});
+  }
   ```
+
   with:
+
   ```ts
-  				// Regenerate Voronoi surface (uses projection's surface config)
-  				const projSurfaceConfig = resolver.config.projectionConfigs[0]?.surfaceConfig;
-  				const voronoiConfig = resolver.config.voronoiConfig;
-  				if (projSurfaceConfig && voronoiConfig && rehydrated.voronoiResult) {
-  					const plainSurfaceConfig = JSON.parse(JSON.stringify(projSurfaceConfig));
-  					const resolvedSurfaceConfig =
-  						plainSurfaceConfig.transform === 'inherit'
-  							? { ...plainSurfaceConfig, transform: voronoiConfig.meta.transform }
-  							: plainSurfaceConfig;
-  					rehydrated.voronoiResult.surface = generateSurface(resolvedSurfaceConfig);
-  				}
+  // Regenerate Voronoi surface (uses projection's surface config)
+  const projSurfaceConfig = resolver.config.projectionConfigs[0]?.surfaceConfig;
+  const voronoiConfig = resolver.config.voronoiConfig;
+  if (projSurfaceConfig && voronoiConfig && rehydrated.voronoiResult) {
+  	const plainSurfaceConfig = JSON.parse(JSON.stringify(projSurfaceConfig));
+  	const resolvedSurfaceConfig =
+  		plainSurfaceConfig.transform === 'inherit'
+  			? { ...plainSurfaceConfig, transform: voronoiConfig.meta.transform }
+  			: plainSurfaceConfig;
+  	rehydrated.voronoiResult.surface = generateSurface(resolvedSurfaceConfig);
+  }
   ```
 
 - [ ] Run the type check: `npm run check` — expected: no errors in `workerStore.ts`; remaining errors are in `superGlobuleStores.ts` and the two components.
@@ -857,9 +911,11 @@ Steps:
   ```bash
   git add src/lib/stores/workerStore.ts
   git commit -m "refactor(voronoi): rehydrate and regen surface for single voronoiResult
+  ```
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
-  ```
+
+````
 
 ---
 
@@ -872,13 +928,15 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 Steps:
 
 - [ ] Replace the `[0]` access. Replace:
-  ```ts
-  		const voronoiResult = $superGlobuleStore.voronoiResults?.[0];
-  ```
-  with:
-  ```ts
-  		const voronoiResult = $superGlobuleStore.voronoiResult;
-  ```
+```ts
+		const voronoiResult = $superGlobuleStore.voronoiResults?.[0];
+````
+
+with:
+
+```ts
+const voronoiResult = $superGlobuleStore.voronoiResult;
+```
 
 - [ ] Run the type check: `npm run check` — expected: no errors at line 478; remaining errors are the hydration-path `voronoiConfigs` reference (Task 12, not yet added) and the two components (Tasks 11, 13).
 
@@ -886,9 +944,11 @@ Steps:
   ```bash
   git add src/lib/stores/superGlobuleStores.ts
   git commit -m "refactor(voronoi): read single voronoiResult in pattern routing
+  ```
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
-  ```
+
+````
 
 ---
 
@@ -901,15 +961,18 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 Steps:
 
 - [ ] Replace the array flatMaps. Replace:
-  ```ts
-  			const voronoiTubes = ($superGlobuleStore.voronoiResults ?? []).flatMap((r) => r.tubes);
-  			const voronoiSurfaceProjectionTubes = ($superGlobuleStore.voronoiResults ?? []).flatMap((r) => r.surfaceProjectionTubes ?? []);
-  ```
-  with:
-  ```ts
-  			const voronoiTubes = $superGlobuleStore.voronoiResult?.tubes ?? [];
-  			const voronoiSurfaceProjectionTubes = $superGlobuleStore.voronoiResult?.surfaceProjectionTubes ?? [];
-  ```
+```ts
+			const voronoiTubes = ($superGlobuleStore.voronoiResults ?? []).flatMap((r) => r.tubes);
+			const voronoiSurfaceProjectionTubes = ($superGlobuleStore.voronoiResults ?? []).flatMap((r) => r.surfaceProjectionTubes ?? []);
+````
+
+with:
+
+```ts
+const voronoiTubes = $superGlobuleStore.voronoiResult?.tubes ?? [];
+const voronoiSurfaceProjectionTubes =
+	$superGlobuleStore.voronoiResult?.surfaceProjectionTubes ?? [];
+```
 
 - [ ] Run the type check: `npm run check` — expected: no errors in `ProjectionGeometryComponent.svelte`; remaining errors are the store hydration normalizer reference (Task 12) and `VoronoiControl.svelte` (Task 13).
 
@@ -917,9 +980,11 @@ Steps:
   ```bash
   git add src/components/projection/ProjectionGeometryComponent.svelte
   git commit -m "refactor(voronoi): read single voronoiResult in geometry component
+  ```
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
-  ```
+
+````
 
 ---
 
@@ -933,72 +998,73 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 Steps:
 
 - [ ] Write the failing test. Create `src/lib/voronoi/__tests__/migrate-voronoi-config.test.ts`:
-  ```ts
-  import { normalizeVoronoiConfig } from '../migrate-voronoi-config';
-  import { defaultVoronoiConfig } from '$lib/shades-config';
-  import type { SuperGlobuleConfig } from '$lib/types';
+```ts
+import { normalizeVoronoiConfig } from '../migrate-voronoi-config';
+import { defaultVoronoiConfig } from '$lib/shades-config';
+import type { SuperGlobuleConfig } from '$lib/types';
 
-  const baseConfig = (extra: Record<string, unknown>): SuperGlobuleConfig =>
-  	({
-  		type: 'SuperGlobuleConfig',
-  		id: 1,
-  		subGlobuleConfigs: [],
-  		projectionConfigs: [],
-  		...extra
-  	}) as SuperGlobuleConfig;
+const baseConfig = (extra: Record<string, unknown>): SuperGlobuleConfig =>
+	({
+		type: 'SuperGlobuleConfig',
+		id: 1,
+		subGlobuleConfigs: [],
+		projectionConfigs: [],
+		...extra
+	}) as SuperGlobuleConfig;
 
-  describe('normalizeVoronoiConfig', () => {
-  	it('injects a default voronoiConfig with a random seed when none is present', () => {
-  		const result = normalizeVoronoiConfig(baseConfig({}));
-  		expect(result.voronoiConfig).toBeDefined();
-  		expect(result.voronoiConfig?.type).toBe('VoronoiConfig');
-  		expect(typeof result.voronoiConfig?.seedConfig.seedMethod.seed).toBe('number');
-  	});
+describe('normalizeVoronoiConfig', () => {
+	it('injects a default voronoiConfig with a random seed when none is present', () => {
+		const result = normalizeVoronoiConfig(baseConfig({}));
+		expect(result.voronoiConfig).toBeDefined();
+		expect(result.voronoiConfig?.type).toBe('VoronoiConfig');
+		expect(typeof result.voronoiConfig?.seedConfig.seedMethod.seed).toBe('number');
+	});
 
-  	it('randomizes the injected seed (differs from the static default seed)', () => {
-  		// Force Math.random to a value that maps to a seed != defaultVoronoiConfig seed.
-  		const spy = jest.spyOn(Math, 'random').mockReturnValue(0.5);
-  		const result = normalizeVoronoiConfig(baseConfig({}));
-  		expect(result.voronoiConfig?.seedConfig.seedMethod.seed).toBe(Math.floor(0.5 * 2 ** 31));
-  		spy.mockRestore();
-  	});
+	it('randomizes the injected seed (differs from the static default seed)', () => {
+		// Force Math.random to a value that maps to a seed != defaultVoronoiConfig seed.
+		const spy = jest.spyOn(Math, 'random').mockReturnValue(0.5);
+		const result = normalizeVoronoiConfig(baseConfig({}));
+		expect(result.voronoiConfig?.seedConfig.seedMethod.seed).toBe(Math.floor(0.5 * 2 ** 31));
+		spy.mockRestore();
+	});
 
-  	it('collapses a legacy voronoiConfigs array to the first entry', () => {
-  		const a = { ...defaultVoronoiConfig, edgeDivisions: 3 };
-  		const b = { ...defaultVoronoiConfig, edgeDivisions: 9 };
-  		const result = normalizeVoronoiConfig(
-  			baseConfig({ voronoiConfigs: [a, b] }) as SuperGlobuleConfig & {
-  				voronoiConfigs: typeof a[];
-  			}
-  		);
-  		expect(result.voronoiConfig?.edgeDivisions).toBe(3);
-  	});
+	it('collapses a legacy voronoiConfigs array to the first entry', () => {
+		const a = { ...defaultVoronoiConfig, edgeDivisions: 3 };
+		const b = { ...defaultVoronoiConfig, edgeDivisions: 9 };
+		const result = normalizeVoronoiConfig(
+			baseConfig({ voronoiConfigs: [a, b] }) as SuperGlobuleConfig & {
+				voronoiConfigs: typeof a[];
+			}
+		);
+		expect(result.voronoiConfig?.edgeDivisions).toBe(3);
+	});
 
-  	it('injects the default when a legacy voronoiConfigs array is empty', () => {
-  		const result = normalizeVoronoiConfig(
-  			baseConfig({ voronoiConfigs: [] }) as SuperGlobuleConfig
-  		);
-  		expect(result.voronoiConfig).toBeDefined();
-  	});
+	it('injects the default when a legacy voronoiConfigs array is empty', () => {
+		const result = normalizeVoronoiConfig(
+			baseConfig({ voronoiConfigs: [] }) as SuperGlobuleConfig
+		);
+		expect(result.voronoiConfig).toBeDefined();
+	});
 
-  	it('preserves an existing single voronoiConfig untouched', () => {
-  		const existing = { ...defaultVoronoiConfig, edgeDivisions: 7 };
-  		const result = normalizeVoronoiConfig(baseConfig({ voronoiConfig: existing }));
-  		expect(result.voronoiConfig?.edgeDivisions).toBe(7);
-  	});
+	it('preserves an existing single voronoiConfig untouched', () => {
+		const existing = { ...defaultVoronoiConfig, edgeDivisions: 7 };
+		const result = normalizeVoronoiConfig(baseConfig({ voronoiConfig: existing }));
+		expect(result.voronoiConfig?.edgeDivisions).toBe(7);
+	});
 
-  	it('strips the legacy voronoiConfigs key from the result', () => {
-  		const result = normalizeVoronoiConfig(
-  			baseConfig({ voronoiConfigs: [defaultVoronoiConfig] }) as SuperGlobuleConfig
-  		);
-  		expect('voronoiConfigs' in result).toBe(false);
-  	});
-  });
-  ```
+	it('strips the legacy voronoiConfigs key from the result', () => {
+		const result = normalizeVoronoiConfig(
+			baseConfig({ voronoiConfigs: [defaultVoronoiConfig] }) as SuperGlobuleConfig
+		);
+		expect('voronoiConfigs' in result).toBe(false);
+	});
+});
+````
 
 - [ ] Run it: `npm run test:unit -- src/lib/voronoi/__tests__/migrate-voronoi-config.test.ts` — expected failure: `Cannot find module '../migrate-voronoi-config'`.
 
 - [ ] Write the implementation. Create `src/lib/voronoi/migrate-voronoi-config.ts`:
+
   ```ts
   import { defaultVoronoiConfig } from '$lib/shades-config';
   import type { SuperGlobuleConfig } from '$lib/types';
@@ -1047,11 +1113,13 @@ Steps:
 - [ ] Run the test: `npm run test:unit -- src/lib/voronoi/__tests__/migrate-voronoi-config.test.ts` — expected: all six tests pass.
 
 - [ ] Wire the normalizer into the store initializer. In `src/lib/stores/superGlobuleStores.ts`, add the import near the other `$lib` imports (after the existing `loadPersistedOrDefault` import on line 18):
+
   ```ts
   import { normalizeVoronoiConfig } from '$lib/voronoi/migrate-voronoi-config';
   ```
 
 - [ ] In the same file, apply the normalizer inside the `superConfigStore` initializer. Replace:
+
   ```ts
   export const superConfigStore = persistable<SuperGlobuleConfig>(
   	((): SuperGlobuleConfig => {
@@ -1063,7 +1131,9 @@ Steps:
   		return config;
   	})(),
   ```
+
   with:
+
   ```ts
   export const superConfigStore = persistable<SuperGlobuleConfig>(
   	((): SuperGlobuleConfig => {
@@ -1084,9 +1154,11 @@ Steps:
   ```bash
   git add src/lib/voronoi/migrate-voronoi-config.ts src/lib/voronoi/__tests__/migrate-voronoi-config.test.ts src/lib/stores/superGlobuleStores.ts
   git commit -m "feat(voronoi): normalize persisted config to single voronoiConfig with boot default
+  ```
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
-  ```
+
+````
 
 ---
 
@@ -1101,70 +1173,71 @@ This is a UI-only change; the non-trivial config-mutation logic is already cover
 Steps:
 
 - [ ] Replace the entire `<script>` block (lines 1-62). Replace with:
-  ```svelte
-  <script lang="ts">
-  	import { superConfigStore } from '$lib/stores/superGlobuleStores';
-  	import { defaultVoronoiConfig } from '$lib/shades-config';
-  	import type { VoronoiConfig, VoronoiMethod } from '$lib/voronoi/types';
+```svelte
+<script lang="ts">
+	import { superConfigStore } from '$lib/stores/superGlobuleStores';
+	import { defaultVoronoiConfig } from '$lib/shades-config';
+	import type { VoronoiConfig, VoronoiMethod } from '$lib/voronoi/types';
 
-  	let config: VoronoiConfig = $derived($superConfigStore.voronoiConfig ?? defaultVoronoiConfig);
+	let config: VoronoiConfig = $derived($superConfigStore.voronoiConfig ?? defaultVoronoiConfig);
 
-  	function update(
-  		field: 'pointCount' | 'seed' | 'seedMethodType' | 'relaxationIterations' | 'edgeDivisions' | 'curveOffsetFactor' | 'surfaceProjectionDivisions' | 'voronoiMethod',
-  		value: number | string
-  	) {
-  		let next: VoronoiConfig = config;
-  		if (field === 'pointCount') {
-  			next = {
-  				...config,
-  				seedConfig: {
-  					...config.seedConfig,
-  					seedMethod: { ...config.seedConfig.seedMethod, pointCount: value as number }
-  				}
-  			};
-  		} else if (field === 'seed') {
-  			next = {
-  				...config,
-  				seedConfig: {
-  					...config.seedConfig,
-  					seedMethod: { ...config.seedConfig.seedMethod, seed: value as number }
-  				}
-  			};
-  		} else if (field === 'seedMethodType') {
-  			next = {
-  				...config,
-  				seedConfig: {
-  					...config.seedConfig,
-  					seedMethod: {
-  						...config.seedConfig.seedMethod,
-  						type: value as VoronoiConfig['seedConfig']['seedMethod']['type']
-  					}
-  				}
-  			};
-  		} else if (field === 'relaxationIterations') {
-  			next = {
-  				...config,
-  				seedConfig: { ...config.seedConfig, relaxationIterations: value as number }
-  			};
-  		} else if (field === 'edgeDivisions') {
-  			next = { ...config, edgeDivisions: value as number };
-  		} else if (field === 'curveOffsetFactor') {
-  			next = { ...config, curveOffsetFactor: value as number };
-  		} else if (field === 'surfaceProjectionDivisions') {
-  			next = { ...config, surfaceProjectionDivisions: value as number };
-  		} else if (field === 'voronoiMethod') {
-  			next = { ...config, voronoiMethod: value as VoronoiMethod };
-  		}
-  		$superConfigStore = { ...$superConfigStore, voronoiConfig: next };
-  	}
+	function update(
+		field: 'pointCount' | 'seed' | 'seedMethodType' | 'relaxationIterations' | 'edgeDivisions' | 'curveOffsetFactor' | 'surfaceProjectionDivisions' | 'voronoiMethod',
+		value: number | string
+	) {
+		let next: VoronoiConfig = config;
+		if (field === 'pointCount') {
+			next = {
+				...config,
+				seedConfig: {
+					...config.seedConfig,
+					seedMethod: { ...config.seedConfig.seedMethod, pointCount: value as number }
+				}
+			};
+		} else if (field === 'seed') {
+			next = {
+				...config,
+				seedConfig: {
+					...config.seedConfig,
+					seedMethod: { ...config.seedConfig.seedMethod, seed: value as number }
+				}
+			};
+		} else if (field === 'seedMethodType') {
+			next = {
+				...config,
+				seedConfig: {
+					...config.seedConfig,
+					seedMethod: {
+						...config.seedConfig.seedMethod,
+						type: value as VoronoiConfig['seedConfig']['seedMethod']['type']
+					}
+				}
+			};
+		} else if (field === 'relaxationIterations') {
+			next = {
+				...config,
+				seedConfig: { ...config.seedConfig, relaxationIterations: value as number }
+			};
+		} else if (field === 'edgeDivisions') {
+			next = { ...config, edgeDivisions: value as number };
+		} else if (field === 'curveOffsetFactor') {
+			next = { ...config, curveOffsetFactor: value as number };
+		} else if (field === 'surfaceProjectionDivisions') {
+			next = { ...config, surfaceProjectionDivisions: value as number };
+		} else if (field === 'voronoiMethod') {
+			next = { ...config, voronoiMethod: value as VoronoiMethod };
+		}
+		$superConfigStore = { ...$superConfigStore, voronoiConfig: next };
+	}
 
-  	function randomizeSeed() {
-  		update('seed', Math.floor(Math.random() * 2 ** 31));
-  	}
-  </script>
-  ```
+	function randomizeSeed() {
+		update('seed', Math.floor(Math.random() * 2 ** 31));
+	}
+</script>
+````
 
 - [ ] Replace the entire markup `<section>...</section>` block (lines 64-165) with a single-config form (no add/remove/each, plus a seed-method selector):
+
   ```svelte
   <section>
   	<header>
@@ -1268,6 +1341,7 @@ Steps:
   	</div>
   </section>
   ```
+
   (Leave the existing `<style>` block at lines 167-204 unchanged; `.config-header` is now unused but harmless.)
 
 - [ ] Run the type check: `npm run check` — expected: passes with zero errors across the whole project (this is the last consumer migrated).
@@ -1278,9 +1352,11 @@ Steps:
   ```bash
   git add src/components/controls/VoronoiControl.svelte
   git commit -m "feat(voronoi): single-config control with seed-method selector
+  ```
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
-  ```
+
+````
 
 ---
 
@@ -1295,17 +1371,20 @@ This is UI-only; reuses the existing `Floater.svelte`. Manual verification repla
 Steps:
 
 - [ ] Import `Floater` and add state. After the existing import on line 16 (`import HoverSidebar ...`), add:
-  ```svelte
-  	import Floater from '../../components/modal/Floater.svelte';
-  ```
+```svelte
+	import Floater from '../../components/modal/Floater.svelte';
+````
 
 - [ ] Add a `showVoronoiFloater` state variable. After the `let viewMode` declaration (line 20), add:
+
   ```svelte
-  	let showVoronoiFloater = $state(false);
+  let showVoronoiFloater = $state(false);
   ```
+
   (Confirm this file uses Svelte 5 runes — `VoronoiControl.svelte` and `Floater.svelte` already use `$props`/`$state`/`$derived`, so the project is on Svelte 5.)
 
 - [ ] Repurpose the SelectBar `Voronoi` option to toggle the floater instead of rendering inline. In the `SelectBar` `options` array, leave `{ name: 'Voronoi' }` in place (line 55) — it stays as the trigger. Remove the inline render branch. Replace:
+
   ```svelte
   			{:else if showControl?.name === 'Projection'}
   				<ProjectionControl />
@@ -1313,7 +1392,9 @@ Steps:
   				<VoronoiControl />
   			{:else if showControl?.name === 'Struts'}
   ```
+
   with:
+
   ```svelte
   			{:else if showControl?.name === 'Projection'}
   				<ProjectionControl />
@@ -1321,6 +1402,7 @@ Steps:
   ```
 
 - [ ] Toggle the floater when the `Voronoi` SelectBar option is chosen. Add a reactive effect after the existing `$: viewMode = ...` line (line 30):
+
   ```svelte
   	$: if (showControl?.name === 'Voronoi') {
   		showVoronoiFloater = true;
@@ -1328,15 +1410,17 @@ Steps:
   ```
 
 - [ ] Render the `Floater` hosting `VoronoiControl`. Just before the closing `</main>` (after the `<HoverSidebar ... />` line 88), add:
+
   ```svelte
-  	<Floater
-  		title="Voronoi"
-  		showFloater={showVoronoiFloater}
-  		onClose={() => (showVoronoiFloater = false)}
-  		content={VoronoiControl}
-  		closeOnClickAway={false}
-  	/>
+  <Floater
+  	title="Voronoi"
+  	showFloater={showVoronoiFloater}
+  	onClose={() => (showVoronoiFloater = false)}
+  	content={VoronoiControl}
+  	closeOnClickAway={false}
+  />
   ```
+
   (`closeOnClickAway={false}` keeps the panel open while dragging sliders, which dispatch document clicks.)
 
 - [ ] Run the type check: `npm run check` — expected: passes with zero errors. (`VoronoiControl` is still imported on line 15 and is now passed as `content`.)
@@ -1347,9 +1431,11 @@ Steps:
   ```bash
   git add src/routes/designer2/+page.svelte
   git commit -m "feat(voronoi): host VoronoiControl in a floating editor panel
+  ```
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
-  ```
+
+```
 
 ---
 
@@ -1394,3 +1480,4 @@ Steps:
 - `normalizeVoronoiConfig` defined Task 12, used in store same task. ✓
 - `Floater.svelte` props (`onClose`, `title`, `showFloater`, `content`, `closeOnClickAway`) match the real component signature read from source. ✓
 - `defaultVoronoiConfig` import path `$lib/shades-config` matches existing usage in `VoronoiControl.svelte`. ✓
+```

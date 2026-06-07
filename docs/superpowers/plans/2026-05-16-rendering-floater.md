@@ -17,6 +17,7 @@
 ### Task 1: Create `Rendering.svelte` from `ComputationMode.svelte`
 
 **Files:**
+
 - Create: `src/components/modal/editor/Rendering.svelte`
 - Source reference: `src/components/modal/editor/ComputationMode.svelte` (existing, will be deleted in Task 2)
 
@@ -101,6 +102,7 @@ The existing `ComputationMode.svelte` is almost what we want. We're creating a n
 ```
 
 Differences from `ComputationMode.svelte`:
+
 - `<header>Computation Mode</header>` removed.
 - `Manual Mode` → `Manual`.
 - `Pause Pattern Updates` → `Pause Patterns`.
@@ -126,6 +128,7 @@ git push
 ### Task 2: Register `Rendering` floater in `utilities`; delete `ComputationMode.svelte`
 
 **Files:**
+
 - Modify: `src/components/modal/sidebar-definitions.ts`
 - Delete: `src/components/modal/editor/ComputationMode.svelte`
 
@@ -238,6 +241,7 @@ git push
 ### Task 3: Remove inline rendering UI from `/designer2/+page.svelte`
 
 **Files:**
+
 - Modify: `src/routes/designer2/+page.svelte`
 
 The page currently renders the rendering controls inline in `<header>`, and also defines `refreshPatterns` and imports stores it uses. All of that moves to the floater; the page should no longer reference it.
@@ -291,11 +295,11 @@ After:
 Delete the function definition (currently lines 32–36) entirely:
 
 ```ts
-	function refreshPatterns() {
-		pausePatternUpdates.set(false);
-		// Force re-subscription to trigger update
-		superGlobulePatternStore.subscribe(() => {})();
-	}
+function refreshPatterns() {
+	pausePatternUpdates.set(false);
+	// Force re-subscription to trigger update
+	superGlobulePatternStore.subscribe(() => {})();
+}
 ```
 
 - [ ] **Step 3: Trim the unused store imports**
@@ -303,29 +307,29 @@ Delete the function definition (currently lines 32–36) entirely:
 Current import statement:
 
 ```ts
-	import {
-		uiStore,
-		type ViewModeSetting,
-		computationMode,
-		pausePatternUpdates,
-		isManualMode,
-		hasPendingChanges
-	} from '$lib/stores/uiStores';
+import {
+	uiStore,
+	type ViewModeSetting,
+	computationMode,
+	pausePatternUpdates,
+	isManualMode,
+	hasPendingChanges
+} from '$lib/stores/uiStores';
 ```
 
 Replace with:
 
 ```ts
-	import { uiStore, type ViewModeSetting } from '$lib/stores/uiStores';
+import { uiStore, type ViewModeSetting } from '$lib/stores/uiStores';
 ```
 
 Then update the `superGlobuleStores` import. Current:
 
 ```ts
-	import {
-		superGlobulePatternStore,
-		triggerManualRegeneration
-	} from '$lib/stores/superGlobuleStores';
+import {
+	superGlobulePatternStore,
+	triggerManualRegeneration
+} from '$lib/stores/superGlobuleStores';
 ```
 
 Verify `triggerManualRegeneration` is still used elsewhere in the file with:
@@ -341,7 +345,7 @@ grep -n "triggerManualRegeneration\|superGlobulePatternStore" src/routes/designe
 Note: the `{#if $computationMode !== '3d-only'}` guard at line ~55 referenced `$computationMode`. **This guard stays, because the spec preserves it.** Since the import was removed in step 3, the guard would now be a build error. Therefore, you MUST keep the `computationMode` import in the `uiStores` import. Correct that step: the final `uiStores` import is:
 
 ```ts
-	import { uiStore, type ViewModeSetting, computationMode } from '$lib/stores/uiStores';
+import { uiStore, type ViewModeSetting, computationMode } from '$lib/stores/uiStores';
 ```
 
 - [ ] **Step 4: Remove the now-orphaned CSS rules**
@@ -412,6 +416,7 @@ If `RN` is missing: the registration in Task 2 didn't take. Verify `sidebar-defi
 - [ ] **Step 3: Open the floater and verify controls**
 
 Click the `RN` button. A "Rendering" floater opens with:
+
 - A `Mode` dropdown with options `Continuous` / `3D Only` / `2D Only`.
 - A `Manual` checkbox.
 - A `Pause Patterns` checkbox.
@@ -477,6 +482,7 @@ Return the PR URL.
 ## Self-Review
 
 **Spec coverage:**
+
 - ✅ Rename `ComputationMode.svelte` → `Rendering.svelte` (Task 1)
 - ✅ Drop section header (Task 1, Step 1)
 - ✅ `Manual Mode` → `Manual` (Task 1, Step 1)

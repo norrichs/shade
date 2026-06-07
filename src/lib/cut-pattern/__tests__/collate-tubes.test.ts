@@ -21,12 +21,12 @@ const makeCutPattern = (tubeIds: string[]): SuperGlobuleProjectionPattern =>
 
 const allOff = {
 	showGlobuleTubeGeometry: { any: false, bands: false, facets: false, sections: false } as never,
-	showProjectionGeometry: { any: false, bands: false, facets: false } as never,
+	showProjectionGeometry: { any: false, bands: false, facets: false } as never
 };
 
 const allOn = {
 	showGlobuleTubeGeometry: { any: true, bands: true, facets: true, sections: true } as never,
-	showProjectionGeometry: { any: true, bands: true, facets: true } as never,
+	showProjectionGeometry: { any: true, bands: true, facets: true } as never
 };
 
 const voronoiDefaults = {
@@ -91,7 +91,12 @@ describe('collateTubes', () => {
 			projectionPattern: undefined,
 			surfaceProjectionPattern: makeCutPattern(['surf-0']),
 			...voronoiDefaults,
-			showGlobuleTubeGeometry: { any: false, bands: false, facets: false, sections: false } as never,
+			showGlobuleTubeGeometry: {
+				any: false,
+				bands: false,
+				facets: false,
+				sections: false
+			} as never,
 			showProjectionGeometry: { any: true, bands: true, facets: true } as never,
 			patternSource: 'surfaceProjection'
 		});

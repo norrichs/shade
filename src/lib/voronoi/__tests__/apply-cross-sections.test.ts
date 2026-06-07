@@ -22,21 +22,9 @@ const makeSimpleCrossSection = (): CrossSectionConfig => ({
 
 describe('applyCrossSectionsToEdge', () => {
 	it('returns one section per sample point', () => {
-		const edgePoints = [
-			new Vector3(0, 0, 0),
-			new Vector3(1, 0, 0),
-			new Vector3(2, 0, 0)
-		];
-		const curvePoints = [
-			new Vector3(0, 1, 0),
-			new Vector3(1, 1, 0),
-			new Vector3(2, 1, 0)
-		];
-		const normals = [
-			new Vector3(0, 0, 1),
-			new Vector3(0, 0, 1),
-			new Vector3(0, 0, 1)
-		];
+		const edgePoints = [new Vector3(0, 0, 0), new Vector3(1, 0, 0), new Vector3(2, 0, 0)];
+		const curvePoints = [new Vector3(0, 1, 0), new Vector3(1, 1, 0), new Vector3(2, 1, 0)];
+		const normals = [new Vector3(0, 0, 1), new Vector3(0, 0, 1), new Vector3(0, 0, 1)];
 
 		const sections = applyCrossSectionsToEdge(
 			edgePoints,

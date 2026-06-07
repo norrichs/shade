@@ -238,7 +238,8 @@
 			/>
 			<div class="mode-toggle">
 				<button class:active={mode === 'unit'} onclick={() => setMode('unit')}>Unit</button>
-				<button class:active={mode === 'partner'} onclick={() => setMode('partner')}>Partner</button>
+				<button class:active={mode === 'partner'} onclick={() => setMode('partner')}>Partner</button
+				>
 			</div>
 			{#if draft}
 				{#if mode === 'unit'}

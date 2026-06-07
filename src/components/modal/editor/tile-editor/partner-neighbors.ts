@@ -38,12 +38,7 @@ type Pt = { x: number; y: number };
 
 // Rigid 2-point transform: returns a function that maps src1→dst1, src2→dst2
 // (assumes |src2-src1| = |dst2-dst1|, true under isometric flattening).
-const rigidFromTwoPoints = (
-	src1: Pt,
-	src2: Pt,
-	dst1: Pt,
-	dst2: Pt
-): ((p: Pt) => Pt) => {
+const rigidFromTwoPoints = (src1: Pt, src2: Pt, dst1: Pt, dst2: Pt): ((p: Pt) => Pt) => {
 	const srcAng = Math.atan2(src2.y - src1.y, src2.x - src1.x);
 	const dstAng = Math.atan2(dst2.y - dst1.y, dst2.x - dst1.x);
 	const theta = dstAng - srcAng;
@@ -110,9 +105,7 @@ export const resolveBaseAndPartners = (
 			address: { ...baseAddress, facet: baseAddress.facet + 1 },
 			quad: next.quad,
 			path: structuredClone(next.path),
-			originalPath: next.meta?.originalPath
-				? structuredClone(next.meta.originalPath)
-				: undefined
+			originalPath: next.meta?.originalPath ? structuredClone(next.meta.originalPath) : undefined
 		};
 	};
 
@@ -129,9 +122,7 @@ export const resolveBaseAndPartners = (
 			address: { ...baseAddress, facet: baseAddress.facet - 1 },
 			quad: prev.quad,
 			path: structuredClone(prev.path),
-			originalPath: prev.meta?.originalPath
-				? structuredClone(prev.meta.originalPath)
-				: undefined
+			originalPath: prev.meta?.originalPath ? structuredClone(prev.meta.originalPath) : undefined
 		};
 	};
 
@@ -180,7 +171,12 @@ export const resolveBaseAndPartners = (
 			role: 'left',
 			ruleSet: 'acrossBands',
 			baseIsTarget: true,
-			address: { globule: baseAddress.globule, tube: baseAddress.tube, band: baseAddress.band - 1, facet: baseAddress.facet },
+			address: {
+				globule: baseAddress.globule,
+				tube: baseAddress.tube,
+				band: baseAddress.band - 1,
+				facet: baseAddress.facet
+			},
 			quad: transformQuadFn(facet.quad, fn),
 			path: transformPathFn(structuredClone(facet.path), fn),
 			originalPath: facet.meta?.originalPath
@@ -202,7 +198,12 @@ export const resolveBaseAndPartners = (
 			role: 'right',
 			ruleSet: 'acrossBands',
 			baseIsTarget: false,
-			address: { globule: baseAddress.globule, tube: baseAddress.tube, band: baseAddress.band + 1, facet: baseAddress.facet },
+			address: {
+				globule: baseAddress.globule,
+				tube: baseAddress.tube,
+				band: baseAddress.band + 1,
+				facet: baseAddress.facet
+			},
 			quad: transformQuadFn(facet.quad, fn),
 			path: transformPathFn(structuredClone(facet.path), fn),
 			originalPath: facet.meta?.originalPath

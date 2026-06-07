@@ -27,15 +27,15 @@
 
 ## File Structure
 
-| File | Responsibility |
-|---|---|
-| `src/lib/types.ts` | Add `tagAnchorAutoAngle?: number` to `BandCutPattern`. |
-| `src/lib/cut-pattern/compute-label-anchor.ts` | NEW. Pure function `computeOutlinedLabelAnchor(edge, tab, interiorPoint, tabWidth?)` → `{ anchor: Point, autoAngle: number }`. No Three or paper deps; just `Point` math. |
-| `src/lib/cut-pattern/__tests__/compute-label-anchor.test.ts` | NEW. Tests for no-tab case, with-rect-tab case, outward-direction correctness. |
-| `src/lib/cut-pattern/generate-outlined-pattern.ts` | Modify `generateOutlinedBandPattern` (~line 441-516): identify the start-cap edge + its tab (if any), call `computeOutlinedLabelAnchor`, populate `tagAnchorPoint` and `tagAnchorAutoAngle`. |
-| `src/components/cut-pattern/PatternLabel.svelte` | Add `autoAngle?: number` prop. Compute `effectiveAngle = angle + (autoAngle ?? 0)`. When `autoAngle !== undefined`, apply a stem-width/2 shift to the wrapper translate so one long side of the stem lands at `anchor`. |
-| `src/components/cut-pattern/BandComponent.svelte` | Pass `autoAngle={band.tagAnchorAutoAngle}` to `<PatternLabel>`. |
-| `src/components/cut-pattern/CutPatternRenderer.svelte` | (No change needed — already forwards `band.tagAnchorPoint` and `band.tagAngle`. The autoAngle flows through `band` directly to `BandComponent`.) |
+| File                                                         | Responsibility                                                                                                                                                                                                          |
+| ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/lib/types.ts`                                           | Add `tagAnchorAutoAngle?: number` to `BandCutPattern`.                                                                                                                                                                  |
+| `src/lib/cut-pattern/compute-label-anchor.ts`                | NEW. Pure function `computeOutlinedLabelAnchor(edge, tab, interiorPoint, tabWidth?)` → `{ anchor: Point, autoAngle: number }`. No Three or paper deps; just `Point` math.                                               |
+| `src/lib/cut-pattern/__tests__/compute-label-anchor.test.ts` | NEW. Tests for no-tab case, with-rect-tab case, outward-direction correctness.                                                                                                                                          |
+| `src/lib/cut-pattern/generate-outlined-pattern.ts`           | Modify `generateOutlinedBandPattern` (~line 441-516): identify the start-cap edge + its tab (if any), call `computeOutlinedLabelAnchor`, populate `tagAnchorPoint` and `tagAnchorAutoAngle`.                            |
+| `src/components/cut-pattern/PatternLabel.svelte`             | Add `autoAngle?: number` prop. Compute `effectiveAngle = angle + (autoAngle ?? 0)`. When `autoAngle !== undefined`, apply a stem-width/2 shift to the wrapper translate so one long side of the stem lands at `anchor`. |
+| `src/components/cut-pattern/BandComponent.svelte`            | Pass `autoAngle={band.tagAnchorAutoAngle}` to `<PatternLabel>`.                                                                                                                                                         |
+| `src/components/cut-pattern/CutPatternRenderer.svelte`       | (No change needed — already forwards `band.tagAnchorPoint` and `band.tagAngle`. The autoAngle flows through `band` directly to `BandComponent`.)                                                                        |
 
 ## Algorithm reference
 
@@ -52,6 +52,7 @@ Given the start-cap `OutlineEdge` with `start`, `end`, `interiorPoint` (all `Vec
 ### Why `atan2(-N.x, N.y)`
 
 `SVG transform="rotate(θ)"` applies `[cos, -sin; sin, cos]` to a point. Applied to `(0, 1)` (the stem's local +y direction) it yields `(-sin θ, cos θ)`. We want this to equal `N`:
+
 - `-sin θ = N.x → sin θ = -N.x`
 - `cos θ = N.y`
 - `θ = atan2(-N.x, N.y)`
@@ -61,9 +62,11 @@ Given the start-cap `OutlineEdge` with `start`, `end`, `interiorPoint` (all `Vec
 `PatternLabel`'s local stem geometry has the two long sides at internal `x = ±stemWidth/2`, both running from `y = 0` (stem tip) to `y = stemLength` (body base). After the wrapper `translate(renderAnchor) rotate(effectiveAngle)`, the side at internal `+stemWidth/2` ends up at world position `renderAnchor + R(effectiveAngle) * (stemWidth/2, 0) = renderAnchor + (cos θ * w/2, sin θ * w/2)`.
 
 To make that side land on the supplied `anchor` (the midpoint M from the algorithm):
+
 ```
 renderAnchor = anchor - (cos θ * stemWidth/2, sin θ * stemWidth/2)
 ```
+
 where `θ = effectiveAngle` (radians). The other side then lands at `M − (cos θ * stemWidth, sin θ * stemWidth)` — offset by `stemWidth` along the edge direction, as the spec requires.
 
 This shift is applied only when `autoAngle !== undefined`. For tiled bands (no autoAngle), `renderAnchor = anchor` exactly as today.
@@ -73,6 +76,7 @@ This shift is applied only when `autoAngle !== undefined`. For tiled bands (no a
 ## Task 1: Add `tagAnchorAutoAngle` to BandCutPattern
 
 **Files:**
+
 - Modify: `src/lib/types.ts` (line ~319, in the `BandCutPattern` type definition)
 
 - [ ] **Step 1: Edit `src/lib/types.ts`**
@@ -117,6 +121,7 @@ git commit -m "feat(types): add BandCutPattern.tagAnchorAutoAngle for outlined-b
 ## Task 2: `computeOutlinedLabelAnchor` — pure function + tests
 
 **Files:**
+
 - Create: `src/lib/cut-pattern/compute-label-anchor.ts`
 - Create: `src/lib/cut-pattern/__tests__/compute-label-anchor.test.ts`
 
@@ -269,6 +274,7 @@ git commit -m "feat(cut-pattern): add computeOutlinedLabelAnchor for start-cap l
 ## Task 3: Wire into `generateOutlinedBandPattern`
 
 **Files:**
+
 - Modify: `src/lib/cut-pattern/generate-outlined-pattern.ts` (around lines 441-516)
 
 - [ ] **Step 1: Add the import**
@@ -284,36 +290,36 @@ import { computeOutlinedLabelAnchor } from './compute-label-anchor';
 The function starts around line 441. After the existing block that computes `tabs` (around line 502 where `const tabs = collectOutlinedBandTabs(...)` is called) and BEFORE the `const result: BandCutPattern = { ... }` block (around line 504), insert this block:
 
 ```ts
-	// Locate the start-cap edge (the one with endIsStartCap === true) so the
-	// self-tag label can attach near its midpoint (or the outer midpoint of its
-	// tab, if any). For outlined bands the start cap is the LAST edge in the
-	// walk order (see getOutlineEdges: it's appended after the 'after' side and
-	// closes the loop back to quads[0].a). We scan rather than hardcode the
-	// index so any future reordering of the walk doesn't silently break this.
-	let startCapIndex = -1;
-	for (let i = 0; i < edges.length; i++) {
-		if (edges[i].side === 'end' && edges[i].endIsStartCap === true) {
-			startCapIndex = i;
-			break;
-		}
+// Locate the start-cap edge (the one with endIsStartCap === true) so the
+// self-tag label can attach near its midpoint (or the outer midpoint of its
+// tab, if any). For outlined bands the start cap is the LAST edge in the
+// walk order (see getOutlineEdges: it's appended after the 'after' side and
+// closes the loop back to quads[0].a). We scan rather than hardcode the
+// index so any future reordering of the walk doesn't silently break this.
+let startCapIndex = -1;
+for (let i = 0; i < edges.length; i++) {
+	if (edges[i].side === 'end' && edges[i].endIsStartCap === true) {
+		startCapIndex = i;
+		break;
 	}
+}
 
-	let labelAnchor: { anchor: { x: number; y: number }; autoAngle: number } | undefined;
-	if (startCapIndex >= 0) {
-		const capEdge = edges[startCapIndex];
-		const capTab = tabsByIndex.get(startCapIndex);
-		// tabConfig is typed as optional on OutlinedPatternConfig, though in
-		// practice buildOutlinePath above will have already required it if any
-		// tab was generated. Guard with ?? 0 to keep the types honest.
-		const capTabWidth = config.tabConfig?.tabWidth ?? 0;
-		labelAnchor = computeOutlinedLabelAnchor({
-			edgeStart: { x: capEdge.start.x, y: capEdge.start.y },
-			edgeEnd: { x: capEdge.end.x, y: capEdge.end.y },
-			interiorPoint: { x: capEdge.interiorPoint.x, y: capEdge.interiorPoint.y },
-			tab: capTab ? { tabWidth: capTabWidth } : undefined,
-			tabWidth: capTabWidth
-		});
-	}
+let labelAnchor: { anchor: { x: number; y: number }; autoAngle: number } | undefined;
+if (startCapIndex >= 0) {
+	const capEdge = edges[startCapIndex];
+	const capTab = tabsByIndex.get(startCapIndex);
+	// tabConfig is typed as optional on OutlinedPatternConfig, though in
+	// practice buildOutlinePath above will have already required it if any
+	// tab was generated. Guard with ?? 0 to keep the types honest.
+	const capTabWidth = config.tabConfig?.tabWidth ?? 0;
+	labelAnchor = computeOutlinedLabelAnchor({
+		edgeStart: { x: capEdge.start.x, y: capEdge.start.y },
+		edgeEnd: { x: capEdge.end.x, y: capEdge.end.y },
+		interiorPoint: { x: capEdge.interiorPoint.x, y: capEdge.interiorPoint.y },
+		tab: capTab ? { tabWidth: capTabWidth } : undefined,
+		tabWidth: capTabWidth
+	});
+}
 ```
 
 - [ ] **Step 3: Update the `result` object to populate the new fields**
@@ -321,32 +327,32 @@ The function starts around line 441. After the existing block that computes `tab
 Currently (around lines 504-513) the result is built with:
 
 ```ts
-	const result: BandCutPattern = {
-		projectionType: 'patterned',
-		facets: [outlineFacet, ...quadFacets],
-		svgPath: outlineFacet.svgPath,
-		id: `outlined-band-${bandIndex}`,
-		tagAnchorPoint: { x: 0, y: 0 },
-		address: { ...tubeAddress, band: bandIndex },
-		bounds,
-		meta
-	};
+const result: BandCutPattern = {
+	projectionType: 'patterned',
+	facets: [outlineFacet, ...quadFacets],
+	svgPath: outlineFacet.svgPath,
+	id: `outlined-band-${bandIndex}`,
+	tagAnchorPoint: { x: 0, y: 0 },
+	address: { ...tubeAddress, band: bandIndex },
+	bounds,
+	meta
+};
 ```
 
 Change `tagAnchorPoint` to draw from `labelAnchor` if available, and add `tagAnchorAutoAngle`:
 
 ```ts
-	const result: BandCutPattern = {
-		projectionType: 'patterned',
-		facets: [outlineFacet, ...quadFacets],
-		svgPath: outlineFacet.svgPath,
-		id: `outlined-band-${bandIndex}`,
-		tagAnchorPoint: labelAnchor ? labelAnchor.anchor : { x: 0, y: 0 },
-		tagAnchorAutoAngle: labelAnchor?.autoAngle,
-		address: { ...tubeAddress, band: bandIndex },
-		bounds,
-		meta
-	};
+const result: BandCutPattern = {
+	projectionType: 'patterned',
+	facets: [outlineFacet, ...quadFacets],
+	svgPath: outlineFacet.svgPath,
+	id: `outlined-band-${bandIndex}`,
+	tagAnchorPoint: labelAnchor ? labelAnchor.anchor : { x: 0, y: 0 },
+	tagAnchorAutoAngle: labelAnchor?.autoAngle,
+	address: { ...tubeAddress, band: bandIndex },
+	bounds,
+	meta
+};
 ```
 
 - [ ] **Step 4: Run tests**
@@ -375,6 +381,7 @@ git commit -m "feat(cut-pattern): populate tagAnchor at start-cap for outlined b
 ## Task 4: PatternLabel — `autoAngle` prop, effective angle, and stem-width shift
 
 **Files:**
+
 - Modify: `src/components/cut-pattern/PatternLabel.svelte`
 
 - [ ] **Step 1: Add `autoAngle` to props**
@@ -382,35 +389,35 @@ git commit -m "feat(cut-pattern): populate tagAnchor at start-cap for outlined b
 Currently the props block (lines 11-37) declares `angle = 0`. Add `autoAngle` next to it. The props object becomes:
 
 ```ts
-	let {
-		id = undefined,
-		color = 'black',
-		value,
-		addressStrings = undefined,
-		radius = 10,
-		height = 14,
-		angle = 0,
-		autoAngle = undefined,
-		anchor = { x: 0, y: 0 },
-		padding = 10,
-		stemLength = 20,
-		stemWidth = 4,
-		portal = undefined
-	}: {
-		id?: string | undefined;
-		color?: string;
-		value: number;
-		addressStrings?: string[] | undefined;
-		radius?: number;
-		height?: number;
-		angle?: number;
-		autoAngle?: number | undefined;
-		anchor?: Point;
-		padding?: number;
-		stemLength?: number;
-		stemWidth?: number;
-		portal?: { transform: string } | undefined;
-	} = $props();
+let {
+	id = undefined,
+	color = 'black',
+	value,
+	addressStrings = undefined,
+	radius = 10,
+	height = 14,
+	angle = 0,
+	autoAngle = undefined,
+	anchor = { x: 0, y: 0 },
+	padding = 10,
+	stemLength = 20,
+	stemWidth = 4,
+	portal = undefined
+}: {
+	id?: string | undefined;
+	color?: string;
+	value: number;
+	addressStrings?: string[] | undefined;
+	radius?: number;
+	height?: number;
+	angle?: number;
+	autoAngle?: number | undefined;
+	anchor?: Point;
+	padding?: number;
+	stemLength?: number;
+	stemWidth?: number;
+	portal?: { transform: string } | undefined;
+} = $props();
 ```
 
 - [ ] **Step 2: Compute the effective angle and the render anchor**
@@ -418,55 +425,55 @@ Currently the props block (lines 11-37) declares `angle = 0`. Add `autoAngle` ne
 Currently (around lines 238-249) the angle/transform derivation is:
 
 ```ts
-	// Convert radians to degrees for SVG transform.
-	let angleDeg = $derived((angle * 180) / Math.PI);
+// Convert radians to degrees for SVG transform.
+let angleDeg = $derived((angle * 180) / Math.PI);
 
-	// Wrapper transform: position the path-space origin at `anchor`, then
-	// rotate around it. For the portal branch, prepend the portal transform
-	// so the portal positioning still applies but the rotation is local to
-	// the label coords.
-	let wrapperTransform = $derived(
-		portal
-			? `${portal.transform} translate(${anchor.x} ${anchor.y}) rotate(${angleDeg})`
-			: `translate(${anchor.x} ${anchor.y}) rotate(${angleDeg})`
-	);
+// Wrapper transform: position the path-space origin at `anchor`, then
+// rotate around it. For the portal branch, prepend the portal transform
+// so the portal positioning still applies but the rotation is local to
+// the label coords.
+let wrapperTransform = $derived(
+	portal
+		? `${portal.transform} translate(${anchor.x} ${anchor.y}) rotate(${angleDeg})`
+		: `translate(${anchor.x} ${anchor.y}) rotate(${angleDeg})`
+);
 ```
 
 Replace that block with:
 
 ```ts
-	// When `autoAngle` is provided (outlined bands), `angle` is interpreted as
-	// a relative offset added to it. For tiled bands and any legacy caller,
-	// `autoAngle` is undefined and `angle` keeps its previous absolute-rotation
-	// behavior.
-	let effectiveAngle = $derived(angle + (autoAngle ?? 0));
-	let effectiveAngleDeg = $derived((effectiveAngle * 180) / Math.PI);
+// When `autoAngle` is provided (outlined bands), `angle` is interpreted as
+// a relative offset added to it. For tiled bands and any legacy caller,
+// `autoAngle` is undefined and `angle` keeps its previous absolute-rotation
+// behavior.
+let effectiveAngle = $derived(angle + (autoAngle ?? 0));
+let effectiveAngleDeg = $derived((effectiveAngle * 180) / Math.PI);
 
-	// Stem-width/2 shift: the path-space stem has its two long sides at internal
-	// x = ±stemWidth/2. We want the +x side to land exactly on `anchor` (so one
-	// long side passes through M and the other is offset by stemWidth along the
-	// edge direction). The wrapper translate must therefore be shifted by
-	// −R(θ) · (stemWidth/2, 0) where θ is the effective angle. Only apply this
-	// when autoAngle is defined; otherwise preserve the legacy "anchor = stem
-	// tip center" behavior.
-	let renderAnchor = $derived(
-		autoAngle === undefined
-			? anchor
-			: {
-					x: anchor.x - (stemWidth / 2) * Math.cos(effectiveAngle),
-					y: anchor.y - (stemWidth / 2) * Math.sin(effectiveAngle)
-				}
-	);
+// Stem-width/2 shift: the path-space stem has its two long sides at internal
+// x = ±stemWidth/2. We want the +x side to land exactly on `anchor` (so one
+// long side passes through M and the other is offset by stemWidth along the
+// edge direction). The wrapper translate must therefore be shifted by
+// −R(θ) · (stemWidth/2, 0) where θ is the effective angle. Only apply this
+// when autoAngle is defined; otherwise preserve the legacy "anchor = stem
+// tip center" behavior.
+let renderAnchor = $derived(
+	autoAngle === undefined
+		? anchor
+		: {
+				x: anchor.x - (stemWidth / 2) * Math.cos(effectiveAngle),
+				y: anchor.y - (stemWidth / 2) * Math.sin(effectiveAngle)
+			}
+);
 
-	// Wrapper transform: position the path-space origin at `renderAnchor`, then
-	// rotate around it. For the portal branch, prepend the portal transform
-	// so the portal positioning still applies but the rotation is local to
-	// the label coords.
-	let wrapperTransform = $derived(
-		portal
-			? `${portal.transform} translate(${renderAnchor.x} ${renderAnchor.y}) rotate(${effectiveAngleDeg})`
-			: `translate(${renderAnchor.x} ${renderAnchor.y}) rotate(${effectiveAngleDeg})`
-	);
+// Wrapper transform: position the path-space origin at `renderAnchor`, then
+// rotate around it. For the portal branch, prepend the portal transform
+// so the portal positioning still applies but the rotation is local to
+// the label coords.
+let wrapperTransform = $derived(
+	portal
+		? `${portal.transform} translate(${renderAnchor.x} ${renderAnchor.y}) rotate(${effectiveAngleDeg})`
+		: `translate(${renderAnchor.x} ${renderAnchor.y}) rotate(${effectiveAngleDeg})`
+);
 ```
 
 - [ ] **Step 3: Type-check**
@@ -493,6 +500,7 @@ git commit -m "feat(pattern-label): add autoAngle prop, effective-angle composit
 ## Task 5: BandComponent threads `autoAngle` to PatternLabel
 
 **Files:**
+
 - Modify: `src/components/cut-pattern/BandComponent.svelte` (line ~103-117)
 
 - [ ] **Step 1: Pass `autoAngle` through to PatternLabel**
@@ -500,44 +508,44 @@ git commit -m "feat(pattern-label): add autoAngle prop, effective-angle composit
 Currently the `<PatternLabel ...>` block (lines 103-117) reads:
 
 ```svelte
-		{#if selfTagEnabled}
-			<PatternLabel
-				id={`band-self-${band.id}`}
-				{color}
-				value={index}
-				radius={(labels?.selfTag?.height ?? 16) / 4}
-				height={labels?.selfTag?.height ?? 14}
-				angle={band.tagAngle ?? labels?.selfTag?.angle ?? 0}
-				anchor={tagAnchorPoint || { x: -50, y: -50 }}
-				addressStrings={[concatAddress(band.address, 'tb-slash')]}
-				padding={labels?.selfTag?.padding ?? 10}
-				stemLength={labels?.selfTag?.stemLength ?? 20}
-				stemWidth={labels?.selfTag?.stemWidth ?? 4}
-				portal={isTiled ? { transform: `translate(${origin.x} ${origin.y})` } : undefined}
-			/>
-		{/if}
+{#if selfTagEnabled}
+	<PatternLabel
+		id={`band-self-${band.id}`}
+		{color}
+		value={index}
+		radius={(labels?.selfTag?.height ?? 16) / 4}
+		height={labels?.selfTag?.height ?? 14}
+		angle={band.tagAngle ?? labels?.selfTag?.angle ?? 0}
+		anchor={tagAnchorPoint || { x: -50, y: -50 }}
+		addressStrings={[concatAddress(band.address, 'tb-slash')]}
+		padding={labels?.selfTag?.padding ?? 10}
+		stemLength={labels?.selfTag?.stemLength ?? 20}
+		stemWidth={labels?.selfTag?.stemWidth ?? 4}
+		portal={isTiled ? { transform: `translate(${origin.x} ${origin.y})` } : undefined}
+	/>
+{/if}
 ```
 
 Add the `autoAngle` prop, sourced from `band.tagAnchorAutoAngle`:
 
 ```svelte
-		{#if selfTagEnabled}
-			<PatternLabel
-				id={`band-self-${band.id}`}
-				{color}
-				value={index}
-				radius={(labels?.selfTag?.height ?? 16) / 4}
-				height={labels?.selfTag?.height ?? 14}
-				angle={band.tagAngle ?? labels?.selfTag?.angle ?? 0}
-				autoAngle={band.tagAnchorAutoAngle}
-				anchor={tagAnchorPoint || { x: -50, y: -50 }}
-				addressStrings={[concatAddress(band.address, 'tb-slash')]}
-				padding={labels?.selfTag?.padding ?? 10}
-				stemLength={labels?.selfTag?.stemLength ?? 20}
-				stemWidth={labels?.selfTag?.stemWidth ?? 4}
-				portal={isTiled ? { transform: `translate(${origin.x} ${origin.y})` } : undefined}
-			/>
-		{/if}
+{#if selfTagEnabled}
+	<PatternLabel
+		id={`band-self-${band.id}`}
+		{color}
+		value={index}
+		radius={(labels?.selfTag?.height ?? 16) / 4}
+		height={labels?.selfTag?.height ?? 14}
+		angle={band.tagAngle ?? labels?.selfTag?.angle ?? 0}
+		autoAngle={band.tagAnchorAutoAngle}
+		anchor={tagAnchorPoint || { x: -50, y: -50 }}
+		addressStrings={[concatAddress(band.address, 'tb-slash')]}
+		padding={labels?.selfTag?.padding ?? 10}
+		stemLength={labels?.selfTag?.stemLength ?? 20}
+		stemWidth={labels?.selfTag?.stemWidth ?? 4}
+		portal={isTiled ? { transform: `translate(${origin.x} ${origin.y})` } : undefined}
+	/>
+{/if}
 ```
 
 - [ ] **Step 2: Type-check**
@@ -578,6 +586,7 @@ Expected: no errors in any of the modified files.
 - [ ] **Step 3: Visual sanity check (manual)**
 
 The visual behavior change is hard to assert via tests. Manually verify by:
+
 1. Start dev server: `npm run dev`
 2. Open the designer in browser; select an outlined pattern
 3. Enable self-tag in LabelEditor

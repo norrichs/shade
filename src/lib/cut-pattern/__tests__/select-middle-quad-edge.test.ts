@@ -1,4 +1,9 @@
-import { middleQuadIndex, middleQuadEdgeIndices, selectMiddleQuadEdgeIndex, chooseMiddleQuadEdge } from '../select-middle-quad-edge';
+import {
+	middleQuadIndex,
+	middleQuadEdgeIndices,
+	selectMiddleQuadEdgeIndex,
+	chooseMiddleQuadEdge
+} from '../select-middle-quad-edge';
 
 describe('middleQuadIndex', () => {
 	test.each([
@@ -33,11 +38,11 @@ describe('middleQuadEdgeIndices', () => {
 });
 
 describe('selectMiddleQuadEdgeIndex', () => {
-	const candidate = (
-		index: number,
-		hasTab: boolean,
-		partnerBand: number | undefined
-	) => ({ index, hasTab, partnerBand });
+	const candidate = (index: number, hasTab: boolean, partnerBand: number | undefined) => ({
+		index,
+		hasTab,
+		partnerBand
+	});
 
 	test('priority 1: prefers the edge with no tab', () => {
 		const before = candidate(2, true, 0);
@@ -82,20 +87,12 @@ describe('chooseMiddleQuadEdge', () => {
 		Array.from({ length: 12 }, (_, i) => ({ partnerBand: byIndex[i] }));
 
 	test('no tabs, no partners -> before edge (index 2)', () => {
-		const chosen = chooseMiddleQuadEdge(
-			5,
-			edgesWithPartnerBands({}),
-			new Set<number>()
-		);
+		const chosen = chooseMiddleQuadEdge(5, edgesWithPartnerBands({}), new Set<number>());
 		expect(chosen).toBe(2);
 	});
 
 	test('before edge tabbed -> after edge wins (index 8)', () => {
-		const chosen = chooseMiddleQuadEdge(
-			5,
-			edgesWithPartnerBands({}),
-			new Set<number>([2])
-		);
+		const chosen = chooseMiddleQuadEdge(5, edgesWithPartnerBands({}), new Set<number>([2]));
 		expect(chosen).toBe(8);
 	});
 

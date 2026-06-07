@@ -1,8 +1,5 @@
 import { Vector3 } from 'three';
-import {
-	collectOutlinedBandTabs,
-	type OutlinedTabEdge
-} from '../collect-outlined-band-tabs';
+import { collectOutlinedBandTabs, type OutlinedTabEdge } from '../collect-outlined-band-tabs';
 import type { TabGeometry } from '../generate-tab-geometry';
 
 // Helpers --------------------------------------------------------------------
@@ -41,9 +38,7 @@ describe('collectOutlinedBandTabs', () => {
 
 	it('classifies a near-end (endIsStartCap=true) tab as start', () => {
 		const edges: OutlinedTabEdge[] = [endEdge(true)];
-		const tabs = new Map<number, TabGeometry>([
-			[0, rectTab([0, 0], [1, 0], [0, 1], [1, 1])]
-		]);
+		const tabs = new Map<number, TabGeometry>([[0, rectTab([0, 0], [1, 0], [0, 1], [1, 1])]]);
 
 		const result = collectOutlinedBandTabs(edges, tabs);
 		expect(result).toBeDefined();
@@ -55,9 +50,7 @@ describe('collectOutlinedBandTabs', () => {
 
 	it('classifies a far-end (endIsStartCap=false) tab as end', () => {
 		const edges: OutlinedTabEdge[] = [endEdge(false)];
-		const tabs = new Map<number, TabGeometry>([
-			[0, rectTab([0, 0], [1, 0], [0, 1], [1, 1])]
-		]);
+		const tabs = new Map<number, TabGeometry>([[0, rectTab([0, 0], [1, 0], [0, 1], [1, 1])]]);
 
 		const result = collectOutlinedBandTabs(edges, tabs);
 		expect(result).toBeDefined();
@@ -83,8 +76,7 @@ describe('collectOutlinedBandTabs', () => {
 			endEdge(true)
 		];
 
-		const mkTab = (i: number): TabGeometry =>
-			rectTab([i, 0], [i + 1, 0], [i, 1], [i + 1, 1]);
+		const mkTab = (i: number): TabGeometry => rectTab([i, 0], [i + 1, 0], [i, 1], [i + 1, 1]);
 		const tabs = new Map<number, TabGeometry>();
 		for (let i = 0; i < edges.length; i++) tabs.set(i, mkTab(i));
 
@@ -93,16 +85,7 @@ describe('collectOutlinedBandTabs', () => {
 		expect(result!.length).toBe(8);
 
 		const positions = result!.map((r) => r.position);
-		expect(positions).toEqual([
-			'mid',
-			'mid',
-			'mid',
-			'end',
-			'mid',
-			'mid',
-			'mid',
-			'start'
-		]);
+		expect(positions).toEqual(['mid', 'mid', 'mid', 'end', 'mid', 'mid', 'mid', 'start']);
 
 		const midRecords = result!.filter((r) => r.position === 'mid');
 		expect(midRecords.length).toBe(6);
@@ -152,9 +135,7 @@ describe('collectOutlinedBandTabs', () => {
 
 	it('outputs 2D Points only (no Vector3 leaks) for outer + base', () => {
 		const edges: OutlinedTabEdge[] = [endEdge(true)];
-		const tabs = new Map<number, TabGeometry>([
-			[0, rectTab([0, 0], [4, 0], [0, 2], [4, 2])]
-		]);
+		const tabs = new Map<number, TabGeometry>([[0, rectTab([0, 0], [4, 0], [0, 2], [4, 2])]]);
 
 		const result = collectOutlinedBandTabs(edges, tabs)!;
 		const record = result[0];
@@ -183,9 +164,7 @@ describe('collectOutlinedBandTabs', () => {
 		// Rectangle: shared edge (0,0)→(4,0), outer (0,2)→(4,2).
 		// Expected polygon walk: edgeStart, outerStart, outerEnd, edgeEnd.
 		const edges: OutlinedTabEdge[] = [endEdge(true)];
-		const tabs = new Map<number, TabGeometry>([
-			[0, rectTab([0, 0], [4, 0], [0, 2], [4, 2])]
-		]);
+		const tabs = new Map<number, TabGeometry>([[0, rectTab([0, 0], [4, 0], [0, 2], [4, 2])]]);
 
 		const result = collectOutlinedBandTabs(edges, tabs)!;
 		expect(result[0].outer).toEqual([
@@ -226,11 +205,7 @@ describe('collectOutlinedBandTabs', () => {
 	});
 
 	it('skips edges that have no tab entry, even if listed', () => {
-		const edges: OutlinedTabEdge[] = [
-			endEdge(true),
-			beforeEdge(),
-			endEdge(false)
-		];
+		const edges: OutlinedTabEdge[] = [endEdge(true), beforeEdge(), endEdge(false)];
 		// Only the two end caps have tabs.
 		const tabs = new Map<number, TabGeometry>([
 			[0, rectTab([0, 0], [1, 0], [0, 1], [1, 1])],

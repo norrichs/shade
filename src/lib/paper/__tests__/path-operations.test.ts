@@ -1,10 +1,5 @@
 import type { PathSegment } from '$lib/types';
-import {
-	unitePaths,
-	subtractPaths,
-	intersectPaths,
-	excludePaths
-} from '../path-operations';
+import { unitePaths, subtractPaths, intersectPaths, excludePaths } from '../path-operations';
 import { getPaperScope } from '../scope';
 import { pathSegmentsToPaper } from '../path-segment-to-paper';
 

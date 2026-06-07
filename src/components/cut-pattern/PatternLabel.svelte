@@ -7,7 +7,11 @@
 	import { onDestroy, onMount } from 'svelte';
 	import { LABEL_TAG_PORTAL_ID } from './constants';
 	import LabelText from './LabelText.svelte';
-	import { buildLabelOutlinePath, FALLBACK_TEXT_WIDTH, FALLBACK_TEXT_HEIGHT } from '$lib/cut-pattern/label-outline-path';
+	import {
+		buildLabelOutlinePath,
+		FALLBACK_TEXT_WIDTH,
+		FALLBACK_TEXT_HEIGHT
+	} from '$lib/cut-pattern/label-outline-path';
 	import { mergedBandPaths, labelTextDimensions } from '$lib/stores';
 
 	let {
@@ -285,7 +289,12 @@
 		style="visibility: hidden; pointer-events: none;"
 		aria-hidden="true"
 	>
-		<LabelText lines={addressStrings} anchor={{ x: 0, y: 0 }} size={height} bind:element={measurementText} />
+		<LabelText
+			lines={addressStrings}
+			anchor={{ x: 0, y: 0 }}
+			size={height}
+			bind:element={measurementText}
+		/>
 	</g>
 {/if}
 

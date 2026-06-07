@@ -6,14 +6,14 @@
 
 Empirical signature (band-striped 3D view of one surfaceProjection tube):
 
-| surfaceProjectionDivisions | divA length | `reverse()` effect | result |
-|----|----|----|----|
-| 0 | 0 | no-op | clean (baseline) |
-| 1 | 1 | no-op (single element) | clean |
-| 2 | 2 | swaps the two | **broken — overlap/z-fight on the cA-side (upper) bands** |
+| surfaceProjectionDivisions | divA length | `reverse()` effect     | result                                                    |
+| -------------------------- | ----------- | ---------------------- | --------------------------------------------------------- |
+| 0                          | 0           | no-op                  | clean (baseline)                                          |
+| 1                          | 1           | no-op (single element) | clean                                                     |
+| 2                          | 2           | swaps the two          | **broken — overlap/z-fight on the cA-side (upper) bands** |
 
 `Array.reverse()` is identity for length ≤ 1 and only reorders at length ≥ 2. The bug threshold is
-therefore *exactly* `divisions ≥ 2`, which uniquely matches `divA.reverse()` and rules out other
+therefore _exactly_ `divisions ≥ 2`, which uniquely matches `divA.reverse()` and rules out other
 causes (a general ordering/offset bug would break at divisions 1 or 0 too). The cA-side (`divA`) bands
 mottle while the cB-side (`divB`, un-reversed) stays clean — consistent with the asymmetric reverse.
 
@@ -48,7 +48,7 @@ Drop the `.reverse()` so both halves are built consistently outward from `cA →
 
 ```ts
 // line 459
-points: [cA.clone(), ...divA, edgePoint.clone(), ...divB, cB.clone()]
+points: [cA.clone(), ...divA, edgePoint.clone(), ...divB, cB.clone()];
 ```
 
 `divA` is already ordered nearest-cA → nearest-edge by the slerp, so no reversal is needed — this
@@ -99,7 +99,7 @@ Alternative (equivalent, larger diff, not preferred): keep the reverse but build
 - Removed `.reverse()` on `divA` (and corrected the stale `divA_reversed` comment at :428).
 - **Test metric changed during implementation.** The first attempt asserted angular monotonicity of
   the section profile about the projection center. That metric assumes the `cA→edge→cB` profile is
-  planar; on a sphere it is a *bent* arc, so it flagged a benign ~95° kink at the edge centerline as
+  planar; on a sphere it is a _bent_ arc, so it flagged a benign ~95° kink at the edge centerline as
   a sub-degree "violation" even after the fix. Replaced with a **planarity-independent fold-back
   test**: the dot of consecutive profile-segment directions must stay `> -0.5` (no turn sharper than
   120°). Evidence for the threshold:
