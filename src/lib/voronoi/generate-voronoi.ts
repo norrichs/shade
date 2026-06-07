@@ -13,6 +13,7 @@ import type {
 	Tube
 } from '$lib/projection-geometry/types';
 import type { VoronoiConfig, VoronoiResult } from './types';
+import { computeAdaptiveEdgeDivisions } from './edge-divisions';
 import { generateSeeds } from './generate-seeds';
 import { extractSurfaceTriangles } from './extract-surface-triangles';
 import { toUV, fromUVToDirection } from './uv-mapping';
@@ -112,6 +113,22 @@ function sampleEdgeAsDirections(
 		directions.push(dir);
 	}
 	return directions;
+}
+
+/**
+ * Great-circle arc length (radians) of a Voronoi edge, measured as the angle
+ * between its two vertices' surface directions. Used as a length proxy that is
+ * consistent with the slerp-based sampling in sampleEdgeAsDirections.
+ */
+function edgeArcLength(
+	v0: [number, number],
+	v1: [number, number],
+	coordToDirection: CoordToDirection
+): number {
+	const d0 = coordToDirection(v0[0], v0[1]).normalize();
+	const d1 = coordToDirection(v1[0], v1[1]).normalize();
+	const dot = Math.max(-1, Math.min(1, d0.dot(d1)));
+	return Math.acos(dot);
 }
 
 function slerp(a: Vector3, b: Vector3, t: number): Vector3 {
@@ -325,7 +342,16 @@ export function makeVoronoi(
 
 	const normalRaycaster = new Raycaster(undefined, undefined, undefined, 2000);
 
-	for (const voronoiEdge of voronoiResult.edges) {
+	// Adaptive divisions: divide each edge by a count interpolated between the
+	// configured [min, max] according to the edge's arc length relative to the
+	// shortest and longest edges.
+	const edgeLengths = voronoiResult.edges.map((e) =>
+		edgeArcLength(e.vertices[0], e.vertices[1], coordToDirection)
+	);
+	const edgeDivisionCounts = computeAdaptiveEdgeDivisions(edgeLengths, config.edgeDivisions);
+
+	for (let edgeIndex = 0; edgeIndex < voronoiResult.edges.length; edgeIndex++) {
+		const voronoiEdge = voronoiResult.edges[edgeIndex];
 		const [cellIdxA, cellIdxB] = voronoiEdge.cellIndices;
 		const cellCenterA = relaxedSeeds[cellIdxA];
 		const cellCenterB = relaxedSeeds[cellIdxB];
@@ -334,7 +360,7 @@ export function makeVoronoi(
 		const edgeDirections = sampleEdgeAsDirections(
 			voronoiEdge.vertices[0],
 			voronoiEdge.vertices[1],
-			config.edgeDivisions,
+			edgeDivisionCounts[edgeIndex],
 			coordToDirection
 		);
 

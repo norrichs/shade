@@ -11,7 +11,8 @@
 			| 'seed'
 			| 'seedMethodType'
 			| 'relaxationIterations'
-			| 'edgeDivisions'
+			| 'edgeDivisionsMin'
+			| 'edgeDivisionsMax'
 			| 'curveOffsetFactor'
 			| 'surfaceProjectionDivisions'
 			| 'voronoiMethod',
@@ -50,8 +51,16 @@
 				...config,
 				seedConfig: { ...config.seedConfig, relaxationIterations: value as number }
 			};
-		} else if (field === 'edgeDivisions') {
-			next = { ...config, edgeDivisions: value as number };
+		} else if (field === 'edgeDivisionsMin') {
+			// Keep the invariant min <= max: raise max to match if min overtakes it.
+			const min = value as number;
+			const max = Math.max(min, config.edgeDivisions[1]);
+			next = { ...config, edgeDivisions: [min, max] };
+		} else if (field === 'edgeDivisionsMax') {
+			// Keep the invariant min <= max: lower min to match if max drops below it.
+			const max = value as number;
+			const min = Math.min(max, config.edgeDivisions[0]);
+			next = { ...config, edgeDivisions: [min, max] };
 		} else if (field === 'curveOffsetFactor') {
 			next = { ...config, curveOffsetFactor: value as number };
 		} else if (field === 'surfaceProjectionDivisions') {
@@ -156,15 +165,27 @@
 		</label>
 
 		<label>
-			Edge Divisions
+			Edge Divisions (min)
 			<input
 				type="range"
 				min="2"
 				max="20"
-				value={config.edgeDivisions}
-				oninput={(e) => update('edgeDivisions', Number(e.currentTarget.value))}
+				value={config.edgeDivisions[0]}
+				oninput={(e) => update('edgeDivisionsMin', Number(e.currentTarget.value))}
 			/>
-			<span>{config.edgeDivisions}</span>
+			<span>{config.edgeDivisions[0]}</span>
+		</label>
+
+		<label>
+			Edge Divisions (max)
+			<input
+				type="range"
+				min="2"
+				max="20"
+				value={config.edgeDivisions[1]}
+				oninput={(e) => update('edgeDivisionsMax', Number(e.currentTarget.value))}
+			/>
+			<span>{config.edgeDivisions[1]}</span>
 		</label>
 	</div>
 </section>

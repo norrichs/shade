@@ -29,7 +29,7 @@ const inlineDefaultVoronoiConfig: VoronoiConfig = {
 		orientation: 'axial-right',
 		tubeSymmetry: 'lateral'
 	},
-	edgeDivisions: 6,
+	edgeDivisions: [6, 6],
 	curveOffsetFactor: 0.3,
 	surfaceProjectionDivisions: 0,
 	voronoiMethod: 'spherical'
@@ -68,14 +68,14 @@ describe('normalizeVoronoiConfig', () => {
 	});
 
 	it('collapses a legacy voronoiConfigs array to the first entry', () => {
-		const a = { ...inlineDefaultVoronoiConfig, edgeDivisions: 3 };
-		const b = { ...inlineDefaultVoronoiConfig, edgeDivisions: 9 };
+		const a = { ...inlineDefaultVoronoiConfig, edgeDivisions: [3, 3] as [number, number] };
+		const b = { ...inlineDefaultVoronoiConfig, edgeDivisions: [9, 9] as [number, number] };
 		const result = normalizeVoronoiConfig(
 			baseConfig({ voronoiConfigs: [a, b] }) as SuperGlobuleConfig & {
 				voronoiConfigs: (typeof a)[];
 			}
 		);
-		expect(result.voronoiConfig?.edgeDivisions).toBe(3);
+		expect(result.voronoiConfig?.edgeDivisions).toEqual([3, 3]);
 	});
 
 	it('injects the default when a legacy voronoiConfigs array is empty', () => {
@@ -83,10 +83,28 @@ describe('normalizeVoronoiConfig', () => {
 		expect(result.voronoiConfig).toBeDefined();
 	});
 
-	it('preserves an existing single voronoiConfig untouched', () => {
-		const existing = { ...inlineDefaultVoronoiConfig, edgeDivisions: 7 };
+	it('preserves an existing single voronoiConfig', () => {
+		const existing = { ...inlineDefaultVoronoiConfig, edgeDivisions: [7, 11] as [number, number] };
 		const result = normalizeVoronoiConfig(baseConfig({ voronoiConfig: existing }));
-		expect(result.voronoiConfig?.edgeDivisions).toBe(7);
+		expect(result.voronoiConfig?.edgeDivisions).toEqual([7, 11]);
+	});
+
+	it('migrates a legacy scalar edgeDivisions to a [min, max] pair', () => {
+		const legacy = {
+			...inlineDefaultVoronoiConfig,
+			edgeDivisions: 8 as unknown as [number, number]
+		};
+		const result = normalizeVoronoiConfig(baseConfig({ voronoiConfig: legacy }));
+		expect(result.voronoiConfig?.edgeDivisions).toEqual([8, 8]);
+	});
+
+	it('enforces the min <= max invariant on a persisted pair', () => {
+		const inverted = {
+			...inlineDefaultVoronoiConfig,
+			edgeDivisions: [12, 4] as [number, number]
+		};
+		const result = normalizeVoronoiConfig(baseConfig({ voronoiConfig: inverted }));
+		expect(result.voronoiConfig?.edgeDivisions).toEqual([4, 12]);
 	});
 
 	it('strips the legacy voronoiConfigs key from the result', () => {

@@ -1,6 +1,7 @@
 import { defaultVoronoiConfig } from '$lib/shades-config';
 import type { SuperGlobuleConfig } from '$lib/types';
 import type { VoronoiConfig } from './types';
+import { normalizeEdgeDivisions } from './edge-divisions';
 
 type LegacySuperGlobuleConfig = SuperGlobuleConfig & {
 	voronoiConfigs?: VoronoiConfig[];
@@ -36,7 +37,14 @@ export function normalizeVoronoiConfig(config: SuperGlobuleConfig): SuperGlobule
 	const { voronoiConfigs, ...rest } = legacy;
 
 	const fromArray = voronoiConfigs && voronoiConfigs.length > 0 ? voronoiConfigs[0] : undefined;
-	const voronoiConfig = rest.voronoiConfig ?? fromArray ?? defaultConfigWithRandomSeed();
+	const resolved = rest.voronoiConfig ?? fromArray ?? defaultConfigWithRandomSeed();
+
+	// Migrate the legacy scalar `edgeDivisions: number` to `[min, max]` and enforce
+	// the min <= max invariant for any persisted pair.
+	const voronoiConfig: VoronoiConfig = {
+		...resolved,
+		edgeDivisions: normalizeEdgeDivisions(resolved.edgeDivisions)
+	};
 
 	return { ...rest, voronoiConfig };
 }

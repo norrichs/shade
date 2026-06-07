@@ -12,7 +12,11 @@ export type VoronoiConfig = {
 	seedConfig: VoronoiSeedConfig;
 	crossSectionConfig: CrossSectionConfig;
 	bandConfig: ProjectionBandConfig;
-	edgeDivisions: number;
+	// Adaptive edge divisions: [minDivisions, maxDivisions]. The shortest Voronoi
+	// cell edge is divided by minDivisions, the longest by maxDivisions, and every
+	// other edge by a count linearly interpolated between the two by its length.
+	// Invariant: edgeDivisions[0] <= edgeDivisions[1].
+	edgeDivisions: [number, number];
 	curveOffsetFactor: number;
 	surfaceProjectionDivisions: number;
 	voronoiMethod: VoronoiMethod;
