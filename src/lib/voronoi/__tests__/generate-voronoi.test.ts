@@ -248,6 +248,16 @@ describe('makeVoronoi', () => {
 		expect(facet.triangle.c).toBeDefined();
 	});
 
+	it('generates tubes with insetMethod localProjection', () => {
+		const address: GlobuleAddress = { globule: 0 };
+		const config: VoronoiConfig = { ...makeTestConfig(), insetMethod: 'localProjection' };
+		const result = makeVoronoi(config, address, testSurfaceConfig);
+		expect(result.tubes.length).toBeGreaterThan(0);
+		result.tubes.forEach((tube) => {
+			tube.bands.forEach((band) => expect(band.facets.length).toBeGreaterThan(0));
+		});
+	});
+
 	// Regression: a surfaceProjection section's profile (cA -> divA -> edge -> divB -> cB) must not
 	// fold back on itself. A fold-back makes generateProjectionBands emit overlapping bands
 	// (z-fighting), which happens at surfaceProjectionDivisions >= 2 when the cA-side division list

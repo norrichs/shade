@@ -29,6 +29,7 @@ import { edgeArcLength, type CoordToDirection } from './edge-sampling';
 import { projectEdgesOntoSurface, type EdgeProjection } from './project-edges-onto-surface';
 import type { EdgeInsets } from './inset-types';
 import { computeEdgeInsetsCenterOut } from './inset-center-out';
+import { computeEdgeInsetsLocalProjection } from './local-projection';
 import {
 	generateSurface,
 	generateProjectionBands,
@@ -314,16 +315,31 @@ export function makeVoronoi(
 		intersect
 	});
 
-	const edgeInsets: EdgeInsets[] = computeEdgeInsetsCenterOut({
-		edges: voronoiResult.edges,
-		edgeProjections,
-		relaxedSeeds,
-		coordToDirection,
-		center,
-		intersect,
-		curveOffsetFactor,
-		surfaceProjectionDivisions: config.surfaceProjectionDivisions ?? 0
-	});
+	const seedPoints3d = relaxedSeeds.map((seed) => intersect(coordToDirection(seed[0], seed[1])));
+
+	const edgeInsets: EdgeInsets[] =
+		config.insetMethod === 'localProjection'
+			? computeEdgeInsetsLocalProjection({
+					edges: voronoiResult.edges,
+					edgeProjections,
+					relaxedSeeds,
+					seedPoints3d,
+					coordToDirection,
+					surface,
+					surfaceCenter: center,
+					curveOffsetFactor,
+					surfaceProjectionDivisions: config.surfaceProjectionDivisions ?? 0
+				})
+			: computeEdgeInsetsCenterOut({
+					edges: voronoiResult.edges,
+					edgeProjections,
+					relaxedSeeds,
+					coordToDirection,
+					center,
+					intersect,
+					curveOffsetFactor,
+					surfaceProjectionDivisions: config.surfaceProjectionDivisions ?? 0
+				});
 
 	for (let edgeIndex = 0; edgeIndex < voronoiResult.edges.length; edgeIndex++) {
 		const voronoiEdge = voronoiResult.edges[edgeIndex];
