@@ -25,12 +25,8 @@ import {
 	fromLonLat
 } from './compute-voronoi-spherical';
 import { applyCrossSectionsToEdge } from './apply-cross-sections';
-import {
-	slerp,
-	edgeArcLength,
-	sampleEdgeAsDirections,
-	type CoordToDirection
-} from './edge-sampling';
+import { slerp, edgeArcLength, type CoordToDirection } from './edge-sampling';
+import { projectEdgesOntoSurface, type EdgeProjection } from './project-edges-onto-surface';
 import {
 	generateSurface,
 	generateProjectionBands,
@@ -299,8 +295,6 @@ export function makeVoronoi(
 	const curveOffsetFactor = config.curveOffsetFactor ?? DEFAULT_CURVE_OFFSET_FACTOR;
 	const dummyEdgeConfig = makeDummyEdgeConfig(crossSectionConfig);
 
-	const normalRaycaster = new Raycaster(undefined, undefined, undefined, 2000);
-
 	// Adaptive divisions: divide each edge by a count interpolated between the
 	// configured [min, max] according to the edge's arc length relative to the
 	// shortest and longest edges.
@@ -309,57 +303,35 @@ export function makeVoronoi(
 	);
 	const edgeDivisionCounts = computeAdaptiveEdgeDivisions(edgeLengths, config.edgeDivisions);
 
+	const edgeProjections: EdgeProjection[] = projectEdgesOntoSurface({
+		edges: voronoiResult.edges,
+		edgeDivisionCounts,
+		coordToDirection,
+		center,
+		surface,
+		intersect
+	});
+
 	for (let edgeIndex = 0; edgeIndex < voronoiResult.edges.length; edgeIndex++) {
 		const voronoiEdge = voronoiResult.edges[edgeIndex];
 		const [cellIdxA, cellIdxB] = voronoiEdge.cellIndices;
 		const cellCenterA = relaxedSeeds[cellIdxA];
 		const cellCenterB = relaxedSeeds[cellIdxB];
 
-		// Sample directions along the great circle arc between edge vertices
-		const edgeDirections = sampleEdgeAsDirections(
-			voronoiEdge.vertices[0],
-			voronoiEdge.vertices[1],
-			edgeDivisionCounts[edgeIndex],
-			coordToDirection
-		);
+		const { edgePoints3d, normals } = edgeProjections[edgeIndex];
 
-		// Map each direction to 3D surface point, compute normals and curve offsets
-		const edgePoints3d: Vector3[] = [];
+		// Curve offset points (still center-out here; replaced by EdgeInsets in Task 8).
 		const curvePointsA: Vector3[] = [];
 		const curvePointsB: Vector3[] = [];
-		const normals: Vector3[] = [];
-
-		for (const dir of edgeDirections) {
-			const point3d = intersect(dir);
-			if (!point3d) continue;
-
-			edgePoints3d.push(point3d);
-
-			// Compute surface normal at this point
-			normalRaycaster.set(center, dir.clone().normalize());
-			const hits = normalRaycaster.intersectObject(surface, true);
-			let normal: Vector3;
-			if (hits.length > 0 && hits[0].face) {
-				normal = hits[0].face.normal
-					.clone()
-					.transformDirection(hits[0].object.matrixWorld)
-					.normalize();
-			} else {
-				normal = dir.clone().normalize();
-			}
-			normals.push(normal);
-
-			// Compute curve offset points by slerping toward cell centers and raycasting
+		for (const point3d of edgePoints3d) {
 			const edgeDir = point3d.clone().sub(center).normalize();
 			const cellDirA = coordToDirection(cellCenterA[0], cellCenterA[1]).normalize();
 			const cellDirB = coordToDirection(cellCenterB[0], cellCenterB[1]).normalize();
 
-			const curveDirA = slerp(edgeDir, cellDirA, curveOffsetFactor);
-			const curveHitA = intersect(curveDirA);
+			const curveHitA = intersect(slerp(edgeDir, cellDirA, curveOffsetFactor));
 			curvePointsA.push(curveHitA ?? point3d.clone());
 
-			const curveDirB = slerp(edgeDir, cellDirB, curveOffsetFactor);
-			const curveHitB = intersect(curveDirB);
+			const curveHitB = intersect(slerp(edgeDir, cellDirB, curveOffsetFactor));
 			curvePointsB.push(curveHitB ?? point3d.clone());
 		}
 
