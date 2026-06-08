@@ -2,7 +2,6 @@ import { Object3D, Vector2, Vector3 } from 'three';
 import type { VoronoiEdge } from './types';
 import type { EdgeProjection } from './project-edges-onto-surface';
 import type { EdgeInsets } from './inset-types';
-import type { CoordToDirection } from './edge-sampling';
 import { fitPlane } from './fit-plane';
 import { buildPlaneBasis, projectToPlane2D, plane2DToPoint3D } from './source-projection';
 import { insetPoint2D, insetIntermediates2D } from './inset-2d';
@@ -42,9 +41,7 @@ function averageNormal(edgeIdxs: number[], edgeProjections: EdgeProjection[]): V
 export function computeEdgeInsetsLocalProjection(params: {
 	edges: VoronoiEdge[];
 	edgeProjections: EdgeProjection[];
-	relaxedSeeds: [number, number][];
 	seedPoints3d: (Vector3 | null)[];
-	coordToDirection: CoordToDirection;
 	surface: Object3D;
 	surfaceCenter: Vector3;
 	curveOffsetFactor: number;
@@ -90,8 +87,7 @@ export function computeEdgeInsetsLocalProjection(params: {
 		for (const ei of edgeIdxs) samples.push(...edgeProjections[ei].edgePoints3d);
 		const seed3d = seedPoints3d[cell] ?? null;
 		if (samples.length === 0) continue;
-		const seedForInset = seed3d ?? null;
-		if (seedForInset) samples.push(seedForInset);
+		if (seed3d) samples.push(seed3d);
 
 		const fallbackNormal = averageNormal(edgeIdxs, edgeProjections);
 		const { normal, centroid } = fitPlane(samples, { fallbackNormal, orientAwayFrom: surfaceCenter });
@@ -104,8 +100,7 @@ export function computeEdgeInsetsLocalProjection(params: {
 
 		// 2D seed (homothety target). Fall back to the plane origin if projection fails.
 		const seed2d =
-			(seedForInset && projectToPlane2D(seedForInset, source, planePoint, normal, basis)) ||
-			new Vector2(0, 0);
+			(seed3d && projectToPlane2D(seed3d, source, planePoint, normal, basis)) || new Vector2(0, 0);
 
 		for (const ei of edgeIdxs) {
 			const pts = edgeProjections[ei].edgePoints3d;

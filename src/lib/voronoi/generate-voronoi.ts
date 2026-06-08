@@ -315,31 +315,30 @@ export function makeVoronoi(
 		intersect
 	});
 
-	const seedPoints3d = relaxedSeeds.map((seed) => intersect(coordToDirection(seed[0], seed[1])));
-
-	const edgeInsets: EdgeInsets[] =
-		config.insetMethod === 'localProjection'
-			? computeEdgeInsetsLocalProjection({
-					edges: voronoiResult.edges,
-					edgeProjections,
-					relaxedSeeds,
-					seedPoints3d,
-					coordToDirection,
-					surface,
-					surfaceCenter: center,
-					curveOffsetFactor,
-					surfaceProjectionDivisions: config.surfaceProjectionDivisions ?? 0
-				})
-			: computeEdgeInsetsCenterOut({
-					edges: voronoiResult.edges,
-					edgeProjections,
-					relaxedSeeds,
-					coordToDirection,
-					center,
-					intersect,
-					curveOffsetFactor,
-					surfaceProjectionDivisions: config.surfaceProjectionDivisions ?? 0
-				});
+	let edgeInsets: EdgeInsets[];
+	if (config.insetMethod === 'localProjection') {
+		const seedPoints3d = relaxedSeeds.map((seed) => intersect(coordToDirection(seed[0], seed[1])));
+		edgeInsets = computeEdgeInsetsLocalProjection({
+			edges: voronoiResult.edges,
+			edgeProjections,
+			seedPoints3d,
+			surface,
+			surfaceCenter: center,
+			curveOffsetFactor,
+			surfaceProjectionDivisions: config.surfaceProjectionDivisions ?? 0
+		});
+	} else {
+		edgeInsets = computeEdgeInsetsCenterOut({
+			edges: voronoiResult.edges,
+			edgeProjections,
+			relaxedSeeds,
+			coordToDirection,
+			center,
+			intersect,
+			curveOffsetFactor,
+			surfaceProjectionDivisions: config.surfaceProjectionDivisions ?? 0
+		});
+	}
 
 	for (let edgeIndex = 0; edgeIndex < voronoiResult.edges.length; edgeIndex++) {
 		const voronoiEdge = voronoiResult.edges[edgeIndex];
