@@ -197,7 +197,8 @@ const makeTestConfig = (): VoronoiConfig => ({
 	edgeDivisions: [4, 4],
 	curveOffsetFactor: 0.3,
 	surfaceProjectionDivisions: 0,
-	voronoiMethod: 'spherical'
+	voronoiMethod: 'spherical',
+	insetMethod: 'centerOut'
 });
 
 describe('makeVoronoi', () => {
@@ -247,6 +248,16 @@ describe('makeVoronoi', () => {
 		expect(facet.triangle.c).toBeDefined();
 	});
 
+	it('generates tubes with insetMethod localProjection', () => {
+		const address: GlobuleAddress = { globule: 0 };
+		const config: VoronoiConfig = { ...makeTestConfig(), insetMethod: 'localProjection' };
+		const result = makeVoronoi(config, address, testSurfaceConfig);
+		expect(result.tubes.length).toBeGreaterThan(0);
+		result.tubes.forEach((tube) => {
+			tube.bands.forEach((band) => expect(band.facets.length).toBeGreaterThan(0));
+		});
+	});
+
 	// Regression: a surfaceProjection section's profile (cA -> divA -> edge -> divB -> cB) must not
 	// fold back on itself. A fold-back makes generateProjectionBands emit overlapping bands
 	// (z-fighting), which happens at surfaceProjectionDivisions >= 2 when the cA-side division list
@@ -257,6 +268,34 @@ describe('makeVoronoi', () => {
 	it('surfaceProjection sections do not fold back (no band overlap with divisions)', () => {
 		const address: GlobuleAddress = { globule: 0 };
 		const config: VoronoiConfig = { ...makeTestConfig(), surfaceProjectionDivisions: 3 };
+		const result = makeVoronoi(config, address, testSurfaceConfig);
+
+		expect(result.surfaceProjectionTubes.length).toBeGreaterThan(0);
+
+		result.surfaceProjectionTubes.forEach((tube) => {
+			tube.sections.forEach((section) => {
+				const pts = section.points;
+				for (let i = 2; i < pts.length; i++) {
+					const a = pts[i - 1].clone().sub(pts[i - 2]);
+					const b = pts[i].clone().sub(pts[i - 1]);
+					if (a.lengthSq() < 1e-12 || b.lengthSq() < 1e-12) continue;
+					const fold = a.normalize().dot(b.normalize());
+					expect(fold).toBeGreaterThan(-0.5);
+				}
+			});
+		});
+	});
+
+	// Same fold-back guard as above, but through the localProjection inset path — this is the
+	// only coverage of localProjection's divsB-reversal + intermediate back-projection at
+	// surfaceProjectionDivisions > 0.
+	it('localProjection surfaceProjection sections do not fold back (with divisions)', () => {
+		const address: GlobuleAddress = { globule: 0 };
+		const config: VoronoiConfig = {
+			...makeTestConfig(),
+			insetMethod: 'localProjection',
+			surfaceProjectionDivisions: 3
+		};
 		const result = makeVoronoi(config, address, testSurfaceConfig);
 
 		expect(result.surfaceProjectionTubes.length).toBeGreaterThan(0);

@@ -43,7 +43,8 @@ export function normalizeVoronoiConfig(config: SuperGlobuleConfig): SuperGlobule
 	// the min <= max invariant for any persisted pair.
 	const voronoiConfig: VoronoiConfig = {
 		...resolved,
-		edgeDivisions: normalizeEdgeDivisions(resolved.edgeDivisions)
+		edgeDivisions: normalizeEdgeDivisions(resolved.edgeDivisions),
+		insetMethod: resolved.insetMethod ?? 'centerOut'
 	};
 
 	return { ...rest, voronoiConfig };

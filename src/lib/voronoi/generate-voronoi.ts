@@ -25,6 +25,11 @@ import {
 	fromLonLat
 } from './compute-voronoi-spherical';
 import { applyCrossSectionsToEdge } from './apply-cross-sections';
+import { edgeArcLength, type CoordToDirection } from './edge-sampling';
+import { projectEdgesOntoSurface, type EdgeProjection } from './project-edges-onto-surface';
+import type { EdgeInsets } from './inset-types';
+import { computeEdgeInsetsCenterOut } from './inset-center-out';
+import { computeEdgeInsetsLocalProjection } from './local-projection';
 import {
 	generateSurface,
 	generateProjectionBands,
@@ -96,51 +101,6 @@ function makeDummyEdgeConfig(
 		widthCurve: { curves: [], sampleMethod: { method: 'divideCurvePath', divisions: 1 } },
 		crossSectionCurve: crossSectionConfig
 	};
-}
-
-function sampleEdgeAsDirections(
-	v0: [number, number],
-	v1: [number, number],
-	divisions: number,
-	coordToDirection: CoordToDirection
-): Vector3[] {
-	const dir0 = coordToDirection(v0[0], v0[1]).normalize();
-	const dir1 = coordToDirection(v1[0], v1[1]).normalize();
-	const directions: Vector3[] = [];
-	for (let i = 0; i <= divisions; i++) {
-		const t = i / divisions;
-		const dir = slerp(dir0, dir1, t);
-		directions.push(dir);
-	}
-	return directions;
-}
-
-/**
- * Great-circle arc length (radians) of a Voronoi edge, measured as the angle
- * between its two vertices' surface directions. Used as a length proxy that is
- * consistent with the slerp-based sampling in sampleEdgeAsDirections.
- */
-function edgeArcLength(
-	v0: [number, number],
-	v1: [number, number],
-	coordToDirection: CoordToDirection
-): number {
-	const d0 = coordToDirection(v0[0], v0[1]).normalize();
-	const d1 = coordToDirection(v1[0], v1[1]).normalize();
-	const dot = Math.max(-1, Math.min(1, d0.dot(d1)));
-	return Math.acos(dot);
-}
-
-function slerp(a: Vector3, b: Vector3, t: number): Vector3 {
-	const dot = Math.max(-1, Math.min(1, a.dot(b)));
-	const omega = Math.acos(dot);
-	if (omega < 1e-10) {
-		return a.clone().lerp(b, t);
-	}
-	const sinOmega = Math.sin(omega);
-	const sa = Math.sin((1 - t) * omega) / sinOmega;
-	const sb = Math.sin(t * omega) / sinOmega;
-	return new Vector3(sa * a.x + sb * b.x, sa * a.y + sb * b.y, sa * a.z + sb * b.z);
 }
 
 function matchTubeEnds(tubes: Tube[]): void {
@@ -280,8 +240,6 @@ function matchFacets(tubes: Tube[]): void {
 	});
 }
 
-type CoordToDirection = (a: number, b: number) => Vector3;
-
 function computeVoronoiFromSeeds(
 	seeds3d: Vector3[],
 	center: Vector3,
@@ -340,8 +298,6 @@ export function makeVoronoi(
 	const curveOffsetFactor = config.curveOffsetFactor ?? DEFAULT_CURVE_OFFSET_FACTOR;
 	const dummyEdgeConfig = makeDummyEdgeConfig(crossSectionConfig);
 
-	const normalRaycaster = new Raycaster(undefined, undefined, undefined, 2000);
-
 	// Adaptive divisions: divide each edge by a count interpolated between the
 	// configured [min, max] according to the edge's arc length relative to the
 	// shortest and longest edges.
@@ -350,59 +306,46 @@ export function makeVoronoi(
 	);
 	const edgeDivisionCounts = computeAdaptiveEdgeDivisions(edgeLengths, config.edgeDivisions);
 
+	const edgeProjections: EdgeProjection[] = projectEdgesOntoSurface({
+		edges: voronoiResult.edges,
+		edgeDivisionCounts,
+		coordToDirection,
+		center,
+		surface,
+		intersect
+	});
+
+	let edgeInsets: EdgeInsets[];
+	if (config.insetMethod === 'localProjection') {
+		const seedPoints3d = relaxedSeeds.map((seed) => intersect(coordToDirection(seed[0], seed[1])));
+		edgeInsets = computeEdgeInsetsLocalProjection({
+			edges: voronoiResult.edges,
+			edgeProjections,
+			seedPoints3d,
+			surface,
+			surfaceCenter: center,
+			curveOffsetFactor,
+			surfaceProjectionDivisions: config.surfaceProjectionDivisions ?? 0
+		});
+	} else {
+		edgeInsets = computeEdgeInsetsCenterOut({
+			edges: voronoiResult.edges,
+			edgeProjections,
+			relaxedSeeds,
+			coordToDirection,
+			center,
+			intersect,
+			curveOffsetFactor,
+			surfaceProjectionDivisions: config.surfaceProjectionDivisions ?? 0
+		});
+	}
+
 	for (let edgeIndex = 0; edgeIndex < voronoiResult.edges.length; edgeIndex++) {
 		const voronoiEdge = voronoiResult.edges[edgeIndex];
 		const [cellIdxA, cellIdxB] = voronoiEdge.cellIndices;
-		const cellCenterA = relaxedSeeds[cellIdxA];
-		const cellCenterB = relaxedSeeds[cellIdxB];
 
-		// Sample directions along the great circle arc between edge vertices
-		const edgeDirections = sampleEdgeAsDirections(
-			voronoiEdge.vertices[0],
-			voronoiEdge.vertices[1],
-			edgeDivisionCounts[edgeIndex],
-			coordToDirection
-		);
-
-		// Map each direction to 3D surface point, compute normals and curve offsets
-		const edgePoints3d: Vector3[] = [];
-		const curvePointsA: Vector3[] = [];
-		const curvePointsB: Vector3[] = [];
-		const normals: Vector3[] = [];
-
-		for (const dir of edgeDirections) {
-			const point3d = intersect(dir);
-			if (!point3d) continue;
-
-			edgePoints3d.push(point3d);
-
-			// Compute surface normal at this point
-			normalRaycaster.set(center, dir.clone().normalize());
-			const hits = normalRaycaster.intersectObject(surface, true);
-			let normal: Vector3;
-			if (hits.length > 0 && hits[0].face) {
-				normal = hits[0].face.normal
-					.clone()
-					.transformDirection(hits[0].object.matrixWorld)
-					.normalize();
-			} else {
-				normal = dir.clone().normalize();
-			}
-			normals.push(normal);
-
-			// Compute curve offset points by slerping toward cell centers and raycasting
-			const edgeDir = point3d.clone().sub(center).normalize();
-			const cellDirA = coordToDirection(cellCenterA[0], cellCenterA[1]).normalize();
-			const cellDirB = coordToDirection(cellCenterB[0], cellCenterB[1]).normalize();
-
-			const curveDirA = slerp(edgeDir, cellDirA, curveOffsetFactor);
-			const curveHitA = intersect(curveDirA);
-			curvePointsA.push(curveHitA ?? point3d.clone());
-
-			const curveDirB = slerp(edgeDir, cellDirB, curveOffsetFactor);
-			const curveHitB = intersect(curveDirB);
-			curvePointsB.push(curveHitB ?? point3d.clone());
-		}
+		const { edgePoints3d, normals } = edgeProjections[edgeIndex];
+		const { curvePointsA, curvePointsB, divsA, divsB } = edgeInsets[edgeIndex];
 
 		if (edgePoints3d.length < 2) continue;
 
@@ -453,40 +396,11 @@ export function makeVoronoi(
 
 		// Surface projection: [curveA, ...divA, edge, ...divB, curveB]
 		const spTubeAddress: GlobuleAddress_Tube = { ...address, tube: surfaceProjectionTubes.length };
-		const spDivisions = config.surfaceProjectionDivisions ?? 0;
 		const spSections: Section[] = edgePoints3d.map((edgePoint, idx): Section => {
 			const cA = curvePointsA[idx];
 			const cB = curvePointsB[idx];
-			const divA: Vector3[] = [];
-			const divB: Vector3[] = [];
-
-			if (spDivisions > 0) {
-				for (let d = 1; d <= spDivisions; d++) {
-					const t = d / (spDivisions + 1);
-					const dirA = slerp(
-						cA.clone().sub(center).normalize(),
-						edgePoint.clone().sub(center).normalize(),
-						t
-					);
-					const hitA = intersect(dirA);
-					if (hitA) divA.push(hitA);
-
-					const dirB = slerp(
-						edgePoint.clone().sub(center).normalize(),
-						cB.clone().sub(center).normalize(),
-						t
-					);
-					const hitB = intersect(dirB);
-					if (hitB) divB.push(hitB);
-				}
-			}
-
 			return {
-				// divA is already ordered cA -> edge by the slerp above; do NOT reverse it (that
-				// inverts the cA-side ordering and makes the band profile fold back on itself,
-				// producing overlapping bands at surfaceProjectionDivisions >= 2). divB is likewise
-				// built edge -> cB and left un-reversed.
-				points: [cA.clone(), ...divA, edgePoint.clone(), ...divB, cB.clone()]
+				points: [cA.clone(), ...divsA[idx], edgePoint.clone(), ...divsB[idx], cB.clone()]
 			};
 		});
 

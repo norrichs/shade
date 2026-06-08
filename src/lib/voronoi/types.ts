@@ -6,6 +6,8 @@ import type {
 
 export type VoronoiMethod = 'spherical' | 'uv';
 
+export type InsetMethod = 'centerOut' | 'localProjection';
+
 export type VoronoiConfig = {
 	type: 'VoronoiConfig';
 	meta: { transform: TransformConfig };
@@ -20,6 +22,7 @@ export type VoronoiConfig = {
 	curveOffsetFactor: number;
 	surfaceProjectionDivisions: number;
 	voronoiMethod: VoronoiMethod;
+	insetMethod: InsetMethod;
 	fillAll?: boolean;
 };
 
