@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { superConfigStore } from '$lib/stores/superGlobuleStores';
 	import { defaultVoronoiConfig } from '$lib/shades-config';
-	import type { VoronoiConfig, VoronoiMethod } from '$lib/voronoi/types';
+	import type { VoronoiConfig, VoronoiMethod, InsetMethod } from '$lib/voronoi/types';
 
 	let config: VoronoiConfig = $derived($superConfigStore.voronoiConfig ?? defaultVoronoiConfig);
 
@@ -15,7 +15,8 @@
 			| 'edgeDivisionsMax'
 			| 'curveOffsetFactor'
 			| 'surfaceProjectionDivisions'
-			| 'voronoiMethod',
+			| 'voronoiMethod'
+			| 'insetMethod',
 		value: number | string
 	) {
 		let next: VoronoiConfig = config;
@@ -67,6 +68,8 @@
 			next = { ...config, surfaceProjectionDivisions: value as number };
 		} else if (field === 'voronoiMethod') {
 			next = { ...config, voronoiMethod: value as VoronoiMethod };
+		} else if (field === 'insetMethod') {
+			next = { ...config, insetMethod: value as InsetMethod };
 		}
 		$superConfigStore = { ...$superConfigStore, voronoiConfig: next };
 	}
@@ -101,6 +104,17 @@
 			>
 				<option value="spherical">Spherical</option>
 				<option value="uv">UV</option>
+			</select>
+		</label>
+
+		<label>
+			Inset Method
+			<select
+				value={config.insetMethod ?? 'centerOut'}
+				onchange={(e) => update('insetMethod', e.currentTarget.value)}
+			>
+				<option value="centerOut">Center Out</option>
+				<option value="localProjection">Local Projection</option>
 			</select>
 		</label>
 

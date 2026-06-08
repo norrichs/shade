@@ -32,7 +32,8 @@ const inlineDefaultVoronoiConfig: VoronoiConfig = {
 	edgeDivisions: [6, 6],
 	curveOffsetFactor: 0.3,
 	surfaceProjectionDivisions: 0,
-	voronoiMethod: 'spherical'
+	voronoiMethod: 'spherical',
+	insetMethod: 'centerOut'
 };
 
 // Mock shades-config to avoid uuid transitive dependency
@@ -105,6 +106,21 @@ describe('normalizeVoronoiConfig', () => {
 		};
 		const result = normalizeVoronoiConfig(baseConfig({ voronoiConfig: inverted }));
 		expect(result.voronoiConfig?.edgeDivisions).toEqual([4, 12]);
+	});
+
+	it("defaults a missing insetMethod to 'centerOut'", () => {
+		const legacy = { ...inlineDefaultVoronoiConfig } as Record<string, unknown>;
+		delete legacy.insetMethod;
+		const result = normalizeVoronoiConfig(
+			baseConfig({ voronoiConfig: legacy as unknown as VoronoiConfig })
+		);
+		expect(result.voronoiConfig?.insetMethod).toBe('centerOut');
+	});
+
+	it('preserves an explicit insetMethod', () => {
+		const existing = { ...inlineDefaultVoronoiConfig, insetMethod: 'localProjection' as const };
+		const result = normalizeVoronoiConfig(baseConfig({ voronoiConfig: existing }));
+		expect(result.voronoiConfig?.insetMethod).toBe('localProjection');
 	});
 
 	it('strips the legacy voronoiConfigs key from the result', () => {

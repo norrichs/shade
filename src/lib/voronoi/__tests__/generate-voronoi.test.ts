@@ -197,7 +197,8 @@ const makeTestConfig = (): VoronoiConfig => ({
 	edgeDivisions: [4, 4],
 	curveOffsetFactor: 0.3,
 	surfaceProjectionDivisions: 0,
-	voronoiMethod: 'spherical'
+	voronoiMethod: 'spherical',
+	insetMethod: 'centerOut'
 });
 
 describe('makeVoronoi', () => {
