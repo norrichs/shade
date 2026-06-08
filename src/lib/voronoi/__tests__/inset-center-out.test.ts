@@ -101,4 +101,24 @@ describe('computeEdgeInsetsCenterOut', () => {
 		const cA = curvePointsA[1];
 		expect(divsA[1][0].distanceTo(cA)).toBeLessThan(divsA[1][1].distanceTo(cA));
 	});
+
+	it('orders divsB edge -> cB', () => {
+		const result = computeEdgeInsetsCenterOut({
+			edges,
+			edgeProjections,
+			relaxedSeeds,
+			coordToDirection,
+			center,
+			intersect,
+			curveOffsetFactor: 0.3,
+			surfaceProjectionDivisions: 2
+		});
+		const { divsB, curvePointsB } = result[0];
+		expect(divsB[1]).toHaveLength(2);
+		const edgePt = edgeProjections[0].edgePoints3d[1];
+		const cB = curvePointsB[1];
+		// First intermediate is nearer the edge point; last is nearer cB.
+		expect(divsB[1][0].distanceTo(edgePt)).toBeLessThan(divsB[1][1].distanceTo(edgePt));
+		expect(divsB[1][1].distanceTo(cB)).toBeLessThan(divsB[1][0].distanceTo(cB));
+	});
 });
