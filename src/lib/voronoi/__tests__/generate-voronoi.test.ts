@@ -285,4 +285,32 @@ describe('makeVoronoi', () => {
 			});
 		});
 	});
+
+	// Same fold-back guard as above, but through the localProjection inset path — this is the
+	// only coverage of localProjection's divsB-reversal + intermediate back-projection at
+	// surfaceProjectionDivisions > 0.
+	it('localProjection surfaceProjection sections do not fold back (with divisions)', () => {
+		const address: GlobuleAddress = { globule: 0 };
+		const config: VoronoiConfig = {
+			...makeTestConfig(),
+			insetMethod: 'localProjection',
+			surfaceProjectionDivisions: 3
+		};
+		const result = makeVoronoi(config, address, testSurfaceConfig);
+
+		expect(result.surfaceProjectionTubes.length).toBeGreaterThan(0);
+
+		result.surfaceProjectionTubes.forEach((tube) => {
+			tube.sections.forEach((section) => {
+				const pts = section.points;
+				for (let i = 2; i < pts.length; i++) {
+					const a = pts[i - 1].clone().sub(pts[i - 2]);
+					const b = pts[i].clone().sub(pts[i - 1]);
+					if (a.lengthSq() < 1e-12 || b.lengthSq() < 1e-12) continue;
+					const fold = a.normalize().dot(b.normalize());
+					expect(fold).toBeGreaterThan(-0.5);
+				}
+			});
+		});
+	});
 });
