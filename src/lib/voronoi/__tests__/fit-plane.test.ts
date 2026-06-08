@@ -56,4 +56,22 @@ describe('fitPlane', () => {
 		const { normal } = fitPlane(pts, { fallbackNormal: fallback });
 		expect(normal.z).toBeCloseTo(1, 6);
 	});
+
+	it('handles the isotropic-planar case (equal covariance diagonals, theta=0)', () => {
+		// A non-square rectangle rotated 45deg in the z=0 plane yields equal diagonal
+		// covariance entries with a nonzero off-diagonal, which drives theta to 0 in the
+		// (0,1) Jacobi pair. This is the exact path the Math.sign(0) avoidance protects.
+		const u = new Vector3(1, 1, 0).normalize();
+		const v = new Vector3(-1, 1, 0).normalize();
+		const corners = [
+			[2, 1],
+			[2, -1],
+			[-2, 1],
+			[-2, -1]
+		].map(([a, b]) => u.clone().multiplyScalar(a).add(v.clone().multiplyScalar(b)));
+		const { normal } = fitPlane(corners);
+		expect(Math.abs(normal.z)).toBeCloseTo(1, 5);
+		expect(Math.abs(normal.x)).toBeCloseTo(0, 5);
+		expect(Math.abs(normal.y)).toBeCloseTo(0, 5);
+	});
 });
