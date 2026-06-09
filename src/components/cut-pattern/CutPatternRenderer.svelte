@@ -3,7 +3,9 @@
 		sliceProjectionCutPattern,
 		type ProjectionRange
 	} from '$lib/projection-geometry/filters';
-	import { patternConfigStore, viewControlStore } from '$lib/stores';
+	import { patternConfigStore, viewControlStore, labelTextDimensions } from '$lib/stores';
+	import { buildSelfTagLines } from '$lib/cut-pattern/build-self-tag-lines';
+	import { effectiveBandBounds } from '$lib/cut-pattern/label-footprint';
 	import { Vector3 } from 'three';
 	import {
 		computeWrappedOrigins,
@@ -64,12 +66,36 @@
 	const groupCodeFor = (address: { globule: number; tube: number; band: number }) =>
 		codeMap?.get(`${address.globule}-${address.tube}-${address.band}`);
 
+	let patternLabels = $derived($patternConfigStore.patternTypeConfig?.labels);
+	let externalTagEnabled = $derived(patternLabels?.selfTag?.externalTag ?? false);
+	let measuredLabelDims = $derived($labelTextDimensions);
+
+	// Band bounds expanded to enclose the external self-tag label, so layout
+	// packing reserves space for labels instead of overlapping them. Falls back
+	// to raw geometry bounds when the label isn't shown.
+	const effBoundsFor = (band: BandCutPattern) => {
+		const selfTagLines = buildSelfTagLines(
+			concatAddress(band.address, 'tb-slash'),
+			groupCodeFor(band.address),
+			externalTagEnabled
+		);
+		return (
+			effectiveBandBounds({
+				band,
+				labels: patternLabels,
+				selfTagLines,
+				measuredDims: measuredLabelDims
+			}) ?? band.bounds
+		);
+	};
+
 	const alignedY = (band: BandCutPattern, verticalAlignment: 'top' | 'bottom' | 'center') => {
+		const bounds = effBoundsFor(band);
 		switch (verticalAlignment) {
 			case 'bottom':
-				return -(band.bounds?.height || 0);
+				return -(bounds?.height || 0);
 			case 'center':
-				return -(band.bounds?.height || 0) / 2;
+				return -(bounds?.height || 0) / 2;
 			case 'top':
 			default:
 				return 0;
@@ -84,11 +110,16 @@
 		wrapWidth?: number
 	) => {
 		const flatBands = tubes.flatMap((tube) => tube.bands);
-		const inputs: WrapInput[] = flatBands.map((band) => ({
-			width: band.bounds?.width || 0,
-			height: band.bounds?.height || 0,
-			alignedYOffset: alignedY(band, verticalAlignment)
-		}));
+		const inputs: WrapInput[] = flatBands.map((band) => {
+			const bounds = effBoundsFor(band);
+			return {
+				width: bounds?.width || 0,
+				height: bounds?.height || 0,
+				left: bounds?.left || 0,
+				top: bounds?.top || 0,
+				alignedYOffset: alignedY(band, verticalAlignment)
+			};
+		});
 		const flat = computeWrappedOrigins(inputs, { gap, lineWrap, wrapWidth });
 
 		let cursor = 0;
@@ -106,11 +137,16 @@
 		lineWrap = false,
 		wrapWidth?: number
 	): Vector3[] => {
-		const inputs: WrapInput[] = bands.map(({ band }) => ({
-			width: band.bounds?.width || 0,
-			height: band.bounds?.height || 0,
-			alignedYOffset: alignedY(band, verticalAlignment)
-		}));
+		const inputs: WrapInput[] = bands.map(({ band }) => {
+			const bounds = effBoundsFor(band);
+			return {
+				width: bounds?.width || 0,
+				height: bounds?.height || 0,
+				left: bounds?.left || 0,
+				top: bounds?.top || 0,
+				alignedYOffset: alignedY(band, verticalAlignment)
+			};
+		});
 		return computeWrappedOrigins(inputs, { gap, lineWrap, wrapWidth });
 	};
 
@@ -162,6 +198,7 @@
 	let range = $derived($patternConfigStore.patternViewConfig.range);
 	let lineWrap = $derived($patternConfigStore.patternViewConfig.lineWrap ?? false);
 	let wrapWidth = $derived($patternConfigStore.patternViewConfig.wrapWidth ?? 800);
+	let gap = $derived($patternConfigStore.patternViewConfig.gap ?? GAP_BETWEEN_BANDS);
 
 	let showPattern = $derived.by(() => {
 		const { showGlobuleTubeGeometry, showProjectionGeometry, showVoronoiGeometry } =
@@ -177,13 +214,9 @@
 	});
 
 	let filteredTubes = $derived(filtered({ tubes, range }));
-	let origins = $derived(
-		getCumulativeOrigins(filteredTubes, GAP_BETWEEN_BANDS, 'center', lineWrap, wrapWidth)
-	);
+	let origins = $derived(getCumulativeOrigins(filteredTubes, gap, 'center', lineWrap, wrapWidth));
 	let flatOrigins = $derived(
-		indexedBands
-			? getFlatOrigins(indexedBands, GAP_BETWEEN_BANDS, 'center', lineWrap, wrapWidth)
-			: undefined
+		indexedBands ? getFlatOrigins(indexedBands, gap, 'center', lineWrap, wrapWidth) : undefined
 	);
 </script>
 

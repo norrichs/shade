@@ -56,6 +56,8 @@ export type PatternViewConfig = {
 	bandSortMode: BandSortMode;
 	lineWrap?: boolean;
 	wrapWidth?: number;
+	/** Gap between adjacent bands in the layout (band-space units). */
+	gap?: number;
 };
 export type PatternStyle = 'faceted' | 'outlined' | 'patterned' | 'none' | 'layered';
 

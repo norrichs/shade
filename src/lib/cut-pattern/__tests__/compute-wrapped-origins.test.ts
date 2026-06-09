@@ -52,6 +52,28 @@ describe('computeWrappedOrigins', () => {
 		expect(origins[2].y).toBe(30 + GAP_BETWEEN_BANDS);
 	});
 
+	it('offsets origin by -left so content left edges pack at a consistent gap', () => {
+		// Content left edge = origin.x + left. With per-band left offsets (e.g. a
+		// label extending left of the geometry), origins must compensate so the
+		// visible gap between content stays exactly `gap`.
+		const bands: WrapInput[] = [
+			{ width: 100, height: 50, alignedYOffset: 0, left: -30 },
+			{ width: 100, height: 50, alignedYOffset: 0, left: 10 }
+		];
+		const origins = computeWrappedOrigins(bands, { gap: 20 });
+		expect(origins[0].x + -30).toBeCloseTo(0); // first content left edge at 0
+		expect(origins[1].x + 10).toBeCloseTo(120); // 0 + width(100) + gap(20)
+	});
+
+	it('offsets origin by -top so content aligns vertically regardless of box top', () => {
+		const origins = computeWrappedOrigins(
+			[{ width: 10, height: 40, alignedYOffset: -20, top: -5 }],
+			{}
+		);
+		// origin.y = rowY(0) + alignedYOffset(-20) - top(-5)
+		expect(origins[0].y).toBeCloseTo(-15);
+	});
+
 	it('a band wider than wrapWidth gets its own row with no empty leading row', () => {
 		// wrapWidth 100. b0 w=500 (oversized): x=0 so x>0 guard keeps it on row0 at x=0.
 		// b1 w=50: x=500+20=520>0, 520+50>100 -> new row. row0 max height = 80.

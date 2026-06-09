@@ -570,7 +570,8 @@ export const defaultPatternViewConfig = (): PatternViewConfig => ({
 	patternSource: 'surfaceProjection',
 	bandSortMode: 'tube-order',
 	lineWrap: false,
-	wrapWidth: 800
+	wrapWidth: 800,
+	gap: 20
 });
 
 export const getLevels = (sampleMethod: CurveSampleMethod, curveCount: number) => {

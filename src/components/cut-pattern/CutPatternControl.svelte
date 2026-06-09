@@ -65,6 +65,13 @@
 					bind:value={$patternConfigStore.patternViewConfig.wrapWidth as number}
 				/>
 			{/if}
+			<NumberInput
+				label="gap"
+				min={0}
+				max={500}
+				step={1}
+				bind:value={$patternConfigStore.patternViewConfig.gap as number}
+			/>
 		</div>
 		<div>
 			<div>
