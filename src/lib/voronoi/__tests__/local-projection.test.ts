@@ -106,4 +106,31 @@ describe('computeEdgeInsetsLocalProjection', () => {
 		const dCenter = centerOut[0].curvePointsA[1];
 		expect(dLocal.distanceTo(dCenter)).toBeLessThan(R * 0.2);
 	});
+
+	it('curvedInset: shared edge is curved and still lands on the sphere', () => {
+		const straight = computeEdgeInsetsLocalProjection({ ...common, seedPoints3d });
+		const curved = computeEdgeInsetsLocalProjection({ ...common, seedPoints3d, curvedInset: true });
+
+		// edgePoints3d are length 3, so curve points stay length 3.
+		expect(curved[0].curvePointsA).toHaveLength(3);
+		curved[0].curvePointsA.forEach((p) => expect(p.distanceTo(center)).toBeCloseTo(R, -1));
+		curved[0].curvePointsB.forEach((p) => expect(p.distanceTo(center)).toBeCloseTo(R, -1));
+
+		// The shared edge (index 0) has both vertices at cell-interior degree 2 for cells 0
+		// and 1, so it is curved -> differs from the straight inset.
+		const moved = curved[0].curvePointsA.reduce(
+			(acc, p, i) => acc + p.distanceTo(straight[0].curvePointsA[i]),
+			0
+		);
+		expect(moved).toBeGreaterThan(1e-3);
+	});
+
+	it('curvedInset: open-chain edges fall back to the straight inset', () => {
+		const straight = computeEdgeInsetsLocalProjection({ ...common, seedPoints3d });
+		const curved = computeEdgeInsetsLocalProjection({ ...common, seedPoints3d, curvedInset: true });
+		// Edge 1 touches vertex (0.7,-0.3) which is degree 1 in cell 0 -> fallback (== straight).
+		curved[1].curvePointsA.forEach((p, i) =>
+			expect(p.distanceTo(straight[1].curvePointsA[i])).toBeCloseTo(0, 6)
+		);
+	});
 });

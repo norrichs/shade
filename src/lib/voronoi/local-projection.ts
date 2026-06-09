@@ -4,7 +4,8 @@ import type { EdgeProjection } from './project-edges-onto-surface';
 import type { EdgeInsets } from './inset-types';
 import { fitPlane } from './fit-plane';
 import { buildPlaneBasis, projectToPlane2D, plane2DToPoint3D } from './source-projection';
-import { insetPoint2D, insetIntermediates2D } from './inset-2d';
+import { insetPoint2D, insetIntermediates2D, segmentIntermediates2D } from './inset-2d';
+import { buildCellCurvedInsets2d, vertexKey, type CurvedCellEdge } from './curved-inset-2d';
 import { selectSurfaceHit } from './select-surface-hit';
 
 const DEFAULT_SOURCE_DISTANCE_FACTOR = 10;
@@ -47,6 +48,7 @@ export function computeEdgeInsetsLocalProjection(params: {
 	curveOffsetFactor: number;
 	surfaceProjectionDivisions: number;
 	sourceDistanceFactor?: number;
+	curvedInset?: boolean;
 }): EdgeInsets[] {
 	const {
 		edges,
@@ -58,6 +60,7 @@ export function computeEdgeInsetsLocalProjection(params: {
 		surfaceProjectionDivisions
 	} = params;
 	const distanceFactor = params.sourceDistanceFactor ?? DEFAULT_SOURCE_DISTANCE_FACTOR;
+	const curvedInset = params.curvedInset ?? false;
 
 	// Initialize output; default every side to the edge points so any edge a cell pass misses
 	// still yields a valid (degenerate) inset rather than undefined.
@@ -102,11 +105,44 @@ export function computeEdgeInsetsLocalProjection(params: {
 		const seed2d =
 			(seed3d && projectToPlane2D(seed3d, source, planePoint, normal, basis)) || new Vector2(0, 0);
 
+		// When curvedInset is on, precompute this cell's curved inner curves (plane-2D).
+		// Map edgeId -> samples | null; null edges fall back to the straight inset below.
+		let curvedByEdge: Map<number, Vector2[] | null> | null = null;
+		if (curvedInset) {
+			const vertexPos2d = new Map<string, Vector2>();
+			const cellEdgeInputs: CurvedCellEdge[] = [];
+			for (const ei of edgeIdxs) {
+				const pts3d = edgeProjections[ei].edgePoints3d;
+				if (pts3d.length < 2) continue;
+				const vS = vertexKey(edges[ei].vertices[0]);
+				const vE = vertexKey(edges[ei].vertices[1]);
+				if (!vertexPos2d.has(vS)) {
+					const p = projectToPlane2D(pts3d[0], source, planePoint, normal, basis);
+					if (p) vertexPos2d.set(vS, p);
+				}
+				if (!vertexPos2d.has(vE)) {
+					const p = projectToPlane2D(pts3d[pts3d.length - 1], source, planePoint, normal, basis);
+					if (p) vertexPos2d.set(vE, p);
+				}
+				cellEdgeInputs.push({ edgeId: ei, vKeyStart: vS, vKeyEnd: vE, sampleCount: pts3d.length });
+			}
+			curvedByEdge = buildCellCurvedInsets2d({
+				edges: cellEdgeInputs,
+				vertexPos2d,
+				seed2d,
+				curveOffsetFactor
+			});
+		}
+
 		for (const ei of edgeIdxs) {
 			const pts = edgeProjections[ei].edgePoints3d;
 			const isSideA = edges[ei].cellIndices[0] === cell;
 			const curve: Vector3[] = [];
 			const divs: Vector3[][] = [];
+
+			// Curved samples for this edge, only if every sample is present (length match).
+			const curvedRaw = curvedByEdge?.get(ei) ?? null;
+			const inner2dArr = curvedRaw && curvedRaw.length === pts.length ? curvedRaw : null;
 
 			for (let i = 0; i < pts.length; i++) {
 				const anchor = pts[i];
@@ -117,16 +153,30 @@ export function computeEdgeInsetsLocalProjection(params: {
 					continue;
 				}
 
-				const inset2d = insetPoint2D(e2d, seed2d, curveOffsetFactor);
+				// inset2d: the inner point (curved or straight). interSource2d: rung
+				// intermediates ordered inset -> edge in 2D.
+				let inset2d: Vector2;
+				let interSource2d: Vector2[];
+				if (inner2dArr) {
+					inset2d = inner2dArr[i];
+					interSource2d = segmentIntermediates2D(inset2d, e2d, surfaceProjectionDivisions);
+				} else {
+					inset2d = insetPoint2D(e2d, seed2d, curveOffsetFactor);
+					interSource2d = insetIntermediates2D(
+						e2d,
+						seed2d,
+						curveOffsetFactor,
+						surfaceProjectionDivisions
+					);
+				}
+
 				const insetThrough = plane2DToPoint3D(inset2d, planePoint, basis);
 				const insetPt =
 					selectSurfaceHit({ surface, source, through: insetThrough, anchor, cellNormal: normal }) ??
 					anchor.clone();
 				curve.push(insetPt);
 
-				// Intermediates ordered inset -> edge (== cA -> edge for side A).
-				const inter2d = insetIntermediates2D(e2d, seed2d, curveOffsetFactor, surfaceProjectionDivisions);
-				const interPts = inter2d.map((p2) => {
+				const interPts = interSource2d.map((p2) => {
 					const through = plane2DToPoint3D(p2, planePoint, basis);
 					return (
 						selectSurfaceHit({ surface, source, through, anchor, cellNormal: normal }) ??
