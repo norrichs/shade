@@ -17,6 +17,7 @@
 	import Button from '../design-system/Button.svelte';
 	import WorkingIndicator from './WorkingIndicator.svelte';
 	import ViewMenu from './ViewMenu.svelte';
+	import BandSelectionPanel from '../projection/BandSelectionPanel.svelte';
 	import { computeMergedBandPaths } from '$lib/cut-pattern/prepare-merge';
 	import { collateTubes } from '$lib/cut-pattern/collate-tubes';
 	import { get } from 'svelte/store';
@@ -142,9 +143,10 @@
 
 <header>
 	<nav>
-		<div>
+		<div class="left-group">
 			<a href="/designer2">Designer</a>
 			<ViewMenu />
+			<BandSelectionPanel />
 		</div>
 
 		<WorkingIndicator />
@@ -254,6 +256,12 @@
 		flex-direction: row;
 		gap: 12px;
 		align-items: center;
+	}
+	.left-group {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		gap: 12px;
 	}
 	.band-select {
 		font-size: 0.9rem;

@@ -26,18 +26,21 @@
 	</header>
 
 	{#if !collapsed}
-		<button
-			class="select-mode"
-			class:active={$selectModeActive}
-			onclick={() => selectModeActive.update((v) => !v)}
-		>
-			{$selectModeActive ? '● select mode ON — camera locked' : '○ select mode OFF — camera free'}
-		</button>
+		<div class="dropdown">
+			<button
+				class="select-mode"
+				class:active={$selectModeActive}
+				onclick={() => selectModeActive.update((v) => !v)}
+			>
+				{$selectModeActive
+					? '● select mode ON — camera locked'
+					: '○ select mode OFF — camera free'}
+			</button>
 
-		{#if $selectedBandLogInfo.length === 0}
-			<p class="empty">Click bands in the 3D view to inspect their end connections.</p>
-		{:else}
-			<ul>
+			{#if $selectedBandLogInfo.length === 0}
+				<p class="empty">Click bands in the 3D view to inspect their end connections.</p>
+			{:else}
+				<ul>
 				{#each $selectedBandLogInfo as item (item.source + '-' + item.address.tube + '-' + item.address.band)}
 					<li>
 						<div class="row">
@@ -73,49 +76,44 @@
 				{/each}
 			</ul>
 		{/if}
+		</div>
 	{/if}
 </div>
 
 <style>
 	.panel {
-		position: absolute;
-		top: 108px;
-		left: 8px;
-		z-index: 20;
-		width: 260px;
-		max-height: 60%;
-		overflow-y: auto;
-		background: rgba(255, 255, 255, 0.94);
-		border: 1px solid #999;
-		border-radius: 4px;
+		position: relative;
+		display: inline-block;
 		font-size: 12px;
 		font-family: monospace;
-		box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
 	}
-	.panel.collapsed {
-		width: auto;
+	.dropdown {
+		position: absolute;
+		top: calc(100% + 6px);
+		left: 0;
+		z-index: 20;
+		width: 260px;
+		max-height: 70vh;
+		overflow-y: auto;
+		background: rgba(255, 255, 255, 0.97);
+		border: 1px solid #999;
+		border-radius: 4px;
+		box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
 	}
 	header {
 		display: flex;
 		align-items: center;
-		justify-content: space-between;
-		gap: 8px;
-		padding: 4px 6px;
-		border-bottom: 1px solid #ddd;
-		position: sticky;
-		top: 0;
-		background: inherit;
-	}
-	.panel.collapsed header {
-		border-bottom: none;
+		gap: 6px;
 	}
 	.toggle {
-		border: none;
-		background: none;
+		border: 1px solid #bbb;
+		background: #f4f4f4;
 		cursor: pointer;
 		font: inherit;
 		font-weight: bold;
-		padding: 0;
+		border-radius: 3px;
+		padding: 4px 8px;
+		white-space: nowrap;
 	}
 	.clear,
 	.remove {
