@@ -286,6 +286,20 @@ describe('makeVoronoi', () => {
 		});
 	});
 
+	it('generates tubes with insetMethod localProjection + curvedInset', () => {
+		const address: GlobuleAddress = { globule: 0 };
+		const config: VoronoiConfig = {
+			...makeTestConfig(),
+			insetMethod: 'localProjection',
+			curvedInset: true
+		};
+		const result = makeVoronoi(config, address, testSurfaceConfig);
+		expect(result.tubes.length).toBeGreaterThan(0);
+		result.tubes.forEach((tube) => {
+			tube.bands.forEach((band) => expect(band.facets.length).toBeGreaterThan(0));
+		});
+	});
+
 	// Same fold-back guard as above, but through the localProjection inset path — this is the
 	// only coverage of localProjection's divsB-reversal + intermediate back-projection at
 	// surfaceProjectionDivisions > 0.

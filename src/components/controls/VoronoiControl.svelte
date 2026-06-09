@@ -16,7 +16,8 @@
 			| 'curveOffsetFactor'
 			| 'surfaceProjectionDivisions'
 			| 'voronoiMethod'
-			| 'insetMethod',
+			| 'insetMethod'
+			| 'curvedInset',
 		value: number | string
 	) {
 		let next: VoronoiConfig = config;
@@ -70,6 +71,8 @@
 			next = { ...config, voronoiMethod: value as VoronoiMethod };
 		} else if (field === 'insetMethod') {
 			next = { ...config, insetMethod: value as InsetMethod };
+		} else if (field === 'curvedInset') {
+			next = { ...config, curvedInset: value === 'true' };
 		}
 		$superConfigStore = { ...$superConfigStore, voronoiConfig: next };
 	}
@@ -116,6 +119,16 @@
 				<option value="centerOut">Center Out</option>
 				<option value="localProjection">Local Projection</option>
 			</select>
+		</label>
+
+		<label>
+			<input
+				type="checkbox"
+				checked={config.curvedInset ?? false}
+				disabled={(config.insetMethod ?? 'centerOut') !== 'localProjection'}
+				onchange={(e) => update('curvedInset', String(e.currentTarget.checked))}
+			/>
+			Curved Inset
 		</label>
 
 		<label>

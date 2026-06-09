@@ -23,6 +23,9 @@ export type VoronoiConfig = {
 	surfaceProjectionDivisions: number;
 	voronoiMethod: VoronoiMethod;
 	insetMethod: InsetMethod;
+	// When true (localProjection only), inset edges are drawn as per-corner quadratic
+	// beziers instead of straight homothety lines. Ignored by other inset methods.
+	curvedInset?: boolean;
 	fillAll?: boolean;
 };
 

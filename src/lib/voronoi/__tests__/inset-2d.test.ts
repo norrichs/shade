@@ -1,5 +1,32 @@
 import { Vector2 } from 'three';
-import { insetPoint2D, insetIntermediates2D } from '../inset-2d';
+import { segmentIntermediates2D, insetIntermediates2D, insetPoint2D } from '../inset-2d';
+
+describe('segmentIntermediates2D', () => {
+	it('returns `divisions` points evenly spaced from->to (exclusive ends)', () => {
+		const from = new Vector2(0, 0);
+		const to = new Vector2(3, 0);
+		const pts = segmentIntermediates2D(from, to, 2);
+		expect(pts).toHaveLength(2);
+		expect(pts[0].x).toBeCloseTo(1, 10); // s = 1/3
+		expect(pts[1].x).toBeCloseTo(2, 10); // s = 2/3
+	});
+
+	it('returns [] for 0 divisions', () => {
+		expect(segmentIntermediates2D(new Vector2(0, 0), new Vector2(1, 0), 0)).toHaveLength(0);
+	});
+});
+
+describe('insetIntermediates2D still matches segmentIntermediates2D(inset, edge)', () => {
+	it('produces the same points', () => {
+		const edge = new Vector2(4, 0);
+		const seed = new Vector2(0, 0);
+		const factor = 0.25;
+		const viaInset = insetIntermediates2D(edge, seed, factor, 3);
+		const inset = insetPoint2D(edge, seed, factor);
+		const viaSegment = segmentIntermediates2D(inset, edge, 3);
+		viaInset.forEach((p, i) => expect(p.distanceTo(viaSegment[i])).toBeCloseTo(0, 10));
+	});
+});
 
 describe('insetPoint2D (homothety toward seed)', () => {
 	const edge = new Vector2(10, 0);
