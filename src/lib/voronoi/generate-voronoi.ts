@@ -325,7 +325,8 @@ export function makeVoronoi(
 			surface,
 			surfaceCenter: center,
 			curveOffsetFactor,
-			surfaceProjectionDivisions: config.surfaceProjectionDivisions ?? 0
+			surfaceProjectionDivisions: config.surfaceProjectionDivisions ?? 0,
+			curvedInset: config.curvedInset ?? false
 		});
 	} else {
 		edgeInsets = computeEdgeInsetsCenterOut({
