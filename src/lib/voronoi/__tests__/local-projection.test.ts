@@ -15,7 +15,10 @@ import type { CoordToDirection } from '../edge-sampling';
 
 function sphereSurface(radius: number): Object3D {
 	const surface = new Object3D();
-	const mesh = new Mesh(new SphereGeometry(radius, 64, 64), new MeshBasicMaterial({ side: DoubleSide }));
+	const mesh = new Mesh(
+		new SphereGeometry(radius, 64, 64),
+		new MeshBasicMaterial({ side: DoubleSide })
+	);
 	surface.add(mesh);
 	surface.updateMatrixWorld(true);
 	return surface;
@@ -35,11 +38,41 @@ describe('computeEdgeInsetsLocalProjection', () => {
 
 	// Off-seam: all longitudes in 0.5..1.5 so no sampled ray lands on the (1,0,0) UV seam.
 	const edges: VoronoiEdge[] = [
-		{ vertices: [[1.0, -0.3], [1.0, 0.3]], cellIndices: [0, 1] }, // shared edge
-		{ vertices: [[0.7, -0.3], [1.0, -0.3]], cellIndices: [0, 2] },
-		{ vertices: [[0.7, 0.3], [1.0, 0.3]], cellIndices: [0, 2] },
-		{ vertices: [[1.3, -0.3], [1.0, -0.3]], cellIndices: [1, 3] },
-		{ vertices: [[1.3, 0.3], [1.0, 0.3]], cellIndices: [1, 3] }
+		{
+			vertices: [
+				[1.0, -0.3],
+				[1.0, 0.3]
+			],
+			cellIndices: [0, 1]
+		}, // shared edge
+		{
+			vertices: [
+				[0.7, -0.3],
+				[1.0, -0.3]
+			],
+			cellIndices: [0, 2]
+		},
+		{
+			vertices: [
+				[0.7, 0.3],
+				[1.0, 0.3]
+			],
+			cellIndices: [0, 2]
+		},
+		{
+			vertices: [
+				[1.3, -0.3],
+				[1.0, -0.3]
+			],
+			cellIndices: [1, 3]
+		},
+		{
+			vertices: [
+				[1.3, 0.3],
+				[1.0, 0.3]
+			],
+			cellIndices: [1, 3]
+		}
 	];
 	const relaxedSeeds: [number, number][] = [
 		[0.8, 0], // cell 0
@@ -48,7 +81,9 @@ describe('computeEdgeInsetsLocalProjection', () => {
 		[1.5, 0] // cell 3
 	];
 	const edgeProjections: EdgeProjection[] = edges.map((e) => {
-		const ends = [e.vertices[0], e.vertices[1]].map((v) => intersect(coordToDirection(v[0], v[1]))!);
+		const ends = [e.vertices[0], e.vertices[1]].map(
+			(v) => intersect(coordToDirection(v[0], v[1]))!
+		);
 		const mid = intersect(
 			coordToDirection(
 				(e.vertices[0][0] + e.vertices[1][0]) / 2,

@@ -93,7 +93,10 @@ export function computeEdgeInsetsLocalProjection(params: {
 		if (seed3d) samples.push(seed3d);
 
 		const fallbackNormal = averageNormal(edgeIdxs, edgeProjections);
-		const { normal, centroid } = fitPlane(samples, { fallbackNormal, orientAwayFrom: surfaceCenter });
+		const { normal, centroid } = fitPlane(samples, {
+			fallbackNormal,
+			orientAwayFrom: surfaceCenter
+		});
 		const size = maxPairwiseDistance(samples);
 		if (size < 1e-9) continue;
 		const sourceDistance = distanceFactor * size;
@@ -172,8 +175,13 @@ export function computeEdgeInsetsLocalProjection(params: {
 
 				const insetThrough = plane2DToPoint3D(inset2d, planePoint, basis);
 				const insetPt =
-					selectSurfaceHit({ surface, source, through: insetThrough, anchor, cellNormal: normal }) ??
-					anchor.clone();
+					selectSurfaceHit({
+						surface,
+						source,
+						through: insetThrough,
+						anchor,
+						cellNormal: normal
+					}) ?? anchor.clone();
 				curve.push(insetPt);
 
 				const interPts = interSource2d.map((p2) => {

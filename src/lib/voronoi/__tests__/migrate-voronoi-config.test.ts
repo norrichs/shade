@@ -132,7 +132,8 @@ describe('normalizeVoronoiConfig', () => {
 
 	it('defaults curvedInset to false when absent', () => {
 		const base = baseConfig({ voronoiConfig: inlineDefaultVoronoiConfig });
-		const { curvedInset, ...voronoiNoCurved } = base.voronoiConfig!;
+		const voronoiNoCurved = { ...base.voronoiConfig! };
+		delete voronoiNoCurved.curvedInset;
 		const input = { ...base, voronoiConfig: voronoiNoCurved } as typeof base;
 		const result = normalizeVoronoiConfig(input);
 		expect(result.voronoiConfig!.curvedInset).toBe(false);

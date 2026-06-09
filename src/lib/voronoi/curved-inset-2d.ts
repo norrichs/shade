@@ -69,7 +69,14 @@ function buildEdgeInnerCurve(
 	const eInset = insetToward(ePos, seed2d, f);
 	const mE = midpoint(sInset, eInset); // this edge's inset midpoint (shared by both halves)
 
-	const mOtherStart = otherEdgeInsetMidpoint(e.vKeyStart, e.edgeId, adjacency, vertexPos2d, seed2d, f);
+	const mOtherStart = otherEdgeInsetMidpoint(
+		e.vKeyStart,
+		e.edgeId,
+		adjacency,
+		vertexPos2d,
+		seed2d,
+		f
+	);
 	const mOtherEnd = otherEdgeInsetMidpoint(e.vKeyEnd, e.edgeId, adjacency, vertexPos2d, seed2d, f);
 	if (!mOtherStart || !mOtherEnd) return null;
 
