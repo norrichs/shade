@@ -143,7 +143,9 @@ export function computeEdgeInsetsLocalProjection(params: {
 			const curve: Vector3[] = [];
 			const divs: Vector3[][] = [];
 
-			// Curved samples for this edge, only if every sample is present (length match).
+			// Curved samples for this edge. A non-null curve has length == sampleCount ==
+			// pts.length by construction; the length check is defensive (and also coerces a
+			// null fallback entry to null). null edges fall through to the straight path.
 			const curvedRaw = curvedByEdge?.get(ei) ?? null;
 			const inner2dArr = curvedRaw && curvedRaw.length === pts.length ? curvedRaw : null;
 
