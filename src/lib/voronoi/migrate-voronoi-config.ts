@@ -44,7 +44,8 @@ export function normalizeVoronoiConfig(config: SuperGlobuleConfig): SuperGlobule
 	const voronoiConfig: VoronoiConfig = {
 		...resolved,
 		edgeDivisions: normalizeEdgeDivisions(resolved.edgeDivisions),
-		insetMethod: resolved.insetMethod ?? 'centerOut'
+		insetMethod: resolved.insetMethod ?? 'centerOut',
+		curvedInset: resolved.curvedInset ?? false
 	};
 
 	return { ...rest, voronoiConfig };
