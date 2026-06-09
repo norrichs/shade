@@ -61,6 +61,12 @@ describe('buildCellCurvedInsets2d', () => {
 		// Endpoints still on the vertex->seed lines.
 		expect(e0[0].x - e0[0].y).toBeCloseTo(0, 6);
 		expect(e0[3].x + e0[3].y).toBeCloseTo(0, 6);
+		// N=3 interior spacing: index 1 at 2/3 along the start half, index 2 at 1/3 of the
+		// end half. Coordinates derived from the corner-bezier definitions (split at t=0.5).
+		expect(e0[1].x).toBeCloseTo(0.2291667, 4);
+		expect(e0[1].y).toBeCloseTo(0.7291667, 4);
+		expect(e0[2].x).toBeCloseTo(-0.2291667, 4);
+		expect(e0[2].y).toBeCloseTo(0.7291667, 4);
 	});
 
 	it('falls back (null) for edges of an open chain whose vertex has degree 1', () => {
