@@ -27,7 +27,8 @@
 		type InteractionMode
 	} from './interaction-mode';
 	import { getNearestPoint } from '$lib/generate-globulegeometry';
-	import { Vector3 } from 'three';
+	import { BufferGeometry, Vector3 } from 'three';
+	import { materials } from './materials';
 	import { generateTempId } from '$lib/id-handler';
 	import TransformDisplay from './TransformDisplay.svelte';
 	import {
@@ -196,6 +197,13 @@
 		]
 	};
 
+	// Static, non-reactive geometry for the measurement indicators. Building it
+	// once (rather than via GlobuleMesh, which holds its BufferGeometry in
+	// $state) avoids Svelte proxying a Three.js object whose per-frame mutations
+	// would feed back as reactive invalidations and trip effect_update_depth.
+	const indicatorGeometry = new BufferGeometry().setFromPoints(indicator.points);
+	indicatorGeometry.computeVertexNormals();
+
 	// Matched extent pairs as placeable, colour-coded indicators
 	// (x = red, y = green, z = blue). The indicator apex sits at the measured
 	// point so it marks the exact mesh vertex feeding `model3dBoundsStore`.
@@ -258,7 +266,7 @@
 {#if $showMeasureIndicators && $model3dExtremesStore}
 	{#each measureIndicators($model3dExtremesStore) as { point, material }, i (i)}
 		<T.Group position={[point.x, point.y, point.z]}>
-			<GlobuleMesh geometry={indicator} {material} />
+			<T.Mesh geometry={indicatorGeometry} material={materials[material]} />
 		</T.Group>
 	{/each}
 {/if}
