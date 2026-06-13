@@ -4,6 +4,8 @@
 	import CheckboxInput from '../controls/CheckboxInput.svelte';
 	import NumberInput from '../controls/super-control/NumberInput.svelte';
 	import PanControl from './PanControl.svelte';
+	import { pageEditorOpen } from '$lib/stores/pageEditorStore';
+	import type { PatternLayoutMode } from '$lib/types';
 
 	let rangeTubes: ProjectionRange['tubes'] = $patternConfigStore.patternViewConfig.range?.tubes;
 	let rangeBands: ProjectionRange['bands'] = $patternConfigStore.patternViewConfig.range?.bands;
@@ -28,6 +30,19 @@
 			pc.surfaceProjectionConfig = { divisions: 0 };
 		}
 	}
+
+	const MODE_ORDER: PatternLayoutMode[] = ['linear', 'line-wrap', 'page'];
+	const MODE_LABEL: Record<PatternLayoutMode, string> = {
+		linear: 'Linear',
+		'line-wrap': 'Line-wrap',
+		page: 'Page'
+	};
+	const cycleMode = () => {
+		const cur = $patternConfigStore.patternViewConfig.patternLayoutMode ?? 'linear';
+		const next = MODE_ORDER[(MODE_ORDER.indexOf(cur) + 1) % MODE_ORDER.length];
+		$patternConfigStore.patternViewConfig.patternLayoutMode = next;
+		if (next === 'page') $pageEditorOpen = true;
+	};
 </script>
 
 <div class="view-control-box">
@@ -52,11 +67,12 @@
 				label="show Labels"
 				bind:value={$patternConfigStore.patternViewConfig.showLabels}
 			/>
-			<CheckboxInput
-				label="line wrap"
-				bind:value={$patternConfigStore.patternViewConfig.lineWrap as boolean}
-			/>
-			{#if $patternConfigStore.patternViewConfig.lineWrap}
+			<button class="mode-cycle" on:click={cycleMode}>
+				Layout: {MODE_LABEL[
+					$patternConfigStore.patternViewConfig.patternLayoutMode ?? 'linear'
+				]}
+			</button>
+			{#if $patternConfigStore.patternViewConfig.patternLayoutMode === 'line-wrap'}
 				<NumberInput
 					label="wrap width"
 					min={50}
@@ -64,6 +80,9 @@
 					step={10}
 					bind:value={$patternConfigStore.patternViewConfig.wrapWidth as number}
 				/>
+			{/if}
+			{#if $patternConfigStore.patternViewConfig.patternLayoutMode === 'page'}
+				<button class="mode-cycle" on:click={() => ($pageEditorOpen = true)}>Page editor</button>
 			{/if}
 			<NumberInput
 				label="gap"
@@ -215,6 +234,14 @@
 </div>
 
 <style>
+	.mode-cycle {
+		display: block;
+		margin: 2px 0;
+		padding: 2px 8px;
+		font-family: monospace;
+		font-size: 12px;
+		cursor: pointer;
+	}
 	.range-inputs {
 		display: flex;
 		flex-direction: row;
