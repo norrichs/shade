@@ -253,12 +253,17 @@
 		return algo(items, geom);
 	});
 
-	// Publish the page count to the Page Layout editor.
+	// Publish the page count to the Page Layout editor. Guard on a value key so we
+	// only write when it actually changes — an unconditional store write here
+	// re-enters the reactive flush and trips effect_update_depth_exceeded.
+	let lastPageInfoKey = '';
 	$effect(() => {
-		pageLayoutInfoStore.set({
-			pageCount: pageResult?.pages.length ?? 0,
-			overflow: !!pageResult?.overflow
-		});
+		const pageCount = pageResult?.pages.length ?? 0;
+		const overflow = !!pageResult?.overflow;
+		const key = `${pageCount}:${overflow}`;
+		if (key === lastPageInfoKey) return;
+		lastPageInfoKey = key;
+		pageLayoutInfoStore.set({ pageCount, overflow });
 	});
 
 	// Line-wrap is on in line-wrap mode, and also as the page-mode overflow fallback:
