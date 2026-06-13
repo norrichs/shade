@@ -4,7 +4,6 @@
 	import CheckboxInput from '../controls/CheckboxInput.svelte';
 	import NumberInput from '../controls/super-control/NumberInput.svelte';
 	import PanControl from './PanControl.svelte';
-	import { pageEditorOpen } from '$lib/stores/pageEditorStore';
 	import type { PatternLayoutMode } from '$lib/types';
 
 	let rangeTubes: ProjectionRange['tubes'] = $patternConfigStore.patternViewConfig.range?.tubes;
@@ -41,7 +40,6 @@
 		const cur = $patternConfigStore.patternViewConfig.patternLayoutMode ?? 'linear';
 		const next = MODE_ORDER[(MODE_ORDER.indexOf(cur) + 1) % MODE_ORDER.length];
 		$patternConfigStore.patternViewConfig.patternLayoutMode = next;
-		if (next === 'page') $pageEditorOpen = true;
 	};
 </script>
 
@@ -68,9 +66,7 @@
 				bind:value={$patternConfigStore.patternViewConfig.showLabels}
 			/>
 			<button class="mode-cycle" on:click={cycleMode}>
-				Layout: {MODE_LABEL[
-					$patternConfigStore.patternViewConfig.patternLayoutMode ?? 'linear'
-				]}
+				Layout: {MODE_LABEL[$patternConfigStore.patternViewConfig.patternLayoutMode ?? 'linear']}
 			</button>
 			{#if $patternConfigStore.patternViewConfig.patternLayoutMode === 'line-wrap'}
 				<NumberInput
@@ -80,9 +76,6 @@
 					step={10}
 					bind:value={$patternConfigStore.patternViewConfig.wrapWidth as number}
 				/>
-			{/if}
-			{#if $patternConfigStore.patternViewConfig.patternLayoutMode === 'page'}
-				<button class="mode-cycle" on:click={() => ($pageEditorOpen = true)}>Page editor</button>
 			{/if}
 			<NumberInput
 				label="gap"

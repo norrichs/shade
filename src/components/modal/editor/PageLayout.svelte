@@ -1,14 +1,26 @@
 <script lang="ts">
 	import { patternConfigStore } from '$lib/stores';
-	import { pageEditorOpen } from '$lib/stores/pageEditorStore';
 	import { model3dBoundsStore } from '$lib/stores/superGlobuleStores';
 	import { PAGE_PRESETS } from '$lib/cut-pattern/page-layout/page-presets';
 	import { derivePageDimensions, inchToMm, mmToInch } from '$lib/cut-pattern/page-layout/units';
+	import type { PatternLayoutMode } from '$lib/types';
 
 	let cfg = $derived($patternConfigStore.patternConfig.pageLayout);
 	let unit = $derived(cfg.displayUnit);
 	const toDisplay = (mm: number) => (unit === 'inch' ? mmToInch(mm) : mm);
 	const fromDisplay = (v: number) => (unit === 'inch' ? inchToMm(v) : v);
+
+	const MODE_ORDER: PatternLayoutMode[] = ['linear', 'line-wrap', 'page'];
+	const MODE_LABEL: Record<PatternLayoutMode, string> = {
+		linear: 'Linear',
+		'line-wrap': 'Line-wrap',
+		page: 'Page'
+	};
+	let mode = $derived($patternConfigStore.patternViewConfig.patternLayoutMode ?? 'linear');
+	const cycleMode = () => {
+		const next = MODE_ORDER[(MODE_ORDER.indexOf(mode) + 1) % MODE_ORDER.length];
+		$patternConfigStore.patternViewConfig.patternLayoutMode = next;
+	};
 
 	let presetId = $derived.by(() => {
 		const p = PAGE_PRESETS.find(
@@ -40,18 +52,25 @@
 	const fmt = (n: number) => n.toFixed(2);
 </script>
 
-{#if $pageEditorOpen}
-	<div class="page-editor">
-		<header>
-			<span>Page Layout</span>
-			<button on:click={() => ($pageEditorOpen = false)} aria-label="Close">×</button>
-		</header>
+<div class="page-editor">
+	<button class="mode-cycle" onclick={cycleMode}>Layout: {MODE_LABEL[mode]}</button>
 
+	<label>
+		keepConnected (px)
+		<input
+			type="number"
+			min="0"
+			step="1"
+			bind:value={$patternConfigStore.patternConfig.pageLayout.keepConnected}
+		/>
+	</label>
+
+	{#if mode === 'page'}
 		<label>
 			Preset
 			<select
 				value={presetId}
-				on:change={(e) => applyPreset((e.currentTarget as HTMLSelectElement).value)}
+				onchange={(e) => applyPreset((e.currentTarget as HTMLSelectElement).value)}
 			>
 				{#each PAGE_PRESETS as p (p.id)}
 					<option value={p.id}>{p.label}</option>
@@ -74,7 +93,7 @@
 				type="number"
 				step="0.1"
 				value={fmt(toDisplay(cfg.pageSize.width))}
-				on:change={(e) =>
+				onchange={(e) =>
 					($patternConfigStore.patternConfig.pageLayout.pageSize.width = fromDisplay(
 						Number((e.currentTarget as HTMLInputElement).value)
 					))}
@@ -86,7 +105,7 @@
 				type="number"
 				step="0.1"
 				value={fmt(toDisplay(cfg.pageSize.height))}
-				on:change={(e) =>
+				onchange={(e) =>
 					($patternConfigStore.patternConfig.pageLayout.pageSize.height = fromDisplay(
 						Number((e.currentTarget as HTMLInputElement).value)
 					))}
@@ -108,7 +127,7 @@
 				type="number"
 				step="0.1"
 				value={fmt(toDisplay(cfg.margin))}
-				on:change={(e) =>
+				onchange={(e) =>
 					($patternConfigStore.patternConfig.pageLayout.margin = fromDisplay(
 						Number((e.currentTarget as HTMLInputElement).value)
 					))}
@@ -150,39 +169,23 @@
 				<div>—</div>
 			{/if}
 		</div>
-	</div>
-{/if}
+	{/if}
+</div>
 
 <style>
 	.page-editor {
-		position: fixed;
-		top: 80px;
-		right: 24px;
-		z-index: 9000;
 		width: 220px;
-		padding: 10px 12px;
-		background: white;
-		border: 1px solid #ccc;
-		border-radius: 6px;
-		box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
 		font-family: monospace;
 		font-size: 12px;
 		display: flex;
 		flex-direction: column;
 		gap: 6px;
 	}
-	header {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		font-weight: bold;
-	}
-	header button {
-		border: none;
-		background: none;
-		font-size: 18px;
+	.mode-cycle {
+		padding: 2px 8px;
+		font-family: monospace;
+		font-size: 12px;
 		cursor: pointer;
-		line-height: 1;
 	}
 	label {
 		display: flex;

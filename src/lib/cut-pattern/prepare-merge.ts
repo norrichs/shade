@@ -6,6 +6,7 @@ import {
 } from './label-outline-path';
 import { transformLabelOutlineToBandSpace } from './transform-label-outline';
 import { mergeOutlineWithLabel } from './merge-outline-with-label';
+import { insertKeepConnectedBreak } from './keep-connected';
 import type { LabelTextDims } from '$lib/stores/mergedPathStore';
 
 /**
@@ -25,12 +26,17 @@ import type { LabelTextDims } from '$lib/stores/mergedPathStore';
  * Returns a new Map<bandId, PathSegment[]> with one entry per merged band.
  * Pure; does not write to any store. The caller is responsible for writing
  * the result to `mergedBandPaths`.
+ *
+ * When `keepConnected > 0`, each merged path gets a single uncut bridge of that
+ * pixel width (see `insertKeepConnectedBreak`) so the laser-cut piece stays
+ * attached to the surrounding sheet.
  */
 export const computeMergedBandPaths = (
 	tubes: TubeCutPattern[],
 	labels: PatternLabelsConfig | undefined,
 	patternType: string,
-	labelTextDims: Map<string, LabelTextDims>
+	labelTextDims: Map<string, LabelTextDims>,
+	keepConnected = 0
 ): Map<string, PathSegment[]> => {
 	const result = new Map<string, PathSegment[]>();
 	if (patternType !== 'outlined') return result;
@@ -77,7 +83,10 @@ export const computeMergedBandPaths = (
 			);
 
 			const merged = mergeOutlineWithLabel(bandPath, bandSpacePath);
-			result.set(band.id, merged);
+			result.set(
+				band.id,
+				keepConnected > 0 ? insertKeepConnectedBreak(merged, keepConnected) : merged
+			);
 		}
 	}
 

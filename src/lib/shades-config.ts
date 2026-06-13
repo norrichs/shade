@@ -556,7 +556,8 @@ export const defaultPatternConfig = (): PatternConfig => ({
 		margin: 12.7, // 0.5in
 		gap: 20,
 		displayUnit: 'inch',
-		algorithm: 'flex-wrap'
+		algorithm: 'flex-wrap',
+		keepConnected: 0
 	},
 	page: { height: 300, width: 300, unit: 'mm' },
 	origin: { type: 'PointConfig2', x: 0, y: 0 },

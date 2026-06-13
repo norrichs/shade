@@ -185,6 +185,7 @@ export type PageLayoutConfig = {
 	gap: number; // pattern units, spacing between patterns
 	displayUnit: 'mm' | 'inch'; // editor display only
 	algorithm: 'flex-wrap';
+	keepConnected: number; // px-wide uncut bridge left in each prepared cut path (0 = off)
 };
 
 export type PatternConfig = {
