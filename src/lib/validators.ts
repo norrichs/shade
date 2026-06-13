@@ -69,6 +69,23 @@ export const migrateGlobulePatternConfig = <T extends Partial<GlobulePatternConf
 			patternTypeConfig.labels = migrated;
 		}
 	}
+	const pvc = config.patternViewConfig as
+		| { lineWrap?: boolean; patternLayoutMode?: string }
+		| undefined;
+	if (pvc && pvc.patternLayoutMode === undefined) {
+		pvc.patternLayoutMode = pvc.lineWrap ? 'line-wrap' : 'linear';
+	}
+	const pc = config.patternConfig as { pageLayout?: unknown } | undefined;
+	if (pc && pc.pageLayout === undefined) {
+		pc.pageLayout = {
+			pageSize: { width: 304.8, height: 304.8 },
+			pageScale: 0.6562,
+			margin: 12.7,
+			gap: 20,
+			displayUnit: 'inch',
+			algorithm: 'flex-wrap'
+		};
+	}
 	return config;
 };
 

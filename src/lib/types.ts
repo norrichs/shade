@@ -58,6 +58,7 @@ export type PatternViewConfig = {
 	wrapWidth?: number;
 	/** Gap between adjacent bands in the layout (band-space units). */
 	gap?: number;
+	patternLayoutMode: PatternLayoutMode;
 };
 export type PatternStyle = 'faceted' | 'outlined' | 'patterned' | 'none' | 'layered';
 
@@ -175,6 +176,17 @@ export type EdgeConfig = { lead: TrianglePoint; follow: TrianglePoint };
 export type PixelScale = { value: number; unit: 'cm' | 'inch' | 'mm' };
 export type PageSize = { height: number; width: number; unit: 'cm' | 'inch' | 'mm' };
 
+export type PatternLayoutMode = 'linear' | 'line-wrap' | 'page';
+
+export type PageLayoutConfig = {
+	pageSize: { width: number; height: number }; // millimetres
+	pageScale: number; // pattern-units per millimetre
+	margin: number; // millimetres
+	gap: number; // pattern units, spacing between patterns
+	displayUnit: 'mm' | 'inch'; // editor display only
+	algorithm: 'flex-wrap';
+};
+
 export type PatternConfig = {
 	[key: string]:
 		| PatternShowConfig
@@ -184,7 +196,8 @@ export type PatternConfig = {
 		| boolean
 		| undefined
 		| PixelScale
-		| PageSize;
+		| PageSize
+		| PageLayoutConfig;
 	showPattern: PatternShowConfig;
 	axis: Axis;
 	origin: PointConfig2;
@@ -193,6 +206,7 @@ export type PatternConfig = {
 	showTabs: boolean;
 	pixelScale: PixelScale;
 	page: PageSize;
+	pageLayout: PageLayoutConfig;
 	// patternedConfig: CutPatternConfig;
 };
 
