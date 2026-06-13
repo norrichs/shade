@@ -31,6 +31,15 @@
 		>
 			<span class="toast-icon">{getIcon(toast.type)}</span>
 			<span class="toast-message">{toast.message}</span>
+			{#if toast.action}
+				<button
+					class="toast-action"
+					on:click={() => {
+						toast.action?.onClick();
+						handleDismiss(toast.id);
+					}}>{toast.action.label}</button
+				>
+			{/if}
 			{#if toast.dismissible !== false}
 				<button class="toast-dismiss" on:click={() => handleDismiss(toast.id)} aria-label="Dismiss">
 					×
@@ -96,6 +105,21 @@
 	.toast-message {
 		flex: 1;
 		word-wrap: break-word;
+	}
+
+	.toast-action {
+		pointer-events: auto;
+		background: rgba(0, 0, 0, 0.08);
+		border: 1px solid rgba(0, 0, 0, 0.2);
+		border-radius: 3px;
+		padding: 4px 8px;
+		font-family: monospace;
+		font-size: 12px;
+		cursor: pointer;
+		flex-shrink: 0;
+	}
+	.toast-action:hover {
+		background: rgba(0, 0, 0, 0.16);
 	}
 
 	.toast-dismiss {
