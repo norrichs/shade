@@ -12,8 +12,10 @@ import type {
 	SuperGlobuleMesh,
 	AxisExtremes,
 	BandGeometry,
-	SuperGlobuleGeometry
+	SuperGlobuleGeometry,
+	PatternSource
 } from '$lib/types';
+import { collectRenderedPoints } from '$lib/collect-rendered-points';
 import type { GlobuleAddress_Facet } from '$lib/projection-geometry/types';
 import { derived, writable, get } from 'svelte/store';
 import { loadPersistedOrDefault } from './stores';
@@ -94,7 +96,10 @@ export function triggerManualRegeneration(): void {
  * Extracts minimal mesh data from SuperGlobule for lightweight 3D rendering
  * Used in 2d-only mode to preserve 3D visualization while freeing memory
  */
-export function extractMeshData(superGlobule: SuperGlobule): SuperGlobuleMesh {
+export function extractMeshData(
+	superGlobule: SuperGlobule,
+	patternSource: PatternSource = 'projection'
+): SuperGlobuleMesh {
 	// Extract band geometry for 3D rendering
 	const geometryResult: SuperGlobuleGeometry = generateSuperGlobuleBandGeometry(superGlobule);
 	const bandGeometry: BandGeometry[] =
@@ -117,24 +122,28 @@ export function extractMeshData(superGlobule: SuperGlobule): SuperGlobuleMesh {
 		});
 	});
 
-	// Compute bounds from all band geometry points, tracking the actual extreme
+	// Compute bounds from the geometry actually rendered for the active pattern
+	// source (projection/voronoi facet triangles), falling back to the globule
+	// band points when that source has no geometry. Track the actual extreme
 	// point on each axis so the measured extents can be visualised.
+	const renderedPoints = collectRenderedPoints(superGlobule, patternSource);
+	const points: Vector3[] =
+		renderedPoints.length > 0 ? renderedPoints : bandGeometry.flatMap((bg) => bg.points);
+
 	const bounds = new Box3();
 	let extremes: AxisExtremes | null = null;
-	bandGeometry.forEach((bg) => {
-		bg.points.forEach((point) => {
-			bounds.expandByPoint(point);
-			if (!extremes) {
-				extremes = { x: [point, point], y: [point, point], z: [point, point] };
-				return;
-			}
-			if (point.x < extremes.x[0].x) extremes.x[0] = point;
-			if (point.x > extremes.x[1].x) extremes.x[1] = point;
-			if (point.y < extremes.y[0].y) extremes.y[0] = point;
-			if (point.y > extremes.y[1].y) extremes.y[1] = point;
-			if (point.z < extremes.z[0].z) extremes.z[0] = point;
-			if (point.z > extremes.z[1].z) extremes.z[1] = point;
-		});
+	points.forEach((point) => {
+		bounds.expandByPoint(point);
+		if (!extremes) {
+			extremes = { x: [point, point], y: [point, point], z: [point, point] };
+			return;
+		}
+		if (point.x < extremes.x[0].x) extremes.x[0] = point;
+		if (point.x > extremes.x[1].x) extremes.x[1] = point;
+		if (point.y < extremes.y[0].y) extremes.y[0] = point;
+		if (point.y > extremes.y[1].y) extremes.y[1] = point;
+		if (point.z < extremes.z[0].z) extremes.z[0] = point;
+		if (point.z > extremes.z[1].z) extremes.z[1] = point;
 	});
 
 	return {
@@ -368,10 +377,21 @@ export const superGlobuleStore = derived(
 	}
 );
 
+// Active pattern source, isolated so the mesh store below only recomputes when
+// the source changes — not on every view-only patternConfig change (zoom/pan).
+const patternSourceStore = derived(
+	patternConfigStore,
+	($c): PatternSource => $c.patternViewConfig.patternSource ?? 'projection'
+);
+
 // Mesh data (bounds + extreme points) of the current model, computed once and
-// shared by the bounds and extremes stores below.
-const superGlobuleMeshStore = derived(superGlobuleStore, ($superGlobuleStore) =>
-	$superGlobuleStore ? extractMeshData($superGlobuleStore) : null
+// shared by the bounds and extremes stores below. Measured from the geometry
+// actually rendered for the active pattern source so the extents match the
+// on-screen model (e.g. voronoi tubes, not the globule surface).
+const superGlobuleMeshStore = derived(
+	[superGlobuleStore, patternSourceStore],
+	([$superGlobuleStore, $patternSource]) =>
+		$superGlobuleStore ? extractMeshData($superGlobuleStore, $patternSource) : null
 );
 
 // Live 3D bounding box of the current model, for deriving real-world page units.
