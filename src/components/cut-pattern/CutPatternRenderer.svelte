@@ -214,7 +214,6 @@
 
 	let range = $derived($patternConfigStore.patternViewConfig.range);
 	let layoutMode = $derived($patternConfigStore.patternViewConfig.patternLayoutMode ?? 'linear');
-	let lineWrap = $derived(layoutMode === 'line-wrap');
 	let pageLayoutCfg = $derived($patternConfigStore.patternConfig.pageLayout);
 	let wrapWidth = $derived($patternConfigStore.patternViewConfig.wrapWidth ?? 800);
 	let gap = $derived($patternConfigStore.patternViewConfig.gap ?? GAP_BETWEEN_BANDS);
@@ -233,10 +232,6 @@
 	});
 
 	let filteredTubes = $derived(filtered({ tubes, range }));
-	let origins = $derived(getCumulativeOrigins(filteredTubes, gap, 'center', lineWrap, wrapWidth));
-	let flatOrigins = $derived(
-		indexedBands ? getFlatOrigins(indexedBands, gap, 'center', lineWrap, wrapWidth) : undefined
-	);
 
 	// Flat, ordered band list for page mode: use the sort-index order when present,
 	// else flatten filtered tubes in tube order.
@@ -252,6 +247,18 @@
 		const algo = PAGE_LAYOUT_ALGORITHMS[pageLayoutCfg.algorithm];
 		return algo(items, geom);
 	});
+
+	// Line-wrap is on in line-wrap mode, and also as the page-mode overflow fallback:
+	// when a pattern is too large to fit a page we drop pages but still wrap, so
+	// patterns stay visible without running off in one infinite row.
+	let lineWrap = $derived(
+		layoutMode === 'line-wrap' || (layoutMode === 'page' && !!pageResult?.overflow)
+	);
+
+	let origins = $derived(getCumulativeOrigins(filteredTubes, gap, 'center', lineWrap, wrapWidth));
+	let flatOrigins = $derived(
+		indexedBands ? getFlatOrigins(indexedBands, gap, 'center', lineWrap, wrapWidth) : undefined
+	);
 
 	// Raise a fit-error toast (with a scale-fixing action) when a pattern overflows.
 	let lastOverflowKey = '';
