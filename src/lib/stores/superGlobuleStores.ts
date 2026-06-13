@@ -354,6 +354,12 @@ export const superGlobuleStore = derived(
 	}
 );
 
+// Live 3D bounding box of the current model, for deriving real-world page units.
+export const model3dBoundsStore = derived(superGlobuleStore, ($superGlobuleStore) => {
+	if (!$superGlobuleStore) return null;
+	return extractMeshData($superGlobuleStore).bounds;
+});
+
 export const superGlobuleGeometryStore = derived(superGlobuleStore, ($superGlobuleStore) => {
 	const superGlobuleGeometry = generateSuperGlobuleGeometry($superGlobuleStore);
 	console.log('SUPER GLOBULE GEOMETRY STORE', { $superGlobuleStore, superGlobuleGeometry });
