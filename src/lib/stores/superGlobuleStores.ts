@@ -10,6 +10,7 @@ import type {
 	TubeCutPattern,
 	ProjectionCutPattern,
 	SuperGlobuleMesh,
+	AxisExtremes,
 	BandGeometry,
 	SuperGlobuleGeometry
 } from '$lib/types';
@@ -116,11 +117,23 @@ export function extractMeshData(superGlobule: SuperGlobule): SuperGlobuleMesh {
 		});
 	});
 
-	// Compute bounds from all band geometry points
+	// Compute bounds from all band geometry points, tracking the actual extreme
+	// point on each axis so the measured extents can be visualised.
 	const bounds = new Box3();
+	let extremes: AxisExtremes | null = null;
 	bandGeometry.forEach((bg) => {
 		bg.points.forEach((point) => {
 			bounds.expandByPoint(point);
+			if (!extremes) {
+				extremes = { x: [point, point], y: [point, point], z: [point, point] };
+				return;
+			}
+			if (point.x < extremes.x[0].x) extremes.x[0] = point;
+			if (point.x > extremes.x[1].x) extremes.x[1] = point;
+			if (point.y < extremes.y[0].y) extremes.y[0] = point;
+			if (point.y > extremes.y[1].y) extremes.y[1] = point;
+			if (point.z < extremes.z[0].z) extremes.z[0] = point;
+			if (point.z > extremes.z[1].z) extremes.z[1] = point;
 		});
 	});
 
@@ -129,7 +142,8 @@ export function extractMeshData(superGlobule: SuperGlobule): SuperGlobuleMesh {
 		superGlobuleConfigId: superGlobule.superGlobuleConfigId,
 		bandGeometry,
 		projectionAddresses,
-		bounds
+		bounds,
+		extremes
 	};
 }
 
@@ -354,11 +368,21 @@ export const superGlobuleStore = derived(
 	}
 );
 
+// Mesh data (bounds + extreme points) of the current model, computed once and
+// shared by the bounds and extremes stores below.
+const superGlobuleMeshStore = derived(superGlobuleStore, ($superGlobuleStore) =>
+	$superGlobuleStore ? extractMeshData($superGlobuleStore) : null
+);
+
 // Live 3D bounding box of the current model, for deriving real-world page units.
-export const model3dBoundsStore = derived(superGlobuleStore, ($superGlobuleStore) => {
-	if (!$superGlobuleStore) return null;
-	return extractMeshData($superGlobuleStore).bounds;
-});
+export const model3dBoundsStore = derived(superGlobuleMeshStore, ($mesh) => $mesh?.bounds ?? null);
+
+// The matched point pairs that define each axis extent of `model3dBoundsStore`,
+// for rendering measurement indicators in the 3D scene.
+export const model3dExtremesStore = derived(
+	superGlobuleMeshStore,
+	($mesh): AxisExtremes | null => $mesh?.extremes ?? null
+);
 
 export const superGlobuleGeometryStore = derived(superGlobuleStore, ($superGlobuleStore) => {
 	const superGlobuleGeometry = generateSuperGlobuleGeometry($superGlobuleStore);

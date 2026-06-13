@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { patternConfigStore } from '$lib/stores';
+	import { patternConfigStore, pageLayoutInfoStore, showMeasureIndicators } from '$lib/stores';
 	import { model3dBoundsStore } from '$lib/stores/superGlobuleStores';
 	import { PAGE_PRESETS } from '$lib/cut-pattern/page-layout/page-presets';
 	import { derivePageDimensions, inchToMm, mmToInch } from '$lib/cut-pattern/page-layout/units';
@@ -160,14 +160,27 @@
 		</svg>
 
 		<div class="derived">
+			<strong>Pages</strong>
+			<div>
+				{$pageLayoutInfoStore.pageCount}
+				{$pageLayoutInfoStore.pageCount === 1 ? 'page' : 'pages'}
+				{#if $pageLayoutInfoStore.overflow}<span class="warn">(overflow)</span>{/if}
+			</div>
+		</div>
+
+		<div class="derived">
 			<strong>Model size</strong>
 			{#if derived3d}
-				<div>X: {fmt(derived3d.mm.x)} mm / {fmt(derived3d.inch.x)} in</div>
-				<div>Y: {fmt(derived3d.mm.y)} mm / {fmt(derived3d.inch.y)} in</div>
-				<div>Z: {fmt(derived3d.mm.z)} mm / {fmt(derived3d.inch.z)} in</div>
+				<div class="axis-x">X: {fmt(derived3d.mm.x)} mm / {fmt(derived3d.inch.x)} in</div>
+				<div class="axis-y">Y: {fmt(derived3d.mm.y)} mm / {fmt(derived3d.inch.y)} in</div>
+				<div class="axis-z">Z: {fmt(derived3d.mm.z)} mm / {fmt(derived3d.inch.z)} in</div>
 			{:else}
 				<div>—</div>
 			{/if}
+			<label class="indicator-toggle">
+				<input type="checkbox" bind:checked={$showMeasureIndicators} />
+				show measure points
+			</label>
 		</div>
 	{/if}
 </div>
@@ -209,5 +222,26 @@
 		display: flex;
 		flex-direction: column;
 		gap: 2px;
+	}
+	/* Match the 3D measurement-indicator colours: x = red, y = green, z = blue. */
+	.axis-x {
+		color: red;
+	}
+	.axis-y {
+		color: green;
+	}
+	.axis-z {
+		color: blue;
+	}
+	.indicator-toggle {
+		justify-content: flex-start;
+		gap: 6px;
+		margin-top: 4px;
+	}
+	.indicator-toggle input {
+		width: auto;
+	}
+	.warn {
+		color: #c00;
 	}
 </style>

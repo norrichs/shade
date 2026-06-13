@@ -3,7 +3,12 @@
 		sliceProjectionCutPattern,
 		type ProjectionRange
 	} from '$lib/projection-geometry/filters';
-	import { patternConfigStore, viewControlStore, labelTextDimensions } from '$lib/stores';
+	import {
+		patternConfigStore,
+		viewControlStore,
+		labelTextDimensions,
+		pageLayoutInfoStore
+	} from '$lib/stores';
 	import { buildSelfTagLines } from '$lib/cut-pattern/build-self-tag-lines';
 	import { effectiveBandBounds } from '$lib/cut-pattern/label-footprint';
 	import { Vector3 } from 'three';
@@ -246,6 +251,14 @@
 		const geom = buildPageGeom(pageLayoutCfg);
 		const algo = PAGE_LAYOUT_ALGORITHMS[pageLayoutCfg.algorithm];
 		return algo(items, geom);
+	});
+
+	// Publish the page count to the Page Layout editor.
+	$effect(() => {
+		pageLayoutInfoStore.set({
+			pageCount: pageResult?.pages.length ?? 0,
+			overflow: !!pageResult?.overflow
+		});
 	});
 
 	// Line-wrap is on in line-wrap mode, and also as the page-mode overflow fallback:

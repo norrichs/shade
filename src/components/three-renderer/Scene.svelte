@@ -5,11 +5,19 @@
 		superGlobuleBandGeometryStore as geometryStore,
 		selectedBand,
 		superConfigStore,
+		model3dExtremesStore,
+		showMeasureIndicators,
 		type BandSelection
 	} from '$lib/stores';
 	import { get } from 'svelte/store';
 	import GlobuleMesh from '../globuleMesh/GlobuleMesh.svelte';
-	import type { BandAddressed, BandGeometry, GeometryAddress, GlobuleGeometry } from '$lib/types';
+	import type {
+		AxisExtremes,
+		BandAddressed,
+		BandGeometry,
+		GeometryAddress,
+		GlobuleGeometry
+	} from '$lib/types';
 	import DesignerCamera from './DesignerCamera.svelte';
 	import DesignerLighting from './DesignerLighting.svelte';
 	import {
@@ -188,6 +196,18 @@
 		]
 	};
 
+	// Matched extent pairs as placeable, colour-coded indicators
+	// (x = red, y = green, z = blue). The indicator apex sits at the measured
+	// point so it marks the exact mesh vertex feeding `model3dBoundsStore`.
+	const measureIndicators = (ex: AxisExtremes): { point: Vector3; material: Material }[] => [
+		{ point: ex.x[0], material: 'axisX' },
+		{ point: ex.x[1], material: 'axisX' },
+		{ point: ex.y[0], material: 'axisY' },
+		{ point: ex.y[1], material: 'axisY' },
+		{ point: ex.z[0], material: 'axisZ' },
+		{ point: ex.z[1], material: 'axisZ' }
+	];
+
 	const getInteractionMaterial = (
 		band: BandGeometry,
 		mode: InteractionMode,
@@ -228,9 +248,17 @@
 
 <TransformDisplay />
 {#if isPointSelectInteractionMode($interactionMode)}
-	{#each $interactionMode.data.points as point}
+	{#each $interactionMode.data.points as point, i (i)}
 		<T.Group position={[point.x, point.y, point.z]}>
 			<GlobuleMesh geometry={indicator} material="default" />
+		</T.Group>
+	{/each}
+{/if}
+
+{#if $showMeasureIndicators && $model3dExtremesStore}
+	{#each measureIndicators($model3dExtremesStore) as { point, material }, i (i)}
+		<T.Group position={[point.x, point.y, point.z]}>
+			<GlobuleMesh geometry={indicator} {material} />
 		</T.Group>
 	{/each}
 {/if}

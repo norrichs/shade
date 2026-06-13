@@ -963,12 +963,26 @@ export type SuperGlobule = {
 	};
 };
 
+/**
+ * The matched pair of mesh points that define each axis extent of the model
+ * bounding box: `[minPoint, maxPoint]` per axis. The extent along an axis is the
+ * distance between the two points' coordinates on that axis. Used to render
+ * measurement indicators so the derived model size can be visually verified.
+ */
+export type AxisExtremes = {
+	x: [Vector3, Vector3];
+	y: [Vector3, Vector3];
+	z: [Vector3, Vector3];
+};
+
 export type SuperGlobuleMesh = {
 	type: 'SuperGlobuleMesh';
 	superGlobuleConfigId: Id;
 	bandGeometry: BandGeometry[];
 	projectionAddresses: GlobuleAddress_Facet[];
 	bounds: Box3;
+	/** Null when the model has no geometry points. */
+	extremes: AxisExtremes | null;
 };
 
 export type SuperGlobuleGeometry =
