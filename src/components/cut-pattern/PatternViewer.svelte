@@ -2,6 +2,7 @@
 	import { superGlobulePatternStore, patternConfigStore, viewControlStore } from '$lib/stores';
 	import CutPatternControl from './CutPatternControl.svelte';
 	import CutPatternSvg from './CutPatternSvg.svelte';
+	import PageLayoutEditor from './PageLayoutEditor.svelte';
 
 	import ProjectionPanelPatterns from './ProjectionPanelPatterns.svelte';
 	import { mmFromInches } from '$lib/patterns/utils';
@@ -69,6 +70,7 @@
 		</CutPatternSvg>
 	</div>
 	<CutPatternControl />
+	<PageLayoutEditor />
 </div>
 
 <style>
