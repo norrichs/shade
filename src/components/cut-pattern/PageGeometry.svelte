@@ -4,7 +4,7 @@
 	let { pages = [], marginPx = 0 }: { pages?: PageRect[]; marginPx?: number } = $props();
 </script>
 
-{#each pages as page}
+{#each pages as page, i (i)}
 	<g class="page-geometry">
 		<rect
 			x={page.x}

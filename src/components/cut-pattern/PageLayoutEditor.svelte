@@ -53,7 +53,7 @@
 				value={presetId}
 				on:change={(e) => applyPreset((e.currentTarget as HTMLSelectElement).value)}
 			>
-				{#each PAGE_PRESETS as p}
+				{#each PAGE_PRESETS as p (p.id)}
 					<option value={p.id}>{p.label}</option>
 				{/each}
 				<option value="custom">Custom</option>

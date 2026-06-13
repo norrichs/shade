@@ -1,4 +1,3 @@
-import { Vector3 } from 'three';
 import { flexWrapPageLayout } from '../flex-wrap';
 import type { LayoutItem, PageGeom } from '../types';
 
