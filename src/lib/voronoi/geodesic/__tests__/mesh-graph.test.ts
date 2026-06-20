@@ -41,4 +41,14 @@ describe('buildMeshGraph', () => {
 		expect(origin).toBeGreaterThanOrEqual(0);
 		expect(g.adjacency[origin].length).toBeGreaterThanOrEqual(3);
 	});
+
+	it('produces unit normals pointing along the face normal for a flat mesh', () => {
+		// Two coplanar triangles in the z=0 plane wound CCW -> face normal is +Z.
+		const tris = [tri([0, 0, 0], [1, 0, 0], [0, 1, 0]), tri([1, 0, 0], [1, 1, 0], [0, 1, 0])];
+		const g = buildMeshGraph(tris);
+		for (const n of g.normals) {
+			expect(n.length()).toBeCloseTo(1, 9); // normalized
+			expect(n.z).toBeCloseTo(1, 9); // +Z for CCW winding in z=0 plane
+		}
+	});
 });

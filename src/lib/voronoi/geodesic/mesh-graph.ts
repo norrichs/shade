@@ -44,17 +44,27 @@ export function buildMeshGraph(triangles: SurfaceTriangle[]): MeshGraph {
 
 	const normals: Vector3[] = [];
 	const adjacency: GraphNeighbor[][] = [];
+	// Per-vertex neighbor sets for O(1) dedup; high-valence vertices (e.g. sphere
+	// poles) would make a linear .some() scan O(n^2) on dense meshes.
+	const neighborSets: Set<number>[] = [];
 
 	const ensureSlots = () => {
 		while (normals.length < positions.length) normals.push(new Vector3());
 		while (adjacency.length < positions.length) adjacency.push([]);
+		while (neighborSets.length < positions.length) neighborSets.push(new Set());
 	};
 
 	const addEdge = (a: number, b: number) => {
 		if (a === b) return;
 		const w = positions[a].distanceTo(positions[b]);
-		if (!adjacency[a].some((n) => n.to === b)) adjacency[a].push({ to: b, weight: w });
-		if (!adjacency[b].some((n) => n.to === a)) adjacency[b].push({ to: a, weight: w });
+		if (!neighborSets[a].has(b)) {
+			neighborSets[a].add(b);
+			adjacency[a].push({ to: b, weight: w });
+		}
+		if (!neighborSets[b].has(a)) {
+			neighborSets[b].add(a);
+			adjacency[b].push({ to: a, weight: w });
+		}
 	};
 
 	for (const t of triangles) {
