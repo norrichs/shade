@@ -348,6 +348,9 @@ function assembleVoronoiTubes(params: {
 			};
 		});
 
+		// surfaceCenter is used ONLY to resolve surface-projection band winding
+		// (which way faces point), never to place edge points. The geodesic pipeline
+		// stays center-free: all geometry above is already computed before this.
 		const spCenter = surfaceCenter;
 		const p0 = spSections[0].points[0];
 		const p1 = spSections[0].points[1];
