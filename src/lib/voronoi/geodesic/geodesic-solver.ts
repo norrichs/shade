@@ -69,7 +69,8 @@ export class DijkstraGeodesicSolver implements GeodesicSolver {
 		const heap = new MinHeap();
 		seedVertexIds.forEach((vid, seedIndex) => {
 			if (vid < 0 || vid >= n) return;
-			if (0 < field[vid].distance) {
+			// Only seed a vertex once: if two seeds share a vertex, the first wins.
+			if (field[vid].nearestSeed === -1) {
 				field[vid] = { nearestSeed: seedIndex, distance: 0 };
 				heap.push(vid, 0);
 			}

@@ -51,4 +51,26 @@ describe('DijkstraGeodesicSolver', () => {
 		expect(field[far].distance).toBeGreaterThanOrEqual(Math.sqrt(18) - 1e-9);
 		expect(Number.isFinite(field[far].distance)).toBe(true);
 	});
+
+	it('leaves vertices in a disconnected component unreachable', () => {
+		// Two separate single-triangle islands; source only on the first island.
+		const tri = (a: number[], b: number[], c: number[]): SurfaceTriangle => [
+			new Vector3(...(a as [number, number, number])),
+			new Vector3(...(b as [number, number, number])),
+			new Vector3(...(c as [number, number, number]))
+		];
+		const g = buildMeshGraph([
+			tri([0, 0, 0], [1, 0, 0], [0, 1, 0]),
+			tri([10, 10, 0], [11, 10, 0], [10, 11, 0])
+		]);
+		const s0 = g.positions.findIndex((p) => p.distanceTo(new Vector3(0, 0, 0)) < 1e-6);
+		const field = solver(g).solveMultiSource([s0]);
+		const island2 = g.positions.findIndex((p) => p.distanceTo(new Vector3(10, 10, 0)) < 1e-6);
+		expect(field[island2].nearestSeed).toBe(-1);
+		expect(field[island2].distance).toBe(Infinity);
+	});
 });
+
+function solver(g: ReturnType<typeof buildMeshGraph>): DijkstraGeodesicSolver {
+	return new DijkstraGeodesicSolver(g);
+}
