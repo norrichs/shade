@@ -4,11 +4,13 @@
  */
 
 import { generateSuperGlobule } from '$lib/generate-superglobule';
-import type { SuperGlobuleConfig, SuperGlobule } from '$lib/types';
+import type { SuperGlobuleConfig, SuperGlobule, PipelineGates } from '$lib/types';
 
 export type WorkerMessage = {
 	type: 'generate';
 	payload: SuperGlobuleConfig;
+	/** Which pipelines to run, derived from the viewControl `any` flags. */
+	gates: PipelineGates;
 	requestId: number;
 };
 
@@ -74,14 +76,14 @@ function stripNonSerializable(superGlobule: SuperGlobule): SuperGlobule {
 }
 
 self.onmessage = (event: MessageEvent<WorkerMessage>) => {
-	const { type, payload, requestId } = event.data;
+	const { type, payload, gates, requestId } = event.data;
 
 	if (type === 'generate') {
 		try {
 			console.log('[Worker] Starting generateSuperGlobule');
 			const startTime = performance.now();
 
-			const superGlobule = generateSuperGlobule(payload);
+			const superGlobule = generateSuperGlobule(payload, gates);
 
 			const endTime = performance.now();
 			console.log(`[Worker] generateSuperGlobule completed in ${endTime - startTime}ms`);

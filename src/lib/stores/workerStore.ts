@@ -1,5 +1,6 @@
 import { writable, derived, type Readable } from 'svelte/store';
-import type { SuperGlobuleConfig, SuperGlobule } from '$lib/types';
+import type { SuperGlobuleConfig, SuperGlobule, PipelineGates } from '$lib/types';
+import type { Tube } from '$lib/projection-geometry/types';
 import type { WorkerMessage, WorkerResponse } from '$lib/workers/super-globule.worker';
 import { Vector3, Triangle } from 'three';
 import {
@@ -214,8 +215,17 @@ function getWorker(): Worker {
 			}
 
 			if (type === 'result') {
-				workerError.set(null);
 				const rehydrated = rehydrateSuperGlobule(event.data.payload);
+
+				// Non-fatal per-pipeline failures: surface them as a warning (the toast
+				// subscriber reads workerError) but still resolve with the partial result
+				// so the pipelines that succeeded still render.
+				const pipelineErrors = rehydrated.pipelineErrors ?? [];
+				workerError.set(
+					pipelineErrors.length > 0
+						? pipelineErrors.map((e) => `${e.pipeline}: ${e.message}`).join('; ')
+						: null
+				);
 
 				// Regenerate surfaces on main thread (Object3D can't be serialized through worker)
 				resolver.config.projectionConfigs.forEach((projConfig, i) => {
@@ -264,7 +274,10 @@ function getWorker(): Worker {
  * Generates a SuperGlobule using the web worker
  * Returns a promise that resolves with the result
  */
-export function generateSuperGlobuleAsync(config: SuperGlobuleConfig): Promise<SuperGlobule> {
+export function generateSuperGlobuleAsync(
+	config: SuperGlobuleConfig,
+	gates: PipelineGates
+): Promise<SuperGlobule> {
 	return new Promise((resolve, reject) => {
 		const requestId = ++requestIdCounter;
 
@@ -275,6 +288,7 @@ export function generateSuperGlobuleAsync(config: SuperGlobuleConfig): Promise<S
 		const message: WorkerMessage = {
 			type: 'generate',
 			payload: config,
+			gates,
 			requestId
 		};
 

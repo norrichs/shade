@@ -11,7 +11,8 @@ import type {
 	ProjectionCutPattern,
 	SuperGlobuleMesh,
 	BandGeometry,
-	SuperGlobuleGeometry
+	SuperGlobuleGeometry,
+	PipelineGates
 } from '$lib/types';
 import type { GlobuleAddress_Facet } from '$lib/projection-geometry/types';
 import { derived, writable, get } from 'svelte/store';
@@ -42,10 +43,25 @@ import {
 } from './workerStore';
 import { browser } from '$app/environment';
 import { toastStore } from './toastStore';
+import { viewControlStore, type ViewControls } from './viewControlStore';
 import { Box3, Vector3 } from 'three';
 
 // Re-export the isWorking store for external use
 export { workerIsWorking as isGenerating };
+
+/**
+ * Map the viewControl `any` flags to pipeline gates. A pipeline is only generated
+ * when its output is wanted, so a hidden pipeline (e.g. projection on an open
+ * surface) can't run — and can't crash the others.
+ */
+function pipelineGatesFromViewControls(vc: ViewControls): PipelineGates {
+	return {
+		globule: vc.showGlobuleGeometry.any,
+		globuleTube: vc.showGlobuleTubeGeometry.any,
+		projection: vc.showProjectionGeometry.any,
+		voronoi: vc.showVoronoiGeometry.any
+	};
+}
 
 /**
  * Manual trigger for regenerating geometry/patterns when in manual mode
@@ -197,7 +213,8 @@ function triggerAsyncGeneration(config: SuperGlobuleConfig): void {
 		console.log('SUPER GLOBULE STORE - Starting async generation');
 
 		try {
-			const result = await generateSuperGlobuleAsync(config);
+			const gates = pipelineGatesFromViewControls(get(viewControlStore));
+			const result = await generateSuperGlobuleAsync(config, gates);
 			lastValidResult = result; // Store successful result
 			superGlobuleInternal.set(result);
 			console.log('SUPER GLOBULE STORE - Async generation complete');
@@ -242,7 +259,8 @@ if (browser) {
 			// Do initial synchronous generation for fast first render
 			console.log('SUPER GLOBULE STORE - Initial sync generation');
 			try {
-				const result = generateSuperGlobule(config);
+				const gates = pipelineGatesFromViewControls(get(viewControlStore));
+				const result = generateSuperGlobule(config, gates);
 				lastValidResult = result; // Store initial result
 				superGlobuleInternal.set(result);
 				isInitialized = true;
@@ -257,12 +275,40 @@ if (browser) {
 		}
 	});
 
+	// Generation now depends on the viewControl pipeline gates, so a gate flip must
+	// re-trigger generation. Only the `any` flags affect generation; the render-only
+	// sub-flags (bands/facets/sections/...) are ignored here to avoid needless work.
+	let prevGateKey: string | null = null;
+	viewControlStore.subscribe((vc) => {
+		const g = pipelineGatesFromViewControls(vc);
+		const key = `${g.globule}|${g.globuleTube}|${g.projection}|${g.voronoi}`;
+		if (prevGateKey === null) {
+			prevGateKey = key; // skip the initial subscription call
+			return;
+		}
+		if (key === prevGateKey) return; // render-only sub-flag change — no regen
+		prevGateKey = key;
+		if (!isInitialized) return;
+
+		const currentMode = get(computationMode);
+		if (currentMode === '2d-only') {
+			// Mirror config-change behavior: leaving 2d-only triggers regeneration.
+			computationMode.set('continuous');
+			return;
+		}
+		if (get(isManualMode)) {
+			hasPendingChanges.set(true);
+			return;
+		}
+		triggerAsyncGeneration(get(superConfigStore));
+	});
+
 	// Subscribe to worker errors and show toast notifications
 	workerError.subscribe((error) => {
 		if (error) {
 			toastStore.add({
 				type: 'error',
-				message: `Projection generation failed: ${error}. Adjust your geometry and the system will retry automatically.`,
+				message: `Geometry generation issue — ${error}. Adjust your geometry (or turn off that pipeline) and the system will retry automatically.`,
 				duration: 10000, // 10 seconds
 				dismissible: true
 			});
@@ -350,7 +396,10 @@ export const superGlobuleStore = derived(
 
 		// Fallback: generate synchronously (for SSR or before first result)
 		console.log('SUPER GLOBULE STORE - Sync fallback');
-		return generateSuperGlobule($superConfigStore);
+		return generateSuperGlobule(
+			$superConfigStore,
+			pipelineGatesFromViewControls(get(viewControlStore))
+		);
 	}
 );
 
