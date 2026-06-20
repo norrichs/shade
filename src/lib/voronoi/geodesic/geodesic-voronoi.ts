@@ -38,7 +38,9 @@ function resample(
 	normals: Vector3[],
 	count: number
 ): { points: Vector3[]; normals: Vector3[] } {
-	if (points.length <= 2 || count <= 2) {
+	// count >= 2 falls through to the normal path, which emits exactly `count` points
+	// (endpoints preserved). Only truly degenerate inputs short-circuit.
+	if (points.length < 2 || count <= 1) {
 		return { points: points.map((p) => p.clone()), normals: normals.map((n) => n.clone()) };
 	}
 	const cum: number[] = [0];

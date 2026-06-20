@@ -56,4 +56,28 @@ describe('generateGeodesicVoronoi', () => {
 		}
 		expect([...counts.values()].some((n) => n >= 2)).toBe(true);
 	});
+
+	it('runs Lloyd relaxation without changing the cell count', () => {
+		const config = { ...baseConfig() };
+		config.seedConfig = { ...config.seedConfig, relaxationIterations: 3 };
+		const result = generateGeodesicVoronoi(config, sphereMesh(24));
+		expect(result.seedPoints3d.length).toBe(8); // cellCount invariant across iterations
+		expect(result.edges.length).toBeGreaterThan(0);
+		expect(result.edgeProjections.length).toBe(result.edges.length);
+	});
+
+	it('coerces a centerProjection seed method to area-weighted', () => {
+		const config = { ...baseConfig() };
+		config.seedConfig = {
+			...config.seedConfig,
+			seedMethod: { type: 'centerProjection', pointCount: 8, seed: 42 }
+		};
+		const result = generateGeodesicVoronoi(config, sphereMesh(24));
+		// Same seed/pointCount as the area-weighted baseConfig -> identical seed positions.
+		const baseline = generateGeodesicVoronoi(baseConfig(), sphereMesh(24));
+		expect(result.seedPoints3d.length).toBe(8);
+		for (let i = 0; i < 8; i++) {
+			expect(result.seedPoints3d[i]?.distanceTo(baseline.seedPoints3d[i]!)).toBeCloseTo(0, 9);
+		}
+	});
 });
