@@ -43,4 +43,29 @@ describe('extractBoundaries', () => {
 		const shared = [...counts.values()].some((n) => n >= 2);
 		expect(shared).toBe(true);
 	});
+
+	it('welds a crossing shared by two adjacent faces into one chain', () => {
+		// Two triangles sharing edge (0,0,0)-(2,0,0). The shared edge has one endpoint
+		// in cell 0 and one in cell 1, so the crossing on it must be reused by both faces
+		// -> the two per-face segments stitch into a single chain.
+		const tris = [tri([0, 0, 0], [2, 0, 0], [1, 1, 0]), tri([0, 0, 0], [2, 0, 0], [1, -1, 0])];
+		const g = buildMeshGraph(tris);
+		const field: GeodesicField = g.positions.map((p) =>
+			p.distanceTo(new Vector3(0, 0, 0)) < 1e-6
+				? { nearestSeed: 1, distance: 1 }
+				: { nearestSeed: 0, distance: 1 }
+		);
+		const chains = extractBoundaries(g, field);
+		const pair = chains.filter((c) => new Set(c.cellIndices).has(0) && new Set(c.cellIndices).has(1));
+		expect(pair.length).toBe(1); // one stitched chain, not two disjoint segments
+		expect(pair[0].points.length).toBe(3); // crossing on top edge, shared crossing, crossing on bottom edge
+	});
+
+	it('skips faces touching an unreachable vertex', () => {
+		const g = buildMeshGraph([tri([0, 0, 0], [2, 0, 0], [0, 2, 0])]);
+		const field: GeodesicField = g.positions.map(() => ({ nearestSeed: 0, distance: 1 }));
+		const v2 = g.positions.findIndex((p) => p.distanceTo(new Vector3(0, 2, 0)) < 1e-6);
+		field[v2] = { nearestSeed: -1, distance: Infinity }; // unreachable
+		expect(extractBoundaries(g, field)).toEqual([]);
+	});
 });

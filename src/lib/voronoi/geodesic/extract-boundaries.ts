@@ -4,7 +4,12 @@ import type { GeodesicField } from './geodesic-solver';
 
 /** A raw (un-resampled) Voronoi boundary chain on the surface. */
 export type BoundaryChain = {
-	/** [startCornerId, endCornerId] — stable keys shared with adjacent chains. */
+	/**
+	 * [startCornerId, endCornerId] — stable keys shared with adjacent chains so
+	 * corners stitch. A closed-loop boundary (a cell fully enclosed by one other,
+	 * which only arises with very few seeds) has both ids equal: vertices[0] ===
+	 * vertices[1]. Consumers using these as stitch keys should treat that as a loop.
+	 */
 	vertices: [number, number];
 	/** The two cells this chain separates. */
 	cellIndices: [number, number];
