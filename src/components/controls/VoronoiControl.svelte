@@ -4,6 +4,7 @@
 	import type { VoronoiConfig, VoronoiMethod, InsetMethod } from '$lib/voronoi/types';
 
 	let config: VoronoiConfig = $derived($superConfigStore.voronoiConfig ?? defaultVoronoiConfig);
+	let isGeodesic = $derived((config.voronoiMethod ?? 'spherical') === 'geodesic');
 
 	function update(
 		field:
@@ -93,6 +94,7 @@
 			<select
 				value={config.seedConfig.seedMethod.type}
 				onchange={(e) => update('seedMethodType', e.currentTarget.value)}
+				disabled={isGeodesic}
 			>
 				<option value="areaWeighted">Area Weighted</option>
 				<option value="centerProjection">Center Projection</option>
@@ -107,6 +109,7 @@
 			>
 				<option value="spherical">Spherical</option>
 				<option value="uv">UV</option>
+				<option value="geodesic">Geodesic (center-free)</option>
 			</select>
 		</label>
 
@@ -115,6 +118,7 @@
 			<select
 				value={config.insetMethod ?? 'centerOut'}
 				onchange={(e) => update('insetMethod', e.currentTarget.value)}
+				disabled={isGeodesic}
 			>
 				<option value="centerOut">Center Out</option>
 				<option value="localProjection">Local Projection</option>
@@ -125,7 +129,7 @@
 			<input
 				type="checkbox"
 				checked={config.curvedInset ?? false}
-				disabled={(config.insetMethod ?? 'centerOut') !== 'localProjection'}
+				disabled={!isGeodesic && (config.insetMethod ?? 'centerOut') !== 'localProjection'}
 				onchange={(e) => update('curvedInset', String(e.currentTarget.checked))}
 			/>
 			Curved Inset
