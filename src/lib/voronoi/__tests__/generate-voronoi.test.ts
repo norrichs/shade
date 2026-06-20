@@ -143,6 +143,7 @@ jest.mock('$lib/stores/superGlobuleStores', () => ({}));
 jest.mock('$lib/stores/selectionStores', () => ({}));
 
 import { makeVoronoi } from '../generate-voronoi';
+import * as geodesicModule from '../geodesic/geodesic-voronoi';
 
 const testSurfaceConfig = {
 	type: 'SphereConfig' as const,
@@ -311,12 +312,20 @@ describe('makeVoronoi', () => {
 				seedMethod: { type: 'areaWeighted' as const, pointCount: 8, seed: 7 }
 			}
 		};
+		// Spy proves the geodesic front-half is actually taken (not the center-based
+		// fallthrough, which would also produce tubes and mask a regression).
+		const spy = jest.spyOn(geodesicModule, 'generateGeodesicVoronoi');
 		const result = makeVoronoi(config, { globule: 0 }, testSurfaceConfig);
+		expect(spy).toHaveBeenCalledTimes(1);
+		// One tube per geodesic boundary edge.
+		const { edges } = spy.mock.results[0].value as { edges: unknown[] };
+		expect(result.tubes.length).toBe(edges.length);
 		expect(result.tubes.length).toBeGreaterThan(0);
 		for (const tube of result.tubes) {
 			expect(tube.bands.length).toBeGreaterThan(0);
 			for (const band of tube.bands) expect(band.facets.length).toBeGreaterThan(0);
 		}
+		spy.mockRestore();
 	});
 
 	// Same fold-back guard as above, but through the localProjection inset path — this is the
