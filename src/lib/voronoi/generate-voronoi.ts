@@ -507,11 +507,14 @@ export function makeVoronoi(
 	}
 
 	// Per-cell apex for fillAll: ray-cast the seed direction onto the surface.
-	const cellApex: (Vector3 | undefined)[] = relaxedSeeds.map((seed) => {
-		const hit = intersect(coordToDirection(seed[0], seed[1]));
-		if (!hit) console.warn('fillAll: cell seed ray missed surface; using averaged border point');
-		return hit ?? undefined;
-	});
+	// Only needed when filling; skip the ray-casts otherwise.
+	const cellApex: (Vector3 | undefined)[] = config.fillAll
+		? relaxedSeeds.map((seed) => {
+				const hit = intersect(coordToDirection(seed[0], seed[1]));
+				if (!hit) console.warn('fillAll: cell seed ray missed surface; using averaged border point');
+				return hit ?? undefined;
+			})
+		: [];
 
 	const { tubes, surfaceProjectionTubes } = assembleVoronoiTubes({
 		edges: voronoiResult.edges,
