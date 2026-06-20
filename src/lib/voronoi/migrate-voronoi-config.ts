@@ -41,12 +41,28 @@ export function normalizeVoronoiConfig(config: SuperGlobuleConfig): SuperGlobule
 
 	// Migrate the legacy scalar `edgeDivisions: number` to `[min, max]` and enforce
 	// the min <= max invariant for any persisted pair.
-	const voronoiConfig: VoronoiConfig = {
+	let voronoiConfig: VoronoiConfig = {
 		...resolved,
 		edgeDivisions: normalizeEdgeDivisions(resolved.edgeDivisions),
 		insetMethod: resolved.insetMethod ?? 'centerOut',
 		curvedInset: resolved.curvedInset ?? false
 	};
+
+	// Geodesic Voronoi requires center-free methods. Coerce stale/persisted configs.
+	if (voronoiConfig.voronoiMethod === 'geodesic') {
+		const sm = voronoiConfig.seedConfig.seedMethod;
+		voronoiConfig = {
+			...voronoiConfig,
+			insetMethod: 'localProjection',
+			seedConfig: {
+				...voronoiConfig.seedConfig,
+				seedMethod:
+					sm.type === 'areaWeighted'
+						? sm
+						: { type: 'areaWeighted', pointCount: sm.pointCount, seed: sm.seed }
+			}
+		};
+	}
 
 	return { ...rest, voronoiConfig };
 }

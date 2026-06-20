@@ -138,4 +138,27 @@ describe('normalizeVoronoiConfig', () => {
 		const result = normalizeVoronoiConfig(input);
 		expect(result.voronoiConfig!.curvedInset).toBe(false);
 	});
+
+	it('coerces seed + inset methods to center-free choices when geodesic', () => {
+		const cfg = normalizeVoronoiConfig(
+			baseConfig({
+				voronoiConfig: {
+					...inlineDefaultVoronoiConfig,
+					voronoiMethod: 'geodesic',
+					insetMethod: 'centerOut',
+					seedConfig: {
+						type: 'VoronoiSeedConfig',
+						seedMethod: { type: 'centerProjection', pointCount: 10, seed: 3 },
+						relaxationIterations: 2
+					}
+				} as VoronoiConfig
+			})
+		);
+		const v = cfg.voronoiConfig!;
+		expect(v.insetMethod).toBe('localProjection');
+		expect(v.seedConfig.seedMethod.type).toBe('areaWeighted');
+		expect(v.seedConfig.seedMethod.pointCount).toBe(10); // preserved
+		expect(v.seedConfig.seedMethod.seed).toBe(3); // preserved
+		expect(v.seedConfig.relaxationIterations).toBe(2); // preserved
+	});
 });
