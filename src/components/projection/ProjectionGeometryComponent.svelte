@@ -78,7 +78,9 @@
 		show: ShowProjectionGeometries,
 		projectionData: ProjectionData[]
 	) => {
-		projectionGeometry = collateGeometry(projectionData[0], show);
+		// projectionData is empty when the projection pipeline is gated off; nothing
+		// to collate (collateGeometry destructures its first arg, so guard it).
+		projectionGeometry = projectionData[0] ? collateGeometry(projectionData[0], show) : {};
 	};
 
 	const updateGlobuleTubeGeometry = (show: ShowGlobuleTubeGeometries, globuleTubes: Tube[]) => {

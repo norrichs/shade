@@ -148,18 +148,19 @@ export const selectedProjection = writable<GlobuleAddress_Facet>({
 
 const getSelectedFacet = (address: GlobuleAddress_Facet, sg: SuperGlobule, mode: SelectionMode) => {
 	const facets = new Set<Facet>([]);
+	// The selected projection may not exist when the projection pipeline is gated
+	// off (e.g. a stale selection address). Nothing to highlight in that case.
+	const proj = sg.projections[address.globule];
+	if (!proj) return [];
 	if (mode.includes.tube) {
-		sg.projections[address.globule].tubes[address.tube].bands.forEach((band) =>
+		proj.tubes[address.tube]?.bands.forEach((band) =>
 			band.facets.forEach((facet) => facets.add(facet))
 		);
 	} else if (mode.includes.band) {
-		sg.projections[address.globule].tubes[address.tube].bands[address.band].facets.forEach(
-			(facet) => facets.add(facet)
-		);
+		proj.tubes[address.tube]?.bands[address.band]?.facets.forEach((facet) => facets.add(facet));
 	} else if (mode.includes.facet) {
-		facets.add(
-			sg.projections[address.globule].tubes[address.tube].bands[address.band].facets[address.facet]
-		);
+		const facet = proj.tubes[address.tube]?.bands[address.band]?.facets[address.facet];
+		if (facet) facets.add(facet);
 	}
 	return Array.from(facets);
 };
@@ -192,15 +193,19 @@ const getPartnerFacets = (facets: Facet[], sg: SuperGlobule, mode: SelectionMode
 					receiver = partners;
 				}
 				const { globule: g, tube: t, band: b, facet: f } = a;
-				if (!facetAddresses.has(concatAddress(a))) {
+				// The referenced projection may not exist when the projection pipeline
+				// is gated off (e.g. a persisted selection pointing at it).
+				const proj = sg.projections[g];
+				if (proj && !facetAddresses.has(concatAddress(a))) {
 					if (mode.includes.tube) {
-						sg.projections[g].tubes[t].bands.forEach((band) => {
+						proj.tubes[t]?.bands.forEach((band) => {
 							band.facets.forEach((facet) => receiver.add(facet));
 						});
 					} else if (mode.includes.band) {
-						sg.projections[g].tubes[t].bands[b].facets.forEach((facet) => receiver.add(facet));
+						proj.tubes[t]?.bands[b]?.facets.forEach((facet) => receiver.add(facet));
 					} else if (mode.includes.facet) {
-						receiver.add(sg.projections[g].tubes[t].bands[b].facets[f]);
+						const facetAtAddress = proj.tubes[t]?.bands[b]?.facets[f];
+						if (facetAtAddress) receiver.add(facetAtAddress);
 					}
 				}
 			});

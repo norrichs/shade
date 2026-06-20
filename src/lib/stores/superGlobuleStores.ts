@@ -514,7 +514,8 @@ const superGlobulePatternStoreInternal = derived(
 			patternSource === 'projection' &&
 			showProjectionGeometry.any &&
 			showProjectionGeometry.bands &&
-			$genConfig.showBands
+			$genConfig.showBands &&
+			projection // empty when the projection pipeline is gated off
 				? generateProjectionPattern(
 						projection.tubes,
 						$superConfigStore.id,
@@ -527,7 +528,7 @@ const superGlobulePatternStoreInternal = derived(
 			patternSource === 'surfaceProjection' &&
 			showProjectionGeometry.any &&
 			$genConfig.showBands &&
-			projection.surfaceProjectionTubes?.length
+			projection?.surfaceProjectionTubes?.length
 				? generateProjectionPattern(
 						projection.surfaceProjectionTubes,
 						$superConfigStore.id,
