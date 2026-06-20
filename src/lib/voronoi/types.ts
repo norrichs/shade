@@ -4,7 +4,7 @@ import type {
 	TransformConfig
 } from '$lib/projection-geometry/types';
 
-export type VoronoiMethod = 'spherical' | 'uv';
+export type VoronoiMethod = 'spherical' | 'uv' | 'geodesic';
 
 export type InsetMethod = 'centerOut' | 'localProjection';
 

@@ -1,0 +1,59 @@
+import { describe, it, expect } from '@jest/globals';
+import { Vector3 } from 'three';
+import type { SurfaceTriangle, VoronoiConfig } from '$lib/voronoi/types';
+import { defaultVoronoiConfig } from '$lib/shades-config';
+import { generateGeodesicVoronoi } from '../geodesic-voronoi';
+
+/** UV sphere sampling -> triangles. */
+function sphereMesh(seg: number): SurfaceTriangle[] {
+	const v = (i: number, j: number) => {
+		const u = (i / seg) * Math.PI * 2;
+		const t = (j / seg) * Math.PI;
+		return new Vector3(Math.sin(t) * Math.cos(u), Math.cos(t), Math.sin(t) * Math.sin(u));
+	};
+	const tris: SurfaceTriangle[] = [];
+	for (let j = 0; j < seg; j++) {
+		for (let i = 0; i < seg; i++) {
+			tris.push([v(i, j), v(i + 1, j), v(i, j + 1)]);
+			tris.push([v(i + 1, j), v(i + 1, j + 1), v(i, j + 1)]);
+		}
+	}
+	return tris;
+}
+
+// Base on the real default so bandConfig/crossSectionConfig stay type-valid; override
+// only what the geodesic path reads (seeds, edgeDivisions, method).
+const baseConfig = (): VoronoiConfig => ({
+	...defaultVoronoiConfig,
+	seedConfig: {
+		...defaultVoronoiConfig.seedConfig,
+		seedMethod: { type: 'areaWeighted', pointCount: 8, seed: 42 },
+		relaxationIterations: 0
+	},
+	edgeDivisions: [4, 4],
+	voronoiMethod: 'geodesic',
+	insetMethod: 'localProjection'
+});
+
+describe('generateGeodesicVoronoi', () => {
+	it('emits parallel edges/edgeProjections and per-cell seed points', () => {
+		const result = generateGeodesicVoronoi(baseConfig(), sphereMesh(24));
+		expect(result.edges.length).toBeGreaterThan(0);
+		expect(result.edgeProjections.length).toBe(result.edges.length);
+		expect(result.seedPoints3d.length).toBe(8);
+		for (let i = 0; i < result.edges.length; i++) {
+			const proj = result.edgeProjections[i];
+			expect(proj.edgePoints3d.length).toBeGreaterThanOrEqual(2);
+			expect(proj.normals.length).toBe(proj.edgePoints3d.length);
+		}
+	});
+
+	it('shares corner keys between edges meeting at a Voronoi corner', () => {
+		const result = generateGeodesicVoronoi(baseConfig(), sphereMesh(24));
+		const counts = new Map<number, number>();
+		for (const e of result.edges) {
+			for (const v of e.vertices) counts.set(v[0], (counts.get(v[0]) ?? 0) + 1);
+		}
+		expect([...counts.values()].some((n) => n >= 2)).toBe(true);
+	});
+});
