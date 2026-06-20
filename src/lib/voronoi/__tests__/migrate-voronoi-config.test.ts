@@ -161,4 +161,27 @@ describe('normalizeVoronoiConfig', () => {
 		expect(v.seedConfig.seedMethod.seed).toBe(3); // preserved
 		expect(v.seedConfig.relaxationIterations).toBe(2); // preserved
 	});
+
+	it('leaves an already center-free geodesic config intact', () => {
+		const cfg = normalizeVoronoiConfig(
+			baseConfig({
+				voronoiConfig: {
+					...inlineDefaultVoronoiConfig,
+					voronoiMethod: 'geodesic',
+					insetMethod: 'localProjection',
+					seedConfig: {
+						type: 'VoronoiSeedConfig',
+						seedMethod: { type: 'areaWeighted', pointCount: 12, seed: 9 },
+						relaxationIterations: 4
+					}
+				} as VoronoiConfig
+			})
+		);
+		const v = cfg.voronoiConfig!;
+		expect(v.insetMethod).toBe('localProjection');
+		expect(v.seedConfig.seedMethod.type).toBe('areaWeighted');
+		expect(v.seedConfig.seedMethod.pointCount).toBe(12);
+		expect(v.seedConfig.seedMethod.seed).toBe(9);
+		expect(v.seedConfig.relaxationIterations).toBe(4);
+	});
 });
