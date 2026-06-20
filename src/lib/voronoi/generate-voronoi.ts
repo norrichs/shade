@@ -12,7 +12,7 @@ import type {
 	TriangleEdge,
 	Tube
 } from '$lib/projection-geometry/types';
-import type { VoronoiConfig, VoronoiResult } from './types';
+import type { VoronoiConfig, VoronoiEdge, VoronoiResult } from './types';
 import { computeAdaptiveEdgeDivisions } from './edge-divisions';
 import { generateSeeds } from './generate-seeds';
 import { extractSurfaceTriangles } from './extract-surface-triangles';
@@ -264,85 +264,27 @@ function computeVoronoiFromSeeds(
 	}
 }
 
-export function makeVoronoi(
-	config: VoronoiConfig,
-	address: GlobuleAddress,
-	surfaceConfig: SurfaceConfig
-): { tubes: Tube[]; surfaceProjectionTubes: Tube[]; surface: Object3D } {
-	const resolvedSurfaceConfig =
-		surfaceConfig.transform === 'inherit'
-			? ({ ...surfaceConfig, transform: config.meta.transform } as SurfaceConfig)
-			: surfaceConfig;
+function assembleVoronoiTubes(params: {
+	edges: VoronoiEdge[];
+	edgeProjections: EdgeProjection[];
+	edgeInsets: EdgeInsets[];
+	address: GlobuleAddress;
+	config: VoronoiConfig;
+	surfaceCenter: Vector3;
+	/** Per-cell apex for fillAll (cell seed on surface). Index = cell id. */
+	cellApex: (Vector3 | undefined)[];
+}): { tubes: Tube[]; surfaceProjectionTubes: Tube[] } {
+	const { edges, edgeProjections, edgeInsets, address, config, surfaceCenter, cellApex } = params;
 
-	const surface = generateSurface(resolvedSurfaceConfig);
-	const center = getSurfaceCenter(surfaceConfig);
-	const intersect = createSurfaceIntersector(surface, center);
-
-	// Step 1: Generate seeds on surface
-	const surfaceTriangles = extractSurfaceTriangles(surface);
-	const seeds3d = generateSeeds(config.seedConfig.seedMethod, center, intersect, surfaceTriangles);
-
-	// Steps 2-4: Branch on voronoi method
-	const { voronoiResult, relaxedSeeds, coordToDirection } = computeVoronoiFromSeeds(
-		seeds3d,
-		center,
-		config
-	);
-
-	// Step 5: Process each Voronoi edge into tube geometry
 	const tubes: Tube[] = [];
 	const surfaceProjectionTubes: Tube[] = [];
 	// For fillAll: which cell each spTube's first/last outer band borders.
 	const spFillMeta: { firstCell: number; lastCell: number }[] = [];
 	const crossSectionConfig = config.crossSectionConfig;
-	const curveOffsetFactor = config.curveOffsetFactor ?? DEFAULT_CURVE_OFFSET_FACTOR;
 	const dummyEdgeConfig = makeDummyEdgeConfig(crossSectionConfig);
 
-	// Adaptive divisions: divide each edge by a count interpolated between the
-	// configured [min, max] according to the edge's arc length relative to the
-	// shortest and longest edges.
-	const edgeLengths = voronoiResult.edges.map((e) =>
-		edgeArcLength(e.vertices[0], e.vertices[1], coordToDirection)
-	);
-	const edgeDivisionCounts = computeAdaptiveEdgeDivisions(edgeLengths, config.edgeDivisions);
-
-	const edgeProjections: EdgeProjection[] = projectEdgesOntoSurface({
-		edges: voronoiResult.edges,
-		edgeDivisionCounts,
-		coordToDirection,
-		center,
-		surface,
-		intersect
-	});
-
-	let edgeInsets: EdgeInsets[];
-	if (config.insetMethod === 'localProjection') {
-		const seedPoints3d = relaxedSeeds.map((seed) => intersect(coordToDirection(seed[0], seed[1])));
-		edgeInsets = computeEdgeInsetsLocalProjection({
-			edges: voronoiResult.edges,
-			edgeProjections,
-			seedPoints3d,
-			surface,
-			surfaceCenter: center,
-			curveOffsetFactor,
-			surfaceProjectionDivisions: config.surfaceProjectionDivisions ?? 0,
-			curvedInset: config.curvedInset ?? false
-		});
-	} else {
-		edgeInsets = computeEdgeInsetsCenterOut({
-			edges: voronoiResult.edges,
-			edgeProjections,
-			relaxedSeeds,
-			coordToDirection,
-			center,
-			intersect,
-			curveOffsetFactor,
-			surfaceProjectionDivisions: config.surfaceProjectionDivisions ?? 0
-		});
-	}
-
-	for (let edgeIndex = 0; edgeIndex < voronoiResult.edges.length; edgeIndex++) {
-		const voronoiEdge = voronoiResult.edges[edgeIndex];
+	for (let edgeIndex = 0; edgeIndex < edges.length; edgeIndex++) {
+		const voronoiEdge = edges[edgeIndex];
 		const [cellIdxA, cellIdxB] = voronoiEdge.cellIndices;
 
 		const { edgePoints3d, normals } = edgeProjections[edgeIndex];
@@ -405,7 +347,7 @@ export function makeVoronoi(
 			};
 		});
 
-		const spCenter = getSurfaceCenter(surfaceConfig);
+		const spCenter = surfaceCenter;
 		const p0 = spSections[0].points[0];
 		const p1 = spSections[0].points[1];
 		const p2 = spSections[1].points[0];
@@ -448,13 +390,6 @@ export function makeVoronoi(
 		const averageOf = (pts: Vector3[]): Vector3 =>
 			pts.reduce((acc, p) => acc.add(p.clone()), new Vector3()).divideScalar(pts.length);
 
-		// Per-cell apex: ray-cast the seed direction onto the surface.
-		const cellApex: (Vector3 | undefined)[] = relaxedSeeds.map((seed) => {
-			const hit = intersect(coordToDirection(seed[0], seed[1]));
-			if (!hit) console.warn('fillAll: cell seed ray missed surface; using averaged border point');
-			return hit ?? undefined;
-		});
-
 		surfaceProjectionTubes.forEach((tube, t) => {
 			const meta = spFillMeta[t];
 			const firstEdge = outerBorderPolyline(tube.sections, 'first');
@@ -471,7 +406,7 @@ export function makeVoronoi(
 						borderEdge: firstEdge,
 						center: firstApex,
 						address: { ...tube.address, band: 0 },
-						projCenter: center
+						projCenter: surfaceCenter
 					})
 				);
 			}
@@ -482,7 +417,7 @@ export function makeVoronoi(
 						borderEdge: lastEdge,
 						center: lastApex,
 						address: { ...tube.address, band: 0 },
-						projCenter: center
+						projCenter: surfaceCenter
 					})
 				);
 			}
@@ -497,6 +432,96 @@ export function makeVoronoi(
 	} catch (error) {
 		console.error('Voronoi surface projection partner matching error:', error);
 	}
+
+	return { tubes, surfaceProjectionTubes };
+}
+
+export function makeVoronoi(
+	config: VoronoiConfig,
+	address: GlobuleAddress,
+	surfaceConfig: SurfaceConfig
+): { tubes: Tube[]; surfaceProjectionTubes: Tube[]; surface: Object3D } {
+	const resolvedSurfaceConfig =
+		surfaceConfig.transform === 'inherit'
+			? ({ ...surfaceConfig, transform: config.meta.transform } as SurfaceConfig)
+			: surfaceConfig;
+
+	const surface = generateSurface(resolvedSurfaceConfig);
+	const center = getSurfaceCenter(surfaceConfig);
+	const intersect = createSurfaceIntersector(surface, center);
+
+	// Step 1: Generate seeds on surface
+	const surfaceTriangles = extractSurfaceTriangles(surface);
+	const seeds3d = generateSeeds(config.seedConfig.seedMethod, center, intersect, surfaceTriangles);
+
+	// Steps 2-4: Branch on voronoi method
+	const { voronoiResult, relaxedSeeds, coordToDirection } = computeVoronoiFromSeeds(
+		seeds3d,
+		center,
+		config
+	);
+
+	const curveOffsetFactor = config.curveOffsetFactor ?? DEFAULT_CURVE_OFFSET_FACTOR;
+
+	// Adaptive divisions: divide each edge by a count interpolated between the
+	// configured [min, max] according to the edge's arc length relative to the
+	// shortest and longest edges.
+	const edgeLengths = voronoiResult.edges.map((e) =>
+		edgeArcLength(e.vertices[0], e.vertices[1], coordToDirection)
+	);
+	const edgeDivisionCounts = computeAdaptiveEdgeDivisions(edgeLengths, config.edgeDivisions);
+
+	const edgeProjections: EdgeProjection[] = projectEdgesOntoSurface({
+		edges: voronoiResult.edges,
+		edgeDivisionCounts,
+		coordToDirection,
+		center,
+		surface,
+		intersect
+	});
+
+	let edgeInsets: EdgeInsets[];
+	if (config.insetMethod === 'localProjection') {
+		const seedPoints3d = relaxedSeeds.map((seed) => intersect(coordToDirection(seed[0], seed[1])));
+		edgeInsets = computeEdgeInsetsLocalProjection({
+			edges: voronoiResult.edges,
+			edgeProjections,
+			seedPoints3d,
+			surface,
+			surfaceCenter: center,
+			curveOffsetFactor,
+			surfaceProjectionDivisions: config.surfaceProjectionDivisions ?? 0,
+			curvedInset: config.curvedInset ?? false
+		});
+	} else {
+		edgeInsets = computeEdgeInsetsCenterOut({
+			edges: voronoiResult.edges,
+			edgeProjections,
+			relaxedSeeds,
+			coordToDirection,
+			center,
+			intersect,
+			curveOffsetFactor,
+			surfaceProjectionDivisions: config.surfaceProjectionDivisions ?? 0
+		});
+	}
+
+	// Per-cell apex for fillAll: ray-cast the seed direction onto the surface.
+	const cellApex: (Vector3 | undefined)[] = relaxedSeeds.map((seed) => {
+		const hit = intersect(coordToDirection(seed[0], seed[1]));
+		if (!hit) console.warn('fillAll: cell seed ray missed surface; using averaged border point');
+		return hit ?? undefined;
+	});
+
+	const { tubes, surfaceProjectionTubes } = assembleVoronoiTubes({
+		edges: voronoiResult.edges,
+		edgeProjections,
+		edgeInsets,
+		address,
+		config,
+		surfaceCenter: center,
+		cellApex
+	});
 
 	return { tubes, surfaceProjectionTubes, surface };
 }
