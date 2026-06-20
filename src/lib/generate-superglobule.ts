@@ -12,24 +12,70 @@ import type {
 	GlobuleConfig,
 	GlobuleData,
 	Id,
+	PipelineError,
+	PipelineGates,
 	SubGlobule,
 	SubGlobuleConfig,
 	SuperGlobule,
 	SuperGlobuleConfig
 } from './types';
 
-export const generateSuperGlobule = (superConfig: SuperGlobuleConfig): SuperGlobule => {
+const ALL_PIPELINES: PipelineGates = {
+	globule: true,
+	globuleTube: true,
+	projection: true,
+	voronoi: true
+};
+
+/**
+ * Run all generation pipelines whose gate is enabled. Each pipeline is gated
+ * (skipped when its gate is false) AND fault-isolated (its failure is collected
+ * as a non-fatal `pipelineError` rather than aborting the others). Gates are wired
+ * to the viewControl `any` flags so a pipeline only runs when its output is wanted.
+ */
+export const generateSuperGlobule = (
+	superConfig: SuperGlobuleConfig,
+	gates: PipelineGates = ALL_PIPELINES
+): SuperGlobule => {
+	const pipelineErrors: PipelineError[] = [];
+
+	// Run a gated, fault-isolated pipeline: skip when disabled; on failure record
+	// the error and fall back rather than propagating.
+	function runPipeline<T>(pipeline: keyof PipelineGates, enabled: boolean, fn: () => T, fallback: T): T {
+		if (!enabled) return fallback;
+		try {
+			return fn();
+		} catch (error) {
+			pipelineErrors.push({
+				pipeline,
+				message: error instanceof Error ? error.message : String(error)
+			});
+			return fallback;
+		}
+	}
+
 	// Old Globule Pipeline
-	const subGlobules: SubGlobule[] = recombineSubGlobules(
-		superConfig.subGlobuleConfigs.map((sgc, index) => generateSubGlobule(sgc, index)).flat()
+	const subGlobules = runPipeline<SubGlobule[]>(
+		'globule',
+		gates.globule,
+		() =>
+			recombineSubGlobules(
+				superConfig.subGlobuleConfigs.map((sgc, index) => generateSubGlobule(sgc, index)).flat()
+			),
+		[]
 	);
 
 	// New Globule Tube Pipeline
-	const globuleTubes = superConfig.subGlobuleConfigs
-		.map((sgc, index) => generateSubGlobuleTubes(sgc, index))
-		.flat();
+	const globuleTubes = runPipeline<Tube[]>(
+		'globuleTube',
+		gates.globuleTube,
+		() => superConfig.subGlobuleConfigs.map((sgc, index) => generateSubGlobuleTubes(sgc, index)).flat(),
+		[]
+	);
 
-	// Projection Tube pipeline
+	// Surface-config resolution is cheap (no mesh/raycasting) and is needed by the
+	// voronoi pipeline even when the projection pipeline is gated off, so it runs
+	// unconditionally here.
 	const globuleConfig = superConfig.subGlobuleConfigs[0]?.globuleConfig;
 	const resolvedProjectionConfigs = superConfig.projectionConfigs.map((config) => {
 		if (config.surfaceConfig.type === 'GlobuleConfig' && globuleConfig) {
@@ -44,16 +90,23 @@ export const generateSuperGlobule = (superConfig: SuperGlobuleConfig): SuperGlob
 		return config;
 	});
 
-	const projections = resolvedProjectionConfigs.map((config, i) => {
-		return makeProjection(config, { globule: i });
-	});
+	// Projection Tube pipeline (the center-based ray-casting pipeline that throws on
+	// open/gapped surfaces — gating it off keeps it from aborting the others).
+	const projections = runPipeline<SuperGlobule['projections']>(
+		'projection',
+		gates.projection,
+		() => resolvedProjectionConfigs.map((config, i) => makeProjection(config, { globule: i })),
+		[]
+	);
 
 	// Voronoi Tube pipeline (single config)
 	const projectionSurfaceConfig = resolvedProjectionConfigs[0]?.surfaceConfig;
-	const voronoiResult =
-		projectionSurfaceConfig && superConfig.voronoiConfig
-			? makeVoronoi(superConfig.voronoiConfig, { globule: 0 }, projectionSurfaceConfig)
-			: undefined;
+	const voronoiResult = runPipeline<SuperGlobule['voronoiResult']>(
+		'voronoi',
+		gates.voronoi && !!projectionSurfaceConfig && !!superConfig.voronoiConfig,
+		() => makeVoronoi(superConfig.voronoiConfig!, { globule: 0 }, projectionSurfaceConfig!),
+		undefined
+	);
 
 	const superGlobule: SuperGlobule = {
 		type: 'SuperGlobule',
@@ -62,7 +115,8 @@ export const generateSuperGlobule = (superConfig: SuperGlobuleConfig): SuperGlob
 		globuleTubes,
 		subGlobules,
 		projections,
-		voronoiResult
+		voronoiResult,
+		pipelineErrors: pipelineErrors.length > 0 ? pipelineErrors : undefined
 	};
 	return superGlobule;
 };

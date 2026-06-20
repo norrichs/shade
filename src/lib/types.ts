@@ -928,6 +928,22 @@ export type SuperGlobuleConfig = {
 	voronoiConfig?: VoronoiConfig;
 };
 
+// Which generation pipelines to run. Wired to the viewControl `any` flags so a
+// pipeline only runs when its output is wanted (see superGlobuleStores).
+export type PipelineGates = {
+	globule: boolean;
+	globuleTube: boolean;
+	projection: boolean;
+	voronoi: boolean;
+};
+
+// A non-fatal failure from one pipeline. Collected (not thrown) so a single
+// pipeline's failure can't abort the others; surfaced to the user as a warning.
+export type PipelineError = {
+	pipeline: keyof PipelineGates;
+	message: string;
+};
+
 export type SuperGlobule = {
 	type: 'SuperGlobule';
 	superGlobuleConfigId: Id;
@@ -946,6 +962,8 @@ export type SuperGlobule = {
 		surfaceProjectionTubes: Tube[];
 		surface: Object3D;
 	};
+	// Non-fatal per-pipeline failures from this generation pass, if any.
+	pipelineErrors?: PipelineError[];
 };
 
 export type SuperGlobuleMesh = {
