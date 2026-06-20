@@ -30,6 +30,7 @@ import { projectEdgesOntoSurface, type EdgeProjection } from './project-edges-on
 import type { EdgeInsets } from './inset-types';
 import { computeEdgeInsetsCenterOut } from './inset-center-out';
 import { computeEdgeInsetsLocalProjection } from './local-projection';
+import { generateGeodesicVoronoi } from './geodesic/geodesic-voronoi';
 import {
 	generateSurface,
 	generateProjectionBands,
@@ -452,6 +453,34 @@ export function makeVoronoi(
 
 	// Step 1: Generate seeds on surface
 	const surfaceTriangles = extractSurfaceTriangles(surface);
+
+	if (config.voronoiMethod === 'geodesic') {
+		const { edges, edgeProjections, seedPoints3d } = generateGeodesicVoronoi(config, surfaceTriangles);
+		const edgeInsets = computeEdgeInsetsLocalProjection({
+			edges,
+			edgeProjections,
+			seedPoints3d,
+			surface,
+			surfaceCenter: center,
+			curveOffsetFactor: config.curveOffsetFactor ?? DEFAULT_CURVE_OFFSET_FACTOR,
+			surfaceProjectionDivisions: config.surfaceProjectionDivisions ?? 0,
+			curvedInset: config.curvedInset ?? false
+		});
+		const cellApex: (Vector3 | undefined)[] = config.fillAll
+			? seedPoints3d.map((p) => p ?? undefined)
+			: [];
+		const { tubes, surfaceProjectionTubes } = assembleVoronoiTubes({
+			edges,
+			edgeProjections,
+			edgeInsets,
+			address,
+			config,
+			surfaceCenter: center,
+			cellApex
+		});
+		return { tubes, surfaceProjectionTubes, surface };
+	}
+
 	const seeds3d = generateSeeds(config.seedConfig.seedMethod, center, intersect, surfaceTriangles);
 
 	// Steps 2-4: Branch on voronoi method

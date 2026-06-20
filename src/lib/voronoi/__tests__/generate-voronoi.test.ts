@@ -300,6 +300,25 @@ describe('makeVoronoi', () => {
 		});
 	});
 
+	it('generates tubes via the geodesic pipeline (center-free)', () => {
+		const base = makeTestConfig();
+		const config = {
+			...base,
+			voronoiMethod: 'geodesic' as const,
+			insetMethod: 'localProjection' as const,
+			seedConfig: {
+				...base.seedConfig,
+				seedMethod: { type: 'areaWeighted' as const, pointCount: 8, seed: 7 }
+			}
+		};
+		const result = makeVoronoi(config, { globule: 0 }, testSurfaceConfig);
+		expect(result.tubes.length).toBeGreaterThan(0);
+		for (const tube of result.tubes) {
+			expect(tube.bands.length).toBeGreaterThan(0);
+			for (const band of tube.bands) expect(band.facets.length).toBeGreaterThan(0);
+		}
+	});
+
 	// Same fold-back guard as above, but through the localProjection inset path — this is the
 	// only coverage of localProjection's divsB-reversal + intermediate back-projection at
 	// surfaceProjectionDivisions > 0.
