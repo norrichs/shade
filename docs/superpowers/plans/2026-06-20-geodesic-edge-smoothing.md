@@ -479,7 +479,9 @@ export class SurfaceProjector {
 
 	project(point: Vector3, normal: Vector3): { point: Vector3; normal: Vector3 } {
 		const hit = this.raycastBoth(point, normal);
-		if (hit && hit.faceIndex !== undefined && hit.faceIndex < this.triangles.length) {
+		// `!= null` (not `!== undefined`): three's Intersection.faceIndex is typed
+		// `number | null`, so this narrows away both null and undefined.
+		if (hit && hit.faceIndex != null && hit.faceIndex < this.triangles.length) {
 			return { point: hit.point.clone(), normal: this.blendNormal(hit.faceIndex, hit.point) };
 		}
 		return this.closestPoint(point);
