@@ -27,6 +27,27 @@ curves — but still threads through every zigzag point from (1). Only an
 flattens the zigzag. Hence a cubic smoothing spline with a penalty on the
 second derivative.
 
+### Numeric method: discrete cubic smoothing spline (Whittaker–Henderson)
+
+We smooth the chain's node positions directly (per coordinate), which is the
+discrete cubic smoothing spline: minimize
+
+```
+  Σ wᵢ (yᵢ − zᵢ)²  +  λ Σ (z_{k−1} − 2 z_k + z_{k+1})²
+```
+
+the second sum being the discrete second-derivative (curvature) penalty. The
+normal equations `(W + λ DᵀD) z = W y` give a symmetric **pentadiagonal**
+(half-bandwidth 2), positive-definite system, solved with a small **banded
+Cholesky** (not a tridiagonal Thomas solve — the 2nd-difference penalty is
+inherently pentadiagonal). Endpoints are pinned by giving indices `0` and `n−1`
+a large data weight and then overwriting the two endpoint outputs with the exact
+input values, so shared corners stay bit-identical. `λ = 0` returns the input
+unchanged (`z = y`).
+
+This operates at node level (output has the same point count as input), so the
+existing arc-length `resample` step runs afterward unchanged.
+
 ### Safety net
 
 `geodesicSmoothing === 0` reproduces today's output exactly (raw chain points →
@@ -40,26 +61,21 @@ Applied per `BoundaryChain` in `geodesic-voronoi.ts`, after
 
 When `geodesicSmoothing > 0` **and** the chain has ≥ 4 points:
 
-1. **Parametrize** the raw chain points by cumulative chord length `s_i`
-   (`s_0 = 0`).
-2. **Fit** a Reinsch cubic smoothing spline `g(s)` independently for x, y, z.
-   Penalty `λ = geodesicSmoothing` on ∫ g″(s)² ds. **Endpoints pinned**: indices
-   `0` and `n` carry effectively-infinite weight so `g` interpolates them
-   exactly. This guarantees shared corners (triple-points, rim transition
-   points) never move.
-3. **Evaluate** `g` densely (e.g. `max(rawCount, divisionCount) * k` samples) →
-   smoothed polyline (points + provisional normals lerped from raw, to feed
-   resample).
-4. **Arc-length resample** the smoothed polyline to `divisionCounts[i]` using
+1. **Smooth** the chain node positions per coordinate with the discrete cubic
+   smoothing spline above (`λ = geodesicSmoothing`), endpoints pinned. Output has
+   the same point count as input. Shared corners (triple-points, rim transition
+   points) stay bit-identical.
+2. **Arc-length resample** the smoothed polyline to `divisionCounts[i]` using
    the existing `resample` helper (preserves endpoints, emits exactly the
-   adaptive division count).
-5. **Re-project** each resampled point onto the surface (see Re-projection).
+   adaptive division count). Normals are lerped here as today, then replaced by
+   re-projection.
+3. **Re-project** each resampled point onto the surface (see Re-projection).
    Replaces both the point and its normal.
 
 When `geodesicSmoothing === 0` **or** the chain has < 4 points → current
 behavior: raw points → `resample`, **no** re-projection. (A 4-point minimum
-keeps the spline meaningful; padded single-vertex rim runs are exactly 3 points
-and pass through unchanged.)
+keeps the smoother meaningful; padded single-vertex rim runs are exactly 3
+points and pass through unchanged.)
 
 ## Re-projection
 
@@ -84,13 +100,13 @@ from both `surfaceTriangles` and the `MeshGraph`.
 
 ## New module: `src/lib/voronoi/geodesic/smooth-chains.ts`
 
-- `fitSmoothingSpline(params: number[], values: number[], lambda: number): (s: number) => number`
-  — pure Reinsch cubic smoothing spline solver (tridiagonal system via the
-  Thomas algorithm), endpoints hard-pinned. Numeric and fully unit-testable in
-  isolation, independent of Three.js.
-- `smoothChainPolyline(points: Vector3[], normals: Vector3[], lambda: number, denseCount: number): { points: Vector3[]; normals: Vector3[] }`
-  — fits the spline to all three coordinates, returns the densely-sampled
-  smoothed polyline (normals lerped from input, recomputed later by projection).
+- `smoothSeries(values: number[], lambda: number): number[]` — pure discrete
+  cubic smoothing spline (Whittaker–Henderson) on one coordinate series, endpoints
+  pinned exactly. Builds the symmetric pentadiagonal `W + λ DᵀD` and solves via a
+  small banded Cholesky. Numeric, fully unit-testable, independent of Three.js.
+- `smoothChainPoints(points: Vector3[], lambda: number): Vector3[]` — applies
+  `smoothSeries` to x, y, z and recombines; returns same-length smoothed points
+  (endpoints unchanged). Chains with < 4 points are returned unchanged.
 - `SurfaceProjector` — built from `surfaceTriangles` + the `MeshGraph`; builds
   the raycast `Mesh` + `Raycaster` and a triangle→welded-vertex-ids map once;
   `project(point: Vector3, normal: Vector3): { point: Vector3; normal: Vector3 }`
@@ -138,10 +154,11 @@ raycast mesh is built internally.
 
 ## Testing
 
-- `fitSmoothingSpline`: on a flat noisy 1-D series the output is smoother
-  (smaller total |second difference|) and passes through the pinned endpoints
-  exactly; `λ = 0` interpolates the input.
-- `smoothChainPolyline`: endpoints unchanged; total turning angle drops vs. raw.
+- `smoothSeries`: on a flat noisy 1-D series the output is smoother (smaller
+  total |second difference|) and equals the input at the pinned endpoints
+  exactly; `λ = 0` returns the input unchanged.
+- `smoothChainPoints`: endpoints unchanged; total turning angle drops vs. raw;
+  < 4-point chains returned unchanged.
 - `SurfaceProjector`: projected points lie on the surface (≈ 0 distance to the
   nearest triangle).
 - Integration (`generateGeodesicVoronoi`): `λ = 0` reproduces current output;
