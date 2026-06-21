@@ -103,3 +103,15 @@ describe('SurfaceProjector', () => {
 		expect(Math.abs(res.normal.z)).toBeGreaterThan(0.99); // blended normal still points off-plane
 	});
 });
+
+describe('SurfaceProjector.projectClosest', () => {
+	it('returns the nearest on-surface point and a sensible normal', () => {
+		const tris = gridMesh(8);
+		const projector = new SurfaceProjector(tris, buildMeshGraph(tris));
+		const res = projector.projectClosest(new Vector3(0.2, -0.1, 0.5));
+		expect(Math.abs(res.point.z)).toBeLessThan(1e-6); // snapped to z=0 plane
+		expect(res.point.x).toBeCloseTo(0.2, 5);
+		expect(res.point.y).toBeCloseTo(-0.1, 5);
+		expect(Math.abs(res.normal.z)).toBeGreaterThan(0.99);
+	});
+});

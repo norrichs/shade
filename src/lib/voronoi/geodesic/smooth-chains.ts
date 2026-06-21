@@ -186,6 +186,13 @@ export class SurfaceProjector {
 		return this.closestPoint(point);
 	}
 
+	/** Closest point on the surface to `point`, with a blended welded-vertex normal.
+	 * Normal-free (no ray direction needed) — used by curve-shortening, which
+	 * projects moved midpoints that have no reliable ray. */
+	projectClosest(point: Vector3): { point: Vector3; normal: Vector3 } {
+		return this.closestPoint(point);
+	}
+
 	private raycastBoth(point: Vector3, normal: Vector3): Intersection | null {
 		const dir = normal.lengthSq() < 1e-18 ? new Vector3(0, 0, 1) : normal.clone().normalize();
 		this.raycaster.set(point, dir);
