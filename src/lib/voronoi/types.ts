@@ -6,6 +6,8 @@ import type {
 
 export type VoronoiMethod = 'spherical' | 'uv' | 'geodesic';
 
+export type GeodesicEdgeStyle = 'bisector' | 'smoothed' | 'geodesic';
+
 export type InsetMethod = 'centerOut' | 'localProjection';
 
 export type VoronoiConfig = {
@@ -22,10 +24,15 @@ export type VoronoiConfig = {
 	curveOffsetFactor: number;
 	surfaceProjectionDivisions: number;
 	voronoiMethod: VoronoiMethod;
-	// Geodesic-only: cubic-smoothing-spline strength (λ) applied to boundary
-	// chains before resampling. 0 = off (raw piecewise-linear edges). Higher =
-	// smoother. Ignored by the spherical/uv methods.
+	// Geodesic-only. How cell edges are drawn:
+	//   'bisector' — raw equidistant boundary (default; current behavior)
+	//   'smoothed' — bisector run through the cubic smoothing spline (geodesicSmoothing = λ)
+	//   'geodesic' — edge replaced by the geodesic between its corners (curve-shortening)
+	geodesicEdgeStyle?: GeodesicEdgeStyle;
+	// Smoothing-spline strength (λ) for the 'smoothed' style. 0 = off.
 	geodesicSmoothing?: number;
+	// Max curve-shortening iterations for the 'geodesic' style.
+	geodesicStraightenCap?: number;
 	insetMethod: InsetMethod;
 	// When true (localProjection only), inset edges are drawn as per-corner quadratic
 	// beziers instead of straight homothety lines. Ignored by other inset methods.

@@ -725,7 +725,9 @@ export const defaultVoronoiConfig: VoronoiConfig = {
 	curveOffsetFactor: 0.3,
 	surfaceProjectionDivisions: 0,
 	voronoiMethod: 'spherical',
+	geodesicEdgeStyle: 'bisector',
 	geodesicSmoothing: 0,
+	geodesicStraightenCap: 60,
 	insetMethod: 'centerOut',
 	curvedInset: false
 };
