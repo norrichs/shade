@@ -1,8 +1,22 @@
 import { describe, it, expect } from '@jest/globals';
 import { Vector3 } from 'three';
 import type { SurfaceTriangle, VoronoiConfig } from '$lib/voronoi/types';
+import { OPENING } from '$lib/types';
 import { defaultVoronoiConfig } from '$lib/shades-config';
 import { generateGeodesicVoronoi } from '../geodesic-voronoi';
+
+/** Flat NxN grid in the z=0 plane — an OPEN surface (perimeter rim). */
+function gridMesh(n: number): SurfaceTriangle[] {
+	const v = (x: number, y: number) => new Vector3((x / n) * 2 - 1, (y / n) * 2 - 1, 0);
+	const tris: SurfaceTriangle[] = [];
+	for (let y = 0; y < n; y++) {
+		for (let x = 0; x < n; x++) {
+			tris.push([v(x, y), v(x + 1, y), v(x, y + 1)]);
+			tris.push([v(x + 1, y), v(x + 1, y + 1), v(x, y + 1)]);
+		}
+	}
+	return tris;
+}
 
 /** UV sphere sampling -> triangles. */
 function sphereMesh(seg: number): SurfaceTriangle[] {
@@ -64,6 +78,16 @@ describe('generateGeodesicVoronoi', () => {
 		expect(result.seedPoints3d.length).toBe(8); // cellCount invariant across iterations
 		expect(result.edges.length).toBeGreaterThan(0);
 		expect(result.edgeProjections.length).toBe(result.edges.length);
+	});
+
+	it('emits opening-sentinel edges on an open surface', () => {
+		const result = generateGeodesicVoronoi(baseConfig(), gridMesh(16));
+		expect(result.edges.some((e) => e.cellIndices.includes(OPENING))).toBe(true);
+	});
+
+	it('emits no opening-sentinel edges on a closed surface', () => {
+		const result = generateGeodesicVoronoi(baseConfig(), sphereMesh(24));
+		expect(result.edges.some((e) => e.cellIndices.includes(OPENING))).toBe(false);
 	});
 
 	it('coerces a centerProjection seed method to area-weighted', () => {

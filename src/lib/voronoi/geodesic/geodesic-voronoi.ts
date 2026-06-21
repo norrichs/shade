@@ -3,9 +3,10 @@ import type { SurfaceTriangle, VoronoiConfig, VoronoiEdge } from '$lib/voronoi/t
 import { generateAreaWeightedSeeds } from '$lib/voronoi/generate-seeds';
 import type { EdgeProjection } from '$lib/voronoi/project-edges-onto-surface';
 import { computeAdaptiveEdgeDivisions } from '$lib/voronoi/edge-divisions';
-import { buildMeshGraph, type MeshGraph } from './mesh-graph';
+import { buildMeshGraph, traceBoundaryLoops, type MeshGraph } from './mesh-graph';
 import { DijkstraGeodesicSolver, type GeodesicField } from './geodesic-solver';
 import { extractBoundaries, type BoundaryChain } from './extract-boundaries';
+import { buildRimChains } from './rim-edges';
 
 export type GeodesicVoronoiResult = {
 	edges: VoronoiEdge[];
@@ -115,7 +116,10 @@ export function generateGeodesicVoronoi(
 	);
 
 	// Boundaries -> resample to adaptive divisions.
-	const chains: BoundaryChain[] = extractBoundaries(graph, field);
+	// Cell-cell boundaries plus, for open surfaces, per-cell rim chains tracing the openings.
+	const cellChains = extractBoundaries(graph, field);
+	const rimChains = buildRimChains(graph, field, traceBoundaryLoops(graph));
+	const chains: BoundaryChain[] = [...cellChains, ...rimChains];
 	const lengths = chains.map((c) => polylineLength(c.points));
 	const divisionCounts = computeAdaptiveEdgeDivisions(lengths, config.edgeDivisions);
 
