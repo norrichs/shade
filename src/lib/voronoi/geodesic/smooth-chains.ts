@@ -1,5 +1,3 @@
-import { Vector3 } from 'three';
-
 /**
  * Discrete cubic smoothing spline (Whittaker–Henderson) on one coordinate series.
  * Minimises  Σ wᵢ (yᵢ − zᵢ)²  +  λ Σ (z_{k−1} − 2 z_k + z_{k+1})²
@@ -83,6 +81,3 @@ export function smoothSeries(values: number[], lambda: number): number[] {
 	z[n - 1] = values[n - 1];
 	return z;
 }
-
-// Suppress unused-import warning: Vector3 is used by later tasks in this module.
-void (Vector3 as unknown);

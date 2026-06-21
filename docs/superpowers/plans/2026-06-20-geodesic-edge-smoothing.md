@@ -81,11 +81,10 @@ Expected: FAIL — `Cannot find module '../smooth-chains'`.
 
 - [ ] **Step 3: Write minimal implementation**
 
-Create `src/lib/voronoi/geodesic/smooth-chains.ts`:
+Create `src/lib/voronoi/geodesic/smooth-chains.ts` (no imports yet — pure number
+crunching; `Vector3` is added by Task 2 when first used):
 
 ```ts
-import { Vector3 } from 'three';
-
 /**
  * Discrete cubic smoothing spline (Whittaker–Henderson) on one coordinate series.
  * Minimises  Σ wᵢ (yᵢ − zᵢ)²  +  λ Σ (z_{k−1} − 2 z_k + z_{k+1})²
@@ -115,14 +114,15 @@ export function smoothSeries(values: number[], lambda: number): number[] {
 		else if (j === i + 1) d1[i] += val;
 		else if (j === i + 2) d2[i] += val;
 	};
+	// Store only the upper triangle (j >= i), so loop b >= a (cols is monotone,
+	// hence cols[b] >= cols[a]). A full a,b loop would double-count off-diagonals
+	// and break positive-definiteness.
 	const coeff = [1, -2, 1];
 	for (let k = 1; k <= n - 2; k++) {
 		const cols = [k - 1, k, k + 1];
 		for (let a = 0; a < 3; a++) {
-			for (let b = 0; b < 3; b++) {
-				const lo = Math.min(cols[a], cols[b]);
-				const hi = Math.max(cols[a], cols[b]);
-				addUpper(lo, hi, lambda * coeff[a] * coeff[b]);
+			for (let b = a; b < 3; b++) {
+				addUpper(cols[a], cols[b], lambda * coeff[a] * coeff[b]);
 			}
 		}
 	}
@@ -238,7 +238,14 @@ Expected: FAIL — `smoothChainPoints is not a function` / not exported.
 
 - [ ] **Step 3: Write minimal implementation**
 
-Append to `src/lib/voronoi/geodesic/smooth-chains.ts`:
+Add the `Vector3` import at the top of `src/lib/voronoi/geodesic/smooth-chains.ts`
+(the file currently has no imports):
+
+```ts
+import { Vector3 } from 'three';
+```
+
+Then append to `src/lib/voronoi/geodesic/smooth-chains.ts`:
 
 ```ts
 /**
