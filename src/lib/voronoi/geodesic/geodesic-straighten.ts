@@ -69,6 +69,9 @@ export function straightenToGeodesic(
 		for (let i = 1; i < n - 1; i++) spread[i] = projector.projectClosest(spread[i]).point;
 		cur = spread;
 
+		// Convergence signal is the Laplacian+snap displacement (the geodesic-
+		// curvature term that drives straightening); the redistribution shuffle is
+		// not counted. As the curve approaches a geodesic this term -> 0 regardless.
 		if (maxMove < tolerance) break;
 	}
 	return cur;
