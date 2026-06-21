@@ -40,4 +40,19 @@ describe('buildRimChains', () => {
 		expect(chains.every((c) => c.cellIndices[0] >= 0)).toBe(true);
 		expect(chains.some((c) => c.cellIndices[0] === 0)).toBe(true);
 	});
+
+	it('emits a single chain when the whole rim borders one cell', () => {
+		const g = quad();
+		const field = fieldBy(g, () => 3); // every rim vertex in cell 3
+		const chains = buildRimChains(g, field, traceBoundaryLoops(g));
+		expect(chains.length).toBe(1);
+		expect(chains[0].cellIndices).toEqual([3, OPENING]);
+		expect(chains[0].points.length).toBeGreaterThanOrEqual(2);
+	});
+
+	it('emits no chains when the whole rim is unreachable', () => {
+		const g = quad();
+		const field = fieldBy(g, () => -1);
+		expect(buildRimChains(g, field, traceBoundaryLoops(g))).toEqual([]);
+	});
 });
