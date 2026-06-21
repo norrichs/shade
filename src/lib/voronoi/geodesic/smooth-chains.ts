@@ -1,4 +1,15 @@
-import { Vector3 } from 'three';
+import {
+	Vector3,
+	BufferGeometry,
+	BufferAttribute,
+	Mesh,
+	MeshBasicMaterial,
+	Raycaster,
+	Triangle,
+	type Intersection
+} from 'three';
+import type { SurfaceTriangle } from '$lib/voronoi/types';
+import { weldKey, type MeshGraph } from './mesh-graph';
 
 /**
  * Discrete cubic smoothing spline (Whittaker–Henderson) on one coordinate series.
@@ -104,4 +115,113 @@ export function smoothChainPoints(points: Vector3[], lambda: number): Vector3[] 
 		lambda
 	);
 	return points.map((_, i) => new Vector3(xs[i], ys[i], zs[i]));
+}
+
+/** Barycentric coords of p w.r.t. triangle (a,b,c). Degenerate → [1,0,0]. */
+function barycentric(p: Vector3, a: Vector3, b: Vector3, c: Vector3): [number, number, number] {
+	const v0 = b.clone().sub(a);
+	const v1 = c.clone().sub(a);
+	const v2 = p.clone().sub(a);
+	const d00 = v0.dot(v0);
+	const d01 = v0.dot(v1);
+	const d11 = v1.dot(v1);
+	const d20 = v2.dot(v0);
+	const d21 = v2.dot(v1);
+	const denom = d00 * d11 - d01 * d01;
+	if (Math.abs(denom) < 1e-20) return [1, 0, 0];
+	const v = (d11 * d20 - d01 * d21) / denom;
+	const w = (d00 * d21 - d01 * d20) / denom;
+	return [1 - v - w, v, w];
+}
+
+function faceNormalOf(t: SurfaceTriangle): Vector3 {
+	const n = t[1].clone().sub(t[0]).cross(t[2].clone().sub(t[0]));
+	return n.lengthSq() < 1e-18 ? new Vector3(0, 0, 1) : n.normalize();
+}
+
+/**
+ * Re-projects smoothed points onto the surface. Built once per generation from
+ * the surface triangles and the welded mesh graph; raycasts from a point along
+ * ±normal onto a Mesh of the triangles (nearest hit wins), with a
+ * closest-point-on-triangle fallback. Returned normals are a barycentric blend
+ * of the hit triangle's welded vertex normals. Worker-local; never serialized.
+ */
+export class SurfaceProjector {
+	private mesh: Mesh;
+	private raycaster = new Raycaster();
+	private triangles: SurfaceTriangle[];
+	private triNormals: [Vector3, Vector3, Vector3][];
+
+	constructor(triangles: SurfaceTriangle[], graph: MeshGraph) {
+		this.triangles = triangles;
+		const idByKey = new Map<string, number>();
+		graph.positions.forEach((p, i) => idByKey.set(weldKey(p), i));
+
+		const positions = new Float32Array(triangles.length * 9);
+		this.triNormals = [];
+		triangles.forEach((t, ti) => {
+			for (let c = 0; c < 3; c++) {
+				positions[ti * 9 + c * 3 + 0] = t[c].x;
+				positions[ti * 9 + c * 3 + 1] = t[c].y;
+				positions[ti * 9 + c * 3 + 2] = t[c].z;
+			}
+			const fallback = faceNormalOf(t);
+			const normalFor = (c: number): Vector3 => {
+				const id = idByKey.get(weldKey(t[c]));
+				return id !== undefined ? graph.normals[id] : fallback;
+			};
+			this.triNormals.push([normalFor(0), normalFor(1), normalFor(2)]);
+		});
+
+		const geom = new BufferGeometry();
+		geom.setAttribute('position', new BufferAttribute(positions, 3));
+		this.mesh = new Mesh(geom, new MeshBasicMaterial());
+	}
+
+	project(point: Vector3, normal: Vector3): { point: Vector3; normal: Vector3 } {
+		const hit = this.raycastBoth(point, normal);
+		if (hit && hit.faceIndex !== undefined && hit.faceIndex < this.triangles.length) {
+			return { point: hit.point.clone(), normal: this.blendNormal(hit.faceIndex, hit.point) };
+		}
+		return this.closestPoint(point);
+	}
+
+	private raycastBoth(point: Vector3, normal: Vector3): Intersection | null {
+		const dir = normal.lengthSq() < 1e-18 ? new Vector3(0, 0, 1) : normal.clone().normalize();
+		this.raycaster.set(point, dir);
+		const fwd = this.raycaster.intersectObject(this.mesh, false);
+		this.raycaster.set(point, dir.clone().negate());
+		const bwd = this.raycaster.intersectObject(this.mesh, false);
+		const f = fwd[0] ?? null;
+		const b = bwd[0] ?? null;
+		if (f && b) return f.distance <= b.distance ? f : b;
+		return f ?? b;
+	}
+
+	private blendNormal(faceIndex: number, at: Vector3): Vector3 {
+		const t = this.triangles[faceIndex];
+		const [u, v, w] = barycentric(at, t[0], t[1], t[2]);
+		const [n0, n1, n2] = this.triNormals[faceIndex];
+		const n = n0.clone().multiplyScalar(u).addScaledVector(n1, v).addScaledVector(n2, w);
+		return n.lengthSq() < 1e-18 ? faceNormalOf(t) : n.normalize();
+	}
+
+	private closestPoint(point: Vector3): { point: Vector3; normal: Vector3 } {
+		let bestD = Infinity;
+		let bestP = point.clone();
+		let bestI = 0;
+		const tmp = new Vector3();
+		const tri = new Triangle();
+		this.triangles.forEach((t, ti) => {
+			tri.set(t[0], t[1], t[2]);
+			tri.closestPointToPoint(point, tmp);
+			const d = tmp.distanceToSquared(point);
+			if (d < bestD) {
+				bestD = d;
+				bestP = tmp.clone();
+				bestI = ti;
+			}
+		});
+		return { point: bestP, normal: this.blendNormal(bestI, bestP) };
+	}
 }

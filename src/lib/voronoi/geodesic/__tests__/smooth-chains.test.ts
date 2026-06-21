@@ -1,6 +1,9 @@
 import { describe, it, expect } from '@jest/globals';
 import { Vector3 } from 'three';
 import { smoothSeries, smoothChainPoints } from '../smooth-chains';
+import type { SurfaceTriangle } from '$lib/voronoi/types';
+import { buildMeshGraph } from '../mesh-graph';
+import { SurfaceProjector } from '../smooth-chains';
 
 /** Sum of |second differences| — a proxy for jaggedness. */
 function roughness(s: number[]): number {
@@ -66,5 +69,37 @@ describe('smoothChainPoints', () => {
 		const out = smoothChainPoints(raw, 10);
 		expect(out.map((p) => p.toArray())).toEqual(raw.map((p) => p.toArray()));
 		expect(out[0]).not.toBe(raw[0]);
+	});
+});
+
+/** Flat NxN grid in the z=0 plane (normals point +z). */
+function gridMesh(n: number): SurfaceTriangle[] {
+	const v = (x: number, y: number) => new Vector3((x / n) * 2 - 1, (y / n) * 2 - 1, 0);
+	const tris: SurfaceTriangle[] = [];
+	for (let y = 0; y < n; y++) {
+		for (let x = 0; x < n; x++) {
+			tris.push([v(x, y), v(x + 1, y), v(x, y + 1)]);
+			tris.push([v(x + 1, y), v(x + 1, y + 1), v(x, y + 1)]);
+		}
+	}
+	return tris;
+}
+
+describe('SurfaceProjector', () => {
+	it('snaps a point above the plane back onto the surface via raycast', () => {
+		const tris = gridMesh(8);
+		const projector = new SurfaceProjector(tris, buildMeshGraph(tris));
+		const res = projector.project(new Vector3(0.1, -0.2, 0.3), new Vector3(0, 0, 1));
+		expect(Math.abs(res.point.z)).toBeLessThan(1e-6);
+		expect(Math.abs(res.normal.z)).toBeGreaterThan(0.99);
+	});
+
+	it('falls back to closest-point when the ray misses the surface', () => {
+		const tris = gridMesh(8);
+		const projector = new SurfaceProjector(tris, buildMeshGraph(tris));
+		// Point off the +x edge, normal parallel to the plane so neither ray hits.
+		const res = projector.project(new Vector3(1.5, 0, 0), new Vector3(1, 0, 0));
+		expect(Math.abs(res.point.z)).toBeLessThan(1e-6); // landed on the z=0 surface
+		expect(res.point.x).toBeLessThanOrEqual(1.000001); // clamped onto the mesh extent
 	});
 });
