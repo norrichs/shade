@@ -100,7 +100,9 @@ export function buildMeshGraph(triangles: SurfaceTriangle[]): MeshGraph {
  * Trace the boundary (opening) loops of the mesh. A boundary edge is a welded edge
  * used by exactly one face; boundary edges chain into ordered vertex-id loops, one
  * per opening. A closed mesh (every edge shared by two faces) returns []. "Open" =
- * the returned array is non-empty.
+ * the returned array is non-empty. Assumes manifold openings (each boundary vertex
+ * has exactly two boundary edges); a pinched/non-manifold boundary yields partial
+ * loops rather than looping forever — fine for our generated surface meshes.
  */
 export function traceBoundaryLoops(graph: MeshGraph): number[][] {
 	const key = (a: number, b: number) => (a < b ? `${a}:${b}` : `${b}:${a}`);
