@@ -69,9 +69,18 @@ by raycasting (chosen over closest-point as the primary method):
 - Build a `Mesh` (`BufferGeometry` from `surfaceTriangles`) + `Raycaster` once
   per generation (Three.js `Raycaster` needs no DOM — runs fine in the worker).
 - For each sample `p` with normal `n`: raycast `(p, +n)` and `(p, −n)`; take the
-  nearest hit. Use `hit.point` and the **hit face normal**.
+  nearest hit. Use `hit.point` and a **barycentric blend of the hit triangle's
+  three welded vertex normals** (from `MeshGraph.normals`) at the hit's
+  barycentric coords, normalized — preserving the smooth area-weighted normals.
 - **Fallback** on miss (grazing angle / thin feature): closest-point-on-triangle
-  across `surfaceTriangles`; normal = that triangle's face normal.
+  across `surfaceTriangles`; normal = barycentric blend of that triangle's
+  welded vertex normals at the closest point.
+
+To blend welded vertex normals we map each `surfaceTriangle`'s three corner
+positions to their welded vertex ids (via the same `QUANTUM` key used by
+`buildMeshGraph`) so the raycast/closest-point triangle index resolves to three
+`MeshGraph.normals` entries. The `SurfaceProjector` is therefore constructed
+from both `surfaceTriangles` and the `MeshGraph`.
 
 ## New module: `src/lib/voronoi/geodesic/smooth-chains.ts`
 
@@ -82,9 +91,12 @@ by raycasting (chosen over closest-point as the primary method):
 - `smoothChainPolyline(points: Vector3[], normals: Vector3[], lambda: number, denseCount: number): { points: Vector3[]; normals: Vector3[] }`
   — fits the spline to all three coordinates, returns the densely-sampled
   smoothed polyline (normals lerped from input, recomputed later by projection).
-- `SurfaceProjector` — builds the raycast `Mesh` + `Raycaster` from
-  `surfaceTriangles` once; `project(point: Vector3, normal: Vector3): { point: Vector3; normal: Vector3 }`
-  with raycast + closest-point fallback. Worker-local scratch; never serialized.
+- `SurfaceProjector` — built from `surfaceTriangles` + the `MeshGraph`; builds
+  the raycast `Mesh` + `Raycaster` and a triangle→welded-vertex-ids map once;
+  `project(point: Vector3, normal: Vector3): { point: Vector3; normal: Vector3 }`
+  raycasts (with closest-point fallback) and returns the hit point plus a
+  barycentric blend of the hit triangle's welded vertex normals. Worker-local
+  scratch; never serialized.
 
 `geodesic-voronoi.ts` constructs one `SurfaceProjector` per generation and runs
 each chain through the pipeline above. No signature change to
@@ -120,9 +132,9 @@ raycast mesh is built internally.
 - **Closed-loop chains** (`vertices[0] === vertices[1]`; rare — very few seeds,
   or a rim loop bordering a single cell) pin their one shared point, which may
   leave a slight cusp there. Acceptable for now; documented limitation.
-- **Re-projected normals are face normals** (per the raycast choice) rather than
-  the smooth area-weighted vertex normals the raw chains carried. Minor
-  tube-orientation change, accepted.
+- Re-projected normals are a **barycentric blend of the smooth area-weighted
+  welded vertex normals** at the hit point, preserving smooth shading along the
+  re-projected curve.
 
 ## Testing
 
