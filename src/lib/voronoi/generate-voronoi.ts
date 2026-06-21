@@ -298,6 +298,10 @@ function assembleVoronoiTubes(params: {
 		// only the surface side gets bands (no opening-side curve, no surface-projection tube).
 		const openingA = cellIdxA === OPENING;
 		const openingB = cellIdxB === OPENING;
+		// Defensive: an edge bordering openings on both sides has no real cell to back
+		// any geometry. This shouldn't occur (rim edges always carry exactly one real
+		// cell), but skip it rather than feed degenerate insets to the symmetric path.
+		if (openingA && openingB) continue;
 		if (openingA !== openingB) {
 			const realCurve = openingA ? curvePointsB : curvePointsA;
 			const sideSections = applyCrossSectionsToEdge(
