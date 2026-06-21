@@ -1,5 +1,6 @@
 import { Object3D, Raycaster, Vector3 } from 'three';
 import type { Facet, FacetEdgeMeta } from '$lib/types';
+import { OPENING } from '$lib/types';
 import type {
 	CrossSectionConfig,
 	EdgeConfig,
@@ -292,6 +293,35 @@ function assembleVoronoiTubes(params: {
 		const { curvePointsA, curvePointsB, divsA, divsB } = edgeInsets[edgeIndex];
 
 		if (edgePoints3d.length < 2) continue;
+
+		// One-sided (asymmetric) tube for rim edges: one side borders an opening, so
+		// only the surface side gets bands (no opening-side curve, no surface-projection tube).
+		const openingA = cellIdxA === OPENING;
+		const openingB = cellIdxB === OPENING;
+		if (openingA !== openingB) {
+			const realCurve = openingA ? curvePointsB : curvePointsA;
+			const sideSections = applyCrossSectionsToEdge(
+				edgePoints3d,
+				realCurve,
+				normals,
+				crossSectionConfig
+			);
+			const oneSided: Section[] = sideSections.map((s) => ({ points: s.crossSectionPoints }));
+			const tubeAddress: GlobuleAddress_Tube = { ...address, tube: tubes.length };
+			const bands = generateProjectionBands(
+				oneSided,
+				config.bandConfig.orientation,
+				tubeAddress,
+				config.bandConfig.tubeSymmetry
+			);
+			tubes.push({
+				bands,
+				sections: oneSided,
+				orientation: config.bandConfig.orientation,
+				address: tubeAddress
+			});
+			continue; // skip the symmetric main tube + surface-projection tube
+		}
 
 		// Apply cross-sections for each side of the edge
 		const sectionsA = applyCrossSectionsToEdge(

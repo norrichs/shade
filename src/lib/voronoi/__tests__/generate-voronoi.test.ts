@@ -2,6 +2,7 @@ import {
 	Mesh,
 	Object3D,
 	SphereGeometry,
+	PlaneGeometry,
 	MeshBasicMaterial,
 	DoubleSide,
 	Triangle,
@@ -144,6 +145,11 @@ jest.mock('$lib/stores/selectionStores', () => ({}));
 
 import { makeVoronoi } from '../generate-voronoi';
 import * as geodesicModule from '../geodesic/geodesic-voronoi';
+import {
+	generateSurface,
+	generateProjectionBands
+} from '$lib/projection-geometry/generate-projection';
+import { OPENING } from '$lib/types';
 
 const testSurfaceConfig = {
 	type: 'SphereConfig' as const,
@@ -326,6 +332,42 @@ describe('makeVoronoi', () => {
 			for (const band of tube.bands) expect(band.facets.length).toBeGreaterThan(0);
 		}
 		spy.mockRestore();
+	});
+
+	it('builds a one-sided tube for rim (opening-sentinel) edges', () => {
+		// Open plane surface -> geodesic produces both cell-cell and rim edges.
+		const openSurface = new Object3D();
+		openSurface.add(
+			new Mesh(new PlaneGeometry(800, 800, 6, 6), new MeshBasicMaterial({ side: DoubleSide }))
+		);
+		openSurface.updateMatrixWorld(true);
+		(generateSurface as jest.Mock).mockReturnValueOnce(openSurface);
+
+		const base = makeTestConfig();
+		const config = {
+			...base,
+			voronoiMethod: 'geodesic' as const,
+			insetMethod: 'localProjection' as const,
+			seedConfig: {
+				...base.seedConfig,
+				seedMethod: { type: 'areaWeighted' as const, pointCount: 10, seed: 5 }
+			}
+		};
+
+		(generateProjectionBands as jest.Mock).mockClear();
+		const result = makeVoronoi(config, { globule: 0 }, testSurfaceConfig);
+
+		expect(result.tubes.length).toBeGreaterThan(0);
+		for (const tube of result.tubes) expect(tube.bands.length).toBeGreaterThan(0);
+
+		// A symmetric (cell-cell) tube's combined section has 4 + (4-1) = 7 points;
+		// a one-sided rim tube has exactly 4 (the raw cross-section profile).
+		const sectionPointCounts = (generateProjectionBands as jest.Mock).mock.calls.map(
+			(c: Parameters<typeof generateProjectionBands>) =>
+				(c[0] as { points: unknown[] }[])[0]?.points.length
+		);
+		expect(sectionPointCounts).toContain(4); // one-sided rim tube
+		expect(sectionPointCounts).toContain(7); // normal two-sided tube
 	});
 
 	// Same fold-back guard as above, but through the localProjection inset path — this is the
