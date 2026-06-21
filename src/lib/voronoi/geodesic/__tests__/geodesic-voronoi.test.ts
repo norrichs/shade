@@ -105,3 +105,47 @@ describe('generateGeodesicVoronoi', () => {
 		}
 	});
 });
+
+describe('generateGeodesicVoronoi smoothing', () => {
+	const withLambda = (lambda: number): VoronoiConfig => ({ ...baseConfig(), geodesicSmoothing: lambda });
+
+	it('leaves edge endpoints (shared corners) identical to the unsmoothed run', () => {
+		const off = generateGeodesicVoronoi(withLambda(0), sphereMesh(24));
+		const on = generateGeodesicVoronoi(withLambda(8), sphereMesh(24));
+		expect(on.edges.length).toBe(off.edges.length);
+		for (let i = 0; i < on.edges.length; i++) {
+			const a = off.edgeProjections[i].edgePoints3d;
+			const b = on.edgeProjections[i].edgePoints3d;
+			expect(b[0].distanceTo(a[0])).toBeLessThan(1e-9);
+			expect(b[b.length - 1].distanceTo(a[a.length - 1])).toBeLessThan(1e-9);
+		}
+	});
+
+	it('keeps re-projected interior points on the unit sphere', () => {
+		const on = generateGeodesicVoronoi(withLambda(8), sphereMesh(24));
+		for (const proj of on.edgeProjections) {
+			const pts = proj.edgePoints3d;
+			for (let k = 1; k < pts.length - 1; k++) {
+				expect(Math.abs(pts[k].length() - 1)).toBeLessThan(0.05);
+			}
+		}
+	});
+
+	it('reduces total edge turning versus the unsmoothed run', () => {
+		const turning = (r: ReturnType<typeof generateGeodesicVoronoi>) => {
+			let t = 0;
+			for (const proj of r.edgeProjections) {
+				const p = proj.edgePoints3d;
+				for (let k = 1; k < p.length - 1; k++) {
+					const u = p[k].clone().sub(p[k - 1]);
+					const v = p[k + 1].clone().sub(p[k]);
+					if (u.lengthSq() > 1e-18 && v.lengthSq() > 1e-18) t += u.angleTo(v);
+				}
+			}
+			return t;
+		};
+		const off = generateGeodesicVoronoi(withLambda(0), sphereMesh(24));
+		const on = generateGeodesicVoronoi(withLambda(8), sphereMesh(24));
+		expect(turning(on)).toBeLessThan(turning(off));
+	});
+});

@@ -7,6 +7,7 @@ import { buildMeshGraph, traceBoundaryLoops, type MeshGraph } from './mesh-graph
 import { DijkstraGeodesicSolver, type GeodesicField } from './geodesic-solver';
 import { extractBoundaries, type BoundaryChain } from './extract-boundaries';
 import { buildRimChains } from './rim-edges';
+import { smoothChainPoints, SurfaceProjector } from './smooth-chains';
 
 export type GeodesicVoronoiResult = {
 	edges: VoronoiEdge[];
@@ -123,11 +124,29 @@ export function generateGeodesicVoronoi(
 	const lengths = chains.map((c) => polylineLength(c.points));
 	const divisionCounts = computeAdaptiveEdgeDivisions(lengths, config.edgeDivisions);
 
+	const lambda = Math.max(0, config.geodesicSmoothing ?? 0);
+	const projector = lambda > 0 ? new SurfaceProjector(surfaceTriangles, graph) : null;
+
 	const edges: VoronoiEdge[] = [];
 	const edgeProjections: EdgeProjection[] = [];
 	chains.forEach((chain, i) => {
-		const { points, normals } = resample(chain.points, chain.normals, divisionCounts[i]);
+		// Smooth (and later re-project) only chains with enough points; shorter
+		// chains (e.g. single-vertex rim runs) keep the original behavior.
+		const smoothing = lambda > 0 && chain.points.length >= 4;
+		const srcPoints = smoothing ? smoothChainPoints(chain.points, lambda) : chain.points;
+		const { points, normals } = resample(srcPoints, chain.normals, divisionCounts[i]);
 		if (points.length < 2) return;
+
+		// Re-project interior points onto the surface; endpoints are left exactly
+		// as resampled so shared corners stay bit-identical across chains.
+		if (smoothing && projector) {
+			for (let k = 1; k < points.length - 1; k++) {
+				const pr = projector.project(points[k], normals[k]);
+				points[k] = pr.point;
+				normals[k] = pr.normal;
+			}
+		}
+
 		edges.push({
 			vertices: [
 				[chain.vertices[0], 0],
