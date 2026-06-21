@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { superConfigStore } from '$lib/stores/superGlobuleStores';
 	import { defaultVoronoiConfig } from '$lib/shades-config';
-	import type { VoronoiConfig, VoronoiMethod, InsetMethod } from '$lib/voronoi/types';
+	import type { VoronoiConfig, VoronoiMethod, InsetMethod, GeodesicEdgeStyle } from '$lib/voronoi/types';
 
 	let config: VoronoiConfig = $derived($superConfigStore.voronoiConfig ?? defaultVoronoiConfig);
 	let isGeodesic = $derived((config.voronoiMethod ?? 'spherical') === 'geodesic');
@@ -18,6 +18,8 @@
 			| 'surfaceProjectionDivisions'
 			| 'voronoiMethod'
 			| 'geodesicSmoothing'
+			| 'geodesicEdgeStyle'
+			| 'geodesicStraightenCap'
 			| 'insetMethod'
 			| 'curvedInset',
 		value: number | string
@@ -73,6 +75,10 @@
 			next = { ...config, voronoiMethod: value as VoronoiMethod };
 		} else if (field === 'geodesicSmoothing') {
 			next = { ...config, geodesicSmoothing: value as number };
+		} else if (field === 'geodesicEdgeStyle') {
+			next = { ...config, geodesicEdgeStyle: value as GeodesicEdgeStyle };
+		} else if (field === 'geodesicStraightenCap') {
+			next = { ...config, geodesicStraightenCap: value as number };
 		} else if (field === 'insetMethod') {
 			next = { ...config, insetMethod: value as InsetMethod };
 		} else if (field === 'curvedInset') {
@@ -117,6 +123,19 @@
 		</label>
 
 		<label>
+			Edge Style
+			<select
+				value={config.geodesicEdgeStyle ?? 'bisector'}
+				onchange={(e) => update('geodesicEdgeStyle', e.currentTarget.value)}
+				disabled={!isGeodesic}
+			>
+				<option value="bisector">Bisector</option>
+				<option value="smoothed">Smoothed</option>
+				<option value="geodesic">Geodesic (straight)</option>
+			</select>
+		</label>
+
+		<label>
 			Smoothing
 			<input
 				type="range"
@@ -128,6 +147,20 @@
 				oninput={(e) => update('geodesicSmoothing', Number(e.currentTarget.value))}
 			/>
 			<span>{config.geodesicSmoothing ?? 0}</span>
+		</label>
+
+		<label>
+			Straighten Iterations
+			<input
+				type="range"
+				min="0"
+				max="200"
+				step="1"
+				value={config.geodesicStraightenCap ?? 60}
+				disabled={!isGeodesic || (config.geodesicEdgeStyle ?? 'bisector') !== 'geodesic'}
+				oninput={(e) => update('geodesicStraightenCap', Number(e.currentTarget.value))}
+			/>
+			<span>{config.geodesicStraightenCap ?? 60}</span>
 		</label>
 
 		<label>
