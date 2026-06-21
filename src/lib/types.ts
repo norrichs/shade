@@ -928,6 +928,10 @@ export type SuperGlobuleConfig = {
 	voronoiConfig?: VoronoiConfig;
 };
 
+// Sentinel cell index for the "opening" side of a rim (boundary-tracing) Voronoi
+// edge: such an edge borders a real cell on one side and an opening on the other.
+export const OPENING = -1;
+
 // Which generation pipelines to run. Wired to the viewControl `any` flags so a
 // pipeline only runs when its output is wanted (see superGlobuleStores).
 export type PipelineGates = {
