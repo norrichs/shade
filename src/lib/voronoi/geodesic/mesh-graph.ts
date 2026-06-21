@@ -95,3 +95,72 @@ export function buildMeshGraph(triangles: SurfaceTriangle[]): MeshGraph {
 
 	return { positions, normals, faces, adjacency };
 }
+
+/**
+ * Trace the boundary (opening) loops of the mesh. A boundary edge is a welded edge
+ * used by exactly one face; boundary edges chain into ordered vertex-id loops, one
+ * per opening. A closed mesh (every edge shared by two faces) returns []. "Open" =
+ * the returned array is non-empty.
+ */
+export function traceBoundaryLoops(graph: MeshGraph): number[][] {
+	const key = (a: number, b: number) => (a < b ? `${a}:${b}` : `${b}:${a}`);
+
+	const incidence = new Map<string, number>();
+	for (const [a, b, c] of graph.faces) {
+		for (const [u, v] of [
+			[a, b],
+			[b, c],
+			[c, a]
+		] as const) {
+			const k = key(u, v);
+			incidence.set(k, (incidence.get(k) ?? 0) + 1);
+		}
+	}
+
+	const boundaryAdj = new Map<number, number[]>();
+	const seenEdge = new Set<string>();
+	const link = (a: number, b: number) => {
+		const l = boundaryAdj.get(a);
+		if (l) l.push(b);
+		else boundaryAdj.set(a, [b]);
+	};
+	for (const [a, b, c] of graph.faces) {
+		for (const [u, v] of [
+			[a, b],
+			[b, c],
+			[c, a]
+		] as const) {
+			const k = key(u, v);
+			if (incidence.get(k) === 1 && !seenEdge.has(k)) {
+				seenEdge.add(k);
+				link(u, v);
+				link(v, u);
+			}
+		}
+	}
+
+	const used = new Set<string>();
+	const loops: number[][] = [];
+	for (const start of boundaryAdj.keys()) {
+		for (const first of boundaryAdj.get(start) ?? []) {
+			if (used.has(key(start, first))) continue;
+			const loop = [start];
+			let prev = start;
+			let cur = first;
+			used.add(key(prev, cur));
+			while (cur !== start) {
+				loop.push(cur);
+				const nexts = (boundaryAdj.get(cur) ?? []).filter(
+					(n) => n !== prev && !used.has(key(cur, n))
+				);
+				if (nexts.length === 0) break;
+				const nx = nexts[0];
+				used.add(key(cur, nx));
+				prev = cur;
+				cur = nx;
+			}
+			if (loop.length >= 3) loops.push(loop);
+		}
+	}
+	return loops;
+}

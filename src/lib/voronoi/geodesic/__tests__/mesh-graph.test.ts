@@ -1,6 +1,6 @@
 import { describe, it, expect } from '@jest/globals';
 import { Vector3 } from 'three';
-import { buildMeshGraph } from '../mesh-graph';
+import { buildMeshGraph, traceBoundaryLoops } from '../mesh-graph';
 import type { SurfaceTriangle } from '../../types';
 
 const tri = (a: number[], b: number[], c: number[]): SurfaceTriangle => [
@@ -50,5 +50,27 @@ describe('buildMeshGraph', () => {
 			expect(n.length()).toBeCloseTo(1, 9); // normalized
 			expect(n.z).toBeCloseTo(1, 9); // +Z for CCW winding in z=0 plane
 		}
+	});
+});
+
+describe('traceBoundaryLoops', () => {
+	it('returns one loop around an open quad', () => {
+		const g = buildMeshGraph([
+			tri([0, 0, 0], [1, 0, 0], [0, 1, 0]),
+			tri([1, 0, 0], [1, 1, 0], [0, 1, 0])
+		]);
+		const loops = traceBoundaryLoops(g);
+		expect(loops.length).toBe(1);
+		expect(new Set(loops[0]).size).toBe(4);
+	});
+
+	it('returns no loops for a closed mesh (tetrahedron)', () => {
+		const g = buildMeshGraph([
+			tri([0, 0, 0], [1, 0, 0], [0, 1, 0]),
+			tri([0, 0, 0], [0, 1, 0], [0, 0, 1]),
+			tri([0, 0, 0], [0, 0, 1], [1, 0, 0]),
+			tri([1, 0, 0], [0, 0, 1], [0, 1, 0])
+		]);
+		expect(traceBoundaryLoops(g)).toEqual([]);
 	});
 });
