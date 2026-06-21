@@ -8,8 +8,10 @@ export function vertexKey(coord: [number, number]): string {
 
 export type CurvedCellEdge = {
 	edgeId: number; // caller's global edge index, echoed back in the output map
-	vKeyStart: string; // vertexKey(edge.vertices[0])
-	vKeyEnd: string; // vertexKey(edge.vertices[1])
+	// Stable per-corner keys; two edges meeting at one corner must share the key (the
+	// caller keys by 3D endpoint position so coincident corners pair regardless of id).
+	vKeyStart: string;
+	vKeyEnd: string;
 	sampleCount: number; // points wanted (== that edge's edgePoints3d.length)
 };
 

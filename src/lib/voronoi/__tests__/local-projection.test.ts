@@ -196,4 +196,64 @@ describe('computeEdgeInsetsLocalProjection', () => {
 		// Opening side (B) is NOT inset — it stays at the edge points.
 		insets[0].curvePointsB.forEach((p, i) => expect(p.distanceTo(edgePoints3d[i])).toBeLessThan(1e-6));
 	});
+
+	it('curvedInset: corners at coincident 3D points round even when vertex ids differ', () => {
+		// Regression for rim-adjacent cells: a rim chain and the interior edge that
+		// meets it on the rim are the SAME 3D corner but get different synthetic
+		// vertex ids (rim ids live in a separate negative namespace). The curved
+		// inset must recognise them as one corner from geometry, not from the id.
+		function planeSurface(): Object3D {
+			const o = new Object3D();
+			o.add(new Mesh(new PlaneGeometry(400, 400, 1, 1), new MeshBasicMaterial({ side: DoubleSide })));
+			o.updateMatrixWorld(true);
+			return o;
+		}
+		const surface = planeSurface();
+
+		// Triangular cell 0 with corners A, B, C. Each edge carries [start, mid, end].
+		const A = new Vector3(-50, -50, 0);
+		const B = new Vector3(50, -50, 0);
+		const C = new Vector3(0, 50, 0);
+		const mid = (p: Vector3, q: Vector3) => p.clone().add(q).multiplyScalar(0.5);
+		const proj = (...pts: Vector3[]): EdgeProjection => ({
+			edgePoints3d: pts,
+			normals: pts.map(() => new Vector3(0, 0, 1))
+		});
+
+		// edge0 A->B (interior), edge1 B->C (interior, terminates at the rim corner C),
+		// edge2 C->A (rim edge). Corner C is given id 3 on edge1 but a DIFFERENT id 99
+		// on the rim edge2 — coincident in 3D, distinct ids.
+		const edges: VoronoiEdge[] = [
+			{ vertices: [[1, 0], [2, 0]], cellIndices: [0, 1] },
+			{ vertices: [[2, 0], [3, 0]], cellIndices: [0, 2] },
+			{ vertices: [[99, 0], [1, 0]], cellIndices: [0, OPENING] }
+		];
+		const edgeProjections: EdgeProjection[] = [
+			proj(A.clone(), mid(A, B), B.clone()),
+			proj(B.clone(), mid(B, C), C.clone()),
+			proj(C.clone(), mid(C, A), A.clone())
+		];
+
+		const common = {
+			edges,
+			edgeProjections,
+			seedPoints3d: [new Vector3(0, 0, 0)],
+			surface,
+			surfaceCenter: new Vector3(0, 0, -1000),
+			curveOffsetFactor: 0.3,
+			surfaceProjectionDivisions: 0
+		};
+		const straight = computeEdgeInsetsLocalProjection({ ...common, curvedInset: false });
+		const curved = computeEdgeInsetsLocalProjection({ ...common, curvedInset: true });
+
+		const moved = (i: number) =>
+			curved[i].curvePointsA.reduce((acc, p, k) => acc + p.distanceTo(straight[i].curvePointsA[k]), 0);
+
+		// edge0's corners (A,B) match by id either way -> always curved (sanity).
+		expect(moved(0)).toBeGreaterThan(1e-3);
+		// edge1 terminates at rim corner C, edge2 is the rim edge: both share corner C
+		// only by geometry. These must also round.
+		expect(moved(1)).toBeGreaterThan(1e-3);
+		expect(moved(2)).toBeGreaterThan(1e-3);
+	});
 });

@@ -5,11 +5,20 @@ import type { EdgeInsets } from './inset-types';
 import { fitPlane } from './fit-plane';
 import { buildPlaneBasis, projectToPlane2D, plane2DToPoint3D } from './source-projection';
 import { insetPoint2D, insetIntermediates2D, segmentIntermediates2D } from './inset-2d';
-import { buildCellCurvedInsets2d, vertexKey, type CurvedCellEdge } from './curved-inset-2d';
+import { buildCellCurvedInsets2d, type CurvedCellEdge } from './curved-inset-2d';
 import { selectSurfaceHit } from './select-surface-hit';
 import { OPENING } from '$lib/types';
 
 const DEFAULT_SOURCE_DISTANCE_FACTOR = 10;
+
+/**
+ * Stable key for a 3D corner position. Coincident endpoints (shared corners — including a
+ * rim transition shared by a rim chain and the interior edge meeting it) collide; distinct
+ * corners do not. Used to pair a cell's edges into corners for the curved inset.
+ */
+function vertexKey3D(p: Vector3): string {
+	return `${p.x.toFixed(6)},${p.y.toFixed(6)},${p.z.toFixed(6)}`;
+}
 
 function maxPairwiseDistance(points: Vector3[]): number {
 	let max = 0;
@@ -119,8 +128,12 @@ export function computeEdgeInsetsLocalProjection(params: {
 			for (const ei of edgeIdxs) {
 				const pts3d = edgeProjections[ei].edgePoints3d;
 				if (pts3d.length < 2) continue;
-				const vS = vertexKey(edges[ei].vertices[0]);
-				const vE = vertexKey(edges[ei].vertices[1]);
+				// Key corners by 3D endpoint position, not by synthetic vertex id. A rim
+				// chain and the interior edge meeting it on the rim are the same 3D corner
+				// but get ids from separate namespaces; geometry is the ground truth for
+				// "these edges meet here", so coincident endpoints round correctly.
+				const vS = vertexKey3D(pts3d[0]);
+				const vE = vertexKey3D(pts3d[pts3d.length - 1]);
 				if (!vertexPos2d.has(vS)) {
 					const p = projectToPlane2D(pts3d[0], source, planePoint, normal, basis);
 					if (p) vertexPos2d.set(vS, p);
