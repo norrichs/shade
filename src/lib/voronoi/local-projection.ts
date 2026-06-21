@@ -78,6 +78,7 @@ export function computeEdgeInsetsLocalProjection(params: {
 	const cellEdges = new Map<number, number[]>();
 	edges.forEach((edge, edgeIndex) => {
 		for (const cell of edge.cellIndices) {
+			if (cell < 0) continue; // OPENING sentinel — the opening side has no cell to inset toward
 			const list = cellEdges.get(cell);
 			if (list) list.push(edgeIndex);
 			else cellEdges.set(cell, [edgeIndex]);

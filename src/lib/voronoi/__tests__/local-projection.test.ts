@@ -3,10 +3,12 @@ import {
 	Object3D,
 	Mesh,
 	SphereGeometry,
+	PlaneGeometry,
 	MeshBasicMaterial,
 	DoubleSide,
 	Raycaster
 } from 'three';
+import { OPENING } from '$lib/types';
 import { computeEdgeInsetsLocalProjection } from '../local-projection';
 import { computeEdgeInsetsCenterOut } from '../inset-center-out';
 import type { VoronoiEdge } from '../types';
@@ -167,5 +169,31 @@ describe('computeEdgeInsetsLocalProjection', () => {
 		curved[1].curvePointsA.forEach((p, i) =>
 			expect(p.distanceTo(straight[1].curvePointsA[i])).toBeCloseTo(0, 6)
 		);
+	});
+
+	it('insets only the real-cell side for an opening-sentinel edge', () => {
+		function planeSurface(): Object3D {
+			const o = new Object3D();
+			o.add(new Mesh(new PlaneGeometry(400, 400, 1, 1), new MeshBasicMaterial({ side: DoubleSide })));
+			o.updateMatrixWorld(true);
+			return o;
+		}
+		const surface = planeSurface();
+		const edgePoints3d = [new Vector3(-50, 0, 0), new Vector3(0, 0, 0), new Vector3(50, 0, 0)];
+		const normals = edgePoints3d.map(() => new Vector3(0, 0, 1));
+		const insets = computeEdgeInsetsLocalProjection({
+			edges: [{ vertices: [[-2, 0], [-3, 0]] as [[number, number], [number, number]], cellIndices: [0, OPENING] as [number, number] }],
+			edgeProjections: [{ edgePoints3d, normals }],
+			seedPoints3d: [new Vector3(0, 80, 0)],
+			surface,
+			surfaceCenter: new Vector3(0, 0, -1000),
+			curveOffsetFactor: 0.3,
+			surfaceProjectionDivisions: 0,
+			curvedInset: false
+		});
+		// Real side (A, since cellIndices[0] === 0) is inset toward the seed.
+		expect(insets[0].curvePointsA.some((p, i) => p.distanceTo(edgePoints3d[i]) > 1e-6)).toBe(true);
+		// Opening side (B) is NOT inset — it stays at the edge points.
+		insets[0].curvePointsB.forEach((p, i) => expect(p.distanceTo(edgePoints3d[i])).toBeLessThan(1e-6));
 	});
 });
