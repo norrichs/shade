@@ -110,7 +110,8 @@ function matchTubeEnds(tubes: Tube[]): void {
 	tubes.forEach((tube) =>
 		tube.bands.forEach((band) =>
 			band.facets.forEach((facet, f, facets) => {
-				if (f === 0 || f === facets.length - 1) {
+				// Degenerate (synthetic fill) facets are never partner-matched.
+				if ((f === 0 || f === facets.length - 1) && !facet.isDegenerate) {
 					endFacets.push(facet);
 				}
 			})
@@ -124,7 +125,7 @@ function matchTubeEnds(tubes: Tube[]): void {
 
 			if (!firstFacet.address || !lastFacet.address) return;
 
-			if (hasNoPartner(firstFacet)) {
+			if (!firstFacet.isDegenerate && hasNoPartner(firstFacet)) {
 				const match = findPartner(
 					firstFacet,
 					endFacets,
@@ -138,7 +139,7 @@ function matchTubeEnds(tubes: Tube[]): void {
 				}
 			}
 
-			if (hasNoPartner(lastFacet)) {
+			if (!lastFacet.isDegenerate && hasNoPartner(lastFacet)) {
 				const match = findPartner(
 					lastFacet,
 					endFacets,
@@ -175,7 +176,8 @@ function hasNoPartner(facet: Facet): boolean {
 	return !facet.meta?.ab?.partner && !facet.meta?.ac?.partner && !facet.meta?.bc?.partner;
 }
 
-function matchFacets(tubes: Tube[]): void {
+// Exported for direct testing of the degenerate-facet partner-matching invariant.
+export function matchFacets(tubes: Tube[]): void {
 	tubes.forEach((tube) => {
 		tube.bands.forEach((band) => {
 			band.facets.forEach((facet, f) => {
@@ -190,10 +192,10 @@ function matchFacets(tubes: Tube[]): void {
 					}
 				}
 
-				// Sequential within-band partners
+				// Sequential within-band partners (degenerate fill facets never partner)
 				if (f > 0) {
 					const prev = band.facets[f - 1];
-					if (prev.address) {
+					if (prev.address && !prev.isDegenerate) {
 						const match = getEdgeMatchedTriangles(facet.triangle, prev.triangle);
 						if (match && !edgeMeta[match.t0].partner) {
 							edgeMeta[match.t0].partner = { ...prev.address, edge: match.t1 };
@@ -202,7 +204,7 @@ function matchFacets(tubes: Tube[]): void {
 				}
 				if (f < band.facets.length - 1) {
 					const next = band.facets[f + 1];
-					if (next.address) {
+					if (next.address && !next.isDegenerate) {
 						const match = getEdgeMatchedTriangles(facet.triangle, next.triangle);
 						if (match && !edgeMeta[match.t0].partner) {
 							edgeMeta[match.t0].partner = { ...next.address, edge: match.t1 };
@@ -223,15 +225,17 @@ function matchFacets(tubes: Tube[]): void {
 				const bandA = tube.bands[i];
 				const bandB = tube.bands[j];
 				for (const facetA of bandA.facets) {
-					if (!facetA.address) continue;
+					if (!facetA.address || facetA.isDegenerate) continue;
 					for (const facetB of bandB.facets) {
-						if (!facetB.address) continue;
+						if (!facetB.address || facetB.isDegenerate) continue;
 						const match = getEdgeMatchedTriangles(facetA.triangle, facetB.triangle);
 						if (match) {
-							if (facetA.meta && !facetA.meta[match.t0].partner) {
+							// Non-degenerate facets have meta normalized to {ab,bc,ac} by the first
+							// pass; the optional chaining is defensive against any partial meta.
+							if (facetA.meta?.[match.t0] && !facetA.meta[match.t0].partner) {
 								facetA.meta[match.t0].partner = { ...facetB.address, edge: match.t1 };
 							}
-							if (facetB.meta && !facetB.meta[match.t1].partner) {
+							if (facetB.meta?.[match.t1] && !facetB.meta[match.t1].partner) {
 								facetB.meta[match.t1].partner = { ...facetA.address, edge: match.t0 };
 							}
 						}

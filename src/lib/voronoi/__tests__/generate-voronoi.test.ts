@@ -143,7 +143,7 @@ jest.mock('$lib/cut-pattern/generate-pattern', () => ({
 jest.mock('$lib/stores/superGlobuleStores', () => ({}));
 jest.mock('$lib/stores/selectionStores', () => ({}));
 
-import { makeVoronoi } from '../generate-voronoi';
+import { makeVoronoi, matchFacets } from '../generate-voronoi';
 import * as geodesicModule from '../geodesic/geodesic-voronoi';
 import {
 	generateSurface,
@@ -305,6 +305,48 @@ describe('makeVoronoi', () => {
 		result.tubes.forEach((tube) => {
 			tube.bands.forEach((band) => expect(band.facets.length).toBeGreaterThan(0));
 		});
+	});
+
+	it('matchFacets does not throw on a degenerate facet with partial meta', () => {
+		// Regression: degenerate (synthetic fill) facets carry partial meta from
+		// matchTubeEnds and must be excluded from the cross-band pass. Previously the
+		// cross-band pass dereferenced `facetB.meta[match.t1].partner` on a key the
+		// partial meta lacked → "surface projection partner matching error".
+		// facetA (band 0, non-degenerate) shares edge with facetB (band 1, degenerate).
+		// Per the mocked getEdgeMatchedTriangles this matches facetA edge 'ab' to
+		// facetB edge 'bc' — a key absent from facetB's partial meta {ab:{...}}.
+		const facetA: Facet = {
+			triangle: new Triangle(
+				new Vector3(1, 0, 0),
+				new Vector3(1, 1, 0),
+				new Vector3(5, 5, 0)
+			),
+			address: { globule: 0, tube: 0, band: 0, facet: 0 },
+			orientation: 'axial-right'
+		};
+		const facetB: Facet = {
+			triangle: new Triangle(
+				new Vector3(0, 0, 0),
+				new Vector3(1, 0, 0),
+				new Vector3(1, 1, 0)
+			),
+			address: { globule: 0, tube: 0, band: 1, facet: 0 },
+			orientation: 'axial-right',
+			isDegenerate: true,
+			// Partial meta as matchTubeEnds would leave it (only the 'ab' key).
+			meta: { ab: { partner: { globule: 0, tube: 9, band: 0, facet: 0, edge: 'ab' } } } as Facet['meta']
+		};
+		const tube = {
+			bands: [
+				{ orientation: 'axial-right', facets: [facetA], visible: true, address: { globule: 0, tube: 0, band: 0 } },
+				{ orientation: 'axial-right', facets: [facetB], visible: true, address: { globule: 0, tube: 0, band: 1 } }
+			],
+			sections: [],
+			orientation: 'axial-right' as const,
+			address: { globule: 0, tube: 0 }
+		} as unknown as Parameters<typeof matchFacets>[0][number];
+
+		expect(() => matchFacets([tube])).not.toThrow();
 	});
 
 	it('generates tubes via the geodesic pipeline (center-free)', () => {
