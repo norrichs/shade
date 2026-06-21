@@ -55,4 +55,21 @@ describe('buildRimChains', () => {
 		const field = fieldBy(g, () => -1);
 		expect(buildRimChains(g, field, traceBoundaryLoops(g))).toEqual([]);
 	});
+
+	it('emits a chain per single-vertex run when the cell changes every rim vertex', () => {
+		// Regression: each rim vertex belongs to a distinct cell, so every run is length 1.
+		// Previously these were all dropped (rimChains: 0). Each run must still yield a
+		// valid chain, padded with boundary tie-points (>=2 points).
+		const g = quad();
+		const field = fieldBy(g, (p) => p.x * 2 + p.y); // 4 distinct labels: 0,1,2,3
+		const chains = buildRimChains(g, field, traceBoundaryLoops(g));
+		expect(chains.length).toBe(4); // one per rim vertex / cell
+		const cells = chains.map((c) => c.cellIndices[0]).sort((a, b) => a - b);
+		expect(cells).toEqual([0, 1, 2, 3]);
+		for (const c of chains) {
+			expect(c.cellIndices[1]).toBe(OPENING);
+			expect(c.points.length).toBeGreaterThanOrEqual(2); // tie-point + vertex + tie-point
+			expect(c.normals.length).toBe(c.points.length);
+		}
+	});
 });
