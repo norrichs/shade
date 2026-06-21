@@ -1196,6 +1196,12 @@ export const getEdgeMatchedTriangles = (
 
 	if (matched[0].length !== 2 || matched[1].length !== 2) return false;
 
+	// A real shared edge needs two DISTINCT vertices on each triangle. A repeated
+	// letter (e.g. "cc") means one vertex matched twice — a degenerate, coincident-
+	// vertex triangle, not an edge match. Such a match would normalize to a non-edge
+	// key ("cc") that downstream meta lookups (matchFacets) can't resolve.
+	if (matched[0][0] === matched[0][1] || matched[1][0] === matched[1][1]) return false;
+
 	// Normalize edge names to canonical form (ab, ac, bc) — earlier letter first
 	const normalize = (edge: string): TriangleEdge => {
 		const [a, b] = edge.split('');
