@@ -1,3 +1,5 @@
+import { Vector3 } from 'three';
+
 /**
  * Discrete cubic smoothing spline (Whittaker–Henderson) on one coordinate series.
  * Minimises  Σ wᵢ (yᵢ − zᵢ)²  +  λ Σ (z_{k−1} − 2 z_k + z_{k+1})²
@@ -80,4 +82,26 @@ export function smoothSeries(values: number[], lambda: number): number[] {
 	z[0] = values[0];
 	z[n - 1] = values[n - 1];
 	return z;
+}
+
+/**
+ * Smooth a Vector3 polyline by running `smoothSeries` on each coordinate.
+ * Returns a new same-length array; endpoints are unchanged. Chains with fewer
+ * than 4 points (or λ ≤ 0) are returned as clones, unchanged.
+ */
+export function smoothChainPoints(points: Vector3[], lambda: number): Vector3[] {
+	if (points.length < 4 || lambda <= 0) return points.map((p) => p.clone());
+	const xs = smoothSeries(
+		points.map((p) => p.x),
+		lambda
+	);
+	const ys = smoothSeries(
+		points.map((p) => p.y),
+		lambda
+	);
+	const zs = smoothSeries(
+		points.map((p) => p.z),
+		lambda
+	);
+	return points.map((_, i) => new Vector3(xs[i], ys[i], zs[i]));
 }
