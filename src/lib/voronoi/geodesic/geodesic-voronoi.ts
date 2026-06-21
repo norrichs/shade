@@ -139,6 +139,9 @@ export function generateGeodesicVoronoi(
 
 		// Re-project interior points onto the surface; endpoints are left exactly
 		// as resampled so shared corners stay bit-identical across chains.
+		// (smoothChainPoints hard-pins chain endpoints, and resample reproduces
+		// the first/last source point exactly, so points[0]/points[last] already
+		// equal the original chain corners — we just never touch them here.)
 		if (smoothing && projector) {
 			for (let k = 1; k < points.length - 1; k++) {
 				const pr = projector.project(points[k], normals[k]);
