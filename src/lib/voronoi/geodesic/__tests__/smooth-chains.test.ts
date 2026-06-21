@@ -1,9 +1,8 @@
 import { describe, it, expect } from '@jest/globals';
 import { Vector3 } from 'three';
-import { smoothSeries, smoothChainPoints } from '../smooth-chains';
+import { smoothSeries, smoothChainPoints, SurfaceProjector } from '../smooth-chains';
 import type { SurfaceTriangle } from '$lib/voronoi/types';
 import { buildMeshGraph } from '../mesh-graph';
-import { SurfaceProjector } from '../smooth-chains';
 
 /** Sum of |second differences| — a proxy for jaggedness. */
 function roughness(s: number[]): number {
@@ -101,5 +100,6 @@ describe('SurfaceProjector', () => {
 		const res = projector.project(new Vector3(1.5, 0, 0), new Vector3(1, 0, 0));
 		expect(Math.abs(res.point.z)).toBeLessThan(1e-6); // landed on the z=0 surface
 		expect(res.point.x).toBeLessThanOrEqual(1.000001); // clamped onto the mesh extent
+		expect(Math.abs(res.normal.z)).toBeGreaterThan(0.99); // blended normal still points off-plane
 	});
 });
