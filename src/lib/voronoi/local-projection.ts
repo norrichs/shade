@@ -7,6 +7,7 @@ import { buildPlaneBasis, projectToPlane2D, plane2DToPoint3D } from './source-pr
 import { insetPoint2D, insetIntermediates2D, segmentIntermediates2D } from './inset-2d';
 import { buildCellCurvedInsets2d, vertexKey, type CurvedCellEdge } from './curved-inset-2d';
 import { selectSurfaceHit } from './select-surface-hit';
+import { OPENING } from '$lib/types';
 
 const DEFAULT_SOURCE_DISTANCE_FACTOR = 10;
 
@@ -78,7 +79,7 @@ export function computeEdgeInsetsLocalProjection(params: {
 	const cellEdges = new Map<number, number[]>();
 	edges.forEach((edge, edgeIndex) => {
 		for (const cell of edge.cellIndices) {
-			if (cell < 0) continue; // OPENING sentinel — the opening side has no cell to inset toward
+			if (cell === OPENING) continue; // the opening side has no cell to inset toward
 			const list = cellEdges.get(cell);
 			if (list) list.push(edgeIndex);
 			else cellEdges.set(cell, [edgeIndex]);
