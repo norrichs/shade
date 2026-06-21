@@ -1,7 +1,6 @@
 import { describe, it, expect } from '@jest/globals';
-import { smoothSeries } from '../smooth-chains';
 import { Vector3 } from 'three';
-import { smoothChainPoints } from '../smooth-chains';
+import { smoothSeries, smoothChainPoints } from '../smooth-chains';
 
 /** Sum of |second differences| — a proxy for jaggedness. */
 function roughness(s: number[]): number {
