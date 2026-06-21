@@ -22,6 +22,10 @@ export type VoronoiConfig = {
 	curveOffsetFactor: number;
 	surfaceProjectionDivisions: number;
 	voronoiMethod: VoronoiMethod;
+	// Geodesic-only: cubic-smoothing-spline strength (λ) applied to boundary
+	// chains before resampling. 0 = off (raw piecewise-linear edges). Higher =
+	// smoother. Ignored by the spherical/uv methods.
+	geodesicSmoothing?: number;
 	insetMethod: InsetMethod;
 	// When true (localProjection only), inset edges are drawn as per-corner quadratic
 	// beziers instead of straight homothety lines. Ignored by other inset methods.
