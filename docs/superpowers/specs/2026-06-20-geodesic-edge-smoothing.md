@@ -69,8 +69,11 @@ When `geodesicSmoothing > 0` **and** the chain has ≥ 4 points:
    the existing `resample` helper (preserves endpoints, emits exactly the
    adaptive division count). Normals are lerped here as today, then replaced by
    re-projection.
-3. **Re-project** each resampled point onto the surface (see Re-projection).
-   Replaces both the point and its normal.
+3. **Re-project** each resampled **interior** point onto the surface (see
+   Re-projection), replacing its point and normal. The two endpoints are left
+   exactly as resampled (= the pinned chain endpoints), so shared corners stay
+   bit-identical across adjacent chains rather than each chain re-snapping its
+   shared corner independently.
 
 When `geodesicSmoothing === 0` **or** the chain has < 4 points → current
 behavior: raw points → `resample`, **no** re-projection. (A 4-point minimum
@@ -84,6 +87,7 @@ by raycasting (chosen over closest-point as the primary method):
 
 - Build a `Mesh` (`BufferGeometry` from `surfaceTriangles`) + `Raycaster` once
   per generation (Three.js `Raycaster` needs no DOM — runs fine in the worker).
+- Applied to interior sample points only (endpoints are not re-projected).
 - For each sample `p` with normal `n`: raycast `(p, +n)` and `(p, −n)`; take the
   nearest hit. Use `hit.point` and a **barycentric blend of the hit triangle's
   three welded vertex normals** (from `MeshGraph.normals`) at the hit's
