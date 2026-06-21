@@ -80,12 +80,20 @@ export const collateVoronoiGeometry = (
 	show: ShowVoronoiGeometries
 ) => {
 	if (!show.any) return {};
+	// One-sided rim tubes (open-surface boundary edges) have a single band; split them
+	// out so the renderer can colour them distinctly. (Valid discriminator while
+	// surfaceProjectionDivisions === 0, where normal tubes have 2 bands.)
+	const rimTubes = voronoiTubes.filter((tube) => tube.bands.length === 1);
+	const mainTubes = voronoiTubes.filter((tube) => tube.bands.length !== 1);
 	return {
 		sections: show.sections
 			? collateSectionGeometry(voronoiTubes.map((tube) => tube.sections).flat(1))
 			: undefined,
 		bands: show.bands
-			? collateBandGeometry(voronoiTubes.map((tube) => tube.bands).flat())
+			? collateBandGeometry(mainTubes.map((tube) => tube.bands).flat())
+			: undefined,
+		rimBands: show.bands
+			? collateBandGeometry(rimTubes.map((tube) => tube.bands).flat())
 			: undefined,
 		facets: show.facets
 			? collateFacetGeometry(voronoiTubes.map((tube) => tube.bands).flat())

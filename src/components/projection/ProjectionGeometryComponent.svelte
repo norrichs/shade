@@ -271,6 +271,10 @@
 		{#each voronoiGeometry.bands || [] as band (band.id)}
 			<T.Mesh geometry={band} material={materials.default} raycast={noRaycast} />
 		{/each}
+		{#each voronoiGeometry.rimBands || [] as band (band.id)}
+			<!-- Open-surface rim tubes, coloured red to distinguish them -->
+			<T.Mesh geometry={band} material={materials.numbered[1]} raycast={noRaycast} />
+		{/each}
 		{#each voronoiGeometry.facets || [] as facet (facetKey(facet.address))}
 			<T.Mesh
 				geometry={facet.geometry}
