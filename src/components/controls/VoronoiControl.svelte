@@ -17,6 +17,7 @@
 			| 'curveOffsetFactor'
 			| 'surfaceProjectionDivisions'
 			| 'voronoiMethod'
+			| 'geodesicSmoothing'
 			| 'insetMethod'
 			| 'curvedInset',
 		value: number | string
@@ -70,6 +71,8 @@
 			next = { ...config, surfaceProjectionDivisions: value as number };
 		} else if (field === 'voronoiMethod') {
 			next = { ...config, voronoiMethod: value as VoronoiMethod };
+		} else if (field === 'geodesicSmoothing') {
+			next = { ...config, geodesicSmoothing: value as number };
 		} else if (field === 'insetMethod') {
 			next = { ...config, insetMethod: value as InsetMethod };
 		} else if (field === 'curvedInset') {
@@ -111,6 +114,20 @@
 				<option value="uv">UV</option>
 				<option value="geodesic">Geodesic (center-free)</option>
 			</select>
+		</label>
+
+		<label>
+			Smoothing
+			<input
+				type="range"
+				min="0"
+				max="50"
+				step="1"
+				value={config.geodesicSmoothing ?? 0}
+				disabled={!isGeodesic}
+				oninput={(e) => update('geodesicSmoothing', Number(e.currentTarget.value))}
+			/>
+			<span>{config.geodesicSmoothing ?? 0}</span>
 		</label>
 
 		<label>
