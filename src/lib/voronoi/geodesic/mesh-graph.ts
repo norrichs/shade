@@ -16,7 +16,12 @@ export type MeshGraph = {
 
 const QUANTUM = 1e-5;
 
-function keyOf(p: Vector3): string {
+/**
+ * Quantized position key used to weld coincident vertices. Exported so other
+ * geodesic code (e.g. the surface projector) can map raw positions to the same
+ * welded vertex ids `buildMeshGraph` produced.
+ */
+export function weldKey(p: Vector3): string {
 	const q = (n: number) => Math.round(n / QUANTUM);
 	return `${q(p.x)},${q(p.y)},${q(p.z)}`;
 }
@@ -33,7 +38,7 @@ export function buildMeshGraph(triangles: SurfaceTriangle[]): MeshGraph {
 	const faces: [number, number, number][] = [];
 
 	const idFor = (p: Vector3): number => {
-		const k = keyOf(p);
+		const k = weldKey(p);
 		const existing = idByKey.get(k);
 		if (existing !== undefined) return existing;
 		const id = positions.length;
