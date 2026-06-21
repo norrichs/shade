@@ -1,5 +1,5 @@
 import { Vector3 } from 'three';
-import type { SurfaceTriangle, VoronoiConfig, VoronoiEdge } from '$lib/voronoi/types';
+import type { SurfaceTriangle, VoronoiConfig, VoronoiEdge, GeodesicEdgeStyle } from '$lib/voronoi/types';
 import { generateAreaWeightedSeeds } from '$lib/voronoi/generate-seeds';
 import type { EdgeProjection } from '$lib/voronoi/project-edges-onto-surface';
 import { computeAdaptiveEdgeDivisions } from '$lib/voronoi/edge-divisions';
@@ -8,6 +8,8 @@ import { DijkstraGeodesicSolver, type GeodesicField } from './geodesic-solver';
 import { extractBoundaries, type BoundaryChain } from './extract-boundaries';
 import { buildRimChains } from './rim-edges';
 import { smoothChainPoints, SurfaceProjector } from './smooth-chains';
+import { straightenToGeodesic } from './geodesic-straighten';
+import { OPENING } from '$lib/types';
 
 export type GeodesicVoronoiResult = {
 	edges: VoronoiEdge[];
@@ -124,25 +126,42 @@ export function generateGeodesicVoronoi(
 	const lengths = chains.map((c) => polylineLength(c.points));
 	const divisionCounts = computeAdaptiveEdgeDivisions(lengths, config.edgeDivisions);
 
+	const edgeStyle: GeodesicEdgeStyle = config.geodesicEdgeStyle ?? 'bisector';
 	const lambda = Math.max(0, config.geodesicSmoothing ?? 0);
-	const projector = lambda > 0 ? new SurfaceProjector(surfaceTriangles, graph) : null;
+	const straightenCap = Math.max(0, Math.floor(config.geodesicStraightenCap ?? 60));
+	// A projector is needed whenever points get re-projected (smoothed or geodesic).
+	const projector = edgeStyle !== 'bisector' ? new SurfaceProjector(surfaceTriangles, graph) : null;
 
 	const edges: VoronoiEdge[] = [];
 	const edgeProjections: EdgeProjection[] = [];
 	chains.forEach((chain, i) => {
-		// Smooth (and later re-project) only chains with enough points; shorter
-		// chains (e.g. single-vertex rim runs) keep the original behavior.
-		const smoothing = lambda > 0 && chain.points.length >= 4;
+		const isRim = chain.cellIndices.includes(OPENING);
+		// Geodesic straightening applies to cell-cell edges only; rim edges trace
+		// an opening and must stay on the rim, so they keep the smoothed treatment.
+		const straighten = edgeStyle === 'geodesic' && !isRim && chain.points.length >= 4;
+		const smoothing =
+			(edgeStyle === 'smoothed' || (edgeStyle === 'geodesic' && isRim)) &&
+			lambda > 0 &&
+			chain.points.length >= 4;
+
 		const srcPoints = smoothing ? smoothChainPoints(chain.points, lambda) : chain.points;
 		const { points, normals } = resample(srcPoints, chain.normals, divisionCounts[i]);
 		if (points.length < 2) return;
 
-		// Re-project interior points onto the surface; endpoints are left exactly
-		// as resampled so shared corners stay bit-identical across chains.
-		// (smoothChainPoints hard-pins chain endpoints, and resample reproduces
-		// the first/last source point exactly, so points[0]/points[last] already
-		// equal the original chain corners — we just never touch them here.)
-		if (smoothing && projector) {
+		// Interior points get re-projected; endpoints are left exactly as resampled
+		// so shared corners stay bit-identical across chains.
+		if (straighten && projector) {
+			const tolerance = 1e-4 * polylineLength(points);
+			const straightened = straightenToGeodesic(points, projector, {
+				stepFactor: 0.5,
+				tolerance,
+				cap: straightenCap
+			});
+			for (let k = 1; k < points.length - 1; k++) {
+				points[k] = straightened[k];
+				normals[k] = projector.projectClosest(straightened[k]).normal;
+			}
+		} else if (smoothing && projector) {
 			for (let k = 1; k < points.length - 1; k++) {
 				const pr = projector.project(points[k], normals[k]);
 				points[k] = pr.point;

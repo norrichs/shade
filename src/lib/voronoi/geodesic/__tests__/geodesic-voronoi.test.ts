@@ -106,8 +106,82 @@ describe('generateGeodesicVoronoi', () => {
 	});
 });
 
+describe('generateGeodesicVoronoi edge styles', () => {
+	const withStyle = (
+		style: 'bisector' | 'smoothed' | 'geodesic',
+		extra: Partial<VoronoiConfig> = {}
+	): VoronoiConfig => ({ ...baseConfig(), geodesicEdgeStyle: style, ...extra });
+
+	const totalTurning = (r: ReturnType<typeof generateGeodesicVoronoi>) => {
+		let t = 0;
+		for (const proj of r.edgeProjections) {
+			const p = proj.edgePoints3d;
+			for (let k = 1; k < p.length - 1; k++) {
+				const u = p[k].clone().sub(p[k - 1]);
+				const v = p[k + 1].clone().sub(p[k]);
+				if (u.lengthSq() > 1e-18 && v.lengthSq() > 1e-18) t += u.angleTo(v);
+			}
+		}
+		return t;
+	};
+
+	it('geodesic style reduces total edge turning vs bisector', () => {
+		const bis = generateGeodesicVoronoi(withStyle('bisector'), sphereMesh(24));
+		const geo = generateGeodesicVoronoi(withStyle('geodesic', { geodesicStraightenCap: 120 }), sphereMesh(24));
+		expect(geo.edges.length).toBe(bis.edges.length);
+		expect(totalTurning(geo)).toBeLessThan(totalTurning(bis));
+	});
+
+	it('keeps edge endpoints (shared corners) identical across all three styles', () => {
+		const bis = generateGeodesicVoronoi(withStyle('bisector'), sphereMesh(24));
+		const sm = generateGeodesicVoronoi(withStyle('smoothed', { geodesicSmoothing: 8 }), sphereMesh(24));
+		const geo = generateGeodesicVoronoi(withStyle('geodesic'), sphereMesh(24));
+		for (let i = 0; i < bis.edges.length; i++) {
+			const a = bis.edgeProjections[i].edgePoints3d;
+			const s = sm.edgeProjections[i].edgePoints3d;
+			const g = geo.edgeProjections[i].edgePoints3d;
+			expect(s[0].distanceTo(a[0])).toBeLessThan(1e-9);
+			expect(g[0].distanceTo(a[0])).toBeLessThan(1e-9);
+			expect(s[s.length - 1].distanceTo(a[a.length - 1])).toBeLessThan(1e-9);
+			expect(g[g.length - 1].distanceTo(a[a.length - 1])).toBeLessThan(1e-9);
+		}
+	});
+
+	it('does not straighten rim edges; cell-cell edges do change', () => {
+		// Open surface -> some edges border an OPENING. With smoothing off, rim
+		// edges must be identical between bisector and geodesic; at least one
+		// cell-cell edge must differ (proving straightening ran on non-rim edges).
+		const bis = generateGeodesicVoronoi(withStyle('bisector', { geodesicSmoothing: 0 }), gridMesh(16));
+		const geo = generateGeodesicVoronoi(
+			withStyle('geodesic', { geodesicSmoothing: 0, geodesicStraightenCap: 60 }),
+			gridMesh(16)
+		);
+		let rimChecked = 0;
+		let cellChanged = false;
+		for (let i = 0; i < bis.edges.length; i++) {
+			const isRim = bis.edges[i].cellIndices.includes(OPENING);
+			const a = bis.edgeProjections[i].edgePoints3d;
+			const g = geo.edgeProjections[i].edgePoints3d;
+			let maxDiff = 0;
+			for (let k = 0; k < a.length; k++) maxDiff = Math.max(maxDiff, g[k].distanceTo(a[k]));
+			if (isRim) {
+				expect(maxDiff).toBeLessThan(1e-9); // rim untouched
+				rimChecked++;
+			} else if (maxDiff > 1e-6) {
+				cellChanged = true;
+			}
+		}
+		expect(rimChecked).toBeGreaterThan(0);
+		expect(cellChanged).toBe(true);
+	});
+});
+
 describe('generateGeodesicVoronoi smoothing', () => {
-	const withLambda = (lambda: number): VoronoiConfig => ({ ...baseConfig(), geodesicSmoothing: lambda });
+	const withLambda = (lambda: number): VoronoiConfig => ({
+		...baseConfig(),
+		geodesicEdgeStyle: 'smoothed',
+		geodesicSmoothing: lambda
+	});
 
 	it('leaves edge endpoints (shared corners) identical to the unsmoothed run', () => {
 		const off = generateGeodesicVoronoi(withLambda(0), sphereMesh(24));
