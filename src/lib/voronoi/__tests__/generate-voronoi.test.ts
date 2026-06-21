@@ -412,6 +412,35 @@ describe('makeVoronoi', () => {
 		expect(sectionPointCounts).toContain(7); // normal two-sided tube
 	});
 
+	it('builds one-sided surface-projection tubes for rim edges', () => {
+		// Open plane -> rim edges -> one-sided SP tubes. With surfaceProjectionDivisions=0,
+		// a normal SP section is [cA, edge, cB] (3 pts -> 2 bands) and a rim SP section is
+		// [edge, cellCurve] (2 pts -> 1 band).
+		const openSurface = new Object3D();
+		openSurface.add(
+			new Mesh(new PlaneGeometry(800, 800, 6, 6), new MeshBasicMaterial({ side: DoubleSide }))
+		);
+		openSurface.updateMatrixWorld(true);
+		(generateSurface as jest.Mock).mockReturnValueOnce(openSurface);
+
+		const base = makeTestConfig();
+		const config = {
+			...base,
+			voronoiMethod: 'geodesic' as const,
+			insetMethod: 'localProjection' as const,
+			surfaceProjectionDivisions: 0,
+			seedConfig: {
+				...base.seedConfig,
+				seedMethod: { type: 'areaWeighted' as const, pointCount: 10, seed: 5 }
+			}
+		};
+		const result = makeVoronoi(config, { globule: 0 }, testSurfaceConfig);
+
+		const spBandCounts = result.surfaceProjectionTubes.map((t) => t.bands.length);
+		expect(spBandCounts).toContain(1); // one-sided rim surface-projection tube
+		expect(spBandCounts).toContain(2); // normal two-sided surface-projection tube
+	});
+
 	// Same fold-back guard as above, but through the localProjection inset path — this is the
 	// only coverage of localProjection's divsB-reversal + intermediate back-projection at
 	// surfaceProjectionDivisions > 0.

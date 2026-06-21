@@ -299,7 +299,8 @@ function assembleVoronoiTubes(params: {
 		if (edgePoints3d.length < 2) continue;
 
 		// One-sided (asymmetric) tube for rim edges: one side borders an opening, so
-		// only the surface side gets bands (no opening-side curve, no surface-projection tube).
+		// only the surface side gets bands. The surface-projection tube is likewise
+		// one-sided: the strip from the rim edge across to the cell-side inset curve.
 		const openingA = cellIdxA === OPENING;
 		const openingB = cellIdxB === OPENING;
 		// Defensive: an edge bordering openings on both sides has no real cell to back
@@ -328,7 +329,39 @@ function assembleVoronoiTubes(params: {
 				orientation: config.bandConfig.orientation,
 				address: tubeAddress
 			});
-			continue; // skip the symmetric main tube + surface-projection tube
+
+			// One-sided surface-projection tube: [edge, ...divs, cellCurve] per edge point.
+			const realCell = openingA ? cellIdxB : cellIdxA;
+			const spTubeAddress: GlobuleAddress_Tube = { ...address, tube: surfaceProjectionTubes.length };
+			const spSections: Section[] = edgePoints3d.map((edgePoint, idx): Section => {
+				// divsA is ordered cell->edge, divsB edge->cell; we want edge->cell either way.
+				const interior = openingA ? divsB[idx] : divsA[idx].slice().reverse();
+				return { points: [edgePoint.clone(), ...interior, realCurve[idx].clone()] };
+			});
+			// Outward winding (same test the symmetric SP tube uses); surfaceCenter only
+			// resolves which way faces point, never placement — the pipeline stays center-free.
+			const sp0 = spSections[0].points[0];
+			const sp1 = spSections[0].points[1];
+			const sp2 = spSections[1].points[0];
+			const spNormal = new Vector3().crossVectors(
+				new Vector3().subVectors(sp1, sp0),
+				new Vector3().subVectors(sp2, sp0)
+			);
+			const spCentroid = new Vector3().addVectors(sp0, sp1).add(sp2).divideScalar(3);
+			if (spNormal.dot(new Vector3().subVectors(spCentroid, surfaceCenter)) < 0) {
+				spSections.forEach((s) => s.points.reverse());
+			}
+			const spBands = generateProjectionBands(spSections, 'axial-right', spTubeAddress);
+			surfaceProjectionTubes.push({
+				bands: spBands,
+				sections: spSections,
+				orientation: 'axial-right',
+				address: spTubeAddress
+			});
+			// Opening side has no cell; use the real cell for both ends to keep spFillMeta aligned.
+			spFillMeta.push({ firstCell: realCell, lastCell: realCell });
+
+			continue; // rim edge fully handled (one-sided main + surface-projection tubes)
 		}
 
 		// Apply cross-sections for each side of the edge
