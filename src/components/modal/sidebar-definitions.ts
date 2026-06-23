@@ -8,6 +8,7 @@ import Utilities from './editor/Utilities.svelte';
 import Silhouette from './editor/Silhouette.svelte';
 import GlobuleCrossSection from './editor/GlobuleCrossSection.svelte';
 import PatternScale from './editor/PatternScale.svelte';
+import PageLayout from './editor/PageLayout.svelte';
 import LabelEditor from './editor/LabelEditor.svelte';
 import TileEditor from './editor/TileEditor.svelte';
 import Selection from './editor/Selection.svelte';
@@ -91,6 +92,15 @@ export const patternConfigs: SidebarDefinition = new Map([
 			shortTitle: 'TE',
 			title: 'Tile Editor',
 			content: TileEditor,
+			closeOnClickAway: false
+		}
+	],
+	[
+		'Page Layout',
+		{
+			shortTitle: 'PL',
+			title: 'Page Layout',
+			content: PageLayout,
 			closeOnClickAway: false
 		}
 	]

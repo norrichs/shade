@@ -6,6 +6,7 @@ export interface Toast {
 	message: string;
 	duration?: number; // ms, undefined = no auto-dismiss
 	dismissible?: boolean;
+	action?: { label: string; onClick: () => void };
 }
 
 function createToastStore() {

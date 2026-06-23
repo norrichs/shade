@@ -39,6 +39,7 @@
 		void $patternConfigStore.patternTypeConfig.labels?.selfTag;
 		mergedBandPaths.set(new Map());
 		void $patternConfigStore.patternViewConfig.bandSortMode;
+		void $patternConfigStore.patternConfig.pageLayout.keepConnected;
 		csvState = 'idle';
 		csvText = '';
 	}
@@ -88,7 +89,8 @@
 		});
 		const labels = config.patternTypeConfig.labels;
 		const patternType = config.patternTypeConfig.type;
-		const merged = computeMergedBandPaths(tubes, labels, patternType, labelDims);
+		const keepConnected = config.patternConfig.pageLayout.keepConnected ?? 0;
+		const merged = computeMergedBandPaths(tubes, labels, patternType, labelDims, keepConnected);
 		mergedBandPaths.set(merged);
 	};
 

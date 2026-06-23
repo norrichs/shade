@@ -3,7 +3,12 @@
 		sliceProjectionCutPattern,
 		type ProjectionRange
 	} from '$lib/projection-geometry/filters';
-	import { patternConfigStore, viewControlStore, labelTextDimensions } from '$lib/stores';
+	import {
+		patternConfigStore,
+		viewControlStore,
+		labelTextDimensions,
+		pageLayoutInfoStore
+	} from '$lib/stores';
 	import { buildSelfTagLines } from '$lib/cut-pattern/build-self-tag-lines';
 	import { effectiveBandBounds } from '$lib/cut-pattern/label-footprint';
 	import { Vector3 } from 'three';
@@ -16,6 +21,7 @@
 		BandCutPattern,
 		BandSortIndex,
 		CutPattern,
+		PatternSource,
 		Point,
 		PointConfig2,
 		TubeCutPattern
@@ -28,6 +34,10 @@
 	import { concatAddress, isSameAddress } from '$lib/util';
 	import { PATTERN_PORTAL_ID, LABEL_TEXT_PORTAL_ID, LABEL_TAG_PORTAL_ID } from './constants';
 	import { buildBandCodeMap } from '$lib/cut-pattern/band-sort-index';
+	import PageGeometry from './PageGeometry.svelte';
+	import { buildPageGeom, PAGE_LAYOUT_ALGORITHMS } from '$lib/cut-pattern/page-layout/registry';
+	import type { LayoutItem, PageLayoutResult } from '$lib/cut-pattern/page-layout/types';
+	import { toastStore } from '$lib/stores/toastStore';
 
 	let {
 		tubes = [],
@@ -36,7 +46,7 @@
 	}: {
 		tubes?: TubeCutPattern[];
 		sortIndex?: BandSortIndex;
-		selectionTarget?: string;
+		selectionTarget?: PatternSource;
 	} = $props();
 
 	type ResolvedBand = { band: BandCutPattern; tube: TubeCutPattern };
@@ -150,6 +160,18 @@
 		return computeWrappedOrigins(inputs, { gap, lineWrap, wrapWidth });
 	};
 
+	const toLayoutItems = (bands: ResolvedBand[]): LayoutItem[] =>
+		bands.map(({ band }) => {
+			const bounds = effBoundsFor(band);
+			return {
+				width: bounds?.width || 0,
+				height: bounds?.height || 0,
+				left: bounds?.left || 0,
+				top: bounds?.top || 0,
+				alignedYOffset: 0 // page mode is top-aligned (flex-start)
+			};
+		});
+
 	const getPartnerBands = (originBand: BandCutPattern, tubes: TubeCutPattern[]) => {
 		const { meta } = originBand;
 		if (!meta) return undefined;
@@ -196,7 +218,8 @@
 	};
 
 	let range = $derived($patternConfigStore.patternViewConfig.range);
-	let lineWrap = $derived($patternConfigStore.patternViewConfig.lineWrap ?? false);
+	let layoutMode = $derived($patternConfigStore.patternViewConfig.patternLayoutMode ?? 'linear');
+	let pageLayoutCfg = $derived($patternConfigStore.patternConfig.pageLayout);
 	let wrapWidth = $derived($patternConfigStore.patternViewConfig.wrapWidth ?? 800);
 	let gap = $derived($patternConfigStore.patternViewConfig.gap ?? GAP_BETWEEN_BANDS);
 
@@ -214,14 +237,112 @@
 	});
 
 	let filteredTubes = $derived(filtered({ tubes, range }));
+
+	// Flat, ordered band list for page mode: use the sort-index order when present,
+	// else flatten filtered tubes in tube order.
+	let pageBands = $derived.by((): ResolvedBand[] => {
+		if (indexedBands) return indexedBands;
+		return filteredTubes.flatMap((tube) => tube.bands.map((band) => ({ band, tube })));
+	});
+
+	let pageResult = $derived.by((): PageLayoutResult | undefined => {
+		if (layoutMode !== 'page' || !pageLayoutCfg) return undefined;
+		const items = toLayoutItems(pageBands);
+		const geom = buildPageGeom(pageLayoutCfg);
+		const algo = PAGE_LAYOUT_ALGORITHMS[pageLayoutCfg.algorithm];
+		return algo(items, geom);
+	});
+
+	// Publish the page count to the Page Layout editor. Guard on a value key so we
+	// only write when it actually changes — an unconditional store write here
+	// re-enters the reactive flush and trips effect_update_depth_exceeded.
+	let lastPageInfoKey = '';
+	$effect(() => {
+		const pageCount = pageResult?.pages.length ?? 0;
+		const overflow = !!pageResult?.overflow;
+		const key = `${pageCount}:${overflow}`;
+		if (key === lastPageInfoKey) return;
+		lastPageInfoKey = key;
+		pageLayoutInfoStore.set({ pageCount, overflow });
+	});
+
+	// Line-wrap is on in line-wrap mode, and also as the page-mode overflow fallback:
+	// when a pattern is too large to fit a page we drop pages but still wrap, so
+	// patterns stay visible without running off in one infinite row.
+	let lineWrap = $derived(
+		layoutMode === 'line-wrap' || (layoutMode === 'page' && !!pageResult?.overflow)
+	);
+
 	let origins = $derived(getCumulativeOrigins(filteredTubes, gap, 'center', lineWrap, wrapWidth));
 	let flatOrigins = $derived(
 		indexedBands ? getFlatOrigins(indexedBands, gap, 'center', lineWrap, wrapWidth) : undefined
 	);
+
+	// Raise a fit-error toast (with a scale-fixing action) when a pattern overflows.
+	let lastOverflowKey = '';
+	$effect(() => {
+		const ov = pageResult?.overflow;
+		if (!ov) {
+			lastOverflowKey = '';
+			return;
+		}
+		const key = `${ov.itemIndex}:${ov.requiredScale.toFixed(4)}`;
+		if (key === lastOverflowKey) return;
+		lastOverflowKey = key;
+		const suggested = Number(ov.requiredScale.toFixed(4));
+		toastStore.add({
+			type: 'error',
+			message: `A pattern is too large to fit the page. Increase pageScale to ~${suggested} to fit.`,
+			dismissible: true,
+			action: {
+				label: 'Fit page',
+				onClick: () => {
+					$patternConfigStore.patternConfig.pageLayout.pageScale = suggested;
+				}
+			}
+		});
+	});
+
+	let pageMarginPx = $derived(pageLayoutCfg ? buildPageGeom(pageLayoutCfg).marginPx : 0);
+	let usePageLayout = $derived(layoutMode === 'page' && !!pageResult && !pageResult.overflow);
 </script>
 
 {#if showPattern}
-	{#if indexedBands && flatOrigins}
+	{#if usePageLayout && pageResult}
+		<PageGeometry pages={pageResult.pages} marginPx={pageMarginPx} />
+		{#each pageBands as { band, tube }, i (concatAddress(band.address))}
+			<BandComponent
+				{band}
+				{tube}
+				index={i}
+				origin={pageResult.origins[i]}
+				portal={true}
+				tagAnchorPoint={band.tagAnchorPoint ?? minPoint(band.facets)}
+				tagAngle={band.tagAngle}
+				groupCode={groupCodeFor(band.address)}
+				showBounds={false}
+				{selectionTarget}
+			>
+				{#if band.projectionType === 'patterned'}
+					<BandCutPatternComponent
+						{band}
+						renderAsSinglePath={true}
+						highlightFirstFacet={false}
+						partnerBands={getPartnerBands(band, tubes)}
+						showQuadLabels={false}
+						showPathPointIndices={false}
+						partnerFacets={[
+							band.meta?.translatedStartPartnerFacet,
+							band.meta?.translatedEndPartnerFacet
+						].filter((el) => el !== undefined)}
+						showPartnerBands={false}
+						showAdjacentFacets={false}
+						showBounds={false}
+					/>
+				{/if}
+			</BandComponent>
+		{/each}
+	{:else if indexedBands && flatOrigins}
 		{#each indexedBands as { band, tube }, i (concatAddress(band.address))}
 			<BandComponent
 				{band}

@@ -550,6 +550,15 @@ export const defaultPatternConfig = (): PatternConfig => ({
 	cutouts: defaultCutoutConfig()[1],
 	axis: 'z',
 	pixelScale: { value: 1, unit: 'mm' },
+	pageLayout: {
+		pageSize: { width: 304.8, height: 304.8 }, // 12in × 12in
+		pageScale: 0.6562, // ~200 pattern-units per 12in
+		margin: 12.7, // 0.5in
+		gap: 20,
+		displayUnit: 'inch',
+		algorithm: 'flex-wrap',
+		keepConnected: 0
+	},
 	page: { height: 300, width: 300, unit: 'mm' },
 	origin: { type: 'PointConfig2', x: 0, y: 0 },
 	direction: { type: 'PointConfig2', x: 0, y: 1 },
@@ -571,7 +580,8 @@ export const defaultPatternViewConfig = (): PatternViewConfig => ({
 	bandSortMode: 'tube-order',
 	lineWrap: false,
 	wrapWidth: 800,
-	gap: 20
+	gap: 20,
+	patternLayoutMode: 'linear'
 });
 
 export const getLevels = (sampleMethod: CurveSampleMethod, curveCount: number) => {

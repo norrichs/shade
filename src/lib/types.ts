@@ -58,6 +58,7 @@ export type PatternViewConfig = {
 	wrapWidth?: number;
 	/** Gap between adjacent bands in the layout (band-space units). */
 	gap?: number;
+	patternLayoutMode: PatternLayoutMode;
 };
 export type PatternStyle = 'faceted' | 'outlined' | 'patterned' | 'none' | 'layered';
 
@@ -175,6 +176,18 @@ export type EdgeConfig = { lead: TrianglePoint; follow: TrianglePoint };
 export type PixelScale = { value: number; unit: 'cm' | 'inch' | 'mm' };
 export type PageSize = { height: number; width: number; unit: 'cm' | 'inch' | 'mm' };
 
+export type PatternLayoutMode = 'linear' | 'line-wrap' | 'page';
+
+export type PageLayoutConfig = {
+	pageSize: { width: number; height: number }; // millimetres
+	pageScale: number; // pattern-units per millimetre
+	margin: number; // millimetres
+	gap: number; // pattern units, spacing between patterns
+	displayUnit: 'mm' | 'inch'; // editor display only
+	algorithm: 'flex-wrap';
+	keepConnected: number; // px-wide uncut bridge left in each prepared cut path (0 = off)
+};
+
 export type PatternConfig = {
 	[key: string]:
 		| PatternShowConfig
@@ -184,7 +197,8 @@ export type PatternConfig = {
 		| boolean
 		| undefined
 		| PixelScale
-		| PageSize;
+		| PageSize
+		| PageLayoutConfig;
 	showPattern: PatternShowConfig;
 	axis: Axis;
 	origin: PointConfig2;
@@ -193,6 +207,7 @@ export type PatternConfig = {
 	showTabs: boolean;
 	pixelScale: PixelScale;
 	page: PageSize;
+	pageLayout: PageLayoutConfig;
 	// patternedConfig: CutPatternConfig;
 };
 
@@ -970,12 +985,26 @@ export type SuperGlobule = {
 	pipelineErrors?: PipelineError[];
 };
 
+/**
+ * The matched pair of mesh points that define each axis extent of the model
+ * bounding box: `[minPoint, maxPoint]` per axis. The extent along an axis is the
+ * distance between the two points' coordinates on that axis. Used to render
+ * measurement indicators so the derived model size can be visually verified.
+ */
+export type AxisExtremes = {
+	x: [Vector3, Vector3];
+	y: [Vector3, Vector3];
+	z: [Vector3, Vector3];
+};
+
 export type SuperGlobuleMesh = {
 	type: 'SuperGlobuleMesh';
 	superGlobuleConfigId: Id;
 	bandGeometry: BandGeometry[];
 	projectionAddresses: GlobuleAddress_Facet[];
 	bounds: Box3;
+	/** Null when the model has no geometry points. */
+	extremes: AxisExtremes | null;
 };
 
 export type SuperGlobuleGeometry =

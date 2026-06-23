@@ -128,7 +128,12 @@ export const materials = {
 		transparent: true,
 		opacity: 0.7,
 		side: DoubleSide
-	})
+	}),
+	// Model-size measurement indicators: one opaque colour per axis
+	// (x = red, y = green, z = blue) so matched extent pairs read at a glance.
+	axisX: new MeshStandardMaterial({ color: 'red', transparent: false, side: DoubleSide }),
+	axisY: new MeshStandardMaterial({ color: 'lime', transparent: false, side: DoubleSide }),
+	axisZ: new MeshStandardMaterial({ color: 'blue', transparent: false, side: DoubleSide })
 };
 
 export const materialByColor = (color: ThreeColor) => {
