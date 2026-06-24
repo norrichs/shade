@@ -1,7 +1,13 @@
 <script lang="ts">
-	import { superConfigStore } from '$lib/stores';
+	import { superConfigStore, patternConfigStore, viewControlStore } from '$lib/stores';
 	import { triggerManualRegeneration } from '$lib/stores/superGlobuleStores';
 	import { isManualMode } from '$lib/stores/uiStores';
+	import { tilePatternSpecStore } from '$lib/stores/tilePatternSpecStore';
+	import {
+		buildSavedConfig,
+		parseSavedConfig,
+		collectReferencedTilePatternSpecs
+	} from '$lib/saved-config';
 	import { get } from 'svelte/store';
 	import Button from '../../design-system/Button.svelte';
 	import Container from './Container.svelte';
@@ -41,12 +47,24 @@
 		saving = true;
 		error = '';
 		try {
+			const patternConfig = get(patternConfigStore);
+			const tilePatternSpecs = collectReferencedTilePatternSpecs(
+				patternConfig,
+				get(tilePatternSpecStore).variants
+			);
 			const res = await fetch('/api/config', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
 					name: configName.trim(),
-					configJson: JSON.stringify(get(superConfigStore))
+					configJson: JSON.stringify(
+						buildSavedConfig(
+							get(superConfigStore),
+							patternConfig,
+							get(viewControlStore),
+							tilePatternSpecs
+						)
+					)
 				})
 			});
 			if (!res.ok) throw new Error('Failed to save config');
@@ -65,8 +83,18 @@
 			const res = await fetch(`/api/config/${id}`);
 			if (!res.ok) throw new Error('Failed to load config');
 			const data = await res.json();
-			const parsed = JSON.parse(data.configJson);
-			superConfigStore.set(parsed);
+			const { superGlobuleConfig, globulePatternConfig, viewControls, tilePatternSpecs } =
+				parseSavedConfig(data.configJson);
+			// Register embedded custom specs before applying the pattern config so
+			// generation can resolve them (no-ops for ids already in the registry).
+			tilePatternSpecStore.ensureRegistered(tilePatternSpecs);
+			superConfigStore.set(superGlobuleConfig);
+			if (globulePatternConfig) {
+				patternConfigStore.set(globulePatternConfig);
+			}
+			if (viewControls) {
+				viewControlStore.set(viewControls);
+			}
 			if (get(isManualMode)) {
 				triggerManualRegeneration();
 			}

@@ -46,6 +46,19 @@ const unregisterVariant = (variantId: string): void => {
 	delete patterns[variantId];
 };
 
+/**
+ * Register specs embedded in a saved config (see saved-config.ts) into the
+ * `patterns` registry so the loaded config resolves its custom pattern. Only
+ * fills gaps — an id already present (a built-in, or a spec the user already
+ * has) is left untouched rather than clobbering the live registry on every load.
+ */
+const ensureRegistered = (specs: TiledPatternSpec[]): void => {
+	for (const spec of specs) {
+		if (patterns[spec.id]) continue;
+		registerVariant(spec);
+	}
+};
+
 const hydrate = async (): Promise<void> => {
 	const state = get(internal);
 	if (state.hydrated || state.loading) return;
@@ -121,6 +134,7 @@ const remove = async (rowId: number): Promise<boolean> => {
 export const tilePatternSpecStore = {
 	subscribe: derived(internal, (s) => s).subscribe,
 	hydrate,
+	ensureRegistered,
 	create,
 	update,
 	remove
