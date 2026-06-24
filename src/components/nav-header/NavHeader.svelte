@@ -147,6 +147,7 @@
 	<nav>
 		<div class="left-group">
 			<a href="/designer2">Designer</a>
+			<a href="/assembler">Assembler</a>
 			<ViewMenu />
 			<BandSelectionPanel />
 		</div>
