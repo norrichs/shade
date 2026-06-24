@@ -69,6 +69,17 @@ export const utilities: SidebarDefinition = new Map([
 	]
 ]);
 
+export const assemblerConfigs: SidebarDefinition = new Map([
+	[
+		'Configs',
+		{
+			shortTitle: 'CF',
+			title: 'Configs',
+			content: ConfigManager
+		}
+	]
+]);
+
 export const patternConfigs: SidebarDefinition = new Map([
 	[
 		'Pattern',
@@ -96,10 +107,10 @@ export const patternConfigs: SidebarDefinition = new Map([
 		}
 	],
 	[
-		'Page Layout',
+		'Pattern Layout',
 		{
 			shortTitle: 'PL',
-			title: 'Page Layout',
+			title: 'Pattern layout',
 			content: PageLayout,
 			closeOnClickAway: false
 		}

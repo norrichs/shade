@@ -1,5 +1,10 @@
 <script lang="ts">
-	import { patternConfigStore, pageLayoutInfoStore, showMeasureIndicators } from '$lib/stores';
+	import {
+		patternConfigStore,
+		pageLayoutInfoStore,
+		showMeasureIndicators,
+		superConfigStore
+	} from '$lib/stores';
 	import { model3dBoundsStore } from '$lib/stores/superGlobuleStores';
 	import { PAGE_PRESETS } from '$lib/cut-pattern/page-layout/page-presets';
 	import { derivePageDimensions, inchToMm, mmToInch } from '$lib/cut-pattern/page-layout/units';
@@ -21,6 +26,15 @@
 		const next = MODE_ORDER[(MODE_ORDER.indexOf(mode) + 1) % MODE_ORDER.length];
 		$patternConfigStore.patternViewConfig.patternLayoutMode = next;
 	};
+
+	// Ensure a surfaceProjectionConfig exists so the divisions/fill-all controls
+	// have something to bind to when the surfaceProjection source is selected.
+	$effect(() => {
+		const pc = $superConfigStore.projectionConfigs[0];
+		if (pc && !pc.surfaceProjectionConfig) {
+			pc.surfaceProjectionConfig = { divisions: 0 };
+		}
+	});
 
 	let presetId = $derived.by(() => {
 		const p = PAGE_PRESETS.find(
@@ -54,6 +68,99 @@
 
 <div class="page-editor">
 	<button class="mode-cycle" onclick={cycleMode}>Layout: {MODE_LABEL[mode]}</button>
+
+	<label>
+		Band order
+		<select bind:value={$patternConfigStore.patternViewConfig.bandSortMode}>
+			<option value="tube-order">Tube order</option>
+			<option value="end-connection-tube">End connection</option>
+		</select>
+	</label>
+
+	<label>
+		Geometry
+		<select bind:value={$patternConfigStore.patternViewConfig.patternSource}>
+			<option value="projection">Projection</option>
+			<option value="surfaceProjection">Surface</option>
+			<option value="voronoi">Voronoi</option>
+			<option value="voronoiSurface">Voronoi Surface</option>
+		</select>
+	</label>
+
+	{#if $patternConfigStore.patternViewConfig.patternSource === 'surfaceProjection' && $superConfigStore.projectionConfigs[0]?.surfaceProjectionConfig}
+		<label>
+			divisions
+			<input
+				type="number"
+				min="0"
+				max="5"
+				step="1"
+				bind:value={$superConfigStore.projectionConfigs[0].surfaceProjectionConfig.divisions}
+			/>
+		</label>
+		<label class="indicator-toggle">
+			<input
+				type="checkbox"
+				checked={$superConfigStore.projectionConfigs[0].surfaceProjectionConfig.fillAll ?? false}
+				onchange={(e) => {
+					const checked = (e.currentTarget as HTMLInputElement).checked;
+					$superConfigStore = {
+						...$superConfigStore,
+						projectionConfigs: $superConfigStore.projectionConfigs.map((pc, i) =>
+							i === 0
+								? {
+										...pc,
+										surfaceProjectionConfig: {
+											...pc.surfaceProjectionConfig!,
+											fillAll: checked
+										}
+									}
+								: pc
+						)
+					};
+				}}
+			/>
+			fill all
+		</label>
+	{:else if $patternConfigStore.patternViewConfig.patternSource === 'voronoiSurface' && $superConfigStore.voronoiConfig}
+		<label class="indicator-toggle">
+			<input
+				type="checkbox"
+				checked={$superConfigStore.voronoiConfig.fillAll ?? false}
+				onchange={(e) => {
+					const checked = (e.currentTarget as HTMLInputElement).checked;
+					$superConfigStore = {
+						...$superConfigStore,
+						voronoiConfig: { ...$superConfigStore.voronoiConfig!, fillAll: checked }
+					};
+				}}
+			/>
+			fill all
+		</label>
+	{/if}
+
+	<label>
+		gap
+		<input
+			type="number"
+			min="0"
+			step="1"
+			bind:value={$patternConfigStore.patternViewConfig.gap}
+		/>
+	</label>
+
+	{#if mode === 'line-wrap'}
+		<label>
+			wrap width
+			<input
+				type="number"
+				min="50"
+				max="5000"
+				step="10"
+				bind:value={$patternConfigStore.patternViewConfig.wrapWidth}
+			/>
+		</label>
+	{/if}
 
 	<label>
 		keepConnected (px)
@@ -132,11 +239,6 @@
 						Number((e.currentTarget as HTMLInputElement).value)
 					))}
 			/>
-		</label>
-
-		<label>
-			Layout gap (units)
-			<input type="number" step="1" bind:value={$patternConfigStore.patternConfig.pageLayout.gap} />
 		</label>
 
 		<svg class="preview" viewBox="0 0 120 120" width="120" height="120">

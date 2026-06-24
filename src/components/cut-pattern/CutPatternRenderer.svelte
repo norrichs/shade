@@ -248,7 +248,8 @@
 	let pageResult = $derived.by((): PageLayoutResult | undefined => {
 		if (layoutMode !== 'page' || !pageLayoutCfg) return undefined;
 		const items = toLayoutItems(pageBands);
-		const geom = buildPageGeom(pageLayoutCfg);
+		// Use the single shared gap so all three layout modes stay consistent.
+		const geom = { ...buildPageGeom(pageLayoutCfg), gap };
 		const algo = PAGE_LAYOUT_ALGORITHMS[pageLayoutCfg.algorithm];
 		return algo(items, geom);
 	});
