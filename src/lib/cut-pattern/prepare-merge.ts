@@ -8,6 +8,7 @@ import { transformLabelOutlineToBandSpace } from './transform-label-outline';
 import { mergeOutlineWithLabel } from './merge-outline-with-label';
 import { insertKeepConnectedBreak } from './keep-connected';
 import type { LabelTextDims } from '$lib/stores/mergedPathStore';
+import { buildBandUnionPath } from './build-band-union-path';
 
 /**
  * Compute merged outline+label paths for every eligible band in `tubes`.
@@ -31,6 +32,23 @@ import type { LabelTextDims } from '$lib/stores/mergedPathStore';
  * pixel width (see `insertKeepConnectedBreak`) so the laser-cut piece stays
  * attached to the surrounding sheet.
  */
+/**
+ * Build one hole-preserving union path per band for tiled (non-outlined)
+ * patterns. Same output shape and key (`band.id`) as the outlined merge, so it
+ * feeds the same `mergedBandPaths` store and render branch.
+ */
+export const computeTiledUnionPaths = (tubes: TubeCutPattern[]): Map<string, PathSegment[]> => {
+	const result = new Map<string, PathSegment[]>();
+	for (const tube of tubes) {
+		for (const band of tube.bands) {
+			if (!band.facets || band.facets.length === 0) continue;
+			const union = buildBandUnionPath(band);
+			if (union.length > 0) result.set(band.id, union);
+		}
+	}
+	return result;
+};
+
 export const computeMergedBandPaths = (
 	tubes: TubeCutPattern[],
 	labels: PatternLabelsConfig | undefined,
@@ -39,7 +57,7 @@ export const computeMergedBandPaths = (
 	keepConnected = 0
 ): Map<string, PathSegment[]> => {
 	const result = new Map<string, PathSegment[]>();
-	if (patternType !== 'outlined') return result;
+	if (patternType !== 'outlined') return computeTiledUnionPaths(tubes);
 	const selfTag = labels?.selfTag;
 	if (!selfTag?.enabled) return result;
 
