@@ -9,19 +9,18 @@ const contourCount = (segs: PathSegment[]): number => segs.filter((s) => s[0] ==
 describe('buildBandUnionPath hole preservation', () => {
 	beforeAll(() => getPaperScope());
 
-	// Regression guard for the root cause: handing a whole multi-subpath facet to
-	// the expander lets IT merge the pieces, which drops interior holes at shared
-	// vertices. buildBandUnionPath must expand each subpath separately so paper's
-	// union (proven hole-preserving) does the merging.
-	test('expands each subpath separately, not the whole facet at once', () => {
-		// One facet whose path has three separate subpaths.
+	// Regression guard for the root cause: handing a whole multi-edge subpath to
+	// the expander lets svg-path-outline turn a closed loop into a ring (or merge
+	// pieces at shared vertices), corrupting the union. buildBandUnionPath must
+	// expand each individual EDGE separately so paper's union does the merging.
+	test('expands each individual edge separately, not whole subpaths', () => {
+		// One facet whose single subpath is a closed quad loop = 4 edges (3 L + Z).
 		const facetPath: PathSegment[] = [
 			['M', 0, 0],
-			['L', 1, 0],
-			['M', 2, 0],
-			['L', 3, 0],
-			['M', 4, 0],
-			['L', 5, 0]
+			['L', 10, 0],
+			['L', 10, 10],
+			['L', 0, 10],
+			['Z']
 		];
 		const band = {
 			id: 'b',
@@ -41,9 +40,13 @@ describe('buildBandUnionPath hole preservation', () => {
 
 		buildBandUnionPath(band, spy);
 
-		// 3 subpaths → 3 expander calls, each with a single-subpath (exactly one 'M').
-		expect(seenPaths.length).toBe(3);
-		seenPaths.forEach((p) => expect(contourCount(p)).toBe(1));
+		// 4 edges (including the Z closing edge) → 4 expander calls, each a
+		// two-point single segment (exactly one 'M' and one draw command).
+		expect(seenPaths.length).toBe(4);
+		seenPaths.forEach((p) => {
+			expect(contourCount(p)).toBe(1);
+			expect(p.length).toBe(2);
+		});
 	});
 
 	// Outcome check: a dense lattice supplied as ONE multi-subpath facet must keep
@@ -68,5 +71,22 @@ describe('buildBandUnionPath hole preservation', () => {
 		const area = Math.abs(item.area);
 		item.remove();
 		expect(area).toBeGreaterThan(0);
+	});
+
+	// Real tristar facet whose subpaths include multi-edge CLOSED LOOPS (cells)
+	// plus crossing spokes. Expanding whole subpaths collapsed this to 11 contours
+	// (cells filled / wrongly merged); per-edge expansion recovers the full
+	// tessellation (~23 contours).
+	test('recovers all cells of a tristar facet with closed-loop subpaths', () => {
+		// prettier-ignore
+		const facet0: PathSegment[] = [["M",70.05,238.72],["L",67.31,227.12],["M",52.16,238.92],["L",47.91,258.66],["L",37.01,250.73],["L",41.26,230.99],["L",52.16,238.92],["M",45.90,212.75],["L",41.26,230.99],["L",29.97,221.58],["L",34.62,203.33],["L",45.90,212.75],["M",62.67,245.37],["L",67.31,227.12],["L",56.80,220.67],["L",61.83,203.91],["L",50.93,195.98],["M",33.14,271.95],["L",21.86,262.54],["L",25.72,241.32],["L",14.04,230.42],["L",18.30,210.69],["M",67.31,227.12],["L",47.91,258.66],["L",21.86,262.54],["L",41.26,230.99],["L",67.31,227.12],["M",61.83,203.91],["L",41.26,230.99],["L",14.04,230.42],["L",34.62,203.33],["L",61.83,203.91],["M",67.31,227.12],["L",52.16,238.92],["M",37.01,250.73],["L",21.86,262.54],["M",61.83,203.91],["L",45.90,212.75],["M",29.97,221.58],["L",14.04,230.42],["M",67.31,227.12],["L",61.83,203.91],["M",47.91,258.66],["L",41.26,230.99],["M",41.26,230.99],["L",34.62,203.33],["M",21.86,262.54],["L",14.04,230.42],["M",62.67,245.37],["L",33.14,271.95],["M",56.80,220.67],["L",25.72,241.32],["M",50.93,195.98],["L",18.30,210.69],["M",61.83,203.91],["L",57.87,177.43]];
+		const band = {
+			id: 'tristar',
+			facets: [{ path: facet0, strokeWidth: 3 }]
+		} as unknown as BandCutPattern;
+
+		const union = buildBandUnionPath(band);
+		// Whole-subpath expansion yielded only 11 contours here; per-edge recovers ~23.
+		expect(contourCount(union)).toBeGreaterThanOrEqual(20);
 	});
 });

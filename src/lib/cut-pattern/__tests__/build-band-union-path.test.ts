@@ -22,7 +22,8 @@ const bandWithFacets = (count: number): BandCutPattern =>
 	({
 		id: 'band-test',
 		facets: Array.from({ length: count }, () => ({
-			path: [['M', 0, 0] as PathSegment],
+			// A single-edge facet path (one 'M' + one 'L' = one edge to expand).
+			path: [['M', 0, 0] as PathSegment, ['L', 1, 0] as PathSegment],
 			strokeWidth: 4
 		}))
 	}) as unknown as BandCutPattern;
