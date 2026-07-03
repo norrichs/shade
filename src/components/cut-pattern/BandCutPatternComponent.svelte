@@ -72,11 +72,15 @@
 />
 <BoundsPattern {showBounds} bounds={band.bounds} />
 {#if renderAsSinglePath}
-	{@const mergedPath = $mergedBandPaths.has(band.id)
+	{@const hasMerged = $mergedBandPaths.has(band.id)}
+	{@const mergedPath = hasMerged
 		? svgPathStringFromSegments($mergedBandPaths.get(band.id)!)
 		: band.svgPath}
-	{#if $patternConfigStore.patternTypeConfig.type !== 'outlined'}
-		<!-- Tiled outline-union: filled silhouette with holes + 1px cut outline -->
+	{#if hasMerged && $patternConfigStore.patternTypeConfig.type !== 'outlined'}
+		<!-- Tiled outline-union: filled silhouette with holes + 1px cut outline.
+		     Only once a union has been prepared (mergedBandPaths populated via
+		     "Prepare Download"); otherwise fall through to the default thick-stroke
+		     view so the pre-Prepare working view is unchanged. -->
 		<path
 			d={mergedPath}
 			fill="rgba(200,200,200,0.1)"
