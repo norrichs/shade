@@ -14,9 +14,11 @@ import type { BandCutPattern } from '$lib/types';
 
 /**
  * Build the self-tag label outline (stem + body) for a tiled band, in band-local
- * coordinates. Tiled bands have no `tagAnchorAutoAngle`, so — mirroring
- * PatternLabel's `autoAngle === undefined` branch — `tagAngle` is treated as an
- * absolute rotation and the anchor is used directly (no stem-width shift).
+ * coordinates. Mirrors PatternLabel's transform so the merged outline lands
+ * exactly under the separately-rendered label text: `effectiveAngle` combines
+ * the configured `tagAngle` with `tagAnchorAutoAngle` (the edge-derived
+ * orientation), and — when an auto-angle is present — the anchor is shifted by
+ * `stemWidth/2` along the angle, matching PatternLabel's `renderAnchor`.
  */
 const buildTiledLabelOutline = (
 	band: BandCutPattern,
@@ -28,16 +30,24 @@ const buildTiledLabelOutline = (
 		width: FALLBACK_TEXT_WIDTH,
 		height: FALLBACK_TEXT_HEIGHT
 	};
+	const stemWidth = selfTag.stemWidth ?? 4;
 	const localPath = buildLabelOutlinePath({
 		measuredWidth: dims.width,
 		measuredHeight: dims.height,
 		radius: (selfTag.height ?? 16) / 4,
 		padding: selfTag.padding ?? 10,
 		stemLength: selfTag.stemLength ?? 20,
-		stemWidth: selfTag.stemWidth ?? 4
+		stemWidth
 	});
-	const effectiveAngle = band.tagAngle ?? selfTag.angle ?? 0;
-	return transformLabelOutlineToBandSpace(localPath, band.tagAnchorPoint, effectiveAngle);
+	const effectiveAngle = (band.tagAngle ?? selfTag.angle ?? 0) + (band.tagAnchorAutoAngle ?? 0);
+	const renderAnchor =
+		band.tagAnchorAutoAngle === undefined
+			? band.tagAnchorPoint
+			: {
+					x: band.tagAnchorPoint.x - (stemWidth / 2) * Math.cos(effectiveAngle),
+					y: band.tagAnchorPoint.y - (stemWidth / 2) * Math.sin(effectiveAngle)
+				};
+	return transformLabelOutlineToBandSpace(localPath, renderAnchor, effectiveAngle);
 };
 
 /**

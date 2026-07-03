@@ -66,4 +66,31 @@ describe('computeTiledUnionPaths label merge', () => {
 		).get('t0b0')!;
 		expect(bottomY(withDisabled)).toBeCloseTo(bottomY(bandOnly), 1);
 	});
+
+	// Regression: the merged label outline must rotate with `tagAnchorAutoAngle`
+	// so it stays aligned under the (separately-rendered) label text. Previously
+	// the tiled outline ignored the auto-angle and always pointed along tagAngle,
+	// leaving the box axis-aligned while the text rotated.
+	test('rotates the label outline by tagAnchorAutoAngle', () => {
+		const autoTube = (id: string, autoAngle: number): TubeCutPattern =>
+			({
+				bands: [
+					{
+						id,
+						facets: [{ path: gridLattice(), strokeWidth: 2 }],
+						tagAnchorPoint: { x: 50, y: 100 },
+						tagAngle: 0,
+						tagAnchorAutoAngle: autoAngle
+					}
+				]
+			}) as unknown as TubeCutPattern;
+		const dims = new Map([['t0b0', { width: 20, height: 10 }]]);
+
+		// autoAngle 0 → stem points down, label extends well below the grid.
+		const down = computeTiledUnionPaths([autoTube('t0b0', 0)], labelsEnabled, dims).get('t0b0')!;
+		// autoAngle π → stem points up, so the silhouette does NOT extend downward.
+		const up = computeTiledUnionPaths([autoTube('t0b0', Math.PI)], labelsEnabled, dims).get('t0b0')!;
+
+		expect(bottomY(down)).toBeGreaterThan(bottomY(up) + 15);
+	});
 });
