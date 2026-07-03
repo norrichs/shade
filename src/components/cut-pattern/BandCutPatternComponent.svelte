@@ -72,15 +72,27 @@
 />
 <BoundsPattern {showBounds} bounds={band.bounds} />
 {#if renderAsSinglePath}
-	<path
-		d={$mergedBandPaths.has(band.id)
-			? svgPathStringFromSegments($mergedBandPaths.get(band.id)!)
-			: band.svgPath}
-		fill="none"
-		stroke-width={band.facets[0].strokeWidth}
-		stroke-linecap="round"
-		stroke-linejoin="round"
-	/>
+	{@const mergedPath = $mergedBandPaths.has(band.id)
+		? svgPathStringFromSegments($mergedBandPaths.get(band.id)!)
+		: band.svgPath}
+	{#if $patternConfigStore.patternTypeConfig.type !== 'outlined'}
+		<!-- Tiled outline-union: filled silhouette with holes + 1px cut outline -->
+		<path
+			d={mergedPath}
+			fill="rgba(200,200,200,0.1)"
+			fill-rule="evenodd"
+			stroke="black"
+			stroke-width={1}
+		/>
+	{:else}
+		<path
+			d={mergedPath}
+			fill="none"
+			stroke-width={band.facets[0].strokeWidth}
+			stroke-linecap="round"
+			stroke-linejoin="round"
+		/>
+	{/if}
 {:else}
 	{#each band.facets as facet, f (f)}
 		{#if showOriginalPath && facet.meta?.originalPath}
