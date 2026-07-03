@@ -1,6 +1,7 @@
 import type { PathSegment } from '$lib/types';
 import { pathSegmentsToPaper } from './path-segment-to-paper';
 import { paperToPathSegments } from './paper-to-path-segment';
+import { getPaperScope } from './scope';
 type Op = 'unite' | 'subtract' | 'intersect' | 'exclude';
 
 const apply = (a: PathSegment[], b: PathSegment[], op: Op): PathSegment[] => {
@@ -40,3 +41,32 @@ export const intersectPaths = (a: PathSegment[], b: PathSegment[]): PathSegment[
 	apply(a, b, 'intersect');
 export const excludePaths = (a: PathSegment[], b: PathSegment[]): PathSegment[] =>
 	apply(a, b, 'exclude');
+
+/**
+ * Union a list of closed outline paths into a single path, PRESERVING interior
+ * holes. Unlike `unitePaths`, this does not reorient sub-path winding, so holes
+ * produced by the union (e.g. the negative space in a grid) survive as separate
+ * opposite-winding contours in the result.
+ *
+ * Input contours must each begin with 'M'. Engine-agnostic: it knows nothing
+ * about how the outlines were produced.
+ */
+export const uniteMany = (outlines: PathSegment[][]): PathSegment[] => {
+	const valid = outlines.filter((o) => o.length > 0 && o[0][0] === 'M');
+	if (valid.length === 0) return [];
+	getPaperScope();
+	let acc = pathSegmentsToPaper(valid[0]) as {
+		unite: (other: unknown, options?: { insert?: boolean }) => typeof acc;
+		remove: () => void;
+	};
+	for (let i = 1; i < valid.length; i++) {
+		const next = pathSegmentsToPaper(valid[i]) as { remove: () => void };
+		const united = acc.unite(next, { insert: false });
+		acc.remove();
+		next.remove();
+		acc = united;
+	}
+	const out = paperToPathSegments(acc as Parameters<typeof paperToPathSegments>[0]);
+	acc.remove();
+	return out;
+};

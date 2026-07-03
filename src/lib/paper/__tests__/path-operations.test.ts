@@ -1,5 +1,5 @@
 import type { PathSegment } from '$lib/types';
-import { unitePaths, subtractPaths, intersectPaths, excludePaths } from '../path-operations';
+import { unitePaths, subtractPaths, intersectPaths, excludePaths, uniteMany } from '../path-operations';
 import { getPaperScope } from '../scope';
 import { pathSegmentsToPaper } from '../path-segment-to-paper';
 
@@ -66,5 +66,37 @@ describe('path-operations', () => {
 		const xor = excludePaths(a, b);
 		// Combined (150) minus overlap (50) = 100.
 		expect(area(xor)).toBeCloseTo(100, 1);
+	});
+
+	describe('uniteMany', () => {
+		test('empty input returns empty array', () => {
+			expect(uniteMany([])).toEqual([]);
+		});
+
+		test('single outline is returned as a single contour', () => {
+			const united = uniteMany([rect(0, 0, 10, 10)]);
+			expect(united.filter((s) => s[0] === 'M').length).toBe(1);
+			expect(area(united)).toBeCloseTo(100, 1);
+		});
+
+		test('many overlapping outlines union to one contour', () => {
+			const united = uniteMany([rect(0, 0, 10, 10), rect(5, 0, 10, 10), rect(10, 0, 10, 10)]);
+			expect(united.filter((s) => s[0] === 'M').length).toBe(1);
+			// 0..20 wide, 10 tall = 200.
+			expect(area(united)).toBeCloseTo(200, 1);
+		});
+
+		test('a frame of outlines preserves the interior hole', () => {
+			// Four bars forming a 30x30 frame with a 10x10 empty center (x/y 10..20).
+			const top = rect(0, 0, 30, 10);
+			const bottom = rect(0, 20, 30, 10);
+			const left = rect(0, 0, 10, 30);
+			const right = rect(20, 0, 10, 30);
+			const united = uniteMany([top, bottom, left, right]);
+			// Outer boundary + one hole = two M..Z runs.
+			expect(united.filter((s) => s[0] === 'M').length).toBe(2);
+			// Signed area = outer 900 - hole 100 = 800. If the hole were filled it would be 900.
+			expect(area(united)).toBeCloseTo(800, 1);
+		});
 	});
 });
