@@ -1,5 +1,6 @@
 import type { BandCutPattern, PathSegment, TubeCutPattern } from '$lib/types';
-import { computeMergedBandPaths } from '../prepare-merge';
+import { computeMergedBandPaths, computeTiledUnionPaths } from '../prepare-merge';
+import { getPaperScope } from '$lib/paper/scope';
 
 const rect = (x: number, y: number, w: number, h: number): PathSegment[] => [
 	['M', x, y],
@@ -35,6 +36,10 @@ const labels = {
 } as unknown as Parameters<typeof computeMergedBandPaths>[1];
 
 describe('computeMergedBandPaths', () => {
+	beforeAll(() => {
+		getPaperScope();
+	});
+
 	test('produces a merged path for an eligible outlined band', () => {
 		const band = makeBand();
 		const result = computeMergedBandPaths(
@@ -50,7 +55,7 @@ describe('computeMergedBandPaths', () => {
 		expect(merged[merged.length - 1][0]).toBe('Z');
 	});
 
-	test('skips tiled bands', () => {
+	test('routes tiled bands to the tiled union path instead of the label-merge branch', () => {
 		const band = makeBand();
 		const result = computeMergedBandPaths(
 			[makeTube(band)],
@@ -58,7 +63,16 @@ describe('computeMergedBandPaths', () => {
 			'tiled',
 			new Map([['band-1', { width: 50, height: 20 }]])
 		);
-		expect(result.size).toBe(0);
+		expect(result.has('band-1')).toBe(true);
+		// The dispatcher delegates to computeTiledUnionPaths with the same label
+		// config + measured dims, so the outputs match exactly.
+		expect(result.get('band-1')).toEqual(
+			computeTiledUnionPaths(
+				[makeTube(band)],
+				labels,
+				new Map([['band-1', { width: 50, height: 20 }]])
+			).get('band-1')
+		);
 	});
 
 	test('skips bands without tagAnchorAutoAngle', () => {
@@ -112,5 +126,48 @@ describe('computeMergedBandPaths', () => {
 		const baseMerged = JSON.stringify(result.get('band-base'));
 		const overrideMerged = JSON.stringify(result.get('band-override'));
 		expect(baseMerged).not.toBe(overrideMerged);
+	});
+});
+
+describe('computeTiledUnionPaths', () => {
+	beforeAll(() => {
+		getPaperScope();
+	});
+
+	const line = (x1: number, y1: number, x2: number, y2: number): PathSegment[] => [
+		['M', x1, y1],
+		['L', x2, y2]
+	];
+
+	const tubeWithBand = (id: string): TubeCutPattern =>
+		({
+			bands: [
+				{
+					id,
+					facets: [
+						{ path: line(0, 0, 10, 0), strokeWidth: 4 },
+						{ path: line(0, 0, 0, 10), strokeWidth: 4 }
+					]
+				}
+			]
+		}) as unknown as TubeCutPattern;
+
+	test('produces one union path per band, keyed by band id', () => {
+		const result = computeTiledUnionPaths([tubeWithBand('t0b0')]);
+		expect(result.has('t0b0')).toBe(true);
+		const path = result.get('t0b0')!;
+		expect(path[0][0]).toBe('M');
+		expect(path.some((s) => s[0] === 'Z')).toBe(true);
+	});
+
+	test('dispatcher routes non-outlined pattern types to tiled union', () => {
+		const result = computeMergedBandPaths(
+			[tubeWithBand('t0b0')],
+			undefined,
+			'grid',
+			new Map(),
+			0
+		);
+		expect(result.has('t0b0')).toBe(true);
 	});
 });

@@ -24,8 +24,14 @@
 	import { buildBandSortIndex } from '$lib/cut-pattern/band-sort-index';
 	import { buildPatternCsv } from '$lib/cut-pattern/build-pattern-csv';
 	import { downloadTextFile } from '$lib/util';
+	import { tick } from 'svelte';
 
 	$: regenerateDisabled = !$isManualMode || $isGenerating || !$hasPendingChanges;
+
+	// "Prepare Download" can be heavy (tiled union expansion), so surface a
+	// running/done indicator. `prepareMs` records the last run's duration.
+	let prepareState: 'idle' | 'running' | 'done' = 'idle';
+	let prepareMs = 0;
 
 	// Invalidate prepared merge state whenever underlying geometry or label
 	// config changes. User must re-click "Prepare Download" (or just click
@@ -42,6 +48,8 @@
 		void $patternConfigStore.patternConfig.pageLayout.keepConnected;
 		csvState = 'idle';
 		csvText = '';
+		// A geometry/config change makes any prepared union stale.
+		prepareState = 'idle';
 	}
 
 	let showModal = false;
@@ -92,6 +100,22 @@
 		const keepConnected = config.patternConfig.pageLayout.keepConnected ?? 0;
 		const merged = computeMergedBandPaths(tubes, labels, patternType, labelDims, keepConnected);
 		mergedBandPaths.set(merged);
+	};
+
+	// Wrap runPrepare with a visible running/done indicator. The computation is
+	// synchronous and blocks the main thread, so yield a frame first to let the
+	// "Preparing…" state paint before the work freezes the UI.
+	const handlePrepare = async () => {
+		if (prepareState === 'running') return;
+		prepareState = 'running';
+		await tick();
+		await new Promise((resolve) =>
+			requestAnimationFrame(() => requestAnimationFrame(() => resolve(undefined)))
+		);
+		const start = performance.now();
+		runPrepare();
+		prepareMs = Math.round(performance.now() - start);
+		prepareState = 'done';
 	};
 
 	type CsvState = 'idle' | 'ready';
@@ -200,7 +224,14 @@
 					$interactionMode = { type: 'band-select-multiple', data: { bands: [] } };
 				}}>Select Bands</Button
 			>
-			<Button onclick={runPrepare}>Prepare Download</Button>
+			<Button onclick={handlePrepare} disabled={prepareState === 'running'}>
+				{prepareState === 'running' ? 'Preparing…' : 'Prepare Download'}
+			</Button>
+			{#if prepareState === 'running'}
+				<span class="prepare-status running">…preparing</span>
+			{:else if prepareState === 'done'}
+				<span class="prepare-status done">✓ ready ({prepareMs} ms)</span>
+			{/if}
 			<Button
 				onclick={() => {
 					if (
@@ -230,6 +261,31 @@
 </header>
 
 <style>
+	.prepare-status {
+		display: inline-flex;
+		align-items: center;
+		padding: 0 8px;
+		font-size: 0.85rem;
+		white-space: nowrap;
+	}
+	.prepare-status.running {
+		color: var(--color-text-muted, #ccc);
+		font-style: italic;
+		animation: prepare-pulse 1.5s ease-in-out infinite;
+	}
+	.prepare-status.done {
+		color: #4caf50;
+	}
+	@keyframes prepare-pulse {
+		0%,
+		100% {
+			opacity: 0.4;
+		}
+		50% {
+			opacity: 1;
+		}
+	}
+
 	a {
 		/* --link-color: green; */
 		color: var(--color-link);

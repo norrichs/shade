@@ -369,8 +369,8 @@ export const tiledPatternConfigs: { [key: string]: TiledPatternConfig } = {
 			scaleConfig: defaultScaleConfig
 		}
 	},
-	'tiledTriStarPattern-1': {
-		type: 'tiledTriStarPattern-1',
+	'tiledAsanohaPattern-1': {
+		type: 'tiledAsanohaPattern-1',
 		tiling: 'quadrilateral',
 		config: {
 			rowCount: 1,
