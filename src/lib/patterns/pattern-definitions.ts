@@ -61,7 +61,10 @@ export const patterns: { [key: string]: PatternGenerator } = {
 			const unitPattern = generateTriStarPattern({ size: 1, rows, columns });
 			return unitPattern;
 		},
-		tagAnchor: { facetIndex: 0, segmentIndex: 1 },
+		// Anchor at path point 3 of the end facet — the convergence junction the
+		// label should originate from (identified against the rendered point-index
+		// overlay). The label angle is then derived from the nearest quad edge.
+		tagAnchor: { facetIndex: 0, segmentIndex: 3 },
 		adjustAfterMapping: (
 			patternBand: PathSegment[][],
 			quadBand: Quadrilateral[],

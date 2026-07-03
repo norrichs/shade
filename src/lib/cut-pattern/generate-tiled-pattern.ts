@@ -11,10 +11,16 @@ import type {
 	TubeCutPattern,
 	Facet
 } from '$lib/types';
-import { getQuadrilaterals, transformPatternByQuad } from '$lib/patterns/quadrilateral';
+import {
+	getQuadrilaterals,
+	getQuadrilateralTransformMatrix,
+	transformPatternByQuad,
+	transformPointByQuadrilateralTransform
+} from '$lib/patterns/quadrilateral';
 import type { BandCutPatternPattern, TiledPatternConfig } from '$lib/types';
 import { applyStrokeWidth, getFlatStripV2 } from './generate-cut-pattern';
 import { resolvePatternEntry } from '$lib/patterns/resolve-pattern';
+import { computeTiledLabelAngle } from './compute-tiled-label-angle';
 import { getQuadWidth, svgPathStringFromSegments } from '$lib/patterns/utils';
 import type {
 	GlobuleAddress_Band,
@@ -208,6 +214,9 @@ export const generateTiling = ({
 			adjustedPatternBand = mappedPatternBand;
 		}
 		const tagAnchorPoint = { x: 0, y: 0 };
+		// Quad on the anchor facet — captured alongside the anchor point so the
+		// label angle can be derived from the quad edge nearest that anchor.
+		let tagAnchorQuad: Quadrilateral | undefined;
 
 		const band = bands[bandIndex];
 		const edges = getBandTriangleEdges(band.orientation);
@@ -229,13 +238,37 @@ export const generateTiling = ({
 		const cuttablePattern: CutPattern[] = adjustedPatternBand.map((facet, facetIndex) => {
 			const quad = structuredClone(quadBand[facetIndex % quadBand.length]);
 			const facetPathSegment = facet[(facet.length + tagAnchor.segmentIndex) % facet.length];
-			if (
-				tagAnchor.facetIndex === facetIndex &&
-				Array.isArray(facetPathSegment) &&
-				facetPathSegment.length >= 2
-			) {
-				tagAnchorPoint.x = facetPathSegment[1] || 0;
-				tagAnchorPoint.y = facetPathSegment[2] || 0;
+			if (tagAnchor.facetIndex === facetIndex) {
+				if (tagAnchor.anchorUnitPoint) {
+					// Geometric anchor: map a fixed point in the unit-pattern's
+					// coordinate space through this facet's quad. This lands on the
+					// intended vertex (e.g. a pattern convergence junction) regardless
+					// of how `endsTrimmed`/`rowCount`/segment order shuffle the path
+					// array — unlike `segmentIndex`, which indexes into the mutated
+					// path and drifts off the junction when segments are trimmed.
+					const rows = tiledPatternConfig.config.rowCount || 1;
+					const columns = tiledPatternConfig.config.columnCount || 1;
+					const unitPoint =
+						typeof tagAnchor.anchorUnitPoint === 'function'
+							? tagAnchor.anchorUnitPoint(rows, columns)
+							: tagAnchor.anchorUnitPoint;
+					// Use the original (un-cloned) quad here: `structuredClone` strips
+					// the Vector3 prototype, and getQuadrilateralTransformMatrix relies
+					// on Vector3.clone()/.sub().
+					const sourceQuad = quadBand[facetIndex % quadBand.length];
+					const mapped = transformPointByQuadrilateralTransform(
+						unitPoint,
+						getQuadrilateralTransformMatrix(sourceQuad),
+						sourceQuad.a
+					);
+					tagAnchorPoint.x = mapped.x;
+					tagAnchorPoint.y = mapped.y;
+					tagAnchorQuad = quad;
+				} else if (Array.isArray(facetPathSegment) && facetPathSegment.length >= 2) {
+					tagAnchorPoint.x = facetPathSegment[1] || 0;
+					tagAnchorPoint.y = facetPathSegment[2] || 0;
+					tagAnchorQuad = quad;
+				}
 			}
 			const quadWidth = getQuadWidth(quad);
 
@@ -262,6 +295,12 @@ export const generateTiling = ({
 			svgPath: undefined, //cuttablePattern.map((p) => p.svgPath).join(),
 			id: `${tiledPatternConfig.type}-band-${address.globule}-${address.tube}-${globalBandIndex}`,
 			tagAnchorPoint,
+			// Orient the label relative to the quad edge nearest the anchor: text
+			// parallel to that edge, stem perpendicular. `tagAngle` is then applied
+			// as a relative offset on top of this auto angle (see PatternLabel).
+			tagAnchorAutoAngle: tagAnchorQuad
+				? computeTiledLabelAngle(tagAnchorPoint, tagAnchorQuad)
+				: undefined,
 			tagAngle: tiledPatternConfig.labels?.selfTag?.angle ?? tagAnchor.angle ?? 0,
 			projectionType: 'patterned',
 			address: { ...address, band: globalBandIndex },
