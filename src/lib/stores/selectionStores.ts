@@ -32,6 +32,30 @@ import {
 	isGlobuleAddress_Facet,
 	isGlobuleAddress_Tube
 } from '$lib/util';
+import { sameGlobuleBand, type AssemblerHighlight } from '$lib/assembler-highlight';
+
+/**
+ * Assembler-page highlight state. The `AssemblerHighlight` type and the
+ * `sameGlobuleBand` equality helper live in the store-free leaf module
+ * `$lib/assembler-highlight` so low-level renderer code can use them without
+ * an import cycle; re-exported here for existing consumers.
+ */
+export { sameGlobuleBand, type AssemblerHighlight };
+
+export const assemblerHighlight = writable<AssemblerHighlight>(null);
+
+/**
+ * Highlight `band` (with its `ring`). Clicking the already-highlighted band
+ * clears the highlight; clicking a different band replaces it.
+ */
+export const setAssemblerHighlight = (
+	band: GlobuleAddress_Band,
+	ring: GlobuleAddress_Band[] = []
+): void => {
+	assemblerHighlight.update((cur) =>
+		cur && sameGlobuleBand(cur.band, band) ? null : { band, ring }
+	);
+};
 
 /** Union type for address types that can be selected */
 type SelectableAddress = GlobuleAddress_Tube | GlobuleAddress_Band | GlobuleAddress_Facet;

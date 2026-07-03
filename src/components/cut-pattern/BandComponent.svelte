@@ -5,11 +5,14 @@
 	import OnTabLabel from './OnTabLabel.svelte';
 	import { resolveTabLabel } from '$lib/cut-pattern/resolve-tab-label';
 	import {
+		assemblerHighlight,
 		patternConfigStore,
+		sameGlobuleBand,
 		selectedProjection,
 		selectedSurfaceProjection,
 		selectedVoronoiSurface
 	} from '$lib/stores';
+	import { HIGHLIGHT_PRIMARY, HIGHLIGHT_SECONDARY } from '$lib/highlight-colors';
 	import type { Vector3 } from 'three';
 	import type { GlobuleAddress_Band } from '$lib/projection-geometry/types';
 	import { concatAddress } from '$lib/util';
@@ -62,6 +65,16 @@
 	let isHovered = $state(false);
 	let color = $derived(isHovered ? colors.hovered : isFocused ? colors.focused : colors.default);
 
+	// Assembler cross-view highlight: fill this band's bounds when it (or its
+	// ring) is the band clicked in the data grid.
+	let highlightFill = $derived.by(() => {
+		const h = $assemblerHighlight;
+		if (!h) return null;
+		if (sameGlobuleBand(band.address, h.band)) return HIGHLIGHT_PRIMARY;
+		if (h.ring.some((b) => sameGlobuleBand(band.address, b))) return HIGHLIGHT_SECONDARY;
+		return null;
+	});
+
 	const handleMouseOver = (address: GlobuleAddress_Band) => {
 		isHovered = true;
 	};
@@ -101,6 +114,16 @@
 			fill="rgba(0, 0, 0, 0.05)"
 			stroke="red"
 			stroke-width={0.1}
+		/>{/if}
+	{#if highlightFill && band.bounds}<rect
+			x={band.bounds.left}
+			y={band.bounds.top}
+			width={band.bounds.width}
+			height={band.bounds.height}
+			fill={highlightFill}
+			fill-opacity={0.45}
+			stroke={highlightFill}
+			stroke-width={1}
 		/>{/if}
 	{@render children?.()}
 	{#if onTabEnabled && hasTabs}

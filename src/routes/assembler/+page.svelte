@@ -11,16 +11,19 @@
 	import { collateTubes } from '$lib/cut-pattern/collate-tubes';
 	import { buildBandSortIndex } from '$lib/cut-pattern/band-sort-index';
 	import { buildPatternCsv } from '$lib/cut-pattern/build-pattern-csv';
+	import type { BandSortIndex, TubeCutPattern } from '$lib/types';
 
-	// Compute the same CSV data the pattern export produces, derived from the
-	// live pattern/config/view stores, and hand it to PatternData to render.
-	let csv = $derived.by(() => {
+	// Collate the live tubes once, then derive the sort index and CSV from them.
+	// PatternData needs the structured `tubes`/`index` (which carry full
+	// {globule, tube, band} addresses) to resolve a clicked member cell back to a
+	// band — the CSV text omits the globule index.
+	let tubes = $derived.by<TubeCutPattern[]>(() => {
 		const patternState = $superGlobulePatternStore as any;
-		if (!patternState || typeof patternState === 'string') return '';
+		if (!patternState || typeof patternState === 'string') return [];
 		try {
 			const config = $patternConfigStore;
 			const view = $viewControlStore;
-			const tubes = collateTubes({
+			return collateTubes({
 				globuleTubePattern: patternState.globuleTubePattern,
 				projectionPattern: patternState.projectionPattern,
 				surfaceProjectionPattern: patternState.surfaceProjectionPattern,
@@ -30,15 +33,24 @@
 				showProjectionGeometry: view.showProjectionGeometry,
 				patternSource: config.patternViewConfig.patternSource ?? 'projection'
 			});
-			if (!tubes.length) return '';
-			const mode = config.patternViewConfig.bandSortMode ?? 'tube-order';
-			const index = buildBandSortIndex(tubes, mode);
-			return buildPatternCsv(index, tubes);
 		} catch (e) {
-			console.warn('Assembler: failed to build pattern CSV', e);
-			return '';
+			console.warn('Assembler: failed to collate tubes', e);
+			return [];
 		}
 	});
+
+	let index = $derived.by<BandSortIndex | undefined>(() => {
+		if (!tubes.length) return undefined;
+		const mode = $patternConfigStore.patternViewConfig.bandSortMode ?? 'tube-order';
+		try {
+			return buildBandSortIndex(tubes, mode);
+		} catch (e) {
+			console.warn('Assembler: failed to build band sort index', e);
+			return undefined;
+		}
+	});
+
+	let csv = $derived(index ? buildPatternCsv(index, tubes) : '');
 </script>
 
 <main>
@@ -52,7 +64,7 @@
 		<PatternViewer />
 	</section>
 	<section class="pane pane-data">
-		<PatternData {csv} />
+		<PatternData {csv} {index} {tubes} />
 	</section>
 	<HoverSidebar sidebarDefinition={assemblerConfigs} />
 </main>

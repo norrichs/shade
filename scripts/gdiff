@@ -1,0 +1,184 @@
+#!/usr/bin/env zsh
+# gdiff                          Interactive commit picker; select a commit to diff against.
+# gdiff --c <commits-back>       Diff working tree vs HEAD~N.
+# gdiff --b <branch>             Diff working tree vs <branch> (or any ref).
+# gdiff [--c N | --b ref] --f F  Open nvim vimdiff for file F (left = base read-only, right = working tree).
+#
+# Without --f: list/pick changed files, color coded by status.
+# With    --f: open vimdiff for that file.
+#
+# Status colors: A=green  M=yellow  D=red  R=cyan  C=blue  other=magenta
+
+set -e
+
+RED=$'\e[31m'
+GREEN=$'\e[32m'
+YELLOW=$'\e[33m'
+CYAN=$'\e[36m'
+BLUE=$'\e[34m'
+MAGENTA=$'\e[35m'
+BOLD=$'\e[1m'
+RESET=$'\e[0m'
+
+usage() {
+  echo "Usage: gdiff [--c <commits-back> | --b <branch>] [--f <file>]" >&2
+  exit 1
+}
+
+# ── No arguments: commit picker ─────────────────────────────────────────────
+if [[ $# -eq 0 ]]; then
+  repo_root=$(git rev-parse --show-toplevel)
+  selected=$(
+    git -C "$repo_root" log \
+        --format="%H|%p|%ad|%s" \
+        --date=format:'%Y-%m-%d %H:%M' \
+        -80 \
+      | awk -F'|' -v CY="$CYAN" -v DIM="$BOLD" -v RST="$RESET" '{
+          full=$1; parents=$2; date=$3
+          # subject is everything after the third "|"
+          sub(/^[^|]*\|[^|]*\|[^|]*\|/, ""); subject=$0
+          hash=substr(full,1,8)
+          n=split(parents,a," ")
+          if (n > 1)
+            printf "%s⦷%s  %s  %s  %s%s|%s\n", CY, RST, hash, date, subject, RST, full
+          else
+            printf "   %s  %s  %s|%s\n", hash, date, subject, full
+        }' \
+      | fzf --ansi \
+            --delimiter '|' \
+            --with-nth 1 \
+            --preview "git -C $repo_root show --stat --color=always {2}" \
+            --preview-window 'right:55%'
+  ) || exit 0
+
+  full_hash=$(printf '%s' "$selected" | cut -d'|' -f2)
+  [[ -z "$full_hash" ]] && exit 0
+
+  # Count how many commits ahead HEAD is of the selected commit.
+  n_back=$(git -C "$repo_root" rev-list --count "${full_hash}..HEAD")
+  exec gdiff --c "$n_back"
+fi
+
+# ── Parse flags ─────────────────────────────────────────────────────────────
+commit_n=''
+branch=''
+file=''
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --c|--commit)
+      [[ -z "$2" ]] && { echo "Error: $1 requires a value" >&2; usage; }
+      commit_n="$2"; shift 2 ;;
+    --b|--branch)
+      [[ -z "$2" ]] && { echo "Error: $1 requires a value" >&2; usage; }
+      branch="$2"; shift 2 ;;
+    --f|--file)
+      [[ -z "$2" ]] && { echo "Error: $1 requires a value" >&2; usage; }
+      file="$2"; shift 2 ;;
+    *)
+      echo "Error: unknown argument '$1'" >&2; usage ;;
+  esac
+done
+
+if [[ -n "$commit_n" && -n "$branch" ]]; then
+  echo "Error: --c and --b are mutually exclusive" >&2; usage
+fi
+if [[ -z "$commit_n" && -z "$branch" ]]; then
+  echo "Error: one of --c or --b is required" >&2; usage
+fi
+
+# ── Resolve the base ref ────────────────────────────────────────────────────
+if [[ -n "$commit_n" ]]; then
+  if ! [[ "$commit_n" =~ '^[0-9]+$' ]]; then
+    echo "Error: --c value must be a non-negative integer" >&2
+    exit 1
+  fi
+  ref="HEAD~${commit_n}"
+else
+  ref="$branch"
+fi
+
+repo_root=$(git rev-parse --show-toplevel)
+
+if ! git rev-parse --verify "$ref" &>/dev/null; then
+  echo "Error: ref '$ref' does not exist" >&2
+  exit 1
+fi
+
+# ── No --f: interactive file picker (fzf) or plain list ─────────────────────
+if [[ -z "$file" ]]; then
+  # Normalize git output: one line per file, "STATUS<TAB>filepath"
+  normalized() {
+    git -C "$repo_root" diff --name-status "$ref" \
+      | awk -F'\t' '{
+          if ($1 ~ /^[RC]/) { st=substr($1,1,1); file=$3 }
+          else              { st=substr($1,1,1); file=$2 }
+          print st "\t" file
+        }' \
+      | sort -t$'\t' -k2
+  }
+
+  if command -v fzf &>/dev/null; then
+    # Feed fzf colored "ST  dir/base" lines; keep full path as hidden field 2.
+    selected=$(
+      normalized \
+        | awk -F'\t' -v G="$GREEN" -v Y="$YELLOW" -v R="$RED" \
+                      -v C="$CYAN"  -v B="$BLUE"  -v M="$MAGENTA" -v RST="$RESET" '{
+            st=$1; file=$2
+            if      (st=="A") col=G
+            else if (st=="M") col=Y
+            else if (st=="D") col=R
+            else if (st=="R") col=C
+            else if (st=="C") col=B
+            else              col=M
+            printf "%s%s%s  %s\t%s\n", col, st, RST, file, file
+          }' \
+        | fzf --ansi \
+              --delimiter $'\t' \
+              --with-nth 1 \
+              --preview "git -C $repo_root diff $ref -- {2}" \
+              --preview-window 'right:60%'
+    ) || exit 0  # exit 0 on fzf cancel (Esc / Ctrl-C)
+
+    filepath=$(printf '%s' "$selected" | cut -f2)
+    [[ -z "$filepath" ]] && exit 0
+    file="$repo_root/$filepath"
+  else
+    # Fallback: plain grouped list
+    prev_dir=''
+    while IFS=$'\t' read -r st f; do
+      dir=$(dirname "$f")
+      base=$(basename "$f")
+      case "$st" in
+        A) color=$GREEN ;;
+        M) color=$YELLOW ;;
+        D) color=$RED ;;
+        R) color=$CYAN ;;
+        C) color=$BLUE ;;
+        *) color=$MAGENTA ;;
+      esac
+      if [[ "$dir" != "$prev_dir" ]]; then
+        [[ -n "$prev_dir" ]] && echo
+        echo "${BOLD}${dir}/${RESET}"
+        prev_dir="$dir"
+      fi
+      echo "  ${color}${st}${RESET}  ${base}"
+    done < <(normalized)
+    exit 0
+  fi
+fi
+
+# ── Open vimdiff ────────────────────────────────────────────────────────────
+if [[ ! -f "$file" ]]; then
+  echo "Error: file not found: $file" >&2
+  exit 1
+fi
+
+abs_file=$(cd "$(dirname "$file")" && pwd)/$(basename "$file")
+rel_path=${abs_file#${repo_root}/}
+
+tmp=$(mktemp "/tmp/gdiff-$(basename "$file")-XXXXXX")
+git -C "$repo_root" show "${ref}:${rel_path}" > "$tmp" 2>/dev/null || true
+
+nvim -d "$tmp" "$abs_file"
+rm -f "$tmp"

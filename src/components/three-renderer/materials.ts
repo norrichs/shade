@@ -1,7 +1,9 @@
 import { DoubleSide, MeshPhysicalMaterial, MeshStandardMaterial } from 'three';
 import type { ThreeColor } from './colors';
 import type { GlobuleAddress_Facet } from '$lib/projection-geometry/types';
+import { sameGlobuleBand, type AssemblerHighlight } from '$lib/assembler-highlight';
 import type { SelectedProjectionGeometry } from '$lib/stores/selectionStores';
+import { HIGHLIGHT_PRIMARY, HIGHLIGHT_SECONDARY } from '$lib/highlight-colors';
 
 const theme = {
 	colorSelected: 'rgb(0,150,255)',
@@ -111,6 +113,22 @@ export const materials = {
 		opacity: 0.95,
 		side: DoubleSide
 	}),
+	// Assembler cross-view highlight: the band clicked in the data grid.
+	assemblerPrimary: new MeshPhysicalMaterial({
+		color: HIGHLIGHT_PRIMARY,
+		transparent: false,
+		opacity: 1,
+		clearcoat: 1,
+		clearcoatRoughness: 0,
+		side: DoubleSide
+	}),
+	// Assembler cross-view highlight: the other bands in the clicked band's ring.
+	assemblerSecondary: new MeshStandardMaterial({
+		color: HIGHLIGHT_SECONDARY,
+		transparent: true,
+		opacity: 0.95,
+		side: DoubleSide
+	}),
 	partnerBase: new MeshStandardMaterial({
 		color: 'rgb(80, 130, 200)',
 		transparent: true,
@@ -155,8 +173,17 @@ const defaultMaterialSelectionConfig: MaterialSelectionConfig = {
 export const getMaterial = (
 	address: GlobuleAddress_Facet,
 	selectedGeometry: SelectedProjectionGeometry,
-	config: MaterialSelectionConfig = defaultMaterialSelectionConfig
+	config: MaterialSelectionConfig = defaultMaterialSelectionConfig,
+	highlight: AssemblerHighlight = null
 ) => {
+	// Assembler cross-view highlight takes precedence over normal selection
+	// colouring so a grid-clicked band reads clearly in 3D.
+	if (highlight) {
+		if (sameGlobuleBand(address, highlight.band)) return materials.assemblerPrimary;
+		if (highlight.ring.some((b) => sameGlobuleBand(address, b)))
+			return materials.assemblerSecondary;
+	}
+
 	if (!selectedGeometry?.selected) return materials.default;
 
 	if (selectedGeometry.isSelected(address)) return materials.selected;

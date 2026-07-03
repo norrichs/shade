@@ -21,6 +21,7 @@
 	} from '$lib/projection-geometry/types';
 	import ColorMapped from './ColorMapped.svelte';
 	import {
+		assemblerHighlight,
 		selectedProjection,
 		selectedProjectionGeometry,
 		selectedSurfaceProjection,
@@ -39,6 +40,15 @@
 
 	// Stable key for {#each} blocks over facets, derived from the facet's address.
 	const facetKey = (a: GlobuleAddress_Facet) => `${a.globule}-${a.tube}-${a.band}-${a.facet}`;
+
+	// Wrap getMaterial so every facet also respects the Assembler cross-view
+	// highlight (a band/ring clicked in the data grid). Reading $assemblerHighlight
+	// here registers it as a dependency of each facet's material expression.
+	const highlightedFacetMaterial = (
+		address: GlobuleAddress_Facet,
+		selectedGeometry: Parameters<typeof getMaterial>[1],
+		config?: Parameters<typeof getMaterial>[2]
+	) => getMaterial(address, selectedGeometry, config, $assemblerHighlight);
 
 	let {
 		onClick,
@@ -193,7 +203,7 @@
 			{#each projectionGeometry.surfaceProjectionFacets as facet (facetKey(facet.address))}
 				<T.Mesh
 					geometry={facet.geometry}
-					material={getMaterial(facet.address, $selectedSurfaceProjectionGeometry, {
+					material={highlightedFacetMaterial(facet.address, $selectedSurfaceProjectionGeometry, {
 						colorByBand
 					})}
 					onclick={(ev) =>
@@ -241,7 +251,7 @@
 		{#each projectionGeometry.facets || [] as facet (facetKey(facet.address))}
 			<T.Mesh
 				geometry={facet.geometry}
-				material={getMaterial(facet.address, $selectedProjectionGeometry, {
+				material={highlightedFacetMaterial(facet.address, $selectedProjectionGeometry, {
 					colorByBand
 				})}
 				onclick={(ev) =>
@@ -278,7 +288,7 @@
 		{#each voronoiGeometry.facets || [] as facet (facetKey(facet.address))}
 			<T.Mesh
 				geometry={facet.geometry}
-				material={getMaterial(facet.address, $selectedProjectionGeometry)}
+				material={highlightedFacetMaterial(facet.address, $selectedProjectionGeometry)}
 				onclick={(ev) =>
 					handleFacetSelect(ev, 'voronoi', facet.address, (a) => selectedProjection.set(a))}
 			/>
@@ -286,7 +296,7 @@
 		{#each voronoiGeometry.surfaceProjectionFacets || [] as facet (facetKey(facet.address))}
 			<T.Mesh
 				geometry={facet.geometry}
-				material={getMaterial(facet.address, $selectedVoronoiSurfaceGeometry, {
+				material={highlightedFacetMaterial(facet.address, $selectedVoronoiSurfaceGeometry, {
 					zebraStriped: true
 				})}
 				onclick={(ev) =>
@@ -316,7 +326,7 @@
 		{#each globuleTubeGeometry.facets || [] as facet (facetKey(facet.address))}
 			<T.Mesh
 				geometry={facet.geometry}
-				material={getMaterial(facet.address, $selectedProjectionGeometry)}
+				material={highlightedFacetMaterial(facet.address, $selectedProjectionGeometry)}
 				onclick={(ev) =>
 					handleFacetSelect(ev, 'globuleTube', facet.address, (a) => selectedProjection.set(a))}
 			/>
