@@ -64,7 +64,15 @@ describe('computeMergedBandPaths', () => {
 			new Map([['band-1', { width: 50, height: 20 }]])
 		);
 		expect(result.has('band-1')).toBe(true);
-		expect(result.get('band-1')).toEqual(computeTiledUnionPaths([makeTube(band)]).get('band-1'));
+		// The dispatcher delegates to computeTiledUnionPaths with the same label
+		// config + measured dims, so the outputs match exactly.
+		expect(result.get('band-1')).toEqual(
+			computeTiledUnionPaths(
+				[makeTube(band)],
+				labels,
+				new Map([['band-1', { width: 50, height: 20 }]])
+			).get('band-1')
+		);
 	});
 
 	test('skips bands without tagAnchorAutoAngle', () => {

@@ -9,19 +9,66 @@ import { mergeOutlineWithLabel } from './merge-outline-with-label';
 import { insertKeepConnectedBreak } from './keep-connected';
 import type { LabelTextDims } from '$lib/stores/mergedPathStore';
 import { buildBandUnionPath } from './build-band-union-path';
+import { uniteMany } from '$lib/paper';
+import type { BandCutPattern } from '$lib/types';
+
+/**
+ * Build the self-tag label outline (stem + body) for a tiled band, in band-local
+ * coordinates. Tiled bands have no `tagAnchorAutoAngle`, so — mirroring
+ * PatternLabel's `autoAngle === undefined` branch — `tagAngle` is treated as an
+ * absolute rotation and the anchor is used directly (no stem-width shift).
+ */
+const buildTiledLabelOutline = (
+	band: BandCutPattern,
+	selfTag: NonNullable<PatternLabelsConfig['selfTag']>,
+	labelTextDims: Map<string, LabelTextDims>
+): PathSegment[] => {
+	if (!band.tagAnchorPoint) return [];
+	const dims = labelTextDims.get(band.id) ?? {
+		width: FALLBACK_TEXT_WIDTH,
+		height: FALLBACK_TEXT_HEIGHT
+	};
+	const localPath = buildLabelOutlinePath({
+		measuredWidth: dims.width,
+		measuredHeight: dims.height,
+		radius: (selfTag.height ?? 16) / 4,
+		padding: selfTag.padding ?? 10,
+		stemLength: selfTag.stemLength ?? 20,
+		stemWidth: selfTag.stemWidth ?? 4
+	});
+	const effectiveAngle = band.tagAngle ?? selfTag.angle ?? 0;
+	return transformLabelOutlineToBandSpace(localPath, band.tagAnchorPoint, effectiveAngle);
+};
 
 /**
  * Build one hole-preserving union path per band for tiled (non-outlined)
  * patterns. Same output shape and key (`band.id`) as the outlined merge, so it
  * feeds the same `mergedBandPaths` store and render branch.
+ *
+ * When `labels.selfTag.enabled`, the self-tag label outline is merged into the
+ * band union AFTER the facet geometry is unioned, so the label attaches to the
+ * finished silhouette (mirroring the outlined `mergeOutlineWithLabel` step).
  */
-export const computeTiledUnionPaths = (tubes: TubeCutPattern[]): Map<string, PathSegment[]> => {
+export const computeTiledUnionPaths = (
+	tubes: TubeCutPattern[],
+	labels?: PatternLabelsConfig,
+	labelTextDims: Map<string, LabelTextDims> = new Map()
+): Map<string, PathSegment[]> => {
 	const result = new Map<string, PathSegment[]>();
+	const selfTag = labels?.selfTag;
 	for (const tube of tubes) {
 		for (const band of tube.bands) {
 			if (!band.facets || band.facets.length === 0) continue;
-			const union = buildBandUnionPath(band);
-			if (union.length > 0) result.set(band.id, union);
+			const bandUnion = buildBandUnionPath(band);
+			if (bandUnion.length === 0) continue;
+			if (selfTag?.enabled && band.tagAnchorPoint) {
+				const labelPath = buildTiledLabelOutline(band, selfTag, labelTextDims);
+				if (labelPath.length > 0) {
+					result.set(band.id, uniteMany([bandUnion, labelPath]));
+					continue;
+				}
+			}
+			result.set(band.id, bandUnion);
 		}
 	}
 	return result;
@@ -60,7 +107,7 @@ export const computeMergedBandPaths = (
 	keepConnected = 0
 ): Map<string, PathSegment[]> => {
 	const result = new Map<string, PathSegment[]>();
-	if (patternType !== 'outlined') return computeTiledUnionPaths(tubes);
+	if (patternType !== 'outlined') return computeTiledUnionPaths(tubes, labels, labelTextDims);
 	const selfTag = labels?.selfTag;
 	if (!selfTag?.enabled) return result;
 
