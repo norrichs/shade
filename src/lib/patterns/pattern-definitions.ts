@@ -11,10 +11,10 @@ import { adjustCarnation, generateCarnation } from './tiled-carnation-pattern';
 import { generateAuxetic } from './tiled-bowtie-pattern';
 import { generateBranched } from './banded-branched-pattern';
 import {
-	adjustTriStarPatternAfterMapping,
-	generateTriStarPattern,
-	getTriStarSegments
-} from './tiled-tristar-pattern';
+	adjustAsanohaPatternAfterMapping,
+	generateAsanohaPattern,
+	getAsanohaSegments
+} from './tiled-asanoha-pattern';
 import { generateGridPattern, adjustRectPatternAfterTiling } from './tiled-grid-pattern';
 import { algorithms } from './pattern-registry';
 import {
@@ -56,9 +56,9 @@ export const patterns: { [key: string]: PatternGenerator } = {
 			return adjustCarnation(tiledBands, 1);
 		}
 	},
-	'tiledTriStarPattern-1': {
+	'tiledAsanohaPattern-1': {
 		getPattern: (rows: number, columns: number) => {
-			const unitPattern = generateTriStarPattern({ size: 1, rows, columns });
+			const unitPattern = generateAsanohaPattern({ size: 1, rows, columns });
 			return unitPattern;
 		},
 		tagAnchor: { facetIndex: 0, segmentIndex: 1 },
@@ -67,11 +67,11 @@ export const patterns: { [key: string]: PatternGenerator } = {
 			quadBand: Quadrilateral[],
 			tiledPatternConfig: TiledPatternConfig
 		) =>
-			adjustTriStarPatternAfterMapping(
+			adjustAsanohaPatternAfterMapping(
 				patternBand,
 				quadBand,
 				tiledPatternConfig,
-				getTriStarSegments
+				getAsanohaSegments
 			)
 	},
 	'tiledGridPattern-0': {

@@ -38,7 +38,7 @@ export type TiledPatternAlgorithm =
 	| 'grid'
 	| 'multihex-tesselation'
 	| 'triangle-panel'
-	| 'tristar';
+	| 'asanoha';
 
 export type TiledPatternSpec = {
 	id: string;

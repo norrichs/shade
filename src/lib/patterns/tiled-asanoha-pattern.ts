@@ -1,7 +1,7 @@
 import type { PathSegment, Quadrilateral, TiledPatternConfig } from '$lib/types';
 import { rotatePS, translatePS } from './utils';
 
-export const generateTriStarPattern = ({
+export const generateAsanohaPattern = ({
 	size,
 	rows,
 	columns
@@ -147,7 +147,7 @@ export const generateTriStarPattern = ({
 /////////////////////////////////////////////////
 // Adjustment functions.  Make these general so they can be reused
 
-export const adjustTriStarPatternAfterMapping = (
+export const adjustAsanohaPatternAfterMapping = (
 	patternBand: PathSegment[][],
 	quadBand: Quadrilateral[],
 	tiledPatternConfig: TiledPatternConfig,
@@ -266,7 +266,7 @@ type GetSegmentFunction = (
 	facetLength: number
 ) => [number, number][];
 
-export const getTriStarSegments = (
+export const getAsanohaSegments = (
 	end: 'start' | 'end',
 	rows: number,
 	columns: number,

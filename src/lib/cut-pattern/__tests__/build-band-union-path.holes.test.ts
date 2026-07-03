@@ -73,15 +73,15 @@ describe('buildBandUnionPath hole preservation', () => {
 		expect(area).toBeGreaterThan(0);
 	});
 
-	// Real tristar facet whose subpaths include multi-edge CLOSED LOOPS (cells)
+	// Real asanoha facet whose subpaths include multi-edge CLOSED LOOPS (cells)
 	// plus crossing spokes. Expanding whole subpaths collapsed this to 11 contours
 	// (cells filled / wrongly merged); per-edge expansion recovers the full
 	// tessellation (~23 contours).
-	test('recovers all cells of a tristar facet with closed-loop subpaths', () => {
+	test('recovers all cells of an asanoha facet with closed-loop subpaths', () => {
 		// prettier-ignore
 		const facet0: PathSegment[] = [["M",70.05,238.72],["L",67.31,227.12],["M",52.16,238.92],["L",47.91,258.66],["L",37.01,250.73],["L",41.26,230.99],["L",52.16,238.92],["M",45.90,212.75],["L",41.26,230.99],["L",29.97,221.58],["L",34.62,203.33],["L",45.90,212.75],["M",62.67,245.37],["L",67.31,227.12],["L",56.80,220.67],["L",61.83,203.91],["L",50.93,195.98],["M",33.14,271.95],["L",21.86,262.54],["L",25.72,241.32],["L",14.04,230.42],["L",18.30,210.69],["M",67.31,227.12],["L",47.91,258.66],["L",21.86,262.54],["L",41.26,230.99],["L",67.31,227.12],["M",61.83,203.91],["L",41.26,230.99],["L",14.04,230.42],["L",34.62,203.33],["L",61.83,203.91],["M",67.31,227.12],["L",52.16,238.92],["M",37.01,250.73],["L",21.86,262.54],["M",61.83,203.91],["L",45.90,212.75],["M",29.97,221.58],["L",14.04,230.42],["M",67.31,227.12],["L",61.83,203.91],["M",47.91,258.66],["L",41.26,230.99],["M",41.26,230.99],["L",34.62,203.33],["M",21.86,262.54],["L",14.04,230.42],["M",62.67,245.37],["L",33.14,271.95],["M",56.80,220.67],["L",25.72,241.32],["M",50.93,195.98],["L",18.30,210.69],["M",61.83,203.91],["L",57.87,177.43]];
 		const band = {
-			id: 'tristar',
+			id: 'asanoha',
 			facets: [{ path: facet0, strokeWidth: 3 }]
 		} as unknown as BandCutPattern;
 
