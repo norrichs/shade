@@ -17,12 +17,15 @@ export type PageGeom = {
 	marginPx: number; // margin in pattern units
 	pageGap: number; // vertical gap between stacked pages, pattern units
 	gap: number; // spacing between items, pattern units
+	reorderWindow: number; // skyline lookahead window (>= 1)
+	allowRotation: boolean; // skyline: permit 90° rotation
 };
 
 export type PageRect = { x: number; y: number; width: number; height: number };
 
 export type PageLayoutResult = {
 	origins: Vector3[];
+	rotations: number[]; // per-item rotation in degrees (0 or 90), parallel to origins
 	pages: PageRect[];
 	overflow?: { itemIndex: number; requiredScale: number };
 };

@@ -31,4 +31,30 @@ describe('migrateGlobulePatternConfig — page layout', () => {
 		expect(out.patternConfig?.pageLayout?.algorithm).toBe('flex-wrap');
 		expect(out.patternConfig?.pageLayout?.pageSize.width).toBeGreaterThan(0);
 	});
+
+	it('backfills reorderWindow and allowRotation when the pageLayout block is missing', () => {
+		const out = migrateGlobulePatternConfig({
+			patternConfig: {}
+		} as Partial<GlobulePatternConfig>);
+		expect(out.patternConfig?.pageLayout?.reorderWindow).toBe(8);
+		expect(out.patternConfig?.pageLayout?.allowRotation).toBe(false);
+	});
+
+	it('backfills reorderWindow and allowRotation on an existing pageLayout that lacks them', () => {
+		const out = migrateGlobulePatternConfig({
+			patternConfig: {
+				pageLayout: {
+					pageSize: { width: 304.8, height: 304.8 },
+					pageScale: 0.6562,
+					margin: 12.7,
+					gap: 20,
+					displayUnit: 'inch',
+					algorithm: 'flex-wrap',
+					keepConnected: 0
+				}
+			}
+		} as unknown as Partial<GlobulePatternConfig>);
+		expect(out.patternConfig?.pageLayout?.reorderWindow).toBe(8);
+		expect(out.patternConfig?.pageLayout?.allowRotation).toBe(false);
+	});
 });

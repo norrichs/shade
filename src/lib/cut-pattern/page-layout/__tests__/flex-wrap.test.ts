@@ -18,6 +18,8 @@ const geom = (over: Partial<PageGeom> = {}): PageGeom => ({
 	marginPx: 0,
 	pageGap: 50,
 	gap: 0,
+	reorderWindow: 1,
+	allowRotation: false,
 	...over
 });
 

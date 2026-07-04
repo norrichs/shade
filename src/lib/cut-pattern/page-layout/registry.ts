@@ -2,7 +2,10 @@ import type { PageLayoutConfig } from '$lib/types';
 import { flexWrapPageLayout, PAGE_STACK_GAP } from './flex-wrap';
 import type { PageGeom, PageLayoutFn } from './types';
 
-export const PAGE_LAYOUT_ALGORITHMS: Record<PageLayoutConfig['algorithm'], PageLayoutFn> = {
+// Only 'flex-wrap' is implemented so far; 'skyline' is registered in a later task.
+// Typed loosely (string-keyed) so the not-yet-complete map still satisfies the
+// widened PageLayoutConfig['algorithm'] union without a placeholder entry.
+export const PAGE_LAYOUT_ALGORITHMS: Record<string, PageLayoutFn> = {
 	'flex-wrap': flexWrapPageLayout
 };
 
@@ -19,6 +22,8 @@ export const buildPageGeom = (cfg: PageLayoutConfig): PageGeom => {
 		contentHeight: pageHeight - 2 * marginPx,
 		marginPx,
 		pageGap: PAGE_STACK_GAP,
-		gap: cfg.gap
+		gap: cfg.gap,
+		reorderWindow: cfg.reorderWindow,
+		allowRotation: cfg.allowRotation
 	};
 };

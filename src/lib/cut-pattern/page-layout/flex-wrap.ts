@@ -28,6 +28,7 @@ export const flexWrapPageLayout = (items: LayoutItem[], geom: PageGeom): PageLay
 	if (worst >= 0) {
 		return {
 			origins: [],
+			rotations: [],
 			pages: [],
 			overflow: { itemIndex: worst, requiredScale: pageScale * factor }
 		};
@@ -88,5 +89,5 @@ export const flexWrapPageLayout = (items: LayoutItem[], geom: PageGeom): PageLay
 		rowMaxH = Math.max(rowMaxH, it.height);
 	}
 
-	return { origins, pages };
+	return { origins, rotations: origins.map(() => 0), pages };
 };
