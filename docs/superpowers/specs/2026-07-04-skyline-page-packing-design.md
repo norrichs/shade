@@ -76,9 +76,20 @@ Implements the existing `PageLayoutFn` interface:
 ### Skyline representation
 
 Per page, keep a skyline: an ordered list of segments `{ x, width, top }`
-spanning `contentWidth`, initialised flat as a single segment
-`{ x: 0, width: contentWidth, top: 0 }`. `top` is the occupied height at that x
+spanning the packing width, initialised flat as a single segment
+`{ x: 0, width: packWidth, top: 0 }`. `top` is the occupied height at that x
 span (distance from the content-box top).
+
+### Gap spacing
+
+Like `flex-wrap`, the skyline packer honours `geom.gap` (the renderer injects
+the shared `gap` so all layout modes stay consistent). Each item reserves `gap`
+of spacing on its right and bottom: the packer works with inflated
+`(w + gap) × (h + gap)` footprints inside a box expanded by `gap`
+(`packWidth = contentWidth + gap`, `packHeight = contentHeight + gap`), with the
+real item box left/top-aligned in its cell — so the origin uses the real
+`(w, h)` while the skyline reserves the inflated footprint. The `+ gap` terms
+cancel in the overflow fit-check, so overflow semantics match `gap = 0`.
 
 ### Placing one item
 
