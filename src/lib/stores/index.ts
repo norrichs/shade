@@ -8,3 +8,4 @@ export * from '$lib/stores/workerStore';
 export * from '$lib/stores/partnerHighlightStore';
 export * from '$lib/stores/mergedPathStore';
 export * from '$lib/stores/pageLayoutInfoStore';
+export * from '$lib/stores/loadedConfigStore';
