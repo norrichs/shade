@@ -304,13 +304,12 @@
 		});
 	});
 
-	let pageMarginPx = $derived(pageLayoutCfg ? buildPageGeom(pageLayoutCfg).marginPx : 0);
 	let usePageLayout = $derived(layoutMode === 'page' && !!pageResult && !pageResult.overflow);
 </script>
 
 {#if showPattern}
 	{#if usePageLayout && pageResult}
-		<PageGeometry pages={pageResult.pages} marginPx={pageMarginPx} />
+		<PageGeometry pages={pageResult.pages} />
 		{#each pageBands as { band, tube }, i (concatAddress(band.address))}
 			<BandComponent
 				{band}
