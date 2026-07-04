@@ -17,7 +17,7 @@
 	import type { GlobuleAddress_Band } from '$lib/projection-geometry/types';
 	import { concatAddress } from '$lib/util';
 	import { buildSelfTagLines } from '$lib/cut-pattern/build-self-tag-lines';
-	import { bandTransform, type Point2 } from '$lib/cut-pattern/band-transform';
+	import { bandTransform } from '$lib/cut-pattern/band-transform';
 
 	let {
 		band,
@@ -38,7 +38,7 @@
 		index: number;
 		origin: Vector3;
 		rotation?: number;
-		pivot?: Point2;
+		pivot?: Point;
 		tube: TubeCutPattern;
 		showBounds?: boolean;
 		portal?: boolean;
