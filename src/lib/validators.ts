@@ -95,6 +95,7 @@ export const migrateGlobulePatternConfig = <T extends Partial<GlobulePatternConf
 		if (pl.reorderWindow === undefined) pl.reorderWindow = 8;
 		if (pl.allowRotation === undefined) pl.allowRotation = false;
 		if (pl.algorithm === undefined) pl.algorithm = 'flex-wrap';
+		if (pl.keepConnected === undefined) pl.keepConnected = 0;
 	}
 	return config;
 };

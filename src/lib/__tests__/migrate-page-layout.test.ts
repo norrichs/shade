@@ -40,7 +40,7 @@ describe('migrateGlobulePatternConfig — page layout', () => {
 		expect(out.patternConfig?.pageLayout?.allowRotation).toBe(false);
 	});
 
-	it('backfills reorderWindow and allowRotation on an existing pageLayout that lacks them', () => {
+	it('backfills reorderWindow, allowRotation, algorithm and keepConnected on an existing pageLayout that lacks them', () => {
 		const out = migrateGlobulePatternConfig({
 			patternConfig: {
 				pageLayout: {
@@ -48,13 +48,13 @@ describe('migrateGlobulePatternConfig — page layout', () => {
 					pageScale: 0.6562,
 					margin: 12.7,
 					gap: 20,
-					displayUnit: 'inch',
-					algorithm: 'flex-wrap',
-					keepConnected: 0
+					displayUnit: 'inch'
 				}
 			}
 		} as unknown as Partial<GlobulePatternConfig>);
 		expect(out.patternConfig?.pageLayout?.reorderWindow).toBe(8);
 		expect(out.patternConfig?.pageLayout?.allowRotation).toBe(false);
+		expect(out.patternConfig?.pageLayout?.algorithm).toBe('flex-wrap');
+		expect(out.patternConfig?.pageLayout?.keepConnected).toBe(0);
 	});
 });
