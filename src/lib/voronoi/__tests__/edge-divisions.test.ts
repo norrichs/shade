@@ -1,4 +1,9 @@
-import { normalizeEdgeDivisions, computeAdaptiveEdgeDivisions } from '../edge-divisions';
+import {
+	normalizeEdgeDivisions,
+	computeAdaptiveEdgeDivisions,
+	deriveEdgeDivisionsMax,
+	type EdgeMetric
+} from '../edge-divisions';
 
 describe('normalizeEdgeDivisions', () => {
 	it('passes a valid ordered pair through (rounded)', () => {
@@ -49,5 +54,45 @@ describe('computeAdaptiveEdgeDivisions', () => {
 		const result = computeAdaptiveEdgeDivisions([2, 10], [12, 4]);
 		expect(result[0]).toBe(4);
 		expect(result[1]).toBe(12);
+	});
+});
+
+describe('deriveEdgeDivisionsMax', () => {
+	const edge = (length: number, width: number): EdgeMetric => ({ length, width });
+
+	it('returns min when there are fewer than two usable edges', () => {
+		expect(deriveEdgeDivisionsMax([], 4)).toBe(4);
+		expect(deriveEdgeDivisionsMax([edge(10, 2)], 4)).toBe(4);
+		// A zero-length / zero-width edge is not usable.
+		expect(deriveEdgeDivisionsMax([edge(10, 2), edge(0, 2)], 4)).toBe(4);
+	});
+
+	it('returns min when all edges are (near) equal length', () => {
+		expect(deriveEdgeDivisionsMax([edge(5, 1), edge(5, 2), edge(5, 3)], 6)).toBe(6);
+	});
+
+	it('derives max so long-edge facets match the shortest edge facet aspect', () => {
+		// short: 2 long, width 1, at min=4 -> facet aspect = 1 * 4 / 2 = 2.
+		// long: 10 long, width 2 -> need 10 divisions so facet aspect = 2 * 10 / 10 = 2.
+		expect(deriveEdgeDivisionsMax([edge(2, 1), edge(10, 2)], 4)).toBe(10);
+	});
+
+	it('is unaffected by intermediate edges when extremes are unchanged', () => {
+		expect(deriveEdgeDivisionsMax([edge(2, 1), edge(6, 5), edge(10, 2)], 4)).toBe(10);
+	});
+
+	it('clamps the derived max to the default cap of 20', () => {
+		// short facet aspect = 10; long edge would need 1000 divisions -> clamped.
+		expect(deriveEdgeDivisionsMax([edge(1, 1), edge(100, 1)], 10)).toBe(20);
+	});
+
+	it('honors a custom maxCap', () => {
+		expect(deriveEdgeDivisionsMax([edge(1, 1), edge(100, 1)], 10, { maxCap: 12 })).toBe(12);
+	});
+
+	it('never returns below min', () => {
+		// Longer edge is much wider, so matching would want fewer divisions than min.
+		const result = deriveEdgeDivisionsMax([edge(2, 1), edge(10, 50)], 6);
+		expect(result).toBeGreaterThanOrEqual(6);
 	});
 });

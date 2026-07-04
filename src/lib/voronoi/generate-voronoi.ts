@@ -511,11 +511,55 @@ function assembleVoronoiTubes(params: {
 	return { tubes, surfaceProjectionTubes };
 }
 
+/** Per-edge geometry for the surface Voronoi, used to auto-derive edge divisions. */
+export type VoronoiEdgeMetric = { length: number; width: number };
+
+/**
+ * Per-edge metrics for the surface Voronoi:
+ *  - length: the arc length used to subdivide the edge by edge-divisions (edgeLengths[i]).
+ *  - width: straight-line distance from the Voronoi edge to its curve-offset edge,
+ *    measured at the edge's midpoint sample. Averaged over whichever inset sides are
+ *    present (a rim edge only has one real side). No geodesic — a direct 3D chord.
+ * Degenerate edges (too few samples, zero length/width) are skipped.
+ */
+function computeVoronoiEdgeMetrics(
+	edgeProjections: EdgeProjection[],
+	edgeInsets: EdgeInsets[],
+	edgeLengths: number[]
+): VoronoiEdgeMetric[] {
+	const metrics: VoronoiEdgeMetric[] = [];
+	for (let i = 0; i < edgeProjections.length; i++) {
+		const edgePts = edgeProjections[i]?.edgePoints3d;
+		const insets = edgeInsets[i];
+		const length = edgeLengths[i];
+		if (!edgePts || edgePts.length < 2 || !insets || !(length > 1e-9)) continue;
+
+		const mid = Math.floor(edgePts.length / 2);
+		const edgeMid = edgePts[mid];
+		const halfWidths: number[] = [];
+		for (const curve of [insets.curvePointsA[mid], insets.curvePointsB[mid]]) {
+			if (!curve) continue;
+			const d = edgeMid.distanceTo(curve);
+			if (d > 1e-9) halfWidths.push(d);
+		}
+		if (halfWidths.length === 0) continue;
+
+		const width = halfWidths.reduce((sum, d) => sum + d, 0) / halfWidths.length;
+		metrics.push({ length, width });
+	}
+	return metrics;
+}
+
 export function makeVoronoi(
 	config: VoronoiConfig,
 	address: GlobuleAddress,
 	surfaceConfig: SurfaceConfig
-): { tubes: Tube[]; surfaceProjectionTubes: Tube[]; surface: Object3D } {
+): {
+	tubes: Tube[];
+	surfaceProjectionTubes: Tube[];
+	surface: Object3D;
+	voronoiEdgeMetrics: VoronoiEdgeMetric[];
+} {
 	const resolvedSurfaceConfig =
 		surfaceConfig.transform === 'inherit'
 			? ({ ...surfaceConfig, transform: config.meta.transform } as SurfaceConfig)
@@ -552,7 +596,8 @@ export function makeVoronoi(
 			surfaceCenter: center,
 			cellApex
 		});
-		return { tubes, surfaceProjectionTubes, surface };
+		// Surface-Voronoi metrics only for now; the geodesic path is out of scope.
+		return { tubes, surfaceProjectionTubes, surface, voronoiEdgeMetrics: [] };
 	}
 
 	const seeds3d = generateSeeds(config.seedConfig.seedMethod, center, intersect, surfaceTriangles);
@@ -629,5 +674,7 @@ export function makeVoronoi(
 		cellApex
 	});
 
-	return { tubes, surfaceProjectionTubes, surface };
+	const voronoiEdgeMetrics = computeVoronoiEdgeMetrics(edgeProjections, edgeInsets, edgeLengths);
+
+	return { tubes, surfaceProjectionTubes, surface, voronoiEdgeMetrics };
 }

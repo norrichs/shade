@@ -96,13 +96,15 @@ export type UnitPatternGenerator = {
 		columns: number,
 		quadBand?: Quadrilateral[],
 		variant?: TiledPatternVariant,
-		sideOrientation?: Band['sideOrientation']
+		sideOrientation?: Band['sideOrientation'],
+		finishOuterEdge?: boolean
 	) => PathSegment[];
 	tagAnchor?: any;
 	adjustAfterMapping?: (
 		patternBand: PathSegment[][],
 		quadBand: Quadrilateral[],
-		tiledPatternConfig: TiledPatternConfig
+		tiledPatternConfig: TiledPatternConfig,
+		finishOuterEdge?: boolean
 	) => PathSegment[][];
 	adjustAfterTiling?: any;
 };
@@ -980,6 +982,9 @@ export type SuperGlobule = {
 		tubes: Tube[];
 		surfaceProjectionTubes: Tube[];
 		surface: Object3D;
+		// Per-edge surface-Voronoi geometry (length + edge->offset width) for
+		// auto-deriving edge divisions. Empty for the geodesic method.
+		voronoiEdgeMetrics?: { length: number; width: number }[];
 	};
 	// Non-fatal per-pipeline failures from this generation pass, if any.
 	pipelineErrors?: PipelineError[];

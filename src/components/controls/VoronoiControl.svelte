@@ -1,10 +1,14 @@
 <script lang="ts">
-	import { superConfigStore } from '$lib/stores/superGlobuleStores';
+	import { superConfigStore, superGlobuleStore } from '$lib/stores/superGlobuleStores';
 	import { defaultVoronoiConfig } from '$lib/shades-config';
 	import type { VoronoiConfig, VoronoiMethod, InsetMethod, GeodesicEdgeStyle } from '$lib/voronoi/types';
+	import { deriveEdgeDivisionsMax } from '$lib/voronoi/edge-divisions';
 
 	let config: VoronoiConfig = $derived($superConfigStore.voronoiConfig ?? defaultVoronoiConfig);
 	let isGeodesic = $derived((config.voronoiMethod ?? 'spherical') === 'geodesic');
+	// Per-edge surface-Voronoi metrics from the last generation pass (empty for geodesic).
+	let edgeMetrics = $derived($superGlobuleStore.voronoiResult?.voronoiEdgeMetrics ?? []);
+	let canDeriveMax = $derived(edgeMetrics.length > 1);
 
 	function update(
 		field:
@@ -89,6 +93,14 @@
 
 	function randomizeSeed() {
 		update('seed', Math.floor(Math.random() * 2 ** 31));
+	}
+
+	// Auto-derive `max` so long-edge facets match the aspect ratio of short-edge facets,
+	// using the surface-Voronoi edge metrics (length + edge->offset width) from the worker.
+	function deriveMax() {
+		if (edgeMetrics.length < 2) return;
+		const min = config.edgeDivisions[0];
+		update('edgeDivisionsMax', deriveEdgeDivisionsMax(edgeMetrics, min, { maxCap: 20 }));
 	}
 </script>
 
@@ -249,7 +261,7 @@
 			Edge Divisions (min)
 			<input
 				type="range"
-				min="2"
+				min="1"
 				max="20"
 				value={config.edgeDivisions[0]}
 				oninput={(e) => update('edgeDivisionsMin', Number(e.currentTarget.value))}
@@ -267,6 +279,15 @@
 				oninput={(e) => update('edgeDivisionsMax', Number(e.currentTarget.value))}
 			/>
 			<span>{config.edgeDivisions[1]}</span>
+			<button
+				type="button"
+				class="derive-max"
+				onclick={deriveMax}
+				disabled={!canDeriveMax}
+				title="Derive max so long-edge facets match the aspect ratio of the shortest edge's facets"
+			>
+				Match aspect
+			</button>
 		</label>
 	</div>
 </section>
@@ -307,5 +328,15 @@
 	label span {
 		min-width: 30px;
 		text-align: right;
+	}
+	.derive-max {
+		font-size: 11px;
+		padding: 2px 6px;
+		white-space: nowrap;
+		cursor: pointer;
+	}
+	.derive-max:disabled {
+		cursor: not-allowed;
+		opacity: 0.5;
 	}
 </style>
