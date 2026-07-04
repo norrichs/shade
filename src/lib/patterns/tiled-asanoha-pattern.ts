@@ -4,11 +4,26 @@ import { rotatePS, translatePS } from './utils';
 export const generateAsanohaPattern = ({
 	size,
 	rows,
-	columns
+	columns,
+	finishOuterEdge = false
 }: {
 	size: number;
 	rows: number;
 	columns: number;
+	/**
+	 * When true, finish the free OUTER edge of an edge band by mirroring the
+	 * `start`/`end` verticals onto the far-right (w6) side, so it becomes a full-height
+	 * line instead of only `edgeSegment`'s middle third. Used for the outermost band of
+	 * a non-tubular (surface-projection) tube, whose outer side has no adjacent band
+	 * partner and so needs its own finished edge.
+	 *
+	 * The mirror is appended to the rightmost column's `start`/`end` segment arrays so it
+	 * flows through the same post-mapping processing as the x=0 line: `straightenEndSegments`
+	 * chains it across quads and `endsTrimmed` trims it at the band's lengthwise ends.
+	 * `getAsanohaSegments` must be called with the matching `hasOuterMirror` flag so the
+	 * indices line up.
+	 */
+	finishOuterEdge?: boolean;
 }) => {
 	const row = size / rows;
 	const col = size / columns;
@@ -29,8 +44,25 @@ export const generateAsanohaPattern = ({
 		['L', w6, 3 * h]
 	];
 
+	// The far-left side of the unit (x = 0) is finished by a full-height vertical line:
+	// the `start` segment (0→h) + greens (h→3h) + `end` segment (3h→4h). The far-right
+	// side (x = w6) only gets `edgeSegment` (h→3h). To finish the free OUTER edge of an
+	// edge band, mirror the `start`/`end` verticals onto the w6 side so it too becomes a
+	// full-height line. These are appended to the `start`/`end` arrays (not `middle`) so
+	// they get the same straighten/trim processing — mirrorStart is the top (0→h),
+	// mirrorEnd the bottom (3h→4h), together complementing edgeSegment's middle (h→3h).
+	const mirrorStartSegment: PathSegment[] = [
+		['M', w6, 0],
+		['L', w6, h]
+	];
+	const mirrorEndSegment: PathSegment[] = [
+		['M', w6, 3 * h],
+		['L', w6, 4 * h]
+	];
+
 	const unitPattern = (
-		edge = false
+		edge = false,
+		start = false
 	): {
 		start: PathSegment[];
 		middle: PathSegment[];
@@ -40,12 +72,16 @@ export const generateAsanohaPattern = ({
 		start: [
 			//yellow
 			['M', 0, 0],
-			['L', 0, h]
+			['L', 0, h],
+			// mirror top on the w6 side, appended so it shares the start-region processing
+			...(start ? mirrorStartSegment : [])
 		],
 		end: [
 			//yellow
 			['M', 0, 3 * h],
-			['L', 0, 4 * h]
+			['L', 0, 4 * h],
+			// mirror bottom on the w6 side, appended so it shares the end-region processing
+			...(start ? mirrorEndSegment : [])
 		],
 		middle: [
 			// blue 1
@@ -117,7 +153,7 @@ export const generateAsanohaPattern = ({
 
 	for (let c = 0; c < columns; c++) {
 		for (let r = 0; r < rows; r++) {
-			const unit = unitPattern(c === columns - 1);
+			const unit = unitPattern(c === columns - 1, finishOuterEdge && c === columns - 1);
 			if (r > 0 && r < rows - 1) {
 				middleSegments.push(
 					...translatePS(unit.start, col * c, row * r),
@@ -151,7 +187,10 @@ export const adjustAsanohaPatternAfterMapping = (
 	patternBand: PathSegment[][],
 	quadBand: Quadrilateral[],
 	tiledPatternConfig: TiledPatternConfig,
-	getSegments: GetSegmentFunction
+	getSegments: GetSegmentFunction,
+	// True for the outermost band, whose facets carry the mirrored w6 finishing line in
+	// their start/end regions — the segment-index lookups must account for it.
+	hasOuterMirror = false
 ): PathSegment[][] => {
 	const { endsMatched, endsTrimmed, rowCount, columnCount } = tiledPatternConfig.config;
 	let prevFacet: PathSegment[] | undefined;
@@ -188,7 +227,8 @@ export const adjustAsanohaPatternAfterMapping = (
 			nextFacet,
 			rows: tiledPatternConfig.config.rowCount || 1,
 			columns: tiledPatternConfig.config.columnCount || 1,
-			getSegments
+			getSegments,
+			hasOuterMirror
 		});
 		return straightened;
 	});
@@ -198,13 +238,15 @@ export const adjustAsanohaPatternAfterMapping = (
 			'start',
 			rowCount || 1,
 			columnCount || 1,
-			patternBand[0].length
+			patternBand[0].length,
+			hasOuterMirror
 		).flat();
 		const endSegments = getSegments(
 			'end',
 			rowCount || 1,
 			columnCount || 1,
-			patternBand[patternBand.length - 1].length
+			patternBand[patternBand.length - 1].length,
+			hasOuterMirror
 		).flat();
 		patternBand[0].splice(0, startSegments.length);
 		patternBand[patternBand.length - 1].splice(Math.min(...endSegments), endSegments.length);
@@ -219,6 +261,7 @@ type StraightenEndSegmentsProps = {
 	rows: number;
 	columns: number;
 	getSegments: GetSegmentFunction;
+	hasOuterMirror?: boolean;
 };
 
 const straightenEndSegments = ({
@@ -227,14 +270,15 @@ const straightenEndSegments = ({
 	nextFacet,
 	rows,
 	columns,
-	getSegments
+	getSegments,
+	hasOuterMirror = false
 }: StraightenEndSegmentsProps) => {
 	if (rows < 1 || columns < 1) {
 		console.error(`bad row or column count, rows: ${rows}, columns: ${columns}`);
 		return thisFacet;
 	}
-	const startSegmentIndices = getSegments('start', rows, columns, thisFacet.length);
-	const endSegmentIndices = getSegments('end', rows, columns, thisFacet.length);
+	const startSegmentIndices = getSegments('start', rows, columns, thisFacet.length, hasOuterMirror);
+	const endSegmentIndices = getSegments('end', rows, columns, thisFacet.length, hasOuterMirror);
 
 	const output = structuredClone(thisFacet);
 	const altNextFacet = structuredClone(nextFacet);
@@ -263,22 +307,35 @@ type GetSegmentFunction = (
 	end: 'start' | 'end',
 	rows: number,
 	columns: number,
-	facetLength: number
+	facetLength: number,
+	hasOuterMirror?: boolean
 ) => [number, number][];
 
 export const getAsanohaSegments = (
 	end: 'start' | 'end',
 	rows: number,
 	columns: number,
-	facetLength: number
+	facetLength: number,
+	hasOuterMirror = false
 ): [number, number][] => {
 	const indices: [number, number][] = [];
+	// The start/end regions each hold one [M, L] pair per column, plus one extra mirror
+	// pair (the w6 finishing line) when the band carries the outer mirror.
+	const regionSize = columns * 2 + (hasOuterMirror ? 2 : 0);
+	const endRegionStart = facetLength - regionSize;
 	for (let c = 0; c < columns; c++) {
 		if (end === 'start') {
 			indices.push([c * 2, c * 2 + 1]);
 		} else {
-			const startIndex = facetLength - columns * 2;
-			indices.push([startIndex + c * 2, startIndex + c * 2 + 1]);
+			indices.push([endRegionStart + c * 2, endRegionStart + c * 2 + 1]);
+		}
+	}
+	if (hasOuterMirror) {
+		// Mirror pair sits immediately after the per-column pairs in each region.
+		if (end === 'start') {
+			indices.push([columns * 2, columns * 2 + 1]);
+		} else {
+			indices.push([endRegionStart + columns * 2, endRegionStart + columns * 2 + 1]);
 		}
 	}
 	return indices;

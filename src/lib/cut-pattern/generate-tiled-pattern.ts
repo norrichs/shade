@@ -28,6 +28,21 @@ import {
 import { Triangle, Vector3 } from 'three';
 import { getBandTriangleEdges } from '$lib/projection-geometry/generate-projection';
 
+/**
+ * A band is an "edge" band when at least one of its facets' outer (side) edges has
+ * no partner — i.e. one long side of the strip borders open space rather than an
+ * adjacent band. Tubular tubes wrap around, so every band has partners on both
+ * sides; surface-projection tubes are open, so their outermost bands have a free
+ * side. Read straight from the 3D facet `meta` graph.
+ */
+const bandHasFreeSide = (band: Band): boolean => {
+	const [evenEdges, oddEdges] = getBandTriangleEdges(band.orientation);
+	return band.facets.some((facet, facetIndex) => {
+		const outerEdge = (facetIndex % 2 === 0 ? evenEdges : oddEdges).outer;
+		return !facet.meta?.[outerEdge]?.partner;
+	});
+};
+
 export const generateTubeCutPattern = ({
 	address,
 	bands,
@@ -64,7 +79,8 @@ export const generateTubeCutPattern = ({
 		bands: alignedBands,
 		tiledPatternConfig,
 		address,
-		bandIndexOffset: rangeStart
+		bandIndexOffset: rangeStart,
+		totalBandCount: visibleBands.length
 	});
 
 	// Return raw tiling - adjustAfterTiling and post-processing happen in generate-pattern.ts
@@ -150,6 +166,8 @@ export type GenerateTilingProps = {
 	tiledPatternConfig: TiledPatternConfig;
 	address: GlobuleAddress_Tube | GeometryAddress<BandAddressed>;
 	bandIndexOffset?: number;
+	/** Total number of visible bands in the tube (used to detect the last band). */
+	totalBandCount?: number;
 };
 
 export const generateTiling = ({
@@ -157,8 +175,10 @@ export const generateTiling = ({
 	bands,
 	tiledPatternConfig,
 	address,
-	bandIndexOffset = 0
+	bandIndexOffset = 0,
+	totalBandCount
 }: GenerateTilingProps): BandCutPattern[] => {
+	const bandCount = totalBandCount ?? quadBands.length;
 	const tiling: {
 		facets: CutPattern[];
 		svgPath?: string | undefined;
@@ -170,6 +190,16 @@ export const generateTiling = ({
 		);
 		const { rowCount, columnCount, variant } = tiledPatternConfig.config;
 
+		// The LAST band of a non-tubular (surface-projection) tube has no adjacent band
+		// partner on its outer (w6) side, so it needs its own finished edge there.
+		// Tubular tubes wrap around, so the last band DOES have a partner and must not
+		// get the extra line. Distinguish the two by reading the partner meta: an "edge"
+		// band has at least one facet whose outer (side) edge has no partner. (Band 0 is
+		// also an edge band, but its free side is x=0, which is already finished by the
+		// start/end verticals — the mirror only completes the w6 side.)
+		const finishOuterEdge =
+			bandIndex + bandIndexOffset === bandCount - 1 && bandHasFreeSide(bands[bandIndex]);
+
 		let mappedPatternBand: PathSegment[][] | PathSegment[];
 		if (tiledPatternConfig.tiling === 'quadrilateral') {
 			const unitPattern = getPattern(
@@ -177,7 +207,8 @@ export const generateTiling = ({
 				columnCount || 1,
 				undefined,
 				variant,
-				bands[bandIndex].sideOrientation
+				bands[bandIndex].sideOrientation,
+				finishOuterEdge
 			);
 			// Check if unitPattern is PathSegment[] (not DynamicPathCollection)
 			if (Array.isArray(unitPattern)) {
@@ -203,7 +234,12 @@ export const generateTiling = ({
 		let adjustedPatternBand: PathSegment[][];
 
 		if (adjustAfterMapping) {
-			adjustedPatternBand = adjustAfterMapping(mappedPatternBand, quadBand, tiledPatternConfig);
+			adjustedPatternBand = adjustAfterMapping(
+				mappedPatternBand,
+				quadBand,
+				tiledPatternConfig,
+				finishOuterEdge
+			);
 		} else {
 			adjustedPatternBand = mappedPatternBand;
 		}

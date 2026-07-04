@@ -57,21 +57,35 @@ export const patterns: { [key: string]: PatternGenerator } = {
 		}
 	},
 	'tiledAsanohaPattern-1': {
-		getPattern: (rows: number, columns: number) => {
-			const unitPattern = generateAsanohaPattern({ size: 1, rows, columns });
+		getPattern: (
+			rows: number,
+			columns: number,
+			_quadBand?: Quadrilateral[],
+			_variant?: unknown,
+			_sideOrientation?: unknown,
+			finishOuterEdge?: boolean
+		) => {
+			const unitPattern = generateAsanohaPattern({
+				size: 1,
+				rows,
+				columns,
+				finishOuterEdge
+			});
 			return unitPattern;
 		},
 		tagAnchor: { facetIndex: 0, segmentIndex: 1 },
 		adjustAfterMapping: (
 			patternBand: PathSegment[][],
 			quadBand: Quadrilateral[],
-			tiledPatternConfig: TiledPatternConfig
+			tiledPatternConfig: TiledPatternConfig,
+			finishOuterEdge?: boolean
 		) =>
 			adjustAsanohaPatternAfterMapping(
 				patternBand,
 				quadBand,
 				tiledPatternConfig,
-				getAsanohaSegments
+				getAsanohaSegments,
+				finishOuterEdge ?? false
 			)
 	},
 	'tiledGridPattern-0': {
