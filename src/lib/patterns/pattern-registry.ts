@@ -1,4 +1,4 @@
-import type { Band, GridVariant, Quadrilateral } from '$lib/types';
+import type { Band, GridVariant, Quadrilateral, TagAnchor } from '$lib/types';
 import type { PatternGenerator } from '$lib/types';
 import type { TiledPatternSpec } from './spec-types';
 import { defaultShieldSpec } from './tesselation/shield';
@@ -14,8 +14,6 @@ export type PatternAlgorithm = {
 	supportsEditing: boolean;
 	createPatternsEntry: (spec: TiledPatternSpec) => PatternGenerator;
 };
-
-type TagAnchor = { facetIndex: number; segmentIndex: number; angle?: number };
 
 const makeAlgorithm = (
 	algorithmId: string,

@@ -9,7 +9,8 @@ import type {
 	Point,
 	Quadrilateral,
 	TubeCutPattern,
-	Facet
+	Facet,
+	TagAnchor
 } from '$lib/types';
 import {
 	getQuadrilaterals,
@@ -166,6 +167,31 @@ export const generateTiledBandPattern = ({
 	return pattern as BandCutPatternPattern;
 };
 
+/**
+ * Resolve a `tagAnchor.quadEdge` spec to a 2D point on the quad. The named edge
+ * runs from its first vertex to its second (e.g. 'ab' is a → b); `position` is
+ * either the string 'midPoint' (t = 0.5) or a ratio clamped to [0, 1].
+ */
+const anchorPointOnQuadEdge = (
+	quad: Quadrilateral,
+	quadEdge: NonNullable<TagAnchor['quadEdge']>
+): Point => {
+	const [fromKey, toKey] = quadEdge.edge.split('') as [
+		keyof Quadrilateral,
+		keyof Quadrilateral
+	];
+	const from = quad[fromKey];
+	const to = quad[toKey];
+	const t =
+		quadEdge.position === 'midPoint'
+			? 0.5
+			: Math.max(0, Math.min(1, quadEdge.position));
+	return {
+		x: from.x + (to.x - from.x) * t,
+		y: from.y + (to.y - from.y) * t
+	};
+};
+
 export type GenerateTilingProps = {
 	quadBands: Quadrilateral[][];
 	bands: Band[];
@@ -273,9 +299,16 @@ export const generateTiling = ({
 
 		const cuttablePattern: CutPattern[] = adjustedPatternBand.map((facet, facetIndex) => {
 			const quad = structuredClone(quadBand[facetIndex % quadBand.length]);
-			const facetPathSegment = facet[(facet.length + tagAnchor.segmentIndex) % facet.length];
-			if (tagAnchor.facetIndex === facetIndex) {
-				if (tagAnchor.anchorUnitPoint) {
+			if (tagAnchor && tagAnchor.facetIndex === facetIndex) {
+				if (tagAnchor.quadEdge) {
+					// Anchor on a named quad edge at a ratio between its vertices.
+					// Takes precedence over `anchorUnitPoint`/`segmentIndex` so it
+					// works uniformly for any tiled pattern regardless of path order.
+					const anchor = anchorPointOnQuadEdge(quad, tagAnchor.quadEdge);
+					tagAnchorPoint.x = anchor.x;
+					tagAnchorPoint.y = anchor.y;
+					tagAnchorQuad = quad;
+				} else if (tagAnchor.anchorUnitPoint) {
 					// Geometric anchor: map a fixed point in the unit-pattern's
 					// coordinate space through this facet's quad. This lands on the
 					// intended vertex (e.g. a pattern convergence junction) regardless
@@ -300,10 +333,14 @@ export const generateTiling = ({
 					tagAnchorPoint.x = mapped.x;
 					tagAnchorPoint.y = mapped.y;
 					tagAnchorQuad = quad;
-				} else if (Array.isArray(facetPathSegment) && facetPathSegment.length >= 2) {
-					tagAnchorPoint.x = facetPathSegment[1] || 0;
-					tagAnchorPoint.y = facetPathSegment[2] || 0;
-					tagAnchorQuad = quad;
+				} else if (tagAnchor.segmentIndex !== undefined) {
+					const facetPathSegment =
+						facet[(facet.length + tagAnchor.segmentIndex) % facet.length];
+					if (Array.isArray(facetPathSegment) && facetPathSegment.length >= 2) {
+						tagAnchorPoint.x = facetPathSegment[1] || 0;
+						tagAnchorPoint.y = facetPathSegment[2] || 0;
+						tagAnchorQuad = quad;
+					}
 				}
 			}
 			const quadWidth = getQuadWidth(quad);
@@ -337,7 +374,7 @@ export const generateTiling = ({
 			tagAnchorAutoAngle: tagAnchorQuad
 				? computeTiledLabelAngle(tagAnchorPoint, tagAnchorQuad)
 				: undefined,
-			tagAngle: tiledPatternConfig.labels?.selfTag?.angle ?? tagAnchor.angle ?? 0,
+			tagAngle: tiledPatternConfig.labels?.selfTag?.angle ?? tagAnchor?.angle ?? 0,
 			projectionType: 'patterned',
 			address: { ...address, band: globalBandIndex },
 			bounds: bands[bandIndex].bounds,

@@ -90,6 +90,45 @@ export type DynamicPath = { width: number; path: PathSegment[]; svgPath: string 
 
 export type PatternGenerator = UnitPatternGenerator | BandPatternGenerator;
 
+/** A named edge of a quad, going from the first vertex to the second. */
+export type QuadEdgeName = 'ab' | 'bc' | 'cd' | 'da';
+
+/**
+ * How a tiled pattern's self-tag / label is anchored to the geometry.
+ *
+ * Precedence when several fields are set: `quadEdge` > `anchorUnitPoint` >
+ * `segmentIndex`. When `quadEdge` is present, `segmentIndex` is ignored.
+ */
+export type TagAnchor = {
+	/** Index of the facet (quad) within the band whose geometry anchors the label. */
+	facetIndex: number;
+	/**
+	 * Anchor at a point of the facet's mapped pattern path. Indexes into the
+	 * facet `path` array (negative wraps from the end). Ignored when `quadEdge`
+	 * is set.
+	 */
+	segmentIndex?: number;
+	/**
+	 * Anchor on a named edge of the facet's quad, interpolating between the edge
+	 * vertices. Takes precedence over `segmentIndex` and `anchorUnitPoint`.
+	 */
+	quadEdge?: {
+		edge: QuadEdgeName;
+		/**
+		 * `'midPoint'` anchors halfway along the edge. A number is used as a
+		 * ratio (clamped to [0, 1]) to interpolate between the edge vertices.
+		 */
+		position: 'midPoint' | number;
+	};
+	/**
+	 * Anchor at a fixed point in unit-pattern space, mapped through the facet's
+	 * quad. A function receives (rows, columns). Ignored when `quadEdge` is set.
+	 */
+	anchorUnitPoint?: Point | ((rows: number, columns: number) => Point);
+	/** Relative angle offset applied on top of the auto-derived label angle. */
+	angle?: number;
+};
+
 export type UnitPatternGenerator = {
 	getPattern: (
 		rows: number,
@@ -99,7 +138,7 @@ export type UnitPatternGenerator = {
 		sideOrientation?: Band['sideOrientation'],
 		finishOuterEdge?: boolean
 	) => PathSegment[];
-	tagAnchor?: any;
+	tagAnchor?: TagAnchor;
 	adjustAfterMapping?: (
 		patternBand: PathSegment[][],
 		quadBand: Quadrilateral[],
@@ -110,7 +149,7 @@ export type UnitPatternGenerator = {
 };
 export type BandPatternGenerator = {
 	getPattern: (rows: number, columns: number, quadBand?: Quadrilateral[]) => DynamicPathCollection;
-	tagAnchor?: any;
+	tagAnchor?: TagAnchor;
 	adjustAfterMapping?: any;
 	adjustAfterTiling?: any;
 };

@@ -73,10 +73,11 @@ export const patterns: { [key: string]: PatternGenerator } = {
 			});
 			return unitPattern;
 		},
-		// Anchor at path point 3 of the end facet — the convergence junction the
-		// label should originate from (identified against the rendered point-index
-		// overlay). The label angle is then derived from the nearest quad edge.
-		tagAnchor: { facetIndex: 0, segmentIndex: 3 },
+		// Anchor at the midpoint of the end facet's quad 'ab' edge. The quad-edge
+		// anchor is path-order independent, so it stays put regardless of how
+		// `endsTrimmed`/`rowCount` reorder the mapped path. The label angle is then
+		// derived from the nearest quad edge.
+		tagAnchor: { facetIndex: 0, quadEdge: { edge: 'ab', position: 'midPoint' } },
 		adjustAfterMapping: (
 			patternBand: PathSegment[][],
 			quadBand: Quadrilateral[],

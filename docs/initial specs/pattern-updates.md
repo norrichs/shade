@@ -23,4 +23,9 @@ Currently tiled patterns output paths with stroke width
 We need to derive paths that would outline the thickness, then combine those paths into a big compound path with voids.
 
 
+## Pattern label orientation
 
+Adjust how labels are attached to tiled patterns.
+Originate at the anchor point specified in the pattern definition
+Set the ANGLE of the label relative to the nearest Quadrilateral edge.
+The label text should be parallel to that edge, and the stem should be perpendicular.
