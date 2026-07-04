@@ -1,9 +1,11 @@
 import type { PageLayoutConfig } from '$lib/types';
 import { flexWrapPageLayout, PAGE_STACK_GAP } from './flex-wrap';
+import { skylinePageLayout } from './skyline';
 import type { PageGeom, PageLayoutFn } from './types';
 
 export const PAGE_LAYOUT_ALGORITHMS: Record<PageLayoutConfig['algorithm'], PageLayoutFn> = {
-	'flex-wrap': flexWrapPageLayout
+	'flex-wrap': flexWrapPageLayout,
+	skyline: skylinePageLayout
 };
 
 export const buildPageGeom = (cfg: PageLayoutConfig): PageGeom => {
@@ -19,6 +21,8 @@ export const buildPageGeom = (cfg: PageLayoutConfig): PageGeom => {
 		contentHeight: pageHeight - 2 * marginPx,
 		marginPx,
 		pageGap: PAGE_STACK_GAP,
-		gap: cfg.gap
+		gap: cfg.gap,
+		reorderWindow: cfg.reorderWindow,
+		allowRotation: cfg.allowRotation
 	};
 };

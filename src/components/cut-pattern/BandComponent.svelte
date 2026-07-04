@@ -17,11 +17,14 @@
 	import type { GlobuleAddress_Band } from '$lib/projection-geometry/types';
 	import { concatAddress } from '$lib/util';
 	import { buildSelfTagLines } from '$lib/cut-pattern/build-self-tag-lines';
+	import { bandTransform } from '$lib/cut-pattern/band-transform';
 
 	let {
 		band,
 		index,
 		origin,
+		rotation = 0,
+		pivot = { x: 0, y: 0 },
 		tube,
 		showBounds = false,
 		portal = false,
@@ -34,6 +37,8 @@
 		band: BandCutPattern;
 		index: number;
 		origin: Vector3;
+		rotation?: number;
+		pivot?: Point;
 		tube: TubeCutPattern;
 		showBounds?: boolean;
 		portal?: boolean;
@@ -94,7 +99,7 @@
 </script>
 
 <g
-	transform={`translate(${origin.x} ${origin.y})`}
+	transform={bandTransform(origin, rotation, pivot)}
 	id={`band-${band.id}`}
 	role="group"
 	onmouseover={() => handleMouseOver(band.address)}
@@ -152,7 +157,7 @@
 			padding={labels?.selfTag?.padding ?? 10}
 			stemLength={labels?.selfTag?.stemLength ?? 20}
 			stemWidth={labels?.selfTag?.stemWidth ?? 4}
-			portal={isTiled ? { transform: `translate(${origin.x} ${origin.y})` } : undefined}
+			portal={isTiled ? { transform: bandTransform(origin, rotation, pivot) } : undefined}
 		/>
 	{/if}
 </g>

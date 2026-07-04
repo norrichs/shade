@@ -141,12 +141,7 @@
 
 	<label>
 		gap
-		<input
-			type="number"
-			min="0"
-			step="1"
-			bind:value={$patternConfigStore.patternViewConfig.gap}
-		/>
+		<input type="number" min="0" step="1" bind:value={$patternConfigStore.patternViewConfig.gap} />
 	</label>
 
 	{#if mode === 'line-wrap'}
@@ -173,6 +168,33 @@
 	</label>
 
 	{#if mode === 'page'}
+		<label>
+			Algorithm
+			<select bind:value={$patternConfigStore.patternConfig.pageLayout.algorithm}>
+				<option value="flex-wrap">Flex-wrap</option>
+				<option value="skyline">Skyline</option>
+			</select>
+		</label>
+
+		{#if $patternConfigStore.patternConfig.pageLayout.algorithm === 'skyline'}
+			<label>
+				reorder window
+				<input
+					type="number"
+					min="1"
+					step="1"
+					bind:value={$patternConfigStore.patternConfig.pageLayout.reorderWindow}
+				/>
+			</label>
+			<label class="indicator-toggle">
+				<input
+					type="checkbox"
+					bind:checked={$patternConfigStore.patternConfig.pageLayout.allowRotation}
+				/>
+				allow rotation
+			</label>
+		{/if}
+
 		<label>
 			Preset
 			<select

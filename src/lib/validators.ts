@@ -75,7 +75,9 @@ export const migrateGlobulePatternConfig = <T extends Partial<GlobulePatternConf
 	if (pvc && pvc.patternLayoutMode === undefined) {
 		pvc.patternLayoutMode = pvc.lineWrap ? 'line-wrap' : 'linear';
 	}
-	const pc = config.patternConfig as { pageLayout?: unknown } | undefined;
+	const pc = config.patternConfig as
+		| { pageLayout?: Record<string, unknown> }
+		| undefined;
 	if (pc && pc.pageLayout === undefined) {
 		pc.pageLayout = {
 			pageSize: { width: 304.8, height: 304.8 },
@@ -83,8 +85,17 @@ export const migrateGlobulePatternConfig = <T extends Partial<GlobulePatternConf
 			margin: 12.7,
 			gap: 20,
 			displayUnit: 'inch',
-			algorithm: 'flex-wrap'
+			algorithm: 'flex-wrap',
+			reorderWindow: 8,
+			allowRotation: false,
+			keepConnected: 0
 		};
+	} else if (pc && pc.pageLayout) {
+		const pl = pc.pageLayout;
+		if (pl.reorderWindow === undefined) pl.reorderWindow = 8;
+		if (pl.allowRotation === undefined) pl.allowRotation = false;
+		if (pl.algorithm === undefined) pl.algorithm = 'flex-wrap';
+		if (pl.keepConnected === undefined) pl.keepConnected = 0;
 	}
 	return config;
 };

@@ -557,6 +557,8 @@ export const defaultPatternConfig = (): PatternConfig => ({
 		gap: 20,
 		displayUnit: 'inch',
 		algorithm: 'flex-wrap',
+		reorderWindow: 8,
+		allowRotation: false,
 		keepConnected: 0
 	},
 	page: { height: 300, width: 300, unit: 'mm' },

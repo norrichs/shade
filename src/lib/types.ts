@@ -225,7 +225,9 @@ export type PageLayoutConfig = {
 	margin: number; // millimetres
 	gap: number; // pattern units, spacing between patterns
 	displayUnit: 'mm' | 'inch'; // editor display only
-	algorithm: 'flex-wrap';
+	algorithm: 'flex-wrap' | 'skyline';
+	reorderWindow: number; // skyline only: lookahead window (>= 1); 1 = strict order
+	allowRotation: boolean; // skyline only: permit 90° rotation
 	keepConnected: number; // px-wide uncut bridge left in each prepared cut path (0 = off)
 };
 
