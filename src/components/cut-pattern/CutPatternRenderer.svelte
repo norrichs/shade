@@ -172,6 +172,11 @@
 			};
 		});
 
+	const pivotFor = (band: BandCutPattern) => {
+		const b = effBoundsFor(band);
+		return { x: (b?.left ?? 0) + (b?.width ?? 0) / 2, y: (b?.top ?? 0) + (b?.height ?? 0) / 2 };
+	};
+
 	const getPartnerBands = (originBand: BandCutPattern, tubes: TubeCutPattern[]) => {
 		const { meta } = originBand;
 		if (!meta) return undefined;
@@ -317,6 +322,8 @@
 				{tube}
 				index={i}
 				origin={pageResult.origins[i]}
+				rotation={pageResult.rotations[i] ?? 0}
+				pivot={pivotFor(band)}
 				portal={true}
 				tagAnchorPoint={band.tagAnchorPoint ?? minPoint(band.facets)}
 				tagAngle={band.tagAngle}
