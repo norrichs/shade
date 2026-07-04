@@ -111,4 +111,38 @@ describe('skylinePageLayout', () => {
 		expect(r.overflow).toBeUndefined();
 		expect(r.rotations[0]).toBe(90);
 	});
+
+	it('reserves gap spacing between items', () => {
+		// Two 100-wide items with gap 10 sit at x=0 and x=110 (10 units apart).
+		const r = skylinePageLayout(
+			[item(100, 50), item(100, 50)],
+			geom({ gap: 10, contentWidth: 300 })
+		);
+		expect(r.origins.map((o) => o.x)).toEqual([0, 110]);
+		expect(r.origins.map((o) => o.y)).toEqual([0, 0]);
+	});
+
+	it('rests an item on the higher of the ledges it spans (multi-segment max)', () => {
+		// Strict order, contentWidth 200:
+		//   item0 100×100 -> left column top 100
+		//   item1 50×20   -> rests right at top 0, right column top 20
+		//   item2 150×80  -> spans the 100-tall left ledge and the 20-tall middle,
+		//                    so it must rest at top=100 (the max), not 20.
+		const r = skylinePageLayout(
+			[item(100, 100), item(50, 20), item(150, 80)],
+			geom({ contentWidth: 200, reorderWindow: 1 })
+		);
+		expect(r.origins[2].y).toBeCloseTo(100);
+	});
+
+	it('computes the origin of a rotated item about its bounds-center', () => {
+		// content 100×50, item 30×80 rotates to 80×30. Placed at slot (0,0):
+		//   origin.x = 0 + 80/2 - (0 + 30/2) = 25
+		//   origin.y = 0 + 30/2 - (0 + 80/2) = -25
+		const g = geom({ contentWidth: 100, contentHeight: 50, pageHeight: 50, allowRotation: true });
+		const r = skylinePageLayout([item(30, 80)], g);
+		expect(r.rotations[0]).toBe(90);
+		expect(r.origins[0].x).toBeCloseTo(25);
+		expect(r.origins[0].y).toBeCloseTo(-25);
+	});
 });
