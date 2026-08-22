@@ -847,7 +847,6 @@ export const getFlatTriangle = ({ triangle, base }: { triangle: Triangle; base: 
 
 	const baseTriangleVector = triangle[p1].clone().addScaledVector(triangle[p0], -1);
 	const secondTriangleVector = triangle[p2].clone().addScaledVector(triangle[p0], -1);
-	const angle = baseTriangleVector.angleTo(secondTriangleVector);
 
 	const flat = {
 		a: new Vector3(),
@@ -860,12 +859,24 @@ export const getFlatTriangle = ({ triangle, base }: { triangle: Triangle; base: 
 	const baseSideLength = baseTriangleVector.length();
 	const secondSideLength = secondTriangleVector.length();
 
-	const baseVector = base.v1.clone().addScaledVector(base.v0, -1).setLength(baseSideLength);
+	// A collapsed edge has no direction, so `angleTo` and `setLength` would divide by
+	// zero and NaN-poison every facet chained after this one. Zero is the right angle
+	// for a zero-area triangle: it contributes no rotation to the strip. Real geometry
+	// collapses this way at a globule pole, where the level radius reaches zero.
+	const angle =
+		baseSideLength === 0 || secondSideLength === 0
+			? 0
+			: baseTriangleVector.angleTo(secondTriangleVector);
+
+	// Likewise, keep the base *direction* usable when the incoming base edge collapsed.
+	const baseDirection = base.v1.clone().addScaledVector(base.v0, -1);
+	if (baseDirection.lengthSq() === 0) baseDirection.set(1, 0, 0);
+	const baseVector = baseDirection.setLength(baseSideLength);
 	flat[p1].copy(flat[p0]).addScaledVector(baseVector, 1);
 
-	const secondVector = flat[p1]
-		.clone()
-		.addScaledVector(flat[p0], -1)
+	const secondDirection = flat[p1].clone().addScaledVector(flat[p0], -1);
+	if (secondDirection.lengthSq() === 0) secondDirection.copy(baseDirection).setLength(1);
+	const secondVector = secondDirection
 		.applyAxisAngle(new Vector3(0, 0, 1), -angle)
 		.setLength(secondSideLength);
 

@@ -17,7 +17,7 @@ import type {
 	PatternSource
 } from '$lib/types';
 import { collectRenderedPoints } from '$lib/collect-rendered-points';
-import type { GlobuleAddress_Facet } from '$lib/projection-geometry/types';
+import type { GlobuleAddress_Facet, Tube } from '$lib/projection-geometry/types';
 import { derived, writable, get } from 'svelte/store';
 import { loadPersistedOrDefault } from './stores';
 import { normalizeVoronoiConfig } from '$lib/voronoi/migrate-voronoi-config';
@@ -36,6 +36,7 @@ import {
 	patternGenerationConfig,
 	type PatternGenerationConfig
 } from './globulePatternStores';
+import { resolvePatternGenerationTargets } from '$lib/cut-pattern/pattern-generation-gates';
 import { overrideStore } from './overrideStore';
 import { getMetaInfo } from '$lib/projection-geometry/meta-info';
 import { computationMode, pausePatternUpdates, isManualMode, hasPendingChanges } from './uiStores';
@@ -65,6 +66,24 @@ function pipelineGatesFromViewControls(vc: ViewControls): PipelineGates {
 		voronoi: vc.showVoronoiGeometry.any
 	};
 }
+
+/**
+ * The pipeline gates alone, deduped. Pattern generation depends on these but not
+ * on the render-only sub-flags, so toggling e.g. `facets` must not re-run it.
+ */
+let lastPatternGateKey = '';
+const patternGates = derived<typeof viewControlStore, PipelineGates>(
+	viewControlStore,
+	($viewControlStore, set) => {
+		const gates = pipelineGatesFromViewControls($viewControlStore);
+		const key = `${gates.globule}|${gates.globuleTube}|${gates.projection}|${gates.voronoi}`;
+		if (key !== lastPatternGateKey) {
+			lastPatternGateKey = key;
+			set(gates);
+		}
+	},
+	pipelineGatesFromViewControls(get(viewControlStore))
+);
 
 /**
  * Manual trigger for regenerating geometry/patterns when in manual mode
@@ -473,6 +492,7 @@ const superGlobulePatternStoreInternal = derived(
 		superGlobuleStore,
 		superConfigStore,
 		patternGenerationConfig,
+		patternGates,
 		overrideStore,
 		computationMode,
 		pausePatternUpdates,
@@ -483,6 +503,7 @@ const superGlobulePatternStoreInternal = derived(
 		$superGlobuleStore,
 		$superConfigStore,
 		$genConfig,
+		$patternGates,
 		$overrideStore,
 		$computationMode,
 		$pausePatternUpdates,
@@ -524,10 +545,6 @@ const superGlobulePatternStoreInternal = derived(
 
 		console.time('PATTERN_GENERATION');
 
-		const showGlobuleGeometry = { any: false };
-		const showProjectionGeometry = { any: true, bands: true };
-		const showGlobuleTubeGeometry = { any: false, bands: false, facets: false, sections: false };
-
 		// Build a GlobulePatternConfig-compatible object from the generation config
 		// for generateSuperGlobulePattern which still expects the full config
 		const patternConfigForGeneration: GlobulePatternConfig = {
@@ -539,7 +556,36 @@ const superGlobulePatternStoreInternal = derived(
 			patternTypeConfig: $genConfig.patternTypeConfig
 		};
 
-		const superGlobulePattern = showGlobuleGeometry.any
+		const projection = $superGlobuleStore.projections[0];
+		const globuleTubes = $superGlobuleStore.globuleTubes;
+		const voronoiResult = $superGlobuleStore.voronoiResult;
+		const voronoiTubes = voronoiResult?.tubes ?? [];
+		const voronoiSurfaceProjectionTubes = voronoiResult?.surfaceProjectionTubes ?? [];
+
+		const patternSource = $genConfig.patternSource ?? 'projection';
+
+		const targets = resolvePatternGenerationTargets(
+			$patternGates,
+			patternSource,
+			$genConfig.showBands,
+			{
+				hasGlobuleTubes: globuleTubes.length > 0,
+				hasProjectionTubes: !!projection?.tubes?.length,
+				hasSurfaceProjectionTubes: !!projection?.surfaceProjectionTubes?.length,
+				hasVoronoiTubes: voronoiTubes.length > 0,
+				hasVoronoiSurfaceTubes: voronoiSurfaceProjectionTubes.length > 0
+			}
+		);
+
+		const patternFor = (tubes: Tube[]) =>
+			generateProjectionPattern(
+				tubes,
+				$superConfigStore.id,
+				patternConfigForGeneration,
+				$genConfig.range
+			);
+
+		const superGlobulePattern = targets.superGlobule
 			? generateSuperGlobulePattern(
 					$superGlobuleStore,
 					$superConfigStore,
@@ -547,71 +593,19 @@ const superGlobulePatternStoreInternal = derived(
 				)
 			: null;
 
-		const projection = $superGlobuleStore.projections[0];
-		const globuleTubes = $superGlobuleStore.globuleTubes;
-		const globuleTubePattern = showGlobuleTubeGeometry.any
-			? generateProjectionPattern(
-					globuleTubes,
-					$superConfigStore.id,
-					patternConfigForGeneration,
-					$genConfig.range
-				)
-			: null;
+		const globuleTubePattern = targets.globuleTube ? patternFor(globuleTubes) : null;
 
-		const patternSource = $genConfig.patternSource ?? 'projection';
+		const projectionPattern = targets.projection ? patternFor(projection.tubes) : undefined;
 
-		const projectionPattern =
-			patternSource === 'projection' &&
-			showProjectionGeometry.any &&
-			showProjectionGeometry.bands &&
-			$genConfig.showBands &&
-			projection // empty when the projection pipeline is gated off
-				? generateProjectionPattern(
-						projection.tubes,
-						$superConfigStore.id,
-						patternConfigForGeneration,
-						$genConfig.range
-					)
-				: undefined;
+		const surfaceProjectionPattern = targets.surfaceProjection
+			? patternFor(projection.surfaceProjectionTubes!)
+			: undefined;
 
-		const surfaceProjectionPattern =
-			patternSource === 'surfaceProjection' &&
-			showProjectionGeometry.any &&
-			$genConfig.showBands &&
-			projection?.surfaceProjectionTubes?.length
-				? generateProjectionPattern(
-						projection.surfaceProjectionTubes,
-						$superConfigStore.id,
-						patternConfigForGeneration,
-						$genConfig.range
-					)
-				: undefined;
+		const voronoiPattern = targets.voronoi ? patternFor(voronoiTubes) : undefined;
 
-		const voronoiResult = $superGlobuleStore.voronoiResult;
-		const voronoiTubes = voronoiResult?.tubes ?? [];
-		const voronoiSurfaceProjectionTubes = voronoiResult?.surfaceProjectionTubes ?? [];
-
-		const voronoiPattern =
-			patternSource === 'voronoi' && $genConfig.showBands && voronoiTubes.length
-				? generateProjectionPattern(
-						voronoiTubes,
-						$superConfigStore.id,
-						patternConfigForGeneration,
-						$genConfig.range
-					)
-				: undefined;
-
-		const voronoiSurfacePattern =
-			patternSource === 'voronoiSurface' &&
-			$genConfig.showBands &&
-			voronoiSurfaceProjectionTubes.length
-				? generateProjectionPattern(
-						voronoiSurfaceProjectionTubes,
-						$superConfigStore.id,
-						patternConfigForGeneration,
-						$genConfig.range
-					)
-				: undefined;
+		const voronoiSurfacePattern = targets.voronoiSurface
+			? patternFor(voronoiSurfaceProjectionTubes)
+			: undefined;
 
 		const metaInfo = getMetaInfo(projectionPattern);
 
