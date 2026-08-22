@@ -19,7 +19,11 @@
 	let viewMode: ViewModeSetting = $uiStore.designer.viewMode;
 
 	let showControl: { name: string; value?: unknown } = { name: 'None' };
-	type ShowControlCurveValue = 'ShapeConfig' | 'DepthCurveConfig' | 'SilhouetteConfig';
+	type ShowControlCurveValue =
+		| 'ShapeConfig'
+		| 'DepthCurveConfig'
+		| 'SilhouetteConfig'
+		| 'SpineCurveConfig';
 	const isShowControlCurveValue = (value: unknown): value is ShowControlCurveValue => {
 		return ['ShapeConfig', 'DepthCurveConfig', 'SilhouetteConfig', 'SpineCurveConfig'].includes(
 			value as string
@@ -60,12 +64,11 @@
 			/>
 		</header>
 		<div class="group">
-			{#if ['Silhouette', 'Shape', 'DepthCurve', 'Spine'].includes(showControl?.name)}
-				<SuperPathEdit
-					curveStoreType={isShowControlCurveValue(showControl.value)
-						? showControl.value
-						: 'SilhouetteConfig'}
-				/>
+			<!-- Keyed on the config value, not the display label: the curve entries were
+			     once matched by name, and renaming "DepthCurve" to "Depth" silently
+			     stranded the Depth panel. -->
+			{#if isShowControlCurveValue(showControl?.value)}
+				<SuperPathEdit curveStoreType={showControl.value} />
 			{:else if showControl?.name === 'Projection'}
 				<ProjectionControl />
 			{:else if showControl?.name === 'Struts'}
