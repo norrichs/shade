@@ -22,6 +22,7 @@ import type {
 	TiledPattern,
 	PatternScale
 } from '$lib/types';
+import { DEFAULT_DEPTH_CURVE_BASELINE } from './types';
 import type { EndCapConfig } from './geometry/end-caps';
 import { rad } from './util';
 import { GENERAL_CONFIG, generateTempId, GLOBULE_CONFIG, SUPER_GLOBULE_CONFIG } from './id-handler';
@@ -71,7 +72,7 @@ const defaultSilhouetteConfigV2: SilhouetteConfig = {
 
 const defaultDepthCurveConfig = (): DepthCurveConfig => ({
 	type: 'DepthCurveConfig',
-	depthCurveBaseline: 100,
+	depthCurveBaseline: DEFAULT_DEPTH_CURVE_BASELINE,
 	curves: [
 		{
 			type: 'BezierConfig',

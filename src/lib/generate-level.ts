@@ -17,7 +17,17 @@ import type {
 	SpineCurveConfig,
 	CurveSampleMethodMethod
 } from './types';
+import { DEFAULT_DEPTH_CURVE_BASELINE } from './types';
 import type { Section } from './projection-geometry/types';
+
+/**
+ * The depth-curve x value that maps to depth 1 (the level's own cross-section,
+ * unmodified). Falls back to the historical hardcoded 100 when a config predates
+ * the field or carries a zero, which would otherwise divide by zero and NaN every
+ * vertex radius.
+ */
+const resolveDepthBaseline = (config: DepthCurveConfig): number =>
+	config.depthCurveBaseline || DEFAULT_DEPTH_CURVE_BASELINE;
 
 /**
  * @deprecated - use generateSections instead
@@ -32,6 +42,7 @@ export const generateLevelSet2 = (
 	const levelCount = countLevels(levelConfig, silhouetteConfig);
 	const levelPrototypes: LevelPrototype[] = getLevelPrototypeArray(levelCount, levelPrototype);
 	const depthCurve: CurvePath<Vector2> = generateDepthCurve(depthCurveConfig);
+	const depthBaseline = resolveDepthBaseline(depthCurveConfig);
 	const silhouette: CurvePath<Vector2> = generateSilhouette(silhouetteConfig);
 	// get levels without offsets by applying silhouette points to depthed level prototype vertices
 	let rawLevels: Level[] = [];
@@ -39,6 +50,7 @@ export const generateLevelSet2 = (
 		rawLevels = generateRawLevelsConstantAspect({
 			silhouette,
 			depthCurve,
+			depthBaseline,
 			levelPrototypes,
 			sampleMethod: levelConfig.silhouetteSampleMethod,
 			divisionBasis: 0
@@ -56,6 +68,7 @@ export const generateLevelSet2 = (
 		rawLevels = generateRawLevels({
 			silhouette,
 			depthCurve,
+			depthBaseline,
 			levelPrototypes,
 			sampleMethod: levelConfig.silhouetteSampleMethod
 		});
@@ -79,6 +92,7 @@ export const generateSections = (
 	const levelCount = countLevels(levelConfig, silhouetteConfig);
 	const levelPrototypes: LevelPrototype[] = getLevelPrototypeArray(levelCount, levelPrototype);
 	const depthCurve: CurvePath<Vector2> = generateDepthCurve(depthCurveConfig);
+	const depthBaseline = resolveDepthBaseline(depthCurveConfig);
 	const silhouette: CurvePath<Vector2> = generateSilhouette(silhouetteConfig);
 	// get levels without offsets by applying silhouette points to depthed level prototype vertices
 	let rawLevels: Level[] = [];
@@ -86,6 +100,7 @@ export const generateSections = (
 		rawLevels = generateRawLevelsConstantAspect({
 			silhouette,
 			depthCurve,
+			depthBaseline,
 			levelPrototypes,
 			sampleMethod: levelConfig.silhouetteSampleMethod,
 			divisionBasis: 0
@@ -103,6 +118,7 @@ export const generateSections = (
 		rawLevels = generateRawLevels({
 			silhouette,
 			depthCurve,
+			depthBaseline,
 			levelPrototypes,
 			sampleMethod: levelConfig.silhouetteSampleMethod
 		});
@@ -183,12 +199,14 @@ const generateRawLevelsSpineCurve = ({
 const generateRawLevelsConstantAspect = ({
 	silhouette,
 	depthCurve,
+	depthBaseline,
 	levelPrototypes,
 	sampleMethod,
 	divisionBasis
 }: {
 	silhouette: CurvePath<Vector2>;
 	depthCurve: CurvePath<Vector2>;
+	depthBaseline: number;
 	levelPrototypes: LevelPrototype[];
 	sampleMethod: CurveSampleMethod;
 	divisionBasis?: number;
@@ -224,7 +242,7 @@ const generateRawLevelsConstantAspect = ({
 				const division = divisions[vertexNumber][levelNumber];
 				const depthedLevelPrototype = getDepthedLevelPrototype(
 					levelPrototypes[vertexNumber % levelPrototypes.length],
-					depthCurve.getPointAt(division).x / 100
+					depthCurve.getPointAt(division).x / depthBaseline
 				);
 				silhouettePoints.push(silhouette.getPointAt(division));
 				meridians[vertexNumber].push(
@@ -304,11 +322,13 @@ const getMeridianPoint = (
 const generateRawLevels = ({
 	silhouette,
 	depthCurve,
+	depthBaseline,
 	levelPrototypes,
 	sampleMethod
 }: {
 	silhouette: CurvePath<Vector2>;
 	depthCurve: CurvePath<Vector2>;
+	depthBaseline: number;
 	levelPrototypes: LevelPrototype[];
 	sampleMethod: CurveSampleMethod;
 }): Level[] => {
@@ -331,8 +351,8 @@ const generateRawLevels = ({
 				: silhouette.getPointAt(division);
 		const depthValue =
 			sampleMethod.method === 'divideCurve'
-				? depthCurve.getPoint(division).x / 100
-				: depthCurve.getPointAt(division).x / 100;
+				? depthCurve.getPoint(division).x / depthBaseline
+				: depthCurve.getPointAt(division).x / depthBaseline;
 		const offset: LevelOffset = {
 			x: 0,
 			y: 0,

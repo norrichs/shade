@@ -903,9 +903,17 @@ export type SilhouetteConfig = {
 	curves: BezierConfig[];
 };
 
+/**
+ * The depth-curve x value that means "full shape" — depth 1, the level's own
+ * cross-section unmodified. Below the baseline a level relaxes toward its
+ * inscribed circle; above it, the lobes are exaggerated.
+ */
+export const DEFAULT_DEPTH_CURVE_BASELINE = 100;
+
 export type DepthCurveConfig = {
 	type: 'DepthCurveConfig';
 	id?: number;
+	/** x value mapped to depth 1. See DEFAULT_DEPTH_CURVE_BASELINE. */
 	depthCurveBaseline: number;
 	curves: BezierConfig[];
 };
