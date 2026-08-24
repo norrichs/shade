@@ -78,7 +78,11 @@ const bestPlacement = (
 			if (top === null || top + ih > packHeight + EPS) continue;
 			const score = top + ih;
 			const x = sky[i].x;
-			if (!best || score < best.score - EPS || (Math.abs(score - best.score) < EPS && x < best.x - EPS)) {
+			if (
+				!best ||
+				score < best.score - EPS ||
+				(Math.abs(score - best.score) < EPS && x < best.x - EPS)
+			) {
 				best = { o, x, top, score };
 			}
 		}
@@ -113,9 +117,11 @@ export const skylinePageLayout = (items: LayoutItem[], geom: PageGeom): PageLayo
 		const os = orientsOf(it, allowRotation);
 		const fits = os.some((o) => o.w + gap <= packWidth + EPS && o.h + gap <= packHeight + EPS);
 		if (!fits) {
-			const f = Math.min(
-				...os.map((o) => Math.max((o.w + gap) / packWidth, (o.h + gap) / packHeight))
-			);
+			// Measure against the BARE content box, not the gap-inflated packing box:
+			// `gap` is a constant in pattern units and does not scale with pageScale,
+			// so the inflated ratio under-reports the scale needed and the layout
+			// still overflows at the reported value.
+			const f = Math.min(...os.map((o) => Math.max(o.w / contentWidth, o.h / contentHeight)));
 			if (f > factor) {
 				factor = f;
 				worst = i;

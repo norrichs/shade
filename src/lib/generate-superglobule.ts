@@ -41,7 +41,12 @@ export const generateSuperGlobule = (
 
 	// Run a gated, fault-isolated pipeline: skip when disabled; on failure record
 	// the error and fall back rather than propagating.
-	function runPipeline<T>(pipeline: keyof PipelineGates, enabled: boolean, fn: () => T, fallback: T): T {
+	function runPipeline<T>(
+		pipeline: keyof PipelineGates,
+		enabled: boolean,
+		fn: () => T,
+		fallback: T
+	): T {
 		if (!enabled) return fallback;
 		try {
 			return fn();
@@ -69,7 +74,7 @@ export const generateSuperGlobule = (
 	const globuleTubes = runPipeline<Tube[]>(
 		'globuleTube',
 		gates.globuleTube,
-		() => superConfig.subGlobuleConfigs.map((sgc, index) => generateSubGlobuleTubes(sgc, index)).flat(),
+		() => generateGlobuleTubes(superConfig.subGlobuleConfigs),
 		[]
 	);
 
@@ -154,38 +159,31 @@ const generateSubGlobule = (subGlobuleConfig: SubGlobuleConfig, sgIndex: number)
 	};
 };
 
-const generateSubGlobuleTubes = (subGlobuleConfig: SubGlobuleConfig, sgIndex: number): Tube[] => {
-	const { transforms, id, name } = subGlobuleConfig;
-
-	// const prototypeGlobule: Globule = {
-	// 	type: 'Globule',
-	// 	coord: { s: sgIndex, t: 0, r: 0 },
-	// 	coordStack: [],
-	// 	address: { s: sgIndex, g: [], b: undefined },
-	// 	subGlobuleConfigId: subGlobuleConfig.id,
-	// 	globuleConfigId: subGlobuleConfig.globuleConfig.id,
-	// 	name: subGlobuleConfig.globuleConfig.name,
-	// 	data: generateGlobuleTube(subGlobuleConfig.globuleConfig),
-	// 	visible: true
-	// };
-
-	const globuleTube = generateGlobuleTube(subGlobuleConfig.globuleConfig);
-
-	// let globules: Globule[];
-	// if (transforms) {
-	// 	globules = generateTransformedGlobules(prototypeGlobule, transforms);
-	// } else {
-	// 	globules = [prototypeGlobule];
-	// }
-
-	// const subGlobule: SubGlobule = {
-	// 	type: 'SubGlobule',
-	// 	subGlobuleConfigId: id,
-	// 	name,
-	// 	data: globules as Globule[]
-	// };
-
-	return [globuleTube];
+/**
+ * One tube per DISTINCT globule.
+ *
+ * Sub-globule configs can share a `globuleConfig`: the legacy recombination flow adds
+ * copies of the same globule that differ only by their `transforms` (placements). This
+ * pipeline does not implement transforms, so a tube per entry emitted the same globule
+ * twice, stacked on itself — visible in the pattern as t0/b0 AND t1/b0 for a single
+ * globule. Keep the first entry per `globuleConfig.id`; an independent globule
+ * (`cloneGlobuleConfig` gives it a fresh id) still gets its own tube.
+ *
+ * The tube address indexes into this list — partner lookups index tubes by
+ * `address.tube`, and band keys/ids downstream are derived from that address.
+ */
+const generateGlobuleTubes = (subGlobuleConfigs: SubGlobuleConfig[]): Tube[] => {
+	const seen = new Set<Id>();
+	const tubes: Tube[] = [];
+	for (const subGlobuleConfig of subGlobuleConfigs) {
+		const globuleConfigId = subGlobuleConfig.globuleConfig.id;
+		if (seen.has(globuleConfigId)) continue;
+		seen.add(globuleConfigId);
+		tubes.push(
+			generateGlobuleTube(subGlobuleConfig.globuleConfig, { globule: 0, tube: tubes.length })
+		);
+	}
+	return tubes;
 };
 
 export const cloneSubGlobuleConfig = (original: SubGlobuleConfig): SubGlobuleConfig => {

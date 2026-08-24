@@ -295,7 +295,9 @@
 		const key = `${ov.itemIndex}:${ov.requiredScale.toFixed(4)}`;
 		if (key === lastOverflowKey) return;
 		lastOverflowKey = key;
-		const suggested = Number(ov.requiredScale.toFixed(4));
+		// Round UP: a nearest-rounded value can land a hair under the required scale,
+		// which leaves the pattern overflowing and makes "Fit page" look inert.
+		const suggested = Math.ceil(ov.requiredScale * 10000) / 10000;
 		toastStore.add({
 			type: 'error',
 			message: `A pattern is too large to fit the page. Increase pageScale to ~${suggested} to fit.`,

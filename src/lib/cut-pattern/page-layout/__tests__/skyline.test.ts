@@ -103,6 +103,29 @@ describe('skylinePageLayout', () => {
 		expect(r.origins).toHaveLength(0);
 	});
 
+	// `gap` is a constant in pattern units — it does NOT scale with pageScale — so
+	// the required scale has to be measured against the bare content box. Measuring
+	// inflated-item / inflated-box under-reports it, and re-running at the reported
+	// scale still overflows (the "Fit page" toast action then appears to do nothing).
+	it('reports a required scale that actually clears the overflow', () => {
+		const base = geom({ pageScale: 1, contentWidth: 300, contentHeight: 1000, gap: 20 });
+		const items = [item(500, 50)];
+		const r = skylinePageLayout(items, base);
+		expect(r.overflow).toBeDefined();
+
+		const s = r.overflow!.requiredScale;
+		// Content box scales with pageScale; gap does not.
+		const rescaled = skylinePageLayout(items, {
+			...base,
+			pageScale: s,
+			pageWidth: base.pageWidth * s,
+			pageHeight: base.pageHeight * s,
+			contentWidth: base.contentWidth * s,
+			contentHeight: base.contentHeight * s
+		});
+		expect(rescaled.overflow).toBeUndefined();
+	});
+
 	it('rotation can rescue an item that would otherwise overflow', () => {
 		// content 100 wide, 400 tall. Item 300×80 overflows width upright, but
 		// rotated (80×300) fits. No overflow expected.

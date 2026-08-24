@@ -43,7 +43,7 @@ import type {
 } from '$lib/types';
 import { generateEdgeConfig } from './cut-pattern/generate-cut-pattern';
 import { generateLevelSet2, generateSections } from './generate-level';
-import type { Tube } from './projection-geometry/types';
+import type { GlobuleAddress_Tube, Tube } from './projection-geometry/types';
 import {
 	generateProjectionBands,
 	generateTubeBands
@@ -859,7 +859,17 @@ export const generateGlobuleData = (configStore: GlobuleConfig): GlobuleData => 
 	return { levels, bands: filteredBands, struts, endCaps };
 };
 
-export const generateGlobuleTube = (configStore: GlobuleConfig): Tube => {
+/**
+ * `address` identifies this tube within the collated tube list. Callers that
+ * generate more than one globule tube MUST pass distinct addresses: band
+ * addresses and ids are derived from the tube address, and the flat page-layout
+ * `#each` is keyed by band address, so colliding tube addresses surface as
+ * `each_key_duplicate` (and as duplicate DOM ids in every layout mode).
+ */
+export const generateGlobuleTube = (
+	configStore: GlobuleConfig,
+	address: GlobuleAddress_Tube = { globule: 0, tube: 0 }
+): Tube => {
 	const config = structuredClone(configStore);
 	const rotatedShapePrototype: LevelPrototype | LevelPrototype[] = generateLevelPrototype(
 		config.shapeConfig,
@@ -872,7 +882,7 @@ export const generateGlobuleTube = (configStore: GlobuleConfig): Tube => {
 		rotatedShapePrototype
 	);
 
-	const bands = generateProjectionBands(sections, 'axial-right', { globule: 0, tube: 0 });
+	const bands = generateProjectionBands(sections, 'axial-right', address);
 
 	// const struts = generateStruts(levels, config.strutConfig);
 	// const unTabbedBands = generateBandSet(config, sections);
@@ -887,7 +897,7 @@ export const generateGlobuleTube = (configStore: GlobuleConfig): Tube => {
 		sections,
 		bands: filteredBands,
 		orientation: 'axial-right',
-		address: { globule: 0, tube: 0 }
+		address
 	};
 
 	return tube;
