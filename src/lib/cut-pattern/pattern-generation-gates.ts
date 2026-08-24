@@ -33,8 +33,9 @@ export type PatternGenerationAvailability = {
  * render sub-flags (bands/facets/sections) are deliberately not consulted here —
  * their 2D counterpart is `showBands`, which is applied instead.
  *
- * `patternSource` selects among the projection/voronoi variants only. Globule
- * tubes are not one of its members, so they are gated by their pipeline alone.
+ * `patternSource` selects among all the variants, `globule` included: each tube
+ * set is generated only when its own source is selected, because `collateTubes`
+ * collates only that source's tubes.
  */
 export const resolvePatternGenerationTargets = (
 	gates: PipelineGates,
@@ -43,7 +44,8 @@ export const resolvePatternGenerationTargets = (
 	availability: PatternGenerationAvailability
 ): PatternGenerationTargets => ({
 	superGlobule: gates.globule,
-	globuleTube: gates.globuleTube && showBands && availability.hasGlobuleTubes,
+	globuleTube:
+		patternSource === 'globule' && gates.globuleTube && showBands && availability.hasGlobuleTubes,
 	projection:
 		patternSource === 'projection' &&
 		gates.projection &&

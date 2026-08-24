@@ -18,7 +18,12 @@ import type { DistributionConfig } from '../components/cut-pattern/distrubute-pa
 import type { ProjectionRange } from './projection-geometry/filters';
 import type { EndCapConfig, EndCapGeometry } from './geometry/end-caps';
 
-export type PatternSource = 'projection' | 'surfaceProjection' | 'voronoi' | 'voronoiSurface';
+export type PatternSource =
+	| 'globule'
+	| 'projection'
+	| 'surfaceProjection'
+	| 'voronoi'
+	| 'voronoiSurface';
 export type BandSortMode = 'tube-order' | 'end-connection-tube';
 
 export type BandRef = GlobuleAddress_Band;

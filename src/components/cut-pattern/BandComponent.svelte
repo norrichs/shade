@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { BandCutPattern, Point, TubeCutPattern } from '$lib/types';
+	import type { BandCutPattern, PatternSource, Point, TubeCutPattern } from '$lib/types';
 	import type { Snippet } from 'svelte';
 	import PatternLabel from './PatternLabel.svelte';
 	import OnTabLabel from './OnTabLabel.svelte';
@@ -45,7 +45,7 @@
 		tagAnchorPoint: Point;
 		tagAngle: number | undefined;
 		groupCode?: string;
-		selectionTarget?: 'projection' | 'surfaceProjection' | 'voronoi' | 'voronoiSurface';
+		selectionTarget?: PatternSource;
 		children?: Snippet;
 	} = $props();
 

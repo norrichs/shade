@@ -71,7 +71,21 @@ describe('collateTubes', () => {
 		expect(out.map((t) => t.bands[0].id)).toEqual(['proj-0']);
 	});
 
-	test('concatenates globuleTubePattern with the active projection variant', () => {
+	// Globule tubes are their own pattern source: they are collated only when
+	// `globule` is selected, the same way the projection/voronoi variants are.
+	test('uses globuleTubePattern when patternSource is globule', () => {
+		const out = collateTubes({
+			globuleTubePattern: makeCutPattern(['gt-0']),
+			projectionPattern: makeCutPattern(['proj-0']),
+			surfaceProjectionPattern: makeCutPattern(['surf-0']),
+			...voronoiDefaults,
+			...allOn,
+			patternSource: 'globule'
+		});
+		expect(out.map((t) => t.bands[0].id)).toEqual(['gt-0']);
+	});
+
+	test('excludes globuleTubePattern when another source is selected', () => {
 		const out = collateTubes({
 			globuleTubePattern: makeCutPattern(['gt-0']),
 			projectionPattern: undefined,
@@ -80,7 +94,19 @@ describe('collateTubes', () => {
 			...allOn,
 			patternSource: 'surfaceProjection'
 		});
-		expect(out.map((t) => t.bands[0].id)).toEqual(['gt-0', 'surf-0']);
+		expect(out.map((t) => t.bands[0].id)).toEqual(['surf-0']);
+	});
+
+	test('respects showGlobuleTubeGeometry.any even when globule is selected', () => {
+		const out = collateTubes({
+			globuleTubePattern: makeCutPattern(['gt-0']),
+			projectionPattern: undefined,
+			surfaceProjectionPattern: undefined,
+			...voronoiDefaults,
+			...allOff,
+			patternSource: 'globule'
+		});
+		expect(out).toEqual([]);
 	});
 
 	test('regression: does not silently fall through to globuleTubePattern when surfaceProjection is selected', () => {

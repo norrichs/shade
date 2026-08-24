@@ -32,16 +32,16 @@ describe('resolvePatternGenerationTargets', () => {
 	it('generates the globule-tube pattern when the globuleTube pipeline is on', () => {
 		const targets = resolvePatternGenerationTargets(
 			gates({ globuleTube: true }),
-			'surfaceProjection',
+			'globule',
 			true,
 			availability()
 		);
 		expect(targets.globuleTube).toBe(true);
 	});
 
-	it('generates the globule-tube pattern regardless of the selected patternSource', () => {
-		// `patternSource` selects between projection/voronoi variants; globule tubes
-		// are not one of its members, so they must not be gated by it.
+	it('generates the globule-tube pattern only for the globule source', () => {
+		// `globule` is a pattern source like the others: its tubes are collated only
+		// when it is selected, so generating them under another source is waste.
 		for (const source of [
 			'projection',
 			'surfaceProjection',
@@ -54,7 +54,7 @@ describe('resolvePatternGenerationTargets', () => {
 				true,
 				availability()
 			);
-			expect(targets.globuleTube).toBe(true);
+			expect(targets.globuleTube).toBe(false);
 		}
 	});
 
@@ -64,7 +64,7 @@ describe('resolvePatternGenerationTargets', () => {
 	it('skips every variant whose tubes are not generated yet', () => {
 		const targets = resolvePatternGenerationTargets(
 			gates({ globuleTube: true, projection: true, voronoi: true }),
-			'projection',
+			'globule',
 			true,
 			availability({ hasGlobuleTubes: false })
 		);
@@ -88,7 +88,7 @@ describe('resolvePatternGenerationTargets', () => {
 	it('skips every band pattern when showBands is off', () => {
 		const targets = resolvePatternGenerationTargets(
 			gates({ globuleTube: true, projection: true, voronoi: true }),
-			'projection',
+			'globule',
 			false,
 			availability({ hasProjectionTubes: true, hasVoronoiTubes: true })
 		);

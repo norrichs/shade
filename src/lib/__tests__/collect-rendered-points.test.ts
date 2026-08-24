@@ -39,9 +39,26 @@ describe('collectRenderedPoints', () => {
 		expect(pts[0]).toBeInstanceOf(Vector3);
 	});
 
+	// The globule source measures the globule-tube pipeline's geometry — the same
+	// bands the pattern view renders for it — so the Page layout editor reports a
+	// real model size for a bare globule instead of falling back to the (usually
+	// empty) legacy sub-globule band geometry.
+	test('globule reads globuleTubes', () => {
+		const model = sg({
+			globuleTubes: [tube(7, 8)] as never,
+			projections: [{ tubes: [tube(2)], surfaceProjectionTubes: [] } as never]
+		});
+		const pts = collectRenderedPoints(model, 'globule');
+		expect(pts).toHaveLength(6);
+		expect(pts.map((p) => p.x)).toEqual(expect.arrayContaining([7, 8]));
+		// must NOT include the projection tubes point (x=2)
+		expect(pts.map((p) => p.x)).not.toContain(2);
+	});
+
 	test('returns empty when the active source has no geometry (caller falls back)', () => {
 		const model = sg({ projections: [] });
 		expect(collectRenderedPoints(model, 'voronoi')).toHaveLength(0);
 		expect(collectRenderedPoints(model, 'projection')).toHaveLength(0);
+		expect(collectRenderedPoints(model, 'globule')).toHaveLength(0);
 	});
 });

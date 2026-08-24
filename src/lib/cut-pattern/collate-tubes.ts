@@ -26,7 +26,7 @@ export type CollateTubesInput = {
 };
 
 /**
- * Concatenate tubes from the three pattern variants under the same gating
+ * Concatenate tubes from the pattern variants under the same gating
  * the renderer applies, so the Prepare Download merge operates on the exact
  * band set the renderer paints.
  *
@@ -56,7 +56,9 @@ export const collateTubes = (input: CollateTubesInput): TubeCutPattern[] => {
 			: [];
 
 	return [
-		...(showGlobuleTubeGeometry.any ? getTubes(globuleTubePattern) : []),
+		...(showGlobuleTubeGeometry.any && patternSource === 'globule'
+			? getTubes(globuleTubePattern)
+			: []),
 		...(showProjectionGeometry.any && patternSource === 'projection'
 			? getTubes(projectionPattern)
 			: []),

@@ -10,7 +10,13 @@
 	import { derivePageDimensions, inchToMm, mmToInch } from '$lib/cut-pattern/page-layout/units';
 	import type { PatternLayoutMode } from '$lib/types';
 
-	let cfg = $derived($patternConfigStore.patternConfig.pageLayout);
+	// Shallow copy on purpose. Binding to `$patternConfigStore.…pageLayout.x` mutates
+	// that object in place, so a `$derived` returning the object itself resolves to the
+	// SAME reference and never propagates — every readout below (units, preset, page
+	// preview, model size) would stay frozen at its mount-time value. Copying gives the
+	// derived a fresh identity each run so those recompute. Reads only; writes go
+	// straight to the store.
+	let cfg = $derived({ ...$patternConfigStore.patternConfig.pageLayout });
 	let unit = $derived(cfg.displayUnit);
 	const toDisplay = (mm: number) => (unit === 'inch' ? mmToInch(mm) : mm);
 	const fromDisplay = (v: number) => (unit === 'inch' ? inchToMm(v) : v);
@@ -80,6 +86,7 @@
 	<label>
 		Geometry
 		<select bind:value={$patternConfigStore.patternViewConfig.patternSource}>
+			<option value="globule">Globule</option>
 			<option value="projection">Projection</option>
 			<option value="surfaceProjection">Surface</option>
 			<option value="voronoi">Voronoi</option>
