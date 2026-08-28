@@ -26,6 +26,7 @@
 			<Container direction="column">
 				<Button onclick={() => console.log(silhouette)}>Print Silhouette</Button>
 				<PathEditor
+					flipY
 					curveDef={silhouette.curves}
 					onChangeCurveDef={(curveDef) => {
 						const config = get(superConfigStore);

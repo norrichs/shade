@@ -14,7 +14,8 @@
 		point,
 		handleDragEnd,
 		handleDoubleClick,
-		handleDrag
+		handleDrag,
+		pointType = undefined
 	}: {
 		config: PathEditorConfig;
 		canv: PathEditorCanvas;
@@ -24,12 +25,15 @@
 		handleDragEnd: () => void;
 		handleDoubleClick: () => void;
 		handleDrag: (x: number, y: number) => void;
+		/** 'angled' or 'smooth' joints get distinct styling so the state is visible. */
+		pointType?: 'smooth' | 'angled';
 	} = $props();
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
 	class={`point ${getPointClass(curveIndex, pointIndex)}`}
+	class:angled={pointType === 'angled'}
 	style={`left:${(-canv.minX - config.gutter + point.x) / canv.scale}px; top:${
 		(-canv.minY - config.gutter + point.y) / canv.scale
 	}px`}
@@ -60,6 +64,11 @@
 	.anchor {
 		background-color: transparent;
 		border: 1px solid rgba(0, 0, 0, 0.7);
+	}
+	.anchor.angled {
+		border-color: rgba(200, 0, 0, 0.9);
+		border-width: 2px;
+		transform: translate(-50%, -50%) rotate(45deg);
 	}
 	.direction {
 		background-color: rgba(200, 200, 255, 1);
