@@ -22,6 +22,13 @@
 		type PathEditorConfig
 	} from './path-editor';
 	import CurveToolbar from './CurveToolbar.svelte';
+	import PointInputs from './PointInputs.svelte';
+	import {
+		defaultPathEditorUiState,
+		pathEditorUiStore,
+		setPathEditorUiState,
+		type PointInputMode
+	} from './path-editor-ui-store';
 	import DirectionLines from './DirectionLines.svelte';
 	import DraggablePoint from './DraggablePoint.svelte';
 
@@ -53,6 +60,9 @@
 		minCurves = 1,
 		coupling = 'none',
 		enablePointTypeToggle = false,
+		showPointInputsToggle = false,
+		pointInputMode = 'inline',
+		editorId = undefined,
 		overlay = undefined,
 		overlayAbove = undefined
 	}: {
@@ -76,6 +86,15 @@
 		minCurves?: number;
 		coupling?: PointCoupling;
 		enablePointTypeToggle?: boolean;
+		showPointInputsToggle?: boolean;
+		/** Starting layout for the numeric inputs; the user can switch it. */
+		pointInputMode?: PointInputMode;
+		/**
+		 * Keys this editor's UI state in a module-level store. Floater remounts its
+		 * panel content on every close, so without an id the "show point inputs"
+		 * toggle resets each time the panel is reopened.
+		 */
+		editorId?: string;
 		overlay?: Snippet<[PathEditorOverlayContext]>;
 		overlayAbove?: Snippet<[PathEditorOverlayContext]>;
 	} = $props();
@@ -127,6 +146,33 @@
 		onChangeCurveDef(curveDef);
 	};
 
+	/**
+	 * The single write path for a point, in stored coordinates. Dragging and typing
+	 * both come through here, so a typed value is clamped by exactly the same
+	 * limits as a dragged one.
+	 */
+	const commitPoint = (newPoint: PointConfig2, curveIndex: number, pointIndex: number) => {
+		// A double-click arrives as two zero-distance drags. Bailing out here keeps
+		// them from emitting a spurious change between the two clicks.
+		const current = curveDef[curveIndex].points[pointIndex];
+		if (current.x === newPoint.x && current.y === newPoint.y) return false;
+
+		if (effectiveLimits.length === 0) {
+			curveDef[curveIndex].points[pointIndex] = newPoint;
+			curveDef = curveDef;
+			return true;
+		}
+		curveDef = applyLimits({
+			limits: effectiveLimits,
+			curveDef,
+			curveIndex,
+			pointIndex,
+			newPoint,
+			oldPoint: { ...current }
+		});
+		return true;
+	};
+
 	const handleDrag = (newX: number, newY: number, curveIndex: number, pointIndex: number) => {
 		const displayPoint = {
 			type: 'PointConfig2',
@@ -134,26 +180,15 @@
 			y: newY * canv.scale
 		} as PointConfig2;
 		// Limits operate on stored data, so convert before applying them.
-		const scaledPoint = flipY ? reflectPoint(displayPoint) : displayPoint;
+		commitPoint(flipY ? reflectPoint(displayPoint) : displayPoint, curveIndex, pointIndex);
+	};
 
-		// A double-click arrives as two zero-distance drags. Bailing out here keeps
-		// them from emitting a spurious change between the two clicks.
-		const current = curveDef[curveIndex].points[pointIndex];
-		if (current.x === scaledPoint.x && current.y === scaledPoint.y) return;
-
-		if (effectiveLimits.length === 0) {
-			curveDef[curveIndex].points[pointIndex] = scaledPoint;
-			curveDef = curveDef;
-			return;
+	/** Typed coordinates are already in stored space and commit immediately. */
+	const handlePointInput = (x: number, y: number, curveIndex: number, pointIndex: number) => {
+		const existing = curveDef[curveIndex].points[pointIndex];
+		if (commitPoint({ ...existing, x, y }, curveIndex, pointIndex)) {
+			onChangeCurveDef(curveDef);
 		}
-		curveDef = applyLimits({
-			limits: effectiveLimits,
-			curveDef,
-			curveIndex,
-			pointIndex,
-			newPoint: scaledPoint,
-			oldPoint: { ...current }
-		});
 	};
 
 	const handleDoubleClick = (curveIndex: number, pointIndex: number) => {
@@ -161,6 +196,18 @@
 		const toggled = togglePointType(curveDef, curveIndex, pointIndex);
 		if (toggled === curveDef) return;
 		handleUpdateCurveDef(toggled);
+	};
+
+	// Unkeyed editors keep their toggle local and never write to the shared store.
+	let localUi = $state({ ...defaultPathEditorUiState(), pointInputMode });
+	let ui = $derived(
+		editorId
+			? ($pathEditorUiStore[editorId] ?? { ...defaultPathEditorUiState(), pointInputMode })
+			: localUi
+	);
+	const updateUi = (patch: Partial<typeof localUi>) => {
+		if (editorId) setPathEditorUiState(editorId, patch);
+		else localUi = { ...localUi, ...patch };
 	};
 
 	const step = $derived(curveStep ?? canv.viewBoxData.width / 10);
@@ -199,7 +246,30 @@
 		{/each}
 	{/each}
 
+	{#if showPointInputsToggle && ui.showPointInputs}
+		<PointInputs
+			{curveDef}
+			{displayCurveDef}
+			{canv}
+			{config}
+			mode={ui.pointInputMode}
+			onChangeMode={(pointInputMode) => updateUi({ pointInputMode })}
+			onChangePoint={handlePointInput}
+		/>
+	{/if}
+
 	<div class="controls">
+		{#if showPointInputsToggle}
+			<label class="points-toggle">
+				<input
+					type="checkbox"
+					checked={ui.showPointInputs}
+					onchange={(event) =>
+						updateUi({ showPointInputs: (event.currentTarget as HTMLInputElement).checked })}
+				/>
+				points
+			</label>
+		{/if}
 		{#if showCurveTools}
 			<CurveToolbar
 				onAdd={() => handleUpdateCurveDef(addCurve(curveDef, step))}
@@ -223,6 +293,13 @@
 		border: 1px dotted black;
 		padding: 0;
 		position: relative;
+	}
+	.points-toggle {
+		display: flex;
+		align-items: center;
+		gap: 2px;
+		font-size: 0.85em;
+		color: rgba(0, 0, 0, 0.6);
 	}
 	.controls {
 		display: flex;
