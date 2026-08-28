@@ -8,7 +8,11 @@
 		"resolveJsonModule": true,
 		"skipLibCheck": true,
 		"sourceMap": true,
-		"strict": true
+		"strict": true,
+		// SvelteKit's generated tsconfig pins "types" to ["node"], which leaves the
+		// Jest globals undeclared and makes `svelte-check` report every describe/it/
+		// expect in the suite as an error. @types/jest is already a devDependency.
+		"types": ["node", "jest"]
 	}
 	// Path aliases are handled by https://kit.svelte.dev/docs/configuration#alias
 	//
