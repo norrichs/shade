@@ -89,13 +89,21 @@
 			stroke-width={1}
 		/>
 	{:else}
-		<path
-			d={mergedPath}
-			fill="none"
-			stroke-width={band.facets[0].strokeWidth}
-			stroke-linecap="round"
-			stroke-linejoin="round"
-		/>
+		<!-- One path PER FACET, each at its own dynamic stroke width. Drawing the
+		     whole band as a single path forces a single width for every facet
+		     (it used to take facets[0]'s), which silently discarded the
+		     dynamicStrokeMin..Max variation that `applyStrokeWidth` computed —
+		     and made the working view disagree with the "Prepare download"
+		     union, which has always expanded each facet at its own width. -->
+		{#each band.facets as facet, f (f)}
+			<path
+				d={facet.svgPath}
+				fill="none"
+				stroke-width={facet.strokeWidth ?? 1}
+				stroke-linecap="round"
+				stroke-linejoin="round"
+			/>
+		{/each}
 	{/if}
 {:else}
 	{#each band.facets as facet, f (f)}

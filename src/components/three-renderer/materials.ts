@@ -1,6 +1,6 @@
 import { DoubleSide, MeshPhysicalMaterial, MeshStandardMaterial } from 'three';
 import type { ThreeColor } from './colors';
-import type { GlobuleAddress_Facet } from '$lib/projection-geometry/types';
+import type { GlobuleAddress_Band, GlobuleAddress_Facet } from '$lib/projection-geometry/types';
 import { sameGlobuleBand, type AssemblerHighlight } from '$lib/assembler-highlight';
 import type { SelectedProjectionGeometry } from '$lib/stores/selectionStores';
 import { HIGHLIGHT_PRIMARY, HIGHLIGHT_SECONDARY } from '$lib/highlight-colors';
@@ -168,6 +168,26 @@ export type MaterialSelectionConfig = {
 const defaultMaterialSelectionConfig: MaterialSelectionConfig = {
 	colorByBand: false,
 	zebraStriped: false
+};
+
+/**
+ * Material for a whole band mesh, honouring the Assembler cross-view highlight.
+ *
+ * Band meshes have no selection state of their own (selection is per facet), so this
+ * is highlight-or-default: the clicked band paints primary, the rest of its ring
+ * secondary. Keeps a bands-only 3D view usable for assembly, where enabling facets
+ * just to see the highlight would change what the model looks like.
+ */
+export const getBandMaterial = (
+	address: GlobuleAddress_Band,
+	highlight: AssemblerHighlight = null
+) => {
+	if (highlight) {
+		if (sameGlobuleBand(address, highlight.band)) return materials.assemblerPrimary;
+		if (highlight.ring.some((b) => sameGlobuleBand(address, b)))
+			return materials.assemblerSecondary;
+	}
+	return materials.default;
 };
 
 export const getMaterial = (

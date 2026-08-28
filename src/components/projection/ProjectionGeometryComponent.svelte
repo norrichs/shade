@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { T } from '@threlte/core';
-	import { getMaterial, materials } from '../three-renderer/materials';
+	import { getBandMaterial, getMaterial, materials } from '../three-renderer/materials';
 	import { BufferGeometry, Object3D, Vector3 } from 'three';
 	import {
 		collateGeometry,
@@ -16,6 +16,7 @@
 	import type {
 		Polyhedron,
 		Projection,
+		GlobuleAddress_Band,
 		GlobuleAddress_Facet,
 		Tube
 	} from '$lib/projection-geometry/types';
@@ -40,6 +41,7 @@
 
 	// Stable key for {#each} blocks over facets, derived from the facet's address.
 	const facetKey = (a: GlobuleAddress_Facet) => `${a.globule}-${a.tube}-${a.band}-${a.facet}`;
+	const bandKey = (a: GlobuleAddress_Band) => `${a.globule}-${a.tube}-${a.band}`;
 
 	// Wrap getMaterial so every facet also respects the Assembler cross-view
 	// highlight (a band/ring clicked in the data grid). Reading $assemblerHighlight
@@ -72,7 +74,7 @@
 	} = $state({});
 	let globuleTubeGeometry: {
 		sections?: BufferGeometry;
-		bands?: BufferGeometry[];
+		bands?: { address: GlobuleAddress_Band; geometry: BufferGeometry }[];
 		facets?: { address: GlobuleAddress_Facet; geometry: BufferGeometry }[];
 	} = $state({});
 
@@ -320,8 +322,14 @@
 				raycast={noRaycast}
 			/>
 		{/if}
-		{#each globuleTubeGeometry.bands || [] as band (band.id)}
-			<T.Mesh geometry={band} material={materials.default} raycast={noRaycast} />
+		{#each globuleTubeGeometry.bands || [] as band (bandKey(band.address))}
+			<!-- Addressed band meshes so a band clicked in the Assembler grid highlights
+			     here too, without needing the facet view turned on. -->
+			<T.Mesh
+				geometry={band.geometry}
+				material={getBandMaterial(band.address, $assemblerHighlight)}
+				raycast={noRaycast}
+			/>
 		{/each}
 		{#each globuleTubeGeometry.facets || [] as facet (facetKey(facet.address))}
 			<T.Mesh
