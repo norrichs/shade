@@ -16,20 +16,20 @@ Outcome: one editor system, one PathEditor, and the full right column given over
 
 ## Disposition of the ten fixed-pane editors
 
-| Tab | Current component | Action | Destination |
-|---|---|---|---|
-| Silhouette | `SuperPathEdit` (`SilhouetteConfig`) | **refactor** | `modal/editor/Silhouette.svelte` — Silhouette tab |
-| Depth | `SuperPathEdit` (`DepthCurveConfig`) | **refactor** | `modal/editor/Silhouette.svelte` — Depth tab |
-| Levels | `controls/LevelControl.svelte` | **refactor** | `modal/editor/Silhouette.svelte` — controls row |
-| Shape | `SuperPathEdit` (`ShapeConfig`) | **refactor** | `modal/editor/GlobuleCrossSection.svelte` |
-| Pattern | `controls/TilingControl.svelte` | **refactor** | `modal/editor/PatternView.svelte` |
-| Spine | `SuperPathEdit` (`SpineCurveConfig`) | **disable** | orphaned, unreachable |
-| Struts | `controls/StrutControl.svelte` | **disable** | orphaned, unreachable |
-| Super | `controls/super-control/SuperControl.svelte` | **disable** | orphaned, unreachable |
-| Projection | `projection/ProjectionControl.svelte` | **eliminate** | deleted — superseded by the Polyhedra / Surface / Edge Curve floaters |
-| Cut | `controls/CutControl.svelte` | **eliminate** | deleted — already unreachable (branch commented out) |
+| Tab        | Current component                            | Action        | Destination                                                           |
+| ---------- | -------------------------------------------- | ------------- | --------------------------------------------------------------------- |
+| Silhouette | `SuperPathEdit` (`SilhouetteConfig`)         | **refactor**  | `modal/editor/Silhouette.svelte` — Silhouette tab                     |
+| Depth      | `SuperPathEdit` (`DepthCurveConfig`)         | **refactor**  | `modal/editor/Silhouette.svelte` — Depth tab                          |
+| Levels     | `controls/LevelControl.svelte`               | **refactor**  | `modal/editor/Silhouette.svelte` — controls row                       |
+| Shape      | `SuperPathEdit` (`ShapeConfig`)              | **refactor**  | `modal/editor/GlobuleCrossSection.svelte`                             |
+| Pattern    | `controls/TilingControl.svelte`              | **refactor**  | `modal/editor/PatternView.svelte`                                     |
+| Spine      | `SuperPathEdit` (`SpineCurveConfig`)         | **disable**   | orphaned, unreachable                                                 |
+| Struts     | `controls/StrutControl.svelte`               | **disable**   | orphaned, unreachable                                                 |
+| Super      | `controls/super-control/SuperControl.svelte` | **disable**   | orphaned, unreachable                                                 |
+| Projection | `projection/ProjectionControl.svelte`        | **eliminate** | deleted — superseded by the Polyhedra / Surface / Edge Curve floaters |
+| Cut        | `controls/CutControl.svelte`                 | **eliminate** | deleted — already unreachable (branch commented out)                  |
 
-Confirmed decisions: Levels folds into the Silhouette floater; `PatternView` grows to full `TilingControl` parity rather than splitting; disabled means *unreachable on disk with a header comment*, not a dev flag; unrelated dead code (`path-edit-v2/`, `PathEdit.svelte`, `LevelControlV1`, `ShowControl`) is left alone.
+Confirmed decisions: Levels folds into the Silhouette floater; `PatternView` grows to full `TilingControl` parity rather than splitting; disabled means _unreachable on disk with a header comment_, not a dev flag; unrelated dead code (`path-edit-v2/`, `PathEdit.svelte`, `LevelControlV1`, `ShowControl`) is left alone.
 
 `spineCurveConfig` and `strutConfig` still feed geometry generation (`src/lib/generate-level.ts`, `src/lib/generate-shape.ts`). Disabling their editors leaves them at their `shades-config.ts` defaults — geometry is unaffected.
 
@@ -53,7 +53,7 @@ The two editors disagree on coordinate convention:
 - `SuperPathEdit` renders every point as `-point.y` (math convention, y-up).
 - `CurveDefPath` / `DraggablePoint` render raw `point.y` (SVG convention, y-down).
 
-They read the *same* `BezierConfig` data, so the existing floating Silhouette editor should be displaying the profile vertically mirrored relative to the fixed pane. **Open both at `/designer2` and compare before writing any code** — the answer decides the approach:
+They read the _same_ `BezierConfig` data, so the existing floating Silhouette editor should be displaying the profile vertically mirrored relative to the fixed pane. **Open both at `/designer2` and compare before writing any code** — the answer decides the approach:
 
 - If the floating version looks wrong, add an opt-in `flipY?: boolean` (default `false`, so `CrossSection`/`EdgeCurve` are untouched): wrap the `<svg>` contents in `<g transform="scale(1,-1)">` and negate y on the way in and out of `handleDrag` and `DraggablePoint` positioning. `Silhouette` and `GlobuleCrossSection` opt in.
 - If y-down reads fine, keep it and work natively y-down.
@@ -133,18 +133,18 @@ Fix a latent bug while here: `cloneCurveDef` inside `applyLimits` shallow-clones
 
 Jest is node-env against Svelte's server builds, so nothing can be mounted — pure functions must live in `.ts` to be covered at all.
 
-| Module | Contents | Ported from |
-|---|---|---|
-| `modal/editor/path-editor.ts` (extend) | the three limit functions above, plus `addCurve` / `splitCurves` / `removeCurve` / `togglePointType` | `path-edit/path-edit.ts:120–232` |
-| `modal/editor/curve-preview.ts` (new) | `pathFromCurves`, `fillPathToAxis`, `mirrorCurvesAcrossY`, `reverseReflectCurves`, `rotateCurvesAroundOrigin`, `radializeCurves` | `SuperPathEdit.svelte:188–265` (inline `const`s today) |
-| `modal/editor/path-editor-ui-store.ts` (new) | `pathEditorUiStore` — per-`editorId` `{ showPointInputs, pointInputMode }` | new |
+| Module                                       | Contents                                                                                                                         | Ported from                                            |
+| -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| `modal/editor/path-editor.ts` (extend)       | the three limit functions above, plus `addCurve` / `splitCurves` / `removeCurve` / `togglePointType`                             | `path-edit/path-edit.ts:120–232`                       |
+| `modal/editor/curve-preview.ts` (new)        | `pathFromCurves`, `fillPathToAxis`, `mirrorCurvesAcrossY`, `reverseReflectCurves`, `rotateCurvesAroundOrigin`, `radializeCurves` | `SuperPathEdit.svelte:188–265` (inline `const`s today) |
+| `modal/editor/path-editor-ui-store.ts` (new) | `pathEditorUiStore` — per-`editorId` `{ showPointInputs, pointInputMode }`                                                       | new                                                    |
 
 Adapt, don't import: `src/components/path-edit/` stays untouched on disk, so copy the logic across. Deliberate corrections to make during the port:
 
 - `addCurve` gains a **`step`** parameter. Legacy hardcodes `+5 / +10 / +20`, which is off-screen by ~20× in a `0..1` viewBox.
 - `removeCurve` gains a `minCurves` floor. Legacy `pop()`s to zero, after which `CurveDefPath.getPathString`'s `curveDef[0].points[0]` throws.
 - `togglePointType` returns a new `curveDef` instead of mutating and firing a callback. Keep the legacy guards: no-op on handles (`pointIndex` 1 or 2) and on the two outer terminal anchors; set the type on **both** sides of a joint.
-- `rotateCurvesAroundOrigin` uses `Math.atan(y / x)`, which collapses quadrants II/III and divides by zero on the y-axis. Use `Math.atan2`. Radial Shape previews will then look *different from* — and more correct than — the legacy panel for any point with `x < 0`. Expect it; don't chase it as a regression.
+- `rotateCurvesAroundOrigin` uses `Math.atan(y / x)`, which collapses quadrants II/III and divides by zero on the y-axis. Use `Math.atan2`. Radial Shape previews will then look _different from_ — and more correct than — the legacy panel for any point with `x < 0`. Expect it; don't chase it as a regression.
 - `mirrorSmoothHandles` must guard zero-length handles (handle dropped exactly on its anchor). Legacy's `Math.acos(...)` yields `NaN` there and the entire path vanishes. Use `atan2` and leave the partner untouched at zero length.
 - The preview helpers call `$state.snapshot()`, unavailable in a plain `.ts` — use a structured deep clone, and let callers snapshot if they need to.
 
@@ -154,12 +154,12 @@ Add specs under `src/components/modal/editor/__tests__/`, alongside the existing
 
 ### New and modified sub-components
 
-| Path | Status | Notes |
-|---|---|---|
-| `modal/editor/CurveToolbar.svelte` | new | `+` / `sp` / `-`, gated by `showCurveTools`. Follow `tile-editor/UnitToolbar.svelte`'s `.toolbar` idiom, not legacy's green circles. Renders in the existing `.controls` div next to the `manualUpdate` button. |
-| `modal/editor/PointInput.svelte` | new | Adapted from `path-edit/PathEditInput.svelte`. Position with **`DraggablePoint`'s** formula, not legacy's `point.x - canv.minX`. Emits absolute model coords routed through the same `handleDrag`, so typed and dragged edits get identical limits. Drop legacy's `bind:point` — it mutates config behind `onChangeCurveDef`'s back. |
-| `modal/editor/PointInputs.svelte` | new | The panel: toggle row plus `inline` (over-canvas) and `outrigger` (side column) layouts. |
-| `modal/editor/DraggablePoint.svelte` | modify | Add `pointType` and an `ondblclick` hook; `class:angled` / `class:smooth` so the toggle is visible. **Leave the `use:asDraggable` block byte-identical.** |
+| Path                                 | Status | Notes                                                                                                                                                                                                                                                                                                                                |
+| ------------------------------------ | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `modal/editor/CurveToolbar.svelte`   | new    | `+` / `sp` / `-`, gated by `showCurveTools`. Follow `tile-editor/UnitToolbar.svelte`'s `.toolbar` idiom, not legacy's green circles. Renders in the existing `.controls` div next to the `manualUpdate` button.                                                                                                                      |
+| `modal/editor/PointInput.svelte`     | new    | Adapted from `path-edit/PathEditInput.svelte`. Position with **`DraggablePoint`'s** formula, not legacy's `point.x - canv.minX`. Emits absolute model coords routed through the same `handleDrag`, so typed and dragged edits get identical limits. Drop legacy's `bind:point` — it mutates config behind `onChangeCurveDef`'s back. |
+| `modal/editor/PointInputs.svelte`    | new    | The panel: toggle row plus `inline` (over-canvas) and `outrigger` (side column) layouts.                                                                                                                                                                                                                                             |
+| `modal/editor/DraggablePoint.svelte` | modify | Add `pointType` and an `ondblclick` hook; `class:angled` / `class:smooth` so the toggle is visible. **Leave the `use:asDraggable` block byte-identical.**                                                                                                                                                                            |
 
 **Double-click vs. drag.** The two already coexist on the same element in legacy (`SuperPathEdit.svelte:449–464`), so the pattern is proven — but a double-click still fires two full drag cycles, which can emit a spurious `onChangeCurveDef` between clicks. Mitigate by early-returning from `handleDrag` when the scaled point equals the current point (epsilon compare), and by having the double-click handler build from the current `curveDef` and commit through `onChangeCurveDef`. Do **not** add `preventDefault`, `pointerdown` handlers, or a click-count timer to `DraggablePoint` — that is exactly where "delicate" bites.
 
@@ -226,11 +226,9 @@ Remove, having confirmed no remaining importers:
 
 Confirm importer counts with `grep -rln` before each deletion, then `npm run check`.
 
-
-
 ## Verification
 
-No component test infrastructure exists — Jest runs `testEnvironment: 'node'` against Svelte's *server* builds, so nothing can be mounted. Verification is therefore:
+No component test infrastructure exists — Jest runs `testEnvironment: 'node'` against Svelte's _server_ builds, so nothing can be mounted. Verification is therefore:
 
 1. **`npm run check`** — must stay clean. This is the main automated guard, and it catches the broken-import failure modes of Phases 3–4 (it type-checks every file, including ones no route imports).
 2. **`npm run test:unit`** — must stay green; any logic extracted into `.ts` during the PathEditor work gets Jest coverage there.
@@ -243,3 +241,51 @@ No component test infrastructure exists — Jest runs `testEnvironment: 'node'` 
 - Restyling or componentizing the shared control primitives (no new Checkbox/Slider/Tabs design-system components beyond what these editors need).
 - Touching the `/assembler` route, `NavHeader`, the 3D renderer, or the pattern generation pipeline.
 - Unrelated dead code: `src/components/path-edit-v2/`, `path-edit/PathEdit.svelte`, `controls/LevelControlV1.svelte`, `controls/ShowControl.svelte`, `controls/AllControls.svelte`.
+
+---
+
+## Implementation notes (Phase 1 complete)
+
+Recorded after building Phase 1, where reality differed from the plan.
+
+**The y-axis question resolved to "the floater was wrong".** The two editors
+rendered exact y-negations of the same config. `generate-level.ts:359` maps
+`z: silhouetteValue.y`, so larger y means a taller model, and the legacy y-up
+rendering was correct — the floating editor drew every profile upside down and
+dragging a point up made the model shorter (measured: stored y went 65 → 5;
+with `flipY`, 65 → 125). `flipY` is now on for Silhouette, Depth and Shape.
+
+**`npm run check` was not a usable gate as written.** It reported 1886
+pre-existing errors, because SvelteKit's generated tsconfig pins
+`"types": ["node"]` and every `describe`/`it`/`expect` in the suite was
+therefore undeclared. `tsconfig.json` now adds `jest`, which drops the count to
+**434 — the clean baseline.** The regression signal is a change in that total,
+not its absence.
+
+**In-place config mutation does not reach a `$derived` chain.** The idiom used
+across the app (mutate the config, re-set the same object) survives only because
+`writable.set` notifies unconditionally. A panel reading
+`$superConfigStore → subGlobuleConfigs[i] → globuleConfig → levelConfig` goes
+stale, because `$derived` stops propagating at a step that returns the reference
+it returned last time. The refactored floaters rebuild references down the
+edited path instead. This also fixed the pre-existing bug where the Silhouette
+floater's path did not redraw during a drag.
+
+**`radialEndLock` was less painful than budgeted**, because `pointOnRay` isolates
+the convention and the shape regeneration path (below) covers the common case.
+
+**Shape symmetry changes regenerate the config**, matching the legacy panel — a
+curve spanning one wedge cannot survive a change of wedge angle. Unlike the
+legacy version, the user's sampling is preserved rather than reset to
+`divideCurve/4`.
+
+**`effect_update_depth_exceeded` in `GlobuleMesh.svelte` is pre-existing** and
+reproduces identically on the base commit when clicking through the fixed pane's
+tabs. It originates in the legacy pane, so Phase 3 should remove it. Verified by
+running the same probe against a worktree at `e74fafd`.
+
+### Phase 2 gate
+
+Phases 3 and 4 delete the fixed pane, which is the reference implementation for
+the parity comparison. They are deliberately **not** started: the visual pass
+belongs to Ben, with both systems still on screen at `/designer2`.
