@@ -58,6 +58,7 @@ import type {
 	Tube,
 	VerticesConfig
 } from './types';
+import { isTubeClosed } from './tube-closure';
 import { materials } from '../../components/three-renderer/materials';
 import { getLength } from '$lib/patterns/utils';
 import {
@@ -881,6 +882,103 @@ const matchFacets = (tubes: Tube[]) => {
 					throw error;
 				}
 			});
+		});
+	});
+};
+
+/**
+ * Assign partner meta for a STANDALONE globule tube.
+ *
+ * A sibling of `matchFacets`/`getFacetEdgeMeta` rather than a reuse of them,
+ * for two structural reasons:
+ *   1. `getFacetEdgeMeta` throws unless a first/last facet already carries end
+ *      meta seeded by `matchTubeEnds` from a NEIGHBOURING tube. A standalone
+ *      globule tube has no neighbour and two genuinely open ends.
+ *   2. `getFacetEdgeMeta` wraps the outer partner unconditionally through
+ *      `% bandCount`, claiming a partner even on a genuinely free edge. Here
+ *      the wrap is CONDITIONAL on the profile actually closing.
+ *
+ * An absent key means "this edge borders open space" — `bandHasFreeSide` reads
+ * it that way, which is what keeps a free edge solid in cut output.
+ */
+export const matchGlobuleTubeFacets = (tube: Tube): void => {
+	const closed = isTubeClosed(tube.sections);
+	const bandCount = tube.bands.length;
+
+	tube.bands.forEach((band, b) => {
+		const facetCount = band.facets.length;
+
+		band.facets.forEach((facet, f) => {
+			if (facet.isDegenerate) return; // synthetic fill facet — never partner-matched
+			const address = facet.address;
+			if (!address) return;
+
+			const { orientation } = facet;
+			const base = getEdge('base', f, orientation);
+			const second = getEdge('second', f, orientation);
+			const outer = getEdge('outer', f, orientation);
+
+			const meta: NonNullable<Facet['meta']> = {};
+
+			// Along the band. The tube's two ends are open — no partner there.
+			if (f > 0) {
+				meta[base] = { partner: { ...address, facet: f - 1, edge: base } };
+			}
+			if (f < facetCount - 1) {
+				meta[second] = { partner: { ...address, facet: f + 1, edge: second } };
+			}
+
+			// Across to the neighbouring band. Same offset arithmetic as
+			// `getFacetEdgeMeta`, but the wrap is conditional.
+			const isEven = f % 2 === 0;
+			const bandOffset = (orientation === 'axial-left' ? -1 : 1) * (isEven ? -1 : 1);
+			const rawPartnerBand = b + bandOffset;
+			const wraps = rawPartnerBand < 0 || rawPartnerBand >= bandCount;
+
+			if (!wraps || closed) {
+				const partnerBand = ((rawPartnerBand % bandCount) + bandCount) % bandCount;
+				const partnerBandOrientation = tube.bands[partnerBand].orientation;
+				const facetOffset = (isEven ? 1 : -1) * (partnerBandOrientation === orientation ? 1 : 0);
+				const pOuter = getEdge('outer', f, partnerBandOrientation);
+				meta[outer] = {
+					partner: {
+						...address,
+						band: partnerBand,
+						facet: f + facetOffset,
+						edge: pOuter
+					}
+				};
+			}
+
+			facet.meta = meta;
+		});
+	});
+};
+
+/**
+ * `generateGlobuleTube` filters bands through `getRenderable` AFTER meta is
+ * assigned over the full generated set. A band on the boundary of that rendered
+ * subset has a partner that is not being cut, so its outer edge is physically
+ * free — drop those partners so the edge stays solid.
+ *
+ * Fails in the safe direction: a pruned partner means "do not drop", never
+ * "punch holes in a free edge".
+ */
+export const pruneOuterPartnersOutsideSet = (renderedBands: Band[]): void => {
+	const surviving = new Set<number>();
+	renderedBands.forEach((band) => {
+		const b = band.facets[0]?.address?.band;
+		if (b !== undefined) surviving.add(b);
+	});
+
+	renderedBands.forEach((band) => {
+		band.facets.forEach((facet, f) => {
+			if (!facet.meta) return;
+			const outer = getEdge('outer', f, facet.orientation);
+			const partner = facet.meta[outer]?.partner;
+			if (partner && !surviving.has(partner.band)) {
+				delete facet.meta[outer];
+			}
 		});
 	});
 };
