@@ -956,13 +956,20 @@ export const getBandTrianglePoints = (orientation: FacetOrientation) => {
 	];
 };
 
+/**
+ * `getFacetEdgeMeta` populates all three edges and throws if any is missing, so
+ * it works with a strict shape internally. `Facet['meta']`'s keys are optional
+ * because OTHER producers (globule tubes) legitimately omit edges.
+ */
+type StrictFacetMeta = { ab: FacetEdgeMeta; bc: FacetEdgeMeta; ac: FacetEdgeMeta };
+
 const getFacetEdgeMeta = (address: GlobuleAddress_Facet, tubes: Tube[]): Facet['meta'] => {
 	const tube = tubes[address.tube];
 	const bandCount = tube.bands.length;
 	const band = tube.bands[address.band];
 	const facetCount = band.facets.length;
 
-	const edgeMeta = { ab: {}, bc: {}, ac: {} } as Facet['meta'];
+	const edgeMeta = { ab: {}, bc: {}, ac: {} } as StrictFacetMeta;
 	if (!edgeMeta) throw Error('stupid error');
 
 	const f = address.facet;
@@ -1098,7 +1105,6 @@ const matchTubeEnds = (tubes: Tube[]) => {
 					newMeta[edge] = {
 						partner: { ...partner.address, edge: partnerEdge }
 					};
-					// @ts-expect-error: meta property may be missing or have an incompatible type, but we want to assign it here
 					firstFacet.meta = firstFacet.meta ? { ...firstFacet.meta, ...newMeta } : newMeta;
 				} catch (error) {
 					console.error(`matchTubeEnds failed for firstFacet at tube:${t}, band:${b}`, error);
@@ -1122,7 +1128,6 @@ const matchTubeEnds = (tubes: Tube[]) => {
 					newMeta[edge] = {
 						partner: { ...partner.address, edge: partnerEdge }
 					};
-					// @ts-expect-error: meta property may be missing or have an incompatible type, but we want to assign it here
 					lastFacet.meta = lastFacet.meta ? { ...lastFacet.meta, ...newMeta } : newMeta;
 				} catch (error) {
 					console.error(`matchTubeEnds failed for lastFacet at tube:${t}, band:${b}`, error);
@@ -1431,12 +1436,10 @@ const matchSurfaceProjectionCrossBandPartners = (tubes: Tube[]) => {
 						if (match) {
 							const newMetaA: { [key: string]: FacetEdgeMeta } = {};
 							newMetaA[match.t0] = { partner: { ...facetB.address, edge: match.t1 } };
-							// @ts-expect-error: partial meta assignment
 							facetA.meta = facetA.meta ? { ...facetA.meta, ...newMetaA } : newMetaA;
 
 							const newMetaB: { [key: string]: FacetEdgeMeta } = {};
 							newMetaB[match.t1] = { partner: { ...facetA.address, edge: match.t0 } };
-							// @ts-expect-error: partial meta assignment
 							facetB.meta = facetB.meta ? { ...facetB.meta, ...newMetaB } : newMetaB;
 						}
 					}
@@ -1459,7 +1462,7 @@ const matchSurfaceProjectionSequentialPartners = (tubes: Tube[]) => {
 				if (facet.isDegenerate) return;
 				if (!facet.address) return;
 
-				const edgeMeta = { ab: {}, bc: {}, ac: {} } as NonNullable<Facet['meta']>;
+				const edgeMeta = { ab: {}, bc: {}, ac: {} } as StrictFacetMeta;
 
 				// Preserve pre-populated meta from cross-band and tube-end matching
 				for (const edge of ['ab', 'bc', 'ac'] as const) {
@@ -1534,12 +1537,10 @@ const matchSurfaceProjectionTubeEnds = (tubes: Tube[]) => {
 			if (match) {
 				const newMetaA: { [key: string]: FacetEdgeMeta } = {};
 				newMetaA[match.t0] = { partner: { ...b.facet.address, edge: match.t1 } };
-				// @ts-expect-error: partial meta assignment
 				a.facet.meta = a.facet.meta ? { ...a.facet.meta, ...newMetaA } : newMetaA;
 
 				const newMetaB: { [key: string]: FacetEdgeMeta } = {};
 				newMetaB[match.t1] = { partner: { ...a.facet.address, edge: match.t0 } };
-				// @ts-expect-error: partial meta assignment
 				b.facet.meta = b.facet.meta ? { ...b.facet.meta, ...newMetaB } : newMetaB;
 			}
 		}

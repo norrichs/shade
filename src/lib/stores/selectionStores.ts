@@ -17,6 +17,7 @@ import {
 import type {
 	GlobuleAddress_Band,
 	GlobuleAddress_Facet,
+	GlobuleAddress_FacetEdge,
 	GlobuleAddress_Tube,
 	Tube
 } from '$lib/projection-geometry/types';
@@ -203,10 +204,10 @@ const getPartnerFacets = (facets: Facet[], sg: SuperGlobule, mode: SelectionMode
 	facets.forEach((facet, facetIndex) => {
 		if (facet.meta) {
 			const partnerAddresses = [
-				facet.meta.ab.partner,
-				facet.meta.ac.partner,
-				facet.meta.bc.partner
-			];
+				facet.meta.ab?.partner,
+				facet.meta.ac?.partner,
+				facet.meta.bc?.partner
+			].filter((a): a is GlobuleAddress_FacetEdge => !!a);
 			partnerAddresses.forEach((a) => {
 				let receiver;
 				if (a.tube !== facet.address?.tube && facetIndex === 0) {

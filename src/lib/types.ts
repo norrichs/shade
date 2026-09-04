@@ -810,10 +810,16 @@ export type Facet = {
 	// firstFacet: { [key: string]: FacetEdgeMeta };
 	triangle: ThreeTriangle;
 	address?: GlobuleAddress_Facet;
+	/**
+	 * Partner data per triangle edge. A key is ABSENT when that edge has no
+	 * partner — the open end of a tube, or the free outer edge of an open
+	 * profile's last band. Absence is meaningful: `bandHasFreeSide` reads it as
+	 * "this edge borders open space", which keeps the edge solid in cut output.
+	 */
 	meta?: {
-		ab: FacetEdgeMeta;
-		bc: FacetEdgeMeta;
-		ac: FacetEdgeMeta;
+		ab?: FacetEdgeMeta;
+		bc?: FacetEdgeMeta;
+		ac?: FacetEdgeMeta;
 	};
 	orientation: FacetOrientation;
 	tab?: FacetTab; // | FacetTab[];
