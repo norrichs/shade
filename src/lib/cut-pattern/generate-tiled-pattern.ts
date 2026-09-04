@@ -176,16 +176,10 @@ const anchorPointOnQuadEdge = (
 	quad: Quadrilateral,
 	quadEdge: NonNullable<TagAnchor['quadEdge']>
 ): Point => {
-	const [fromKey, toKey] = quadEdge.edge.split('') as [
-		keyof Quadrilateral,
-		keyof Quadrilateral
-	];
+	const [fromKey, toKey] = quadEdge.edge.split('') as [keyof Quadrilateral, keyof Quadrilateral];
 	const from = quad[fromKey];
 	const to = quad[toKey];
-	const t =
-		quadEdge.position === 'midPoint'
-			? 0.5
-			: Math.max(0, Math.min(1, quadEdge.position));
+	const t = quadEdge.position === 'midPoint' ? 0.5 : Math.max(0, Math.min(1, quadEdge.position));
 	return {
 		x: from.x + (to.x - from.x) * t,
 		y: from.y + (to.y - from.y) * t
@@ -229,8 +223,15 @@ export const generateTiling = ({
 		// band has at least one facet whose outer (side) edge has no partner. (Band 0 is
 		// also an edge band, but its free side is x=0, which is already finished by the
 		// start/end verticals — the mirror only completes the w6 side.)
-		const finishOuterEdge =
-			bandIndex + bandIndexOffset === bandCount - 1 && bandHasFreeSide(bands[bandIndex]);
+		// `bands` is absent on the `generateTiledBandPattern` call path; treat a
+		// missing band as having a free side (no outer partner) rather than throwing.
+		const sourceBand = bands?.[bandIndex];
+		const hasFreeSide = sourceBand ? bandHasFreeSide(sourceBand) : true;
+		const finishOuterEdge = bandIndex + bandIndexOffset === bandCount - 1 && hasFreeSide;
+		const bandContext = {
+			hasOuterPartner: !hasFreeSide,
+			bandIndex: bandIndex + bandIndexOffset
+		};
 
 		let mappedPatternBand: PathSegment[][] | PathSegment[];
 		if (tiledPatternConfig.tiling === 'quadrilateral') {
@@ -270,7 +271,8 @@ export const generateTiling = ({
 				mappedPatternBand,
 				quadBand,
 				tiledPatternConfig,
-				finishOuterEdge
+				finishOuterEdge,
+				bandContext
 			);
 		} else {
 			adjustedPatternBand = mappedPatternBand;
@@ -334,8 +336,7 @@ export const generateTiling = ({
 					tagAnchorPoint.y = mapped.y;
 					tagAnchorQuad = quad;
 				} else if (tagAnchor.segmentIndex !== undefined) {
-					const facetPathSegment =
-						facet[(facet.length + tagAnchor.segmentIndex) % facet.length];
+					const facetPathSegment = facet[(facet.length + tagAnchor.segmentIndex) % facet.length];
 					if (Array.isArray(facetPathSegment) && facetPathSegment.length >= 2) {
 						tagAnchorPoint.x = facetPathSegment[1] || 0;
 						tagAnchorPoint.y = facetPathSegment[2] || 0;

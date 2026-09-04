@@ -106,8 +106,10 @@ export const patterns: { [key: string]: PatternGenerator } = {
 		adjustAfterMapping: (
 			patternBand: PathSegment[][],
 			quadBand: Quadrilateral[],
-			tiledPatternConfig: TiledPatternConfig
-		) => adjustGridPatternAfterMapping(patternBand, quadBand, tiledPatternConfig)
+			tiledPatternConfig: TiledPatternConfig,
+			_finishOuterEdge?: boolean,
+			bandContext?: { hasOuterPartner: boolean; bandIndex: number }
+		) => adjustGridPatternAfterMapping(patternBand, quadBand, tiledPatternConfig, bandContext)
 	},
 	'tiledPanelPattern-0': {
 		getPattern: (

@@ -148,7 +148,8 @@ export type UnitPatternGenerator = {
 		patternBand: PathSegment[][],
 		quadBand: Quadrilateral[],
 		tiledPatternConfig: TiledPatternConfig,
-		finishOuterEdge?: boolean
+		finishOuterEdge?: boolean,
+		bandContext?: { hasOuterPartner: boolean; bandIndex: number }
 	) => PathSegment[][];
 	adjustAfterTiling?: any;
 };
@@ -676,6 +677,13 @@ export type TiledPatternConfig = {
 		endsTrimmed: boolean;
 		endLooped: number;
 		variant?: GridVariant;
+		/**
+		 * Grid pattern only. When true, bands whose outer long edge borders another
+		 * band drop a regular subset of their outer-edge verticals, so the seam
+		 * between adjacent bands is not drawn twice. See
+		 * `adjustGridPatternAfterMapping`.
+		 */
+		dropEdgeSegments?: boolean;
 		aspectRatio?: number;
 		skipEdges?: SkipEdges;
 		distributePanels?: boolean;
