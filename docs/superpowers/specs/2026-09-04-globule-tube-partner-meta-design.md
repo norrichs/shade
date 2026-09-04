@@ -37,6 +37,23 @@ Also NOT in scope: fixing `getFacetEdgeMeta`'s unconditional wrap, or the dead
 `finishOuterEdge` condition that follows from it. Both are recorded in the previous
 spec.
 
+### Open question: Outlined-pattern tabs on globule tubes
+
+Not decided; flagged for the owner, not treated as a defect or a feature here.
+
+`bandHasPartners` (`src/lib/cut-pattern/generate-outlined-pattern.ts:337-346`) decides
+whether a band gets seam tabs in the Outlined pattern type. Before this change, every
+globule-tube facet had `meta === undefined`, so `bandHasPartners` always returned
+false for them, and Outlined-pattern globules never got seam tabs regardless of
+config. Now that closed globule tubes carry real `ac`/outer partners on interior
+seams, and `defaultOutlinedPatternConfig()` (`src/lib/shades-config.ts`) ships with
+`tabConfig.bandEdge: 'after'`, those seams will get tabs where they previously did
+not. This changes actual cut geometry for the Outlined pattern type on globules.
+
+Whether that is a correctness improvement — tabs appearing where the topology
+genuinely warrants them — or an unwanted change to existing output is unverified and
+left to the owner to judge visually.
+
 ## Topology
 
 `generateProjectionBands`' axial branch builds one band per `f` in

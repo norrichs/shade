@@ -47,9 +47,10 @@ import { getBandTriangleEdges } from '$lib/projection-geometry/generate-projecti
  * band indices, with no check that the wrap is topologically real. So a `false`
  * result here does not prove the edge is genuinely shared — on a genuinely open
  * (non-wrapping) surface projection, the outermost band's free outer edge can
- * still report a partner. Separately, facets with no `meta` at all (e.g. globule
- * tubes, whose generation path never calls `matchFacets`) fall through the `?.`
- * chain and make this function return `true` unconditionally.
+ * still report a partner. Globule tube facets now carry real partner meta too —
+ * assigned by `matchGlobuleTubeFacets` (generate-projection.ts), invoked from
+ * `generateGlobuleTube` (generate-shape.ts) — so they go through the same `?.`
+ * chain as projection facets above rather than falling through it.
  */
 const bandHasFreeSide = (band: Band): boolean => {
 	const [evenEdges, oddEdges] = getBandTriangleEdges(band.orientation);

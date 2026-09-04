@@ -974,7 +974,11 @@ export const pruneOuterPartnersOutsideSet = (renderedBands: Band[]): void => {
 	renderedBands.forEach((band) => {
 		band.facets.forEach((facet, f) => {
 			if (!facet.meta) return;
-			const outer = getEdge('outer', f, facet.orientation);
+			// Use the facet's own recorded index rather than the loop index `f`:
+			// `f` is the post-`getRenderable`-slicing position, which is not
+			// necessarily the index the meta's parity was assigned under.
+			const parityIndex = facet.address?.facet ?? f;
+			const outer = getEdge('outer', parityIndex, facet.orientation);
 			const partner = facet.meta[outer]?.partner;
 			if (partner && !surviving.has(partner.band)) {
 				delete facet.meta[outer];
