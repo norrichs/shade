@@ -46,12 +46,12 @@ k = quadIndex * rows + r        // r is the row index within the quad
 
 Worked cases:
 
-| rows × columns | global `k` per quad | dropped |
-| --- | --- | --- |
-| 1 × 1, 6 quads | q0:0, q1:1, q2:2, … | k = 1, 3 (k = 5 exempt) → every other quad, never the last |
-| 1 × 2 | same | same `k`, segment sits in the last column only |
-| 2 × 2 | q0: 0,1 — q1: 2,3 | k = 1, 3 → one per quad, never a quad's first row |
-| 3 × 2 | q0: 0,1,2 — q1: 3,4,5 | k = 1 (2nd row of q0), then 3 and 5 (1st and 3rd rows of q1) |
+| rows × columns | global `k` per quad   | dropped                                                      |
+| -------------- | --------------------- | ------------------------------------------------------------ |
+| 1 × 1, 6 quads | q0:0, q1:1, q2:2, …   | k = 1, 3 (k = 5 exempt) → every other quad, never the last   |
+| 1 × 2          | same                  | same `k`, segment sits in the last column only               |
+| 2 × 2          | q0: 0,1 — q1: 2,3     | k = 1, 3 → one per quad, never a quad's first row            |
+| 3 × 2          | q0: 0,1,2 — q1: 3,4,5 | k = 1 (2nd row of q0), then 3 and 5 (1st and 3rd rows of q1) |
 
 Each band computes its own `k` sequence from its own quad 0. Drops are **not**
 phase-aligned across bands; no cross-band coordination is attempted.
@@ -69,8 +69,16 @@ hasOuterPartner = !bandHasFreeSide(band)
 Consequences, all of which fall out of the definition rather than needing
 special cases:
 
-- **Truly tubular tubes** (globule tubes, individual projection tubes) wrap
-  around, so every band has an outer partner → every band is treated.
+- **Individual projection tubes** (populated via `matchTubeEnds`/`matchFacets`
+  in `generate-projection.ts`) wrap around, so every band has an outer partner
+  → every band is treated.
+- **Globule tubes are not treated.** `generateGlobuleTube`
+  (`generate-shape.ts`) calls `generateProjectionBands` directly and never
+  calls `matchTubeEnds`/`matchFacets`, so its facets' `meta` is never
+  populated. `bandHasFreeSide` reads `facet.meta?.[outerEdge]?.partner`, which
+  is `undefined` for every facet on this path, so it always returns `true` and
+  `hasOuterPartner` is always `false`. The feature is inert on plain globule
+  cut patterns.
 - **Non-tubular tubes** (surface projection, surface voronoi): the last band's
   outer side borders open space → it is not treated.
 - **"The lower-index band drops"** is automatic. A band only ever drops on its
@@ -80,10 +88,30 @@ special cases:
   matters.
 
 One deliberate consequence: in a tubular tube the last band's outer partner is
-band 0 — a *lower* index. The outer-side rule still applies there, so the last
+band 0 — a _lower_ index. The outer-side rule still applies there, so the last
 band drops on that seam. This is what "each band gets this treatment" for
 tubular geometry requires, and it takes precedence over a literal reading of
 "the band with lower index drops".
+
+### Real reach and a known false-positive mode
+
+Summarizing the above for a future reader: the feature is active on multi-tube
+projection geometry (every band there has real outer-partner meta), and inert
+on plain globule tubes (no `meta` at all, per the consequence above) and on
+voronoi-surface bands whose outer edge is genuinely free — the latter is
+correct by design, not a gap.
+
+There is one known false positive. `hasOuterPartner` comes from
+`bandHasFreeSide`, which reads `facet.meta[...].partner` as set by
+`getFacetEdgeMeta` (`generate-projection.ts`). That function sets `.partner`
+unconditionally in all three of its branches via a plain modulo wrap over band
+indices (`(b + bandOffset + bandCount) % bandCount`), with no check that the
+wrap is topologically real. So on a genuinely open (non-wrapping) surface
+projection, the outermost band's free outer edge can still report a partner,
+and turning this feature on there will drop segments on an edge that should
+stay solid — the opposite of the intent. By contrast, the voronoi path
+(`generate-voronoi.ts`) only sets `.partner` on a real match, so "no partner"
+there is trustworthy.
 
 ## Design
 
@@ -111,8 +139,9 @@ generateGridPatternWithMeta(props): {
 
 The indices are recorded inside the same loop that pushes the segments — as
 offsets into the middle group, resolved to absolute indices (`startSegments.length
-+ offset`) at concatenation. A single pass is the whole point: a second function
-that re-derives the layout would drift from the generator.
+
+- offset`) at concatenation. A single pass is the whole point: a second function
+  that re-derives the layout would drift from the generator.
 
 `generateGridPattern` becomes a thin wrapper returning `.path`, so every existing
 caller is unaffected.

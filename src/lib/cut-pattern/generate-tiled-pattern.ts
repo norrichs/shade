@@ -41,6 +41,15 @@ import { getBandTriangleEdges } from '$lib/projection-geometry/generate-projecti
  * adjacent band. Tubular tubes wrap around, so every band has partners on both
  * sides; surface-projection tubes are open, so their outermost bands have a free
  * side. Read straight from the 3D facet `meta` graph.
+ *
+ * Caveat: for projection geometry, `getFacetEdgeMeta` (generate-projection.ts)
+ * sets the outer edge's `.partner` unconditionally via a plain modulo wrap over
+ * band indices, with no check that the wrap is topologically real. So a `false`
+ * result here does not prove the edge is genuinely shared — on a genuinely open
+ * (non-wrapping) surface projection, the outermost band's free outer edge can
+ * still report a partner. Separately, facets with no `meta` at all (e.g. globule
+ * tubes, whose generation path never calls `matchFacets`) fall through the `?.`
+ * chain and make this function return `true` unconditionally.
  */
 const bandHasFreeSide = (band: Band): boolean => {
 	const [evenEdges, oddEdges] = getBandTriangleEdges(band.orientation);
