@@ -56,15 +56,30 @@ section's point list ends where it began:
 Globule cross-sections usually close but not always, so closure must be detected,
 never assumed.
 
-**Closure test — spatial proximity, not identity:**
+**Closure test — spatial proximity, not identity.** Use a tolerance _relative to the
+section's own point spacing_, not a fixed absolute epsilon: globule coordinates are in
+model units, and a fixed epsilon would misjudge very large or very small globules. A
+section closes when the gap between its endpoints is negligible against the distance
+between neighbouring points:
 
 ```
-sections.every(s => s.points[0].distanceTo(s.points[s.points.length - 1]) < EPSILON)
+closingGap    = points[0].distanceTo(points[points.length - 1])
+meanSpacing   = mean over i of points[i].distanceTo(points[i + 1])
+sectionCloses = closingGap < meanSpacing * CLOSURE_RATIO      // CLOSURE_RATIO = 0.01
 ```
 
-Every section must close; if they disagree, treat the tube as open. This is
-deliberately conservative. Failing to drop segments is a cosmetic miss; punching
-holes in an edge that should be solid ruins a cut.
+This is decisive because the two cases are far apart, not marginal: a closed profile
+carries a duplicate closing point, so the gap is ~0, while an open one leaves a wedge
+on the order of a full point spacing. Anything near the threshold is malformed input,
+and the conservative branch handles it.
+
+The tube is closed only when **every** section closes; if they disagree, treat the
+tube as open. Failing to drop segments is a cosmetic miss; punching holes in an edge
+that should be solid ruins a cut.
+
+Do not reuse `FILL_DEGENERATE_EPSILON` (`src/lib/projection-geometry/fill-bands.ts:6`,
+`1e-6`) — that is an absolute threshold for zero-length edges, a different question
+from whether a profile closes.
 
 This mirrors how `bandHasFreeSide` already works — read topology from the geometry,
 not from config. There is no `closed`/`sweep` flag on `ShapeConfig` or `LevelConfig`
@@ -98,11 +113,23 @@ For each band `b` and each non-degenerate facet `f` (skip `facet.isDegenerate`
 exactly as `matchFacets` does), using
 `getEdge('base' | 'second' | 'outer', f, band.orientation)`:
 
-| Edge     | Partner                                                                        | Omitted when                                                   |
-| -------- | ------------------------------------------------------------------------------ | -------------------------------------------------------------- |
-| `base`   | facet `f - 1`, same band                                                       | `f === 0` — the tube's open start end                          |
-| `second` | facet `f + 1`, same band                                                       | `f === facetCount - 1` — the open end end                      |
-| `outer`  | the adjacent band, by the same `bandOffset` arithmetic `getFacetEdgeMeta` uses | the step would wrap past the last band AND the profile is open |
+| Edge     | Partner                  | Omitted when                                                         |
+| -------- | ------------------------ | -------------------------------------------------------------------- |
+| `base`   | facet `f - 1`, same band | `f === 0` — the tube's open start end                                |
+| `second` | facet `f + 1`, same band | `f === facetCount - 1` — the open end end                            |
+| `outer`  | band `b + bandOffset`    | `partnerBand` falls outside `[0, bandCount)` AND the profile is open |
+
+where `bandOffset` is the same expression `getFacetEdgeMeta` uses:
+
+```
+bandOffset  = (orientation === 'axial-left' ? -1 : 1) * (f % 2 === 0 ? -1 : 1)
+partnerBand = b + bandOffset          // NOT wrapped yet — the wrap is conditional
+```
+
+When `partnerBand` falls outside `[0, bandCount)`: wrap it modulo `bandCount` if the
+profile is closed, and omit the `outer` partner entirely if it is open. This
+conditional wrap is the single substantive difference from `getFacetEdgeMeta`, which
+wraps unconditionally.
 
 The omissions carry the meaning. An absent partner is what makes `bandHasFreeSide`
 return true, which is what keeps a genuinely free edge solid.
@@ -144,7 +171,7 @@ Unit tests over synthetic tubes, in `src/lib/projection-geometry/__tests__/`:
    `second`.
 2. **Open profile** — the last band's `outer` partner is absent; every interior
    band still has one.
-3. **Closure detection** — a profile whose endpoints sit within EPSILON reads as
+3. **Closure detection** — a profile whose endpoints sit within the relative tolerance reads as
    closed; one just outside it reads as open; sections that disagree read as open.
 4. **Degenerate facets** — facets flagged `isDegenerate` are skipped and keep
    whatever meta they had.
