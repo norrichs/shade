@@ -164,10 +164,54 @@ export const getDroppedEdgeSegmentKeys = (rows: number, quadCount: number): Set<
 	return dropped;
 };
 
-export const adjustRectPatternAfterTiling = (
+export type GridBandContext = {
+	/** True when this band's outer long edge borders another band. */
+	hasOuterPartner: boolean;
+	bandIndex: number;
+};
+
+/**
+ * Band-level modification: where two bands meet along their long edges, the band
+ * on the inner side of the seam drops a regular subset of its outer-edge
+ * verticals so the seam does not read as a solid double line.
+ *
+ * A band only ever drops on its OWN outer side, which faces the higher-index
+ * neighbour — so "the lower-index band drops" falls out without a comparison.
+ * Bands whose outer side borders open space (the last band of a surface
+ * projection or surface voronoi tube) are left alone. Start and end partners are
+ * never consulted.
+ */
+export const adjustGridPatternAfterMapping = (
 	patternBand: PathSegment[][],
 	quadBand: Quadrilateral[],
-	tiledPatternConfig: TiledPatternConfig
+	tiledPatternConfig: TiledPatternConfig,
+	bandContext?: GridBandContext
 ): PathSegment[][] => {
-	return patternBand;
+	const config = tiledPatternConfig.config as typeof tiledPatternConfig.config & {
+		dropEdgeSegments?: boolean;
+	};
+	if (!config.dropEdgeSegments || !bandContext?.hasOuterPartner) return patternBand;
+
+	const rows = config.rowCount || 1;
+	const columns = config.columnCount || 1;
+	const { outerEdgeSegmentIndices } = generateGridPatternWithMeta({
+		size: 1,
+		rows,
+		columns,
+		variant: config.variant ?? 'rect'
+	});
+	const dropped = getDroppedEdgeSegmentKeys(rows, patternBand.length);
+
+	return patternBand.map((facetPath, quadIndex) => {
+		const remove = new Set<number>();
+		for (let r = 0; r < rows; r++) {
+			if (!dropped.has(quadIndex * rows + r)) continue;
+			const pair = outerEdgeSegmentIndices[r];
+			if (!pair) continue;
+			remove.add(pair[0]);
+			remove.add(pair[1]);
+		}
+		if (remove.size === 0) return facetPath;
+		return facetPath.filter((_, index) => !remove.has(index));
+	});
 };
