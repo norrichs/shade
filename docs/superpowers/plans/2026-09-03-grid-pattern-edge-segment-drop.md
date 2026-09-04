@@ -4,7 +4,7 @@
 
 **Goal:** Let `tiledGridPattern-0` drop a regular subset of its outer-edge vertical line segments on bands that have an adjacent partner band along their long outer edge, so the seam between two bands is not drawn as a solid double line.
 
-**Architecture:** The grid unit pattern is generated once per band and mapped element-wise onto every quad, so per-quad variation cannot live in the generator. Instead the generator additionally reports *where* its outer-edge verticals sit in the emitted `PathSegment[]`, and the existing (currently no-op) `adjustAfterMapping` hook filters those indices out of the mapped band. Band adjacency is read from the 3D facet meta graph via the existing `bandHasFreeSide` helper and passed into the hook as new band context.
+**Architecture:** The grid unit pattern is generated once per band and mapped element-wise onto every quad, so per-quad variation cannot live in the generator. Instead the generator additionally reports _where_ its outer-edge verticals sit in the emitted `PathSegment[]`, and the existing (currently no-op) `adjustAfterMapping` hook filters those indices out of the mapped band. Band adjacency is read from the 3D facet meta graph via the existing `bandHasFreeSide` helper and passed into the hook as new band context.
 
 **Tech Stack:** TypeScript, SvelteKit (Svelte 5 runes), Jest (`ts-jest`, ESM preset), Three.js. Unit tests live in `**/__tests__/**/*.test.ts`.
 
@@ -14,7 +14,7 @@
 
 - Branch: `feat/grid-pattern-edge-segment-drop`. Do not merge, rebase, stash, or reset. Do not `git checkout` another branch.
 - Run unit tests with `npm run test:unit -- <path>`. Run type checking with `npm run check`.
-- `npm run check` has a **pre-existing baseline of roughly 434 errors**. That is CLEAN. Never expect zero. The regression signal is the total-count *diff*, not the absence of errors.
+- `npm run check` has a **pre-existing baseline of roughly 434 errors**. That is CLEAN. Never expect zero. The regression signal is the total-count _diff_, not the absence of errors.
 - Default the new feature **off**: `dropEdgeSegments: false`. Existing saved configs and current visual output must be unchanged until the toggle is turned on.
 - Only `tiledGridPattern-0` is in scope. Do not change asanoha, panel, carnation, bowtie, branched, or tesselation (shield/hex/box) behaviour.
 - `src/components/controls/TilingControl.svelte` is dead code — it is imported nowhere. Do not modify it.
@@ -27,7 +27,7 @@ Read this before Task 1; the terms are used without explanation below.
 - **Facet** — one triangle. **Band** — a strip of facets. **Quad** — a pair of adjacent triangles; the unit a tiled pattern maps onto. A band of `2n` facets yields `n` quads.
 - **Unit pattern** — the `PathSegment[]` for a single quad, authored in a unit square (`size = 1`), subdivided into `rows` × `columns` cells.
 - In the unit square, **y (rows) runs along the band**, quad to quad. **x (columns) runs across the band's width.** Column `columns - 1` sits on the band's **outer** long edge (the same side `tiled-asanoha-pattern.ts` calls `w6`).
-- **Edge segment** — the vertical `['M', w, 0] → ['L', w, h]` pair emitted by a *last-column* unit. One pair per row, per quad. These are the only segments this feature removes.
+- **Edge segment** — the vertical `['M', w, 0] → ['L', w, h]` pair emitted by a _last-column_ unit. One pair per row, per quad. These are the only segments this feature removes.
 - **`PathSegment`** — a tuple whose first element is an SVG path command letter: `['M', x, y]`, `['L', x, y]`, `['C', x0, y0, x1, y1, x2, y2]`, etc.
 
 ## The Rule
@@ -43,25 +43,25 @@ Drop the edge segment when `k` is odd, **except** when `k === total - 1` (the fi
 
 Worked cases, all with `quadCount = 6`:
 
-| rows | total | dropped `k` | reading |
-| --- | --- | --- | --- |
-| 1 | 6 | 1, 3 (5 exempt) | every other quad loses its single segment; the last quad never does |
-| 2 | 12 | 1, 3, 5, 7, 9 (11 exempt) | exactly one per quad, always the *second* row; never a quad's first row |
-| 3 | 18 | 1, 3, 5, 7, 9, 11, 13, 15 (17 exempt) | q0 loses row 1; q1 loses rows 0 and 2; q2 loses row 1; … |
+| rows | total | dropped `k`                           | reading                                                                 |
+| ---- | ----- | ------------------------------------- | ----------------------------------------------------------------------- |
+| 1    | 6     | 1, 3 (5 exempt)                       | every other quad loses its single segment; the last quad never does     |
+| 2    | 12    | 1, 3, 5, 7, 9 (11 exempt)             | exactly one per quad, always the _second_ row; never a quad's first row |
+| 3    | 18    | 1, 3, 5, 7, 9, 11, 13, 15 (17 exempt) | q0 loses row 1; q1 loses rows 0 and 2; q2 loses row 1; …                |
 
-`columns` never changes which `k` are dropped — it only changes *where* on the quad the dropped segment sits, because the edge segment is always in the last column.
+`columns` never changes which `k` are dropped — it only changes _where_ on the quad the dropped segment sits, because the edge segment is always in the last column.
 
 ## File Structure
 
-| File | Change | Responsibility |
-| --- | --- | --- |
-| `src/lib/patterns/tiled-grid-pattern.ts` | Modify | Generator emits an index map alongside the path; hosts the pure selection rule and the band adjuster. All feature logic lives here. |
-| `src/lib/patterns/__tests__/tiled-grid-pattern.test.ts` | Create | Unit tests for the index map, the selection rule, and the adjuster. |
-| `src/lib/types.ts` | Modify | `dropEdgeSegments?: boolean` on `TiledPatternConfig['config']`; fifth `bandContext` parameter on `UnitPatternGenerator['adjustAfterMapping']`. |
-| `src/lib/cut-pattern/generate-tiled-pattern.ts` | Modify | Compute band adjacency once and pass it into `adjustAfterMapping`. |
-| `src/lib/patterns/pattern-definitions.ts` | Modify | Forward `bandContext` to the grid adjuster; follow the rename. |
-| `src/lib/shades-config.ts` | Modify | Default `dropEdgeSegments: false` for `tiledGridPattern-0`. |
-| `src/components/modal/editor/PatternView.svelte` | Modify | Checkbox, shown only for the grid pattern type. |
+| File                                                    | Change | Responsibility                                                                                                                                 |
+| ------------------------------------------------------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/lib/patterns/tiled-grid-pattern.ts`                | Modify | Generator emits an index map alongside the path; hosts the pure selection rule and the band adjuster. All feature logic lives here.            |
+| `src/lib/patterns/__tests__/tiled-grid-pattern.test.ts` | Create | Unit tests for the index map, the selection rule, and the adjuster.                                                                            |
+| `src/lib/types.ts`                                      | Modify | `dropEdgeSegments?: boolean` on `TiledPatternConfig['config']`; fifth `bandContext` parameter on `UnitPatternGenerator['adjustAfterMapping']`. |
+| `src/lib/cut-pattern/generate-tiled-pattern.ts`         | Modify | Compute band adjacency once and pass it into `adjustAfterMapping`.                                                                             |
+| `src/lib/patterns/pattern-definitions.ts`               | Modify | Forward `bandContext` to the grid adjuster; follow the rename.                                                                                 |
+| `src/lib/shades-config.ts`                              | Modify | Default `dropEdgeSegments: false` for `tiledGridPattern-0`.                                                                                    |
+| `src/components/modal/editor/PatternView.svelte`        | Modify | Checkbox, shown only for the grid pattern type.                                                                                                |
 
 ---
 
@@ -70,10 +70,12 @@ Worked cases, all with `quadCount = 6`:
 The generator assembles its path from three separately accumulated groups and concatenates at the end, so absolute indices are only knowable at concat time. Record offsets during the same loop that pushes the segments — a second function that re-derived the layout would silently drift from the generator.
 
 **Files:**
+
 - Modify: `src/lib/patterns/tiled-grid-pattern.ts:74-108` (`generateGridPattern`)
 - Test: `src/lib/patterns/__tests__/tiled-grid-pattern.test.ts` (create)
 
 **Interfaces:**
+
 - Consumes: `generateUnit`, `translatePS`, `Props`, `GridVariant`, `PathSegment` — all already present in the file.
 - Produces:
   - `generateGridPatternWithMeta(props: Props): { path: PathSegment[]; outerEdgeSegmentIndices: number[][] }` — `outerEdgeSegmentIndices[r]` is `[moveIndex, lineIndex]` into `path` for row `r`'s last-column outer vertical. Length always equals `rows`.
@@ -172,9 +174,7 @@ describe('getDroppedEdgeSegmentKeys', () => {
 	});
 
 	it('drops exactly one per quad, always the second row, for 2 rows', () => {
-		expect([...getDroppedEdgeSegmentKeys(2, 6)].sort((a, b) => a - b)).toEqual([
-			1, 3, 5, 7, 9
-		]);
+		expect([...getDroppedEdgeSegmentKeys(2, 6)].sort((a, b) => a - b)).toEqual([1, 3, 5, 7, 9]);
 	});
 
 	it('alternates 1 / 2 drops per quad for 3 rows', () => {
@@ -308,7 +308,7 @@ Expected: PASS, all cases in both `describe` blocks.
 - [ ] **Step 5: Format and commit**
 
 ```bash
-npm run format
+npx prettier --write <the files this task touched>   # NOT `npm run format` — that reflows the whole repo
 git add src/lib/patterns/tiled-grid-pattern.ts src/lib/patterns/__tests__/tiled-grid-pattern.test.ts
 git commit -m "feat(grid-pattern): report outer-edge segment indices and drop selection"
 ```
@@ -320,10 +320,12 @@ git commit -m "feat(grid-pattern): report outer-edge segment indices and drop se
 `adjustRectPatternAfterTiling` is a no-op passthrough today. It becomes the place the drop actually happens. This is index-safe because `transformPatternByQuad` maps segments element-wise (a unit index is still valid on the mapped path) and because `adjustAfterMapping` runs immediately after mapping, before `endsTrimmed` handling, `adjustAfterTiling`, stroke width, or SVG string generation.
 
 **Files:**
+
 - Modify: `src/lib/patterns/tiled-grid-pattern.ts:110-116` (`adjustRectPatternAfterTiling`)
 - Test: `src/lib/patterns/__tests__/tiled-grid-pattern.test.ts` (append)
 
 **Interfaces:**
+
 - Consumes: `generateGridPatternWithMeta`, `getDroppedEdgeSegmentKeys` from Task 1.
 - Produces: `adjustGridPatternAfterMapping(patternBand: PathSegment[][], quadBand: Quadrilateral[], tiledPatternConfig: TiledPatternConfig, bandContext?: { hasOuterPartner: boolean; bandIndex: number }): PathSegment[][]`. The old name `adjustRectPatternAfterTiling` is removed; Task 3 updates its only caller.
 - Note: `tiledPatternConfig.config.dropEdgeSegments` does not exist on the type yet. Task 3 adds it. Until then read it through a local widening cast, exactly as written below, so this task compiles on its own.
@@ -406,9 +408,9 @@ describe('adjustGridPatternAfterMapping', () => {
 
 	it('is an identity when no band context is supplied', () => {
 		const band = makeBand(6, 1, 1, 'rect');
-		expect(
-			adjustGridPatternAfterMapping(band, NO_QUADS, makeConfig(1, 1, 'rect', true))
-		).toEqual(band);
+		expect(adjustGridPatternAfterMapping(band, NO_QUADS, makeConfig(1, 1, 'rect', true))).toEqual(
+			band
+		);
 	});
 
 	it('removes two segments from exactly the dropped quads at 1 row, 1 column', () => {
@@ -559,7 +561,7 @@ Expected: PASS. Task 1's tests must still pass too.
 - [ ] **Step 5: Format and commit**
 
 ```bash
-npm run format
+npx prettier --write <the files this task touched>   # NOT `npm run format` — that reflows the whole repo
 git add src/lib/patterns/tiled-grid-pattern.ts src/lib/patterns/__tests__/tiled-grid-pattern.test.ts
 git commit -m "feat(grid-pattern): drop outer-edge segments on bands with an outer partner"
 ```
@@ -571,12 +573,14 @@ git commit -m "feat(grid-pattern): drop outer-edge segments on bands with an out
 Nothing calls the new adjuster yet, and `adjustAfterMapping` has no way to learn about band adjacency. This task connects them.
 
 **Files:**
+
 - Modify: `src/lib/types.ts:147-152` (`UnitPatternGenerator.adjustAfterMapping`) and `src/lib/types.ts:664-687` (`TiledPatternConfig`)
 - Modify: `src/lib/cut-pattern/generate-tiled-pattern.ts:220-275` (inside `generateTiling`)
 - Modify: `src/lib/patterns/pattern-definitions.ts:91-107` (the `tiledGridPattern-0` entry)
 - Modify: `src/lib/shades-config.ts:316-332` (the `tiledGridPattern-0` default config)
 
 **Interfaces:**
+
 - Consumes: `adjustGridPatternAfterMapping`, `GridBandContext` from Task 2; `bandHasFreeSide` (already private in `generate-tiled-pattern.ts:44-50`).
 - Produces: `tiledPatternConfig.config.dropEdgeSegments?: boolean` is now a real typed field, so the widening cast added in Task 2 becomes redundant but harmless — leave it, it keeps the adjuster independently testable.
 
@@ -611,15 +615,15 @@ In the same file, replace the `adjustAfterMapping` member of `UnitPatternGenerat
 In `src/lib/cut-pattern/generate-tiled-pattern.ts`, inside the `quadBands.map((quadBand, bandIndex) => {...})` callback, replace the single `const finishOuterEdge = ...` statement with:
 
 ```ts
-		// `bands` is absent on the `generateTiledBandPattern` call path; treat a
-		// missing band as having a free side (no outer partner) rather than throwing.
-		const sourceBand = bands?.[bandIndex];
-		const hasFreeSide = sourceBand ? bandHasFreeSide(sourceBand) : true;
-		const finishOuterEdge = bandIndex + bandIndexOffset === bandCount - 1 && hasFreeSide;
-		const bandContext = {
-			hasOuterPartner: !hasFreeSide,
-			bandIndex: bandIndex + bandIndexOffset
-		};
+// `bands` is absent on the `generateTiledBandPattern` call path; treat a
+// missing band as having a free side (no outer partner) rather than throwing.
+const sourceBand = bands?.[bandIndex];
+const hasFreeSide = sourceBand ? bandHasFreeSide(sourceBand) : true;
+const finishOuterEdge = bandIndex + bandIndexOffset === bandCount - 1 && hasFreeSide;
+const bandContext = {
+	hasOuterPartner: !hasFreeSide,
+	bandIndex: bandIndex + bandIndexOffset
+};
 ```
 
 Keep the existing explanatory comment block above it. Do **not** rename the later `const band = bands[bandIndex];` inside the same callback — `sourceBand` is deliberately a distinct name to avoid colliding with it.
@@ -649,13 +653,13 @@ import { generateGridPattern, adjustGridPatternAfterMapping } from './tiled-grid
 and replace the `adjustAfterMapping` member of the `'tiledGridPattern-0'` entry with:
 
 ```ts
-		adjustAfterMapping: (
-			patternBand: PathSegment[][],
-			quadBand: Quadrilateral[],
-			tiledPatternConfig: TiledPatternConfig,
-			_finishOuterEdge?: boolean,
-			bandContext?: { hasOuterPartner: boolean; bandIndex: number }
-		) => adjustGridPatternAfterMapping(patternBand, quadBand, tiledPatternConfig, bandContext)
+adjustAfterMapping: (
+	patternBand: PathSegment[][],
+	quadBand: Quadrilateral[],
+	tiledPatternConfig: TiledPatternConfig,
+	_finishOuterEdge?: boolean,
+	bandContext?: { hasOuterPartner: boolean; bandIndex: number }
+) => adjustGridPatternAfterMapping(patternBand, quadBand, tiledPatternConfig, bandContext);
 ```
 
 - [ ] **Step 4: Add the default**
@@ -690,7 +694,7 @@ Expected: no test that passed before this branch now fails. Widening a function 
 - [ ] **Step 7: Format and commit**
 
 ```bash
-npm run format
+npx prettier --write <the files this task touched>   # NOT `npm run format` — that reflows the whole repo
 git add src/lib/types.ts src/lib/cut-pattern/generate-tiled-pattern.ts src/lib/patterns/pattern-definitions.ts src/lib/shades-config.ts
 git commit -m "feat(grid-pattern): plumb band adjacency and the dropEdgeSegments config"
 ```
@@ -702,9 +706,11 @@ git commit -m "feat(grid-pattern): plumb band adjacency and the dropEdgeSegments
 The feature is now reachable in code but not from the app. `src/components/controls/TilingControl.svelte` is dead — the Pattern View floater absorbed it — so `PatternView.svelte` is the only UI surface.
 
 **Files:**
+
 - Modify: `src/components/modal/editor/PatternView.svelte` (the tiled-config `Container`, immediately after the "Trim Ends" control)
 
 **Interfaces:**
+
 - Consumes: `patternTypeConfig` (`$derived($patternConfigStore.patternTypeConfig)`, line 22), `inner` (`$derived(patternTypeConfig.config)`, line 31), and `setInner(patch: Record<string, unknown>)` (line 40) — all already in scope in this component.
 - Produces: nothing consumed by later tasks. This is the final task.
 
@@ -774,7 +780,7 @@ Compare the two screenshots. What to look for:
 
 ```bash
 rm -f verify-grid-drop.mjs grid-drop-before.png grid-drop-after.png
-npm run format
+npx prettier --write <the files this task touched>   # NOT `npm run format` — that reflows the whole repo
 git add src/components/modal/editor/PatternView.svelte
 git commit -m "feat(grid-pattern): add the Drop Edge Segments toggle to Pattern View"
 ```
