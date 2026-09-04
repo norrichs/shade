@@ -593,7 +593,7 @@ If `Tube`, `Band` or `Facet` are not already imported in that file, add them —
 - [ ] **Step 4: Run the tests to verify they pass**
 
 Run: `npm run test:unit -- src/lib/projection-geometry/__tests__/match-globule-tube-facets.test.ts`
-Expected: PASS, all 12 cases.
+Expected: PASS, all 11 cases.
 
 - [ ] **Step 5: Check for regressions**
 
