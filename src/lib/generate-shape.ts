@@ -46,7 +46,9 @@ import { generateLevelSet2, generateSections } from './generate-level';
 import type { GlobuleAddress_Tube, Tube } from './projection-geometry/types';
 import {
 	generateProjectionBands,
-	generateTubeBands
+	generateTubeBands,
+	matchGlobuleTubeFacets,
+	pruneOuterPartnersOutsideSet
 } from './projection-geometry/generate-projection';
 
 // Rotated Shape Levels are 2d.  How can I enforce that?
@@ -884,6 +886,16 @@ export const generateGlobuleTube = (
 
 	const bands = generateProjectionBands(sections, 'axial-right', address);
 
+	// Partner meta is assigned over the FULL generated set: every partner then
+	// names a real band, and band indices stay consistent with `facet.address`,
+	// which was assigned pre-filter.
+	matchGlobuleTubeFacets({
+		bands,
+		sections,
+		orientation: 'axial-right',
+		address
+	});
+
 	// const struts = generateStruts(levels, config.strutConfig);
 	// const unTabbedBands = generateBandSet(config, sections);
 	// const bands = unTabbedBands
@@ -892,6 +904,10 @@ export const generateGlobuleTube = (
 	// : generateTabs(unTabbedBands, config.bandConfig, struts);
 
 	const filteredBands = getRenderable(config.renderConfig, bands) as Band[];
+
+	// A band on the boundary of the rendered subset has a partner that is not
+	// being cut, so its outer edge is physically free. Drop those.
+	pruneOuterPartnersOutsideSet(filteredBands);
 
 	const tube: Tube = {
 		sections,

@@ -148,7 +148,8 @@ export type UnitPatternGenerator = {
 		patternBand: PathSegment[][],
 		quadBand: Quadrilateral[],
 		tiledPatternConfig: TiledPatternConfig,
-		finishOuterEdge?: boolean
+		finishOuterEdge?: boolean,
+		bandContext?: { hasOuterPartner: boolean; bandIndex: number }
 	) => PathSegment[][];
 	adjustAfterTiling?: any;
 };
@@ -676,6 +677,13 @@ export type TiledPatternConfig = {
 		endsTrimmed: boolean;
 		endLooped: number;
 		variant?: GridVariant;
+		/**
+		 * Grid pattern only. When true, bands whose outer long edge borders another
+		 * band drop a regular subset of their outer-edge verticals, so the seam
+		 * between adjacent bands is not drawn twice. See
+		 * `adjustGridPatternAfterMapping`.
+		 */
+		dropEdgeSegments?: boolean;
 		aspectRatio?: number;
 		skipEdges?: SkipEdges;
 		distributePanels?: boolean;
@@ -802,10 +810,16 @@ export type Facet = {
 	// firstFacet: { [key: string]: FacetEdgeMeta };
 	triangle: ThreeTriangle;
 	address?: GlobuleAddress_Facet;
+	/**
+	 * Partner data per triangle edge. A key is ABSENT when that edge has no
+	 * partner — the open end of a tube, or the free outer edge of an open
+	 * profile's last band. Absence is meaningful: `bandHasFreeSide` reads it as
+	 * "this edge borders open space", which keeps the edge solid in cut output.
+	 */
 	meta?: {
-		ab: FacetEdgeMeta;
-		bc: FacetEdgeMeta;
-		ac: FacetEdgeMeta;
+		ab?: FacetEdgeMeta;
+		bc?: FacetEdgeMeta;
+		ac?: FacetEdgeMeta;
 	};
 	orientation: FacetOrientation;
 	tab?: FacetTab; // | FacetTab[];

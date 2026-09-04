@@ -15,7 +15,7 @@ import {
 	generateAsanohaPattern,
 	getAsanohaSegments
 } from './tiled-asanoha-pattern';
-import { generateGridPattern, adjustRectPatternAfterTiling } from './tiled-grid-pattern';
+import { generateGridPattern, adjustGridPatternAfterMapping } from './tiled-grid-pattern';
 import { algorithms } from './pattern-registry';
 import {
 	adjustPanelPatternAfterTiling,
@@ -106,8 +106,10 @@ export const patterns: { [key: string]: PatternGenerator } = {
 		adjustAfterMapping: (
 			patternBand: PathSegment[][],
 			quadBand: Quadrilateral[],
-			tiledPatternConfig: TiledPatternConfig
-		) => adjustRectPatternAfterTiling(patternBand, quadBand, tiledPatternConfig)
+			tiledPatternConfig: TiledPatternConfig,
+			_finishOuterEdge?: boolean,
+			bandContext?: { hasOuterPartner: boolean; bandIndex: number }
+		) => adjustGridPatternAfterMapping(patternBand, quadBand, tiledPatternConfig, bandContext)
 	},
 	'tiledPanelPattern-0': {
 		getPattern: (

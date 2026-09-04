@@ -327,6 +327,7 @@ export const tiledPatternConfigs: { [key: string]: TiledPatternConfig } = {
 			endsTrimmed: true,
 			endLooped: 0,
 			variant: 'rect',
+			dropEdgeSegments: false,
 			scaleConfig: defaultScaleConfig
 		}
 	},

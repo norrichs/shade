@@ -322,6 +322,18 @@
 								setInner({ endsTrimmed: (event.currentTarget as HTMLInputElement).checked })}
 						/>
 					</LabeledControl>
+					{#if patternTypeConfig.type === 'tiledGridPattern-0'}
+						<LabeledControl label="Drop Edge Segments">
+							<input
+								type="checkbox"
+								checked={!!inner.dropEdgeSegments}
+								onchange={(event) =>
+									setInner({
+										dropEdgeSegments: (event.currentTarget as HTMLInputElement).checked
+									})}
+							/>
+						</LabeledControl>
+					{/if}
 					<LabeledControl label="Loop Ends">
 						<input
 							type="number"

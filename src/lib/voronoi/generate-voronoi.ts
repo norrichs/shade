@@ -45,6 +45,13 @@ import {
 } from '$lib/projection-geometry/fill-bands';
 import type { Band } from '$lib/types';
 
+/**
+ * `matchFacets` populates all three edges before assigning, so it works with a
+ * strict shape internally. `Facet['meta']`'s keys are optional because other
+ * producers legitimately omit edges (open tube ends, free profile edges).
+ */
+type StrictFacetMeta = { ab: FacetEdgeMeta; bc: FacetEdgeMeta; ac: FacetEdgeMeta };
+
 const DEFAULT_CURVE_OFFSET_FACTOR = 0.3;
 
 function getSurfaceCenter(surfaceConfig: SurfaceConfig): Vector3 {
@@ -134,7 +141,6 @@ function matchTubeEnds(tubes: Tube[]): void {
 				if (match && match.partner.address) {
 					const newMeta: { [key: string]: FacetEdgeMeta } = {};
 					newMeta[match.edge] = { partner: { ...match.partner.address, edge: match.partnerEdge } };
-					// @ts-expect-error: partial meta assignment
 					firstFacet.meta = firstFacet.meta ? { ...firstFacet.meta, ...newMeta } : newMeta;
 				}
 			}
@@ -148,7 +154,6 @@ function matchTubeEnds(tubes: Tube[]): void {
 				if (match && match.partner.address) {
 					const newMeta: { [key: string]: FacetEdgeMeta } = {};
 					newMeta[match.edge] = { partner: { ...match.partner.address, edge: match.partnerEdge } };
-					// @ts-expect-error: partial meta assignment
 					lastFacet.meta = lastFacet.meta ? { ...lastFacet.meta, ...newMeta } : newMeta;
 				}
 			}
@@ -184,7 +189,7 @@ export function matchFacets(tubes: Tube[]): void {
 				if (facet.isDegenerate) return; // synthetic fill facet — never partner-matched
 				if (!facet.address) return;
 
-				const edgeMeta = { ab: {}, bc: {}, ac: {} } as NonNullable<Facet['meta']>;
+				const edgeMeta = { ab: {}, bc: {}, ac: {} } as StrictFacetMeta;
 
 				for (const edge of ['ab', 'bc', 'ac'] as const) {
 					if (facet.meta?.[edge]?.partner) {
@@ -232,11 +237,13 @@ export function matchFacets(tubes: Tube[]): void {
 						if (match) {
 							// Non-degenerate facets have meta normalized to {ab,bc,ac} by the first
 							// pass; the optional chaining is defensive against any partial meta.
-							if (facetA.meta?.[match.t0] && !facetA.meta[match.t0].partner) {
-								facetA.meta[match.t0].partner = { ...facetB.address, edge: match.t1 };
+							const edgeMetaA = facetA.meta?.[match.t0];
+							if (edgeMetaA && !edgeMetaA.partner) {
+								edgeMetaA.partner = { ...facetB.address, edge: match.t1 };
 							}
-							if (facetB.meta?.[match.t1] && !facetB.meta[match.t1].partner) {
-								facetB.meta[match.t1].partner = { ...facetA.address, edge: match.t0 };
+							const edgeMetaB = facetB.meta?.[match.t1];
+							if (edgeMetaB && !edgeMetaB.partner) {
+								edgeMetaB.partner = { ...facetA.address, edge: match.t0 };
 							}
 						}
 					}
@@ -332,7 +339,10 @@ function assembleVoronoiTubes(params: {
 
 			// One-sided surface-projection tube: [edge, ...divs, cellCurve] per edge point.
 			const realCell = openingA ? cellIdxB : cellIdxA;
-			const spTubeAddress: GlobuleAddress_Tube = { ...address, tube: surfaceProjectionTubes.length };
+			const spTubeAddress: GlobuleAddress_Tube = {
+				...address,
+				tube: surfaceProjectionTubes.length
+			};
 			const spSections: Section[] = edgePoints3d.map((edgePoint, idx): Section => {
 				// divsA is ordered cell->edge, divsB edge->cell; we want edge->cell either way.
 				const interior = openingA ? divsB[idx] : divsA[idx].slice().reverse();
@@ -573,7 +583,10 @@ export function makeVoronoi(
 	const surfaceTriangles = extractSurfaceTriangles(surface);
 
 	if (config.voronoiMethod === 'geodesic') {
-		const { edges, edgeProjections, seedPoints3d } = generateGeodesicVoronoi(config, surfaceTriangles);
+		const { edges, edgeProjections, seedPoints3d } = generateGeodesicVoronoi(
+			config,
+			surfaceTriangles
+		);
 		const edgeInsets = computeEdgeInsetsLocalProjection({
 			edges,
 			edgeProjections,
@@ -659,7 +672,8 @@ export function makeVoronoi(
 	const cellApex: (Vector3 | undefined)[] = config.fillAll
 		? relaxedSeeds.map((seed) => {
 				const hit = intersect(coordToDirection(seed[0], seed[1]));
-				if (!hit) console.warn('fillAll: cell seed ray missed surface; using averaged border point');
+				if (!hit)
+					console.warn('fillAll: cell seed ray missed surface; using averaged border point');
 				return hit ?? undefined;
 			})
 		: [];

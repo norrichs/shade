@@ -276,9 +276,9 @@ export const generateBandPatterns = (
 			bands: flattenedGeometry.map((flatBand) => {
 				const edges = getBandTriangleEdges(flatBand.orientation);
 				const startPartner: GlobuleAddress_FacetEdge | undefined =
-					flatBand.facets[0].meta?.[edges[0].base].partner;
+					flatBand.facets[0].meta?.[edges[0].base]?.partner;
 				const endPartner: GlobuleAddress_FacetEdge | undefined =
-					flatBand.facets[flatBand.facets.length - 1].meta?.[edges[1].second].partner;
+					flatBand.facets[flatBand.facets.length - 1].meta?.[edges[1].second]?.partner;
 				const startPartnerBand: GlobuleAddress_Band | undefined = startPartner
 					? {
 							globule: startPartner.globule,
