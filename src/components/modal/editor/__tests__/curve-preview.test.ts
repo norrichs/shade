@@ -1,11 +1,32 @@
 import { describe, it, expect } from '@jest/globals';
 
-import { pathFromCurves, radializeCurves } from '../curve-preview';
+import {
+	fillPathToAxis,
+	mirrorCurvesAcrossY,
+	pathFromCurves,
+	radializeCurves
+} from '../curve-preview';
 import { radialShapeCurveConfigs } from '$lib/geometry/radial-shape';
 import { generateDefaultRadialShapeConfig } from '$lib/shades-config';
-import type { BezierConfig } from '$lib/types';
+import type { BezierConfig, PointConfig2 } from '$lib/types';
 
 const sampleMethod = { method: 'divideCurve', divisions: 4 } as const;
+
+const pt = (x: number, y: number): PointConfig2 => ({ type: 'PointConfig2', x, y });
+
+const curve = (
+	p0: [number, number],
+	p1: [number, number],
+	p2: [number, number],
+	p3: [number, number]
+): BezierConfig => ({
+	type: 'BezierConfig',
+	points: [pt(...p0), pt(...p1), pt(...p2), pt(...p3)]
+});
+
+// Fresh fixtures per assertion: these helpers clone, but a shared literal would
+// still be easy to mutate accidentally from a future test.
+const oneCurve = () => [curve([0, 0], [1, 0], [2, 0], [3, 0])];
 
 const maxJointGap = (curves: BezierConfig[]): number =>
 	Math.max(
@@ -82,5 +103,41 @@ describe('pathFromCurves', () => {
 
 	it('returns an empty string for no curves', () => {
 		expect(pathFromCurves([])).toBe('');
+	});
+
+	it('does not negate y', () => {
+		expect(pathFromCurves([curve([0, 5], [1, 5], [2, 5], [3, 5])])).toContain('M 0 5');
+	});
+});
+
+describe('fillPathToAxis', () => {
+	it('closes the run back to the y-axis', () => {
+		expect(fillPathToAxis([curve([1, 0], [2, 0], [3, 0], [4, 8])])).toBe(
+			'M 0 0 L 1 0 C 2 0, 3 0, 4 8 L 0 8 Z'
+		);
+	});
+
+	it('closes to the x-axis when asked', () => {
+		expect(fillPathToAxis([curve([1, 2], [2, 0], [3, 0], [4, 8])], 'x')).toBe(
+			'M 1 0 L 1 2 C 2 0, 3 0, 4 8 L 4 0 Z'
+		);
+	});
+});
+
+describe('mirrorCurvesAcrossY', () => {
+	it('negates x and leaves y and ordering alone', () => {
+		const [mirrored] = mirrorCurvesAcrossY(oneCurve());
+		expect(mirrored.points.map((p) => [p.x, p.y])).toEqual([
+			[-0, 0],
+			[-1, 0],
+			[-2, 0],
+			[-3, 0]
+		]);
+	});
+
+	it('does not mutate the input', () => {
+		const input = oneCurve();
+		mirrorCurvesAcrossY(input);
+		expect(input[0].points[3].x).toBe(3);
 	});
 });
