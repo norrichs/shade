@@ -32,9 +32,19 @@
 	import DirectionLines from './DirectionLines.svelte';
 	import DraggablePoint from './DraggablePoint.svelte';
 
-	/** What an overlay snippet is handed. `curveDef` is live, so fills track a drag. */
+	/**
+	 * What an overlay snippet is handed.
+	 *
+	 * `curveDef` is the DISPLAY-space run and is live, so fills track a drag.
+	 * `modelCurveDef` is the same run in model space — use it for any geometry you
+	 * compose (rotation, reflection, radial repetition), because display space may
+	 * be mirrored and mirroring reverses the direction of rotation. Convert the
+	 * result back with `toDisplay` before emitting it as a path.
+	 */
 	export type PathEditorOverlayContext = {
 		curveDef: BezierConfig[];
+		modelCurveDef: BezierConfig[];
+		toDisplay: (curves: BezierConfig[]) => BezierConfig[];
 		canv: PathEditorCanvas;
 		config: PathEditorConfig;
 	};
@@ -213,6 +223,8 @@
 	const step = $derived(curveStep ?? canv.viewBoxData.width / 10);
 	const overlayContext = $derived({
 		curveDef: displayCurveDef,
+		modelCurveDef: curveDef,
+		toDisplay: reflectCurves,
 		canv,
 		config
 	} as PathEditorOverlayContext);

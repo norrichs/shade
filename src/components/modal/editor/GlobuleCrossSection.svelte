@@ -32,9 +32,6 @@
 	let isRadial = $derived(
 		shapeConfig?.symmetry === 'radial' || shapeConfig?.symmetry === 'radial-lateral'
 	);
-	let isReflected = $derived(
-		shapeConfig?.symmetry === 'lateral' || shapeConfig?.symmetry === 'radial-lateral'
-	);
 	/**
 	 * The angle the authored run spans — half a wedge when the shape is
 	 * reflected, a whole wedge otherwise. This is what the terminal anchors are
@@ -181,13 +178,15 @@
 		<Container direction="row">
 			<Container direction="column">
 				{#if shapeConfig}
-					{#snippet shapeOverlay({ curveDef, canv }: PathEditorOverlayContext)}
+					{#snippet shapeOverlay({ modelCurveDef, toDisplay, canv }: PathEditorOverlayContext)}
 						<path
 							d={pathFromCurves(
-								radializeCurves(curveDef, {
-									symmetryNumber: shapeConfig.symmetryNumber,
-									reflect: isReflected
-								})
+								toDisplay(
+									radializeCurves(modelCurveDef, {
+										symmetryNumber: shapeConfig.symmetryNumber,
+										symmetry: shapeConfig.symmetry
+									})
+								)
 							)}
 							fill="rgba(255,90,0,0.35)"
 							stroke="rgba(0,0,0,0.4)"
