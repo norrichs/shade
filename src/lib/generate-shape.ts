@@ -229,11 +229,13 @@ const generateRadialShapeLevelPrototype = (
 			points.push(...curve.getSpacedPoints(sampleMethod.divisions).slice(1)); // removes first point from each curve to avoid dupes
 		});
 	} else if (sampleMethod.method === 'divideCurvePath') {
-		const totalLength = shape.getLength();
-		shape.curves.forEach((curve) => {
-			const ratio = curve.getLength() / totalLength;
-			points.push(...curve.getPoints(Math.ceil(sampleMethod.divisions * ratio)).slice(1)); // removes first point from each curve to avoid dupes
-		});
+		// Divide the ENTIRE joined cross-section evenly by arc length, not each
+		// sub-curve proportionally. CurvePath.getPoint maps t through cumulative
+		// curve lengths, so getSpacedPoints is arc-length-even across the whole
+		// path. The outline is closed, so the last point repeats the first —
+		// slice(1) drops the duplicate and leaves exactly `divisions` vertices.
+		// Boundaries deliberately do not land on side boundaries.
+		points.push(...shape.getSpacedPoints(sampleMethod.divisions).slice(1));
 	}
 
 	return {
