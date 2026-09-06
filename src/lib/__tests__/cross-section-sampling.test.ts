@@ -1,7 +1,7 @@
 import { describe, it, expect } from '@jest/globals';
-import { Vector2 } from 'three';
+import { CurvePath, Vector2 } from 'three';
 
-import { generateLevelPrototype } from '../generate-shape';
+import { generateLevelPrototype, radialSideCurvePaths } from '../generate-shape';
 import { generateDefaultRadialShapeConfig } from '../shades-config';
 import { defaultLevelConfigForTest } from './cross-section-sampling.fixtures';
 import type { CurveSampleMethod, ShapeConfig } from '../types';
@@ -18,10 +18,6 @@ const verticesOf = (shape: ShapeConfig): Vector2[] => {
 	return prototype.vertices;
 };
 
-/** Gap lengths between consecutive vertices, wrapping around the closed outline. */
-const spans = (vertices: Vector2[]): number[] =>
-	vertices.map((v, i) => v.distanceTo(vertices[(i - 1 + vertices.length) % vertices.length]));
-
 describe('divideCurvePath (By Whole Curve)', () => {
 	it('produces exactly `divisions` vertices for the whole cross-section', () => {
 		// Not divisions-per-curve: the entire joined path is divided once.
@@ -29,19 +25,35 @@ describe('divideCurvePath (By Whole Curve)', () => {
 		expect(verticesOf(shapeWith({ method: 'divideCurvePath', divisions: 7 }))).toHaveLength(7);
 	});
 
-	it('spaces vertices evenly by arc length across the joined path', () => {
-		const s = spans(verticesOf(shapeWith({ method: 'divideCurvePath', divisions: 60 })));
-		const mean = s.reduce((a, b) => a + b, 0) / s.length;
-		// The default 7-lobed cross-section (see task-3/task-7 briefs) is not
-		// G1-continuous at its 7 lobe joints — adjacent curves meet at a real
-		// ~50deg direction change there. Arc-length-EVEN sampling (what this
-		// fix produces) is therefore not chord-length-even at those 7 joints:
-		// measured deviation peaks at ~47% for the 7 joint-straddling spans,
-		// with the remaining ~53 spans within a few percent of the mean.
-		// 0.5 comfortably covers the real per-span deviation this shape
-		// produces while still failing the old implementation, which yields
-		// the wrong vertex count entirely (see the previous test).
-		for (const span of s) expect(Math.abs(span - mean) / mean).toBeLessThan(0.5);
+	it('divides the joined outline evenly by arc length', () => {
+		// The guarantee is arc-length evenness, which is NOT chord-length
+		// evenness: this shape has genuine ~50deg direction changes at its 7
+		// lobe joints, so measuring distances between consecutive vertices
+		// cannot express it. Instead rebuild the same joined outline
+		// independently and divide THAT by arc length. Generation scales points
+		// by 1/200, and uniform scaling commutes with arc-length-proportional
+		// sampling, so the expectation is scaled rather than the actual.
+		const divisions = 37;
+		const config = generateDefaultRadialShapeConfig(7, {
+			method: 'divideCurvePath',
+			divisions
+		});
+		const actual = verticesOf(config);
+
+		const joined = new CurvePath<Vector2>();
+		radialSideCurvePaths(config).forEach((side) =>
+			side.curves.forEach((curve) => joined.add(curve))
+		);
+		const expected = joined
+			.getSpacedPoints(divisions)
+			.slice(1)
+			.map((p) => p.clone().multiplyScalar(1 / 200));
+
+		expect(actual).toHaveLength(divisions);
+		actual.forEach((point, i) => {
+			expect(point.x).toBeCloseTo(expected[i].x, 10);
+			expect(point.y).toBeCloseTo(expected[i].y, 10);
+		});
 	});
 
 	it('does not force radial symmetry when divisions do not divide the side count', () => {
