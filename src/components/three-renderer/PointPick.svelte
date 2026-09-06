@@ -14,7 +14,8 @@
 		type InteractionMode,
 		type Interaction,
 		isPointSelectInteractionMode,
-		isBandSelectInteractionMode
+		isBandSelectInteractionMode,
+		isMeasureInteractionMode
 	} from '../../components/three-renderer/interaction-mode';
 	import Button from '../design-system/Button.svelte';
 	import { get } from 'svelte/store';
@@ -89,10 +90,21 @@
 	};
 	let partnerJoin: BandEnd = $state('end');
 	let originJoin: BandEnd = $state('end');
+
+	// Measure mode is matched by isPointSelectInteractionMode (its type starts with
+	// 'point-select'), but it has no rendered content here — points are pushed
+	// straight into the measurements store in Scene.svelte's handleClick, bypassing
+	// this overlay's pick/points UI entirely. Without excluding it, `show` would still
+	// apply and leave an empty, click-blocking box over the viewport.
+	let showOverlay = $derived(
+		$mode.type !== 'standard' &&
+			((isPointSelectInteractionMode($mode) && !isMeasureInteractionMode($mode)) ||
+				isBandSelectInteractionMode($mode))
+	);
 </script>
 
-<div class={`overlay ${$mode.type === 'standard' ? 'hide' : 'show'}`}>
-	{#if isPointSelectInteractionMode($mode)}
+<div class={`overlay ${showOverlay ? 'show' : 'hide'}`}>
+	{#if isPointSelectInteractionMode($mode) && !isMeasureInteractionMode($mode)}
 		<div>{interaction.prompt}</div>
 		<div>{$mode.data.points.length}</div>
 		<div>

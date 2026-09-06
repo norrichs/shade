@@ -10,8 +10,14 @@
  * 1. **Orientation-neutral.** The legacy versions negate every `y` because
  *    `SuperPathEdit` renders on a y-up canvas. These emit coordinates exactly as
  *    stored; orientation is the renderer's business.
- * 2. **`ShapeConfig`-free.** `radializeCurves` takes a plain options object so it
- *    is testable without constructing a config.
+ * 2. **Delegates radial repetition to the shared module.** `radializeCurves` takes
+ *    a plain `{ symmetryNumber, symmetry }` options object (not a caller-built
+ *    `ShapeConfig`), then constructs the `ShapeConfig` itself and calls
+ *    `radialShapeCurveConfigs` from `$lib/geometry/radial-shape` — the same
+ *    function the generator uses. This is deliberate: it keeps the preview and
+ *    the generator computing radial repetition identically. Do not hand-roll
+ *    radial repetition here again; that would reintroduce the duplicate-
+ *    implementation drift this module exists to eliminate.
  */
 import { radialShapeCurveConfigs } from '$lib/geometry/radial-shape';
 import type { BezierConfig, PointConfig2, ShapeConfig } from '$lib/types';
