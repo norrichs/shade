@@ -151,7 +151,19 @@ export const materials = {
 	// (x = red, y = green, z = blue) so matched extent pairs read at a glance.
 	axisX: new MeshStandardMaterial({ color: 'red', transparent: false, side: DoubleSide }),
 	axisY: new MeshStandardMaterial({ color: 'lime', transparent: false, side: DoubleSide }),
-	axisZ: new MeshStandardMaterial({ color: 'blue', transparent: false, side: DoubleSide })
+	axisZ: new MeshStandardMaterial({ color: 'blue', transparent: false, side: DoubleSide }),
+	// Magenta marks a measurement point still waiting for its partner; once
+	// paired, both ends turn black.
+	measurePending: new MeshStandardMaterial({
+		color: 'magenta',
+		transparent: false,
+		side: DoubleSide
+	}),
+	measureMatched: new MeshStandardMaterial({
+		color: 'black',
+		transparent: false,
+		side: DoubleSide
+	})
 };
 
 export const materialByColor = (color: ThreeColor) => {
