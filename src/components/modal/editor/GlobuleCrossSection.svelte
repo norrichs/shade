@@ -21,6 +21,7 @@
 	import PathEditor, { type PathEditorOverlayContext } from './PathEditor.svelte';
 	import { neighborPointMatch, pointOnRay, radialEndLock } from './path-editor';
 	import { pathFromCurves, radializeCurves } from './curve-preview';
+	import { isReflectedSymmetry, radialUnitAngle } from '$lib/geometry/radial-shape';
 
 	// Derived from the store so an externally loaded config shows up here; the old
 	// version read into a plain `let` and never updated.
@@ -34,8 +35,19 @@
 	let isReflected = $derived(
 		shapeConfig?.symmetry === 'lateral' || shapeConfig?.symmetry === 'radial-lateral'
 	);
-	/** The angle one symmetry wedge spans. */
-	let wedgeAngle = $derived((Math.PI * 2) / (shapeConfig?.symmetryNumber || 1));
+	/**
+	 * The angle the authored run spans — half a wedge when the shape is
+	 * reflected, a whole wedge otherwise. This is what the terminal anchors are
+	 * locked to, so it must match what the generator expects.
+	 */
+	let unitAngle = $derived(
+		// shapeConfig is typed as always-present (TS can't see the out-of-range
+		// index case), so referencing `shapeConfig?.symmetryNumber` in the
+		// fallback branch narrows to `never`. When shapeConfig is actually
+		// missing at runtime that access would be undefined anyway, so the
+		// fallback here (equivalent to dividing by 1) is simplified to a constant.
+		shapeConfig ? radialUnitAngle(shapeConfig) : Math.PI * 2
+	);
 
 	/**
 	 * Replace the shape config, rebuilding the references down to it. See the note
@@ -76,10 +88,7 @@
 			if (shape.symmetry !== 'radial' && shape.symmetry !== 'radial-lateral') {
 				return { ...shape, symmetryNumber };
 			}
-			return {
-				...generateDefaultRadialShapeConfig(symmetryNumber, shape.sampleMethod),
-				symmetry: shape.symmetry
-			};
+			return generateDefaultRadialShapeConfig(symmetryNumber, shape.sampleMethod, shape.symmetry);
 		});
 
 	const setSymmetry = (event: Event) => {
@@ -90,15 +99,17 @@
 			// between those families rebuilds from the matching default.
 			const wasRadial = shape.symmetry === 'radial' || shape.symmetry === 'radial-lateral';
 			const isNowRadial = value === 'radial' || value === 'radial-lateral';
-			if (wasRadial === isNowRadial) return { ...shape, symmetry: value };
+			// Reflected and unreflected runs span different angles (half wedge vs
+			// whole), so crossing that boundary needs a rebuild too, not just a
+			// relabel.
+			const reflectionChanged = isReflectedSymmetry(shape.symmetry) !== isReflectedSymmetry(value);
+			if (wasRadial === isNowRadial && !reflectionChanged) return { ...shape, symmetry: value };
 			return isNowRadial
-				? {
-						...generateDefaultRadialShapeConfig(
-							Math.max(3, shape.symmetryNumber),
-							shape.sampleMethod
-						),
-						symmetry: value
-					}
+				? generateDefaultRadialShapeConfig(
+						Math.max(3, shape.symmetryNumber),
+						shape.sampleMethod,
+						value
+					)
 				: { ...generateDefaultAsymmetricShapeConfig(shape.sampleMethod), symmetry: value };
 		});
 	};
@@ -132,7 +143,9 @@
 	/** Move both terminal anchors onto the wedge rays at the radius this chord implies. */
 	const setSideLength = (value: number) => {
 		if (!value || !shapeConfig) return;
-		const alpha = Math.PI / shapeConfig.symmetryNumber;
+		// `unitAngle` is the chord's subtended angle; half of it gives the
+		// right-triangle angle relating chord to radius.
+		const alpha = unitAngle / 2;
 		const radius = value / (2 * Math.sin(alpha));
 		updateShape((shape) => {
 			const curves = shape.curves.map((curve) => ({
@@ -144,7 +157,7 @@
 			curves[0].points[0] = { ...curves[0].points[0], ...pointOnRay(radius, 0) } as PointConfig2;
 			curves[last].points[3] = {
 				...curves[last].points[3],
-				...pointOnRay(radius, 2 * alpha)
+				...pointOnRay(radius, unitAngle)
 			} as PointConfig2;
 			return { ...shape, curves };
 		});
@@ -158,7 +171,7 @@
 	};
 
 	let limits = $derived(
-		isRadial ? [radialEndLock(wedgeAngle), neighborPointMatch] : [neighborPointMatch]
+		isRadial ? [radialEndLock(unitAngle), neighborPointMatch] : [neighborPointMatch]
 	);
 </script>
 

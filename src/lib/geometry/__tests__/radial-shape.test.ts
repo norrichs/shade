@@ -1,6 +1,7 @@
 import { describe, it, expect } from '@jest/globals';
 
 import { radialSideCurveConfigs, radialShapeCurveConfigs, radialUnitAngle } from '../radial-shape';
+import { generateDefaultRadialShapeConfig } from '$lib/shades-config';
 import type { BezierConfig, ShapeConfig } from '$lib/types';
 
 /** A single bezier spanning `unitAngle`, in the codebase's (-sin, cos) convention. */
@@ -112,5 +113,27 @@ describe('radialSideCurveConfigs', () => {
 		const before = JSON.stringify(config);
 		radialShapeCurveConfigs(config);
 		expect(JSON.stringify(config)).toBe(before);
+	});
+});
+
+describe('generateDefaultRadialShapeConfig', () => {
+	const maxGapOf = (config: ShapeConfig) => maxJointGap(radialShapeCurveConfigs(config));
+
+	it('produces a closed outline for an unreflected default', () => {
+		const config = generateDefaultRadialShapeConfig(7, { method: 'divideCurve', divisions: 4 });
+		expect(config.symmetry).toBe('radial');
+		expect(maxGapOf(config)).toBeLessThan(1e-9);
+	});
+
+	it('produces a closed outline for a reflected default', () => {
+		// Regression: the default run used to span a full wedge regardless of
+		// symmetry, so a radial-lateral shape overshot and never closed.
+		const config = generateDefaultRadialShapeConfig(
+			7,
+			{ method: 'divideCurve', divisions: 4 },
+			'radial-lateral'
+		);
+		expect(config.symmetry).toBe('radial-lateral');
+		expect(maxGapOf(config)).toBeLessThan(1e-9);
 	});
 });
