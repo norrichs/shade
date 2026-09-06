@@ -15,9 +15,10 @@ radial cross-section geometry, and are therefore sequenced together.
 `Floater.svelte` takes `closeOnClickAway` defaulting to `true`, and duplicates
 its entire markup across an `{#if closeOnClickAway}` branch so the `clickOutside`
 action can be omitted. `HoverSidebar.svelte:50` passes
-`currentFloater?.closeOnClickAway ?? true`. Four entries in
+`currentFloater?.closeOnClickAway ?? true`. Three entries in
 `sidebar-definitions.ts` opt out explicitly (`Tile Editor`, `Pattern Layout`,
-`Voronoi`, and one more); the rest inherit click-away closing.
+`Voronoi`); one opts in redundantly (`Label Editor`); the rest inherit
+click-away closing from the default.
 
 ### Change
 
@@ -136,10 +137,11 @@ Then in `generateRadialShapeLevelPrototype`:
 - No other editor changes. `divideSide` is cross-section-only; `Silhouette`,
   `CrossSection`, `EdgeCurve` and the legacy `path-edit*` panels do not offer it,
   and code paths that never see it are unaffected.
-- `shades-config.ts:590` `getLevels(sampleMethod, curveCount)` returns
-  `divisions + 1` for anything that is not `divideCurve`. `divideSide` needs
-  `divisions * sideCount + 1`, so `getLevels` gains a side-count-aware branch.
-  Its callers are audited as part of the work.
+- `getLevels` in `shades-config.ts` needs no change. Audited: both callers
+  (`shades-config.ts:613`, `stores/stores.ts:41`) pass
+  `levelConfig.silhouetteSampleMethod`, never `shapeConfig.sampleMethod`, and
+  the Silhouette editor does not offer `divideSide`. It is therefore
+  unreachable from this method.
 
 ---
 
