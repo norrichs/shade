@@ -7,17 +7,25 @@
 		title,
 		showFloater,
 		content: Content,
-		closeOnClickAway = true
+		closeOnClickAway = false
 	}: {
 		onClose: () => void;
 		title: string | string[] | undefined;
 		showFloater: boolean;
 		content: Component | undefined;
+		/**
+		 * Floaters stay open on click-away by default. Opt in to click-away
+		 * closing only for panels that are genuinely transient.
+		 */
 		closeOnClickAway?: boolean;
 	} = $props();
 
+	// One `<main>`, one action. The action reads `closeOnClickAway` at event time
+	// rather than being conditionally applied, so toggling the flag never forces
+	// the panel to remount (which would tear down its content).
 	function clickOutside(node: HTMLElement) {
 		const handleClick = (event: MouseEvent) => {
+			if (!closeOnClickAway) return;
 			if (node && !node.contains(event.target as Node) && !event.defaultPrevented) {
 				onClose();
 			}
@@ -34,23 +42,13 @@
 </script>
 
 {#if showFloater}
-	{#if closeOnClickAway}
-		<main use:clickOutside>
-			<header>
-				<span>{title}</span>
-				<Button onclick={() => onClose()}>X</Button>
-			</header>
-			{#if Content}<Content />{/if}
-		</main>
-	{:else}
-		<main>
-			<header>
-				<span>{title}</span>
-				<Button onclick={() => onClose()}>X</Button>
-			</header>
-			{#if Content}<Content />{/if}
-		</main>
-	{/if}
+	<main use:clickOutside>
+		<header>
+			<span>{title}</span>
+			<Button onclick={() => onClose()}>X</Button>
+		</header>
+		{#if Content}<Content />{/if}
+	</main>
 {/if}
 
 <style>

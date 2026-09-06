@@ -20,6 +20,7 @@ export type FloaterContent = {
 	shortTitle: string;
 	title: string | string[];
 	content: Component;
+	/** Defaults to false — floaters stay open on click-away. */
 	closeOnClickAway?: boolean;
 };
 
@@ -102,8 +103,7 @@ export const patternConfigs: SidebarDefinition = new Map([
 		{
 			shortTitle: 'TE',
 			title: 'Tile Editor',
-			content: TileEditor,
-			closeOnClickAway: false
+			content: TileEditor
 		}
 	],
 	[
@@ -111,8 +111,7 @@ export const patternConfigs: SidebarDefinition = new Map([
 		{
 			shortTitle: 'PL',
 			title: 'Pattern layout',
-			content: PageLayout,
-			closeOnClickAway: false
+			content: PageLayout
 		}
 	]
 ]);
@@ -177,8 +176,7 @@ export const projectionConfigs: SidebarDefinition = new Map([
 		{
 			shortTitle: 'Vr',
 			title: 'Voronoi',
-			content: VoronoiControl,
-			closeOnClickAway: false
+			content: VoronoiControl
 		}
 	]
 ]);
