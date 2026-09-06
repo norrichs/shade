@@ -220,7 +220,8 @@ const generateRadialShapeLevelPrototype = (
 	levelConfig: LevelConfig,
 	levelNumber: number
 ): LevelPrototype => {
-	const shape = generateRadialShape(normalizeConfigPoints(config, { normalizationRatio: 1 / 200 }));
+	const normalized = normalizeConfigPoints(config, { normalizationRatio: 1 / 200 });
+	const shape = generateRadialShape(normalized);
 	const points: Vector2[] = [];
 	const { sampleMethod } = config;
 	if (sampleMethod.method === 'divideCurve') {
@@ -236,6 +237,14 @@ const generateRadialShapeLevelPrototype = (
 		// slice(1) drops the duplicate and leaves exactly `divisions` vertices.
 		// Boundaries deliberately do not land on side boundaries.
 		points.push(...shape.getSpacedPoints(sampleMethod.divisions).slice(1));
+	} else if (sampleMethod.method === 'divideSide') {
+		// Join each side's beziers into their own CurvePath and divide that
+		// evenly by arc length. A "side" is the authored curve run, so a
+		// reflected shape has two sides per symmetry repeat. Total vertices are
+		// sides * divisions, and the result stays radially symmetric.
+		radialSideCurvePaths(normalized).forEach((side) => {
+			points.push(...side.getSpacedPoints(sampleMethod.divisions).slice(1));
+		});
 	}
 
 	return {

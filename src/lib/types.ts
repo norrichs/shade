@@ -947,13 +947,14 @@ export type SpineCurveConfig = {
 export type CurveSampleMethod =
 	| { method: 'divideCurvePath'; divisions: number }
 	| { method: 'divideCurve'; divisions: number }
+	| { method: 'divideSide'; divisions: number }
 	| { method: 'preserveAspectRatio'; divisions: number }
 	| { method: 'spineCurve'; divisions: number };
 
 export type CurveSampleMethodMethod = CurveSampleMethod['method'];
 
 export const isCurveSampleMethodMethod = (m: string): m is CurveSampleMethodMethod =>
-	['divideCurvePath', 'divideCurve', 'preserveAspectRatio', 'spineCurve'].includes(m);
+	['divideCurvePath', 'divideCurve', 'divideSide', 'preserveAspectRatio', 'spineCurve'].includes(m);
 
 export type ShapeConfig = {
 	type: 'ShapeConfig';

@@ -66,3 +66,58 @@ describe('divideCurvePath (By Whole Curve)', () => {
 		expect(Math.max(...radii) - Math.min(...radii)).toBeGreaterThan(1e-6);
 	});
 });
+
+describe('divideSide (By Side)', () => {
+	it('divides each side independently: sides x divisions vertices', () => {
+		// The spec's worked example: 7 sides, divisions 3 -> 21 bands.
+		expect(verticesOf(shapeWith({ method: 'divideSide', divisions: 3 }, 7))).toHaveLength(21);
+		expect(verticesOf(shapeWith({ method: 'divideSide', divisions: 5 }, 4))).toHaveLength(20);
+	});
+
+	it('counts the authored run as one side, so a reflected shape has 2n sides', () => {
+		// Decided: a side is the run as authored, not the run plus its mirror.
+		// 7-fold radial-lateral therefore has 14 sides -> 14 * 3 = 42.
+		expect(
+			verticesOf(shapeWith({ method: 'divideSide', divisions: 3 }, 7, 'radial-lateral'))
+		).toHaveLength(42);
+	});
+
+	it('stays radially symmetric, unlike divideCurvePath', () => {
+		// Every side gets the same treatment, so vertex radii repeat with period
+		// `divisions`.
+		const divisions = 4;
+		const vertices = verticesOf(shapeWith({ method: 'divideSide', divisions }, 6));
+		const radii = vertices.map((v) => Math.hypot(v.x, v.y));
+		for (let i = 0; i < divisions; i++) {
+			expect(radii[i]).toBeCloseTo(radii[i + divisions], 6);
+		}
+	});
+
+	it('divides each side evenly by arc length', () => {
+		// Chord-length spacing cannot express arc-length evenness here (see the
+		// 7-lobed shape's ~50deg lobe-joint direction changes exercised above),
+		// so rebuild the expectation independently: sample each side's own
+		// CurvePath by arc length and scale by the same 1/200 normalization
+		// generation applies. Uniform scaling commutes with arc-length-proportional
+		// sampling, so the expectation is scaled rather than the actual.
+		const divisions = 8;
+		const config = shapeWith({ method: 'divideSide', divisions }, 5);
+		const actual = verticesOf(config);
+
+		const expected: Vector2[] = [];
+		radialSideCurvePaths(config).forEach((side) => {
+			expected.push(
+				...side
+					.getSpacedPoints(divisions)
+					.slice(1)
+					.map((p) => p.clone().multiplyScalar(1 / 200))
+			);
+		});
+
+		expect(actual).toHaveLength(expected.length);
+		actual.forEach((point, i) => {
+			expect(point.x).toBeCloseTo(expected[i].x, 10);
+			expect(point.y).toBeCloseTo(expected[i].y, 10);
+		});
+	});
+});

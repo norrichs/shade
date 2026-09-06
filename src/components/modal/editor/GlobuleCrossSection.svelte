@@ -245,6 +245,7 @@
 						<select value={shapeConfig.sampleMethod.method} onchange={setSampleMethod}>
 							<option value="divideCurvePath">By Whole Curve</option>
 							<option value="divideCurve">By Sub-curve</option>
+							<option value="divideSide">By Side</option>
 						</select>
 					</LabeledControl>
 					<LabeledControl label="Divisions">
