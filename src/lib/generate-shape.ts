@@ -1,5 +1,6 @@
-import { CurvePath, Vector2, Vector3, CubicBezierCurve, Triangle, LineCurve } from 'three';
+import { CurvePath, Vector2, Vector3, CubicBezierCurve, Triangle } from 'three';
 import { generateGlobuleEndCaps } from './geometry/end-caps';
+import { radialShapeCurveConfigs, radialSideCurveConfigs } from './geometry/radial-shape';
 import type {
 	TrianglePoint,
 	TriangleSide,
@@ -15,7 +16,6 @@ import type {
 	Level,
 	LevelConfig,
 	LevelPrototype,
-	LineConfig,
 	MultiFacetFullTab,
 	MultiFacetTrapTab,
 	PointConfig2,
@@ -147,62 +147,31 @@ export const generateRegularPolygonLevel = (sides: number, radius: number): Leve
 // 	return validation;
 // };
 
-const rotatedCurve = (
-	config: BezierConfig | LineConfig,
-	index: number,
-	angle: number,
-	isReflected: boolean
-): CubicBezierCurve | LineCurve => {
-	const center = new Vector2(0, 0);
-	if (config.type === 'BezierConfig') {
-		const p = config.points;
-		const vectors = [
-			new Vector2(p[0].x, p[0].y),
-			new Vector2(p[1].x, p[1].y),
-			new Vector2(p[2].x, p[2].y),
-			new Vector2(p[3].x, p[3].y)
-		].map((v) => {
-			if (isReflected) {
-				v.rotateAround(center, angle - 2 * v.angle());
-			}
-			v.rotateAround(center, angle * index);
-			return v;
-		});
-		const [v0, v1, v2, v3] = vectors;
-		return new CubicBezierCurve(v0, v1, v2, v3);
-	}
-	const p = config.points;
-	const vectors = [new Vector2(p[0].x, p[0].y), new Vector2(p[1].x, p[1].y)].map((v) => {
-		if (isReflected) {
-			v.rotateAround(center, angle - 2 * v.angle());
-		}
-		v.rotateAround(center, angle * index);
-		return v;
-	});
-	const [v0, v1] = vectors;
-	return new LineCurve(v0, v1);
-};
+const toCubicBezier = (curve: BezierConfig): CubicBezierCurve =>
+	new CubicBezierCurve(
+		new Vector2(curve.points[0].x, curve.points[0].y),
+		new Vector2(curve.points[1].x, curve.points[1].y),
+		new Vector2(curve.points[2].x, curve.points[2].y),
+		new Vector2(curve.points[3].x, curve.points[3].y)
+	);
 
 const generateRadialShape = (config: ShapeConfig): CurvePath<Vector2> => {
-	// const validation = validateShapeConfig(config);
-	// if (!validation.isValid) throw new Error(validation.msg.join('\n'));
-
-	const { symmetry, symmetryNumber, curves } = config;
 	const shape = new CurvePath<Vector2>();
-
-	const isReflected = ['radial-lateral', 'lateral'].includes(symmetry);
-	const angle = (Math.PI * 2) / symmetryNumber;
-
-	for (let i = 0; i < symmetryNumber; i++) {
-		curves.forEach((curve) => {
-			shape.add(rotatedCurve(curve, i, angle, false));
-		});
-		if (isReflected) {
-			curves.forEach((curve) => shape.add(rotatedCurve(curve, i, angle, true)));
-		}
-	}
+	radialShapeCurveConfigs(config).forEach((curve) => shape.add(toCubicBezier(curve)));
 	return shape;
 };
+
+/**
+ * The cross-section split into one `CurvePath` per side, for `divideSide`
+ * sampling and for the editor preview. Sides are in the same order
+ * `generateRadialShape` emits them, so sampling order matches geometry order.
+ */
+export const radialSideCurvePaths = (config: ShapeConfig): CurvePath<Vector2>[] =>
+	radialSideCurveConfigs(config).map((side) => {
+		const path = new CurvePath<Vector2>();
+		side.forEach((curve) => path.add(toCubicBezier(curve)));
+		return path;
+	});
 
 const normalizeConfigPoints = (
 	shapeConfig: ShapeConfig,
