@@ -12,7 +12,7 @@
 		FALLBACK_TEXT_WIDTH,
 		FALLBACK_TEXT_HEIGHT
 	} from '$lib/cut-pattern/label-outline-path';
-	import { mergedBandPaths, labelTextDimensions } from '$lib/stores';
+	import { mergedBandPaths, setLabelTextDimension } from '$lib/stores';
 
 	let {
 		id = undefined,
@@ -108,11 +108,9 @@
 			// (often with a stale 0-size bbox) and never refresh.
 			const width = textBbox.width;
 			const height = textBbox.height;
-			labelTextDimensions.update((m) => {
-				const next = new Map(m);
-				next.set(bandId, { width, height });
-				return next;
-			});
+			// Batched: N labels measuring after one mount used to mean N store
+			// updates, each re-laying-out every band (see mergedPathStore).
+			setLabelTextDimension(bandId, { width, height });
 		}
 	});
 

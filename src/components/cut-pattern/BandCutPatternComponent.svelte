@@ -65,11 +65,16 @@
 	const colors = ['purple', 'blue', 'green', 'yellow', 'orange', 'red'];
 </script>
 
-<QuadPattern
-	{band}
-	showQuads={$patternConfigStore.patternViewConfig.showQuads}
-	showLabels={$patternConfigStore.patternViewConfig.showLabels}
-/>
+<!-- QuadPattern emits a <g> + <path> per facet even when both toggles are off
+     (the path is only CSS-hidden). Skipping it removes two DOM nodes per facet
+     from the default view, which is roughly 35k nodes on a large model. -->
+{#if $patternConfigStore.patternViewConfig.showQuads || $patternConfigStore.patternViewConfig.showLabels}
+	<QuadPattern
+		{band}
+		showQuads={$patternConfigStore.patternViewConfig.showQuads}
+		showLabels={$patternConfigStore.patternViewConfig.showLabels}
+	/>
+{/if}
 <BoundsPattern {showBounds} bounds={band.bounds} />
 {#if renderAsSinglePath}
 	{@const hasMerged = $mergedBandPaths.has(band.id)}

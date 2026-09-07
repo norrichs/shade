@@ -1,5 +1,10 @@
 <script lang="ts">
-	import { superGlobulePatternStore, patternConfigStore, viewControlStore } from '$lib/stores';
+	import {
+		superGlobulePatternStore,
+		patternConfigStore,
+		patternSourceStore,
+		viewControlStore
+	} from '$lib/stores';
 	import CutPatternControl from './CutPatternControl.svelte';
 	import CutPatternSvg from './CutPatternSvg.svelte';
 
@@ -34,7 +39,7 @@
 		voronoiSurfacePattern: $superGlobulePatternStore.voronoiSurfacePattern,
 		showGlobuleTubeGeometry: $viewControlStore.showGlobuleTubeGeometry,
 		showProjectionGeometry: $viewControlStore.showProjectionGeometry,
-		patternSource: $patternConfigStore.patternViewConfig.patternSource ?? 'projection'
+		patternSource: $patternSourceStore
 	});
 
 	let sortMode = $patternConfigStore.patternViewConfig.bandSortMode ?? 'tube-order';
@@ -51,7 +56,7 @@
 			<CutPatternRenderer
 				tubes={collatedPatterns}
 				{sortIndex}
-				selectionTarget={$patternConfigStore.patternViewConfig.patternSource ?? 'projection'}
+				selectionTarget={$patternSourceStore}
 			/>
 
 			{#if $superGlobulePatternStore.projectionPattern && $viewControlStore.showProjectionGeometry.any}

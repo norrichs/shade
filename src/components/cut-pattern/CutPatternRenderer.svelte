@@ -9,8 +9,13 @@
 		labelTextDimensions,
 		pageLayoutInfoStore
 	} from '$lib/stores';
-	import { buildSelfTagLines } from '$lib/cut-pattern/build-self-tag-lines';
-	import { effectiveBandBounds } from '$lib/cut-pattern/label-footprint';
+	import {
+		buildEffectiveBoundsIndex,
+		buildPivotIndex,
+		buildTagAnchorIndex,
+		effectiveBoundsForBand,
+		type EffectiveBoundsContext
+	} from '$lib/cut-pattern/band-layout';
 	import { Vector3 } from 'three';
 	import {
 		computeWrappedOrigins,
@@ -82,22 +87,17 @@
 
 	// Band bounds expanded to enclose the external self-tag label, so layout
 	// packing reserves space for labels instead of overlapping them. Falls back
-	// to raw geometry bounds when the label isn't shown.
-	const effBoundsFor = (band: BandCutPattern) => {
-		const selfTagLines = buildSelfTagLines(
-			concatAddress(band.address, 'tb-slash'),
-			groupCodeFor(band.address),
-			externalTagEnabled
-		);
-		return (
-			effectiveBandBounds({
-				band,
-				labels: patternLabels,
-				selfTagLines,
-				measuredDims: measuredLabelDims
-			}) ?? band.bounds
-		);
-	};
+	// to raw geometry bounds when the label isn't shown. Computed once per band
+	// per layout pass via `boundsIndex` (see below); the direct call is only a
+	// fallback for a band that is not in the current band list.
+	const boundsContext = (): EffectiveBoundsContext => ({
+		labels: patternLabels,
+		externalTagEnabled,
+		measuredDims: measuredLabelDims,
+		groupCodeFor
+	});
+	const effBoundsFor = (band: BandCutPattern) =>
+		boundsIndex.has(band) ? boundsIndex.get(band) : effectiveBoundsForBand(band, boundsContext());
 
 	const alignedY = (band: BandCutPattern, verticalAlignment: 'top' | 'bottom' | 'center') => {
 		const bounds = effBoundsFor(band);
@@ -172,11 +172,6 @@
 			};
 		});
 
-	const pivotFor = (band: BandCutPattern) => {
-		const b = effBoundsFor(band);
-		return { x: (b?.left ?? 0) + (b?.width ?? 0) / 2, y: (b?.top ?? 0) + (b?.height ?? 0) / 2 };
-	};
-
 	const getPartnerBands = (originBand: BandCutPattern, tubes: TubeCutPattern[]) => {
 		const { meta } = originBand;
 		if (!meta) return undefined;
@@ -208,20 +203,6 @@
 		return sliced;
 	};
 
-	const minPoint = (facets: CutPattern[]) => {
-		let maxY: number = 0;
-		let X: number = 0;
-		facets.forEach((facet) =>
-			facet.path.forEach((segment) => {
-				if (segment[2] && segment[2] > maxY) {
-					maxY = segment[2];
-					X = segment[1] || 0;
-				}
-			})
-		);
-		return { x: X, y: maxY };
-	};
-
 	let range = $derived($patternConfigStore.patternViewConfig.range);
 	let layoutMode = $derived($patternConfigStore.patternViewConfig.patternLayoutMode ?? 'linear');
 	let pageLayoutCfg = $derived($patternConfigStore.patternConfig.pageLayout);
@@ -249,6 +230,14 @@
 		if (indexedBands) return indexedBands;
 		return filteredTubes.flatMap((tube) => tube.bands.map((band) => ({ band, tube })));
 	});
+
+	// Per-band layout values, each computed once per pass and keyed by band identity.
+	// Stable object identity here is what keeps BandComponent from re-rendering on
+	// view-only changes: a fresh `pivot` object per render used to invalidate every band.
+	let bandList = $derived(pageBands.map(({ band }) => band));
+	let boundsIndex = $derived(buildEffectiveBoundsIndex(bandList, boundsContext()));
+	let pivots = $derived(buildPivotIndex(bandList, boundsIndex));
+	let tagAnchors = $derived(buildTagAnchorIndex(bandList));
 
 	let pageResult = $derived.by((): PageLayoutResult | undefined => {
 		if (layoutMode !== 'page' || !pageLayoutCfg) return undefined;
@@ -324,9 +313,9 @@
 				index={i}
 				origin={pageResult.origins[i]}
 				rotation={pageResult.rotations[i] ?? 0}
-				pivot={pivotFor(band)}
+				pivot={pivots.get(band)}
 				portal={true}
-				tagAnchorPoint={band.tagAnchorPoint ?? minPoint(band.facets)}
+				tagAnchorPoint={tagAnchors.get(band)!}
 				tagAngle={band.tagAngle}
 				groupCode={groupCodeFor(band.address)}
 				showBounds={false}
@@ -359,7 +348,7 @@
 				index={i}
 				origin={flatOrigins[i]}
 				portal={true}
-				tagAnchorPoint={band.tagAnchorPoint ?? minPoint(band.facets)}
+				tagAnchorPoint={tagAnchors.get(band)!}
 				tagAngle={band.tagAngle}
 				groupCode={groupCodeFor(band.address)}
 				showBounds={false}
@@ -394,7 +383,7 @@
 						index={b}
 						origin={origins.tubes[t].bands[b]}
 						portal={true}
-						tagAnchorPoint={band.tagAnchorPoint ?? minPoint(band.facets)}
+						tagAnchorPoint={tagAnchors.get(band)!}
 						tagAngle={band.tagAngle}
 						groupCode={groupCodeFor(band.address)}
 						showBounds={false}
