@@ -11,27 +11,29 @@
 		defaultCapsuleConfig,
 		defaultSphereConfig
 	} from '$lib/projection-geometry/surface-definitions';
+	import TransformControls from './TransformControls.svelte';
+	import { identityTransform, isInheritedTransform } from './transform-config';
 
 	const handleChangeSurfaceType = (event: Event) => {
 		const selectedType = (event.target as HTMLSelectElement).value;
 		const config = get(superConfigStore);
 		let newSurfaceConfig: SurfaceConfig;
+		// Every surface type gets its own concrete transform. Sphere and Capsule
+		// used to be seeded 'inherit', which resolves to a hardcoded identity with
+		// no editor anywhere — so they had no Translate/Scale controls at all,
+		// while Globule did. See ./transform-config.
 		switch (selectedType) {
 			case 'sphere':
-				newSurfaceConfig = { ...defaultSphereConfig, transform: 'inherit' };
+				newSurfaceConfig = { ...defaultSphereConfig, transform: identityTransform() };
 				break;
 			case 'capsule':
-				newSurfaceConfig = { ...defaultCapsuleConfig, transform: 'inherit' };
+				newSurfaceConfig = { ...defaultCapsuleConfig, transform: identityTransform() };
 				break;
 			case 'globule':
 			default:
 				newSurfaceConfig = {
 					...config.subGlobuleConfigs[0].globuleConfig,
-					transform: {
-						translate: { x: 0, y: 0, z: 0 },
-						scale: { x: 1, y: 1, z: 1 },
-						rotate: { x: 0, y: 0, z: 0 }
-					}
+					transform: identityTransform()
 				} as SurfaceConfig;
 				break;
 		}
@@ -43,12 +45,30 @@
 		$superConfigStore.projectionConfigs[0].surfaceConfig as SurfaceConfig
 	);
 	let surfaceTypeValue = $derived(surfaceConfig.type.replace('Config', '').toLowerCase());
+
+	// Configs saved before every surface type carried its own transform still hold
+	// 'inherit'. Materialise once so the controls below have something to bind to;
+	// the seed is the same identity 'inherit' resolved to, so nothing moves. The
+	// guard makes this a no-op on every run after the first.
+	$effect(() => {
+		const surface = $superConfigStore.projectionConfigs[0]?.surfaceConfig;
+		if (!surface || !isInheritedTransform(surface.transform)) return;
+		const config = get(superConfigStore);
+		config.projectionConfigs[0].surfaceConfig = {
+			...config.projectionConfigs[0].surfaceConfig,
+			transform: identityTransform()
+		} as SurfaceConfig;
+		superConfigStore.set(config);
+	});
 </script>
 
 <Editor>
 	<section>
+		<!-- The transform used to be the string 'inherit' and was interpolated here;
+		     now that every surface carries a real transform object that rendered as
+		     "[object Object]". The values themselves are editable below. -->
 		<header>
-			{`${surfaceConfig.type} Transform: ${surfaceConfig.transform}`}
+			{surfaceConfig.type}
 		</header>
 		<Container direction="column">
 			<LabeledControl label="Surface Type">
@@ -58,21 +78,11 @@
 					<option value="globule">Globule</option>
 				</select>
 			</LabeledControl>
-			<LabeledControl label="Translate" show={surfaceConfig.transform !== 'inherit'}>
-				{#if $superConfigStore.projectionConfigs[0].surfaceConfig.transform !== 'inherit'}
-					<PointInput
-						bind:value={$superConfigStore.projectionConfigs[0].surfaceConfig.transform.translate}
-					/>
-				{/if}
-			</LabeledControl>
-
-			<LabeledControl label="Scale" show={surfaceConfig.transform !== 'inherit'}>
-				{#if $superConfigStore.projectionConfigs[0].surfaceConfig.transform !== 'inherit'}
-					<PointInput
-						bind:value={$superConfigStore.projectionConfigs[0].surfaceConfig.transform.scale}
-					/>
-				{/if}
-			</LabeledControl>
+			{#if $superConfigStore.projectionConfigs[0].surfaceConfig.transform !== 'inherit'}
+				<TransformControls
+					bind:transform={$superConfigStore.projectionConfigs[0].surfaceConfig.transform}
+				/>
+			{/if}
 
 			{#if surfaceConfig.type === 'SphereConfig' && 'radius' in surfaceConfig}
 				<LabeledControl label="Sphere Radius">
