@@ -1,7 +1,14 @@
 import { writable, derived, type Readable } from 'svelte/store';
 import type { SuperGlobuleConfig, SuperGlobule, PipelineGates } from '$lib/types';
 import type { Tube } from '$lib/projection-geometry/types';
-import type { WorkerMessage, WorkerResponse } from '$lib/workers/super-globule.worker';
+import type {
+	WorkerMessage,
+	WorkerResponse,
+	PatternMessage
+} from '$lib/workers/super-globule-worker-core';
+import type { PatternGenerationConfig } from './globulePatternStores';
+import type { PatternGenerationResult } from '$lib/cut-pattern/run-pattern-generation';
+import { rehydratePatternResult } from '$lib/workers/rehydrate-pattern';
 import { Vector3, Triangle } from 'three';
 import {
 	generateSurface,
@@ -13,6 +20,31 @@ export const isWorking = writable<boolean>(false);
 
 // Store to track if there's an error
 export const workerError = writable<string | null>(null);
+
+// True while a 2D pattern request is in flight in the worker.
+export const isPatternWorking = writable<boolean>(false);
+
+/**
+ * Which worker `generate` request produced a given SuperGlobule instance. A
+ * pattern request names this id so the worker can build the pattern from the
+ * geometry it already holds instead of receiving it again. Geometry that did not
+ * come from the worker (SSR, tests) has no entry and is patterned on the caller's
+ * thread.
+ */
+export const geometryRequestIds = new WeakMap<SuperGlobule, number>();
+
+/** The worker no longer holds the geometry a pattern request named. Callers drop the request. */
+export class StalePatternError extends Error {
+	constructor(message = 'pattern request referenced geometry the worker no longer holds') {
+		super(message);
+		this.name = 'StalePatternError';
+	}
+}
+
+const pendingPatternResolvers: Map<
+	number,
+	{ resolve: (value: PatternGenerationResult) => void; reject: (reason: Error) => void }
+> = new Map();
 
 // Internal state for request tracking
 let requestIdCounter = 0;
@@ -199,7 +231,31 @@ function getWorker(): Worker {
 		});
 
 		worker.onmessage = (event: MessageEvent<WorkerResponse>) => {
-			const { type, requestId } = event.data;
+			const data = event.data;
+
+			if (
+				data.type === 'pattern-result' ||
+				data.type === 'pattern-error' ||
+				data.type === 'pattern-stale'
+			) {
+				const resolver = pendingPatternResolvers.get(data.requestId);
+				pendingPatternResolvers.delete(data.requestId);
+				if (pendingPatternResolvers.size === 0) isPatternWorking.set(false);
+				if (!resolver) {
+					console.warn('[WorkerStore] Received pattern response for unknown request:', data.requestId);
+					return;
+				}
+				if (data.type === 'pattern-result') {
+					resolver.resolve(rehydratePatternResult(data.payload));
+				} else if (data.type === 'pattern-stale') {
+					resolver.reject(new StalePatternError());
+				} else {
+					resolver.reject(new Error(data.error));
+				}
+				return;
+			}
+
+			const { type, requestId } = data;
 			const resolver = pendingResolvers.get(requestId);
 
 			if (!resolver) {
@@ -215,7 +271,8 @@ function getWorker(): Worker {
 			}
 
 			if (type === 'result') {
-				const rehydrated = rehydrateSuperGlobule(event.data.payload);
+				const rehydrated = rehydrateSuperGlobule(data.payload);
+				geometryRequestIds.set(rehydrated, requestId);
 
 				// Non-fatal per-pipeline failures: surface them as a warning (the toast
 				// subscriber reads workerError) but still resolve with the partial result
@@ -249,8 +306,8 @@ function getWorker(): Worker {
 
 				resolver.resolve(rehydrated);
 			} else if (type === 'error') {
-				workerError.set(event.data.error);
-				resolver.reject(new Error(event.data.error));
+				workerError.set(data.error);
+				resolver.reject(new Error(data.error));
 			}
 		};
 
@@ -264,6 +321,9 @@ function getWorker(): Worker {
 				resolver.reject(new Error(error.message));
 			});
 			pendingResolvers.clear();
+			pendingPatternResolvers.forEach((resolver) => resolver.reject(new Error(error.message)));
+			pendingPatternResolvers.clear();
+			isPatternWorking.set(false);
 		};
 	}
 
@@ -307,6 +367,48 @@ export function generateSuperGlobuleAsync(
 }
 
 /**
+ * Generates the 2D patterns for `geometry` in the worker. `geometry` must be a
+ * SuperGlobule the worker produced (see `geometryRequestIds`); otherwise the
+ * promise rejects with a StalePatternError and the caller should generate on its
+ * own thread. Rejects with StalePatternError too when the worker has since moved
+ * on to newer geometry, in which case the caller simply drops the request.
+ */
+export function generatePatternAsync(
+	geometry: SuperGlobule,
+	superConfig: SuperGlobuleConfig,
+	genConfig: PatternGenerationConfig,
+	gates: PipelineGates
+): Promise<PatternGenerationResult> {
+	const geometryRequestId = geometryRequestIds.get(geometry);
+	if (geometryRequestId === undefined) {
+		return Promise.reject(new StalePatternError('geometry was not produced by the worker'));
+	}
+	return new Promise((resolve, reject) => {
+		const requestId = ++requestIdCounter;
+		pendingPatternResolvers.set(requestId, { resolve, reject });
+		isPatternWorking.set(true);
+
+		const message: PatternMessage = {
+			type: 'pattern',
+			requestId,
+			geometryRequestId,
+			superConfig,
+			genConfig,
+			gates
+		};
+
+		try {
+			// Deep clone to strip any Svelte 5 $state proxy objects
+			getWorker().postMessage(JSON.parse(JSON.stringify(message)));
+		} catch (error) {
+			pendingPatternResolvers.delete(requestId);
+			if (pendingPatternResolvers.size === 0) isPatternWorking.set(false);
+			reject(error instanceof Error ? error : new Error('Failed to post pattern request'));
+		}
+	});
+}
+
+/**
  * Terminates the worker (useful for cleanup)
  */
 export function terminateWorker(): void {
@@ -314,6 +416,8 @@ export function terminateWorker(): void {
 		worker.terminate();
 		worker = null;
 		pendingResolvers.clear();
+		pendingPatternResolvers.clear();
 		isWorking.set(false);
+		isPatternWorking.set(false);
 	}
 }

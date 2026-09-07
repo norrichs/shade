@@ -26,23 +26,25 @@ import {
 	generateSuperGlobuleBandGeometry,
 	generateSuperGlobuleGeometry
 } from '$lib/generate-globulegeometry';
+import { validateAllPanels } from '$lib/cut-pattern/generate-pattern';
 import {
-	generateProjectionPattern,
-	generateSuperGlobulePattern,
-	validateAllPanels
-} from '$lib/cut-pattern/generate-pattern';
+	EMPTY_PATTERN_RESULT,
+	runPatternGeneration,
+	type PatternGenerationResult
+} from '$lib/cut-pattern/run-pattern-generation';
 import {
 	patternConfigStore,
 	patternGenerationConfig,
 	type PatternGenerationConfig
 } from './globulePatternStores';
-import { resolvePatternGenerationTargets } from '$lib/cut-pattern/pattern-generation-gates';
-import { overrideStore } from './overrideStore';
-import { getMetaInfo } from '$lib/projection-geometry/meta-info';
 import { computationMode, pausePatternUpdates, isManualMode, hasPendingChanges } from './uiStores';
 import {
 	generateSuperGlobuleAsync,
+	generatePatternAsync,
+	geometryRequestIds,
+	isPatternWorking,
 	isWorking as workerIsWorking,
+	StalePatternError,
 	workerError
 } from './workerStore';
 import { browser } from '$app/environment';
@@ -50,8 +52,11 @@ import { toastStore } from './toastStore';
 import { viewControlStore, type ViewControls } from './viewControlStore';
 import { Box3, Vector3 } from 'three';
 
-// Re-export the isWorking store for external use
-export { workerIsWorking as isGenerating };
+// True while either the 3D geometry or the 2D patterns are being generated in the worker.
+export const isGenerating = derived(
+	[workerIsWorking, isPatternWorking],
+	([$geometry, $pattern]) => $geometry || $pattern
+);
 
 /**
  * Map the viewControl `any` flags to pipeline gates. A pipeline is only generated
@@ -297,24 +302,12 @@ if (browser) {
 			return;
 		}
 
-		if (!isInitialized) {
-			// Do initial synchronous generation for fast first render
-			console.log('SUPER GLOBULE STORE - Initial sync generation');
-			try {
-				const gates = pipelineGatesFromViewControls(get(viewControlStore));
-				const result = generateSuperGlobule(config, gates);
-				lastValidResult = result; // Store initial result
-				superGlobuleInternal.set(result);
-				isInitialized = true;
-			} catch (error) {
-				console.error('SUPER GLOBULE STORE - Initial generation failed:', error);
-				// Error will be shown via toast subscription below
-				isInitialized = true;
-			}
-		} else {
-			// Subsequent changes use async generation (only if NOT manual)
-			triggerAsyncGeneration(config);
-		}
+		// The first generation used to run synchronously "for fast first render"; on a
+		// large model that is a ~45 s freeze on every page load. Every generation now
+		// goes through the worker; `superGlobuleStore` serves an empty model until the
+		// first result lands and the header shows the working indicator meanwhile.
+		isInitialized = true;
+		triggerAsyncGeneration(config);
 	});
 
 	// Generation now depends on the viewControl pipeline gates, so a gate flip must
@@ -427,6 +420,15 @@ if (browser) {
 	});
 }
 
+const emptySuperGlobule = (superGlobuleConfigId: Id): SuperGlobule => ({
+	type: 'SuperGlobule',
+	superGlobuleConfigId,
+	subGlobules: [],
+	globuleTubes: [],
+	projections: [],
+	voronoiResult: undefined
+});
+
 // Derived store that provides the SuperGlobule (with fallback for SSR)
 export const superGlobuleStore = derived(
 	[superGlobuleInternal, superConfigStore],
@@ -436,8 +438,10 @@ export const superGlobuleStore = derived(
 			return $superGlobuleInternal;
 		}
 
-		// Fallback: generate synchronously (for SSR or before first result)
-		console.log('SUPER GLOBULE STORE - Sync fallback');
+		// Before the first worker result lands, serve an empty model rather than
+		// blocking the main thread with a synchronous generation. Outside the browser
+		// (SSR, tests) keep the synchronous path so consumers see real geometry.
+		if (browser) return emptySuperGlobule($superConfigStore.id);
 		return generateSuperGlobule(
 			$superConfigStore,
 			pipelineGatesFromViewControls(get(viewControlStore))
@@ -445,9 +449,11 @@ export const superGlobuleStore = derived(
 	}
 );
 
-// Active pattern source, isolated so the mesh store below only recomputes when
-// the source changes — not on every view-only patternConfig change (zoom/pan).
-const patternSourceStore = derived(
+// Active pattern source, isolated so the mesh store below and the pattern viewer
+// only recompute when the source changes — not on every view-only patternConfig
+// change (zoom/pan). Exported for PatternViewer, which otherwise re-collated every
+// tube (and so re-rendered every band) on each zoom/pan write.
+export const patternSourceStore = derived(
 	patternConfigStore,
 	($c): PatternSource => $c.patternViewConfig.patternSource ?? 'projection'
 );
@@ -484,188 +490,122 @@ export const superGlobuleBandGeometryStore = derived(superGlobuleStore, ($superG
 	return superGlobuleGeometry;
 });
 
-// Internal pattern store (non-debounced)
-// Uses patternGenerationConfig instead of patternConfigStore to avoid
-// re-triggering pattern generation on view-only changes (zoom, pan, display toggles)
-const superGlobulePatternStoreInternal = derived(
+// ---------------------------------------------------------------------------
+// 2D pattern generation
+//
+// Runs in the geometry worker against the SuperGlobule it already holds, so a
+// pattern parameter change never blocks the main thread. Requests are debounced
+// and latest-wins; a request that names geometry the worker has since replaced
+// is dropped (the new geometry triggers its own request).
+//
+// Uses patternGenerationConfig instead of patternConfigStore so view-only
+// changes (zoom, pan, display toggles) do not re-trigger generation.
+// ---------------------------------------------------------------------------
+
+export const PATTERN_DEBOUNCE_MS = 150;
+
+export const superGlobulePatternStore = writable<PatternGenerationResult>(EMPTY_PATTERN_RESULT);
+
+type PatternInputs = [
+	SuperGlobule,
+	SuperGlobuleConfig,
+	PatternGenerationConfig,
+	PipelineGates,
+	string,
+	boolean,
+	boolean,
+	boolean
+];
+
+const patternInputs = derived(
 	[
 		superGlobuleStore,
 		superConfigStore,
 		patternGenerationConfig,
 		patternGates,
-		overrideStore,
 		computationMode,
 		pausePatternUpdates,
 		isManualMode,
 		hasPendingChanges
 	],
-	([
-		$superGlobuleStore,
-		$superConfigStore,
-		$genConfig,
-		$patternGates,
-		$overrideStore,
-		$computationMode,
-		$pausePatternUpdates,
-		$isManualMode,
-		$hasPendingChanges
-	]):
-		| {
-				superGlobulePattern: any;
-				projectionPattern: any;
-				globuleTubePattern: any;
-				surfaceProjectionPattern: any;
-				voronoiPattern: any;
-				voronoiSurfacePattern: any;
-		  }
-		| 'paused' => {
-		// Skip pattern generation if paused - return 'paused' marker
-		if ($pausePatternUpdates) {
-			console.log('PATTERN STORE: Updates paused');
-			return 'paused' as const;
-		}
-
-		// MANUAL MODE: Pause patterns when pending changes exist
-		if ($isManualMode && $hasPendingChanges) {
-			console.log('PATTERN STORE: Manual mode with pending changes, returning cached');
-			return 'paused' as const;
-		}
-
-		// Skip pattern generation in 3d-only mode
-		if ($computationMode === '3d-only') {
-			return {
-				superGlobulePattern: null,
-				projectionPattern: undefined,
-				globuleTubePattern: null,
-				surfaceProjectionPattern: undefined,
-				voronoiPattern: undefined,
-				voronoiSurfacePattern: undefined
-			};
-		}
-
-		console.time('PATTERN_GENERATION');
-
-		// Build a GlobulePatternConfig-compatible object from the generation config
-		// for generateSuperGlobulePattern which still expects the full config
-		const patternConfigForGeneration: GlobulePatternConfig = {
-			type: 'GlobulePatternConfig',
-			id: '',
-			cutoutConfig: {} as any,
-			patternConfig: { pixelScale: $genConfig.pixelScale } as any,
-			patternViewConfig: { showBands: $genConfig.showBands, range: $genConfig.range } as any,
-			patternTypeConfig: $genConfig.patternTypeConfig
-		};
-
-		const projection = $superGlobuleStore.projections[0];
-		const globuleTubes = $superGlobuleStore.globuleTubes;
-		const voronoiResult = $superGlobuleStore.voronoiResult;
-		const voronoiTubes = voronoiResult?.tubes ?? [];
-		const voronoiSurfaceProjectionTubes = voronoiResult?.surfaceProjectionTubes ?? [];
-
-		const patternSource = $genConfig.patternSource ?? 'projection';
-
-		const targets = resolvePatternGenerationTargets(
-			$patternGates,
-			patternSource,
-			$genConfig.showBands,
-			{
-				hasGlobuleTubes: globuleTubes.length > 0,
-				hasProjectionTubes: !!projection?.tubes?.length,
-				hasSurfaceProjectionTubes: !!projection?.surfaceProjectionTubes?.length,
-				hasVoronoiTubes: voronoiTubes.length > 0,
-				hasVoronoiSurfaceTubes: voronoiSurfaceProjectionTubes.length > 0
-			}
-		);
-
-		const patternFor = (tubes: Tube[]) =>
-			generateProjectionPattern(
-				tubes,
-				$superConfigStore.id,
-				patternConfigForGeneration,
-				$genConfig.range
-			);
-
-		const superGlobulePattern = targets.superGlobule
-			? generateSuperGlobulePattern(
-					$superGlobuleStore,
-					$superConfigStore,
-					patternConfigForGeneration
-				)
-			: null;
-
-		const globuleTubePattern = targets.globuleTube ? patternFor(globuleTubes) : null;
-
-		const projectionPattern = targets.projection ? patternFor(projection.tubes) : undefined;
-
-		const surfaceProjectionPattern = targets.surfaceProjection
-			? patternFor(projection.surfaceProjectionTubes!)
-			: undefined;
-
-		const voronoiPattern = targets.voronoi ? patternFor(voronoiTubes) : undefined;
-
-		const voronoiSurfacePattern = targets.voronoiSurface
-			? patternFor(voronoiSurfaceProjectionTubes)
-			: undefined;
-
-		const metaInfo = getMetaInfo(projectionPattern);
-
-		console.timeEnd('PATTERN_GENERATION');
-		return {
-			superGlobulePattern,
-			projectionPattern,
-			globuleTubePattern,
-			surfaceProjectionPattern,
-			voronoiPattern,
-			voronoiSurfacePattern
-		};
-	}
+	(values) => values as PatternInputs
 );
 
-// Debounced pattern store (exposed publicly)
+let patternRequestSeq = 0;
 let patternDebounceTimeout: ReturnType<typeof setTimeout> | null = null;
-let lastPatternResult: any = {
-	superGlobulePattern: null,
-	projectionPattern: undefined,
-	globuleTubePattern: null,
-	surfaceProjectionPattern: undefined,
-	voronoiPattern: undefined,
-	voronoiSurfacePattern: undefined
+
+const requestPattern = async (
+	superGlobule: SuperGlobule,
+	superConfig: SuperGlobuleConfig,
+	genConfig: PatternGenerationConfig,
+	gates: PipelineGates
+) => {
+	const seq = ++patternRequestSeq;
+	const input = { superGlobule, superConfig, genConfig, gates };
+
+	// Geometry that did not come from the worker (SSR fallback, tests) is
+	// patterned here; it is small by construction.
+	if (!browser || geometryRequestIds.get(superGlobule) === undefined) {
+		const result = runPatternGeneration(input);
+		if (seq === patternRequestSeq) superGlobulePatternStore.set(result);
+		return;
+	}
+
+	try {
+		const result = await generatePatternAsync(superGlobule, superConfig, genConfig, gates);
+		if (seq === patternRequestSeq) superGlobulePatternStore.set(result);
+	} catch (error) {
+		if (error instanceof StalePatternError) return;
+		console.error('PATTERN STORE - generation failed:', error);
+		workerError.set(error instanceof Error ? error.message : 'Pattern generation failed');
+	}
 };
 
-export const superGlobulePatternStore = derived(
-	[superGlobulePatternStoreInternal],
-	([$internal], set) => {
-		// Clear any pending debounced update
-		if (patternDebounceTimeout) {
-			clearTimeout(patternDebounceTimeout);
-		}
+if (browser) {
+	patternInputs.subscribe(
+		([
+			$superGlobule,
+			$superConfig,
+			$genConfig,
+			$gates,
+			$computationMode,
+			$pausePatternUpdates,
+			$isManualMode,
+			$hasPendingChanges
+		]) => {
+			if (patternDebounceTimeout) clearTimeout(patternDebounceTimeout);
 
-		// If paused, return last result immediately
-		if ($internal === 'paused') {
-			console.log('PATTERN STORE: Returning cached result (paused)');
-			return lastPatternResult;
-		}
+			// Paused, or manual mode with pending changes: keep showing the last result.
+			if ($pausePatternUpdates) return;
+			if ($isManualMode && $hasPendingChanges) return;
 
-		// Debounce pattern updates (300ms)
-		patternDebounceTimeout = setTimeout(() => {
-			if ($internal && typeof $internal !== 'string') {
-				lastPatternResult = $internal;
-				set($internal);
+			if ($computationMode === '3d-only') {
+				superGlobulePatternStore.set(EMPTY_PATTERN_RESULT);
+				return;
 			}
-		}, 300);
 
-		// Return last result while debouncing, or current result if available
-		return lastPatternResult;
-	},
-	{
-		superGlobulePattern: null,
-		projectionPattern: undefined,
-		globuleTubePattern: null,
-		surfaceProjectionPattern: undefined,
-		voronoiPattern: undefined,
-		voronoiSurfacePattern: undefined
-	}
-);
+			patternDebounceTimeout = setTimeout(() => {
+				void requestPattern($superGlobule, $superConfig, $genConfig, $gates);
+			}, PATTERN_DEBOUNCE_MS);
+		}
+	);
+} else {
+	// Server / test environments: synchronous, undebounced.
+	patternInputs.subscribe(([$superGlobule, $superConfig, $genConfig, $gates, $computationMode]) => {
+		if ($computationMode === '3d-only') {
+			superGlobulePatternStore.set(EMPTY_PATTERN_RESULT);
+			return;
+		}
+		superGlobulePatternStore.set(
+			runPatternGeneration({
+				superGlobule: $superGlobule,
+				superConfig: $superConfig,
+				genConfig: $genConfig,
+				gates: $gates
+			})
+		);
+	});
+}
 
 export type SuperGlobulePattern = SuperGlobuleBandPattern | SuperGlobuleProjectionPattern;
 
