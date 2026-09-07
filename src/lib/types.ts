@@ -706,10 +706,46 @@ export type OutlinedTabConfig = {
 	inset?: number;
 };
 
+/**
+ * A procedurally generated interior fill layered onto an outlined band pattern.
+ *
+ * The outlined pipeline already produces a band outline with tab geometry
+ * appended; a fill adds internal geometry inside that outline. `kind` is the
+ * registry key — adding a fill means a new module plus one registry entry, with
+ * no change here beyond a union member.
+ *
+ * All lengths are raw SVG user units (px), matching `OutlinedTabConfig`.
+ */
+export type CircleHolesFillConfig = {
+	kind: 'circle-holes';
+	/** Reroll handle. Combined with the band index so each band differs. */
+	seed: number;
+	/** Holes per square px. `count = round(bandArea * density)`. */
+	density: number;
+	/** Target clearance between a hole and the band outline. */
+	margin: number;
+	minRadius: number;
+	maxRadius: number;
+	/** Target gap between the edges of two holes. */
+	spacing: number;
+};
+
+export type ProceduralFillConfig = CircleHolesFillConfig;
+
+export const isCircleHolesFillConfig = (
+	config: ProceduralFillConfig
+): config is CircleHolesFillConfig => config.kind === 'circle-holes';
+
 export type OutlinedPatternConfig = {
 	type: 'outlined';
 	tabConfig?: OutlinedTabConfig;
 	labels?: PatternLabelsConfig;
+	/**
+	 * Optional procedural interior geometry. Absent means a bare outline, which
+	 * is what every saved config predating this field decodes to — no migration
+	 * is needed.
+	 */
+	fill?: ProceduralFillConfig;
 };
 
 export type PatternTypeConfig = TiledPatternConfig | OutlinedPatternConfig;

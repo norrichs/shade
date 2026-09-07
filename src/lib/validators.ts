@@ -3,6 +3,7 @@ import type {
 	GlobulePatternConfig,
 	OutlinedPatternConfig,
 	PatternLabelsConfig,
+	ProceduralFillConfig,
 	TiledPatternConfig
 } from './types';
 
@@ -75,9 +76,7 @@ export const migrateGlobulePatternConfig = <T extends Partial<GlobulePatternConf
 	if (pvc && pvc.patternLayoutMode === undefined) {
 		pvc.patternLayoutMode = pvc.lineWrap ? 'line-wrap' : 'linear';
 	}
-	const pc = config.patternConfig as
-		| { pageLayout?: Record<string, unknown> }
-		| undefined;
+	const pc = config.patternConfig as { pageLayout?: Record<string, unknown> } | undefined;
 	if (pc && pc.pageLayout === undefined) {
 		pc.pageLayout = {
 			pageSize: { width: 304.8, height: 304.8 },
@@ -122,6 +121,29 @@ export const validateCutoutConfig = (config: CutoutConfig): Validity => {
 	if (!validity.isValid) {
 		validity.messages.forEach((message) => console.error(message));
 	}
+
+	return validity;
+};
+
+/**
+ * Validate a procedural fill config.
+ *
+ * A bad combination does not throw — the packer degrades to producing nothing —
+ * but it silently yields an empty band, so surface the reason instead.
+ */
+export const validateProceduralFillConfig = (config: ProceduralFillConfig): Validity => {
+	const validity: Validity = { isValid: true, messages: [] };
+	const fail = (message: string) => {
+		validity.isValid = false;
+		validity.messages.push(message);
+	};
+
+	if (!(config.density > 0)) fail('density must be greater than 0');
+	if (!(config.minRadius > 0)) fail('minRadius must be greater than 0');
+	if (!(config.maxRadius > 0)) fail('maxRadius must be greater than 0');
+	if (config.minRadius > config.maxRadius) fail('minRadius must not exceed maxRadius');
+	if (config.margin < 0) fail('margin must not be negative');
+	if (config.spacing < 0) fail('spacing must not be negative');
 
 	return validity;
 };
