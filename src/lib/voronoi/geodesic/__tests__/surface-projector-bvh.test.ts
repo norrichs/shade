@@ -70,6 +70,39 @@ describe('SurfaceProjector.projectClosest (BVH)', () => {
 		expect(got.normal.z).toBeGreaterThan(0.7);
 	});
 
+	/**
+	 * Analytic normal of the height field z = 0.3 sin(3x) cos(2y).
+	 * The blended welded-vertex normal must be within a few degrees of it: a normal
+	 * taken from the wrong triangle (e.g. a BVH faceIndex read against the original
+	 * triangle order) is off by tens of degrees and tilts every cross-section.
+	 */
+	const analyticNormal = (x: number, y: number) =>
+		new Vector3(-0.9 * Math.cos(3 * x) * Math.cos(2 * y), 0.6 * Math.sin(3 * x) * Math.sin(2 * y), 1).normalize();
+
+	it('blends the normal from the triangle actually hit (closest point)', () => {
+		const r = rng(7);
+		let worst = 0;
+		for (let i = 0; i < 100; i++) {
+			const p = new Vector3(r() * 1.6 - 0.8, r() * 1.6 - 0.8, r() * 0.6 + 0.4);
+			const got = projector.projectClosest(p);
+			const deg = (got.normal.angleTo(analyticNormal(got.point.x, got.point.y)) * 180) / Math.PI;
+			worst = Math.max(worst, deg);
+		}
+		expect(worst).toBeLessThan(8);
+	});
+
+	it('blends the normal from the triangle actually hit (raycast)', () => {
+		const r = rng(11);
+		let worst = 0;
+		for (let i = 0; i < 100; i++) {
+			const p = new Vector3(r() * 1.6 - 0.8, r() * 1.6 - 0.8, 2);
+			const got = projector.project(p, new Vector3(0, 0, 1));
+			const deg = (got.normal.angleTo(analyticNormal(got.point.x, got.point.y)) * 180) / Math.PI;
+			worst = Math.max(worst, deg);
+		}
+		expect(worst).toBeLessThan(8);
+	});
+
 	it('handles a point far outside the mesh extent by clamping to the rim', () => {
 		const got = projector.projectClosest(new Vector3(5, 5, 0));
 		const expected = bruteClosest(tris, new Vector3(5, 5, 0));

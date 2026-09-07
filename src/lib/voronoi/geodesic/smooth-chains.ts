@@ -155,6 +155,8 @@ function faceNormalOf(t: SurfaceTriangle): Vector3 {
 export class SurfaceProjector {
 	private mesh: Mesh;
 	private bvh: MeshBVH;
+	/** BVH faceIndex -> index into `triangles` / `triNormals`. */
+	private originalTriangleOf: Uint32Array;
 	private raycaster = new Raycaster();
 	private triangles: SurfaceTriangle[];
 	private triNormals: [Vector3, Vector3, Vector3][];
@@ -187,12 +189,24 @@ export class SurfaceProjector {
 		(geom as BufferGeometry & { boundsTree?: MeshBVH }).boundsTree = this.bvh;
 		this.mesh = new Mesh(geom, new MeshBasicMaterial());
 		this.mesh.raycast = acceleratedRaycast;
+
+		// MeshBVH builds and SORTS an index buffer for the geometry. Every faceIndex it
+		// reports (closest point and raycast alike) counts triangles in that sorted
+		// order, not in `triangles`. Using it directly picked an unrelated triangle's
+		// normals, tilting every voronoi cross-section (tubes zig-zagged while the
+		// height-free surface-projection tubes stayed straight). Map back once here.
+		const index = geom.index;
+		this.originalTriangleOf = new Uint32Array(triangles.length);
+		for (let f = 0; f < triangles.length; f++) {
+			this.originalTriangleOf[f] = index ? index.getX(f * 3) / 3 : f;
+		}
 	}
 
 	project(point: Vector3, normal: Vector3): { point: Vector3; normal: Vector3 } {
 		const hit = this.raycastBoth(point, normal);
 		if (hit && hit.faceIndex != null && hit.faceIndex < this.triangles.length) {
-			return { point: hit.point.clone(), normal: this.blendNormal(hit.faceIndex, hit.point) };
+			const ti = this.originalTriangleOf[hit.faceIndex];
+			return { point: hit.point.clone(), normal: this.blendNormal(ti, hit.point) };
 		}
 		return this.closestPoint(point);
 	}
@@ -228,6 +242,6 @@ export class SurfaceProjector {
 		const hit = this.bvh.closestPointToPoint(point);
 		if (!hit) return { point: point.clone(), normal: new Vector3(0, 0, 1) };
 		const p = hit.point.clone();
-		return { point: p, normal: this.blendNormal(hit.faceIndex, p) };
+		return { point: p, normal: this.blendNormal(this.originalTriangleOf[hit.faceIndex], p) };
 	}
 }
