@@ -20,4 +20,20 @@ describe('getBandMaterial', () => {
 		expect(getBandMaterial(band(9), highlight)).toBe(materials.default);
 		expect(getBandMaterial(band(3), null)).toBe(materials.default);
 	});
+
+	// Each band source has its own resting colour (voronoi rim tubes red, projection
+	// bands `selected`, ...). Highlighting must override it without permanently
+	// flattening every source to one look.
+	it('falls back to the caller-supplied material instead of the default', () => {
+		expect(getBandMaterial(band(3), null, materials.numbered[1])).toBe(materials.numbered[1]);
+		const highlight = { band: band(3), ring: [band(3)] };
+		expect(getBandMaterial(band(9), highlight, materials.selected)).toBe(materials.selected);
+	});
+
+	// Bands with no resolvable address still render (see collateAddressedBandGeometry);
+	// they simply never match a highlight.
+	it('paints an unaddressed band with its fallback even while a highlight is active', () => {
+		const highlight = { band: band(3), ring: [band(3)] };
+		expect(getBandMaterial(undefined, highlight, materials.selected)).toBe(materials.selected);
+	});
 });

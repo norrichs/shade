@@ -1,5 +1,5 @@
 import type { GeometrySource } from '$lib/stores';
-import { recordBandSelection } from '$lib/stores';
+import { recordBandSelection, setAssemblerHighlightForBand } from '$lib/stores';
 import type { GlobuleAddress_Facet } from '$lib/projection-geometry/types';
 import type { Vector3 } from 'three';
 import { get } from 'svelte/store';
@@ -38,4 +38,13 @@ export const handleFacetSelect = (
 
 	setHighlight?.(address);
 	recordBandSelection(source, address);
+
+	// Also drive the Assembler cross-view highlight, so a band clicked in 3D lights
+	// up in the SVG pattern and the data grid too. Facet index is dropped — the
+	// cross-view highlight is band-granular.
+	setAssemblerHighlightForBand({
+		globule: address.globule,
+		tube: address.tube,
+		band: address.band
+	});
 };

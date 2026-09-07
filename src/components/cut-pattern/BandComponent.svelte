@@ -8,9 +8,12 @@
 		assemblerHighlight,
 		patternConfigStore,
 		sameGlobuleBand,
+		selectedGlobuleTube,
 		selectedProjection,
 		selectedSurfaceProjection,
-		selectedVoronoiSurface
+		selectedVoronoi,
+		selectedVoronoiSurface,
+		setAssemblerHighlightForBand
 	} from '$lib/stores';
 	import { HIGHLIGHT_PRIMARY, HIGHLIGHT_SECONDARY } from '$lib/highlight-colors';
 	import type { Vector3 } from 'three';
@@ -87,27 +90,51 @@
 		isHovered = false;
 	};
 
+	/**
+	 * Clicking a band in the SVG pattern selects it: it drives the per-source 3D
+	 * facet selection AND the Assembler cross-view highlight, so the same band
+	 * lights up in the 3D view and the data grid.
+	 *
+	 * Each source must go to its own selection store — they resolve addresses
+	 * against different `Tube[]` arrays, so sending e.g. a voronoi address to
+	 * `selectedProjection` looks it up in the projection's tubes and highlights the
+	 * wrong band.
+	 */
 	const handleClick = (address: GlobuleAddress_Band) => {
+		const facetAddress = { ...address, facet: 0 };
 		if (selectionTarget === 'voronoiSurface') {
-			$selectedVoronoiSurface = { ...address, facet: 0 };
+			$selectedVoronoiSurface = facetAddress;
+		} else if (selectionTarget === 'voronoi') {
+			$selectedVoronoi = facetAddress;
 		} else if (selectionTarget === 'surfaceProjection') {
-			$selectedSurfaceProjection = { ...address, facet: 0 };
+			$selectedSurfaceProjection = facetAddress;
+		} else if (selectionTarget === 'globule') {
+			$selectedGlobuleTube = facetAddress;
 		} else {
-			$selectedProjection = { ...address, facet: 0 };
+			$selectedProjection = facetAddress;
 		}
+		setAssemblerHighlightForBand(address);
 	};
 </script>
 
+<!-- `role="button"` + `tabindex` make the group genuinely focusable: it previously
+     carried the selection on `onfocus` alone, which can never fire on a plain
+     <g>, so clicking a band in the pattern did nothing at all. -->
 <g
 	transform={bandTransform(origin, rotation, pivot)}
 	id={`band-${band.id}`}
-	role="group"
+	role="button"
+	tabindex="0"
 	onmouseover={() => handleMouseOver(band.address)}
 	onmouseout={() => handleMouseOut(band.address)}
-	onfocus={() => {
-		handleClick(band.address);
-		isFocused = true;
+	onclick={() => handleClick(band.address)}
+	onkeydown={(e) => {
+		if (e.key === 'Enter' || e.key === ' ') {
+			e.preventDefault();
+			handleClick(band.address);
+		}
 	}}
+	onfocus={() => (isFocused = true)}
 	onblur={() => (isFocused = false)}
 	stroke={color}
 >

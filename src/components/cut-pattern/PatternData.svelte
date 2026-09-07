@@ -23,11 +23,7 @@
 	 */
 	import type { BandSortIndex, TubeCutPattern } from '$lib/types';
 	import type { GlobuleAddress_Band } from '$lib/projection-geometry/types';
-	import {
-		assemblerHighlight,
-		sameGlobuleBand,
-		setAssemblerHighlight
-	} from '$lib/stores';
+	import { assemblerHighlight, sameGlobuleBand, setAssemblerHighlightForBand } from '$lib/stores';
 	import { HIGHLIGHT_PRIMARY, HIGHLIGHT_SECONDARY } from '$lib/highlight-colors';
 
 	let {
@@ -184,10 +180,13 @@
 		return '';
 	};
 
+	// Goes through the shared `setAssemblerHighlightForBand` rather than passing the
+	// locally-resolved ring, so a band clicked here highlights exactly the same ring
+	// as the identical band clicked in the 3D view or the SVG pattern.
 	const handleCellClick = (r: number, c: number) => {
 		const resolved = resolveCell(r, c);
 		if (!resolved) return;
-		setAssemblerHighlight(resolved.band, resolved.ring);
+		setAssemblerHighlightForBand(resolved.band);
 	};
 
 	const handleCellKeydown = (e: KeyboardEvent, r: number, c: number) => {
