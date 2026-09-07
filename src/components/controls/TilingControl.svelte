@@ -3,12 +3,17 @@
 	import SelectInput from './SelectInput.svelte';
 	import { patternConfigStore } from '$lib/stores';
 	import ControlGroup from './ControlGroup.svelte';
-	import { tiledPatternConfigs, defaultOutlinedPatternConfig } from '$lib/shades-config';
+	import {
+		tiledPatternConfigs,
+		defaultOutlinedPatternConfig,
+		defaultCircleHolesFillConfig
+	} from '$lib/shades-config';
 	import PatternTileButton from '../pattern/PatternTileButton.svelte';
 	import CheckboxInput from './CheckboxInput.svelte';
 	import NumberInput from './super-control/NumberInput.svelte';
 	import type {
 		GridVariant,
+		OutlinedPatternConfig,
 		TiledPatternConfig,
 		TabShape,
 		TabEdgeOption,
@@ -197,6 +202,68 @@
 							<option value="after">after</option>
 							<option value="beforeAndAfter">beforeAndAfter</option>
 						</select>
+					</div>
+				{/if}
+				<div>
+					<span>Procedural Fill</span>
+					<input
+						type="checkbox"
+						checked={!!$patternConfigStore.patternTypeConfig.fill}
+						on:change={(e) => {
+							const enabled = (e.currentTarget as HTMLInputElement).checked;
+							$patternConfigStore.patternTypeConfig = {
+								...($patternConfigStore.patternTypeConfig as OutlinedPatternConfig),
+								fill: enabled ? defaultCircleHolesFillConfig() : undefined
+							};
+						}}
+					/>
+				</div>
+				{#if $patternConfigStore.patternTypeConfig.fill}
+					<NumberInput
+						label="Density"
+						min={0.0001}
+						max={0.02}
+						step={0.0001}
+						bind:value={$patternConfigStore.patternTypeConfig.fill.density}
+					/>
+					<NumberInput
+						label="Margin"
+						min={0}
+						max={50}
+						step={0.5}
+						bind:value={$patternConfigStore.patternTypeConfig.fill.margin}
+					/>
+					<NumberInput
+						label="Min Radius"
+						min={0.5}
+						max={50}
+						step={0.5}
+						bind:value={$patternConfigStore.patternTypeConfig.fill.minRadius}
+					/>
+					<NumberInput
+						label="Max Radius"
+						min={0.5}
+						max={100}
+						step={0.5}
+						bind:value={$patternConfigStore.patternTypeConfig.fill.maxRadius}
+					/>
+					<NumberInput
+						label="Circle Spacing"
+						min={0}
+						max={50}
+						step={0.5}
+						bind:value={$patternConfigStore.patternTypeConfig.fill.spacing}
+					/>
+					<div class="row">
+						<span>Seed {$patternConfigStore.patternTypeConfig.fill.seed}</span>
+						<button
+							on:click={() => {
+								const outlined = $patternConfigStore.patternTypeConfig as OutlinedPatternConfig;
+								if (!outlined.fill) return;
+								outlined.fill.seed = Math.floor(Math.random() * 1000000) + 1;
+								$patternConfigStore = $patternConfigStore;
+							}}>Reroll</button
+						>
 					</div>
 				{/if}
 			</div>
