@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { T } from '@threlte/core';
 	import { getBandMaterial, getMaterial, materials } from '../three-renderer/materials';
-	import { BufferGeometry, Object3D, Vector3 } from 'three';
+	import { BufferGeometry, Mesh, Object3D, Vector3 } from 'three';
 	import {
 		collateGeometry,
 		collateGlobuleTubeGeometry,
@@ -31,6 +31,10 @@
 		selectedVoronoiSurfaceGeometry
 	} from '$lib/stores';
 	import { handleFacetSelect } from '../three-renderer/selection-helpers';
+	import { get } from 'svelte/store';
+	import { interactionMode, isMeasureInteractionMode } from '../three-renderer/interaction-mode';
+	import { nearestVertexFromEvent } from '../three-renderer/nearest-vertex';
+	import { addMeasurementPoint } from '$lib/stores/measurementStore';
 
 	// Non-interactive visual meshes (bands, sections, the surface) must NOT
 	// participate in pointer raycasting — otherwise an opaque grey band/surface in
@@ -38,6 +42,27 @@
 	// the click so the facet behind it can never be selected. A no-op raycast keeps
 	// these meshes visible while making only the facet meshes clickable.
 	const noRaycast = () => {};
+
+	// Bands, sections and rim tubes opt out of raycasting (above) so an opaque band
+	// in front cannot swallow a click meant for a facet behind it. Measurement wants
+	// the opposite: the nearest visible SURFACE, whatever kind of mesh it belongs to
+	// — the user's spec is "clicks on the 3d model", not "clicks on facets", and
+	// facets are usually hidden while bands are shown. So while measuring, these
+	// meshes become raycastable again and a group-level handler places the point.
+	let isMeasuring = $derived(isMeasureInteractionMode($interactionMode));
+	let surfaceRaycast = $derived(isMeasuring ? Mesh.prototype.raycast : noRaycast);
+
+	const handleSurfaceMeasureClick = (ev: {
+		object?: unknown;
+		point?: Vector3;
+		intersections?: { object: unknown; point?: Vector3 }[];
+		stopPropagation?: () => void;
+	}) => {
+		if (!isMeasureInteractionMode(get(interactionMode))) return;
+		ev.stopPropagation?.();
+		const vertex = nearestVertexFromEvent(ev);
+		if (vertex) addMeasurementPoint(vertex);
+	};
 
 	// Stable key for {#each} blocks over facets, derived from the facet's address.
 	const facetKey = (a: GlobuleAddress_Facet) => `${a.globule}-${a.tube}-${a.band}-${a.facet}`;
@@ -182,9 +207,9 @@
 
 {#if $viewControlStore.showProjectionGeometry.any}
 	<!-- // use negative y scale to match SVG coordinates -->
-	<T.Group position={[0, 0, 0]} scale={[1, 1, 1]}>
+	<T.Group position={[0, 0, 0]} scale={[1, 1, 1]} onclick={handleSurfaceMeasureClick}>
 		{#if projectionGeometry.surface}
-			<T is={projectionGeometry.surface} material={materials.selected} raycast={noRaycast} />
+			<T is={projectionGeometry.surface} material={materials.selected} raycast={surfaceRaycast} />
 		{/if}
 
 		<ColorMapped
@@ -198,7 +223,7 @@
 			<T.Mesh
 				geometry={projectionGeometry.projection}
 				material={materials.highlightedSecondary}
-				raycast={noRaycast}
+				raycast={surfaceRaycast}
 			/>
 		{/if}
 		{#if projectionGeometry.surfaceProjectionFacets}
@@ -223,14 +248,14 @@
 					<T.Mesh
 						geometry={band}
 						material={materials.numbered[i % materials.numbered.length]}
-						raycast={noRaycast}
+						raycast={surfaceRaycast}
 					/>
 				{/each}
 			{:else}
 				<T.Mesh
 					geometry={projectionGeometry.surfaceProjection}
 					material={materials.highlightedSecondary}
-					raycast={noRaycast}
+					raycast={surfaceRaycast}
 				/>
 			{/if}
 		{/if}
@@ -243,12 +268,12 @@
 			<T.Mesh
 				geometry={projectionGeometry.sections}
 				material={materials.numbered[4]}
-				raycast={noRaycast}
+				raycast={surfaceRaycast}
 			/>
 		{/if}
 
 		{#each projectionGeometry.bands || [] as band (band.id)}
-			<T.Mesh geometry={band} material={materials.selected} raycast={noRaycast} />
+			<T.Mesh geometry={band} material={materials.selected} raycast={surfaceRaycast} />
 		{/each}
 		{#each projectionGeometry.facets || [] as facet (facetKey(facet.address))}
 			<T.Mesh
@@ -272,20 +297,20 @@
 {/if}
 
 {#if $viewControlStore.showVoronoiGeometry.any}
-	<T.Group position={[0, 0, 0]}>
+	<T.Group position={[0, 0, 0]} onclick={handleSurfaceMeasureClick}>
 		{#if voronoiGeometry.sections}
 			<T.Mesh
 				geometry={voronoiGeometry.sections}
 				material={materials.numbered[4]}
-				raycast={noRaycast}
+				raycast={surfaceRaycast}
 			/>
 		{/if}
 		{#each voronoiGeometry.bands || [] as band (band.id)}
-			<T.Mesh geometry={band} material={materials.default} raycast={noRaycast} />
+			<T.Mesh geometry={band} material={materials.default} raycast={surfaceRaycast} />
 		{/each}
 		{#each voronoiGeometry.rimBands || [] as band (band.id)}
 			<!-- Open-surface rim tubes, coloured red to distinguish them -->
-			<T.Mesh geometry={band} material={materials.numbered[1]} raycast={noRaycast} />
+			<T.Mesh geometry={band} material={materials.numbered[1]} raycast={surfaceRaycast} />
 		{/each}
 		{#each voronoiGeometry.facets || [] as facet (facetKey(facet.address))}
 			<T.Mesh
@@ -314,12 +339,12 @@
 {/if}
 
 {#if $viewControlStore.showGlobuleTubeGeometry.any}
-	<T.Group position={[0, 0, 0]}>
+	<T.Group position={[0, 0, 0]} onclick={handleSurfaceMeasureClick}>
 		{#if globuleTubeGeometry.sections}
 			<T.Mesh
 				geometry={globuleTubeGeometry.sections}
 				material={materials.numbered[4]}
-				raycast={noRaycast}
+				raycast={surfaceRaycast}
 			/>
 		{/if}
 		{#each globuleTubeGeometry.bands || [] as band (bandKey(band.address))}
@@ -328,7 +353,7 @@
 			<T.Mesh
 				geometry={band.geometry}
 				material={getBandMaterial(band.address, $assemblerHighlight)}
-				raycast={noRaycast}
+				raycast={surfaceRaycast}
 			/>
 		{/each}
 		{#each globuleTubeGeometry.facets || [] as facet (facetKey(facet.address))}
