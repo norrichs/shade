@@ -31,6 +31,8 @@ import { collectOutlinedBandTabs, type OutlinedTabEdge } from './collect-outline
 import { computeOutlinedLabelAnchor } from './compute-label-anchor';
 import { chooseMiddleQuadEdge } from './select-middle-quad-edge';
 import { seamTabOwner } from './seam-tab-layout';
+import { dedupePolygon, type Polygon } from '$lib/patterns/procedural/polygon-2d';
+import { generateProceduralFill } from '$lib/patterns/procedural/procedural-fill';
 
 /**
  * Compute bounding box from all coordinates in a path.
@@ -471,6 +473,21 @@ export const buildOutlinePath = (
 };
 
 /**
+ * The band perimeter as a plain 2D ring, for procedural fills.
+ *
+ * Takes each edge's start point: consecutive edges share endpoints, so the
+ * starts alone walk the closed perimeter. Tab geometry is excluded by
+ * construction — tabs exist only in the built outline path, never in the edge
+ * list — which is what keeps holes out of glue surfaces.
+ *
+ * `dedupePolygon` is required, not defensive: `buildOutlinePath` already skips
+ * zero-length edges because globule bands begin at a collapsed pole facet, and
+ * a zero-length edge would make the fill's distance queries divide by zero.
+ */
+export const outlinePolygonFromEdges = (edges: { start: Vector3 }[]): Polygon =>
+	dedupePolygon(edges.map((e) => ({ x: e.start.x, y: e.start.y })));
+
+/**
  * Generate outlined pattern for a single band.
  */
 const generateOutlinedBandPattern = (
@@ -514,6 +531,13 @@ const generateOutlinedBandPattern = (
 
 	// Compute bounds from all path coordinates (includes tab geometry)
 	const bounds = getBoundsFromPath(outlinePath);
+
+	// Procedural interior geometry, appended AFTER the quad facets so the
+	// existing positional reads of `facets[0]` (the outline, used by
+	// prepare-merge) keep resolving to the same facet.
+	const fillFacet = config.fill
+		? generateProceduralFill(outlinePolygonFromEdges(edges), config.fill, localBandIndex)
+		: undefined;
 
 	// Compute the band's start/end partner bands from facet edge metadata so
 	// `resolveTabLabel` can render addresses on the 'start' and 'end' cap tabs.
@@ -565,7 +589,7 @@ const generateOutlinedBandPattern = (
 
 	const result: BandCutPattern = {
 		projectionType: 'patterned',
-		facets: [outlineFacet, ...quadFacets],
+		facets: fillFacet ? [outlineFacet, ...quadFacets, fillFacet] : [outlineFacet, ...quadFacets],
 		svgPath: outlineFacet.svgPath,
 		id: `outlined-band-${tubeAddress.globule}-${tubeAddress.tube}-${bandIndex}`,
 		tagAnchorPoint: labelAnchor ? labelAnchor.anchor : { x: 0, y: 0 },
