@@ -23,9 +23,16 @@
 	import {
 		interactionMode,
 		isBandSelectInteractionMode,
+		isMeasureInteractionMode,
 		isPointSelectInteractionMode,
 		type InteractionMode
 	} from './interaction-mode';
+	import { nearestVertexFromEvent } from './nearest-vertex';
+	import {
+		addMeasurementPoint,
+		clearMeasurements,
+		measurements
+	} from '$lib/stores/measurementStore';
 	import { getNearestPoint } from '$lib/generate-globulegeometry';
 	import { BufferGeometry, Vector3 } from 'three';
 	import { materials } from './materials';
@@ -55,6 +62,30 @@
 	interactivity({ clickDistanceThreshold: 25 });
 
 	const CLICK_DELTA_THRESHOLD = 10;
+
+	// Measurement points are snapped to model vertices, and vertex identity is
+	// not stable across a geometry regeneration, so stale points must be
+	// cleared whenever the geometry changes. This can't live in
+	// measurementStore.ts itself: wiring a subscription to the geometry store
+	// there closes an import cycle (measurementStore -> superGlobuleStores ->
+	// meta-info -> stores/index -> selectionStores -> back to
+	// superGlobuleStores' exports) — see the note at the bottom of
+	// measurementStore.ts. Scene.svelte already imports geometryStore
+	// (superGlobuleBandGeometryStore) to render the scene, so it sits
+	// downstream of both stores and can safely bridge them here instead.
+	// Keyed on geometryStore specifically (not the pattern/pattern-layout
+	// stores) so measurements survive pattern changes and clear only on an
+	// actual geometry regeneration. Skips its first run so mounting the scene
+	// does not wipe measurements made before a remount.
+	let isFirstGeometryEffectRun = true;
+	$effect(() => {
+		void $geometryStore;
+		if (isFirstGeometryEffectRun) {
+			isFirstGeometryEffectRun = false;
+			return;
+		}
+		clearMeasurements();
+	});
 
 	const selectBand = ({
 		coord,
@@ -172,6 +203,13 @@
 			standardSelect(geometry);
 		} else if (isBandSelectInteractionMode(mode)) {
 			selectBand(geometry);
+		} else if (isMeasureInteractionMode(mode)) {
+			// Measurement collects an unbounded list of pairs, so it must not go
+			// through selectPoint's fixed-size ring buffer. isPointSelectInteractionMode
+			// also matches this mode (it checks a 'point-select' prefix), so this
+			// branch must come first.
+			const vertex = nearestVertexFromEvent(event);
+			if (vertex) addMeasurementPoint(vertex);
 		} else if (isPointSelectInteractionMode(mode)) {
 			selectPoint(event, geometry);
 		}
@@ -255,7 +293,7 @@
 <DesignerLighting />
 
 <TransformDisplay />
-{#if isPointSelectInteractionMode($interactionMode)}
+{#if isPointSelectInteractionMode($interactionMode) && !isMeasureInteractionMode($interactionMode)}
 	{#each $interactionMode.data.points as point, i (i)}
 		<T.Group position={[point.x, point.y, point.z]}>
 			<GlobuleMesh geometry={indicator} material="default" />
@@ -270,6 +308,20 @@
 		</T.Group>
 	{/each}
 {/if}
+
+{#each $measurements as measurement (measurement.id)}
+	<T.Group position={[measurement.a.x, measurement.a.y, measurement.a.z]}>
+		<T.Mesh
+			geometry={indicatorGeometry}
+			material={measurement.b ? materials.measureMatched : materials.measurePending}
+		/>
+	</T.Group>
+	{#if measurement.b}
+		<T.Group position={[measurement.b.x, measurement.b.y, measurement.b.z]}>
+			<T.Mesh geometry={indicatorGeometry} material={materials.measureMatched} />
+		</T.Group>
+	{/if}
+{/each}
 
 <ProjectionGeometryComponent onClick={handleProjectionClick} />
 <GlobuleGeometryComponent {getInteractionMaterial} {handleClick} />

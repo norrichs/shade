@@ -7,6 +7,8 @@
 	import Container from './Container.svelte';
 	import Editor from './Editor.svelte';
 	import { polyhedronConfigs } from './polyhedra-configs';
+	import TransformControls from './TransformControls.svelte';
+	import { identityTransform, isInheritedTransform } from './transform-config';
 
 	const handleChangePolyhedron = (event: Event) => {
 		const selectedName = (event.target as HTMLSelectElement).value;
@@ -14,10 +16,31 @@
 
 		if (newPolyhedron) {
 			const config = get(superConfigStore);
-			config.projectionConfigs[0].projectorConfig.polyhedron = newPolyhedron as any;
+			// Every polyhedron model ships `transform: 'inherit'`, which resolves to a
+			// hardcoded identity with no editor anywhere — so the polyhedron transform
+			// was unreachable, exactly as the surface transform was. Materialise on
+			// selection so the controls below have something to bind to; identity seed
+			// means nothing moves. See ./transform-config.
+			config.projectionConfigs[0].projectorConfig.polyhedron = {
+				...(newPolyhedron as any),
+				transform: identityTransform()
+			};
 			superConfigStore.set(config);
 		}
 	};
+
+	// Same materialisation for the polyhedron already in the config (a fresh app
+	// load, or any saved config predating this). No-op after the first run.
+	$effect(() => {
+		const polyhedron = $superConfigStore.projectionConfigs[0]?.projectorConfig?.polyhedron;
+		if (!polyhedron || !isInheritedTransform(polyhedron.transform)) return;
+		const config = get(superConfigStore);
+		config.projectionConfigs[0].projectorConfig.polyhedron = {
+			...config.projectionConfigs[0].projectorConfig.polyhedron,
+			transform: identityTransform()
+		};
+		superConfigStore.set(config);
+	});
 </script>
 
 <Editor>
@@ -36,6 +59,13 @@
 					{/each}
 				</select>
 			</LabeledControl>
+			{#if $superConfigStore.projectionConfigs[0].projectorConfig.polyhedron.transform !== 'inherit'}
+				<TransformControls
+					bind:transform={
+						$superConfigStore.projectionConfigs[0].projectorConfig.polyhedron.transform
+					}
+				/>
+			{/if}
 		</Container>
 	</section>
 </Editor>

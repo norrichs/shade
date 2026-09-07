@@ -1,12 +1,16 @@
-import type { BezierConfig, PointConfig2 } from '$lib/types';
+import { describe, it, expect } from '@jest/globals';
+
 import {
 	fillPathToAxis,
 	mirrorCurvesAcrossY,
 	pathFromCurves,
-	radializeCurves,
-	reverseReflectCurves,
-	rotateCurvesAroundOrigin
+	radializeCurves
 } from '../curve-preview';
+import { radialShapeCurveConfigs } from '$lib/geometry/radial-shape';
+import { generateDefaultRadialShapeConfig } from '$lib/shades-config';
+import type { BezierConfig, PointConfig2 } from '$lib/types';
+
+const sampleMethod = { method: 'divideCurve', divisions: 4 } as const;
 
 const pt = (x: number, y: number): PointConfig2 => ({ type: 'PointConfig2', x, y });
 
@@ -23,18 +27,78 @@ const curve = (
 // Fresh fixtures per assertion: these helpers clone, but a shared literal would
 // still be easy to mutate accidentally from a future test.
 const oneCurve = () => [curve([0, 0], [1, 0], [2, 0], [3, 0])];
-const twoCurves = () => [
-	curve([0, 0], [1, 0], [2, 0], [3, 0]),
-	curve([3, 0], [4, 1], [5, 2], [6, 3])
-];
 
-describe('pathFromCurves', () => {
-	it('emits a move to the first anchor then one cubic per curve', () => {
-		expect(pathFromCurves(oneCurve())).toBe('M 0 0 C 1 0, 2 0, 3 0');
+const maxJointGap = (curves: BezierConfig[]): number =>
+	Math.max(
+		...curves.map((curve, i) => {
+			const previous = curves[(i - 1 + curves.length) % curves.length];
+			return Math.hypot(
+				curve.points[0].x - previous.points[3].x,
+				curve.points[0].y - previous.points[3].y
+			);
+		})
+	);
+
+describe('radializeCurves', () => {
+	it('closes the outline for an unreflected shape', () => {
+		// Regression: the preview used to be handed y-flipped coordinates and
+		// rotate the wrong way round, leaving a 156-unit gap at every joint on
+		// the radius-100 default — the seven tangential lobes in the bug report.
+		const config = generateDefaultRadialShapeConfig(7, sampleMethod);
+		const preview = radializeCurves(config.curves, {
+			symmetryNumber: 7,
+			symmetry: 'radial'
+		});
+		expect(maxJointGap(preview)).toBeLessThan(1e-9);
 	});
 
-	it('chains curves without repeating the shared anchor', () => {
-		expect(pathFromCurves(twoCurves())).toBe('M 0 0 C 1 0, 2 0, 3 0 C 4 1, 5 2, 6 3');
+	it('closes the outline for a reflected shape', () => {
+		const config = generateDefaultRadialShapeConfig(7, sampleMethod, 'radial-lateral');
+		const preview = radializeCurves(config.curves, {
+			symmetryNumber: 7,
+			symmetry: 'radial-lateral'
+		});
+		expect(maxJointGap(preview)).toBeLessThan(1e-9);
+	});
+
+	it('draws exactly what the generator generates', () => {
+		// The preview and the 3D geometry must not be able to drift apart.
+		for (const symmetry of ['radial', 'radial-lateral'] as const) {
+			for (const n of [3, 5, 7]) {
+				const config = generateDefaultRadialShapeConfig(n, sampleMethod, symmetry);
+				const preview = radializeCurves(config.curves, { symmetryNumber: n, symmetry });
+				expect(preview).toEqual(radialShapeCurveConfigs(config));
+			}
+		}
+	});
+});
+
+describe('pathFromCurves', () => {
+	const curveFrom = (x0: number, y0: number, x3: number, y3: number): BezierConfig => ({
+		type: 'BezierConfig',
+		points: [
+			{ type: 'PointConfig2', x: x0, y: y0 },
+			{ type: 'PointConfig2', x: x0, y: y0 },
+			{ type: 'PointConfig2', x: x3, y: y3 },
+			{ type: 'PointConfig2', x: x3, y: y3 }
+		]
+	});
+
+	it('chains contiguous curves with a single move', () => {
+		const d = pathFromCurves([curveFrom(0, 0, 10, 0), curveFrom(10, 0, 10, 10)]);
+		expect(d.match(/M/g)).toHaveLength(1);
+	});
+
+	it('starts a new subpath at a genuine discontinuity instead of bridging it', () => {
+		// A silent bridge is what turned gaps into phantom loops. A break must
+		// look like a break.
+		const d = pathFromCurves([curveFrom(0, 0, 10, 0), curveFrom(50, 50, 60, 50)]);
+		expect(d.match(/M/g)).toHaveLength(2);
+	});
+
+	it('tolerates floating-point drift at a joint', () => {
+		const d = pathFromCurves([curveFrom(0, 0, 10, 0), curveFrom(10 + 1e-12, 0, 10, 10)]);
+		expect(d.match(/M/g)).toHaveLength(1);
 	});
 
 	it('returns an empty string for no curves', () => {
@@ -75,75 +139,5 @@ describe('mirrorCurvesAcrossY', () => {
 		const input = oneCurve();
 		mirrorCurvesAcrossY(input);
 		expect(input[0].points[3].x).toBe(3);
-	});
-});
-
-describe('reverseReflectCurves', () => {
-	it('mirrors and reverses so the result continues from the input end', () => {
-		const input = twoCurves();
-		const result = reverseReflectCurves(input);
-		// input ends at (6, 3); the reflection should start at (-6, 3)
-		expect([result[0].points[0].x, result[0].points[0].y]).toEqual([-6, 3]);
-	});
-
-	it('does not mutate the input', () => {
-		const input = twoCurves();
-		reverseReflectCurves(input);
-		expect(input[0].points[0].x).toBe(0);
-	});
-});
-
-describe('rotateCurvesAroundOrigin', () => {
-	it('rotates a quarter turn exactly', () => {
-		const [rotated] = rotateCurvesAroundOrigin(
-			[curve([1, 0], [1, 0], [1, 0], [1, 0])],
-			Math.PI / 2
-		);
-		expect(rotated.points[0].x).toBeCloseTo(0);
-		expect(rotated.points[0].y).toBeCloseTo(1);
-	});
-
-	it('handles negative-x points, which the legacy atan(y/x) folded into the wrong quadrant', () => {
-		const [rotated] = rotateCurvesAroundOrigin(
-			[curve([-1, 0], [-1, 0], [-1, 0], [-1, 0])],
-			Math.PI
-		);
-		expect(rotated.points[0].x).toBeCloseTo(1);
-		expect(rotated.points[0].y).toBeCloseTo(0);
-	});
-
-	it('leaves a point on the y-axis finite, where the legacy divided by zero', () => {
-		const [rotated] = rotateCurvesAroundOrigin(
-			[curve([0, 2], [0, 2], [0, 2], [0, 2])],
-			Math.PI / 2
-		);
-		expect(rotated.points[0].x).toBeCloseTo(-2);
-		expect(rotated.points[0].y).toBeCloseTo(0);
-		expect(Number.isNaN(rotated.points[0].x)).toBe(false);
-	});
-
-	it('preserves radius', () => {
-		const [rotated] = rotateCurvesAroundOrigin([curve([3, 4], [3, 4], [3, 4], [3, 4])], 1.234);
-		expect(Math.hypot(rotated.points[0].x, rotated.points[0].y)).toBeCloseTo(5);
-	});
-});
-
-describe('radializeCurves', () => {
-	it('emits exactly symmetryNumber copies, not the legacy off-by-one', () => {
-		const result = radializeCurves(oneCurve(), { symmetryNumber: 6, reflect: false });
-		expect(result).toHaveLength(6);
-	});
-
-	it('doubles the unit when reflecting', () => {
-		const result = radializeCurves(twoCurves(), { symmetryNumber: 3, reflect: true });
-		expect(result).toHaveLength(3 * 2 * 2);
-	});
-
-	it('returns empty for a degenerate symmetry number', () => {
-		expect(radializeCurves(oneCurve(), { symmetryNumber: 0, reflect: false })).toEqual([]);
-	});
-
-	it('returns empty for no curves', () => {
-		expect(radializeCurves([], { symmetryNumber: 5, reflect: false })).toEqual([]);
 	});
 });

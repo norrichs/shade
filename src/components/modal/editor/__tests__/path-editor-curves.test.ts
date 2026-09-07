@@ -272,6 +272,65 @@ describe('radialEndLock', () => {
 		});
 		expect(result[0].points[3]).toMatchObject({ x: 10, y: 7 });
 	});
+
+	describe('with coupleRadius: false (reflected symmetry)', () => {
+		// A reflected run is mirrored about the ray through its end anchor, and that
+		// mirror preserves radius — so closure constrains only the two end ANGLES.
+		// The ends may sit at different distances from the centre.
+		const limitAngle = Math.PI / 6;
+
+		it('pins the dragged end to its ray without moving the partner in or out', () => {
+			const curveDef = joined();
+			// Park the partner (last anchor) at radius 20 on its ray first.
+			curveDef[1].points[3] = { ...curveDef[1].points[3], ...pointOnRay(20, limitAngle) };
+
+			const result = applyLimits({
+				limits: [radialEndLock(limitAngle, { coupleRadius: false })],
+				curveDef,
+				curveIndex: 0,
+				pointIndex: 0,
+				newPoint: pt(0, 5),
+				oldPoint: pt(0, 0)
+			});
+
+			const first = result[0].points[0];
+			const last = result[1].points[3];
+			// Dragged end lands on its own ray at its own radius...
+			expect(Math.hypot(first.x, first.y)).toBeCloseTo(5);
+			// ...and the partner keeps the radius it had, rather than following to 5.
+			expect(Math.hypot(last.x, last.y)).toBeCloseTo(20);
+		});
+
+		it('still holds the partner on its ray', () => {
+			const curveDef = joined();
+			curveDef[1].points[3] = { ...curveDef[1].points[3], ...pointOnRay(20, limitAngle) };
+
+			const result = applyLimits({
+				limits: [radialEndLock(limitAngle, { coupleRadius: false })],
+				curveDef,
+				curveIndex: 0,
+				pointIndex: 0,
+				newPoint: pt(0, 5),
+				oldPoint: pt(0, 0)
+			});
+
+			const last = result[1].points[3];
+			expect(last.x).toBeCloseTo(pointOnRay(20, limitAngle).x);
+			expect(last.y).toBeCloseTo(pointOnRay(20, limitAngle).y);
+		});
+
+		it('defaults to coupling, so unreflected shapes are unaffected', () => {
+			const result = applyLimits({
+				limits: [radialEndLock(limitAngle)],
+				curveDef: joined(),
+				curveIndex: 0,
+				pointIndex: 0,
+				newPoint: pt(0, 5),
+				oldPoint: pt(0, 0)
+			});
+			expect(Math.hypot(result[1].points[3].x, result[1].points[3].y)).toBeCloseTo(5);
+		});
+	});
 });
 
 describe('applyLimits deep clone', () => {

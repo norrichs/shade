@@ -10,10 +10,17 @@
  * 1. **Orientation-neutral.** The legacy versions negate every `y` because
  *    `SuperPathEdit` renders on a y-up canvas. These emit coordinates exactly as
  *    stored; orientation is the renderer's business.
- * 2. **`ShapeConfig`-free.** `radializeCurves` takes a plain options object so it
- *    is testable without constructing a config.
+ * 2. **Delegates radial repetition to the shared module.** `radializeCurves` takes
+ *    a plain `{ symmetryNumber, symmetry }` options object (not a caller-built
+ *    `ShapeConfig`), then constructs the `ShapeConfig` itself and calls
+ *    `radialShapeCurveConfigs` from `$lib/geometry/radial-shape` — the same
+ *    function the generator uses. This is deliberate: it keeps the preview and
+ *    the generator computing radial repetition identically. Do not hand-roll
+ *    radial repetition here again; that would reintroduce the duplicate-
+ *    implementation drift this module exists to eliminate.
  */
-import type { BezierConfig, PointConfig2 } from '$lib/types';
+import { radialShapeCurveConfigs } from '$lib/geometry/radial-shape';
+import type { BezierConfig, PointConfig2, ShapeConfig } from '$lib/types';
 
 const clonePoint = (point: PointConfig2): PointConfig2 => ({ ...point });
 
@@ -23,19 +30,33 @@ const clonePoints = (points: BezierConfig['points']): BezierConfig['points'] =>
 export const cloneCurves = (curves: BezierConfig[]): BezierConfig[] =>
 	curves.map((curve) => ({ ...curve, points: clonePoints(curve.points) }));
 
-const curveSegments = (curves: BezierConfig[]): string =>
-	curves
-		.map(
-			(curve) =>
-				`C ${curve.points[1].x} ${curve.points[1].y}, ${curve.points[2].x} ${curve.points[2].y}, ${curve.points[3].x} ${curve.points[3].y}`
-		)
-		.join(' ');
+/** Points closer than this at a joint are the same point, modulo float drift. */
+const JOINT_EPSILON = 1e-9;
 
-/** `M p0 C p1 p2 p3 …` — the open outline of a curve run. */
+const isContiguous = (previous: BezierConfig, next: BezierConfig): boolean =>
+	Math.hypot(next.points[0].x - previous.points[3].x, next.points[0].y - previous.points[3].y) <=
+	JOINT_EPSILON;
+
+const cubicSegment = (curve: BezierConfig): string =>
+	`C ${curve.points[1].x} ${curve.points[1].y}, ${curve.points[2].x} ${curve.points[2].y}, ${curve.points[3].x} ${curve.points[3].y}`;
+
+/**
+ * `M p0 C p1 p2 p3 …` — the outline of a curve run.
+ *
+ * A `C` continues from the current point, so chaining across a gap silently
+ * bridges it and the bridging bezier bulges outward as a phantom loop. Emit a
+ * fresh `M` at a real discontinuity so a break looks like a break.
+ */
 export const pathFromCurves = (curves: BezierConfig[]): string => {
 	if (curves.length === 0) return '';
-	const start = curves[0].points[0];
-	return `M ${start.x} ${start.y} ${curveSegments(curves)}`;
+	const parts: string[] = [`M ${curves[0].points[0].x} ${curves[0].points[0].y}`];
+	curves.forEach((curve, i) => {
+		if (i > 0 && !isContiguous(curves[i - 1], curve)) {
+			parts.push(`M ${curve.points[0].x} ${curve.points[0].y}`);
+		}
+		parts.push(cubicSegment(curve));
+	});
+	return parts.join(' ');
 };
 
 /**
@@ -52,7 +73,7 @@ export const fillPathToAxis = (curves: BezierConfig[], axis: 'x' | 'y' = 'y'): s
 	return [
 		`M ${onAxis(start)}`,
 		`L ${start.x} ${start.y}`,
-		curveSegments(curves),
+		curves.map(cubicSegment).join(' '),
 		`L ${onAxis(end)}`,
 		'Z'
 	].join(' ');
@@ -66,57 +87,25 @@ export const mirrorCurvesAcrossY = (curves: BezierConfig[]): BezierConfig[] =>
 	}));
 
 /**
- * Mirror across the y-axis *and* reverse traversal, so the result continues
- * where the input left off. Legacy name: `reflectCurvesAroundX`.
- */
-export const reverseReflectCurves = (curves: BezierConfig[]): BezierConfig[] =>
-	cloneCurves(curves)
-		.map((curve) => ({
-			...curve,
-			points: curve.points
-				.map((point) => ({ ...point, x: -point.x }))
-				.reverse() as BezierConfig['points']
-		}))
-		.reverse();
-
-/**
- * Rotate every point about the origin by `angle` radians.
- *
- * The legacy version used `Math.atan(y / x)`, which folds quadrants II and III
- * onto IV and I and divides by zero on the y-axis. This uses the rotation matrix
- * directly, so it is exact and total.
- */
-export const rotateCurvesAroundOrigin = (curves: BezierConfig[], angle: number): BezierConfig[] => {
-	const cos = Math.cos(angle);
-	const sin = Math.sin(angle);
-	return cloneCurves(curves).map((curve) => ({
-		...curve,
-		points: curve.points.map((point) => ({
-			...point,
-			x: point.x * cos - point.y * sin,
-			y: point.x * sin + point.y * cos
-		})) as BezierConfig['points']
-	}));
-};
-
-/**
  * Repeat a unit curve run around the origin to preview a radially symmetric
- * cross-section. With `reflect`, each unit is paired with its mirror first, so
- * the repeated element is itself bilaterally symmetric.
+ * cross-section.
  *
- * The legacy loop ran `i <= symmetryNumber`, drawing one redundant overlapping
- * copy. This emits exactly `symmetryNumber` copies.
+ * Delegates to the same module the 3D generator uses, so the preview cannot
+ * disagree with the geometry. It previously reimplemented the repetition with a
+ * different reflection and was handed y-flipped coordinates, which reversed the
+ * rotation direction and left a full wedge gap at every joint.
+ *
+ * Caller must pass MODEL-space curves. Convert the result for display
+ * afterwards (see `toDisplay` on the PathEditor overlay context).
  */
 export const radializeCurves = (
 	curves: BezierConfig[],
-	{ symmetryNumber, reflect }: { symmetryNumber: number; reflect: boolean }
-): BezierConfig[] => {
-	if (curves.length === 0 || symmetryNumber < 1) return [];
-	const unit = reflect ? [...cloneCurves(curves), ...reverseReflectCurves(curves)] : curves;
-	const angle = (Math.PI * 2) / symmetryNumber;
-	const result: BezierConfig[] = [];
-	for (let i = 0; i < symmetryNumber; i++) {
-		result.push(...rotateCurvesAroundOrigin(unit, angle * i));
-	}
-	return result;
-};
+	{ symmetryNumber, symmetry }: { symmetryNumber: number; symmetry: ShapeConfig['symmetry'] }
+): BezierConfig[] =>
+	radialShapeCurveConfigs({
+		type: 'ShapeConfig',
+		symmetry,
+		symmetryNumber,
+		sampleMethod: { method: 'divideCurve', divisions: 1 },
+		curves
+	});

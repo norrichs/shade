@@ -23,12 +23,9 @@
 	 */
 	import type { BandSortIndex, TubeCutPattern } from '$lib/types';
 	import type { GlobuleAddress_Band } from '$lib/projection-geometry/types';
-	import {
-		assemblerHighlight,
-		sameGlobuleBand,
-		setAssemblerHighlight
-	} from '$lib/stores';
+	import { assemblerHighlight, sameGlobuleBand, setAssemblerHighlightForBand } from '$lib/stores';
 	import { HIGHLIGHT_PRIMARY, HIGHLIGHT_SECONDARY } from '$lib/highlight-colors';
+	import { findBandRow } from '$lib/cut-pattern/band-row-lookup';
 
 	let {
 		csv = '',
@@ -184,10 +181,13 @@
 		return '';
 	};
 
+	// Goes through the shared `setAssemblerHighlightForBand` rather than passing the
+	// locally-resolved ring, so a band clicked here highlights exactly the same ring
+	// as the identical band clicked in the 3D view or the SVG pattern.
 	const handleCellClick = (r: number, c: number) => {
 		const resolved = resolveCell(r, c);
 		if (!resolved) return;
-		setAssemblerHighlight(resolved.band, resolved.ring);
+		setAssemblerHighlightForBand(resolved.band);
 	};
 
 	const handleCellKeydown = (e: KeyboardEvent, r: number, c: number) => {
@@ -196,6 +196,48 @@
 			handleCellClick(r, c);
 		}
 	};
+
+	let autoScroll = $state(false);
+	let gridScrollEl = $state<HTMLDivElement | undefined>(undefined);
+
+	/**
+	 * Bring the highlighted band's row into view when the selection changes.
+	 *
+	 * Scrolls `.grid-scroll` by setting `scrollTop` rather than calling
+	 * `scrollIntoView`: the Assembler nests this pane inside a fixed-height
+	 * `overflow: auto` section, and `scrollIntoView` would drag that section (and
+	 * the page) around too. Positions are measured with `getBoundingClientRect`
+	 * because `.grid-scroll` is not a positioned ancestor, so `offsetTop` would be
+	 * relative to the wrong element.
+	 */
+	$effect(() => {
+		const highlight = $assemblerHighlight;
+		const rows = filteredRows;
+		const container = gridScrollEl;
+		if (!autoScroll || !highlight || !container) return;
+
+		const targetRow = findBandRow(index, flatBands, highlight.band);
+		// The row may be excluded by the active filters, in which case there is
+		// nothing on screen to scroll to.
+		if (targetRow === null || !rows.some((row) => row.r === targetRow)) return;
+
+		const rowEl = container.querySelector<HTMLElement>(`tbody tr[data-row="${targetRow}"]`);
+		if (!rowEl) return;
+
+		// The header is sticky, so a row scrolled to the container's top edge sits
+		// underneath it and reads as invisible.
+		const headerHeight = container.querySelector('thead')?.getBoundingClientRect().height ?? 0;
+		const rowRect = rowEl.getBoundingClientRect();
+		const containerRect = container.getBoundingClientRect();
+
+		// Already fully visible — don't jump the pane out from under a grid click.
+		if (rowRect.top >= containerRect.top + headerHeight && rowRect.bottom <= containerRect.bottom) {
+			return;
+		}
+
+		const rowTopWithinContent = rowRect.top - containerRect.top + container.scrollTop;
+		container.scrollTop = Math.max(0, rowTopWithinContent - headerHeight);
+	});
 </script>
 
 <div class="pattern-data">
@@ -212,8 +254,12 @@
 			Tube #
 			<input type="number" min="0" bind:value={tubeFilter} placeholder="#" />
 		</label>
+		<label class="checkbox">
+			<input type="checkbox" bind:checked={autoScroll} />
+			Auto scroll to selection
+		</label>
 	</div>
-	<div class="grid-scroll">
+	<div class="grid-scroll" bind:this={gridScrollEl}>
 		{#if body.length === 0}
 			<p class="empty">No pattern data available.</p>
 		{:else if filteredRows.length === 0}
@@ -229,7 +275,9 @@
 				</thead>
 				<tbody>
 					{#each filteredRows as { cells: dataRow, r } (r)}
-						<tr>
+						<!-- The original row index, so auto-scroll can find this row after the
+						     filters have reordered or removed others. -->
+						<tr data-row={r}>
 							{#each dataRow as cell, c (c)}
 								{@const clickable = !!resolveCell(r, c)}
 								<td
@@ -277,6 +325,17 @@
 		width: 5rem;
 		padding: 0.15rem 0.3rem;
 		font-size: 0.8rem;
+	}
+	/* Sits alongside the number filters rather than stacking label over input. */
+	.filters label.checkbox {
+		flex-direction: row;
+		align-items: center;
+		gap: 0.35rem;
+		align-self: flex-end;
+		white-space: nowrap;
+	}
+	.filters label.checkbox input {
+		width: auto;
 	}
 	.grid-scroll {
 		flex: 1 1 auto;

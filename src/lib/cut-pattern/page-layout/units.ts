@@ -18,3 +18,18 @@ export const derivePageDimensions = (bounds: Box3, pageScale: number): DerivedDi
 	const mm = { x: size.x / pageScale, y: size.y / pageScale, z: size.z / pageScale };
 	return { mm, inch: { x: mmToInch(mm.x), y: mmToInch(mm.y), z: mmToInch(mm.z) } };
 };
+
+export type DerivedDistance = { mm: number; inch: number };
+
+/**
+ * Straight-line 3D distance between two model points, in real-world page units.
+ * Mirrors `derivePageDimensions`: pageScale is pattern units per mm.
+ *
+ * A zero pageScale (possible in older saved configs) would otherwise produce
+ * Infinity and render as a broken readout, so it falls back to 1:1.
+ */
+export const deriveDistance = (a: Vector3, b: Vector3, pageScale: number): DerivedDistance => {
+	const scale = pageScale || 1;
+	const mm = a.distanceTo(b) / scale;
+	return { mm, inch: mmToInch(mm) };
+};

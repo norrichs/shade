@@ -1,18 +1,11 @@
 import type { GeometrySource } from '$lib/stores';
-import { recordBandSelection } from '$lib/stores';
+import { recordBandSelection, setAssemblerHighlightForBand } from '$lib/stores';
 import type { GlobuleAddress_Facet } from '$lib/projection-geometry/types';
-
-/**
- * Threlte's pointer events report ALL meshes under the cursor (`ev.intersections`
- * is depth-sorted, nearest first). For selection we only want the nearest hit —
- * otherwise a click also lands on back-faces / occluded facets behind it.
- *
- * Returns true only when the event's own object is the nearest intersection.
- */
-export const isNearestIntersection = (ev: {
-	object?: unknown;
-	intersections?: { object: unknown }[];
-}): boolean => ev.intersections?.[0]?.object === ev.object;
+import type { Vector3 } from 'three';
+import { get } from 'svelte/store';
+import { addMeasurementPoint } from '$lib/stores/measurementStore';
+import { interactionMode, isMeasureInteractionMode } from './interaction-mode';
+import { isNearestIntersection, nearestVertexFromEvent } from './nearest-vertex';
 
 /**
  * Standard facet-click handler for any geometry source: ignore non-nearest hits,
@@ -21,13 +14,37 @@ export const isNearestIntersection = (ev: {
  * highlighting for that source.
  */
 export const handleFacetSelect = (
-	ev: { object?: unknown; intersections?: { object: unknown }[]; stopPropagation?: () => void },
+	ev: {
+		object?: unknown;
+		point?: Vector3;
+		intersections?: { object: unknown }[];
+		stopPropagation?: () => void;
+	},
 	source: GeometrySource,
 	address: GlobuleAddress_Facet,
 	setHighlight?: (address: GlobuleAddress_Facet) => void
 ): void => {
 	if (!isNearestIntersection(ev)) return;
 	ev.stopPropagation?.();
+
+	// While measuring, a facet click places a measurement point instead of
+	// changing the selection — so measurement works on projection, surface and
+	// voronoi geometry, not just globule bands.
+	if (isMeasureInteractionMode(get(interactionMode))) {
+		const vertex = nearestVertexFromEvent(ev);
+		if (vertex) addMeasurementPoint(vertex);
+		return;
+	}
+
 	setHighlight?.(address);
 	recordBandSelection(source, address);
+
+	// Also drive the Assembler cross-view highlight, so a band clicked in 3D lights
+	// up in the SVG pattern and the data grid too. Facet index is dropped — the
+	// cross-view highlight is band-granular.
+	setAssemblerHighlightForBand({
+		globule: address.globule,
+		tube: address.tube,
+		band: address.band
+	});
 };

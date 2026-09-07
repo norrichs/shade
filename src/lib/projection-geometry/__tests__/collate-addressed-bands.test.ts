@@ -1,6 +1,6 @@
 import { describe, it, expect } from '@jest/globals';
 import { Triangle, Vector3 } from 'three';
-import { collateAddressedBandGeometry } from '../collate-geometry';
+import { collateAddressedBandGeometry, collateVoronoiGeometry } from '../collate-geometry';
 import type { Band } from '$lib/types';
 
 const facet = (band: number, facetIndex: number) => ({
@@ -41,8 +41,52 @@ describe('collateAddressedBandGeometry', () => {
 		expect(out[0].address).toEqual({ globule: 0, tube: 2, band: 3 });
 	});
 
-	it('skips bands with no resolvable address rather than mis-addressing them', () => {
-		const orphan = { orientation: 'axial-right', visible: true, facets: [] } as unknown as Band;
-		expect(collateAddressedBandGeometry([orphan])).toHaveLength(0);
+	// This feeds ordinary band rendering, not just highlighting, so a band with no
+	// resolvable address must still produce geometry — dropping it would make the
+	// mesh disappear from the 3D view. It just carries no address, so it can never
+	// match a highlight (guessing an index would highlight the wrong band).
+	it('emits geometry without an address rather than mis-addressing or dropping it', () => {
+		const orphan = {
+			orientation: 'axial-right',
+			visible: true,
+			facets: [{ triangle: new Triangle(new Vector3(), new Vector3(), new Vector3()) }]
+		} as unknown as Band;
+		const out = collateAddressedBandGeometry([orphan]);
+		expect(out).toHaveLength(1);
+		expect(out[0].address).toBeUndefined();
+		expect(out[0].geometry.getAttribute('position').count).toBe(3);
+	});
+});
+
+describe('collateVoronoiGeometry', () => {
+	// Voronoi is normally viewed bands-only (facets off), so unaddressed band
+	// meshes left that view with nothing the Assembler highlight could match.
+	const tube = (tubeIndex: number, bandCount: number) => ({
+		sections: [],
+		address: { globule: 0, tube: tubeIndex },
+		bands: Array.from({ length: bandCount }, (_, b) => ({
+			orientation: 'axial-right',
+			visible: true,
+			address: { globule: 0, tube: tubeIndex, band: b },
+			facets: [facet(b, 0)]
+		}))
+	});
+
+	const show = {
+		any: true,
+		sections: false,
+		bands: true,
+		facets: false,
+		surfaceProjection: false
+	};
+
+	it('addresses both the main bands and the one-sided rim bands', () => {
+		// A single-band tube is the rim discriminator; two-band tubes are main tubes.
+		const out = collateVoronoiGeometry([tube(0, 2), tube(1, 1)] as never, [], show as never);
+		expect(out.bands?.map((b) => b.address)).toEqual([
+			{ globule: 0, tube: 0, band: 0 },
+			{ globule: 0, tube: 0, band: 1 }
+		]);
+		expect(out.rimBands?.map((b) => b.address)).toEqual([{ globule: 0, tube: 1, band: 0 }]);
 	});
 });

@@ -28,6 +28,7 @@ import { rad } from './util';
 import { GENERAL_CONFIG, generateTempId, GLOBULE_CONFIG, SUPER_GLOBULE_CONFIG } from './id-handler';
 import { degToRad, mmFromInches } from './patterns/utils';
 import { defaultProjectionConfig } from './projection-geometry/configs';
+import { radialUnitAngle } from './geometry/radial-shape';
 import type { PanelHoleConfig } from './cut-pattern/generate-pattern';
 import type { DistributionConfig } from '../components/cut-pattern/distrubute-panels';
 import type { VoronoiConfig } from './voronoi/types';
@@ -154,12 +155,15 @@ export const generateDefaultAsymmetricShapeConfig = (
 
 export const generateDefaultRadialShapeConfig = (
 	symmetryNumber: number,
-	sampleMethod: CurveSampleMethod
+	sampleMethod: CurveSampleMethod,
+	symmetry: ShapeConfig['symmetry'] = 'radial'
 ): ShapeConfig => {
-	const segmentAngle = (Math.PI * 2) / symmetryNumber;
+	// A reflected shape pairs the authored run with its mirror, so the run spans
+	// half a wedge. Authoring a full wedge there would overshoot and never close.
+	const segmentAngle = radialUnitAngle({ symmetry, symmetryNumber });
 	return {
 		type: 'ShapeConfig',
-		symmetry: 'radial',
+		symmetry,
 		symmetryNumber,
 		sampleMethod,
 		curves: [

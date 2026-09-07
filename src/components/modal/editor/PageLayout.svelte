@@ -7,7 +7,14 @@
 	} from '$lib/stores';
 	import { model3dBoundsStore } from '$lib/stores/superGlobuleStores';
 	import { PAGE_PRESETS } from '$lib/cut-pattern/page-layout/page-presets';
-	import { derivePageDimensions, inchToMm, mmToInch } from '$lib/cut-pattern/page-layout/units';
+	import {
+		derivePageDimensions,
+		deriveDistance,
+		inchToMm,
+		mmToInch
+	} from '$lib/cut-pattern/page-layout/units';
+	import { measurements, removeMeasurement, clearMeasurements } from '$lib/stores/measurementStore';
+	import { interactionMode, isMeasureInteractionMode } from '../../three-renderer/interaction-mode';
 	import type { PatternLayoutMode } from '$lib/types';
 
 	// Shallow copy on purpose. Binding to `$patternConfigStore.…pageLayout.x` mutates
@@ -58,6 +65,30 @@
 
 	let derived3d = $derived(
 		$model3dBoundsStore ? derivePageDimensions($model3dBoundsStore, cfg.pageScale) : null
+	);
+
+	let isMeasuring = $derived(isMeasureInteractionMode($interactionMode));
+
+	const startMeasuring = () => {
+		interactionMode.set({ type: 'point-select-measure', data: { pick: 2, points: [] } });
+	};
+	const stopMeasuring = () => {
+		interactionMode.set({ type: 'standard' });
+	};
+
+	/**
+	 * Only completed pairs get a readout; an open point is still being placed.
+	 * The open measurement (if any) is always last in `$measurements` (see
+	 * measurementStore's invariant), so numbering the completed ones by their
+	 * position among themselves — rather than by index into the raw list —
+	 * keeps the visible labels contiguous (1, 2, 3, …) whether or not a point
+	 * is currently pending, and renumbers cleanly after a removal instead of
+	 * leaving gaps.
+	 */
+	let completedMeasurements = $derived(
+		$measurements
+			.filter((m) => m.b !== null)
+			.map((m, index) => ({ ...m, b: m.b!, label: index + 1 }))
 	);
 
 	let preview = $derived.by(() => {
@@ -308,6 +339,29 @@
 			{:else}
 				<div>—</div>
 			{/if}
+
+			{#each completedMeasurements as m (m.id)}
+				{@const d = deriveDistance(m.a, m.b, cfg.pageScale)}
+				<div class="measurement">
+					<span>{m.label}: {fmt(d.mm)} mm / {fmt(d.inch)} in</span>
+					<button
+						class="clear-measurement"
+						title="Remove this measurement"
+						onclick={() => removeMeasurement(m.id)}>X</button
+					>
+				</div>
+			{/each}
+
+			<button class="measure-button" onclick={isMeasuring ? stopMeasuring : startMeasuring}>
+				{isMeasuring ? 'Done measuring' : 'New measurement'}
+			</button>
+			{#if isMeasuring}
+				<div class="measure-hint">Click two points on the model</div>
+			{/if}
+			{#if $measurements.length > 0}
+				<button class="measure-button" onclick={clearMeasurements}>Clear measurements</button>
+			{/if}
+
 			<label class="indicator-toggle">
 				<input type="checkbox" bind:checked={$showMeasureIndicators} />
 				show measure points
@@ -374,5 +428,37 @@
 	}
 	.warn {
 		color: #c00;
+	}
+	/* Arbitrary measurements are numbered and black, distinguishing them from
+	   the axis-coloured X/Y/Z extents above. */
+	.measurement {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		gap: 6px;
+		color: black;
+	}
+	.clear-measurement {
+		border: 0;
+		background: transparent;
+		cursor: pointer;
+		font-family: monospace;
+		font-size: 11px;
+		padding: 0 4px;
+		line-height: 1;
+	}
+	.clear-measurement:hover {
+		color: #c00;
+	}
+	.measure-button {
+		margin-top: 4px;
+		padding: 2px 8px;
+		font-family: monospace;
+		font-size: 12px;
+		cursor: pointer;
+	}
+	.measure-hint {
+		color: #666;
+		font-size: 11px;
 	}
 </style>

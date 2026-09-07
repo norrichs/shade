@@ -21,6 +21,7 @@
 	import PathEditor, { type PathEditorOverlayContext } from './PathEditor.svelte';
 	import { neighborPointMatch, pointOnRay, radialEndLock } from './path-editor';
 	import { pathFromCurves, radializeCurves } from './curve-preview';
+	import { isReflectedSymmetry, radialUnitAngle } from '$lib/geometry/radial-shape';
 
 	// Derived from the store so an externally loaded config shows up here; the old
 	// version read into a plain `let` and never updated.
@@ -31,11 +32,19 @@
 	let isRadial = $derived(
 		shapeConfig?.symmetry === 'radial' || shapeConfig?.symmetry === 'radial-lateral'
 	);
-	let isReflected = $derived(
-		shapeConfig?.symmetry === 'lateral' || shapeConfig?.symmetry === 'radial-lateral'
+	/**
+	 * The angle the authored run spans — half a wedge when the shape is
+	 * reflected, a whole wedge otherwise. This is what the terminal anchors are
+	 * locked to, so it must match what the generator expects.
+	 */
+	let unitAngle = $derived(
+		// shapeConfig is typed as always-present (TS can't see the out-of-range
+		// index case), so referencing `shapeConfig?.symmetryNumber` in the
+		// fallback branch narrows to `never`. When shapeConfig is actually
+		// missing at runtime that access would be undefined anyway, so the
+		// fallback here (equivalent to dividing by 1) is simplified to a constant.
+		shapeConfig ? radialUnitAngle(shapeConfig) : Math.PI * 2
 	);
-	/** The angle one symmetry wedge spans. */
-	let wedgeAngle = $derived((Math.PI * 2) / (shapeConfig?.symmetryNumber || 1));
 
 	/**
 	 * Replace the shape config, rebuilding the references down to it. See the note
@@ -76,10 +85,7 @@
 			if (shape.symmetry !== 'radial' && shape.symmetry !== 'radial-lateral') {
 				return { ...shape, symmetryNumber };
 			}
-			return {
-				...generateDefaultRadialShapeConfig(symmetryNumber, shape.sampleMethod),
-				symmetry: shape.symmetry
-			};
+			return generateDefaultRadialShapeConfig(symmetryNumber, shape.sampleMethod, shape.symmetry);
 		});
 
 	const setSymmetry = (event: Event) => {
@@ -90,15 +96,17 @@
 			// between those families rebuilds from the matching default.
 			const wasRadial = shape.symmetry === 'radial' || shape.symmetry === 'radial-lateral';
 			const isNowRadial = value === 'radial' || value === 'radial-lateral';
-			if (wasRadial === isNowRadial) return { ...shape, symmetry: value };
+			// Reflected and unreflected runs span different angles (half wedge vs
+			// whole), so crossing that boundary needs a rebuild too, not just a
+			// relabel.
+			const reflectionChanged = isReflectedSymmetry(shape.symmetry) !== isReflectedSymmetry(value);
+			if (wasRadial === isNowRadial && !reflectionChanged) return { ...shape, symmetry: value };
 			return isNowRadial
-				? {
-						...generateDefaultRadialShapeConfig(
-							Math.max(3, shape.symmetryNumber),
-							shape.sampleMethod
-						),
-						symmetry: value
-					}
+				? generateDefaultRadialShapeConfig(
+						Math.max(3, shape.symmetryNumber),
+						shape.sampleMethod,
+						value
+					)
 				: { ...generateDefaultAsymmetricShapeConfig(shape.sampleMethod), symmetry: value };
 		});
 	};
@@ -129,11 +137,19 @@
 		return getLength(curves[0].points[0], curves[curves.length - 1].points[3]);
 	});
 
-	/** Move both terminal anchors onto the wedge rays at the radius this chord implies. */
+	/**
+	 * Set the chord between the two terminal anchors.
+	 *
+	 * Unreflected, the ends share a radius, so the chord determines it outright.
+	 * Reflected, the ends are radius-independent — forcing them equal here would
+	 * quietly undo the asymmetry the editor now allows — so both radii scale by
+	 * the same factor instead. The chord is linear in that factor (law of
+	 * cosines with the angle between the ends held fixed), so scaling by
+	 * `value / currentChord` lands exactly on the requested length while
+	 * preserving the authored ratio between the two ends.
+	 */
 	const setSideLength = (value: number) => {
 		if (!value || !shapeConfig) return;
-		const alpha = Math.PI / shapeConfig.symmetryNumber;
-		const radius = value / (2 * Math.sin(alpha));
 		updateShape((shape) => {
 			const curves = shape.curves.map((curve) => ({
 				...curve,
@@ -141,10 +157,28 @@
 			}));
 			if (curves.length === 0) return shape;
 			const last = curves.length - 1;
-			curves[0].points[0] = { ...curves[0].points[0], ...pointOnRay(radius, 0) } as PointConfig2;
+			const start = curves[0].points[0];
+			const end = curves[last].points[3];
+
+			let startRadius: number;
+			let endRadius: number;
+			if (isReflected) {
+				const chord = getLength(start, end);
+				if (!chord) return shape;
+				const scale = value / chord;
+				startRadius = Math.hypot(start.x, start.y) * scale;
+				endRadius = Math.hypot(end.x, end.y) * scale;
+			} else {
+				// `unitAngle` is the chord's subtended angle; half of it gives the
+				// right-triangle angle relating chord to radius.
+				startRadius = value / (2 * Math.sin(unitAngle / 2));
+				endRadius = startRadius;
+			}
+
+			curves[0].points[0] = { ...start, ...pointOnRay(startRadius, 0) } as PointConfig2;
 			curves[last].points[3] = {
-				...curves[last].points[3],
-				...pointOnRay(radius, 2 * alpha)
+				...end,
+				...pointOnRay(endRadius, unitAngle)
 			} as PointConfig2;
 			return { ...shape, curves };
 		});
@@ -157,8 +191,16 @@
 		size: { width: 300, height: 300 }
 	};
 
+	// A reflected run is paired with its mirror about the ray through its end
+	// anchor, and that mirror preserves radius — so closure constrains only the
+	// two end ANGLES, leaving their radii independent. An unreflected run must
+	// satisfy p3 === rot(p0, wedge), which forces a shared radius.
+	let isReflected = $derived(!!shapeConfig && isReflectedSymmetry(shapeConfig.symmetry));
+
 	let limits = $derived(
-		isRadial ? [radialEndLock(wedgeAngle), neighborPointMatch] : [neighborPointMatch]
+		isRadial
+			? [radialEndLock(unitAngle, { coupleRadius: !isReflected }), neighborPointMatch]
+			: [neighborPointMatch]
 	);
 </script>
 
@@ -168,13 +210,15 @@
 		<Container direction="row">
 			<Container direction="column">
 				{#if shapeConfig}
-					{#snippet shapeOverlay({ curveDef, canv }: PathEditorOverlayContext)}
+					{#snippet shapeOverlay({ modelCurveDef, toDisplay, canv }: PathEditorOverlayContext)}
 						<path
 							d={pathFromCurves(
-								radializeCurves(curveDef, {
-									symmetryNumber: shapeConfig.symmetryNumber,
-									reflect: isReflected
-								})
+								toDisplay(
+									radializeCurves(modelCurveDef, {
+										symmetryNumber: shapeConfig.symmetryNumber,
+										symmetry: shapeConfig.symmetry
+									})
+								)
 							)}
 							fill="rgba(255,90,0,0.35)"
 							stroke="rgba(0,0,0,0.4)"
@@ -232,6 +276,7 @@
 						<select value={shapeConfig.sampleMethod.method} onchange={setSampleMethod}>
 							<option value="divideCurvePath">By Whole Curve</option>
 							<option value="divideCurve">By Sub-curve</option>
+							<option value="divideSide">By Side</option>
 						</select>
 					</LabeledControl>
 					<LabeledControl label="Divisions">

@@ -498,6 +498,41 @@ export const selectedVoronoiSurfaceGeometry = derived(
 	}
 );
 
+// Selection for the voronoi result's tube geometry. Must resolve against
+// `voronoiResult.tubes` — routing voronoi clicks through `selectedProjection`
+// (whose derived geometry looks addresses up in `projections[g].tubes`) matches
+// a completely different band set, so the in-scene highlight lands on the wrong
+// band or nowhere at all.
+export const selectedVoronoi = writable<GlobuleAddress_Facet | null>(null);
+
+export const selectedVoronoiGeometry = derived(
+	[selectedVoronoi, superGlobuleStore, selectMode],
+	([$selectedVoronoi, $superGlobuleStore, $selectMode]): SelectedProjectionGeometry => {
+		if (!$selectedVoronoi) return null;
+		return buildSurfaceSelectionGeometry(
+			$selectedVoronoi,
+			$superGlobuleStore.voronoiResult?.tubes,
+			$selectMode
+		);
+	}
+);
+
+// Selection for the globule-tube geometry, resolved against `globuleTubes` for
+// the same reason as `selectedVoronoi` above.
+export const selectedGlobuleTube = writable<GlobuleAddress_Facet | null>(null);
+
+export const selectedGlobuleTubeGeometry = derived(
+	[selectedGlobuleTube, superGlobuleStore, selectMode],
+	([$selectedGlobuleTube, $superGlobuleStore, $selectMode]): SelectedProjectionGeometry => {
+		if (!$selectedGlobuleTube) return null;
+		return buildSurfaceSelectionGeometry(
+			$selectedGlobuleTube,
+			$superGlobuleStore.globuleTubes,
+			$selectMode
+		);
+	}
+);
+
 // ---------------------------------------------------------------------------
 // Generalized band selection (works for ANY 3D geometry source)
 //

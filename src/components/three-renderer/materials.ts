@@ -151,7 +151,19 @@ export const materials = {
 	// (x = red, y = green, z = blue) so matched extent pairs read at a glance.
 	axisX: new MeshStandardMaterial({ color: 'red', transparent: false, side: DoubleSide }),
 	axisY: new MeshStandardMaterial({ color: 'lime', transparent: false, side: DoubleSide }),
-	axisZ: new MeshStandardMaterial({ color: 'blue', transparent: false, side: DoubleSide })
+	axisZ: new MeshStandardMaterial({ color: 'blue', transparent: false, side: DoubleSide }),
+	// Magenta marks a measurement point still waiting for its partner; once
+	// paired, both ends turn black.
+	measurePending: new MeshStandardMaterial({
+		color: 'magenta',
+		transparent: false,
+		side: DoubleSide
+	}),
+	measureMatched: new MeshStandardMaterial({
+		color: 'black',
+		transparent: false,
+		side: DoubleSide
+	})
 };
 
 export const materialByColor = (color: ThreeColor) => {
@@ -174,20 +186,25 @@ const defaultMaterialSelectionConfig: MaterialSelectionConfig = {
  * Material for a whole band mesh, honouring the Assembler cross-view highlight.
  *
  * Band meshes have no selection state of their own (selection is per facet), so this
- * is highlight-or-default: the clicked band paints primary, the rest of its ring
+ * is highlight-or-`fallback`: the clicked band paints primary, the rest of its ring
  * secondary. Keeps a bands-only 3D view usable for assembly, where enabling facets
  * just to see the highlight would change what the model looks like.
+ *
+ * `fallback` is the colour the mesh had before highlighting existed — each band
+ * source picks its own (voronoi rim tubes red, projection bands `selected`, and so
+ * on), so an unhighlighted band still reads the way it always did.
  */
 export const getBandMaterial = (
-	address: GlobuleAddress_Band,
-	highlight: AssemblerHighlight = null
+	address: GlobuleAddress_Band | undefined,
+	highlight: AssemblerHighlight = null,
+	fallback: MeshStandardMaterial | MeshPhysicalMaterial = materials.default
 ) => {
-	if (highlight) {
+	if (address && highlight) {
 		if (sameGlobuleBand(address, highlight.band)) return materials.assemblerPrimary;
 		if (highlight.ring.some((b) => sameGlobuleBand(address, b)))
 			return materials.assemblerSecondary;
 	}
-	return materials.default;
+	return fallback;
 };
 
 export const getMaterial = (
