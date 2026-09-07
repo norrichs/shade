@@ -5,9 +5,9 @@ import {
 	Mesh,
 	MeshBasicMaterial,
 	Raycaster,
-	Triangle,
 	type Intersection
 } from 'three';
+import { MeshBVH, acceleratedRaycast } from 'three-mesh-bvh';
 import type { SurfaceTriangle } from '$lib/voronoi/types';
 import { weldKey, type MeshGraph } from './mesh-graph';
 
@@ -145,9 +145,16 @@ function faceNormalOf(t: SurfaceTriangle): Vector3 {
  * ±normal onto a Mesh of the triangles (nearest hit wins), with a
  * closest-point-on-triangle fallback. Returned normals are a barycentric blend
  * of the hit triangle's welded vertex normals. Worker-local; never serialized.
+ *
+ * Both queries go through a `MeshBVH`. The closest-point query used to be a
+ * linear scan over every triangle; the curve-shortening flow in
+ * `straightenToGeodesic` issues ~70k of them on a 20k-triangle surface, which
+ * was 1.4 billion triangle tests and ~46 s of the ~47 s geometry generation on
+ * a large voronoi model.
  */
 export class SurfaceProjector {
 	private mesh: Mesh;
+	private bvh: MeshBVH;
 	private raycaster = new Raycaster();
 	private triangles: SurfaceTriangle[];
 	private triNormals: [Vector3, Vector3, Vector3][];
@@ -175,7 +182,11 @@ export class SurfaceProjector {
 
 		const geom = new BufferGeometry();
 		geom.setAttribute('position', new BufferAttribute(positions, 3));
+		this.bvh = new MeshBVH(geom);
+		// Expose the tree to three-mesh-bvh's raycast so `project()` is accelerated too.
+		(geom as BufferGeometry & { boundsTree?: MeshBVH }).boundsTree = this.bvh;
 		this.mesh = new Mesh(geom, new MeshBasicMaterial());
+		this.mesh.raycast = acceleratedRaycast;
 	}
 
 	project(point: Vector3, normal: Vector3): { point: Vector3; normal: Vector3 } {
@@ -214,21 +225,9 @@ export class SurfaceProjector {
 	}
 
 	private closestPoint(point: Vector3): { point: Vector3; normal: Vector3 } {
-		let bestD = Infinity;
-		let bestP = point.clone();
-		let bestI = 0;
-		const tmp = new Vector3();
-		const tri = new Triangle();
-		this.triangles.forEach((t, ti) => {
-			tri.set(t[0], t[1], t[2]);
-			tri.closestPointToPoint(point, tmp);
-			const d = tmp.distanceToSquared(point);
-			if (d < bestD) {
-				bestD = d;
-				bestP = tmp.clone();
-				bestI = ti;
-			}
-		});
-		return { point: bestP, normal: this.blendNormal(bestI, bestP) };
+		const hit = this.bvh.closestPointToPoint(point);
+		if (!hit) return { point: point.clone(), normal: new Vector3(0, 0, 1) };
+		const p = hit.point.clone();
+		return { point: p, normal: this.blendNormal(hit.faceIndex, p) };
 	}
 }
