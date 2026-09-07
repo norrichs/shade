@@ -25,12 +25,12 @@ fill is a new module plus one registry line, with no change to the type system.
 ```ts
 export type CircleHolesFillConfig = {
 	kind: 'circle-holes';
-	seed: number;      // reroll handle; combined with band index
-	density: number;   // holes per px^2
-	margin: number;    // px, target clearance from the band outline
+	seed: number; // reroll handle; combined with band index
+	density: number; // holes per px^2
+	margin: number; // px, target clearance from the band outline
 	minRadius: number; // px
 	maxRadius: number; // px
-	spacing: number;   // px, target gap between circle edges
+	spacing: number; // px, target gap between circle edges
 };
 
 export type ProceduralFillConfig = CircleHolesFillConfig;
@@ -56,11 +56,11 @@ algorithm drives as many gaps as possible onto those exact values.
 Three new pure modules under `src/lib/patterns/procedural/`. None of them import
 Three.js, Svelte, or any band/pattern type.
 
-| Module | Exports | Depends on |
-|---|---|---|
-| `polygon-2d.ts` | `Polygon`, `polygonArea`, `polygonBounds`, `pointInPolygon`, `distanceToPolygonEdge`, `dedupePolygon` | — |
-| `circle-packing.ts` | `packCircles(polygon, params, random) => Circle[]` | `polygon-2d` |
-| `procedural-fill.ts` | `generateProceduralFill(polygon, config, bandIndex) => CutPattern` — the `kind` registry | `circle-packing`, `patterns/utils` |
+| Module               | Exports                                                                                               | Depends on                         |
+| -------------------- | ----------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| `polygon-2d.ts`      | `Polygon`, `polygonArea`, `polygonBounds`, `pointInPolygon`, `distanceToPolygonEdge`, `dedupePolygon` | —                                  |
+| `circle-packing.ts`  | `packCircles(polygon, params, random) => Circle[]`                                                    | `polygon-2d`                       |
+| `procedural-fill.ts` | `generateProceduralFill(polygon, config, bandIndex) => CutPattern` — the `kind` registry              | `circle-packing`, `patterns/utils` |
 
 Plus `src/lib/rng.ts`: `mulberry32`, lifted out of
 `src/lib/voronoi/generate-seeds.ts` (which becomes an importer) so the packer and

@@ -30,11 +30,13 @@
 Extract `mulberry32` from the voronoi seeder so the packer and the seeder share one implementation.
 
 **Files:**
+
 - Create: `src/lib/rng.ts`
 - Create: `src/lib/__tests__/rng.test.ts`
 - Modify: `src/lib/voronoi/generate-seeds.ts:38-47` (delete the local copy, import instead)
 
 **Interfaces:**
+
 - Consumes: nothing.
 - Produces: `mulberry32(seed: number): () => number` — returns a function yielding numbers in `[0, 1)`.
 
@@ -135,10 +137,12 @@ git commit -m "refactor(rng): extract mulberry32 into a shared module"
 Pure geometry the packer needs. No Three.js — plain `{ x, y }` points, so the module is trivially testable.
 
 **Files:**
+
 - Create: `src/lib/patterns/procedural/polygon-2d.ts`
 - Create: `src/lib/patterns/procedural/__tests__/polygon-2d.test.ts`
 
 **Interfaces:**
+
 - Consumes: nothing.
 - Produces:
   - `type Point2 = { x: number; y: number }`
@@ -255,7 +259,12 @@ describe('dedupePolygon', () => {
 	});
 
 	it('keeps a degenerate polygon usable', () => {
-		expect(dedupePolygon([{ x: 1, y: 1 }, { x: 1, y: 1 }])).toHaveLength(1);
+		expect(
+			dedupePolygon([
+				{ x: 1, y: 1 },
+				{ x: 1, y: 1 }
+			])
+		).toHaveLength(1);
 	});
 });
 ```
@@ -404,10 +413,12 @@ git commit -m "feat(procedural): add 2D polygon helpers for pattern fills"
 Dart-thrown seeds with random radii, all constraints satisfied on placement. Phase 2 arrives in Task 4; this task must already produce a valid (if loose) packing.
 
 **Files:**
+
 - Create: `src/lib/patterns/procedural/circle-packing.ts`
 - Create: `src/lib/patterns/procedural/__tests__/circle-packing.test.ts`
 
 **Interfaces:**
+
 - Consumes: `Polygon`, `polygonArea`, `polygonBounds`, `pointInPolygon`, `distanceToPolygonEdge` from `./polygon-2d`; `mulberry32` from `$lib/rng`.
 - Produces:
   - `type Circle = { x: number; y: number; r: number }`
@@ -635,13 +646,7 @@ export const packCircles = (
 	if (width <= 0 || height <= 0) return [];
 
 	const circles: Circle[] = [];
-	const grid = new CircleGrid(
-		minX,
-		minY,
-		Math.max(2 * maxRadius + spacing, 1e-6),
-		width,
-		height
-	);
+	const grid = new CircleGrid(minX, minY, Math.max(2 * maxRadius + spacing, 1e-6), width, height);
 
 	const budget = count * ATTEMPTS_PER_SEED;
 	for (let attempt = 0; attempt < budget && circles.length < count; attempt++) {
@@ -688,15 +693,17 @@ git commit -m "feat(procedural): dart-throw circle seeding with a spatial grid"
 
 Grow the radii so that as many gaps as possible land exactly on `spacing` (between circles) or `margin` (against the boundary).
 
-Why this algorithm: treating the targets as constraints, `maximize sum(r_i)` subject to `r_i + r_j <= d_ij - spacing`, `r_i <= distToEdge_i - margin`, `r_i <= maxRadius` is a linear program, and an LP optimum sits at a *vertex* — the point where the greatest number of constraints are tight. Uniform inflation reaches such a vertex with no solver: every unfrozen circle grows at the same rate, so its radius at time `t` is `r0_i + t`, and each constraint reduces to a freeze time. Pop the earliest freeze from a heap, freeze that circle, and recompute only its unfrozen neighbours.
+Why this algorithm: treating the targets as constraints, `maximize sum(r_i)` subject to `r_i + r_j <= d_ij - spacing`, `r_i <= distToEdge_i - margin`, `r_i <= maxRadius` is a linear program, and an LP optimum sits at a _vertex_ — the point where the greatest number of constraints are tight. Uniform inflation reaches such a vertex with no solver: every unfrozen circle grows at the same rate, so its radius at time `t` is `r0_i + t`, and each constraint reduces to a freeze time. Pop the earliest freeze from a heap, freeze that circle, and recompute only its unfrozen neighbours.
 
 The simulation terminates and never backtracks: when `i` freezes at `t_i`, a neighbour's bound against `i` moves from `T = (d_ij - spacing - r0_i - r0_j) / 2` to `2T - t_i`, and `t_i <= T`, so bounds only ever relax. Popped times are therefore monotonically non-decreasing and each circle freezes exactly once.
 
 **Files:**
+
 - Modify: `src/lib/patterns/procedural/circle-packing.ts` (add the inflation pass and call it from `packCircles`)
 - Modify: `src/lib/patterns/procedural/__tests__/circle-packing.test.ts` (add the optimality test)
 
 **Interfaces:**
+
 - Consumes: everything from Task 3.
 - Produces: no new exports. `packCircles` keeps its signature; its output is now inflated.
 
@@ -705,29 +712,29 @@ The simulation terminates and never backtracks: when `i` freezes at `t_i`, a nei
 Append to `src/lib/patterns/procedural/__tests__/circle-packing.test.ts`, inside the `describe('packCircles', ...)` block:
 
 ```ts
-	it('leaves every circle tight against at least one constraint', () => {
-		const circles = packCircles(square, params, mulberry32(11));
-		expect(circles.length).toBeGreaterThan(5);
-		const TIGHT = 1e-4;
-		for (const c of circles) {
-			const atMax = Math.abs(c.r - params.maxRadius) < TIGHT;
-			const atEdge =
-				Math.abs(distanceToPolygonEdge({ x: c.x, y: c.y }, square) - c.r - params.margin) < TIGHT;
-			const atNeighbour = circles.some((o) => {
-				if (o === c) return false;
-				const gap = Math.hypot(o.x - c.x, o.y - c.y) - o.r - c.r;
-				return Math.abs(gap - params.spacing) < TIGHT;
-			});
-			expect(atMax || atEdge || atNeighbour).toBe(true);
-		}
-	});
+it('leaves every circle tight against at least one constraint', () => {
+	const circles = packCircles(square, params, mulberry32(11));
+	expect(circles.length).toBeGreaterThan(5);
+	const TIGHT = 1e-4;
+	for (const c of circles) {
+		const atMax = Math.abs(c.r - params.maxRadius) < TIGHT;
+		const atEdge =
+			Math.abs(distanceToPolygonEdge({ x: c.x, y: c.y }, square) - c.r - params.margin) < TIGHT;
+		const atNeighbour = circles.some((o) => {
+			if (o === c) return false;
+			const gap = Math.hypot(o.x - c.x, o.y - c.y) - o.r - c.r;
+			return Math.abs(gap - params.spacing) < TIGHT;
+		});
+		expect(atMax || atEdge || atNeighbour).toBe(true);
+	}
+});
 
-	it('grows the circles relative to the seeded radii', () => {
-		const seeded = packCircles(square, { ...params, maxRadius: params.minRadius }, mulberry32(11));
-		const inflated = packCircles(square, params, mulberry32(11));
-		const sum = (cs: Circle[]) => cs.reduce((t, c) => t + c.r, 0);
-		expect(sum(inflated)).toBeGreaterThan(sum(seeded));
-	});
+it('grows the circles relative to the seeded radii', () => {
+	const seeded = packCircles(square, { ...params, maxRadius: params.minRadius }, mulberry32(11));
+	const inflated = packCircles(square, params, mulberry32(11));
+	const sum = (cs: Circle[]) => cs.reduce((t, c) => t + c.r, 0);
+	expect(sum(inflated)).toBeGreaterThan(sum(seeded));
+});
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -879,8 +886,8 @@ const inflateCircles = (
 Then, at the end of `packCircles`, replace `return circles;` with:
 
 ```ts
-	inflateCircles(circles, polygon, params, grid);
-	return circles;
+inflateCircles(circles, polygon, params, grid);
+return circles;
 ```
 
 - [ ] **Step 4: Run tests to verify they pass**
@@ -903,12 +910,14 @@ git commit -m "feat(procedural): inflate packed circles to an LP vertex"
 ### Task 5: Fill config types, defaults, and validation
 
 **Files:**
+
 - Modify: `src/lib/types.ts` (near `OutlinedTabConfig`, around line 697-713)
 - Modify: `src/lib/shades-config.ts` (near `defaultOutlinedPatternConfig`, line 493)
 - Modify: `src/lib/validators.ts`
 - Create: `src/lib/__tests__/procedural-fill-config.test.ts`
 
 **Interfaces:**
+
 - Consumes: nothing from earlier tasks.
 - Produces:
   - `CircleHolesFillConfig`, `ProceduralFillConfig`, `isCircleHolesFillConfig` from `$lib/types`
@@ -1103,10 +1112,12 @@ git commit -m "feat(pattern): add procedural fill config to OutlinedPatternConfi
 Turn a polygon plus a config into the single `CutPattern` the band will carry.
 
 **Files:**
+
 - Create: `src/lib/patterns/procedural/procedural-fill.ts`
 - Create: `src/lib/patterns/procedural/__tests__/procedural-fill.test.ts`
 
 **Interfaces:**
+
 - Consumes: `packCircles`, `Circle` from `./circle-packing`; `Polygon` from `./polygon-2d`; `mulberry32` from `$lib/rng`; `svgPathStringFromSegments` from `$lib/patterns/utils`; `ProceduralFillConfig`, `CutPattern`, `PathSegment` from `$lib/types`.
 - Produces:
   - `circlesToPathSegments(circles: Circle[]): PathSegment[]`
@@ -1316,11 +1327,13 @@ git commit -m "feat(procedural): add the fill registry and circle-hole path emis
 ### Task 7: Wire the fill into the outlined pipeline
 
 **Files:**
+
 - Modify: `src/lib/cut-pattern/generate-outlined-pattern.ts` (imports at the top; `generateOutlinedBandPattern`, lines 476-575)
 - Modify: `src/components/cut-pattern/QuadLabels.svelte:11-30` (the adjacent fix)
 - Create: `src/lib/cut-pattern/__tests__/outlined-fill-polygon.test.ts`
 
 **Interfaces:**
+
 - Consumes: `generateProceduralFill` from `$lib/patterns/procedural/procedural-fill`; `dedupePolygon` from `$lib/patterns/procedural/polygon-2d`; `OutlinedPatternConfig.fill` from Task 5.
 - Produces: `outlinePolygonFromEdges(edges: { start: Vector3 }[]): Polygon`, exported from `generate-outlined-pattern.ts` so it can be tested without constructing a whole band.
 
@@ -1398,12 +1411,12 @@ export const outlinePolygonFromEdges = (edges: { start: Vector3 }[]): Polygon =>
 Inside `generateOutlinedBandPattern`, after `const bounds = getBoundsFromPath(outlinePath);`, add:
 
 ```ts
-	// Procedural interior geometry, appended AFTER the quad facets so the
-	// existing positional reads of `facets[0]` (the outline, used by
-	// prepare-merge) keep resolving to the same facet.
-	const fillFacet = config.fill
-		? generateProceduralFill(outlinePolygonFromEdges(edges), config.fill, localBandIndex)
-		: undefined;
+// Procedural interior geometry, appended AFTER the quad facets so the
+// existing positional reads of `facets[0]` (the outline, used by
+// prepare-merge) keep resolving to the same facet.
+const fillFacet = config.fill
+	? generateProceduralFill(outlinePolygonFromEdges(edges), config.fill, localBandIndex)
+	: undefined;
 ```
 
 Then change the `facets` entry of the returned `result` from:
@@ -1430,8 +1443,8 @@ Expected: PASS, 3 tests.
 Open `src/components/cut-pattern/QuadLabels.svelte` and replace the positional read so it selects from facets that actually carry a quad:
 
 ```ts
-	const quadFacets = band.facets.filter((facet) => facet.quad);
-	const quad = quadFacets[Math.floor((quadFacets.length - 1) / 2)]?.quad;
+const quadFacets = band.facets.filter((facet) => facet.quad);
+const quad = quadFacets[Math.floor((quadFacets.length - 1) / 2)]?.quad;
 ```
 
 Keep the surrounding usage unchanged, and guard any dereference of `quad` with `{#if quad}` if it is not already guarded.
@@ -1457,9 +1470,11 @@ git commit -m "feat(pattern): apply procedural fills to outlined band patterns"
 ### Task 8: UI controls
 
 **Files:**
+
 - Modify: `src/components/controls/TilingControl.svelte` (inside the `{#if isOutlined ...}` block, after the tab `{#if ...tabConfig}` section closes, around line 200)
 
 **Interfaces:**
+
 - Consumes: `defaultCircleHolesFillConfig` from `$lib/shades-config`; `OutlinedPatternConfig.fill` from Task 5.
 - Produces: nothing consumed by later tasks.
 
@@ -1470,11 +1485,11 @@ This file uses Svelte 4 syntax (`$:`, `on:click`, `on:change`). Match it — do 
 In the `<script>` block of `src/components/controls/TilingControl.svelte`, extend the existing `$lib/shades-config` import:
 
 ```ts
-	import {
-		tiledPatternConfigs,
-		defaultOutlinedPatternConfig,
-		defaultCircleHolesFillConfig
-	} from '$lib/shades-config';
+import {
+	tiledPatternConfigs,
+	defaultOutlinedPatternConfig,
+	defaultCircleHolesFillConfig
+} from '$lib/shades-config';
 ```
 
 - [ ] **Step 2: Add the control block**
@@ -1482,67 +1497,66 @@ In the `<script>` block of `src/components/controls/TilingControl.svelte`, exten
 Inside the `{#if isOutlined && isOutlinedPatternConfig($patternConfigStore.patternTypeConfig)}` block, after the closing `{/if}` of the `tabConfig` section but still inside the `<div>` that wraps it, add:
 
 ```svelte
-				<div>
-					<span>Procedural Fill</span>
-					<input
-						type="checkbox"
-						checked={!!$patternConfigStore.patternTypeConfig.fill}
-						on:change={(e) => {
-							$patternConfigStore.patternTypeConfig = {
-								...$patternConfigStore.patternTypeConfig,
-								fill: e.target.checked ? defaultCircleHolesFillConfig() : undefined
-							};
-						}}
-					/>
-				</div>
-				{#if $patternConfigStore.patternTypeConfig.fill}
-					<NumberInput
-						label="Density"
-						min={0.0001}
-						max={0.02}
-						step={0.0001}
-						bind:value={$patternConfigStore.patternTypeConfig.fill.density}
-					/>
-					<NumberInput
-						label="Margin"
-						min={0}
-						max={50}
-						step={0.5}
-						bind:value={$patternConfigStore.patternTypeConfig.fill.margin}
-					/>
-					<NumberInput
-						label="Min Radius"
-						min={0.5}
-						max={50}
-						step={0.5}
-						bind:value={$patternConfigStore.patternTypeConfig.fill.minRadius}
-					/>
-					<NumberInput
-						label="Max Radius"
-						min={0.5}
-						max={100}
-						step={0.5}
-						bind:value={$patternConfigStore.patternTypeConfig.fill.maxRadius}
-					/>
-					<NumberInput
-						label="Circle Spacing"
-						min={0}
-						max={50}
-						step={0.5}
-						bind:value={$patternConfigStore.patternTypeConfig.fill.spacing}
-					/>
-					<div class="row">
-						<span>Seed {$patternConfigStore.patternTypeConfig.fill.seed}</span>
-						<button
-							on:click={() => {
-								if (!$patternConfigStore.patternTypeConfig.fill) return;
-								$patternConfigStore.patternTypeConfig.fill.seed =
-									Math.floor(Math.random() * 1_000_000) + 1;
-								$patternConfigStore = $patternConfigStore;
-							}}>Reroll</button
-						>
-					</div>
-				{/if}
+<div>
+	<span>Procedural Fill</span>
+	<input
+		type="checkbox"
+		checked={!!$patternConfigStore.patternTypeConfig.fill}
+		on:change={(e) => {
+			$patternConfigStore.patternTypeConfig = {
+				...$patternConfigStore.patternTypeConfig,
+				fill: e.target.checked ? defaultCircleHolesFillConfig() : undefined
+			};
+		}}
+	/>
+</div>
+{#if $patternConfigStore.patternTypeConfig.fill}
+	<NumberInput
+		label="Density"
+		min={0.0001}
+		max={0.02}
+		step={0.0001}
+		bind:value={$patternConfigStore.patternTypeConfig.fill.density}
+	/>
+	<NumberInput
+		label="Margin"
+		min={0}
+		max={50}
+		step={0.5}
+		bind:value={$patternConfigStore.patternTypeConfig.fill.margin}
+	/>
+	<NumberInput
+		label="Min Radius"
+		min={0.5}
+		max={50}
+		step={0.5}
+		bind:value={$patternConfigStore.patternTypeConfig.fill.minRadius}
+	/>
+	<NumberInput
+		label="Max Radius"
+		min={0.5}
+		max={100}
+		step={0.5}
+		bind:value={$patternConfigStore.patternTypeConfig.fill.maxRadius}
+	/>
+	<NumberInput
+		label="Circle Spacing"
+		min={0}
+		max={50}
+		step={0.5}
+		bind:value={$patternConfigStore.patternTypeConfig.fill.spacing}
+	/>
+	<div class="row">
+		<span>Seed {$patternConfigStore.patternTypeConfig.fill.seed}</span>
+		<button
+			on:click={() => {
+				if (!$patternConfigStore.patternTypeConfig.fill) return;
+				$patternConfigStore.patternTypeConfig.fill.seed = Math.floor(Math.random() * 1_000_000) + 1;
+				$patternConfigStore = $patternConfigStore;
+			}}>Reroll</button
+		>
+	</div>
+{/if}
 ```
 
 The `$patternConfigStore = $patternConfigStore` reassignment after the seed mutation matches the idiom the neighbouring tab selects already use in this file: the store is mutated in place and re-set so `writable.set` notifies.
@@ -1573,9 +1587,11 @@ git commit -m "feat(controls): add procedural fill controls to the outlined patt
 The design commits to reporting a number rather than asserting the fill is fast. Do that, and only optimise if the number says to.
 
 **Files:**
+
 - Create: `perf-procedural-fill.mjs` at the repo root (throwaway; do not commit)
 
 **Interfaces:**
+
 - Consumes: `packCircles` from Task 4.
 - Produces: a number in the final report.
 
@@ -1668,19 +1684,19 @@ git commit -m "chore(procedural): verification fixes"
 
 **Spec coverage:**
 
-| Spec section | Task |
-|---|---|
-| Configuration type + optional `fill` | 5 |
-| Module layout (`polygon-2d`, `circle-packing`, `procedural-fill`, `rng`) | 1, 2, 3, 4, 6 |
-| Data flow / polygon from edges / tabs excluded | 7 |
-| Output shape (one facet per band, arc subpaths) | 6 |
-| Phase 1 seeding | 3 |
-| Phase 2 inflation | 4 |
-| Determinism | 1, 3, 6 |
-| UI, validation, defaults | 5, 8 |
-| Testing (invariants, determinism, optimality) | 2, 3, 4, 5, 6, 7 |
-| Performance measurement | 9 |
-| Adjacent QuadLabels fix | 7 |
+| Spec section                                                             | Task             |
+| ------------------------------------------------------------------------ | ---------------- |
+| Configuration type + optional `fill`                                     | 5                |
+| Module layout (`polygon-2d`, `circle-packing`, `procedural-fill`, `rng`) | 1, 2, 3, 4, 6    |
+| Data flow / polygon from edges / tabs excluded                           | 7                |
+| Output shape (one facet per band, arc subpaths)                          | 6                |
+| Phase 1 seeding                                                          | 3                |
+| Phase 2 inflation                                                        | 4                |
+| Determinism                                                              | 1, 3, 6          |
+| UI, validation, defaults                                                 | 5, 8             |
+| Testing (invariants, determinism, optimality)                            | 2, 3, 4, 5, 6, 7 |
+| Performance measurement                                                  | 9                |
+| Adjacent QuadLabels fix                                                  | 7                |
 
 No gaps.
 
