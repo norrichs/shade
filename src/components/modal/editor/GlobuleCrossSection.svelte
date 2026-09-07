@@ -137,13 +137,19 @@
 		return getLength(curves[0].points[0], curves[curves.length - 1].points[3]);
 	});
 
-	/** Move both terminal anchors onto the wedge rays at the radius this chord implies. */
+	/**
+	 * Set the chord between the two terminal anchors.
+	 *
+	 * Unreflected, the ends share a radius, so the chord determines it outright.
+	 * Reflected, the ends are radius-independent — forcing them equal here would
+	 * quietly undo the asymmetry the editor now allows — so both radii scale by
+	 * the same factor instead. The chord is linear in that factor (law of
+	 * cosines with the angle between the ends held fixed), so scaling by
+	 * `value / currentChord` lands exactly on the requested length while
+	 * preserving the authored ratio between the two ends.
+	 */
 	const setSideLength = (value: number) => {
 		if (!value || !shapeConfig) return;
-		// `unitAngle` is the chord's subtended angle; half of it gives the
-		// right-triangle angle relating chord to radius.
-		const alpha = unitAngle / 2;
-		const radius = value / (2 * Math.sin(alpha));
 		updateShape((shape) => {
 			const curves = shape.curves.map((curve) => ({
 				...curve,
@@ -151,10 +157,28 @@
 			}));
 			if (curves.length === 0) return shape;
 			const last = curves.length - 1;
-			curves[0].points[0] = { ...curves[0].points[0], ...pointOnRay(radius, 0) } as PointConfig2;
+			const start = curves[0].points[0];
+			const end = curves[last].points[3];
+
+			let startRadius: number;
+			let endRadius: number;
+			if (isReflected) {
+				const chord = getLength(start, end);
+				if (!chord) return shape;
+				const scale = value / chord;
+				startRadius = Math.hypot(start.x, start.y) * scale;
+				endRadius = Math.hypot(end.x, end.y) * scale;
+			} else {
+				// `unitAngle` is the chord's subtended angle; half of it gives the
+				// right-triangle angle relating chord to radius.
+				startRadius = value / (2 * Math.sin(unitAngle / 2));
+				endRadius = startRadius;
+			}
+
+			curves[0].points[0] = { ...start, ...pointOnRay(startRadius, 0) } as PointConfig2;
 			curves[last].points[3] = {
-				...curves[last].points[3],
-				...pointOnRay(radius, unitAngle)
+				...end,
+				...pointOnRay(endRadius, unitAngle)
 			} as PointConfig2;
 			return { ...shape, curves };
 		});
@@ -167,8 +191,16 @@
 		size: { width: 300, height: 300 }
 	};
 
+	// A reflected run is paired with its mirror about the ray through its end
+	// anchor, and that mirror preserves radius — so closure constrains only the
+	// two end ANGLES, leaving their radii independent. An unreflected run must
+	// satisfy p3 === rot(p0, wedge), which forces a shared radius.
+	let isReflected = $derived(!!shapeConfig && isReflectedSymmetry(shapeConfig.symmetry));
+
 	let limits = $derived(
-		isRadial ? [radialEndLock(unitAngle), neighborPointMatch] : [neighborPointMatch]
+		isRadial
+			? [radialEndLock(unitAngle, { coupleRadius: !isReflected }), neighborPointMatch]
+			: [neighborPointMatch]
 	);
 </script>
 

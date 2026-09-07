@@ -497,15 +497,31 @@ export const pointOnRay = (r: number, angle: number): { x: number; y: number } =
 
 /**
  * Pin the two terminal anchors of a radially symmetric cross-section to the rays
- * bounding one symmetry wedge, at a shared radius. Dragging either end sets the
- * radius; both ends follow.
+ * bounding the authored run.
+ *
+ * `coupleRadius` says whether the two ends must also share a radius:
+ *
+ * - **Unreflected** (`radial`, `asymmetric`) — YES. The run spans a whole wedge
+ *   and the next repeat begins at `rot(p0, wedge)`, so closure requires
+ *   `p3 === rot(p0, wedge)` — same radius by construction. Dragging either end
+ *   sets the radius and both follow. Decoupling opens a gap of exactly
+ *   `|r0 − r3|` at every joint.
+ * - **Reflected** (`radial-lateral`, `lateral`) — NO. The run spans a half wedge
+ *   and is paired with its mirror about the ray through `p3`. That mirror fixes
+ *   `p3` and preserves radius, so `reflect(p0)` lands on `rot(p0, wedge)`
+ *   whatever radius `p3` sits at. Only the ANGLES are load-bearing; the two ends
+ *   may sit at different distances from the centre. Verified: gap stays 0 across
+ *   r0/r3 of 100/150, 100/40 and 220/60 at n = 3 and 7.
+ *
+ * Either way both ends stay pinned to their own ray — that part is what closure
+ * actually depends on.
  *
  * Opt-in through the plain `limits` array rather than the `coupling` prop —
  * only a radial `ShapeConfig` wants it, and `PathEditor` should not know about
  * `ShapeConfig`.
  */
 export const radialEndLock =
-	(limitAngle: number): LimitFunction =>
+	(limitAngle: number, { coupleRadius = true }: { coupleRadius?: boolean } = {}): LimitFunction =>
 	({ curveIndex, pointIndex, curveDef, newPoint }) => {
 		curveDef[curveIndex].points[pointIndex] = { ...newPoint };
 
@@ -518,16 +534,18 @@ export const radialEndLock =
 		const thisAngle = isFirst ? 0 : limitAngle;
 		const partnerAngle = isFirst ? limitAngle : 0;
 
-		const here = pointOnRay(r, thisAngle);
-		const there = pointOnRay(r, partnerAngle);
-
-		curveDef[curveIndex].points[pointIndex] = { ...newPoint, ...here };
+		curveDef[curveIndex].points[pointIndex] = { ...newPoint, ...pointOnRay(r, thisAngle) };
 
 		const partnerCurve = curveDef[isFirst ? curveDef.length - 1 : 0];
 		const partnerPointIndex = isFirst ? 3 : 0;
+		const partner = partnerCurve.points[partnerPointIndex];
+
+		// Decoupled, the partner keeps its own radius and is only re-pinned to its
+		// ray — so dragging one end no longer drags the other in or out.
+		const partnerRadius = coupleRadius ? r : Math.hypot(partner.x, partner.y);
 		partnerCurve.points[partnerPointIndex] = {
-			...partnerCurve.points[partnerPointIndex],
-			...there
+			...partner,
+			...pointOnRay(partnerRadius, partnerAngle)
 		};
 
 		return curveDef;
