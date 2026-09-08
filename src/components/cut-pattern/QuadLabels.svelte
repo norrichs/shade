@@ -25,7 +25,12 @@
 	};
 
 	const getBandLabels = (band: BandCutPattern) => {
-		const quad = band.facets[Math.floor((band.facets.length - 1) / 2)].quad;
+		// Select the middle quad from the facets that actually carry one, not by
+		// position in `facets`. The array also holds the band outline and, when a
+		// procedural fill is configured, the fill geometry — indexing positionally
+		// lands on a facet with no `quad` as soon as either count changes.
+		const quadFacets = band.facets.filter((facet) => facet.quad);
+		const quad = quadFacets[Math.floor((quadFacets.length - 1) / 2)]?.quad;
 		if (!quad) return undefined;
 		const centerPoint = {
 			x: (quad.a.x + quad.b.x + quad.c.x + quad.d.x) / 4,

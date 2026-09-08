@@ -17,6 +17,7 @@ import type {
 	SuperGlobuleConfig,
 	SubGlobuleConfig,
 	GlobulePatternConfig,
+	CircleHolesFillConfig,
 	OutlinedPatternConfig,
 	RecombinatoryRecurrence,
 	TiledPattern,
@@ -489,6 +490,16 @@ export const defaultTiledPatternConfig = (): TiledPatternConfig => {
 		}
 	};
 };
+
+export const defaultCircleHolesFillConfig = (): CircleHolesFillConfig => ({
+	kind: 'circle-holes',
+	seed: 1,
+	density: 0.002,
+	margin: 6,
+	minRadius: 3,
+	maxRadius: 14,
+	spacing: 4
+});
 
 export const defaultOutlinedPatternConfig = (): OutlinedPatternConfig => ({
 	type: 'outlined',
