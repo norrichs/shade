@@ -2,7 +2,11 @@
 	import { get } from 'svelte/store';
 	import { patternConfigStore } from '$lib/stores';
 	import { tilePatternSpecStore } from '$lib/stores/tilePatternSpecStore';
-	import { defaultOutlinedPatternConfig, tiledPatternConfigs } from '$lib/shades-config';
+	import {
+		defaultCircleHolesFillConfig,
+		defaultOutlinedPatternConfig,
+		tiledPatternConfigs
+	} from '$lib/shades-config';
 	import { algorithms } from '$lib/patterns/pattern-registry';
 	import type { TiledPatternSpec } from '$lib/patterns/spec-types';
 	import type {
@@ -28,6 +32,7 @@
 		isOutlinedPatternConfig(patternTypeConfig) ? patternTypeConfig : undefined
 	);
 	let tabConfig = $derived(outlined?.tabConfig);
+	let fill = $derived(outlined?.fill);
 	let inner = $derived((patternTypeConfig as { config: Record<string, any> }).config);
 
 	const update = (mutate: (config: GlobulePatternConfig) => GlobulePatternConfig) =>
@@ -55,6 +60,23 @@
 					patch === undefined
 						? undefined
 						: { ...(config.patternTypeConfig as { tabConfig?: object }).tabConfig, ...patch }
+			} as GlobulePatternConfig['patternTypeConfig']
+		}));
+
+	/**
+	 * Patch the outlined pattern's procedural fill. `undefined` clears it, which
+	 * is what turns the fill off; enabling passes a whole default config, which
+	 * the spread merges over the absent one.
+	 */
+	const setFill = (patch: Record<string, unknown> | undefined) =>
+		update((config) => ({
+			...config,
+			patternTypeConfig: {
+				...config.patternTypeConfig,
+				fill:
+					patch === undefined
+						? undefined
+						: { ...(config.patternTypeConfig as { fill?: object }).fill, ...patch }
 			} as GlobulePatternConfig['patternTypeConfig']
 		}));
 
@@ -214,6 +236,77 @@
 							>
 								{#each edgeOptions as option}<option value={option}>{option}</option>{/each}
 							</select>
+						</LabeledControl>
+					{/if}
+
+					<header class="group">Procedural Fill</header>
+					<LabeledControl label="Enable Fill">
+						<input
+							type="checkbox"
+							checked={!!fill}
+							onchange={(event) =>
+								setFill(
+									(event.currentTarget as HTMLInputElement).checked
+										? defaultCircleHolesFillConfig()
+										: undefined
+								)}
+						/>
+					</LabeledControl>
+					{#if fill}
+						<LabeledControl label="Density">
+							<input
+								type="number"
+								min="0.0001"
+								step="0.0005"
+								value={fill.density}
+								onchange={(event) =>
+									setFill({ density: (event.currentTarget as HTMLInputElement).valueAsNumber })}
+							/>
+						</LabeledControl>
+						<LabeledControl label="Margin">
+							<input
+								type="number"
+								min="0"
+								step="0.5"
+								value={fill.margin}
+								onchange={(event) =>
+									setFill({ margin: (event.currentTarget as HTMLInputElement).valueAsNumber })}
+							/>
+						</LabeledControl>
+						<LabeledControl label="Min Radius">
+							<input
+								type="number"
+								min="0.5"
+								step="0.5"
+								value={fill.minRadius}
+								onchange={(event) =>
+									setFill({ minRadius: (event.currentTarget as HTMLInputElement).valueAsNumber })}
+							/>
+						</LabeledControl>
+						<LabeledControl label="Max Radius">
+							<input
+								type="number"
+								min="0.5"
+								step="0.5"
+								value={fill.maxRadius}
+								onchange={(event) =>
+									setFill({ maxRadius: (event.currentTarget as HTMLInputElement).valueAsNumber })}
+							/>
+						</LabeledControl>
+						<LabeledControl label="Circle Spacing">
+							<input
+								type="number"
+								min="0"
+								step="0.5"
+								value={fill.spacing}
+								onchange={(event) =>
+									setFill({ spacing: (event.currentTarget as HTMLInputElement).valueAsNumber })}
+							/>
+						</LabeledControl>
+						<LabeledControl label="Seed {fill.seed}">
+							<button onclick={() => setFill({ seed: Math.floor(Math.random() * 1000000) + 1 })}>
+								Reroll
+							</button>
 						</LabeledControl>
 					{/if}
 				{/if}
