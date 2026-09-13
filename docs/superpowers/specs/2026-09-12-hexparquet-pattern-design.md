@@ -145,7 +145,9 @@ the left side is free. This is the neighbour the tesselation adjuster treats as
 `prev`. Surface projections match partners geometrically
 (`matchSurfaceProjectionCrossBandPartners`), so band 0 of an open tube has none.
 Known limit: a wrapping tube of exactly two bands does not detect band 0's left
-partner.
+partner. Known limit: when a band range starts at band 0 of a wrapping tube, the
+last band is not generated (range expansion clamps at 0), so band 0 keeps its
+extrapolated left apex while still dropping green's partner segment.
 
 Partner meta uses real tube band indices while `BandCutPattern.address.band` is the
 index among visible bands, so `generateTubeCutPattern` passes a real → visible
