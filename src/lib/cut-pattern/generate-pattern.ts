@@ -219,7 +219,8 @@ export const generateProjectionPattern = (
 
 		const firstInRange = tubePatterns[tubeStart];
 		const doAdjustAfterTiling =
-			hasAdjustAfterTiling && (!needsEndPartners || !!firstInRange?.bands[0]?.meta?.startPartnerBand);
+			hasAdjustAfterTiling &&
+			(!needsEndPartners || !!firstInRange?.bands[0]?.meta?.startPartnerBand);
 		if (doAdjustAfterTiling) {
 			for (let t = tubeStart; t < tubeEnd; t++) {
 				const tp = tubePatterns[t];
@@ -451,6 +452,18 @@ export const getEndPartnerTransform = (
 	originBand: BandCutPattern,
 	partnerBand: BandCutPattern
 ): TransformConfig => {
+	// A tube-end partner band may have been refused by generateTiling (quad count not
+	// divisible by the pattern's subunitCount): it has `facets: []` and no `meta`. Bail
+	// out to the null transform rather than indexing into an empty facets array.
+	if (
+		originBand.error ||
+		partnerBand.error ||
+		!originBand.facets.length ||
+		!partnerBand.facets.length
+	) {
+		return nullTransform;
+	}
+
 	const isStartOrigin =
 		originBand.meta?.startPartnerBand &&
 		isSameAddress(originBand.meta?.startPartnerBand, partnerBand.address);
