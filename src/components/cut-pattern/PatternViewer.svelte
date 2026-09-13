@@ -13,6 +13,7 @@
 	import CutPatternRenderer from './CutPatternRenderer.svelte';
 	import { collateTubes } from '$lib/cut-pattern/collate-tubes';
 	import { buildBandSortIndex } from '$lib/cut-pattern/band-sort-index';
+	import { collectBandErrors } from '$lib/cut-pattern/collect-band-errors';
 	import type { BandSortIndex, TubeCutPattern } from '$lib/types';
 
 	let showBands = true;
@@ -48,9 +49,28 @@
 	let sortIndex: BandSortIndex | undefined;
 	$: sortIndex =
 		sortMode === 'tube-order' ? undefined : buildBandSortIndex(collatedPatterns, sortMode);
+
+	let bandErrors: string[] = [];
+	$: bandErrors = collectBandErrors([
+		$superGlobulePatternStore.globuleTubePattern,
+		$superGlobulePatternStore.projectionPattern,
+		$superGlobulePatternStore.surfaceProjectionPattern,
+		$superGlobulePatternStore.voronoiPattern,
+		$superGlobulePatternStore.voronoiSurfacePattern
+	]);
 </script>
 
 <div class="container-svg scroll-container" class:showBands>
+	{#if bandErrors.length}
+		<div class="band-errors" role="alert">
+			<strong>{bandErrors.length} band{bandErrors.length === 1 ? '' : 's'} not patterned</strong>
+			<ul>
+				{#each bandErrors as message, i (i)}
+					<li>{message}</li>
+				{/each}
+			</ul>
+		</div>
+	{/if}
 	<div class="scroll-container">
 		<CutPatternSvg width={6000} height={6000}>
 			<CutPatternRenderer
@@ -93,5 +113,17 @@
 	}
 	.showBands {
 		display: flex;
+	}
+	.band-errors {
+		padding: 0.5rem 0.75rem;
+		margin-bottom: 0.5rem;
+		border: 1px solid #c77;
+		background: #fdf1f1;
+		color: #822;
+		font-size: 0.85rem;
+	}
+	.band-errors ul {
+		margin: 0.25rem 0 0;
+		padding-left: 1.25rem;
 	}
 </style>

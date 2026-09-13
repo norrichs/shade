@@ -5,7 +5,8 @@ import type {
 	PatternGenerator,
 	TiledPatternConfig,
 	GridVariant,
-	PanelVariant
+	PanelVariant,
+	BandCutPattern
 } from '$lib/types';
 import { adjustCarnation, generateCarnation } from './tiled-carnation-pattern';
 import { generateAuxetic } from './tiled-bowtie-pattern';
@@ -15,6 +16,13 @@ import {
 	generateAsanohaPattern,
 	getAsanohaSegments
 } from './tiled-asanoha-pattern';
+import {
+	HEXPARQUET_SUBUNIT_COUNT,
+	adjustHexparquetAfterMapping,
+	adjustHexparquetAfterTiling,
+	generateHexparquetPreview,
+	generateHexparquetSubunits
+} from './tiled-hexparquet-pattern';
 import { generateGridPattern, adjustGridPatternAfterMapping } from './tiled-grid-pattern';
 import { algorithms } from './pattern-registry';
 import {
@@ -91,6 +99,21 @@ export const patterns: { [key: string]: PatternGenerator } = {
 				getAsanohaSegments,
 				finishOuterEdge ?? false
 			)
+	},
+	'tiledHexparquetPattern-0': {
+		subunitCount: HEXPARQUET_SUBUNIT_COUNT,
+		// The single-unit form is the preview (all subunits stacked into one quad).
+		getPattern: (_rows: number, columns: number) => generateHexparquetPreview(columns),
+		getSubunitPatterns: (columns: number) => generateHexparquetSubunits(columns),
+		tagAnchor: { facetIndex: 0, quadEdge: { edge: 'ab', position: 'midPoint' } },
+		adjustAfterMapping: (
+			patternBand: PathSegment[][],
+			quadBand: Quadrilateral[],
+			tiledPatternConfig: TiledPatternConfig
+		) => adjustHexparquetAfterMapping(patternBand, quadBand, tiledPatternConfig),
+		adjustAfterTiling: (bands: BandCutPattern[], tiledPatternConfig: TiledPatternConfig) =>
+			adjustHexparquetAfterTiling(bands, tiledPatternConfig),
+		adjustAfterTilingNeedsEndPartners: false
 	},
 	'tiledGridPattern-0': {
 		getPattern: (

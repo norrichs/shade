@@ -329,16 +329,20 @@
 						</LabeledControl>
 					{/if}
 					{#if inner.rowCount && inner.columnCount}
-						<LabeledControl label="Rows">
-							<input
-								type="number"
-								min="1"
-								max="5"
-								value={inner.rowCount}
-								onchange={(event) =>
-									setInner({ rowCount: (event.currentTarget as HTMLInputElement).valueAsNumber })}
-							/>
-						</LabeledControl>
+						{#if patternTypeConfig.type !== 'tiledHexparquetPattern-0'}
+							<LabeledControl label="Rows">
+								<input
+									type="number"
+									min="1"
+									max="5"
+									value={inner.rowCount}
+									onchange={(event) =>
+										setInner({
+											rowCount: (event.currentTarget as HTMLInputElement).valueAsNumber
+										})}
+								/>
+							</LabeledControl>
+						{/if}
 						<LabeledControl label="Columns">
 							<input
 								type="number"
