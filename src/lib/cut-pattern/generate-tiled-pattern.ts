@@ -321,7 +321,9 @@ export const generateTiling = ({
 			);
 			// Check if unitPattern is PathSegment[] (not DynamicPathCollection)
 			if (Array.isArray(unitPattern)) {
-				const unitPatterns = getSubunitPatterns ? getSubunitPatterns(columnCount || 1) : [unitPattern];
+				const unitPatterns = getSubunitPatterns
+					? getSubunitPatterns(columnCount || 1)
+					: [unitPattern];
 				if (unitPatterns.length !== subunitCount) {
 					throw new Error(
 						`${tiledPatternConfig.type}: expected ${subunitCount} subunit patterns, got ${unitPatterns.length}`
