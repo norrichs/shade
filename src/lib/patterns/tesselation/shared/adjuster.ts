@@ -1,6 +1,6 @@
 import type { BandCutPattern, CutPattern, TiledPatternConfig, TubeCutPattern } from '$lib/types';
-import { getAngle, rotatePS, translatePS } from '../../utils';
 import type { IndexPair, TiledPatternSpec } from '../../spec-types';
+import { alignPrevBandPath } from '../../adjust/align-prev-band';
 import {
 	evaluateSkipEdge,
 	getTransformedPartnerCutPattern,
@@ -63,14 +63,7 @@ export const adjustTesselation = (
 				const { path, quad } = facet;
 				const referenceQuad = band.facets[f].quad;
 				if (!quad || !referenceQuad) throw new Error('missing quad');
-
-				const offset = { x: referenceQuad.a.x - quad.b.x, y: referenceQuad.a.y - quad.b.y };
-				const angle = getAngle(referenceQuad.a, referenceQuad.d) - getAngle(quad.b, quad.c);
-
-				let newPath = translatePS(structuredClone(path), offset.x, offset.y);
-				newPath = rotatePS(newPath, angle, referenceQuad.a);
-
-				return newPath;
+				return alignPrevBandPath(path, quad, referenceQuad);
 			}
 		);
 
