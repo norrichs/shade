@@ -149,9 +149,15 @@ export type UnitPatternGenerator = {
 		quadBand: Quadrilateral[],
 		tiledPatternConfig: TiledPatternConfig,
 		finishOuterEdge?: boolean,
-		bandContext?: { hasOuterPartner: boolean; bandIndex: number }
+		bandContext?: { hasOuterPartner: boolean; bandIndex: number; leftPartnerBand?: number }
 	) => PathSegment[][];
 	adjustAfterTiling?: any;
+	/** Number of unit patterns cycled along a band, one per quad. Defaults to 1. */
+	subunitCount?: number;
+	/** One unit pattern per subunit, in quad-index order. Required when subunitCount > 1. */
+	getSubunitPatterns?: (columns: number) => PathSegment[][];
+	/** When false, adjustAfterTiling runs even if the tube has no tube-end partners. Defaults to true. */
+	adjustAfterTilingNeedsEndPartners?: boolean;
 };
 export type BandPatternGenerator = {
 	getPattern: (rows: number, columns: number, quadBand?: Quadrilateral[]) => DynamicPathCollection;
@@ -415,6 +421,10 @@ export type BandCutPattern = {
 	 * computed; PatternLabel falls back to the previous absolute-angle behavior.
 	 */
 	tagAnchorAutoAngle?: number;
+	/** Set when the band could not be patterned (e.g. quad count not divisible by subunitCount). */
+	error?: string;
+	/** Band index (same space as address.band) of the band on this band's left (unit x = 0) side. */
+	leftPartnerBand?: number;
 	projectionType: 'patterned';
 	address: GlobuleAddress_Band;
 	bounds?: {

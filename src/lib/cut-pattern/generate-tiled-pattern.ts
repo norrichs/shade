@@ -18,7 +18,7 @@ import {
 	transformPatternByQuad,
 	transformPointByQuadrilateralTransform
 } from '$lib/patterns/quadrilateral';
-import type { BandCutPatternPattern, TiledPatternConfig } from '$lib/types';
+import type { BandCutPatternPattern, TiledPatternConfig, UnitPatternGenerator } from '$lib/types';
 import { applyStrokeWidth, getFlatStripV2 } from './generate-cut-pattern';
 import { resolvePatternEntry } from '$lib/patterns/resolve-pattern';
 import { computeTiledLabelAngle } from './compute-tiled-label-angle';
@@ -60,6 +60,32 @@ const bandHasFreeSide = (band: Band): boolean => {
 	});
 };
 
+/**
+ * Real tube band index of the band on this band's LEFT side (unit x = 0 — the
+ * neighbour the tesselation adjuster treats as `prev`), read from facet partner
+ * meta. That is band b − 1, or — for band 0 of a wrapping tube — the tube's last
+ * band. Undefined when the left side is free (band 0 of an open tube) or the
+ * facets carry no address.
+ *
+ * Known limit: in a wrapping tube of exactly two bands, band 0's two neighbours
+ * are the same band, so its left partner is not detected.
+ */
+export const getLeftPartnerBandIndex = (band: Band): number | undefined => {
+	const own = band.facets.find((facet) => facet.address)?.address;
+	if (!own) return undefined;
+	const neighbours = new Set<number>();
+	for (const facet of band.facets) {
+		for (const edge of ['ab', 'bc', 'ac'] as const) {
+			const partner = facet.meta?.[edge]?.partner;
+			if (partner && partner.tube === own.tube && partner.band !== own.band) {
+				neighbours.add(partner.band);
+			}
+		}
+	}
+	if (neighbours.has(own.band - 1)) return own.band - 1;
+	return [...neighbours].find((n) => n > own.band + 1);
+};
+
 export const generateTubeCutPattern = ({
 	address,
 	bands,
@@ -76,6 +102,12 @@ export const generateTubeCutPattern = ({
 	const tubeCutPattern: TubeCutPattern = { projectionType: 'patterned', address, bands: [] };
 
 	const visibleBands = bands.filter((b) => b.visible);
+
+	// Partner meta uses real tube band indices; BandCutPattern.address.band uses the
+	// index among visible bands. Translate so leftPartnerBand matches address.band.
+	const visibleIndexByReal = new Map(
+		visibleBands.map((band, k) => [band.facets.find((f) => f.address)?.address?.band ?? k, k])
+	);
 
 	// Apply band range filtering if provided
 	const rangeStart = bandRange?.start ?? 0;
@@ -97,8 +129,16 @@ export const generateTubeCutPattern = ({
 		tiledPatternConfig,
 		address,
 		bandIndexOffset: rangeStart,
-		totalBandCount: visibleBands.length
+		totalBandCount: visibleBands.length,
+		toVisibleBandIndex: (real: number) => visibleIndexByReal.get(real)
 	});
+
+	const refused = tiling.filter((band) => band.error);
+	if (refused.length) {
+		console.error(
+			`${tiledPatternConfig.type}: ${refused.length} band(s) in tube ${address.tube} not patterned — ${refused[0].error}`
+		);
+	}
 
 	// Return raw tiling - adjustAfterTiling and post-processing happen in generate-pattern.ts
 	tubeCutPattern.bands = tiling;
@@ -204,6 +244,8 @@ export type GenerateTilingProps = {
 	bandIndexOffset?: number;
 	/** Total number of visible bands in the tube (used to detect the last band). */
 	totalBandCount?: number;
+	/** Translate a real tube band index (facet meta) to this tiling's band index space. */
+	toVisibleBandIndex?: (realBandIndex: number) => number | undefined;
 };
 
 export const generateTiling = ({
@@ -212,7 +254,8 @@ export const generateTiling = ({
 	tiledPatternConfig,
 	address,
 	bandIndexOffset = 0,
-	totalBandCount
+	totalBandCount,
+	toVisibleBandIndex = (real: number) => real
 }: GenerateTilingProps): BandCutPattern[] => {
 	const bandCount = totalBandCount ?? quadBands.length;
 	const tiling: {
@@ -221,9 +264,10 @@ export const generateTiling = ({
 		id: string;
 		tagAnchorPoint: Point;
 	}[] = quadBands.map((quadBand, bandIndex) => {
-		const { getPattern, tagAnchor, adjustAfterMapping } = resolvePatternEntry(
-			tiledPatternConfig.type
-		);
+		const entry = resolvePatternEntry(tiledPatternConfig.type) as UnitPatternGenerator;
+		const { getPattern, tagAnchor, adjustAfterMapping, getSubunitPatterns } = entry;
+		const subunitCount = entry.subunitCount ?? 1;
+		const globalBandIndex = bandIndex + bandIndexOffset;
 		const { rowCount, columnCount, variant } = tiledPatternConfig.config;
 
 		// The LAST band of a non-tubular (surface-projection) tube has no adjacent band
@@ -238,10 +282,32 @@ export const generateTiling = ({
 		const sourceBand = bands?.[bandIndex];
 		const hasFreeSide = sourceBand ? bandHasFreeSide(sourceBand) : true;
 		const finishOuterEdge = bandIndex + bandIndexOffset === bandCount - 1 && hasFreeSide;
+		const realLeftPartner = sourceBand ? getLeftPartnerBandIndex(sourceBand) : undefined;
+		const leftPartnerBand =
+			realLeftPartner === undefined ? undefined : toVisibleBandIndex(realLeftPartner);
 		const bandContext = {
 			hasOuterPartner: !hasFreeSide,
-			bandIndex: bandIndex + bandIndexOffset
+			bandIndex: bandIndex + bandIndexOffset,
+			leftPartnerBand
 		};
+
+		if (quadBand.length % subunitCount !== 0) {
+			// Match the type looseness of the address/bounds accesses on the normal
+			// return path below (both pre-existing type gaps) rather than introducing
+			// new svelte-check errors at this new call site.
+			const tubeAddress = address as GlobuleAddress_Tube;
+			return {
+				facets: [],
+				sideOrientation: bands[bandIndex].sideOrientation,
+				svgPath: undefined,
+				id: `${tiledPatternConfig.type}-band-${tubeAddress.globule}-${tubeAddress.tube}-${globalBandIndex}`,
+				tagAnchorPoint: { x: 0, y: 0 },
+				projectionType: 'patterned',
+				address: { ...address, band: globalBandIndex },
+				bounds: (bands[bandIndex] as unknown as { bounds?: BandCutPattern['bounds'] }).bounds,
+				error: `${tiledPatternConfig.type} needs a quad count divisible by ${subunitCount} (got ${quadBand.length})`
+			} as BandCutPattern;
+		}
 
 		let mappedPatternBand: PathSegment[][] | PathSegment[];
 		if (tiledPatternConfig.tiling === 'quadrilateral') {
@@ -255,8 +321,14 @@ export const generateTiling = ({
 			);
 			// Check if unitPattern is PathSegment[] (not DynamicPathCollection)
 			if (Array.isArray(unitPattern)) {
-				mappedPatternBand = quadBand.map((quad) =>
-					transformPatternByQuad(unitPattern, quad)
+				const unitPatterns = getSubunitPatterns ? getSubunitPatterns(columnCount || 1) : [unitPattern];
+				if (unitPatterns.length !== subunitCount) {
+					throw new Error(
+						`${tiledPatternConfig.type}: expected ${subunitCount} subunit patterns, got ${unitPatterns.length}`
+					);
+				}
+				mappedPatternBand = quadBand.map((quad, i) =>
+					transformPatternByQuad(unitPatterns[i % subunitCount], quad)
 				) as PathSegment[][];
 			} else {
 				// unitPattern is DynamicPathCollection, use as-is
@@ -372,7 +444,6 @@ export const generateTiling = ({
 			return cuttable;
 		});
 
-		const globalBandIndex = bandIndex + bandIndexOffset;
 		const result: BandCutPattern = {
 			facets: cuttablePattern,
 			sideOrientation: bands[bandIndex].sideOrientation,
@@ -389,7 +460,8 @@ export const generateTiling = ({
 			projectionType: 'patterned',
 			address: { ...address, band: globalBandIndex },
 			bounds: bands[bandIndex].bounds,
-			meta: startPartnerBand && endPartnerBand ? { startPartnerBand, endPartnerBand } : undefined
+			meta: startPartnerBand && endPartnerBand ? { startPartnerBand, endPartnerBand } : undefined,
+			leftPartnerBand
 		};
 		return result;
 	});
