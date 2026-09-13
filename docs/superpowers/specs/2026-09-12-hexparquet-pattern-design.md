@@ -67,11 +67,11 @@ actual mapped node, so they stay correct on distorted quads.
 
 ### Drop rules (applied last)
 
-| Tag           | Dropped when                                                                                    |
-| ------------- | ----------------------------------------------------------------------------------------------- |
-| `leftEdge`    | column c > 0 (it would retrace column c−1's right zigzag once ◀ is snapped)                     |
-| `partnerDrop` | column 0 and the band has a left partner band                                                   |
-| `unitBottom`  | the unit is not the band's last unit (it coincides with the next unit's red top line `0,1→1,1`) |
+| Tag           | Dropped when                                                                                                                                      |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `leftEdge`    | column c > 0 (it would retrace column c−1's right zigzag once ◀ is snapped)                                                                       |
+| `partnerDrop` | column 0 and the band has a left partner band                                                                                                     |
+| `unitBottom`  | the blue facet is not facet 0 (it coincides with the previous unit's red top line `0,1→1,1`; only the band's first unit keeps it as the band end) |
 
 Drops use tesselation's `removeInPlace` **after every snap**, so snap indices are
 never invalidated. Green's horizontal `◀½→5/6,½` is never dropped; in column c > 0
@@ -79,7 +79,10 @@ its ◀ snaps to column c−1's `(5/6, ½)` so the horizontal is continuous.
 
 ### Exports
 
-- `generateHexparquetSubunits(columns)` → `[red, green, blue]` complete paths.
+- `generateHexparquetSubunits(columns)` → `[blue, green, red]` complete paths, in
+  quad-index order.
+- `generateHexparquetPreview(columns)` → the three subunits stacked into thirds of
+  one unit square (used as `getPattern`, so the pattern tile preview needs no change).
 - Index tables for the given `columns`: adjacent-facet snap rules per subunit,
   across-band snap pairs, and drop indices per tag.
 
@@ -135,12 +138,20 @@ applies drops.
 ### 5. Left-partner flag — `bandContext` in `generateTiling`
 
 Extend the existing `bandContext` (`hasOuterPartner`, from `bandHasFreeSide`) with
-`hasLeftPartner`: true if any facet has an outer-edge partner in band
-`(b − 1 + bandCount) % bandCount` of the same tube — the neighbour the tesselation
-adjuster treats as `prev`. Wrapping tubes resolve through the modulo; surface
-projections match partners geometrically
+`leftPartnerBand`. `getLeftPartnerBandIndex(band)` reads same-tube partner bands
+from facet meta (facets keep `meta` and `address` through flattening) and returns
+band b − 1, or — for band 0 of a wrapping tube — the tube's last band; undefined when
+the left side is free. This is the neighbour the tesselation adjuster treats as
+`prev`. Surface projections match partners geometrically
 (`matchSurfaceProjectionCrossBandPartners`), so band 0 of an open tube has none.
-Carried on the `BandCutPattern` so `adjustAfterTiling` can apply `partnerDrop`.
+Known limit: a wrapping tube of exactly two bands does not detect band 0's left
+partner.
+
+Partner meta uses real tube band indices while `BandCutPattern.address.band` is the
+index among visible bands, so `generateTubeCutPattern` passes a real → visible
+mapping into `generateTiling`. The result is stored as
+`BandCutPattern.leftPartnerBand` so `adjustAfterTiling` can find the partner and
+apply `partnerDrop`.
 
 ### Processing order for hexparquet
 
@@ -150,44 +161,49 @@ Carried on the `BandCutPattern` so `adjustAfterTiling` can apply `partnerDrop`.
 
 ### Registry entry — `pattern-definitions.ts`
 
-`tiledHexparquetPattern-0`: `subunitCount: 3`, `getPattern` returning the three
-subunits, `adjustAfterMapping` (shared snapper with hexparquet rules),
-`adjustAfterTiling` (across-band snap + drops, gate opt-out),
+`tiledHexparquetPattern-0`: `subunitCount: 3`, `getSubunitPatterns(columns)`
+returning the three subunits, `getPattern` returning the stacked preview,
+`adjustAfterMapping` (shared snapper with hexparquet rules), `adjustAfterTiling`
+(across-band snap + drops), `adjustAfterTilingNeedsEndPartners: false`,
 `tagAnchor: { facetIndex: 0, quadEdge: { edge: 'ab', position: 'midPoint' } }`.
+`subunitCount`, `getSubunitPatterns` and `adjustAfterTilingNeedsEndPartners` are new
+optional members of `UnitPatternGenerator`.
 
 ### Ignored config
 
 `rowCount`, `endsMatched`, `endsTrimmed` are ignored for hexparquet.
 
-### To verify in code
+### Quad orientation (verified)
 
-Whether quad _i_+1 lies across green's y = 1 or y = 0 edge. This fixes whether the
-`up` rule reads `prev` or `next` and whether the cycle is red→green→blue or
-reversed. Settled by a test on a real flattened band; quad 0 starts the cycle.
+On real flattened bands `quad[i+1].a === quad[i].d` and `quad[i+1].b === quad[i].c`:
+quad _i_+1 lies across quad _i_'s unit y = 1 edge. So in quad-index order a unit is
+**blue (index 0), green (1), red (2)**, quad 0 starts the cycle, green's `up` node
+reads the `next` facet (red) and its `down` node reads the `prev` facet (blue).
 
 ## Errors & UI
 
 - `BandCutPattern.error?: string`. Guard failures keep the band's address and are
   logged once per tube via `console.error`.
-- `PatternView.svelte` shows a warning banner when any band has `error`, listing
-  affected bands (e.g. `t2/b0: 20 quads`). Placed alongside the grid-specific
-  controls block (`PatternView.svelte:418`).
+- `PatternViewer.svelte` shows a warning banner when any band has `error`, listing
+  affected bands (e.g. `t2/b0: … (got 20)`), built by a pure, tested
+  `collectBandErrors` helper over `superGlobulePatternStore`'s results.
 - `shades-config.ts`: `tiledPatternConfigs['tiledHexparquetPattern-0']` with
   Asanoha-like defaults (`columnCount: 1`, `dynamicStroke: 'quadWidth'`,
   `endsMatched: false`, `endsTrimmed: false`).
 - The pattern picker picks the type up automatically (`PatternTileButton` reads
   `tiledPatternConfigs` / `patterns`).
-- `PatternTile.svelte`: for entries with `subunitCount` > 1, preview the subunits
-  stacked into one quad.
+- `PatternTile.svelte` is unchanged: hexparquet's `getPattern` is the stacked
+  preview.
 - Hide the row control for hexparquet; keep columns.
 
 ## Testing
 
 Jest, TDD. Order matters — characterization before refactor:
 
-1. **Asanoha characterization** (Asanoha has no direct tests today): snapshot mapped
-   - adjusted output on fixture quads for `hasOuterMirror` on/off, `endsMatched`
-     on/off, `endsTrimmed` on/off, columns 1–2. Refactor 2 must keep these identical.
+1. **Asanoha characterization** (Asanoha has no direct tests today): snapshot the
+   mapped and adjusted output on fixture quads for `hasOuterMirror` on/off,
+   `endsMatched` on/off, `endsTrimmed` on/off, rows and columns 1–2. Refactor 2 must
+   keep these identical.
 2. **Tesselation regression**: the existing hex snapshot test stays green through
    refactor 3.
 3. **Shared snapper** unit tests: `prev`/`next`/`self` rules, `endsMatched` wrap.
