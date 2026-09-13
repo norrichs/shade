@@ -13,9 +13,17 @@ green, blue) that **alternate** along a band, one subunit per quad. The three
 together form the visible unit. Mapping each subunit to its own quad gives finer
 conformance to 3D curvature.
 
-The new behaviour is mixed into the existing tiled pipeline through optional
-registry hooks. Legacy tiled patterns (`getPattern` / `adjustAfterMapping` /
-`adjustAfterTiling`) are untouched.
+## Architectural principle: refactor, don't add
+
+Every node adjustment hexparquet needs already exists in some form — Asanoha's
+adjacent-facet snapping and the tesselation adjuster's index-pair replacement,
+across-band frame transform and index removal. Hexparquet is built by
+**generalizing that existing code**, not by writing a parallel mechanism. Existing
+patterns keep their behaviour, proven by characterization/snapshot tests taken
+before the refactor.
+
+Genuinely new code is limited to: the hexparquet definition (subunits + index
+tables), the left-partner check, and the error banner.
 
 ## Pattern definition — `src/lib/patterns/tiled-hexparquet-pattern.ts`
 
@@ -28,8 +36,9 @@ registry hooks. Legacy tiled patterns (`getPattern` / `adjustAfterMapping` /
 
 ### Subunits
 
-`◀` = the **left apex**, defined as `(0, y)` in the definition and resolved to its
-true position after mapping (see _Node resolution_). `†` = within-band pin.
+`◀` = the **left apex**, defined at `(−1/6, y)`. The existing bilinear quad mapping
+extrapolates it to the correct position when there is no neighbour; snaps overwrite
+it when there is one. `†` = within-band snap target.
 
 | Subunit | Segments                                                                                                                                                                   |
 | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -37,11 +46,26 @@ true position after mapping (see _Node resolution_). `†` = within-band pin.
 | Green   | `0,1→◀½` (leftEdge) · `◀½→0,0` (leftEdge, partnerDrop) · `◀½→5/6,½` · `2/6,1→3/6,½` · `3/6,½→4/6,0†down` · `4/6,1†up→3/6,½` · `3/6,½→2/6,0` · `1,1→5/6,½` · `5/6,½→1,0`    |
 | Blue    | `0,1→2/6,1` · `2/6,1→0,0` · `0,1→◀½` (leftEdge) · `◀½→0,0` (leftEdge) · `0,0→1,0` (unitBottom) · `1,0→5/6,½` · `5/6,½→1,1` · `2/6,1→3/6,½` · `3/6,½→2/6,0` · `3/6,½→5/6,½` |
 
-Subunits are stored internally as tagged segments `{ from, to, tags }` and emitted
-as `PathSegment[]` (`M`/`L`) after filtering, so drops are plain filters and pin
-indices are computed after drops.
+Subunits are emitted as **complete** `PathSegment[]` (`M`/`L`) — nothing is dropped
+at generation. All snap and drop indices are therefore fixed constants of the
+definition (no per-variant index recomputation, unlike `getAsanohaSegments`).
 
-### Drop rules
+### Snap rules (node adjustment)
+
+| Target node                 | Source                                           | Mechanism                                     |
+| --------------------------- | ------------------------------------------------ | --------------------------------------------- |
+| green `(4/6, 1)` †up        | adjacent red facet's `(5/6, ½)` node             | shared adjacent-facet snapper (`prev`/`next`) |
+| green `(4/6, 0)` †down      | adjacent blue facet's `(5/6, ½)` node            | shared adjacent-facet snapper (`prev`/`next`) |
+| ◀ in column c > 0           | column c−1's `(5/6, ½)` node, same facet         | shared adjacent-facet snapper (`self`)        |
+| ◀ in column 0, left partner | partner band's `(5/6, ½)` node, same facet index | tesselation across-band replacement           |
+| ◀ with no neighbour         | — (extrapolated by the mapping)                  | none                                          |
+
+Sanity check: green's diagonal `(2/6,1)→(3/6,½)` continued collinearly reaches
+`(5/6, −½)` in green's frame — exactly blue's `(5/6, ½)` on a rectangular quad.
+Snaps are "continue the line into the neighbour", sourced from the neighbour's
+actual mapped node, so they stay correct on distorted quads.
+
+### Drop rules (applied last)
 
 | Tag           | Dropped when                                                                                    |
 | ------------- | ----------------------------------------------------------------------------------------------- |
@@ -49,92 +73,87 @@ indices are computed after drops.
 | `partnerDrop` | column 0 and the band has a left partner band                                                   |
 | `unitBottom`  | the unit is not the band's last unit (it coincides with the next unit's red top line `0,1→1,1`) |
 
-Green's horizontal `◀½→5/6,½` is never dropped; in column c > 0 its ◀ snaps to
-column c−1's `(5/6, ½)` so the horizontal is continuous.
+Drops use tesselation's `removeInPlace` **after every snap**, so snap indices are
+never invalidated. Green's horizontal `◀½→5/6,½` is never dropped; in column c > 0
+its ◀ snaps to column c−1's `(5/6, ½)` so the horizontal is continuous.
 
-### Node resolution (pins)
+### Exports
 
-| Pin      | Node              | Resolves to                                                                                                                |
-| -------- | ----------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `up`     | green `(4/6, 1)`  | red neighbour quad's `(5/6, ½)`                                                                                            |
-| `down`   | green `(4/6, 0)`  | blue neighbour quad's `(5/6, ½)`                                                                                           |
-| `column` | ◀ in column c > 0 | column c−1's `(5/6, y)`, same quad                                                                                         |
-| `apex`   | ◀ in column 0     | left partner band's `(5/6, y)` (tube-level step); otherwise extrapolated `(−1/6, y)` through **this** quad's own transform |
+- `generateHexparquetSubunits(columns)` → `[red, green, blue]` complete paths.
+- Index tables for the given `columns`: adjacent-facet snap rules per subunit,
+  across-band snap pairs, and drop indices per tag.
 
-Sanity check: green's diagonal `(2/6,1)→(3/6,½)` continued collinearly reaches
-`(5/6, −½)` in green's frame, which is exactly blue's `(5/6, ½)` on a rectangular
-quad. Pins are "continue the line into the neighbour", resolved against the actual
-neighbour quad so they stay correct on distorted quads.
+## Refactors of existing code
 
-### Export
+### 1. Subunit cycle — `generateTiling` mapping (`generate-tiling.ts`)
+
+Generalize `quadBand.map((quad) => transformPatternByQuad(unitPattern, quad))` so an
+entry with `subunitCount` > 1 returns one pattern per subunit and quad _i_ uses
+`unitPatterns[i % subunitCount]`. Legacy patterns are `subunitCount = 1`
+(unchanged). The guard lives here: if `quadBand.length % subunitCount !== 0`, emit
+the band with `facets: []` and
+`` error: `${type} needs a quad count divisible by ${subunitCount} (got ${N})` ``.
+The generic code never hard-codes 3.
+
+### 2. Shared adjacent-facet snapper — from Asanoha
+
+Extract `adjustAsanohaPatternAfterMapping` + `straightenEndSegments` into a shared
+snapper (e.g. `src/lib/patterns/adjust/snap-adjacent-facets.ts`):
 
 ```ts
-generateHexparquetSubunits({
-	columns: number,
-	hasLeftPartner: boolean,
-	isLastUnit: boolean
-}): {
-	subunits: [PathSegment[], PathSegment[], PathSegment[]]; // drops applied
-	pins: SubunitPin[]; // indices valid for the returned subunits
-}
+type FacetSnapRule = { from: 'prev' | 'next' | 'self'; pairs: IndexPair[] };
+snapAdjacentFacets(patternBand, quadBand, getRules: (facetIndex) => FacetSnapRule[], {
+	endsMatched
+});
 ```
 
-`SubunitPin`: `{ subunit, segmentIndex, kind: 'up' | 'down' | 'column' | 'apex', unitPoint }`
-where `unitPoint` is the target point in the referenced cell's unit frame.
+- Keeps Asanoha's `endsMatched` wrap (translated clone of the first/last facet).
+- Reads sources from an unmodified copy, writes via tesselation's `replaceInPlace`.
+- Rules are per facet index so the subunit cycle can supply different rules for
+  red/green/blue facets; Asanoha supplies the same rules for every facet.
+- `getAsanohaSegments` becomes Asanoha's rules builder (start pair ← `prev` end
+  pair; end pair ← `next` start pair). Asanoha's `endsTrimmed` handling stays in
+  Asanoha.
 
-## Pipeline integration
+### 3. Across-band frame transform — from the tesselation adjuster
+
+Extract the `prevBandPaths` computation (`tesselation/shared/adjuster.ts:61-75`:
+partner quad `b→c` aligned onto this quad `a→d`, translate + rotate) into a shared
+helper used by both `adjustTesselation` and hexparquet's `adjustAfterTiling`.
+Hexparquet then applies `replaceInPlace` with its across-band pairs (◀ ← partner's
+`(5/6, ½)`) for bands with a left partner.
+
+### 4. `adjustAfterTiling` gate — `generate-pattern.ts:217`
+
+Replace the hard-coded "first band has a tube-end partner" gate with an entry flag
+(default: today's behaviour). Hexparquet opts out so its `adjustAfterTiling` runs on
+open tubes too. The existing band-range expansion (`bandExpand`) still applies, so
+a band range sees its neighbour. When called without tubes
+(`generateTiledBandPattern`), hexparquet skips the across-band snap and still
+applies drops.
+
+### 5. Left-partner flag — `bandContext` in `generateTiling`
+
+Extend the existing `bandContext` (`hasOuterPartner`, from `bandHasFreeSide`) with
+`hasLeftPartner`: true if any facet has an outer-edge partner in band
+`(b − 1 + bandCount) % bandCount` of the same tube — the neighbour the tesselation
+adjuster treats as `prev`. Wrapping tubes resolve through the modulo; surface
+projections match partners geometrically
+(`matchSurfaceProjectionCrossBandPartners`), so band 0 of an open tube has none.
+Carried on the `BandCutPattern` so `adjustAfterTiling` can apply `partnerDrop`.
+
+### Processing order for hexparquet
+
+1. Map (refactor 1) → 2. within-band snaps `prev`/`next`/`self` (refactor 2, in
+   `adjustAfterMapping`) → 3. across-band ◀ snap (refactor 3, in `adjustAfterTiling`)
+   → 4. `removeInPlace` drops (end of `adjustAfterTiling`).
 
 ### Registry entry — `pattern-definitions.ts`
 
-```ts
-'tiledHexparquetPattern-0': {
-	subunitCount: 3,
-	getSubunits: (columns, ctx: { hasLeftPartner: boolean; isLastUnit: boolean }) => ...,
-	adjustAcrossBands: (bands, tiledPatternConfig) => ...,
-	tagAnchor: { facetIndex: 0, quadEdge: { edge: 'ab', position: 'midPoint' } }
-}
-```
-
-`subunitCount` and `getSubunits` are new optional members of the generator type.
-The generic code never hard-codes 3.
-
-### `generateTiling` (per band) — `generate-tiling.ts`
-
-A new branch, taken only when the entry has `getSubunits`:
-
-1. **Guard**: if `quadBand.length % subunitCount !== 0`, emit the band with
-   `facets: []` and `` error: `${type} needs a quad count divisible by ${subunitCount} (got ${N})` ``.
-2. **Map**: quad _i_ → `subunits[i % subunitCount]` via the existing
-   `transformPatternByQuad`. `getSubunits` is called per unit so the last unit can
-   keep `unitBottom`.
-3. **Resolve pins**: map each pin's `unitPoint` through the quad it references
-   (`up`/`down` → neighbour quad *i*∓1; `column` → same quad; `apex` → own quad,
-   extrapolated) using `transformPointByQuadrilateralTransform` with the
-   **original** (un-cloned, Vector3) quads.
-4. Tag anchor, `CutPattern` assembly, stroke width and SVG output reuse the
-   existing code unchanged.
-
-### Left-partner detection
-
-A band has a left partner if any of its facets has an outer-edge partner in band
-`(b − 1 + bandCount) % bandCount` of the same tube — the same neighbour the
-tesselation adjuster treats as `prev`. Wrapping tubes resolve through the modulo;
-surface projections match partners geometrically
-(`matchSurfaceProjectionCrossBandPartners`), so band 0 of an open tube correctly
-has none.
-
-### Tube-level step — `generate-pattern.ts`
-
-New optional hook `adjustAcrossBands(bands, tiledPatternConfig)`, run for every
-in-range tube **without** the tube-end-partner gate that guards
-`adjustAfterTiling` (`generate-pattern.ts:217`). Reuses the existing band-range
-expansion so a band range still sees its neighbour.
-
-For each band with a left partner, re-snap the column-0 ◀ nodes to band b−1's
-`(5/6, y)`. The partner's **quad** is brought into this band's frame with the
-tesselation adjuster's edge-alignment transform (partner quad `b→c` onto this quad
-`a→d`; currently inline in `tesselation/shared/adjuster.ts:61-75`, to be extracted
-into a shared helper), then `(5/6, y)` is mapped through it.
+`tiledHexparquetPattern-0`: `subunitCount: 3`, `getPattern` returning the three
+subunits, `adjustAfterMapping` (shared snapper with hexparquet rules),
+`adjustAfterTiling` (across-band snap + drops, gate opt-out),
+`tagAnchor: { facetIndex: 0, quadEdge: { edge: 'ab', position: 'midPoint' } }`.
 
 ### Ignored config
 
@@ -142,9 +161,9 @@ into a shared helper), then `(5/6, y)` is mapped through it.
 
 ### To verify in code
 
-Whether quad _i_+1 lies across green's y = 1 or y = 0 edge. This fixes whether
-`up` references *i*−1 or _i_+1 and whether the cycle is red→green→blue or reversed.
-Settled by a test on a real flattened band; quad 0 starts the cycle.
+Whether quad _i_+1 lies across green's y = 1 or y = 0 edge. This fixes whether the
+`up` rule reads `prev` or `next` and whether the cycle is red→green→blue or
+reversed. Settled by a test on a real flattened band; quad 0 starts the cycle.
 
 ## Errors & UI
 
@@ -158,31 +177,35 @@ Settled by a test on a real flattened band; quad 0 starts the cycle.
   `endsMatched: false`, `endsTrimmed: false`).
 - The pattern picker picks the type up automatically (`PatternTileButton` reads
   `tiledPatternConfigs` / `patterns`).
-- `PatternTile.svelte`: for entries with `getSubunits`, preview the three subunits
+- `PatternTile.svelte`: for entries with `subunitCount` > 1, preview the subunits
   stacked into one quad.
 - Hide the row control for hexparquet; keep columns.
 
 ## Testing
 
-Jest, TDD:
+Jest, TDD. Order matters — characterization before refactor:
 
-- `src/lib/patterns/__tests__/tiled-hexparquet-pattern.test.ts` — per-subunit
-  segment counts; `leftEdge` / `partnerDrop` / `unitBottom` drops; pin indices valid
-  under every drop combination.
-- Subunit tiling tests (rectangular fixture quads → exact coordinates): guard sets
-  `error` for non-multiple-of-3 quad counts; cycle order; `up`/`down` pins land on the
-  neighbour's mapped `(5/6, ½)`; `apex` extrapolates to `(−1/6, ½)`; quad-direction
-  test on a real flattened band.
-- Left-partner detection: wrapping tube vs open surface-projection fixture facets.
-- Cross-band snap: two rectangular bands; partner `(5/6, ½)` lands on this band's ◀.
-- Regression: existing tiled pattern tests pass; `npm run check` stays at the ~434
-  error baseline.
+1. **Asanoha characterization** (Asanoha has no direct tests today): snapshot mapped
+   - adjusted output on fixture quads for `hasOuterMirror` on/off, `endsMatched`
+     on/off, `endsTrimmed` on/off, columns 1–2. Refactor 2 must keep these identical.
+2. **Tesselation regression**: the existing hex snapshot test stays green through
+   refactor 3.
+3. **Shared snapper** unit tests: `prev`/`next`/`self` rules, `endsMatched` wrap.
+4. **Subunit mapping**: guard sets `error` for non-multiple quad counts; cycle order;
+   legacy `subunitCount = 1` unchanged.
+5. **Hexparquet** (rectangular fixture quads → exact coordinates): full subunit
+   segment counts; up/down snaps land on the neighbour's `(5/6, ½)`; column snaps;
+   ◀ extrapolates to `(−1/6, ½)`; drops for `leftEdge` / `partnerDrop` /
+   `unitBottom`; quad-direction test on a real flattened band.
+6. **Left-partner detection**: wrapping tube vs open surface-projection fixtures.
+7. **Across-band snap**: two rectangular bands; partner `(5/6, ½)` lands on ◀.
+8. Regression: all existing tests pass; `npm run check` stays at the ~434 baseline.
 
 Visual verification: headless Playwright screenshot of designer2 with hexparquet on
 a surface projection and on a wrapping projection.
 
 ## Out of scope
 
-- Other subunit-based patterns (the hooks are generic, but only hexparquet is built).
+- Migrating other patterns (grid, carnation, …) onto the shared snapper.
 - Changing geometry generation to enforce quad counts.
 - Tube-end matching (`endsMatched`) for hexparquet.
