@@ -17,7 +17,8 @@ import type {
 	FacetOrientation,
 	TubeCutPattern,
 	Band,
-	BandCutPattern
+	BandCutPattern,
+	UnitPatternGenerator
 } from '$lib/types';
 import { isTiledPatternConfig, isOutlinedPatternConfig } from '$lib/types';
 
@@ -151,8 +152,11 @@ export const generateProjectionPattern = (
 		};
 	} else {
 		const tiledPatternConfig = patternTypeConfig;
-		const { adjustAfterTiling } = resolvePatternEntry(tiledPatternConfig.type);
+		const entry = resolvePatternEntry(tiledPatternConfig.type) as UnitPatternGenerator;
+		const { adjustAfterTiling } = entry;
 		const hasAdjustAfterTiling = !!adjustAfterTiling;
+		// Most adjusters need tube-end partner transforms; entries can opt out.
+		const needsEndPartners = entry.adjustAfterTilingNeedsEndPartners ?? true;
 
 		// Resolve tube range
 		const [tubeStart, tubeEnd] = resolveRangeIndices(projectionRange?.tubes, effectiveTubes.length);
@@ -215,7 +219,7 @@ export const generateProjectionPattern = (
 
 		const firstInRange = tubePatterns[tubeStart];
 		const doAdjustAfterTiling =
-			hasAdjustAfterTiling && firstInRange?.bands[0]?.meta?.startPartnerBand;
+			hasAdjustAfterTiling && (!needsEndPartners || !!firstInRange?.bands[0]?.meta?.startPartnerBand);
 		if (doAdjustAfterTiling) {
 			for (let t = tubeStart; t < tubeEnd; t++) {
 				const tp = tubePatterns[t];
