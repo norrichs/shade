@@ -1,6 +1,9 @@
-import type { PathSegment } from '$lib/types';
+import type { BandCutPattern, PathSegment, Quadrilateral, TiledPatternConfig } from '$lib/types';
 import type { IndexPair } from './spec-types';
 import type { FacetSnapRule } from './adjust/snap-adjacent-facets';
+import { snapAdjacentFacets } from './adjust/snap-adjacent-facets';
+import { alignPrevBandPath } from './adjust/align-prev-band';
+import { removeInPlace, replaceInPlace } from './tesselation/shared/helpers';
 
 /**
  * Hexparquet: three subunits cycled along a band, one per quad. Quad i+1 lies
@@ -164,4 +167,65 @@ export const getHexparquetDropIndices = (
 		});
 	}
 	return out;
+};
+
+/** Within-band snaps: green up/down nodes and column-to-column apexes. */
+export const adjustHexparquetAfterMapping = (
+	patternBand: PathSegment[][],
+	quadBand: Quadrilateral[],
+	tiledPatternConfig: TiledPatternConfig
+): PathSegment[][] =>
+	snapAdjacentFacets(
+		patternBand,
+		quadBand,
+		getHexparquetSnapRules(tiledPatternConfig.config.columnCount || 1),
+		{ endsMatched: false }
+	);
+
+/**
+ * Tube-level adjustment: snap each band's column-0 left apexes onto its left
+ * partner band's right apex (brought into this band's frame), then drop segments.
+ * All snaps read complete paths, so drops happen last.
+ */
+export const adjustHexparquetAfterTiling = (
+	bands: BandCutPattern[],
+	tiledPatternConfig: TiledPatternConfig
+): BandCutPattern[] => {
+	const columns = tiledPatternConfig.config.columnCount || 1;
+	const byIndex = new Map(bands.map((band) => [band.address.band, band]));
+
+	const snapped = bands.map((band) => {
+		const partner =
+			band.leftPartnerBand === undefined ? undefined : byIndex.get(band.leftPartnerBand);
+		if (band.error || !partner || partner.error || partner.facets.length !== band.facets.length) {
+			return band;
+		}
+		return {
+			...band,
+			facets: band.facets.map((facet, f) => {
+				const partnerFacet = partner.facets[f];
+				if (!facet.quad || !partnerFacet.quad) return facet;
+				const source = alignPrevBandPath(partnerFacet.path, partnerFacet.quad, facet.quad);
+				const path = structuredClone(facet.path);
+				replaceInPlace({ pairs: getHexparquetAcrossBandPairs(f, columns), target: path, source });
+				return { ...facet, path };
+			})
+		};
+	});
+
+	return snapped.map((band) => {
+		if (band.error) return band;
+		const hasLeftPartner = band.leftPartnerBand !== undefined;
+		return {
+			...band,
+			facets: band.facets.map((facet, f) => {
+				const path = structuredClone(facet.path);
+				removeInPlace({
+					indices: getHexparquetDropIndices(f, columns, { hasLeftPartner }),
+					target: path
+				});
+				return { ...facet, path };
+			})
+		};
+	});
 };
