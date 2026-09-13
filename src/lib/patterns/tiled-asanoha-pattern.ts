@@ -1,5 +1,6 @@
 import type { PathSegment, Quadrilateral, TiledPatternConfig } from '$lib/types';
-import { rotatePS, translatePS } from './utils';
+import { translatePS } from './utils';
+import { snapAdjacentFacets, type FacetSnapRule } from './adjust/snap-adjacent-facets';
 
 export const generateAsanohaPattern = ({
 	size,
@@ -181,7 +182,40 @@ export const generateAsanohaPattern = ({
 };
 
 /////////////////////////////////////////////////
-// Adjustment functions.  Make these general so they can be reused
+// Adjustment functions — built on the shared adjacent-facet snapper.
+
+export type GetSegmentFunction = (
+	end: 'start' | 'end',
+	rows: number,
+	columns: number,
+	facetLength: number,
+	hasOuterMirror?: boolean
+) => [number, number][];
+
+/**
+ * Asanoha's snap rules for one facet: each start pair's first node snaps onto the
+ * previous facet's matching end pair's first node, and each end pair's second node
+ * snaps onto the next facet's matching start pair's second node. This chains the
+ * x = 0 (and mirrored w6) verticals across quads.
+ */
+export const getAsanohaSnapRules = (
+	getSegments: GetSegmentFunction,
+	rows: number,
+	columns: number,
+	facetLength: number,
+	hasOuterMirror: boolean
+): FacetSnapRule[] => {
+	if (rows < 1 || columns < 1) {
+		console.error(`bad row or column count, rows: ${rows}, columns: ${columns}`);
+		return [];
+	}
+	const start = getSegments('start', rows, columns, facetLength, hasOuterMirror);
+	const end = getSegments('end', rows, columns, facetLength, hasOuterMirror);
+	return [
+		{ from: 'prev', pairs: start.map(([first], k) => ({ target: first, source: end[k][0] })) },
+		{ from: 'next', pairs: end.map(([, second], k) => ({ target: second, source: start[k][1] })) }
+	];
+};
 
 export const adjustAsanohaPatternAfterMapping = (
 	patternBand: PathSegment[][],
@@ -193,58 +227,28 @@ export const adjustAsanohaPatternAfterMapping = (
 	hasOuterMirror = false
 ): PathSegment[][] => {
 	const { endsMatched, endsTrimmed, rowCount, columnCount } = tiledPatternConfig.config;
-	let prevFacet: PathSegment[] | undefined;
-	let nextFacet: PathSegment[] | undefined;
-	let thisFacet: PathSegment[];
-	let thisQuad: Quadrilateral;
-	patternBand = patternBand.map((facet, i, facets) => {
-		thisFacet = facet;
-		thisQuad = quadBand[i];
-		if (i === 0) {
-			const prevQuad = quadBand[facets.length - 1];
-			const tDiff = { x: thisQuad.a.x - prevQuad.d.x, y: thisQuad.a.y - prevQuad.d.y };
-			const rDiff = 0;
-			prevFacet = endsMatched
-				? rotatePS(translatePS(structuredClone(facets[facets.length - 1]), tDiff.x, tDiff.y), rDiff)
-				: undefined;
-
-			nextFacet = facets[i + 1];
-		} else if (i === facets.length - 1) {
-			const nextQuad = quadBand[0];
-			const tDiff = { x: thisQuad.d.x - nextQuad.a.x, y: thisQuad.d.y - nextQuad.a.y };
-			const rDiff = 0;
-			prevFacet = facets[i - 1];
-			nextFacet = endsMatched
-				? rotatePS(translatePS(structuredClone(facets[0]), tDiff.x, tDiff.y), rDiff)
-				: undefined;
-		} else {
-			prevFacet = facets[i - 1];
-			nextFacet = facets[i + 1];
-		}
-		const straightened = straightenEndSegments({
-			prevFacet,
-			thisFacet,
-			nextFacet,
-			rows: tiledPatternConfig.config.rowCount || 1,
-			columns: tiledPatternConfig.config.columnCount || 1,
-			getSegments,
-			hasOuterMirror
-		});
-		return straightened;
-	});
+	const rows = rowCount || 1;
+	const columns = columnCount || 1;
+	const mapped = patternBand;
+	patternBand = snapAdjacentFacets(
+		mapped,
+		quadBand,
+		(i) => getAsanohaSnapRules(getSegments, rows, columns, mapped[i].length, hasOuterMirror),
+		{ endsMatched: !!endsMatched }
+	);
 
 	if (endsTrimmed) {
 		const startSegments = getSegments(
 			'start',
-			rowCount || 1,
-			columnCount || 1,
+			rows,
+			columns,
 			patternBand[0].length,
 			hasOuterMirror
 		).flat();
 		const endSegments = getSegments(
 			'end',
-			rowCount || 1,
-			columnCount || 1,
+			rows,
+			columns,
 			patternBand[patternBand.length - 1].length,
 			hasOuterMirror
 		).flat();
@@ -253,63 +257,6 @@ export const adjustAsanohaPatternAfterMapping = (
 	}
 	return patternBand;
 };
-
-type StraightenEndSegmentsProps = {
-	prevFacet: PathSegment[] | undefined;
-	thisFacet: PathSegment[];
-	nextFacet: PathSegment[] | undefined;
-	rows: number;
-	columns: number;
-	getSegments: GetSegmentFunction;
-	hasOuterMirror?: boolean;
-};
-
-const straightenEndSegments = ({
-	prevFacet,
-	thisFacet,
-	nextFacet,
-	rows,
-	columns,
-	getSegments,
-	hasOuterMirror = false
-}: StraightenEndSegmentsProps) => {
-	if (rows < 1 || columns < 1) {
-		console.error(`bad row or column count, rows: ${rows}, columns: ${columns}`);
-		return thisFacet;
-	}
-	const startSegmentIndices = getSegments('start', rows, columns, thisFacet.length, hasOuterMirror);
-	const endSegmentIndices = getSegments('end', rows, columns, thisFacet.length, hasOuterMirror);
-
-	const output = structuredClone(thisFacet);
-	const altNextFacet = structuredClone(nextFacet);
-	const altPrevFacet = structuredClone(prevFacet);
-
-	let firstStartIndex, secondStartIndex, firstEndIndex, secondEndIndex;
-	for (let i = 0; i < startSegmentIndices.length; i++) {
-		[firstStartIndex, secondStartIndex] = startSegmentIndices[i];
-		[firstEndIndex, secondEndIndex] = endSegmentIndices[i];
-
-		if (prevFacet) {
-			output[firstStartIndex][1] = prevFacet[firstEndIndex][1];
-			output[firstStartIndex][2] = prevFacet[firstEndIndex][2];
-		}
-
-		if (nextFacet) {
-			output[secondEndIndex][1] = nextFacet[secondStartIndex][1];
-			output[secondEndIndex][2] = nextFacet[secondStartIndex][2];
-		}
-	}
-
-	return output;
-};
-
-type GetSegmentFunction = (
-	end: 'start' | 'end',
-	rows: number,
-	columns: number,
-	facetLength: number,
-	hasOuterMirror?: boolean
-) => [number, number][];
 
 export const getAsanohaSegments = (
 	end: 'start' | 'end',
