@@ -19,8 +19,9 @@ export const generateAsanohaPattern = ({
 	 * partner and so needs its own finished edge.
 	 *
 	 * The mirror is appended to the rightmost column's `start`/`end` segment arrays so it
-	 * flows through the same post-mapping processing as the x=0 line: `straightenEndSegments`
-	 * chains it across quads and `endsTrimmed` trims it at the band's lengthwise ends.
+	 * flows through the same post-mapping processing as the x=0 line: `getAsanohaSnapRules`
+	 * (applied via `snapAdjacentFacets`) chains it across quads and `endsTrimmed` trims it at
+	 * the band's lengthwise ends.
 	 * `getAsanohaSegments` must be called with the matching `hasOuterMirror` flag so the
 	 * indices line up.
 	 */
