@@ -1,5 +1,10 @@
 import { Vector3 } from 'three';
-import type { SurfaceTriangle, VoronoiConfig, VoronoiEdge, GeodesicEdgeStyle } from '$lib/voronoi/types';
+import type {
+	SurfaceTriangle,
+	VoronoiConfig,
+	VoronoiEdge,
+	GeodesicEdgeStyle
+} from '$lib/voronoi/types';
 import { generateAreaWeightedSeeds } from '$lib/voronoi/generate-seeds';
 import type { EdgeProjection } from '$lib/voronoi/project-edges-onto-surface';
 import { computeAdaptiveEdgeDivisions } from '$lib/voronoi/edge-divisions';
@@ -48,7 +53,8 @@ function resample(
 		return { points: points.map((p) => p.clone()), normals: normals.map((n) => n.clone()) };
 	}
 	const cum: number[] = [0];
-	for (let i = 1; i < points.length; i++) cum.push(cum[i - 1] + points[i].distanceTo(points[i - 1]));
+	for (let i = 1; i < points.length; i++)
+		cum.push(cum[i - 1] + points[i].distanceTo(points[i - 1]));
 	const total = cum[cum.length - 1];
 	if (total < 1e-12) {
 		return { points: points.map((p) => p.clone()), normals: normals.map((n) => n.clone()) };
@@ -124,7 +130,11 @@ export function generateGeodesicVoronoi(
 	const rimChains = buildRimChains(graph, field, traceBoundaryLoops(graph));
 	const chains: BoundaryChain[] = [...cellChains, ...rimChains];
 	const lengths = chains.map((c) => polylineLength(c.points));
-	const divisionCounts = computeAdaptiveEdgeDivisions(lengths, config.edgeDivisions);
+	const divisionCounts = computeAdaptiveEdgeDivisions(
+		lengths,
+		config.edgeDivisions,
+		config.edgeDivisionsMultiplier
+	);
 
 	const edgeStyle: GeodesicEdgeStyle = config.geodesicEdgeStyle ?? 'bisector';
 	const lambda = Math.max(0, config.geodesicSmoothing ?? 0);

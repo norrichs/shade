@@ -21,6 +21,8 @@ export type VoronoiConfig = {
 	// other edge by a count linearly interpolated between the two by its length.
 	// Invariant: edgeDivisions[0] <= edgeDivisions[1].
 	edgeDivisions: [number, number];
+	// Integer >= 1. Every interpolated per-edge division count is multiplied by this.
+	edgeDivisionsMultiplier?: number;
 	curveOffsetFactor: number;
 	surfaceProjectionDivisions: number;
 	voronoiMethod: VoronoiMethod;

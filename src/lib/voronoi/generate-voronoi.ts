@@ -630,7 +630,11 @@ export function makeVoronoi(
 	const edgeLengths = voronoiResult.edges.map((e) =>
 		edgeArcLength(e.vertices[0], e.vertices[1], coordToDirection)
 	);
-	const edgeDivisionCounts = computeAdaptiveEdgeDivisions(edgeLengths, config.edgeDivisions);
+	const edgeDivisionCounts = computeAdaptiveEdgeDivisions(
+		edgeLengths,
+		config.edgeDivisions,
+		config.edgeDivisionsMultiplier
+	);
 
 	const edgeProjections: EdgeProjection[] = projectEdgesOntoSurface({
 		edges: voronoiResult.edges,

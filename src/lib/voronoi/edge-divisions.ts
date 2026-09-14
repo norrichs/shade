@@ -17,24 +17,33 @@ export function normalizeEdgeDivisions(edgeDivisions: [number, number] | number)
 	return [lo, hi];
 }
 
+/** Clamp an edge-divisions multiplier to an integer >= 1 (missing/invalid -> 1). */
+export function normalizeEdgeDivisionsMultiplier(multiplier: number | undefined): number {
+	if (multiplier === undefined || !Number.isFinite(multiplier)) return 1;
+	return Math.max(1, Math.round(multiplier));
+}
+
 /**
  * Per-edge division counts. The shortest edge gets minDivisions, the longest gets
  * maxDivisions, and every edge in between is linearly interpolated by length. When
- * all edges are (near) equal length, every edge gets maxDivisions.
+ * all edges are (near) equal length, every edge gets maxDivisions. Each interpolated
+ * count is then multiplied by `multiplier`.
  */
 export function computeAdaptiveEdgeDivisions(
 	lengths: number[],
-	edgeDivisions: [number, number]
+	edgeDivisions: [number, number],
+	multiplier: number = 1
 ): number[] {
 	const [minDiv, maxDiv] = normalizeEdgeDivisions(edgeDivisions);
+	const k = normalizeEdgeDivisionsMultiplier(multiplier);
 	if (lengths.length === 0) return [];
 	const minLen = Math.min(...lengths);
 	const maxLen = Math.max(...lengths);
 	const range = maxLen - minLen;
 	return lengths.map((len) => {
-		if (range < 1e-9) return maxDiv;
+		if (range < 1e-9) return maxDiv * k;
 		const t = (len - minLen) / range;
-		return Math.max(1, Math.round(minDiv + t * (maxDiv - minDiv)));
+		return Math.max(1, Math.round(minDiv + t * (maxDiv - minDiv))) * k;
 	});
 }
 

@@ -1,5 +1,6 @@
 import {
 	normalizeEdgeDivisions,
+	normalizeEdgeDivisionsMultiplier,
 	computeAdaptiveEdgeDivisions,
 	deriveEdgeDivisionsMax,
 	type EdgeMetric
@@ -48,6 +49,19 @@ describe('computeAdaptiveEdgeDivisions', () => {
 		// lengths 0..10, min 6 max 16 -> divisions = round(6 + t*10)
 		const result = computeAdaptiveEdgeDivisions([0, 5, 10], [6, 16]);
 		expect(result).toEqual([6, 11, 16]);
+	});
+
+	it('multiplies every interpolated count by the multiplier', () => {
+		// lengths 0..12, min 1 max 5 -> [1,2,3,4,5] * 3
+		expect(computeAdaptiveEdgeDivisions([0, 3, 6, 9, 12], [1, 5], 3)).toEqual([3, 6, 9, 12, 15]);
+		expect(computeAdaptiveEdgeDivisions([4, 4], [3, 9], 2)).toEqual([18, 18]);
+	});
+
+	it('treats a missing or sub-1 multiplier as 1', () => {
+		expect(computeAdaptiveEdgeDivisions([0, 10], [2, 4], 0)).toEqual([2, 4]);
+		expect(normalizeEdgeDivisionsMultiplier(undefined)).toBe(1);
+		expect(normalizeEdgeDivisionsMultiplier(-3)).toBe(1);
+		expect(normalizeEdgeDivisionsMultiplier(2.6)).toBe(3);
 	});
 
 	it('normalizes an inverted divisions pair before interpolating', () => {

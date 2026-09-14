@@ -1,8 +1,16 @@
 <script lang="ts">
 	import { superConfigStore, superGlobuleStore } from '$lib/stores/superGlobuleStores';
 	import { defaultVoronoiConfig } from '$lib/shades-config';
-	import type { VoronoiConfig, VoronoiMethod, InsetMethod, GeodesicEdgeStyle } from '$lib/voronoi/types';
-	import { deriveEdgeDivisionsMax } from '$lib/voronoi/edge-divisions';
+	import type {
+		VoronoiConfig,
+		VoronoiMethod,
+		InsetMethod,
+		GeodesicEdgeStyle
+	} from '$lib/voronoi/types';
+	import {
+		deriveEdgeDivisionsMax,
+		normalizeEdgeDivisionsMultiplier
+	} from '$lib/voronoi/edge-divisions';
 
 	let config: VoronoiConfig = $derived($superConfigStore.voronoiConfig ?? defaultVoronoiConfig);
 	let isGeodesic = $derived((config.voronoiMethod ?? 'spherical') === 'geodesic');
@@ -18,6 +26,7 @@
 			| 'relaxationIterations'
 			| 'edgeDivisionsMin'
 			| 'edgeDivisionsMax'
+			| 'edgeDivisionsMultiplier'
 			| 'curveOffsetFactor'
 			| 'surfaceProjectionDivisions'
 			| 'voronoiMethod'
@@ -71,6 +80,11 @@
 			const max = value as number;
 			const min = Math.min(max, config.edgeDivisions[0]);
 			next = { ...config, edgeDivisions: [min, max] };
+		} else if (field === 'edgeDivisionsMultiplier') {
+			next = {
+				...config,
+				edgeDivisionsMultiplier: normalizeEdgeDivisionsMultiplier(value as number)
+			};
 		} else if (field === 'curveOffsetFactor') {
 			next = { ...config, curveOffsetFactor: value as number };
 		} else if (field === 'surfaceProjectionDivisions') {
@@ -288,6 +302,17 @@
 			>
 				Match aspect
 			</button>
+		</label>
+
+		<label>
+			Edge Divisions (multiplier)
+			<input
+				type="number"
+				min="1"
+				step="1"
+				value={config.edgeDivisionsMultiplier ?? 1}
+				oninput={(e) => update('edgeDivisionsMultiplier', Number(e.currentTarget.value))}
+			/>
 		</label>
 	</div>
 </section>

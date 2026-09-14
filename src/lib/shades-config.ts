@@ -767,6 +767,7 @@ export const defaultVoronoiConfig: VoronoiConfig = {
 		tubeSymmetry: 'lateral'
 	},
 	edgeDivisions: [6, 6],
+	edgeDivisionsMultiplier: 1,
 	curveOffsetFactor: 0.3,
 	surfaceProjectionDivisions: 0,
 	voronoiMethod: 'spherical',

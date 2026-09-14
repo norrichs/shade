@@ -1,7 +1,7 @@
 import { defaultVoronoiConfig } from '$lib/shades-config';
 import type { SuperGlobuleConfig } from '$lib/types';
 import type { VoronoiConfig } from './types';
-import { normalizeEdgeDivisions } from './edge-divisions';
+import { normalizeEdgeDivisions, normalizeEdgeDivisionsMultiplier } from './edge-divisions';
 
 type LegacySuperGlobuleConfig = SuperGlobuleConfig & {
 	voronoiConfigs?: VoronoiConfig[];
@@ -44,6 +44,7 @@ export function normalizeVoronoiConfig(config: SuperGlobuleConfig): SuperGlobule
 	let voronoiConfig: VoronoiConfig = {
 		...resolved,
 		edgeDivisions: normalizeEdgeDivisions(resolved.edgeDivisions),
+		edgeDivisionsMultiplier: normalizeEdgeDivisionsMultiplier(resolved.edgeDivisionsMultiplier),
 		insetMethod: resolved.insetMethod ?? 'centerOut',
 		curvedInset: resolved.curvedInset ?? false
 	};
