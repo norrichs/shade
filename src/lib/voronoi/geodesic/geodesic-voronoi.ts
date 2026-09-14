@@ -155,7 +155,9 @@ export function generateGeodesicVoronoi(
 			chain.points.length >= 4;
 
 		const srcPoints = smoothing ? smoothChainPoints(chain.points, lambda) : chain.points;
-		const { points, normals } = resample(srcPoints, chain.normals, divisionCounts[i]);
+		// A division count is a number of segments (matching sampleEdgeAsDirections in
+		// the spherical/UV path); resample takes a point count, so N segments = N + 1 points.
+		const { points, normals } = resample(srcPoints, chain.normals, divisionCounts[i] + 1);
 		if (points.length < 2) return;
 
 		// Interior points get re-projected; endpoints are left exactly as resampled

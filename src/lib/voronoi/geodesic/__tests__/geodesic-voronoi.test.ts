@@ -62,6 +62,19 @@ describe('generateGeodesicVoronoi', () => {
 		}
 	});
 
+	it('treats a division count as segments (N divisions -> N + 1 points)', () => {
+		const fixed = generateGeodesicVoronoi(baseConfig(), sphereMesh(24));
+		for (const proj of fixed.edgeProjections) expect(proj.edgePoints3d.length).toBe(5);
+
+		// [1, 2] x 3 -> divisions of 3 or 6 -> 4 or 7 points.
+		const multiplied = generateGeodesicVoronoi(
+			{ ...baseConfig(), edgeDivisions: [1, 2], edgeDivisionsMultiplier: 3 },
+			sphereMesh(24)
+		);
+		const pointCounts = new Set(multiplied.edgeProjections.map((p) => p.edgePoints3d.length));
+		expect([...pointCounts].every((n) => n === 4 || n === 7)).toBe(true);
+	});
+
 	it('shares corner keys between edges meeting at a Voronoi corner', () => {
 		const result = generateGeodesicVoronoi(baseConfig(), sphereMesh(24));
 		const counts = new Map<number, number>();
@@ -127,14 +140,20 @@ describe('generateGeodesicVoronoi edge styles', () => {
 
 	it('geodesic style reduces total edge turning vs bisector', () => {
 		const bis = generateGeodesicVoronoi(withStyle('bisector'), sphereMesh(24));
-		const geo = generateGeodesicVoronoi(withStyle('geodesic', { geodesicStraightenCap: 120 }), sphereMesh(24));
+		const geo = generateGeodesicVoronoi(
+			withStyle('geodesic', { geodesicStraightenCap: 120 }),
+			sphereMesh(24)
+		);
 		expect(geo.edges.length).toBe(bis.edges.length);
 		expect(totalTurning(geo)).toBeLessThan(totalTurning(bis));
 	});
 
 	it('keeps edge endpoints (shared corners) identical across all three styles', () => {
 		const bis = generateGeodesicVoronoi(withStyle('bisector'), sphereMesh(24));
-		const sm = generateGeodesicVoronoi(withStyle('smoothed', { geodesicSmoothing: 8 }), sphereMesh(24));
+		const sm = generateGeodesicVoronoi(
+			withStyle('smoothed', { geodesicSmoothing: 8 }),
+			sphereMesh(24)
+		);
 		const geo = generateGeodesicVoronoi(withStyle('geodesic'), sphereMesh(24));
 		for (let i = 0; i < bis.edges.length; i++) {
 			const a = bis.edgeProjections[i].edgePoints3d;
@@ -151,7 +170,10 @@ describe('generateGeodesicVoronoi edge styles', () => {
 		// Open surface -> some edges border an OPENING. With smoothing off, rim
 		// edges must be identical between bisector and geodesic; at least one
 		// cell-cell edge must differ (proving straightening ran on non-rim edges).
-		const bis = generateGeodesicVoronoi(withStyle('bisector', { geodesicSmoothing: 0 }), gridMesh(16));
+		const bis = generateGeodesicVoronoi(
+			withStyle('bisector', { geodesicSmoothing: 0 }),
+			gridMesh(16)
+		);
 		const geo = generateGeodesicVoronoi(
 			withStyle('geodesic', { geodesicSmoothing: 0, geodesicStraightenCap: 60 }),
 			gridMesh(16)
