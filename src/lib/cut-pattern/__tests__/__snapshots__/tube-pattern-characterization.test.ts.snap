@@ -1,0 +1,22 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`generateTubeCutPattern — characterization (no splits) produces a stable band pattern for a 2-band tube: band ids 1`] = `
+[
+  "tiledHexPattern-1-band-0-0-0",
+  "tiledHexPattern-1-band-0-0-1",
+]
+`;
+
+exports[`generateTubeCutPattern — characterization (no splits) produces a stable band pattern for a 2-band tube: errors 1`] = `
+[
+  undefined,
+  undefined,
+]
+`;
+
+exports[`generateTubeCutPattern — characterization (no splits) produces a stable band pattern for a 2-band tube: facet counts 1`] = `
+[
+  2,
+  2,
+]
+`;
