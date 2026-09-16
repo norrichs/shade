@@ -7,6 +7,7 @@ import type {
 	TubeCutPattern
 } from '$lib/types';
 import { isSameAddress } from '$lib/util';
+import { findBandByAddress } from '$lib/cut-pattern/generate-pattern';
 import type { IndexPair } from '../../spec-types';
 
 export const scaleSegment = (seg: PathSegment, w: number, h: number): PathSegment => {
@@ -118,11 +119,10 @@ export const getTransformedPartnerCutPattern = (
 	const partnerAddress = f === 0 ? band.meta.startPartnerBand : band.meta.endPartnerBand;
 	const transform: TransformConfig | undefined =
 		f === 0 ? band.meta.startPartnerTransform : band.meta.endPartnerTransform;
-	const partnerTube = tubes[partnerAddress.tube];
-	if (!partnerTube) return undefined;
-	const partnerBand =
-		partnerTube.bands.find((b) => b.address.band === partnerAddress.band) ??
-		partnerTube.bands[partnerAddress.band];
+	// findBandByAddress already returns undefined for a missing tube, so the
+	// separate partnerTube guard goes too — leaving it would make `partnerTube`
+	// an unused local and fail `npm run lint`.
+	const partnerBand = findBandByAddress(tubes, partnerAddress);
 	if (!partnerBand?.meta) return undefined;
 	const partnerFacetIndex = isSameAddress(partnerBand.meta.startPartnerBand, band.address)
 		? 0
