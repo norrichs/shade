@@ -40,6 +40,7 @@
 	import { interactionMode, isMeasureInteractionMode } from '../three-renderer/interaction-mode';
 	import { nearestVertexFromEvent } from '../three-renderer/nearest-vertex';
 	import { addMeasurementPoint } from '$lib/stores/measurementStore';
+	import { bandKey } from '$lib/cut-pattern/band-key';
 
 	// Non-interactive visual meshes (bands, sections, the surface) must NOT
 	// participate in pointer raycasting — otherwise an opaque grey band/surface in
@@ -93,10 +94,8 @@
 	const facetKey = (a: GlobuleAddress_Facet) => `${a.globule}-${a.tube}-${a.band}-${a.facet}`;
 	// Bands without an address (see `collateAddressedBandGeometry`) still render, so
 	// the key falls back to the geometry's own uuid.
-	const bandKey = (band: { address?: GlobuleAddress_Band; geometry: BufferGeometry }) =>
-		band.address
-			? `${band.address.globule}-${band.address.tube}-${band.address.band}`
-			: band.geometry.uuid;
+	const bandKeyOf = (band: { address?: GlobuleAddress_Band; geometry: BufferGeometry }) =>
+		band.address ? bandKey(band.address) : band.geometry.uuid;
 
 	// Wrap getMaterial so every facet also respects the Assembler cross-view
 	// highlight (a band/ring clicked in the data grid). Reading $assemblerHighlight
@@ -276,7 +275,7 @@
 			{/each}
 		{:else if projectionGeometry.surfaceProjection}
 			{#if Array.isArray(projectionGeometry.surfaceProjection)}
-				{#each projectionGeometry.surfaceProjection as band, i (bandKey(band))}
+				{#each projectionGeometry.surfaceProjection as band, i (bandKeyOf(band))}
 					<T.Mesh
 						geometry={band.geometry}
 						material={getBandMaterial(
@@ -309,7 +308,7 @@
 			/>
 		{/if}
 
-		{#each projectionGeometry.bands || [] as band (bandKey(band))}
+		{#each projectionGeometry.bands || [] as band (bandKeyOf(band))}
 			<T.Mesh
 				geometry={band.geometry}
 				material={getBandMaterial(band.address, $assemblerHighlight, materials.selected)}
@@ -347,7 +346,7 @@
 				raycast={surfaceRaycast}
 			/>
 		{/if}
-		{#each voronoiGeometry.bands || [] as band (bandKey(band))}
+		{#each voronoiGeometry.bands || [] as band (bandKeyOf(band))}
 			<T.Mesh
 				geometry={band.geometry}
 				material={getBandMaterial(band.address, $assemblerHighlight, materials.default)}
@@ -355,7 +354,7 @@
 				onclick={(ev: BandClickEvent) => handleBandClick(ev, band.address)}
 			/>
 		{/each}
-		{#each voronoiGeometry.rimBands || [] as band (bandKey(band))}
+		{#each voronoiGeometry.rimBands || [] as band (bandKeyOf(band))}
 			<!-- Open-surface rim tubes, coloured red to distinguish them -->
 			<T.Mesh
 				geometry={band.geometry}
@@ -399,7 +398,7 @@
 				raycast={surfaceRaycast}
 			/>
 		{/if}
-		{#each globuleTubeGeometry.bands || [] as band (bandKey(band))}
+		{#each globuleTubeGeometry.bands || [] as band (bandKeyOf(band))}
 			<!-- Addressed band meshes so a band clicked in the Assembler grid highlights
 			     here too, without needing the facet view turned on. -->
 			<T.Mesh

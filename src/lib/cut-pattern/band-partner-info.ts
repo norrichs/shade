@@ -1,4 +1,5 @@
 import type { GlobuleAddress_Band } from '$lib/projection-geometry/types';
+import { bandKey } from './band-key';
 
 /**
  * Diagnostic readout of a band's END CONNECTIONS, read directly from the 3D
@@ -48,8 +49,6 @@ export type BandPartnerInfo = {
 	/** Cross-tube partner bands joined at the END end (last facet). */
 	endPartners: GlobuleAddress_Band[];
 };
-
-const bandKey = (a: GlobuleAddress_Band): string => `${a.globule}-${a.tube}-${a.band}`;
 
 /** Cross-tube partner bands referenced by any edge of a single facet. */
 const crossTubePartnersOfFacet = (

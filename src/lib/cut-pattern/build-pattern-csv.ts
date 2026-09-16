@@ -1,8 +1,6 @@
 import type { BandSortIndex, TubeCutPattern, BandRef as GlobuleAddress_Band } from '$lib/types';
 import { buildBandCodeMap } from './band-sort-index';
-
-/** Local key builder. WS-B's `bandKey` is module-private; we mirror its shape. */
-const bandKey = (a: GlobuleAddress_Band): string => `${a.globule}-${a.tube}-${a.band}`;
+import { bandKey } from './band-key';
 
 /** Display form for an address. Globule omitted per spec `t{tube}/b{band}`. */
 const formatBandAddress = (a: GlobuleAddress_Band): string => `t${a.tube}/b${a.band}`;

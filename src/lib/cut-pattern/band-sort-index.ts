@@ -6,8 +6,7 @@ import type {
 	IndexRange,
 	TubeCutPattern
 } from '$lib/types';
-
-const bandKey = (ref: BandRef): string => `${ref.globule}-${ref.tube}-${ref.band}`;
+import { bandKey } from './band-key';
 
 export const formatGroupCode = (n: number): string => String(n).padStart(4, '0');
 
