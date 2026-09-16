@@ -101,3 +101,25 @@ describe('concatAddress — characterization', () => {
 		expect(concatAddress({ globule: 1, tube: 2, band: 3, quad: 7 })).toBe('g1t2b3');
 	});
 });
+
+describe('concatAddress — piece addresses', () => {
+	it('includes the piece so sibling keys differ', () => {
+		// CutPatternRenderer uses this as a keyed {#each} key. Colliding keys
+		// would make Svelte reuse the wrong band's DOM.
+		const p0 = concatAddress({ globule: 1, tube: 2, band: 3, piece: 0 });
+		const p1 = concatAddress({ globule: 1, tube: 2, band: 3, piece: 1 });
+		expect(p0).toBe('g1t2b3p0');
+		expect(p1).toBe('g1t2b3p1');
+		expect(p0).not.toBe(p1);
+	});
+
+	it('includes the piece in short formats too', () => {
+		const a = { globule: 1, tube: 2, band: 3, piece: 1 };
+		expect(concatAddress(a, 'tb')).toBe('t2b3p1');
+		expect(concatAddress(a, 'b')).toBe('b3p1');
+	});
+
+	it('leaves an unsplit band address unchanged', () => {
+		expect(concatAddress({ globule: 1, tube: 2, band: 3 })).toBe('g1t2b3');
+	});
+});

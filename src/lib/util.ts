@@ -267,6 +267,10 @@ export const concatAddress_Band = (a: GlobuleAddress_Band, format: AddressFormat
 			return `g${a.globule}t${a.tube}b${a.band}`;
 	}
 };
+export const concatAddress_BandPiece = (
+	a: GlobuleAddress_BandPiece,
+	format: AddressFormat = 'gtb'
+) => `${concatAddress_Band(a, format)}p${a.piece}`;
 export const concatAddress_Tube = (a: GlobuleAddress_Tube, format: AddressFormat = 't') => {
 	switch (format) {
 		case 't':
@@ -284,6 +288,11 @@ export const concatAddress = (
 	if (!a) return '';
 	if (isGlobuleAddress_Facet(a)) {
 		return concatAddress_Facet(a, format);
+	}
+	// Must precede the band branch: a piece address has no `facet` key, so the
+	// facet guard misses it and the band branch would silently drop `piece`.
+	if (isGlobuleAddress_BandPiece(a)) {
+		return concatAddress_BandPiece(a, format);
 	}
 	if (isGlobuleAddress_Band(a)) {
 		return concatAddress_Band(a, format);
