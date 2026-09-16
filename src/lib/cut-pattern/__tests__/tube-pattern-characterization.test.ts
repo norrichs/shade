@@ -9,6 +9,11 @@ import type { Band, Facet, PixelScale, TiledPatternConfig } from '$lib/types';
 // carry `address` so generateTubeCutPattern/generateTiling can derive band
 // indices), but built as 3D triangles since generateTubeCutPattern flattens
 // bands itself via getFlatStripV2.
+//
+// Tests use 4 facets per band because getQuadrilaterals pairs facets on
+// `i % 2 === 1`, so quad k is built from facets 2k and 2k+1 — 4 facets
+// yields exactly 2 whole quads. An odd trailing facet would be silently
+// dropped rather than forming a partial quad.
 const buildBand = (bandIndex: number, facetCount: number): Band =>
 	({
 		orientation: 'axial-right',

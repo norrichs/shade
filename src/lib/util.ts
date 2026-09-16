@@ -262,6 +262,10 @@ export const concatAddress_Band = (a: GlobuleAddress_Band, format: AddressFormat
 			return `t${a.tube}`;
 		case 'b':
 			return `b${a.band}`;
+		// 'gtbf' intentionally aliases 'gtb' here: a band address has no facet
+		// component to render, so the facet-inclusive format falls back to the
+		// same string as 'gtb'.
+		case 'gtbf':
 		case 'gtb':
 		default:
 			return `g${a.globule}t${a.tube}b${a.band}`;
@@ -309,9 +313,9 @@ export const concatAddress = (
  * `piece` participates rather than being invisible.
  */
 const addressGranularity = (a: GlobuleAddress): number => {
-	if (isGlobuleAddress_FacetEdge(a)) return 5;
-	if (isGlobuleAddress_Facet(a)) return 4;
-	if (isGlobuleAddress_BandPiece(a)) return 3.5;
+	if (isGlobuleAddress_FacetEdge(a)) return 6;
+	if (isGlobuleAddress_Facet(a)) return 5;
+	if (isGlobuleAddress_BandPiece(a)) return 4;
 	if (isGlobuleAddress_Band(a)) return 3;
 	if (isGlobuleAddress_Tube(a)) return 2;
 	return 1;
