@@ -265,6 +265,7 @@ export type GlobuleAddress =
 	| GlobuleAddress_Band
 	| GlobuleAddress_Facet
 	| GlobuleAddress_Quad
+	| GlobuleAddress_BandPiece
 	| GlobuleAddress_FacetEdge;
 
 export type GlobuleAddress_Globule = {
@@ -282,6 +283,13 @@ export type GlobuleAddress_Band = GlobuleAddress_Tube & {
 export type GlobuleAddress_Quad = GlobuleAddress_Band & {
 	quad: number;
 };
+
+/**
+ * A piece of a split band. `band` stays stable so band-index-dependent logic
+ * (finishOuterEdge, totalBandCount, the sort index, saved selections) is
+ * unaffected; the piece index distinguishes siblings.
+ */
+export type GlobuleAddress_BandPiece = GlobuleAddress_Band & { piece: number };
 
 export type GlobuleAddress_Facet = GlobuleAddress_Band & {
 	facet: number;

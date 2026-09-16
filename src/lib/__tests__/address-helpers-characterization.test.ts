@@ -52,6 +52,27 @@ describe('isSameAddress — characterization', () => {
 	});
 });
 
+describe('isSameAddress — piece addresses', () => {
+	it('distinguishes sibling pieces of the same band', () => {
+		const p0 = { globule: 0, tube: 0, band: 2, piece: 0 };
+		const p1 = { globule: 0, tube: 0, band: 2, piece: 1 };
+		expect(isSameAddress(p0, p1)).toBe(false);
+		expect(isSameAddress(p0, p1, false)).toBe(false);
+	});
+
+	it('matches a piece address against itself', () => {
+		const p0 = { globule: 0, tube: 0, band: 2, piece: 0 };
+		expect(isSameAddress(p0, { globule: 0, tube: 0, band: 2, piece: 0 })).toBe(true);
+	});
+
+	it('does not equate a piece with its unsplit parent band', () => {
+		// Different granularity, so they are not the same address.
+		expect(
+			isSameAddress({ globule: 0, tube: 0, band: 2 }, { globule: 0, tube: 0, band: 2, piece: 0 })
+		).toBe(false);
+	});
+});
+
 describe('concatAddress — characterization', () => {
 	it('stringifies a facet address at full granularity by default', () => {
 		expect(concatAddress({ globule: 1, tube: 2, band: 3, facet: 4 })).toBe('g1t2b3f4');

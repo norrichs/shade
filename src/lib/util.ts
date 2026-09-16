@@ -7,6 +7,7 @@ import type {
 	GlobuleAddress_Facet,
 	GlobuleAddress_FacetEdge,
 	GlobuleAddress_Band,
+	GlobuleAddress_BandPiece,
 	GlobuleAddress_Tube,
 	GlobuleAddress_Globule
 } from './projection-geometry/types';
@@ -223,6 +224,8 @@ export const isGlobuleAddress_FacetEdge = (a: GlobuleAddress): a is GlobuleAddre
 	isGlobuleAddress_Facet(a) && Object.hasOwn(a, 'edge');
 export const isGlobuleAddress_Facet = (a: GlobuleAddress): a is GlobuleAddress_Facet =>
 	isGlobuleAddress_Band(a) && Object.hasOwn(a, 'facet');
+export const isGlobuleAddress_BandPiece = (a: GlobuleAddress): a is GlobuleAddress_BandPiece =>
+	isGlobuleAddress_Band(a) && Object.hasOwn(a, 'piece');
 export const isGlobuleAddress_Band = (a: GlobuleAddress): a is GlobuleAddress_Band =>
 	isGlobuleAddress_Tube(a) && Object.hasOwn(a, 'band');
 export const isGlobuleAddress_Tube = (a: GlobuleAddress): a is GlobuleAddress_Tube =>
@@ -291,11 +294,32 @@ export const concatAddress = (
 	return '';
 };
 
+/**
+ * Granularity of an address, low to high. Used instead of a raw key count so
+ * addresses carrying optional non-addressing fields compare correctly, and so
+ * `piece` participates rather than being invisible.
+ */
+const addressGranularity = (a: GlobuleAddress): number => {
+	if (isGlobuleAddress_FacetEdge(a)) return 5;
+	if (isGlobuleAddress_Facet(a)) return 4;
+	if (isGlobuleAddress_BandPiece(a)) return 3.5;
+	if (isGlobuleAddress_Band(a)) return 3;
+	if (isGlobuleAddress_Tube(a)) return 2;
+	return 1;
+};
+
 export const isSameAddress = (a: GlobuleAddress, b: GlobuleAddress, strict = true) => {
-	if (strict && Object.keys(a).length !== Object.keys(b).length) return false;
+	// Previously an Object.keys length comparison. That made `piece` invisible in
+	// non-strict mode (so siblings compared equal) and made any extra field break
+	// strict comparison. Granularity captures the intent directly.
+	if (strict && addressGranularity(a) !== addressGranularity(b)) return false;
 	if (a.globule !== b.globule) return false;
 	if (isGlobuleAddress_Tube(a) && isGlobuleAddress_Tube(b) && a.tube !== b.tube) return false;
 	if (isGlobuleAddress_Band(a) && isGlobuleAddress_Band(b) && a.band !== b.band) return false;
+	if (isGlobuleAddress_BandPiece(a) && isGlobuleAddress_BandPiece(b) && a.piece !== b.piece)
+		return false;
+	// A piece and a non-piece address are never the same address, in either mode.
+	if (isGlobuleAddress_BandPiece(a) !== isGlobuleAddress_BandPiece(b)) return false;
 	if (isGlobuleAddress_Facet(a) && isGlobuleAddress_Facet(b) && a.facet !== b.facet) return false;
 	if (isGlobuleAddress_FacetEdge(a) && isGlobuleAddress_FacetEdge(b) && a.edge !== b.edge)
 		return false;
