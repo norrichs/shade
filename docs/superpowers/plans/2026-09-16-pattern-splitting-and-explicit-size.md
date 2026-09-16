@@ -664,7 +664,7 @@ describe('findBandByAddress', () => {
 		expect(found?.address).toEqual({ globule: 0, tube: 0, band: 0, piece: 1 });
 	});
 
-	it('resolves a plain band address to the lowest piece of a split band', () => {
+	it('resolves a plain band address to the same piece index as the asker', () => {
 		// Load-bearing. Every cross-band partner address in the codebase is built
 		// as a plain {globule, tube, band} triple — generate-tiled-pattern.ts:375-384,
 		// generate-outlined-pattern.ts:549-554, generate-cut-pattern.ts:282-295 —
@@ -679,11 +679,13 @@ describe('findBandByAddress', () => {
 				band({ globule: 0, tube: 0, band: 0, piece: 1 })
 			])
 		];
-		const found = findBandByAddress(tubes, { globule: 0, tube: 0, band: 0 });
-		expect(found?.address).toEqual({ globule: 0, tube: 0, band: 0, piece: 0 });
+		// Piece 1 asking resolves onto piece 1, not piece 0: tube-wide splits at
+		// identical quad indices mean corresponding pieces physically abut.
+		const found = findBandByAddress(tubes, { globule: 0, tube: 0, band: 0 }, 1);
+		expect(found?.address).toEqual({ globule: 0, tube: 0, band: 0, piece: 1 });
 	});
 
-	it('prefers the lowest piece regardless of band array order', () => {
+	it('matches the asking piece index regardless of band array order', () => {
 		const tubes = [
 			tube([
 				band({ globule: 0, tube: 0, band: 0, piece: 2 }),
@@ -691,7 +693,26 @@ describe('findBandByAddress', () => {
 				band({ globule: 0, tube: 0, band: 0, piece: 1 })
 			])
 		];
-		const found = findBandByAddress(tubes, { globule: 0, tube: 0, band: 0 });
+		const found = findBandByAddress(tubes, { globule: 0, tube: 0, band: 0 }, 1);
+		expect(found?.address).toEqual({ globule: 0, tube: 0, band: 0, piece: 1 });
+	});
+
+	it('falls back to the last piece when the partner has fewer pieces', () => {
+		// A band with fewer quads than the split index is never cut there, so it
+		// has one piece and every querying piece must land on it.
+		const tubes = [tube([band({ globule: 0, tube: 0, band: 0, piece: 0 })])];
+		const found = findBandByAddress(tubes, { globule: 0, tube: 0, band: 0 }, 3);
+		expect(found?.address).toEqual({ globule: 0, tube: 0, band: 0, piece: 0 });
+	});
+
+	it('resolves to piece 0 when the asker is unsplit', () => {
+		const tubes = [
+			tube([
+				band({ globule: 0, tube: 0, band: 0, piece: 0 }),
+				band({ globule: 0, tube: 0, band: 0, piece: 1 })
+			])
+		];
+		const found = findBandByAddress(tubes, { globule: 0, tube: 0, band: 0 }, 0);
 		expect(found?.address).toEqual({ globule: 0, tube: 0, band: 0, piece: 0 });
 	});
 
@@ -739,16 +760,28 @@ Replace `src/lib/cut-pattern/generate-pattern.ts:525-533`:
  * Pass 2 is deliberately one-directional: a plain query resolves onto pieces,
  * a piece query never resolves onto an unsplit band.
  *
- * KNOWN LIMITATION, worth stating because the spec does not settle it: pass 2
- * picks the lowest piece. That is the correct partner where the cross-band
- * relationship meets the partner band's *start*, and merely the nearest
- * available one where it meets its far end. The pieces' own seam matching is
- * unaffected (that is pass 1). Revisit if cross-band partners between two
- * split tubes ever need to be exact.
+ * Pass 2 resolves to the partner piece with the SAME piece index as the
+ * querying band, falling back to the partner's LAST piece when it has fewer
+ * pieces. This is geometry, not convention: splits are tube-wide at identical
+ * absolute quad indices, so band A's piece 1 physically abuts band B's piece 1.
+ * Resolving to the lowest piece instead would point A-p1 at B-p0, which it
+ * never touches. A band shorter than the split index is not cut there, so it
+ * has one piece and every querying piece falls back onto it.
+ *
+ * The querying piece index cannot be recovered from the address alone — every
+ * cross-band partner address in the codebase is destructured down to a plain
+ * {globule, tube, band} triple at construction (generate-tiled-pattern.ts:375-384,
+ * generate-outlined-pattern.ts:549-554, generate-cut-pattern.ts:282-295), and
+ * widening those would mean a new persisted field and a migration. It does not
+ * need to be: the only callers are getEndPartnerTransforms
+ * (generate-pattern.ts:543-544), which iterates tubePattern.bands and therefore
+ * already holds the querying band. So it is passed in.
  */
 export const findBandByAddress = (
 	tubePatterns: TubeCutPattern[],
-	address: GlobuleAddress_Band | GlobuleAddress_BandPiece
+	address: GlobuleAddress_Band | GlobuleAddress_BandPiece,
+	/** Piece index of the band doing the asking; see pass 2 above. */
+	fromPiece?: number
 ): BandCutPattern | undefined => {
 	const tube = tubePatterns[address.tube];
 	if (!tube) return undefined;
@@ -762,13 +795,15 @@ export const findBandByAddress = (
 		(b) => b.address.band === address.band && isGlobuleAddress_BandPiece(b.address)
 	);
 	if (pieces.length === 0) return undefined;
-	return pieces.reduce((lowest, b) =>
-		isGlobuleAddress_BandPiece(b.address) &&
-		isGlobuleAddress_BandPiece(lowest.address) &&
-		b.address.piece < lowest.address.piece
-			? b
-			: lowest
-	);
+	const pieceOf = (b: BandCutPattern): number =>
+		isGlobuleAddress_BandPiece(b.address) ? b.address.piece : 0;
+	if (fromPiece !== undefined) {
+		const sameIndex = pieces.find((b) => pieceOf(b) === fromPiece);
+		if (sameIndex) return sameIndex;
+	}
+	// Partner has fewer pieces than the querying band (it was shorter than the
+	// split index and so was never cut there): fall back to its last piece.
+	return pieces.reduce((last, b) => (pieceOf(b) > pieceOf(last) ? b : last));
 };
 ```
 
@@ -2029,18 +2064,25 @@ const getEndPartnerTransforms = (tubePatterns: TubeCutPattern[]) => {
 		if (!tubePattern) return;
 		tubePattern.bands.forEach((band) => {
 			if (!band.meta) return;
+			// The asking band's own piece index. Task 6's findBandByAddress resolves a
+			// plain cross-band partner address onto the partner piece with the SAME
+			// index, so this MUST be passed — omit it and every cross-band partner
+			// silently falls back to the partner's last piece.
+			const fromPiece = isGlobuleAddress_BandPiece(band.address)
+				? band.address.piece
+				: undefined;
 			// Each end is resolved on its own. Previously both were gated on both,
 			// so one unresolvable end silently disabled matching at the other.
 			const startAddress = band.meta.startPartnerBand;
 			if (startAddress) {
-				const startPartner = findBandByAddress(tubePatterns, startAddress);
+				const startPartner = findBandByAddress(tubePatterns, startAddress, fromPiece);
 				if (startPartner) {
 					band.meta.startPartnerTransform = getEndPartnerTransform(band, startPartner);
 				}
 			}
 			const endAddress = band.meta.endPartnerBand;
 			if (endAddress) {
-				const endPartner = findBandByAddress(tubePatterns, endAddress);
+				const endPartner = findBandByAddress(tubePatterns, endAddress, fromPiece);
 				if (endPartner) {
 					band.meta.endPartnerTransform = getEndPartnerTransform(band, endPartner);
 				}
@@ -2048,6 +2090,33 @@ const getEndPartnerTransforms = (tubePatterns: TubeCutPattern[]) => {
 		});
 	});
 };
+```
+
+`isGlobuleAddress_BandPiece` is already imported into this file by Task 6. An
+unsplit band yields `fromPiece === undefined`, and Task 6's pass 2 only engages
+for a plain query against a split band, so unsplit tubes behave exactly as
+before.
+
+**Verify the wiring, not just the types.** After this step, add an assertion to
+the Step 5 test that a cross-band partner on a split band resolves to the
+matching piece rather than the last one — a two-argument call type-checks
+perfectly and fails silently, which is precisely how this defect class hides:
+
+```ts
+it('resolves a cross-band partner to the piece with the matching index', () => {
+	// p1 asking must land on the partner's p1. With fromPiece omitted this
+	// returns the partner's LAST piece and the assertion catches it.
+	const partner0 = bandWithAddress({ globule: 0, tube: 1, band: 0, piece: 0 });
+	const partner1 = bandWithAddress({ globule: 0, tube: 1, band: 0, piece: 1 });
+	const asker = bandWithAddress({ globule: 0, tube: 0, band: 0, piece: 1 });
+	asker.meta = { startPartnerBand: { globule: 0, tube: 1, band: 0 } };
+
+	getEndPartnerTransforms([tube([asker]), tube([partner0, partner1])]);
+
+	expect(findBandByAddress([tube([asker]), tube([partner0, partner1])],
+		{ globule: 0, tube: 1, band: 0 }, 1)?.address)
+		.toEqual({ globule: 0, tube: 1, band: 0, piece: 1 });
+});
 ```
 
 - [ ] **Step 4: Guard the absent end in `getTransformedPartnerCutPattern`**
