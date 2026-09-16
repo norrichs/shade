@@ -50,6 +50,42 @@ per-pattern-type output concern, so it belongs in the pattern stage.
 A secondary benefit: each piece is re-aligned onto its own long axis by the existing
 `alignBands`, which packs better than inheriting the parent's orientation.
 
+### Piece orientation: inherit the parent's flip
+
+`reAlignBand` (`generate-tiled-pattern.ts:509-529`) rotates a band by π when
+`facets[0].triangle.a.y < facets[last].triangle.a.y`, evaluated in that band's own
+minimal-bounding-box frame. Run per piece, each piece evaluates this on its own facets in its own
+frame, so two pieces of one parent can come out counter-rotated.
+
+This is **not** a correctness problem, and an earlier draft of this spec wrongly said it was. A
+π rotation is rigid, so it does not change a flattened piece's shape; `rotateFacets` does not
+reverse the facets array, so `facets[0]` stays `facets[0]` and end identity survives; and
+`getEndPartnerTransform` (`generate-pattern.ts:475-522`) derives its transform from live quad
+geometry, which is already how it copes with bands sitting at different orientations within a
+tube. Seam matching works either way.
+
+It is a **consistency** problem, and worth fixing for that reason: when pieces of one band are
+cut out and matched up by hand, they should all come off the page in the same orientation. So the
+flip is decided once on the parent and inherited by every piece, while each piece still gets its
+own minimal bounding box and normalization so packing stays per-piece.
+
+Mechanically, the flip test reads post-rotation coordinates, so a parent boolean cannot simply be
+handed to a piece whose bbox rotation differs. `splitFlatBands` therefore stamps each piece with
+the parent's decision and `reAlignBand` prefers it over its own test:
+
+```ts
+// optional field on Band, set only on pieces
+parentAscending?: boolean;
+
+// in reAlignBand, replacing the bare local computation
+const isAscending =
+	band.parentAscending ??
+	newBand.facets[0].triangle.a.y < newBand.facets[newBand.facets.length - 1].triangle.a.y;
+```
+
+An unsplit band has no `parentAscending`, so it falls through to today's computation and behaves
+identically — which the Phase 0 snapshot asserts.
+
 ---
 
 ## Section 1 — Data model and addressing
@@ -105,12 +141,17 @@ gets a characterization test locking today's behaviour **before** it is touched.
 | `util.ts:277` `concatAddress` | Dispatches Facet → Band → Tube by `Object.hasOwn`. A piece address (band + `piece`, no `facet`) falls through to `concatAddress_Band` and drops `piece`, so sibling pieces produce identical strings — duplicate keys in `CutPatternRenderer`'s keyed `{#each}` | Insert a piece branch **before** the band branch; add `concatAddress_BandPiece` producing e.g. `g0t0b2p1` |
 | `generate-pattern.ts:525` `findBandByAddress` | `tube.bands.find((b) => b.address.band === address.band)` — first match wins, so siblings always resolve to piece 0 | Match on `band` **and** `piece` |
 | `helpers.ts:123-125` | Inline duplicate of the same lookup, with a positional fallback | Extract and share the one fixed helper |
-| `band-sort-index.ts:125` `bandKey`, and `band.id` generation | Collide between siblings | Include `piece` |
+| `bandKey`, in **four** copies: `band-sort-index.ts:10`, `band-partner-info.ts:52`, `build-pattern-csv.ts:5`, and a variant at `ProjectionGeometryComponent.svelte:96` used as a Svelte `{#each}` key | All are `` `${globule}-${tube}-${band}` `` and so collide between siblings | Export **one** shared `bandKey` and delete the copies, rather than editing four. `build-pattern-csv.ts:5` even carries the comment "WS-B's `bandKey` is module-private; we mirror its shape" — the duplication is known and this is the occasion to remove it |
+| `band.id` generation, at **four** sites fed by `globalBandIndex` (`generate-tiled-pattern.ts:270`): `id` and `address` on the error-band return (`:303`, `:306`) and on the normal return (`:453`, `:463`) | Collide between siblings | Include `piece` in both the id string and the address at all four |
 
 `band.id` is called out separately from the address because `collate-tubes.ts:34-38` documents
 that `mergedBandPaths` is keyed by `band.id` and that ids like `outlined-band-{idx}` already
 collide across pattern variants. Sibling pieces would collide identically, handing a piece
 another piece's merged geometry. Fixing the address alone is not sufficient.
+
+`BandRef` is a bare alias for `GlobuleAddress_Band` (`types.ts:29`), so the band sort index picks
+up the piece component automatically once the address carries it — no separate change needed
+there beyond the shared `bandKey`.
 
 `GlobuleAddress_Quad` (`projection-geometry/types.ts:282`) already exists and is produced and
 consumed by nothing. It is deliberately **left unused** by this design: splits are persisted as
