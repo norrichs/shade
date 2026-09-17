@@ -24,6 +24,7 @@ import { alignBands, computeBandAscending } from './generate-tiled-pattern';
 import { bandQuadCount, splitFlatBands, tubeQuadCountOf } from './split-flat-bands';
 import { svgPathStringFromSegments } from '$lib/patterns/utils';
 import { getQuadrilaterals } from '$lib/patterns/quadrilateral';
+import { getEdge } from '$lib/projection-geometry/generate-projection';
 import {
 	generateRectangularTab,
 	generateRoundedTab,
@@ -96,9 +97,10 @@ export type OutlineEdge = {
 	/** For partner tabs: the two outer points from the adjacent band's quad */
 	partnerOuter?: { start: Vector3; end: Vector3 };
 	/**
-	 * Band number of the adjacent band sharing this edge, read from facet `ac`
-	 * partner metadata. Only set for 'before'/'after' edges that have a partner.
-	 * Used by the middle-quad self-tag edge selection.
+	 * Band number of the adjacent band sharing this edge, read from the
+	 * orientation-aware outer-edge partner metadata (`sideEdgePartner`). Only
+	 * set for 'before'/'after' edges that have a partner. Used by the
+	 * middle-quad self-tag edge selection.
 	 */
 	partnerBand?: number;
 	/** For end edges: the tube index of the partner at this end */
@@ -188,7 +190,24 @@ const transformPartnerPoints = (
 	});
 };
 
-const getOutlineEdges = (
+/**
+ * Partner meta on quad `quad`'s side edge. The side edge is the OUTER edge
+ * (`getEdge('outer', …)`: `ac` on axial-right, `bc` on axial-left) of one of
+ * the quad's two facets, and which one depends on orientation because
+ * `getQuadrilaterals` names the quad's vertices per orientation:
+ * - axial-right: before (a→d) is the even facet's outer edge, after (c→b) the odd's
+ * - axial-left: before is the ODD facet's outer edge, after the even's
+ * On both, before borders band − 1 and after band + 1. Reading `ac` on an
+ * axial-left band finds a within-band partner (the facet's base or second edge).
+ */
+const sideEdgePartner = (band: Band, quad: number, side: 'before' | 'after') => {
+	const evenSide = band.orientation === 'axial-left' ? 'after' : 'before';
+	const facetIndex = 2 * quad + (side === evenSide ? 0 : 1);
+	const edge = getEdge('outer', facetIndex, band.orientation);
+	return band.facets[facetIndex]?.meta?.[edge]?.partner;
+};
+
+export const getOutlineEdges = (
 	quads: Quadrilateral[],
 	band: Band,
 	neighborBefore?: (Quadrilateral | undefined)[],
@@ -234,7 +253,7 @@ const getOutlineEdges = (
 			side: 'before',
 			interiorPoint: beforeInterior,
 			partnerOuter,
-			partnerBand: band.facets[2 * i]?.meta?.ac?.partner?.band,
+			partnerBand: sideEdgePartner(band, i, 'before')?.band,
 			quad: i
 		});
 	}
@@ -279,7 +298,7 @@ const getOutlineEdges = (
 			side: 'after',
 			interiorPoint: afterInterior,
 			partnerOuter,
-			partnerBand: band.facets[2 * i + 1]?.meta?.ac?.partner?.band,
+			partnerBand: sideEdgePartner(band, i, 'after')?.band,
 			quad: i
 		});
 	}
@@ -353,22 +372,14 @@ const generateTabForEdge = (edge: OutlineEdge, tabConfig: OutlinedTabConfig): Ta
 };
 
 /**
- * Check whether a band has partner facets on a given side.
- *
- * For helical-right, the outer edge of each facet is the 'ac' edge.
- * Odd facets form the "after" side, even facets form the "before" side.
- * We check a representative facet on each side for partner metadata.
+ * Check whether a band has partner facets on a given side, from the first
+ * quad's side edges (`sideEdgePartner`: the orientation-aware outer edge of the
+ * facet carrying that side).
  */
-const bandHasPartners = (band: Band): { after: boolean; before: boolean } => {
-	const facets = band.facets;
-	// Check first odd facet for "after" side partner
-	const afterFacet = facets.length > 1 ? facets[1] : undefined;
-	const hasAfter = !!afterFacet?.meta?.ac?.partner;
-	// Check first even facet for "before" side partner
-	const beforeFacet = facets.length > 0 ? facets[0] : undefined;
-	const hasBefore = !!beforeFacet?.meta?.ac?.partner;
-	return { after: hasAfter, before: hasBefore };
-};
+export const bandHasPartners = (band: Band): { after: boolean; before: boolean } => ({
+	after: !!sideEdgePartner(band, 0, 'after'),
+	before: !!sideEdgePartner(band, 0, 'before')
+});
 
 /**
  * Determine whether a given edge should have a tab based on its side, the tab config,
