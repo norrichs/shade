@@ -685,6 +685,11 @@ export const generateOutlinedProjectionPattern = (
 ): SuperGlobuleProjectionPattern => {
 	const [tubeStart, tubeEnd] = resolveRangeIndices(projectionRange?.tubes, tubes.length);
 
+	// Splits are persisted per tube as absolute quad indices. An absent entry
+	// yields an empty array, which is splitFlatBands' documented no-op path.
+	const splitQuadsFor = (tube: number) =>
+		splits?.tubeSplits.find((t) => t.tube === tube)?.quads ?? [];
+
 	const outputTubePatterns: TubeCutPattern[] = [];
 
 	for (let t = tubeStart; t < tubeEnd; t++) {
@@ -698,7 +703,7 @@ export const generateOutlinedProjectionPattern = (
 			config,
 			pixelScale,
 			{ start: bandStart, end: bandEnd },
-			splits?.tubeSplits.find((t) => t.tube === address.tube)?.quads ?? []
+			splitQuadsFor(address.tube)
 		);
 		outputTubePatterns.push(tubePattern);
 	}

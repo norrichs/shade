@@ -75,7 +75,7 @@ describe('generateTubeCutPattern — characterization (no splits)', () => {
 			{ globule: 0, tube: 0, band: 0 },
 			{ globule: 0, tube: 0, band: 1 }
 		]);
-		expect(result.bands.every((b) => b.address.piece === undefined)).toBe(true);
+		expect(result.bands.every((b) => !isGlobuleAddress_BandPiece(b.address))).toBe(true);
 		expect(result.bands.map((b) => b.id)).toMatchSnapshot('band ids');
 		expect(result.bands.map((b) => b.facets.length)).toMatchSnapshot('facet counts');
 		expect(result.bands.map((b) => b.error)).toMatchSnapshot('errors');
@@ -102,7 +102,9 @@ describe('generateTubeCutPattern — with splits', () => {
 		// If it were the piece index this would read [0, 1, 2, 3] and Task 11's
 		// seam partners could never resolve a sibling.
 		expect(result.bands.map((b) => b.address.band)).toEqual([0, 0, 1, 1]);
-		expect(result.bands.map((b) => b.address.piece)).toEqual([0, 1, 0, 1]);
+		expect(
+			result.bands.map((b) => (isGlobuleAddress_BandPiece(b.address) ? b.address.piece : undefined))
+		).toEqual([0, 1, 0, 1]);
 		// Ids must differ or mergedBandPaths hands a piece the wrong geometry
 		// (collate-tubes.ts:34-38).
 		expect(new Set(result.bands.map((b) => b.id)).size).toBe(4);
@@ -133,8 +135,8 @@ describe('generateTubeCutPattern — with splits', () => {
 		const uncutBand = result.bands[2];
 		expect(uncutBand.address.band).toBe(1);
 		// `isGlobuleAddress_BandPiece` narrows the union so this compiles without a
-		// cast, unlike a direct `.piece` read (the known, separately-queued gap at
-		// this file's :77/:104).
+		// cast, unlike a direct `.piece` read — the same guard now used at this
+		// file's :78/:105.
 		expect(isGlobuleAddress_BandPiece(uncutBand.address)).toBe(false);
 		expect(uncutBand.id).not.toMatch(/-p\d+$/);
 		expect(uncutBand.id.endsWith('-1')).toBe(true);

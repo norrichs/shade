@@ -247,6 +247,8 @@ export const concatAddress_Facet = (a: GlobuleAddress_Facet, format: AddressForm
 			return `b${a.band}`;
 		case 'f':
 			return `f${a.facet}`;
+		// 'gtbf' is already the fully-qualified format for a facet address, so
+		// it aliases the default here.
 		case 'gtbf':
 		default:
 			return `g${a.globule}t${a.tube}b${a.band}f${a.facet}`;
@@ -264,7 +266,9 @@ export const concatAddress_Band = (a: GlobuleAddress_Band, format: AddressFormat
 			return `b${a.band}`;
 		// 'gtbf' intentionally aliases 'gtb' here: a band address has no facet
 		// component to render, so the facet-inclusive format falls back to the
-		// same string as 'gtb'.
+		// same string as 'gtb'. Same convention as concatAddress_Facet's
+		// `case 'gtbf': default:` above, and concatAddress_Tube's `case 'gt':
+		// default:` fallthrough below — the same idea, left uncommented there.
 		case 'gtbf':
 		case 'gtb':
 		default:

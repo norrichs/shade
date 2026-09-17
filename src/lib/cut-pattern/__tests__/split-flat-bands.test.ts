@@ -39,6 +39,7 @@ describe('splitFlatBands', () => {
 		expect(rejoined).toHaveLength(12);
 		rejoined.forEach((facet, i) => {
 			expect(facet.triangle.a.y).toBe(parent.facets[i].triangle.a.y);
+			expect(rejoined[i]).toBe(parent.facets[i]);
 		});
 	});
 

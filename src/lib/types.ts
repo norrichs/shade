@@ -282,6 +282,9 @@ export type PatternConfig = {
 	pixelScale: PixelScale;
 	page: PageSize;
 	pageLayout: PageLayoutConfig;
+	// Optional is load-bearing: absent means "no splits", which is what every
+	// saved config predating this field decodes to — no migration is needed
+	// in validators.ts. Making this required would require one.
 	splits?: SplitConfig;
 	// patternedConfig: CutPatternConfig;
 };
@@ -773,7 +776,8 @@ export type OutlinedPatternConfig = {
 	/**
 	 * Optional procedural interior geometry. Absent means a bare outline, which
 	 * is what every saved config predating this field decodes to — no migration
-	 * is needed.
+	 * is needed. (Same reasoning as `splits?` on PatternConfig: the optionality
+	 * itself is load-bearing, not incidental.)
 	 */
 	fill?: ProceduralFillConfig;
 };
