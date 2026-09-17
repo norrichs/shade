@@ -2317,6 +2317,25 @@ git commit -m "refactor(pattern): resolve each band end's partner independently"
 - Consumes: optional `meta` partners (Task 10), `seamAt` (Task 8).
 - Produces: `meta.startPartnerBand` / `endPartnerBand` pointing at sibling pieces. Consumed by the existing `endsMatched` machinery.
 
+**Write-site types need widening, and this IS your job.** Task 10 widened the
+`meta` FIELD to `GlobuleAddress_Band | GlobuleAddress_BandPiece`, but four sites
+still declare their **local** partner variables as plain `GlobuleAddress_Band`:
+
+- `generate-tiled-pattern.ts:415-505` (the `startPartnerBand`/`endPartnerBand` locals you are about to change)
+- `generate-outlined-pattern.ts:553-560`
+- `generate-cut-pattern.ts:282-308`
+- `collect-band-tabs.ts:10-11` (`BandTabMeta`)
+
+Those are harmless today only because assigning a narrower value to a wider field
+is legal. This task inverts that: you start *producing* piece-bearing seam
+addresses at those write sites, so the locals must admit the union too.
+
+**When you hit the resulting type errors, widen the declaration — do not add a
+cast.** A cast was added at exactly this kind of site in Task 10 and had to be
+removed in a fix round, because it suppressed two real errors and made the
+`npm run check` baseline read clean when it was not. The union is what the data
+genuinely is; say so in the type.
+
 **Known consequence of this task, tracked as beads `shades-azt` — do not fix it here.**
 Populating piece-bearing seam addresses makes a pre-existing gap live:
 `src/components/modal/editor/tile-editor/partner-pair-resolver.ts:42` declares its
@@ -2493,14 +2512,21 @@ Expected: PASS. **Phase 0's snapshot must be unchanged** — an unsplit band has
 
 - [ ] **Step 6: Verify the seam visually**
 
-Start the dev server (`npm run dev`, port 9776), then drive the check with the
-**Claude-in-Chrome extension** (`mcp__claude-in-chrome__*`) rather than a
-hand-written script. Load those tools in ONE `ToolSearch` call, then:
-`tabs_context_mcp{createIfEmpty:true}` → `navigate` to
-`http://localhost:9776/designer2` → switch Geometry to **Voronoi** (the pattern
-pane stays empty otherwise) → pick a tiled pattern with `endsMatched` on →
-set a split with `javascript_tool` against the config store → `computer`
-screenshot to confirm two pieces render with their strokes meeting at the seam.
+**DEFERRED to Task 14 — do not attempt this here.** Verified during Task 11:
+there is no way to set a split from `designer2` yet, because the UI that writes
+`patternConfig.splits` is Task 14. Driving the store directly with
+`javascript_tool` was tried and is not a usable substitute — the split-placement
+targets, the mode toggle and the auto-split button all arrive with Task 14, so
+there is nothing to click and no persisted state to observe.
+
+Task 14's own browser verification step covers this: once split placement exists,
+confirming that two pieces render with their strokes meeting at the seam is a
+natural part of checking that the placement UI works. Attempting it earlier costs
+an implementer a long, inconclusive detour — which is exactly what happened.
+
+Task 11's correctness is established by its unit tests instead: reciprocal
+sibling wiring in both directions, and the unsplit `meta` condition proven
+unchanged by the characterization snapshot matching without `-u`.
 `read_console_messages` with a pattern will surface any worker error.
 
 Close any tab you opened with `tabs_close_mcp` when done.
