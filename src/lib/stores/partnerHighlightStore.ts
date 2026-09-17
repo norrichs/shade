@@ -3,6 +3,11 @@ import type { GlobuleAddress_Facet } from '$lib/projection-geometry/types';
 
 export type PartnerHighlightSource = 'projection' | 'surface' | 'globuleTube';
 
+/**
+ * The tile editor's partner highlight. Addresses are in PATTERN band space, in
+ * parent quad coordinates (`partnerHighlightAddresses`); `partnerHighlightGeometry`
+ * maps them onto the real 3D bands of `source`.
+ */
 export type PartnerHighlight = {
 	source: PartnerHighlightSource;
 	base: GlobuleAddress_Facet | null;

@@ -34,6 +34,14 @@ import {
 	isGlobuleAddress_Tube
 } from '$lib/util';
 import { sameGlobuleBand, type AssemblerHighlight } from '$lib/assembler-highlight';
+import { patternConfigStore } from './globulePatternStores';
+import {
+	bandSpaceForTubes,
+	geometrySourceOfPartnerHighlight,
+	keepsFillBands,
+	patternFacetToReal,
+	type BandSpace
+} from '$lib/cut-pattern/pattern-band-space';
 
 /**
  * Assembler-page highlight state. The `AssemblerHighlight` type and the
@@ -576,6 +584,38 @@ export const tubesForGeometrySource = (
 	}
 };
 
+/** Whether the current pattern type keeps fill bands; primitive, so it only notifies on change. */
+const patternKeepsFillBands = derived(patternConfigStore, ($patternConfigStore) =>
+	keepsFillBands($patternConfigStore.patternTypeConfig)
+);
+
+/** Looks up the band space of one 3D geometry source's pattern. */
+export type PatternBandSpaceOf = (
+	source: GeometrySource,
+	globule?: number
+) => BandSpace | undefined;
+
+/**
+ * Pattern ↔ real band space for each 3D geometry source, built lazily from the
+ * source's tubes with the same fill-band rule pattern generation uses. Every
+ * site that maps a cut-pattern address onto 3D geometry, or a 3D click onto a
+ * pattern address, goes through this (see `pattern-band-space.ts`).
+ */
+export const patternBandSpaces = derived(
+	[superGlobuleStore, patternKeepsFillBands],
+	([$superGlobuleStore, $keepFillBands]): PatternBandSpaceOf => {
+		const cache = new Map<string, BandSpace | undefined>();
+		return (source, globule = 0) => {
+			const key = `${source}:${globule}`;
+			if (!cache.has(key)) {
+				const tubes = tubesForGeometrySource($superGlobuleStore, source, globule);
+				cache.set(key, bandSpaceForTubes(tubes, $keepFillBands));
+			}
+			return cache.get(key);
+		};
+	}
+);
+
 export type SelectedBandEntry = { source: GeometrySource; address: GlobuleAddress_Band };
 
 /**
@@ -659,8 +699,8 @@ export type PartnerHighlightEntry = {
 };
 
 export const partnerHighlightGeometry = derived(
-	[partnerHighlightStore, superGlobuleStore],
-	([$partnerHighlightStore, $superGlobuleStore]): PartnerHighlightEntry[] => {
+	[partnerHighlightStore, superGlobuleStore, patternBandSpaces],
+	([$partnerHighlightStore, $superGlobuleStore, $patternBandSpaces]): PartnerHighlightEntry[] => {
 		const all = [
 			$partnerHighlightStore.base,
 			$partnerHighlightStore.top,
@@ -677,7 +717,14 @@ export const partnerHighlightGeometry = derived(
 			return proj?.tubes;
 		};
 
-		const facetToGeometry = (addr: GlobuleAddress_Facet | null): BufferGeometry | null => {
+		// The highlight is in pattern band space (parent quads); 3D tubes are real.
+		const geometrySource = geometrySourceOfPartnerHighlight($partnerHighlightStore.source);
+		const facetToGeometry = (patternAddr: GlobuleAddress_Facet | null): BufferGeometry | null => {
+			if (!patternAddr) return null;
+			const addr = patternFacetToReal(
+				$patternBandSpaces(geometrySource, patternAddr.globule),
+				patternAddr
+			);
 			if (!addr) return null;
 			const tubes = tubesForSource(addr.globule);
 			const band = tubes?.[addr.tube]?.bands[addr.band];

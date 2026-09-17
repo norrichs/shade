@@ -1,6 +1,7 @@
 import type { GeometrySource } from '$lib/stores';
-import { recordBandSelection, setAssemblerHighlightForBand } from '$lib/stores';
-import type { GlobuleAddress_Facet } from '$lib/projection-geometry/types';
+import { patternBandSpaces, recordBandSelection, setAssemblerHighlightForBand } from '$lib/stores';
+import type { GlobuleAddress_Band, GlobuleAddress_Facet } from '$lib/projection-geometry/types';
+import { realBandToPattern } from '$lib/cut-pattern/pattern-band-space';
 import type { Vector3 } from 'three';
 import { get } from 'svelte/store';
 import { addMeasurementPoint } from '$lib/stores/measurementStore';
@@ -42,9 +43,20 @@ export const handleFacetSelect = (
 	// Also drive the Assembler cross-view highlight, so a band clicked in 3D lights
 	// up in the SVG pattern and the data grid too. Facet index is dropped — the
 	// cross-view highlight is band-granular.
-	setAssemblerHighlightForBand({
+	highlightRealBand(source, address);
+};
+
+/**
+ * Drive the Assembler cross-view highlight from a band clicked in 3D. The
+ * highlight is in pattern band space and the click in real band space, so the
+ * band is mapped first; a band that was not patterned (hidden, or a fill band a
+ * tiled pattern drops) has no pattern band and highlights nothing.
+ */
+export const highlightRealBand = (source: GeometrySource, address: GlobuleAddress_Band): void => {
+	const band = realBandToPattern(get(patternBandSpaces)(source, address.globule), {
 		globule: address.globule,
 		tube: address.tube,
 		band: address.band
 	});
+	if (band) setAssemblerHighlightForBand(band);
 };

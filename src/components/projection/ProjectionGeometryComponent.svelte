@@ -33,9 +33,12 @@
 		selectedVoronoiGeometry,
 		selectedVoronoiSurface,
 		selectedVoronoiSurfaceGeometry,
-		setAssemblerHighlightForBand
+		patternBandSpaces,
+		type AssemblerHighlight,
+		type GeometrySource
 	} from '$lib/stores';
-	import { handleFacetSelect } from '../three-renderer/selection-helpers';
+	import { handleFacetSelect, highlightRealBand } from '../three-renderer/selection-helpers';
+	import { assemblerHighlightToReal } from '$lib/cut-pattern/pattern-band-space';
 	import { get } from 'svelte/store';
 	import { interactionMode, isMeasureInteractionMode } from '../three-renderer/interaction-mode';
 	import { nearestVertexFromEvent } from '../three-renderer/nearest-vertex';
@@ -71,11 +74,15 @@
 	// carry no facet index, so there is nothing to feed the per-source facet
 	// selection stores. Suppressed while measuring, where the group-level handler
 	// places a measurement point instead.
-	const handleBandClick = (ev: BandClickEvent, address?: GlobuleAddress_Band) => {
+	const handleBandClick = (
+		ev: BandClickEvent,
+		source: GeometrySource,
+		address?: GlobuleAddress_Band
+	) => {
 		if (!address) return;
 		if (isMeasureInteractionMode(get(interactionMode))) return;
 		ev.stopPropagation?.();
-		setAssemblerHighlightForBand(address);
+		highlightRealBand(source, address);
 	};
 
 	const handleSurfaceMeasureClick = (ev: {
@@ -97,14 +104,32 @@
 	const bandKeyOf = (band: { address?: GlobuleAddress_Band; geometry: BufferGeometry }) =>
 		band.address ? bandKey(band.address) : band.geometry.uuid;
 
+	// The Assembler highlight is in pattern band space; each source's meshes carry
+	// real band addresses. Mapped once per source per highlight (not per mesh).
+	let highlightFor = $derived.by(() => {
+		const highlight = $assemblerHighlight;
+		const spaceOf = $patternBandSpaces;
+		const cache = new Map<GeometrySource, AssemblerHighlight>();
+		return (source: GeometrySource): AssemblerHighlight => {
+			if (!highlight) return null;
+			if (!cache.has(source))
+				cache.set(
+					source,
+					assemblerHighlightToReal(spaceOf(source, highlight.band.globule), highlight)
+				);
+			return cache.get(source) ?? null;
+		};
+	});
+
 	// Wrap getMaterial so every facet also respects the Assembler cross-view
-	// highlight (a band/ring clicked in the data grid). Reading $assemblerHighlight
+	// highlight (a band/ring clicked in the data grid). Reading `highlightFor`
 	// here registers it as a dependency of each facet's material expression.
 	const highlightedFacetMaterial = (
+		source: GeometrySource,
 		address: GlobuleAddress_Facet,
 		selectedGeometry: Parameters<typeof getMaterial>[1],
 		config?: Parameters<typeof getMaterial>[2]
-	) => getMaterial(address, selectedGeometry, config, $assemblerHighlight);
+	) => getMaterial(address, selectedGeometry, config, highlightFor(source));
 
 	let {
 		onClick,
@@ -261,9 +286,14 @@
 			{#each projectionGeometry.surfaceProjectionFacets as facet (facetKey(facet.address))}
 				<T.Mesh
 					geometry={facet.geometry}
-					material={highlightedFacetMaterial(facet.address, $selectedSurfaceProjectionGeometry, {
-						colorByBand
-					})}
+					material={highlightedFacetMaterial(
+						'surfaceProjection',
+						facet.address,
+						$selectedSurfaceProjectionGeometry,
+						{
+							colorByBand
+						}
+					)}
 					onclick={(ev) =>
 						handleFacetSelect(
 							ev,
@@ -280,11 +310,11 @@
 						geometry={band.geometry}
 						material={getBandMaterial(
 							band.address,
-							$assemblerHighlight,
+							highlightFor('surfaceProjection'),
 							materials.numbered[i % materials.numbered.length]
 						)}
 						raycast={bandRaycast($viewControlStore.showProjectionGeometry.facets, band.address)}
-						onclick={(ev: BandClickEvent) => handleBandClick(ev, band.address)}
+						onclick={(ev: BandClickEvent) => handleBandClick(ev, 'surfaceProjection', band.address)}
 					/>
 				{/each}
 			{:else}
@@ -311,17 +341,22 @@
 		{#each projectionGeometry.bands || [] as band (bandKeyOf(band))}
 			<T.Mesh
 				geometry={band.geometry}
-				material={getBandMaterial(band.address, $assemblerHighlight, materials.selected)}
+				material={getBandMaterial(band.address, highlightFor('projection'), materials.selected)}
 				raycast={bandRaycast($viewControlStore.showProjectionGeometry.facets, band.address)}
-				onclick={(ev: BandClickEvent) => handleBandClick(ev, band.address)}
+				onclick={(ev: BandClickEvent) => handleBandClick(ev, 'projection', band.address)}
 			/>
 		{/each}
 		{#each projectionGeometry.facets || [] as facet (facetKey(facet.address))}
 			<T.Mesh
 				geometry={facet.geometry}
-				material={highlightedFacetMaterial(facet.address, $selectedProjectionGeometry, {
-					colorByBand
-				})}
+				material={highlightedFacetMaterial(
+					'projection',
+					facet.address,
+					$selectedProjectionGeometry,
+					{
+						colorByBand
+					}
+				)}
 				onclick={(ev) =>
 					handleFacetSelect(ev, 'projection', facet.address, (a) => selectedProjection.set(a))}
 			/>
@@ -349,24 +384,24 @@
 		{#each voronoiGeometry.bands || [] as band (bandKeyOf(band))}
 			<T.Mesh
 				geometry={band.geometry}
-				material={getBandMaterial(band.address, $assemblerHighlight, materials.default)}
+				material={getBandMaterial(band.address, highlightFor('voronoi'), materials.default)}
 				raycast={bandRaycast($viewControlStore.showVoronoiGeometry.facets, band.address)}
-				onclick={(ev: BandClickEvent) => handleBandClick(ev, band.address)}
+				onclick={(ev: BandClickEvent) => handleBandClick(ev, 'voronoi', band.address)}
 			/>
 		{/each}
 		{#each voronoiGeometry.rimBands || [] as band (bandKeyOf(band))}
 			<!-- Open-surface rim tubes, coloured red to distinguish them -->
 			<T.Mesh
 				geometry={band.geometry}
-				material={getBandMaterial(band.address, $assemblerHighlight, materials.numbered[1])}
+				material={getBandMaterial(band.address, highlightFor('voronoi'), materials.numbered[1])}
 				raycast={bandRaycast($viewControlStore.showVoronoiGeometry.facets, band.address)}
-				onclick={(ev: BandClickEvent) => handleBandClick(ev, band.address)}
+				onclick={(ev: BandClickEvent) => handleBandClick(ev, 'voronoi', band.address)}
 			/>
 		{/each}
 		{#each voronoiGeometry.facets || [] as facet (facetKey(facet.address))}
 			<T.Mesh
 				geometry={facet.geometry}
-				material={highlightedFacetMaterial(facet.address, $selectedVoronoiGeometry)}
+				material={highlightedFacetMaterial('voronoi', facet.address, $selectedVoronoiGeometry)}
 				onclick={(ev) =>
 					handleFacetSelect(ev, 'voronoi', facet.address, (a) => selectedVoronoi.set(a))}
 			/>
@@ -374,9 +409,14 @@
 		{#each voronoiGeometry.surfaceProjectionFacets || [] as facet (facetKey(facet.address))}
 			<T.Mesh
 				geometry={facet.geometry}
-				material={highlightedFacetMaterial(facet.address, $selectedVoronoiSurfaceGeometry, {
-					zebraStriped: true
-				})}
+				material={highlightedFacetMaterial(
+					'voronoiSurface',
+					facet.address,
+					$selectedVoronoiSurfaceGeometry,
+					{
+						zebraStriped: true
+					}
+				)}
 				onclick={(ev) =>
 					handleFacetSelect(
 						ev,
@@ -403,15 +443,19 @@
 			     here too, without needing the facet view turned on. -->
 			<T.Mesh
 				geometry={band.geometry}
-				material={getBandMaterial(band.address, $assemblerHighlight)}
+				material={getBandMaterial(band.address, highlightFor('globuleTube'))}
 				raycast={bandRaycast($viewControlStore.showGlobuleTubeGeometry.facets, band.address)}
-				onclick={(ev: BandClickEvent) => handleBandClick(ev, band.address)}
+				onclick={(ev: BandClickEvent) => handleBandClick(ev, 'globuleTube', band.address)}
 			/>
 		{/each}
 		{#each globuleTubeGeometry.facets || [] as facet (facetKey(facet.address))}
 			<T.Mesh
 				geometry={facet.geometry}
-				material={highlightedFacetMaterial(facet.address, $selectedGlobuleTubeGeometry)}
+				material={highlightedFacetMaterial(
+					'globuleTube',
+					facet.address,
+					$selectedGlobuleTubeGeometry
+				)}
 				onclick={(ev) =>
 					handleFacetSelect(ev, 'globuleTube', facet.address, (a) => selectedGlobuleTube.set(a))}
 			/>

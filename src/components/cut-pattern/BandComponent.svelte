@@ -6,6 +6,7 @@
 	import { resolveTabLabel } from '$lib/cut-pattern/resolve-tab-label';
 	import {
 		assemblerHighlight,
+		patternBandSpaces,
 		patternConfigStore,
 		sameGlobuleBand,
 		selectedGlobuleTube,
@@ -21,6 +22,10 @@
 	import { concatAddress } from '$lib/util';
 	import { buildSelfTagLines } from '$lib/cut-pattern/build-self-tag-lines';
 	import { bandTransform } from '$lib/cut-pattern/band-transform';
+	import {
+		geometrySourceOfPattern,
+		patternBandSelectionToReal
+	} from '$lib/cut-pattern/pattern-band-space';
 
 	let {
 		band,
@@ -102,19 +107,30 @@
 	 * against different `Tube[]` arrays, so sending e.g. a voronoi address to
 	 * `selectedProjection` looks it up in the projection's tubes and highlights the
 	 * wrong band.
+	 *
+	 * The selection stores index 3D tubes by REAL band, and a pattern band counts
+	 * only the bands that were patterned, so the address is mapped (a piece to its
+	 * parent band, at its first triangle). The Assembler highlight stays in pattern
+	 * space.
 	 */
 	const handleClick = (address: GlobuleAddress_Band) => {
-		const facetAddress = { ...address, facet: 0 };
-		if (selectionTarget === 'voronoiSurface') {
-			$selectedVoronoiSurface = facetAddress;
-		} else if (selectionTarget === 'voronoi') {
-			$selectedVoronoi = facetAddress;
-		} else if (selectionTarget === 'surfaceProjection') {
-			$selectedSurfaceProjection = facetAddress;
-		} else if (selectionTarget === 'globule') {
-			$selectedGlobuleTube = facetAddress;
-		} else {
-			$selectedProjection = facetAddress;
+		const facetAddress = patternBandSelectionToReal(
+			$patternBandSpaces(geometrySourceOfPattern(selectionTarget), address.globule),
+			{ address, parentQuadOffset: band.parentQuadOffset }
+		);
+		// No real band behind it only for a stale pattern: nothing to select in 3D.
+		if (facetAddress) {
+			if (selectionTarget === 'voronoiSurface') {
+				$selectedVoronoiSurface = facetAddress;
+			} else if (selectionTarget === 'voronoi') {
+				$selectedVoronoi = facetAddress;
+			} else if (selectionTarget === 'surfaceProjection') {
+				$selectedSurfaceProjection = facetAddress;
+			} else if (selectionTarget === 'globule') {
+				$selectedGlobuleTube = facetAddress;
+			} else {
+				$selectedProjection = facetAddress;
+			}
 		}
 		setAssemblerHighlightForBand(address);
 	};
