@@ -247,3 +247,17 @@ Close `shades-azt` when done.
 **Tests (must fail before the fix):** real outlined geometry with `bandEdge: 'before'`: every mid tab label names band − 1; `'beforeAndAfter'`: before-edge tabs name band − 1 and after-edge tabs band + 1; a `tabLayout` config: each seam's single tab names the band across that seam; wrap-around at the first/last band; `'after'` characterization unchanged.
 
 **Constraint:** never delete or modify files outside your task (including untracked directories).
+
+---
+
+### Task 14: Adjust every tube against unadjusted partners
+
+**Defect (Task 11 review, pre-existing):** `generate-pattern.ts` (~262-270) runs `adjustAfterTiling` tube by tube and **replaces `tubePatterns[t]` with the adjusted bands as it goes**. Later tubes then read end-partner source paths from earlier tubes **after** those were adjusted — including `skipRemove` / trim removals that shorten facet paths. Consequences: Shield with `skipEdges: 'all'` and `endsMatched` crashes (`replaceInPlace`, `helpers.ts:~78`, source index 73+ out of range after indices 22,23,38,39 were removed) for every multi-facet case at HEAD; and for any spec whose removals precede a partner source index, end snapping silently reads shifted vertices. Behaviour also depends on tube order: tube _t_'s partner in tube _s < t_ is read adjusted, in tube _s > t_ unadjusted.
+
+**Required behaviour:** every tube's adjustment reads partner paths from the **same, pre-adjustment** state (snapshot the unadjusted tube patterns once; adjust each tube against the snapshot; assemble results). Decide from the adjuster's purpose whether partner sources should be the unadjusted tiling or something else (e.g. only within-band adjustments applied) — the invariant is: result independent of tube processing order, and matching snaps to the partner's true vertices. Check whether the same read-after-write exists in the within-tube band loop (`adjuster.ts` reads `bands` for `prevBandPaths` and `newBands` for writes — verify) and in carnation / snap-adjacent-facets paths.
+
+**Existing output:** this may change current output for configs where adjusted-partner reads happened to not crash. That change is intended if the new output snaps to the correct vertices; prove it with the Task 3-style geometric check (seam/outer end strokes coincide with partner strokes in the quad frame) and report which configs changed. Configs whose partner source indices are untouched by removals must be byte-identical — include the Phase 0 snapshot and the Task 10 unsplit label/CSV guard.
+
+**Tests (must fail before the fix):** Shield `skipEdges: 'all'` + `endsMatched` generates without throwing (split and unsplit); tube-order independence (generate with tubes processed in reverse order, or equivalently compare against a per-tube isolated adjustment — design the check so it is real); ends coincide with partner strokes for a config with removals preceding partner sources.
+
+**Constraint:** never delete or modify files outside your task (including untracked directories).
