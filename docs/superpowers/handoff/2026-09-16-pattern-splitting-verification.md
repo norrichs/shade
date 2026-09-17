@@ -164,3 +164,22 @@ Suggested route:
 `shades-1xp` (this plan's Phase 4) is **`IN_PROGRESS`, deliberately left open.** It is absent from `bd list --status=open` only because that filter excludes `in_progress` — not because of a bookkeeping slip. Both its tasks (12 and 13) are implemented, but **Task 13's control has never been seen to render**, and closing a phase on an unverified task would misrepresent the state. Close it once you have confirmed the `Split End` select appears.
 
 This plan's issues are therefore: `shades-1xp` (Phase 4, in progress, pending that one verification), `shades-rya` (Phase 5), `shades-ehy` (Phase 6), the `shades-5a9` epic, and the `shades-azt` bug. Phases 0–3 are closed (`shades-b9d`, `shades-1qz`, `shades-puy`, `shades-0u5`, `shades-u6z`).
+
+---
+
+## Verification results (appended by the verification session, 2026-09-16)
+
+**Verified in app** (`long tri hexparquet shade`, tube 0 split at quad 12): the split partitions 30 bands into 60 pieces with stable band indices; seam partners are reciprocal in live data; tiled seam path crossings coincide on the shared edge; the `Split End` control renders in PatternView and persists, and each option allocates tabs as coded. `shades-1xp` closed. `npm run check` 431, suite 961/101.
+
+**Not ready for Phase 5.** Bugs found, all blocking `shades-rya`:
+
+| Beads | Sev | What |
+| --- | --- | --- |
+| `shades-guk` | P1 | `adjustTesselation` uses array-previous band as neighbour → crash on unequal pieces (Shield/Hex/Box), silent distortion on equal ones |
+| `shades-umy` | P1 | piece-vs-plain `isSameAddress` breaks cross-tube end-partner start/end detection, corrupting even unsplit tubes |
+| `shades-at0` | P1 | outlined side neighbours / tab layout indexed over pieces |
+| `shades-a2a` | P2 | sort-index renderer resolves every piece to piece 0 |
+| `shades-0he` | P2 | ruling: `splitEnd` before/after is reversed relative to the spec |
+| `shades-tb5` | P2 | pre-existing: `persistable.update()` ignores its updater |
+
+Also: unsplit output differs from `63f7017` when bands are hidden (likely a fix, but contradicts the spec's claim); `validateSplitConfig` is never called; hexparquet hard-codes `endsMatched: false`, so the overlap-stroke check needs a tesselation pattern. Details in the ledger's "VERIFICATION PASS" section. Root cause shared by guk/at0/a2a: code that treats array position as band identity — audit `build-pattern-csv.ts:41` and `resolve-tab-label.ts:43` when fixing.
