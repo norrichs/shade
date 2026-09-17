@@ -209,3 +209,15 @@ Close `shades-azt` when done.
 - Unsplit output (labels and CSV) must be byte-identical.
 
 **Tests (must fail before the fix):** end-partner label/CSV cell names the joining piece (`p0` for a start join, last piece for an end join) with unequal pieces; uncut band beside a split neighbour: a mid tab over a quad in the neighbour's piece 1 names `…p1`; CSV lists both pieces; a split band beside an uncut neighbour names the plain neighbour; unsplit characterization unchanged.
+
+---
+
+### Task 11: Single-facet pieces get both ends matched
+
+**Defect (Task 8 review):** in `adjustTesselation` (`src/lib/patterns/tesselation/shared/adjuster.ts`, the loop's `f === 0 || f === band.facets.length - 1` branch) and `getTransformedPartnerCutPattern` (`helpers.ts`), a band with **one** facet has `f === 0` and `f === last` on the same facet, and only the start branch runs (`f === 0 ? translatedStart… : translatedEnd…`, and `partnerSources` / `partnerTargets` chosen for one end). Its end is never matched. One-facet bands arise in practice from splits — any unequal split of a 4-quad band leaves a 1-quad piece — so that piece's seam gets no overlap stroke: no glue surface on a physical part. Check `endsTrimmed` handling on the same facet too, and any other `f === 0 … else last` pattern in the adjuster, carnation (`tiled-carnation-pattern.ts`) and `snap-adjacent-facets.ts`.
+
+**Required behaviour:** a single-facet band has **both** its start end and its end end matched (and trimmed, when `endsTrimmed`), each against its own partner, exactly as a multi-facet band's first and last facets would be. Order of application must not let one end's snap corrupt the other's (they touch different vertices of the unit pattern; verify rather than assume). Multi-facet output byte-identical.
+
+**Tests (must fail before the fix):** real geometry, Shield with `endsMatched: true` (and `endsTrimmed` both ways), split giving a 1-quad piece at a seam: assert the 1-quad piece's seam end strokes coincide with its sibling's (seam edge crossing points equal, in the quad frame, as in the Task 3 glue test / the verification pass's seam-crossing check) and its outer end is matched to its partner. Remove the one-facet exemption at `hidden-band-end-partners.test.ts:~341` if it becomes unnecessary.
+
+**Constraint:** never delete or modify files outside your task (including untracked directories such as `test-results/`).
