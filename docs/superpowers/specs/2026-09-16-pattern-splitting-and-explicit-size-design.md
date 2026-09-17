@@ -565,3 +565,15 @@ found not to hold byte-for-byte when bands are hidden, because independent end r
 (`getEndPartnerTransforms`) changed a pre-existing all-or-nothing behaviour. The outcome of that
 investigation is recorded here when it lands.
 
+### Labels name the physical piece
+
+Cut-pattern labels exist so a person can assemble physical parts, so every label and CSV cell
+names the exact piece it refers to:
+
+- An end-partner label names the partner piece resolved by the end-partner rule above.
+- A side/mid tab label names the neighbour piece whose parent-quad range contains the tab's own
+  parent quad — an uncut band beside a split neighbour borders every piece, so which piece is
+  named depends on where the tab sits.
+- The CSV adjacency column lists every neighbour piece a band borders along its length.
+- The tile editor presents each piece as its own selectable row, labelled like the pattern
+  (`b3p1`), and selection carries the full piece-bearing address.

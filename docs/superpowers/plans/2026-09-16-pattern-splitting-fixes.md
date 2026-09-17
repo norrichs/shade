@@ -174,3 +174,38 @@ Close `shades-azt` when done.
    - Either way the fixture must include a hidden band **and** a split with unequal pieces, because that is the blind spot this whole branch missed.
 
 **Report:** the reproduction config, per-band verdict counts (HEAD correct / old correct / both wrong), what you changed, and the spec text you wrote.
+
+---
+
+### Task 9: Tile editor and 3D partner highlight on split tubes
+
+**Defect (Task 6 review):** `resolvePair` (partner-pair-resolver.ts) is now correct, but its only caller path cannot reach it correctly on a split tube:
+
+- `BaseQuadSelector.svelte` (~:61, :75, :108) passes an **array position** as `band`; in a split tube `band: 3` is b1p1, but `partner-neighbors.ts` local `findBand(tube, band)` (~:72-77) matches `address.band === 3`, a different parent.
+- `crossTubeTop` (partner-neighbors.ts ~:145) checks `baseAddress.facet !== baseBand.facets.length - 1` against piece 0's length while `resolvePair(…, 'partnerEnd')` returns the last piece's end.
+- Left/right side neighbours (`resolveLeft`, `band - 1`) are positional; use the side-neighbour rule (`findAdjacentSideNeighbour` / `findSideNeighbourInBands` in resolve-partner-band.ts).
+- 3D partner highlight: `ghostAddress.facet` is piece-local, but `partnerHighlightGeometry` (via `PartnerEditor.svelte` ~:46-52 → `partnerHighlightStore`, selectionStores.ts) reads it as a parent quad index. Map piece-local facet → parent quad with `parentQuadOffset`.
+
+**Ruling (controller, 2026-09-17):** the selector presents **each piece as its own selectable row**, labelled like pattern labels (e.g. `b3p1`; unsplit bands unchanged, e.g. `b3`). Selection state carries the full piece-bearing address, never an array position.
+
+**Required behaviour:** selecting a piece and a quad in the tile editor produces the correct base band, the correct end/side partner ghosts (end partners by which end joins; side neighbours by same piece index; seam partners exact), and the 3D highlight on the correct parent quad. Unsplit behaviour unchanged.
+
+**Tests (must fail before the fix):** pure logic in `.ts` (extract from `.svelte` if needed): selector options for a split tube enumerate pieces with correct addresses/labels; base band resolution by piece address; `crossTubeTop`/end ghost uses the piece that carries that end; left/right neighbours by side rule with unequal pieces; highlight maps a later piece's facet to `parentQuadOffset + facet`.
+
+---
+
+### Task 10: Labels and CSV name the exact physical piece
+
+**Defects (Task 6 review):**
+
+1. CSV `endPartners` column (`build-pattern-csv.ts`) and start/end tab labels (`resolve-tab-label.ts`) name the **plain parent** for outer end partners (e.g. `t6/b5`) while the physical parts are `t6/b5p0` / `t6/b5p1`. Resolve with the end-partner rule (`resolveEndPartner` / `resolveEndPartnerInBands`) and label the resolved piece's address. Tab labels may need all tubes passed in — thread them from the caller.
+2. An **uncut band beside a split neighbour** (and, generally, any band whose side neighbour's piece boundaries differ from its own) names only one neighbour piece.
+
+**Ruling (controller, 2026-09-17; recorded in the spec amendment "Labels name the physical piece"):**
+
+- A mid/side tab label names the neighbour piece whose parent-quad range (`parentQuadOffset` … `parentQuadOffset + quads - 1`) contains the tab's own parent quad (`own parentQuadOffset + tab's local quad`).
+- The CSV adjacency column lists **every** neighbour piece the band borders along its length (parent-quad ranges overlap), in piece order.
+- Seam partners keep exact piece addresses (unchanged).
+- Unsplit output (labels and CSV) must be byte-identical.
+
+**Tests (must fail before the fix):** end-partner label/CSV cell names the joining piece (`p0` for a start join, last piece for an end join) with unequal pieces; uncut band beside a split neighbour: a mid tab over a quad in the neighbour's piece 1 names `…p1`; CSV lists both pieces; a split band beside an uncut neighbour names the plain neighbour; unsplit characterization unchanged.
