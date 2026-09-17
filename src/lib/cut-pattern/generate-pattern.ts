@@ -19,7 +19,8 @@ import type {
 	TubeCutPattern,
 	Band,
 	BandCutPattern,
-	UnitPatternGenerator
+	UnitPatternGenerator,
+	SplitConfig
 } from '$lib/types';
 import { isTiledPatternConfig, isOutlinedPatternConfig } from '$lib/types';
 
@@ -123,8 +124,13 @@ export const generateProjectionPattern = (
 ): SuperGlobuleProjectionPattern => {
 	const {
 		patternTypeConfig,
-		patternConfig: { pixelScale }
+		patternConfig: { pixelScale, splits }
 	} = globulePatternConfig;
+
+	// Splits are persisted per tube as absolute quad indices. An absent entry
+	// yields an empty array, which is splitFlatBands' documented no-op path.
+	const splitQuadsFor = (tube: number) =>
+		splits?.tubeSplits.find((t) => t.tube === tube)?.quads ?? [];
 
 	// fillAll produces interior fill BANDS (one degenerate facet per quad) inside normal tubes.
 	// Tiled/panel patterns cannot tile degenerate facets — keep fill bands for outlined only.
@@ -138,7 +144,8 @@ export const generateProjectionPattern = (
 			id,
 			patternTypeConfig,
 			pixelScale,
-			projectionRange
+			projectionRange,
+			splits
 		);
 	} else if (shouldUsePanelPattern(patternTypeConfig)) {
 		const projectionPanelPattern = generateProjectionPanelPattern({
@@ -183,7 +190,8 @@ export const generateProjectionPattern = (
 				bands,
 				tiledPatternConfig,
 				pixelScale,
-				bandRange: { start: bandStart, end: bandEnd }
+				bandRange: { start: bandStart, end: bandEnd },
+				splitQuads: splitQuadsFor(address.tube)
 			});
 			tubePatterns[t] = tubePattern;
 		}
@@ -209,7 +217,8 @@ export const generateProjectionPattern = (
 					address,
 					bands,
 					tiledPatternConfig,
-					pixelScale
+					pixelScale,
+					splitQuads: splitQuadsFor(address.tube)
 				});
 			}
 		}

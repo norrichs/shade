@@ -9,6 +9,7 @@ import type {
 	PathSegment,
 	PixelScale,
 	Quadrilateral,
+	SplitConfig,
 	TubeCutPattern
 } from '$lib/types';
 import type { SuperGlobuleProjectionPattern } from '$lib/stores/superGlobuleStores';
@@ -679,7 +680,8 @@ export const generateOutlinedProjectionPattern = (
 	id: SuperGlobuleConfig['id'],
 	config: OutlinedPatternConfig,
 	pixelScale: PixelScale,
-	projectionRange?: ProjectionRange
+	projectionRange?: ProjectionRange,
+	splits?: SplitConfig
 ): SuperGlobuleProjectionPattern => {
 	const [tubeStart, tubeEnd] = resolveRangeIndices(projectionRange?.tubes, tubes.length);
 
@@ -690,10 +692,14 @@ export const generateOutlinedProjectionPattern = (
 		const totalBands = bands.filter((b) => b.visible).length;
 		const [bandStart, bandEnd] = resolveRangeIndices(projectionRange?.bands, totalBands);
 
-		const tubePattern = generateOutlinedTubePattern(address, bands, config, pixelScale, {
-			start: bandStart,
-			end: bandEnd
-		});
+		const tubePattern = generateOutlinedTubePattern(
+			address,
+			bands,
+			config,
+			pixelScale,
+			{ start: bandStart, end: bandEnd },
+			splits?.tubeSplits.find((t) => t.tube === address.tube)?.quads ?? []
+		);
 		outputTubePatterns.push(tubePattern);
 	}
 

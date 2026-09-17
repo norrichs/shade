@@ -56,7 +56,10 @@ export const runPatternGeneration = ({
 		type: 'GlobulePatternConfig',
 		id: '',
 		cutoutConfig: {} as GlobulePatternConfig['cutoutConfig'],
-		patternConfig: { pixelScale: genConfig.pixelScale } as GlobulePatternConfig['patternConfig'],
+		patternConfig: {
+			pixelScale: genConfig.pixelScale,
+			splits: genConfig.splits
+		} as GlobulePatternConfig['patternConfig'],
 		patternViewConfig: {
 			showBands: genConfig.showBands,
 			range: genConfig.range
