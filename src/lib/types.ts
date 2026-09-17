@@ -743,6 +743,16 @@ export type TabEdgeOption = 'before' | 'after' | 'beforeAndAfter';
 export type OutlinedTabConfig = {
 	bandEdge?: TabEdgeOption;
 	bandEnd?: TabEdgeOption;
+	/**
+	 * Tab at a split seam. Unlike `bandEnd`, which allocates by comparing tube
+	 * indices, this compares piece indices — sibling pieces share a tube, so the
+	 * tube comparison is degenerate for them. 'after' gives the tab to the
+	 * lower-indexed piece.
+	 *
+	 * Unset by default, so enabling splits never changes outlined output on its
+	 * own.
+	 */
+	splitEnd?: TabEdgeOption;
 	tabLayout?: 'inner' | 'outer';
 	shape: TabShape;
 	tabWidth: number;

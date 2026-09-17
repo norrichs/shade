@@ -105,6 +105,8 @@ export type OutlineEdge = {
 	 * the start/end positions consumed by `resolveTabLabel`.
 	 */
 	endIsStartCap?: boolean;
+	/** Set on a cap edge that is a split seam; the adjacent piece's index. */
+	seamPartnerPiece?: number;
 };
 
 /**
@@ -192,6 +194,14 @@ const getOutlineEdges = (
 	const startPartnerTube = band.facets[0]?.meta?.ab?.partner?.tube;
 	const endPartnerTube = band.facets[band.facets.length - 1]?.meta?.ab?.partner?.tube;
 
+	// `pieceIndex`, not `band.address?.piece`: Band['address'] is
+	// `GeometryAddress<BandAddressed> | GlobuleAddress_Band` (types.ts:931) and
+	// neither arm has `piece`, so an address read would not type-check. Task 8
+	// puts the piece ordinal on the band as a plain field for exactly this.
+	const piece = band.pieceIndex;
+	const farEndSeamPartner = band.seamAt?.end && piece !== undefined ? piece + 1 : undefined;
+	const nearEndSeamPartner = band.seamAt?.start && piece !== undefined ? piece - 1 : undefined;
+
 	const edges: OutlineEdge[] = [];
 
 	// "before" side: a→d edge of each quad, walked forward
@@ -233,7 +243,8 @@ const getOutlineEdges = (
 		side: 'end',
 		interiorPoint: farEndInterior,
 		endPartnerTube: endPartnerTube,
-		endIsStartCap: false
+		endIsStartCap: false,
+		seamPartnerPiece: farEndSeamPartner
 	});
 
 	// "after" side: c→b edge of each quad, walked backward
@@ -273,7 +284,8 @@ const getOutlineEdges = (
 		side: 'end',
 		interiorPoint: nearEndInterior,
 		endPartnerTube: startPartnerTube,
-		endIsStartCap: true
+		endIsStartCap: true,
+		seamPartnerPiece: nearEndSeamPartner
 	});
 
 	return edges;
@@ -365,7 +377,8 @@ export const shouldHaveTab = (
 	hasPartners: { after: boolean; before: boolean },
 	currentTube: number,
 	bandIndex = 0,
-	bandCount = 0
+	bandCount = 0,
+	currentPiece?: number
 ): boolean => {
 	if (edge.side === 'after' || edge.side === 'before') {
 		const side = edge.side;
@@ -385,6 +398,16 @@ export const shouldHaveTab = (
 			return tabConfig.bandEdge === 'after' || tabConfig.bandEdge === 'beforeAndAfter';
 		}
 		return tabConfig.bandEdge === 'before' || tabConfig.bandEdge === 'beforeAndAfter';
+	}
+	// A split seam is allocated by piece index. This must precede the generic
+	// end-edge branch, which compares tube indices and cannot separate two
+	// pieces of the same tube.
+	if (edge.side === 'end' && edge.seamPartnerPiece !== undefined && currentPiece !== undefined) {
+		if (!tabConfig.splitEnd) return false;
+		if (tabConfig.splitEnd === 'beforeAndAfter') return true;
+		if (tabConfig.splitEnd === 'after') return edge.seamPartnerPiece > currentPiece;
+		if (tabConfig.splitEnd === 'before') return edge.seamPartnerPiece < currentPiece;
+		return false;
 	}
 	if (edge.side === 'end') {
 		if (edge.endPartnerTube === undefined) return false;
@@ -410,7 +433,8 @@ export const buildOutlinePath = (
 	currentTube?: number,
 	tabsOut?: Map<number, TabGeometry>,
 	bandIndex = 0,
-	bandCount = 0
+	bandCount = 0,
+	currentPiece?: number
 ): PathSegment[] => {
 	if (edges.length === 0) return [];
 
@@ -426,7 +450,17 @@ export const buildOutlinePath = (
 	if (tabConfig) {
 		// First pass: generate tabs
 		for (let i = 0; i < edges.length; i++) {
-			if (shouldHaveTab(edges[i], tabConfig, partners, currentTube ?? 0, bandIndex, bandCount)) {
+			if (
+				shouldHaveTab(
+					edges[i],
+					tabConfig,
+					partners,
+					currentTube ?? 0,
+					bandIndex,
+					bandCount,
+					currentPiece
+				)
+			) {
 				const tab = generateTabForEdge(edges[i], tabConfig);
 				tabsByIndex.set(i, tab);
 				if (edges[i].side === 'after') afterEdgeIndices.push(i);
@@ -516,7 +550,8 @@ const generateOutlinedBandPattern = (
 		tubeAddress.tube,
 		tabsByIndex,
 		localBandIndex,
-		bandCount
+		bandCount,
+		piece
 	);
 
 	const outlineFacet: CutPattern = {
