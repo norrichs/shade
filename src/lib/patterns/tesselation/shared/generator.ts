@@ -2,6 +2,7 @@ import type { Band, GridVariant, PathSegment } from '$lib/types';
 import { translatePS } from '../../utils';
 import type { TiledPatternSpec } from '../../spec-types';
 import { scaleSegment } from './helpers';
+import { layoutTesselation, unitCounts } from './layout';
 
 export type TesselationGeneratorProps = {
 	size: number;
@@ -39,36 +40,18 @@ export const generateTesselationTile = (
 
 	const unit = buildUnit(spec, w, h);
 
-	const startSegments: PathSegment[] = [];
-	const middleSegments: PathSegment[] = [];
-	const endSegments: PathSegment[] = [];
-	const extraSegments: PathSegment[] = [];
+	// The adjuster expands spec indices through this same layout, so the path is
+	// assembled from it rather than from its own ordering.
+	const layout = layoutTesselation(unitCounts(spec.unit), rows, columns);
+	const segments: PathSegment[] = layout.blocks.flatMap(({ group, row: r, column: c }) =>
+		translatePS(unit[group], col * c, row * r)
+	);
 
+	const extraSegments: PathSegment[] = [];
 	for (let c = 0; c < columns; c++) {
 		for (let r = 0; r < rows; r++) {
 			const tx = col * c;
 			const ty = row * r;
-
-			if (r > 0 && r < rows - 1) {
-				middleSegments.push(
-					...translatePS(unit.start, tx, ty),
-					...translatePS(unit.middle, tx, ty),
-					...translatePS(unit.end, tx, ty)
-				);
-			} else if (rows === 1) {
-				startSegments.push(...translatePS(unit.start, tx, ty));
-				endSegments.push(...translatePS(unit.end, tx, ty));
-				middleSegments.push(...translatePS(unit.middle, tx, ty));
-			} else if (r === 0) {
-				middleSegments.push(...translatePS(unit.end, tx, ty));
-				startSegments.push(...translatePS(unit.start, tx, ty));
-				middleSegments.push(...translatePS(unit.middle, tx, ty));
-			} else if (r === rows - 1) {
-				middleSegments.push(...translatePS(unit.start, tx, ty));
-				endSegments.push(...translatePS(unit.end, tx, ty));
-				middleSegments.push(...translatePS(unit.middle, tx, ty));
-			}
-
 			if (c === 0 && unit.firstColumn.length > 0) {
 				extraSegments.push(...translatePS(unit.firstColumn, tx, ty));
 			}
@@ -78,5 +61,5 @@ export const generateTesselationTile = (
 		}
 	}
 
-	return [...startSegments, ...middleSegments, ...endSegments, ...extraSegments];
+	return [...segments, ...extraSegments];
 };

@@ -26,43 +26,6 @@ export const scaleSegment = (seg: PathSegment, w: number, h: number): PathSegmen
 	}
 };
 
-export const retarget = (
-	indices: number[],
-	rows: number,
-	columns: number,
-	startCount: number,
-	middleCount: number,
-	endCount: number
-) => {
-	const retargeted = indices.flatMap((index) => {
-		const result: number[] = [];
-
-		if (index < startCount && columns > 1) {
-			for (let c = 0; c < columns; c++) {
-				result.push(index + c * startCount);
-			}
-			return result;
-		}
-		if (index >= startCount + middleCount && columns > 1) {
-			const localIndex = index - startCount - middleCount;
-			const entryPoint = startCount * columns + middleCount * rows * columns;
-			for (let c = 0; c < columns; c++) {
-				result.push(entryPoint + localIndex + c * endCount);
-			}
-			return result;
-		}
-		if (index >= startCount && index < startCount + middleCount && (columns > 1 || rows > 1)) {
-			const entryPoint = startCount * columns + middleCount * (rows - 1) * columns;
-			for (let c = 0; c < columns; c++) {
-				result.push(entryPoint + index + c * middleCount);
-			}
-			return result;
-		}
-		return index;
-	});
-	return retargeted;
-};
-
 export const replaceInPlace = ({
 	pairs,
 	target,

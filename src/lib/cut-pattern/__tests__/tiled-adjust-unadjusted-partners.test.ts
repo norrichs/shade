@@ -10,7 +10,8 @@ import { generateProjectionPattern } from '../generate-pattern';
 import { patterns } from '$lib/patterns/pattern-definitions';
 import { isGlobuleAddress_BandPiece } from '$lib/util';
 import { defaultShieldSpec } from '$lib/patterns/tesselation/shield';
-import { evaluateSkipEdge, retarget } from '$lib/patterns/tesselation/shared/helpers';
+import { evaluateSkipEdge } from '$lib/patterns/tesselation/shared/helpers';
+import { expandTesselationAdjustments } from '$lib/patterns/tesselation/shared/adjuster';
 import type { PatternGenerationConfig } from '$lib/stores/globulePatternStores';
 import type { SuperGlobuleProjectionCutPattern } from '$lib/stores/superGlobuleStores';
 import type {
@@ -246,43 +247,63 @@ describe('Shield skipEdges + endsMatched: ends snap to the partner’s true vert
 		['skipEdges all, unsplit', { skipEdges: 'all' }, undefined, [4]],
 		['skipEdges all, split at 1 (1 + 3)', { skipEdges: 'all' }, [1], [1, 3]],
 		['skipEdges all, split at 3 (3 + 1)', { skipEdges: 'all' }, [3], [3, 1]],
-		// Before the fix these did NOT throw: ends silently snapped onto shifted
-		// vertices of already-adjusted partners in earlier tubes.
+		// Multi-row tiles (Task 17). Before Task 14 these did not throw: ends
+		// silently snapped onto shifted vertices of already-adjusted partners in
+		// earlier tubes. Before Task 17 the end-group indices named interior
+		// tile-to-tile rows, so "ends" were judged mid-facet; the end-row guard
+		// below now requires every judged vertex to lie on the band's end row.
 		[
-			'skipEdges not-first, 2 rows × 2 columns, unsplit',
+			'multi-row ends, skipEdges not-first, 2 rows × 2 columns, unsplit',
 			{ skipEdges: 'not-first', rowCount: 2, columnCount: 2 },
 			undefined,
 			[4]
 		],
 		[
-			'skipEdges not-first, 2 rows × 2 columns, split at 1 (1 + 3)',
+			'multi-row ends, skipEdges not-first, 2 rows × 2 columns, split at 1 (1 + 3)',
 			{ skipEdges: 'not-first', rowCount: 2, columnCount: 2 },
 			[1],
 			[1, 3]
+		],
+		[
+			'multi-row ends, skipEdges not-first, 2 rows × 1 column, unsplit',
+			{ skipEdges: 'not-first', rowCount: 2 },
+			undefined,
+			[4]
+		],
+		[
+			'multi-row ends, skipEdges all, 2 rows × 1 column, split at 3 (3 + 1)',
+			{ skipEdges: 'all', rowCount: 2 },
+			[3],
+			[3, 1]
 		]
 	];
 
 	it.each(cases)('%s', (_, overrides, quads, expectedLengths) => {
 		const config = withConfig(shield, { endsMatched: true, ...overrides });
 		const { rowCount: rows = 1, columnCount: columns = 1, skipEdges = 'none' } = config.config;
-		const { start, middle, end: endUnit } = defaultShieldSpec.unit;
-		// Spec indices expand per row/column exactly as the spec defines them.
-		const expand = (indices: number[]) =>
-			retarget(indices, rows, columns, start.length, middle.length, endUnit.length);
+		// Spec indices expand per row/column exactly as the adjuster expands them.
+		const expanded = expandTesselationAdjustments(defaultShieldSpec, rows, columns);
 		const removedAt = (band: BandCutPattern, facet: number) =>
-			evaluateSkipEdge(skipEdges, facet, band.facets.length - 1)
-				? expand(defaultShieldSpec.adjustments.skipRemove)
-				: [];
+			evaluateSkipEdge(skipEdges, facet, band.facets.length - 1) ? expanded.skipRemove : [];
 		/** Where a pre-removal index sits in the final path, or undefined if removed. */
 		const finalIndex = (band: BandCutPattern, facet: number, index: number) => {
 			const removed = removedAt(band, facet);
 			if (removed.includes(index)) return undefined;
 			return index - removed.filter((r) => r < index).length;
 		};
-		const pairsFor = (end: End) =>
-			end === 'start'
-				? defaultShieldSpec.adjustments.partner.startEnd
-				: defaultShieldSpec.adjustments.partner.endEnd;
+		/**
+		 * Distance, in the edge frame, from the end edge to the opposite edge: the
+		 * facet's height across its rows. An end-row vertex lies within a small
+		 * fraction of one row of the end edge; the next row's is a whole row away.
+		 */
+		const facetHeight = (band: BandCutPattern, end: End) => {
+			const q = band.facets[endFacetIndex(band, end)].quad!;
+			const opposite = end === 'start' ? [q.c, q.d] : [q.a, q.b];
+			const frame = askerEdge(band, end);
+			return Math.max(
+				...opposite.map((p) => Math.abs(vertexInEdgeFrame(['M', p.x, p.y], frame).y))
+			);
+		};
 
 		const tubes = generate(config, quads ? splitAllTubesAt(quads) : undefined);
 		// Fixture guard: every tube really has the (unequal) pieces named.
@@ -290,7 +311,9 @@ describe('Shield skipEdges + endsMatched: ends snap to the partner’s true vert
 			expect(partsOf(tube, 0).map((b) => b.facets.length)).toEqual(expectedLengths);
 		}
 		const failures: string[] = [];
+		const offEndRow: string[] = [];
 		let judged = 0;
+		let judgedVertices = 0;
 		let shiftedSources = 0;
 		tubes.forEach((tube, t) => {
 			for (const band of tube.bands) {
@@ -302,9 +325,10 @@ describe('Shield skipEdges + endsMatched: ends snap to the partner’s true vert
 					const partnerF = endFacetIndex(partner, partnerEnd);
 					const ownPath = band.facets[ownF].path;
 					const partnerPath = partner.facets[partnerF].path;
-					const targets = expand(pairsFor(end).map((p) => p.target));
-					const sources = expand(pairsFor(partnerEnd).map((p) => p.source));
+					const targets = expanded.partnerTargets[end];
+					const sources = expanded.partnerSources[partnerEnd];
 					expect(targets.length).toBe(sources.length);
+					const endRowReach = facetHeight(band, end) / rows / 2;
 					let deviation = 0;
 					targets.forEach((target, i) => {
 						const ti = finalIndex(band, ownF, target);
@@ -313,6 +337,12 @@ describe('Shield skipEdges + endsMatched: ends snap to the partner’s true vert
 						if (si !== sources[i]) shiftedSources++;
 						const a = vertexInEdgeFrame(ownPath[ti], askerEdge(band, end));
 						const b = vertexInEdgeFrame(partnerPath[si], partnerEdge(partner, partnerEnd));
+						if (!(Math.abs(a.y) < endRowReach)) {
+							offEndRow.push(
+								`t${t} b${band.address.band} p${pieceOf(band)} ${end} target ${target}: ${a.y.toFixed(3)}px from the end edge (reach ${endRowReach.toFixed(3)})`
+							);
+						}
+						judgedVertices++;
 						deviation = Math.max(deviation, Math.hypot(a.x - b.x, a.y - b.y));
 					});
 					judged++;
@@ -325,6 +355,9 @@ describe('Shield skipEdges + endsMatched: ends snap to the partner’s true vert
 			}
 		});
 		expect(failures).toEqual([]);
+		// The judged vertices really are the band's end rows, not interior rows.
+		expect(offEndRow.slice(0, 5)).toEqual([]);
+		expect(judgedVertices).toBeGreaterThan(judged);
 		expect(judged).toBeGreaterThan(100);
 		// The removal-shifted case really was judged: partner sources that sit
 		// after removed indices in the partner's final path.
