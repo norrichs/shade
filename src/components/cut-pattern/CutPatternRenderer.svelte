@@ -297,6 +297,7 @@
 			<BandComponent
 				{band}
 				{tube}
+				{tubes}
 				index={i}
 				origin={pageResult.origins[i]}
 				rotation={pageResult.rotations[i] ?? 0}
@@ -332,6 +333,7 @@
 			<BandComponent
 				{band}
 				{tube}
+				{tubes}
 				index={i}
 				origin={flatOrigins[i]}
 				portal={true}
@@ -367,6 +369,7 @@
 					<BandComponent
 						{band}
 						{tube}
+						{tubes}
 						index={b}
 						origin={origins.tubes[t].bands[b]}
 						portal={true}

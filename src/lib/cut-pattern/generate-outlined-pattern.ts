@@ -108,6 +108,8 @@ export type OutlineEdge = {
 	endIsStartCap?: boolean;
 	/** Set on a cap edge that is a split seam; the adjacent piece's index. */
 	seamPartnerPiece?: number;
+	/** 'before' / 'after' edges: the band-local index of the quad the edge is on. */
+	quad?: number;
 };
 
 /**
@@ -228,7 +230,8 @@ const getOutlineEdges = (
 			side: 'before',
 			interiorPoint: beforeInterior,
 			partnerOuter,
-			partnerBand: band.facets[2 * i]?.meta?.ac?.partner?.band
+			partnerBand: band.facets[2 * i]?.meta?.ac?.partner?.band,
+			quad: i
 		});
 	}
 
@@ -272,7 +275,8 @@ const getOutlineEdges = (
 			side: 'after',
 			interiorPoint: afterInterior,
 			partnerOuter,
-			partnerBand: band.facets[2 * i + 1]?.meta?.ac?.partner?.band
+			partnerBand: band.facets[2 * i + 1]?.meta?.ac?.partner?.band,
+			quad: i
 		});
 	}
 
@@ -599,12 +603,14 @@ export const generateOutlinedBandPattern = (
 	const meta =
 		startPartnerBand && endPartnerBand ? { startPartnerBand, endPartnerBand } : undefined;
 
-	// Extract structured tab records for label rendering. We only pass the two
-	// fields collectOutlinedBandTabs needs — `side` and `endIsStartCap` — so the
-	// helper stays decoupled from the Vector3-heavy OutlineEdge shape.
+	// Extract structured tab records for label rendering. We only pass the
+	// fields collectOutlinedBandTabs needs — `side`, `endIsStartCap` and the side
+	// edges' `quad` — so the helper stays decoupled from the Vector3-heavy
+	// OutlineEdge shape.
 	const tabEdges: OutlinedTabEdge[] = edges.map((e) => ({
 		side: e.side,
-		endIsStartCap: e.endIsStartCap
+		endIsStartCap: e.endIsStartCap,
+		quad: e.quad
 	}));
 	const tabs = collectOutlinedBandTabs(tabEdges, tabsByIndex);
 
@@ -642,6 +648,9 @@ export const generateOutlinedBandPattern = (
 			piece === undefined
 				? { ...tubeAddress, band: bandIndex }
 				: { ...tubeAddress, band: bandIndex, piece },
+		// Pieces only, as on the tiled path; spread so unsplit bands gain no key.
+		// Tab labels place a piece's tab at parent quad `parentQuadOffset + quad`.
+		...(band.parentQuadOffset === undefined ? {} : { parentQuadOffset: band.parentQuadOffset }),
 		bounds,
 		meta
 	};

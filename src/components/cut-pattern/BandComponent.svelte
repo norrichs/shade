@@ -29,6 +29,7 @@
 		rotation = 0,
 		pivot = { x: 0, y: 0 },
 		tube,
+		tubes,
 		showBounds = false,
 		portal = false,
 		tagAnchorPoint,
@@ -43,6 +44,8 @@
 		rotation?: number;
 		pivot?: Point;
 		tube: TubeCutPattern;
+		/** Every tube of the pattern, indexed by tube number: tab labels resolve end partners in them. */
+		tubes: TubeCutPattern[];
 		showBounds?: boolean;
 		portal?: boolean;
 		tagAnchorPoint: Point;
@@ -163,7 +166,7 @@
 			<OnTabLabel
 				outer={tab.outer}
 				base={tab.base}
-				text={resolveTabLabel(tab, band, tube)}
+				text={resolveTabLabel(tab, band, tube, tubes)}
 				padding={labels?.onTab?.padding ?? 1}
 				color={labels?.onTab?.color ?? 'black'}
 			/>

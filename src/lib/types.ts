@@ -499,6 +499,12 @@ export type BandCutPattern = {
 		position: 'start' | 'end' | 'mid';
 		midIndex?: number; // 0..midCount-1 for mid tabs
 		midCount?: number; // total mid tabs on this band
+		/**
+		 * Mid tabs of outlined bands: the band-local quad whose side edge the tab
+		 * sits on. Parent quad is `parentQuadOffset + quad`; the tab label names
+		 * the neighbour piece covering it.
+		 */
+		quad?: number;
 	}>;
 };
 

@@ -154,7 +154,23 @@ export const resolveEndPartnerInBands = (
 		return { band, partnerEnd };
 	}
 
-	const parts = bandsOfParent(bands, address);
+	return outerEndPartnerAmong(bandsOfParent(bands, address), asker);
+};
+
+/**
+ * The outer end-partner rule over one parent band's `parts` (the unsplit band
+ * itself, or its pieces in piece order): the parent's START joins `asker` when
+ * its first part's stored start partner is `asker`'s parent band, giving piece
+ * 0; otherwise its END joins, giving the last piece. Undefined for no parts.
+ *
+ * `resolveEndPartnerInBands` finds the parts by scanning; callers that have
+ * already grouped a tube's bands by parent (label rendering) pass them in, so
+ * the rule itself has one implementation.
+ */
+export const outerEndPartnerAmong = (
+	parts: BandCutPattern[],
+	asker: BandCutPattern
+): ResolvedEndPartner | undefined => {
 	if (parts.length === 0) return undefined;
 	const first = parts[0];
 	const outerStart = first.meta?.startPartnerBand;

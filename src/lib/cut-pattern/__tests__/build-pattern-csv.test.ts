@@ -192,3 +192,73 @@ describe('buildPatternCsv — split bands', () => {
 		]);
 	});
 });
+
+describe('buildPatternCsv — labels name the physical piece', () => {
+	type PieceRef = GlobuleAddress_Band & { piece: number };
+	type Meta = {
+		startPartnerBand?: GlobuleAddress_Band | PieceRef;
+		endPartnerBand?: GlobuleAddress_Band | PieceRef;
+	};
+	const p = (t: number, b: number, piece: number): PieceRef => ({
+		globule: 0,
+		tube: t,
+		band: b,
+		piece
+	});
+	// A band of `quads` quads from parent quad `offset`: one quad-bearing facet
+	// per quad, as in tiled output.
+	const quadBand = (
+		a: GlobuleAddress_Band | PieceRef,
+		quads: number,
+		offset?: number,
+		meta?: Meta
+	) =>
+		({
+			address: a,
+			facets: Array.from({ length: quads }, () => ({ quad: {} })),
+			...(offset === undefined ? {} : { parentQuadOffset: offset }),
+			meta
+		}) as unknown as TubeCutPattern['bands'][number];
+
+	// Tube 0: uncut b0 (5 quads) beside b1 cut into UNEQUAL pieces (0..1, 2..4).
+	// b0's start meets t1/b0's start; its end meets t1/b1's end.
+	// Tube 1: b0 and b1 both cut into UNEQUAL pieces (0..1, 2..5).
+	const tubes = (): TubeCutPattern[] => [
+		tube(0, [
+			quadBand(addr(0, 0), 5, undefined, {
+				startPartnerBand: addr(1, 0),
+				endPartnerBand: addr(1, 1)
+			}),
+			quadBand(p(0, 1, 0), 2, 0),
+			quadBand(p(0, 1, 1), 3, 2)
+		]),
+		tube(1, [
+			quadBand(p(1, 0, 0), 2, 0, { startPartnerBand: addr(0, 0), endPartnerBand: p(1, 0, 1) }),
+			quadBand(p(1, 0, 1), 4, 2, { startPartnerBand: p(1, 0, 0) }),
+			quadBand(p(1, 1, 0), 2, 0, { startPartnerBand: addr(9, 9) }),
+			quadBand(p(1, 1, 1), 4, 2)
+		])
+	];
+
+	const rows = () => buildPatternCsv({ mode: 'tube-order', groups: [] }, tubes()).split('\n');
+
+	test('end partners name the joining piece: p0 for a start join, the last piece for an end join', () => {
+		expect(rows()[1].split(',').slice(-1)[0]).toBe('"t1/b0p0 t1/b1p1"');
+	});
+
+	test('an uncut band beside a split neighbour lists every piece it borders, in piece order', () => {
+		expect(rows()[1]).toBe('t0/b0,"t0/b1p0 t0/b1p1","t1/b0p0 t1/b1p1"');
+	});
+
+	test('guard: pieces list only the neighbour pieces their own range overlaps', () => {
+		const r = rows();
+		expect(r[4]).toBe('t1/b0p0,t1/b1p0,"t0/b0 t1/b0p1"');
+		expect(r[5]).toBe('t1/b0p1,t1/b1p1,t1/b0p0');
+	});
+
+	test('guard: a split band beside an uncut neighbour names the plain neighbour', () => {
+		const r = rows();
+		expect(r[2]).toBe('t0/b1p0,t0/b0,');
+		expect(r[3]).toBe('t0/b1p1,t0/b0,');
+	});
+});

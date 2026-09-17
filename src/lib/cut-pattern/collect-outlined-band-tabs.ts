@@ -22,6 +22,8 @@ export type BandTabRecord = NonNullable<BandCutPattern['tabs']>[number];
 export type OutlinedTabEdge = {
 	side: 'before' | 'after' | 'end';
 	endIsStartCap?: boolean;
+	/** 'before' / 'after' edges: the band-local quad the edge belongs to. */
+	quad?: number;
 };
 
 const pointFromXY = (v: { x: number; y: number }): Point => ({ x: v.x, y: v.y });
@@ -82,7 +84,8 @@ const extractTabOuter = (tab: TabGeometry): Point[] => {
  *   - 'before' / 'after' edge              → position 'mid'
  *
  * Mid records receive a sequential `midIndex` (0..N-1, in the edge walk order
- * they appear) and are back-filled with `midCount` once we know the total.
+ * they appear) and are back-filled with `midCount` once we know the total. They
+ * also carry their edge's `quad` when the edge has one.
  *
  * Returns undefined when there are no tabs, so callers can leave
  * `BandCutPattern.tabs` unset (matches the non-outlined paths' convention).
@@ -112,7 +115,10 @@ export const collectOutlinedBandTabs = (
 		const base: [Point, Point] = [pointFromXY(tab.edgeStart), pointFromXY(tab.edgeEnd)];
 
 		const record: BandTabRecord = { outer, base, position };
-		if (position === 'mid') record.midIndex = midCount++;
+		if (position === 'mid') {
+			record.midIndex = midCount++;
+			if (edge.quad !== undefined) record.quad = edge.quad;
+		}
 		records.push(record);
 	}
 

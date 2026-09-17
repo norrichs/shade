@@ -118,3 +118,66 @@ describe('generateOutlinedBandPattern — split seam tab, real wiring', () => {
 		expect(higherResult.tabs?.some((t) => t.position === 'start') ?? false).toBe(false);
 	});
 });
+
+describe('generateOutlinedBandPattern — mid tabs record their quad, real wiring', () => {
+	it('stamps each side tab with the band-local quad of the edge it sits on', () => {
+		// Three unit quads stacked along y. Facet ac partner meta on facets 0 and 1
+		// turns on both side partners, so every before/after edge gets a tab.
+		const quads: Quadrilateral[] = [0, 1, 2].map((i) => ({
+			a: new Vector3(0, i, 0),
+			b: new Vector3(1, i, 0),
+			c: new Vector3(1, i + 1, 0),
+			d: new Vector3(0, i + 1, 0)
+		}));
+		const partner = { globule: 0, tube: 0, band: 1, facet: 0 };
+		const band: Band = {
+			facets: Array.from({ length: 6 }, () => ({
+				triangle: new Triangle(),
+				orientation: 'axial-right' as const,
+				meta: { ac: { partner } }
+			})) as unknown as Band['facets'],
+			orientation: 'axial-right'
+		};
+		const sideConfig: OutlinedPatternConfig = {
+			type: 'outlined',
+			tabConfig: { shape: 'rectangle', tabWidth: 5, bandEdge: 'beforeAndAfter' }
+		};
+
+		const result = generateOutlinedBandPattern(
+			band,
+			0,
+			sideConfig,
+			{ value: 1, unit: 'cm' },
+			{ globule: 0, tube: 0 },
+			quads
+		);
+
+		// Walk order: before edges forward (quads 0,1,2), after edges backward (2,1,0).
+		const mids = (result.tabs ?? []).filter((t) => t.position === 'mid');
+		expect(mids.map((t) => t.quad)).toEqual([0, 1, 2, 2, 1, 0]);
+	});
+});
+
+describe('generateOutlinedBandPattern — pieces carry their parent quad offset', () => {
+	it('copies parentQuadOffset from a piece, and adds no key for an unsplit band', () => {
+		// Tab labels place a piece's tab at parent quad `parentQuadOffset + quad`;
+		// without the offset every piece's tabs read as if they began at quad 0.
+		const piece: Band = { ...makeBand(1, { start: true }), parentQuadOffset: 2 };
+		const generate = (band: Band, piece?: number) =>
+			generateOutlinedBandPattern(
+				band,
+				0,
+				config,
+				{ value: 1, unit: 'cm' },
+				{ globule: 0, tube: 0 },
+				[quad],
+				undefined,
+				undefined,
+				1,
+				0,
+				piece
+			);
+		expect(generate(piece, 1).parentQuadOffset).toBe(2);
+		expect('parentQuadOffset' in generate(makeBand(0, {}))).toBe(false);
+	});
+});

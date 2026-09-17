@@ -1,7 +1,14 @@
 import type { BandSortIndex, TubeCutPattern, BandRef as GlobuleAddress_Band } from '$lib/types';
 import { buildBandCodeMap } from './band-sort-index';
 import { bandKey } from './band-key';
-import { findAdjacentSideNeighbour } from './resolve-partner-band';
+import {
+	adjacentParentBands,
+	buildTubePieceIndex,
+	endPartnerPieceAddress,
+	neighbourPiecesAlongside,
+	parentBandsOf,
+	type TubePieceIndex
+} from './band-piece-index';
 import type { GlobuleAddress_BandPiece } from '$lib/projection-geometry/types';
 import { concatAddress } from '$lib/util';
 
@@ -28,45 +35,75 @@ const csvCell = (value: string): string => {
 /** Join multiple display values into one space-separated cell. */
 const multiCell = (values: string[]): string => csvCell(values.join(' '));
 
+type BandAddress = GlobuleAddress_Band | GlobuleAddress_BandPiece;
+type Band = TubeCutPattern['bands'][number];
+
+/**
+ * Per-call lookup over every tube: tube by (globule, tube), and each tube's
+ * bands grouped by parent with their parent-quad ranges. Built once per CSV in
+ * O(bands + facets), so each row's lookups touch only neighbouring parents.
+ */
+type CsvLookup = {
+	tube: (address: BandAddress) => TubeCutPattern | undefined;
+	index: (tube: TubeCutPattern) => TubePieceIndex<Band>;
+};
+
+const buildCsvLookup = (tubes: TubeCutPattern[]): CsvLookup => {
+	const tubeKey = (a: { globule: number; tube: number }) => `${a.globule}:${a.tube}`;
+	const byKey = new Map<string, TubeCutPattern>();
+	// First tube wins, matching the `tubes.find` this replaces.
+	for (const t of tubes) if (!byKey.has(tubeKey(t.address))) byKey.set(tubeKey(t.address), t);
+	const indexes = new Map<TubeCutPattern, TubePieceIndex<Band>>();
+	return {
+		tube: (address) => byKey.get(tubeKey(address)),
+		index: (t) => {
+			let index = indexes.get(t);
+			if (!index) {
+				index = buildTubePieceIndex(t.bands);
+				indexes.set(t, index);
+			}
+			return index;
+		}
+	};
+};
+
 /**
  * Within-tube adjacency: the side-neighbour bands before and after this band in
  * the SAME tube, i.e. its parent band ± 1 (no wrap), matching
  * `buildTubeOrderIndex` ordering. The facet-level `meta.ab/ac.partner` data is
  * not present on `BandCutPattern`, so adjacency is structural by design.
  *
- * For a split band the neighbour is resolved by address with the side-neighbour
- * rule (same piece index, else the neighbour's last piece), never by array
- * position. A piece's seam sibling is NOT an adjacent band: it joins end to end
+ * Every neighbour piece the band borders along its length is listed, in piece
+ * order (spec amendment "Labels name the physical piece"): those whose
+ * parent-quad range overlaps the band's own. An unsplit neighbour is listed as
+ * itself. A piece's seam sibling is NOT an adjacent band: it joins end to end
  * and is listed among the end partners instead.
  */
-const withinTubeAdjacentPartners = (
-	address: GlobuleAddress_Band | GlobuleAddress_BandPiece,
-	tubes: TubeCutPattern[]
-): (GlobuleAddress_Band | GlobuleAddress_BandPiece)[] => {
-	const tube = tubes.find(
-		(t) => t.address.globule === address.globule && t.address.tube === address.tube
-	);
+const withinTubeAdjacentPartners = (address: BandAddress, lookup: CsvLookup): BandAddress[] => {
+	const tube = lookup.tube(address);
 	if (!tube) return [];
-	const i = tube.bands.findIndex((b) => bandKey(b.address) === bandKey(address));
-	if (i < 0) return [];
-	return [
-		findAdjacentSideNeighbour(tube.bands, i, -1, false),
-		findAdjacentSideNeighbour(tube.bands, i, 1, false)
-	]
-		.filter((b) => b !== undefined)
-		.map((b) => b.address);
+	const index = lookup.index(tube);
+	const self = parentBandsOf(index, address)?.find((b) => bandKey(b.address) === bandKey(address));
+	if (!self) return [];
+	return ([-1, 1] as const).flatMap((step) => {
+		const neighbour = adjacentParentBands(index, address, step, false);
+		return neighbour ? neighbourPiecesAlongside(index, neighbour, self).map((b) => b.address) : [];
+	});
 };
 
 /**
- * End-partner addresses from `meta.startPartnerBand`/`endPartnerBand`,
- * deduped, missing entries omitted.
+ * End-partner addresses naming the physical part each end meets, deduped,
+ * missing entries omitted. A seam names its sibling piece; an outer partner is
+ * resolved by the end-partner rule (`endPartnerPieceAddress`).
  */
-const endPartnerAddresses = (
-	band: TubeCutPattern['bands'][number]
-): (GlobuleAddress_Band | GlobuleAddress_BandPiece)[] => {
-	const partners: (GlobuleAddress_Band | GlobuleAddress_BandPiece)[] = [];
-	if (band.meta?.startPartnerBand) partners.push(band.meta.startPartnerBand);
-	if (band.meta?.endPartnerBand) partners.push(band.meta.endPartnerBand);
+const endPartnerAddresses = (band: Band, lookup: CsvLookup): BandAddress[] => {
+	const partsOf = (address: BandAddress) => {
+		const tube = lookup.tube(address);
+		return tube && parentBandsOf(lookup.index(tube), address);
+	};
+	const partners = (['start', 'end'] as const)
+		.map((end) => endPartnerPieceAddress(band, end, partsOf))
+		.filter((p) => p !== undefined);
 	const seen = new Set<string>();
 	return partners.filter((p) => {
 		const k = bandKey(p);
@@ -77,14 +114,15 @@ const endPartnerAddresses = (
 };
 
 const buildTubeOrderCsv = (tubes: TubeCutPattern[]): string => {
+	const lookup = buildCsvLookup(tubes);
 	const rows: string[] = ['band,adjacent,endPartners'];
 	for (const tube of tubes) {
 		for (const band of tube.bands) {
 			const self = csvCell(formatBandAddress(band.address));
 			const adjacent = multiCell(
-				withinTubeAdjacentPartners(band.address, tubes).map(formatBandAddress)
+				withinTubeAdjacentPartners(band.address, lookup).map(formatBandAddress)
 			);
-			const ends = multiCell(endPartnerAddresses(band).map(formatBandAddress));
+			const ends = multiCell(endPartnerAddresses(band, lookup).map(formatBandAddress));
 			rows.push(`${self},${adjacent},${ends}`);
 		}
 	}
@@ -93,6 +131,7 @@ const buildTubeOrderCsv = (tubes: TubeCutPattern[]): string => {
 
 const buildEndConnectionCsv = (index: BandSortIndex, tubes: TubeCutPattern[]): string => {
 	const codeMap = buildBandCodeMap(index);
+	const lookup = buildCsvLookup(tubes);
 	const rows: string[] = ['ringCode,partnerRingCodes,members'];
 
 	for (const group of index.groups) {
@@ -103,7 +142,7 @@ const buildEndConnectionCsv = (index: BandSortIndex, tubes: TubeCutPattern[]): s
 		// exclude this ring's own code.
 		const partnerCodes = new Set<string>();
 		for (const member of group.bands) {
-			for (const adj of withinTubeAdjacentPartners(member, tubes)) {
+			for (const adj of withinTubeAdjacentPartners(member, lookup)) {
 				const code = codeMap.get(bandKey(adj));
 				if (code && code !== ringCode) partnerCodes.add(code);
 			}

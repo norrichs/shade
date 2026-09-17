@@ -133,6 +133,31 @@ describe('collectOutlinedBandTabs', () => {
 		expect(mids.every((r) => r.midCount === 3)).toBe(true);
 	});
 
+	it('mid records carry the band-local quad of their edge; cap records carry none', () => {
+		// Tab labels name the neighbour piece whose parent-quad range contains the
+		// tab's parent quad, so each mid tab must know which quad its edge is on.
+		const edges: OutlinedTabEdge[] = [
+			{ side: 'before', quad: 0 },
+			{ side: 'before', quad: 1 },
+			endEdge(false),
+			{ side: 'after', quad: 1 },
+			{ side: 'after', quad: 0 },
+			endEdge(true)
+		];
+		const tabs = new Map<number, TabGeometry>();
+		for (let i = 0; i < edges.length; i++) {
+			tabs.set(i, rectTab([i, 0], [i + 1, 0], [i, 1], [i + 1, 1]));
+		}
+
+		const result = collectOutlinedBandTabs(edges, tabs)!;
+		expect(result.filter((r) => r.position === 'mid').map((r) => r.quad)).toEqual([0, 1, 1, 0]);
+		expect(result.filter((r) => r.position !== 'mid').map((r) => r.quad)).toEqual([
+			undefined,
+			undefined
+		]);
+		expect(result.filter((r) => r.position !== 'mid').every((r) => !('quad' in r))).toBe(true);
+	});
+
 	it('outputs 2D Points only (no Vector3 leaks) for outer + base', () => {
 		const edges: OutlinedTabEdge[] = [endEdge(true)];
 		const tabs = new Map<number, TabGeometry>([[0, rectTab([0, 0], [4, 0], [0, 2], [4, 2])]]);
