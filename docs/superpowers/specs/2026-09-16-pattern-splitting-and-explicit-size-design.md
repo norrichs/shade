@@ -128,7 +128,8 @@ sort index, and saved selections. It also means `bandExpand`'s range expansion f
 change, because pieces live _inside_ a band index rather than shifting indices.
 
 A band with no splits keeps a plain `GlobuleAddress_Band` and is byte-identical to today, so
-unsplit output is provably unchanged.
+unsplit output is provably unchanged **when every band is visible**. With hidden or filtered-out
+bands it is not, and must not be: see the amendment "Hidden bands and the 'unchanged' guarantee".
 
 ### Five sites to generalize
 
@@ -292,9 +293,10 @@ it there would widen behaviour for no benefit.
   consumer that assumed both were present.
 - `generateTiling`'s condition becomes _both resolve_ **OR** _this band has a seam and at least
   one end resolves_. For a band with no `seamAt` this reduces to the current condition exactly,
-  so unsplit output is provably unchanged.
+  so unsplit output is provably unchanged when every band is visible (see the hidden-bands
+  amendment for the case where some are not).
 - `getEndPartnerTransforms` computes each end's transform independently rather than gating both
-  on both. Where both are present — every band today — the result is identical.
+  on both. Where both are present — every band with all bands visible — the result is identical.
 - `getTransformedPartnerCutPattern` (`helpers.ts:118`) returns `undefined` for an end whose
   partner is absent. Again identical wherever both existed.
 
@@ -560,10 +562,57 @@ delete splits. `validateSplitConfig` is for the UI's reporting, not for rewritin
 
 ### Hidden bands and the "unchanged" guarantee
 
-Pending investigation (fix plan Task on hidden bands). The unsplit-output guarantee above was
-found not to hold byte-for-byte when bands are hidden, because independent end resolution
-(`getEndPartnerTransforms`) changed a pre-existing all-or-nothing behaviour. The outcome of that
-investigation is recorded here when it lands.
+**Finding (Task 8).** Unsplit output is unchanged from `63f7017` only when every band of every
+tube is visible. With hidden bands it changes, and both the old and the pre-fix output were
+geometrically wrong, for a reason older than this feature.
+
+Two band index spaces meet in tiled generation. Facet partner meta names the **real** band (its
+position in the 3D tube). `BandCutPattern.address.band` names the **pattern** band: its position
+among the bands actually tiled, which excludes hidden bands (`visible: false`) and, for tiled
+patterns only, fillAll's fill bands. `generateTiling` copied the real index straight into
+`meta.startPartnerBand` / `endPartnerBand`, and every resolver matched it against pattern
+addresses. So with any band hidden, an end partner resolved to the band after the hidden one, to
+nothing (past the last band), or to a stand-in for a hidden partner. Independent end resolution
+(`8c9f952`) changed which of those wrong answers appeared; it did not cause them. It is the same
+gap `leftPartnerBand` already bridged with its own translation.
+
+This is not only a hidden-band concern. A surface projection with `fillAll` prepends a fill band
+to every tube and renumbers, and tiled patterns drop fill bands, so every pattern address was one
+below the real index. Measured on the default geometry: 280 of 360 stored end partner addresses
+named a band that did not name the asker back.
+
+Evidence: the default geometry (30 tubes × 6 bands, shield tesselation), full pipeline, judged by
+mapping each partner's true joining edge (taken from an all-visible run) through the stored
+transform onto the band's own end edge. With band 1 of every tube hidden: 0 of 150 bands correct
+at `63f7017` or pre-fix, 150 of 150 after. With tube 0's band 2 hidden: 11 wrong in both before,
+0 after. With band 5 of every tube hidden: the 20 bands where old and pre-fix differ were
+correct only pre-fix, and the fix keeps them correct.
+
+**Ruling (fixed at the root).**
+
+- Band-level partner addresses are stored in **pattern** space. `buildPatternBandIndex`
+  (`cut-pattern/pattern-band-index.ts`) maps real → pattern index for every tube, keyed by facet
+  addresses, so it is correct for other tubes and for filtered bands. `generateProjectionPattern`
+  builds one index and passes it to `generateTubeCutPattern`, which translates start, end and
+  left partners with it.
+- A partner that is hidden has no pattern band, so that end names no partner and is not matched.
+  The band keeps its `meta`: whether it gets `meta` depends on whether each end **has** a partner
+  in the geometry, not on whether that partner is visible, so its other end still matches.
+- The adjuster gate reads "the first band has `meta`" instead of "its stored addresses are
+  present". These are equivalent when every band is visible. Otherwise hiding both of that one
+  band's partners would turn off the adjuster for every tube.
+
+The guarantee therefore reads: **with every band visible and no fill bands filtered, unsplit
+output is identical to `63f7017`** (re-verified on the default geometry: 0 of 180 bands differ in
+address, meta, paths or quads). With hidden or filtered bands, output differs from `63f7017` on
+purpose, because it is now correct. The regression test `hidden-band-end-partners.test.ts` hides a
+band mid-tube and a last band. It splits two tubes into unequal pieces and covers the fillAll
+surface projection.
+
+Not covered: the outlined pipeline also stores real-space partner addresses, used for cap labels,
+the sort index and CSV. No generation path hides bands there, and outlined keeps fill bands, so
+the two spaces coincide in practice. It will need the same translation if outlined ever meets a
+hidden band.
 
 ### Labels name the physical piece
 

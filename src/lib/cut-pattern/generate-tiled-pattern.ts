@@ -24,6 +24,7 @@ import { resolvePatternEntry } from '$lib/patterns/resolve-pattern';
 import { computeTiledLabelAngle } from './compute-tiled-label-angle';
 import { getQuadWidth, svgPathStringFromSegments } from '$lib/patterns/utils';
 import { splitFlatBands, tubeQuadCountOf } from './split-flat-bands';
+import { buildPatternBandIndex, type PatternBandIndexOf } from './pattern-band-index';
 import type {
 	GlobuleAddress_Band,
 	GlobuleAddress_BandPiece,
@@ -94,7 +95,8 @@ export const generateTubeCutPattern = ({
 	tiledPatternConfig,
 	pixelScale,
 	bandRange,
-	splitQuads
+	splitQuads,
+	patternBandIndexOf
 }: {
 	address: GlobuleAddress_Tube;
 	bands: Band[];
@@ -102,16 +104,26 @@ export const generateTubeCutPattern = ({
 	pixelScale: PixelScale;
 	bandRange?: { start: number; end: number };
 	splitQuads?: number[];
+	/**
+	 * Real → pattern band index across ALL tubes, so end partners in other tubes
+	 * with hidden bands are addressed correctly. `generateProjectionPattern`
+	 * always passes it. When omitted, this tube's own bands are translated and
+	 * other tubes' indices pass through unchanged, which is only right when
+	 * those tubes hide no band.
+	 */
+	patternBandIndexOf?: PatternBandIndexOf;
 }): TubeCutPattern => {
 	const tubeCutPattern: TubeCutPattern = { projectionType: 'patterned', address, bands: [] };
 
 	const visibleBands = bands.filter((b) => b.visible);
 
 	// Partner meta uses real tube band indices; BandCutPattern.address.band uses the
-	// index among visible bands. Translate so leftPartnerBand matches address.band.
-	const visibleIndexByReal = new Map(
-		visibleBands.map((band, k) => [band.facets.find((f) => f.address)?.address?.band ?? k, k])
-	);
+	// index among visible bands. Every band-level partner address is translated
+	// (see pattern-band-index.ts).
+	const ownTubeIndexOf = buildPatternBandIndex([{ address, bands }]);
+	const toPatternBandIndex: PatternBandIndexOf =
+		patternBandIndexOf ??
+		((tube, realBand) => (tube === address.tube ? ownTubeIndexOf(tube, realBand) : realBand));
 
 	// Apply band range filtering if provided
 	const rangeStart = bandRange?.start ?? 0;
@@ -161,7 +173,7 @@ export const generateTubeCutPattern = ({
 		address,
 		bandIndexOffset: rangeStart,
 		totalBandCount: visibleBands.length,
-		toVisibleBandIndex: (real: number) => visibleIndexByReal.get(real)
+		patternBandIndexOf: toPatternBandIndex
 	});
 
 	const refused = tiling.filter((band) => band.error);
@@ -275,8 +287,12 @@ export type GenerateTilingProps = {
 	bandIndexOffset?: number;
 	/** Total number of visible bands in the tube (used to detect the last band). */
 	totalBandCount?: number;
-	/** Translate a real tube band index (facet meta) to this tiling's band index space. */
-	toVisibleBandIndex?: (realBandIndex: number) => number | undefined;
+	/**
+	 * Translate a real tube band index (facet meta) to the band index space
+	 * `address.band` uses (see pattern-band-index.ts). Defaults to identity, for
+	 * callers whose band array is a whole tube with no hidden band.
+	 */
+	patternBandIndexOf?: PatternBandIndexOf;
 };
 
 export const generateTiling = ({
@@ -286,7 +302,7 @@ export const generateTiling = ({
 	address,
 	bandIndexOffset = 0,
 	totalBandCount,
-	toVisibleBandIndex = (real: number) => real
+	patternBandIndexOf = (_tube: number, realBand: number) => realBand
 }: GenerateTilingProps): BandCutPattern[] => {
 	const bandCount = totalBandCount ?? quadBands.length;
 	const tiling: {
@@ -327,7 +343,9 @@ export const generateTiling = ({
 		const finishOuterEdge = globalBandIndex === bandCount - 1 && hasFreeSide;
 		const realLeftPartner = sourceBand ? getLeftPartnerBandIndex(sourceBand) : undefined;
 		const leftPartnerBand =
-			realLeftPartner === undefined ? undefined : toVisibleBandIndex(realLeftPartner);
+			realLeftPartner === undefined
+				? undefined
+				: patternBandIndexOf((address as GlobuleAddress_Tube).tube, realLeftPartner);
 		const bandContext = {
 			hasOuterPartner: !hasFreeSide,
 			bandIndex: globalBandIndex,
@@ -415,17 +433,23 @@ export const generateTiling = ({
 			band.facets[0].meta?.[edges[0].base]?.partner;
 		const endPartner: GlobuleAddress_FacetEdge | undefined =
 			band.facets[band.facets.length - 1].meta?.[edges[1].second]?.partner;
+		// Facet partner meta names the REAL tube band; band-level addresses name
+		// the pattern band (index among visible bands), the space every resolver
+		// matches against. A hidden partner has no pattern band, so that end names
+		// no partner and is not matched.
+		const toPatternBandAddress = (
+			partner: GlobuleAddress_FacetEdge | undefined
+		): GlobuleAddress_Band | undefined => {
+			if (!partner) return undefined;
+			const band = patternBandIndexOf(partner.tube, partner.band);
+			return band === undefined
+				? undefined
+				: { globule: partner.globule, tube: partner.tube, band };
+		};
 		const startPartnerBand: GlobuleAddress_Band | GlobuleAddress_BandPiece | undefined =
-			startPartner
-				? {
-						globule: startPartner.globule,
-						tube: startPartner.tube,
-						band: startPartner.band
-					}
-				: undefined;
-		const endPartnerBand: GlobuleAddress_Band | GlobuleAddress_BandPiece | undefined = endPartner
-			? { globule: endPartner.globule, tube: endPartner.tube, band: endPartner.band }
-			: undefined;
+			toPatternBandAddress(startPartner);
+		const endPartnerBand: GlobuleAddress_Band | GlobuleAddress_BandPiece | undefined =
+			toPatternBandAddress(endPartner);
 
 		// A seam end's partner is the adjacent piece of the same parent band. The
 		// existing endsMatched machinery then produces the overlapping strokes
@@ -458,6 +482,8 @@ export const generateTiling = ({
 
 		const resolvedStartPartner = seamStartPartner ?? startPartnerBand;
 		const resolvedEndPartner = seamEndPartner ?? endPartnerBand;
+		const hasStartPartner = !!(seamStartPartner ?? startPartner);
+		const hasEndPartner = !!(seamEndPartner ?? endPartner);
 
 		const cuttablePattern: CutPattern[] = adjustedPatternBand.map((facet, facetIndex) => {
 			const quad = structuredClone(quadBand[facetIndex % quadBand.length]);
@@ -547,19 +573,19 @@ export const generateTiling = ({
 				? {}
 				: { parentQuadOffset: bands[bandIndex].parentQuadOffset }),
 			bounds: bands[bandIndex].bounds,
-			// Both ends resolving is the historical condition, kept exactly for
-			// unsplit bands: with no `seamAt` this reduces to
-			// `startPartnerBand && endPartnerBand ? {…} : undefined`, character for
-			// character what this used to do, so the Phase 0 snapshot is
-			// unaffected. A piece additionally gets meta when only ONE end
-			// resolves, since its outer end may be genuinely unpartnered while its
-			// seam end must still match.
+			// Both ends having a partner is the historical condition, kept exactly
+			// for unsplit bands: with no `seamAt` and no hidden band this reduces
+			// to `startPartnerBand && endPartnerBand ? {…} : undefined`, so the
+			// Phase 0 snapshot is unaffected. A piece additionally gets meta when
+			// only ONE end has a partner, since its outer end may be genuinely
+			// unpartnered while its seam end must still match.
 			//
-			// Written as one condition rather than a nested ternary whose two
-			// branches emit the identical object.
+			// The condition reads whether each end HAS a partner in the geometry,
+			// not whether that partner is visible: a band beside a hidden partner
+			// keeps its meta, naming no partner at that end, so its other end still
+			// matches.
 			meta:
-				(resolvedStartPartner && resolvedEndPartner) ||
-				(seamAt && (resolvedStartPartner || resolvedEndPartner))
+				(hasStartPartner && hasEndPartner) || (seamAt && (hasStartPartner || hasEndPartner))
 					? { startPartnerBand: resolvedStartPartner, endPartnerBand: resolvedEndPartner }
 					: undefined,
 			leftPartnerBand

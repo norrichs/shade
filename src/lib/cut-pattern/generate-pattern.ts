@@ -28,6 +28,7 @@ import {
 	generateTubeCutPattern,
 	applyTubePatternPostProcessing
 } from './generate-tiled-pattern';
+import { buildPatternBandIndex } from './pattern-band-index';
 import { resolvePatternEntry } from '$lib/patterns/resolve-pattern';
 import { generateOutlinedProjectionPattern } from './generate-outlined-pattern';
 import { judgeTubeSplits } from './split-flat-bands';
@@ -188,6 +189,10 @@ export const generateProjectionPattern = (
 		// Resolve band range — expand by 1 on each side if adjustAfterTiling needs neighbors
 		const bandExpand = hasAdjustAfterTiling ? 1 : 0;
 
+		// Facet partner meta names real tube bands; pattern addresses count visible
+		// bands. One index over every tube, so partners in other tubes translate too.
+		const patternBandIndexOf = buildPatternBandIndex(effectiveTubes);
+
 		// Generate tube patterns, but only for in-range tubes
 		// Use a sparse array so that adjustAfterTiling index lookups still work
 		let tubePatterns: (TubeCutPattern | undefined)[] = new Array(effectiveTubes.length);
@@ -207,7 +212,8 @@ export const generateProjectionPattern = (
 				tiledPatternConfig,
 				pixelScale,
 				bandRange: { start: bandStart, end: bandEnd },
-				splitQuads: splitQuadsFor(address.tube)
+				splitQuads: splitQuadsFor(address.tube),
+				patternBandIndexOf
 			});
 			tubePatterns[t] = tubePattern;
 		}
@@ -234,7 +240,8 @@ export const generateProjectionPattern = (
 					bands,
 					tiledPatternConfig,
 					pixelScale,
-					splitQuads: splitQuadsFor(address.tube)
+					splitQuads: splitQuadsFor(address.tube),
+					patternBandIndexOf
 				});
 			}
 		}
@@ -245,9 +252,12 @@ export const generateProjectionPattern = (
 
 		const firstInRange = tubePatterns[tubeStart];
 		const firstBandMeta = firstInRange?.bands[0]?.meta;
-		const doAdjustAfterTiling =
-			hasAdjustAfterTiling &&
-			(!needsEndPartners || !!(firstBandMeta?.startPartnerBand || firstBandMeta?.endPartnerBand));
+		// `meta` exists only when the band has an end partner in the geometry, so
+		// with every band visible this is exactly "names a start or end partner".
+		// It must not read the stored addresses: a hidden partner is stored as no
+		// address, and hiding both of this one band's partners would otherwise
+		// switch the adjuster off for every tube.
+		const doAdjustAfterTiling = hasAdjustAfterTiling && (!needsEndPartners || !!firstBandMeta);
 		if (doAdjustAfterTiling) {
 			for (let t = tubeStart; t < tubeEnd; t++) {
 				const tp = tubePatterns[t];
