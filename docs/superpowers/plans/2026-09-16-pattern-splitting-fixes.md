@@ -297,3 +297,17 @@ Consumers: (a) `chooseMiddleQuadEdge` → `selectMiddleQuadEdgeIndex` tier 3 ("h
 **Tests (must fail before the fix):** real default geometry (lateral symmetry): every band's side partners are band ± 1 (never itself); `bandHasPartners` false on the side of an open-rim band with no neighbour for both orientations; middle-quad-edge tier 3 chosen on an axial-left band where it applies; axial-right characterization unchanged.
 
 **Constraint:** never delete or modify files outside your task (including untracked directories).
+
+---
+
+### Task 17: Tesselation index retargeting for multi-row tiles
+
+**Defect (Task 14 review, pre-existing):** `retarget` (`src/lib/patterns/tesselation/shared/helpers.ts:~40-61`) maps spec unit indices (start / middle / end groups) into a tiled path of `rows × columns` unit tiles with closed-form arithmetic that is wrong for any `rows > 1`. Verified on the Shield spec (size 100, true end row at y≈100): 1×1 and 1×2 correct; **2×1** end indices unshifted (66,72,73,79 → y 28.6, 39.3, 25.0, 0.0 — mid-tile); **2×2** end indices 236-263 while the real end group is 292-319. The middle branch is wrong the same way, so `withinBand`, `acrossBands`, partner end matching and `skipRemove` all read/write interior vertices for multi-row configs. `rowCount` is exposed in the UI (`TilingControl.svelte:~237`, `PatternView.svelte:~351`).
+
+**Required behaviour:** derive every group's index positions from the actual path layout produced by `generator.ts:~47-80` (starts; then per column the row sequence [end₀, middle₀, (start, middle, end)×(rows−2), start_last, middle_last]; then ends — verify this description against the code rather than trusting it), ideally by having the generator emit the index map it used so the two cannot drift. 1×N output byte-identical.
+
+**Also (Task 14 review ⚠️):** Task 14 made every tube adjust against a shared, un-copied tiling snapshot, which relies on adjusters never mutating their inputs. Add a non-mutation test for each registered `adjustAfterTiling` family (tesselation adjuster, carnation, hexparquet, asanoha — enumerate from the registry) that deep-compares the input tube patterns before and after.
+
+**Tests (must fail before the fix):** for 2×1, 2×2 and 3×2 Shield tiles, every retargeted start/end index lies on the start/end row geometry (y≈0 / y≈size) and middle indices on the matching middle segments; real-geometry end matching with `rowCount: 2` and `endsMatched` makes ends coincide with partner strokes (Task 3/14-style metric); relabel `tiled-adjust-unadjusted-partners.test.ts:~260-271` 2×2 cases once they genuinely test ends. Non-mutation tests are guards (label them).
+
+**Constraint:** never delete or modify files outside your task (including untracked directories).
