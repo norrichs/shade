@@ -261,3 +261,25 @@ Close `shades-azt` when done.
 **Tests (must fail before the fix):** Shield `skipEdges: 'all'` + `endsMatched` generates without throwing (split and unsplit); tube-order independence (generate with tubes processed in reverse order, or equivalently compare against a per-tube isolated adjustment — design the check so it is real); ends coincide with partner strokes for a config with removals preceding partner sources.
 
 **Constraint:** never delete or modify files outside your task (including untracked directories).
+
+---
+
+### Task 15: Band-space mapping follows the generated pattern; highlight knows its source
+
+**Defects (Task 12 review):**
+
+1. `selectionStores.ts` (~1210-1212) derives the fill-band rule (`patternKeepsFillBands`) from `patternConfigStore`, but generation can lag config in steady state: `patternInputs` skips regeneration while `pausePatternUpdates` is on or manual mode has pending changes (`superGlobuleStores.ts:~584-586`). Pause a fillAll surface projection, switch tiled→outlined: the pane shows the tiled pattern while every highlight, pattern click and 3D click is one band off.
+2. `selection-helpers.ts:~477`, `ProjectionGeometryComponent.svelte:~173`: a 3D click on a fill/hidden band (no pattern band) leaves the previous assembler highlight lit, reading as if the click selected it.
+3. `AssemblerHighlight` carries no geometry source. `ProjectionGeometryComponent` renders every enabled source; with projection and a fillAll surface projection both showing bands, a highlight maps through each source's own band space, so only the originating source is right. A 3D click on a source other than the current pattern source writes a highlight the pattern pane reads in its own space.
+4. `pattern-band-space.test.ts:~857-869` address-level round-trip test is vacuous under identity and duplicates the table-level one.
+
+**Required behaviour:**
+
+1. Record the band-space facts generation used (fill rule / the pattern band index per source) on the generation result (`PatternGenerationResult` or each projection pattern), and derive `patternBandSpaces` from `superGlobulePatternStore`, not config. Must survive the worker round-trip (plain data).
+2. A 3D click on a band with no pattern band clears the assembler highlight.
+3. `AssemblerHighlight` records its source. Each mesh group lights only highlights whose source matches it (mapping through that source's space); the pattern pane shows a highlight only if its source is the current pattern source. Decide what a 3D click on a non-pattern source should do (recommended: set a highlight with that source; the pane ignores it) and state it.
+4. Drop or fold the vacuous test.
+
+**Tests (must fail before the fix):** paused-updates scenario maps through the generated pattern's facts (pure logic: config says outlined, result says tiled → mapping uses tiled); fill-band click clears; highlight with source A is not applied to source B's meshes and is ignored by the pane when the pattern source is B. All-visible single-source behaviour unchanged.
+
+**Constraint:** never delete or modify files outside your task (including untracked directories).
