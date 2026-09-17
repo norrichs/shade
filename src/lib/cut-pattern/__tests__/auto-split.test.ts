@@ -5,7 +5,7 @@ import { deriveAutoSplits } from '../auto-split';
 describe('deriveAutoSplits', () => {
 	it('returns no splits when the band already fits', () => {
 		expect(
-			deriveAutoSplits({ quadLengths: [10, 10, 10], contentLength: 100, subunitCount: 1 })
+			deriveAutoSplits({ quadLengths: [10, 10, 10], pieceLengthBudget: 100, subunitCount: 1 })
 		).toEqual([]);
 	});
 
@@ -14,7 +14,7 @@ describe('deriveAutoSplits', () => {
 		expect(
 			deriveAutoSplits({
 				quadLengths: [10, 10, 10, 10, 10, 10],
-				contentLength: 25,
+				pieceLengthBudget: 25,
 				subunitCount: 1
 			})
 		).toEqual([2, 4]);
@@ -22,17 +22,17 @@ describe('deriveAutoSplits', () => {
 
 	it('snaps splits to multiples of subunitCount', () => {
 		// Nine quads of 10 in subunit groups of 3 => three groups of 30 each.
-		// contentLength 35 fits exactly one group but not two, so the only legal
+		// pieceLengthBudget 35 fits exactly one group but not two, so the only legal
 		// boundaries — 3 and 6 — are both taken.
 		//
-		// Do NOT use contentLength 25 here: a 30-unit group would not fit the page
+		// Do NOT use pieceLengthBudget 25 here: a 30-unit group would not fit the page
 		// on its own, the unsplittable check fires on the first iteration, and the
 		// function correctly returns []. That fixture is self-contradictory, not a
 		// snapping test.
 		expect(
 			deriveAutoSplits({
 				quadLengths: [10, 10, 10, 10, 10, 10, 10, 10, 10],
-				contentLength: 35,
+				pieceLengthBudget: 35,
 				subunitCount: 3
 			})
 		).toEqual([3, 6]);
@@ -48,7 +48,7 @@ describe('deriveAutoSplits', () => {
 		// partition, which is neither what the implementation does nor what the
 		// doc comment promises.
 		expect(
-			deriveAutoSplits({ quadLengths: [30, 5, 5, 30], contentLength: 40, subunitCount: 1 })
+			deriveAutoSplits({ quadLengths: [30, 5, 5, 30], pieceLengthBudget: 40, subunitCount: 1 })
 		).toEqual([3]);
 	});
 
@@ -56,12 +56,14 @@ describe('deriveAutoSplits', () => {
 		// Nothing can be done by splitting along the band; the caller should
 		// surface the existing overflow warning instead.
 		expect(
-			deriveAutoSplits({ quadLengths: [200, 200], contentLength: 100, subunitCount: 1 })
+			deriveAutoSplits({ quadLengths: [200, 200], pieceLengthBudget: 100, subunitCount: 1 })
 		).toEqual([]);
 	});
 
 	it('returns no splits for an empty band', () => {
-		expect(deriveAutoSplits({ quadLengths: [], contentLength: 100, subunitCount: 1 })).toEqual([]);
+		expect(deriveAutoSplits({ quadLengths: [], pieceLengthBudget: 100, subunitCount: 1 })).toEqual(
+			[]
+		);
 	});
 
 	// Beyond the brief: properties Task 16 relies on, and the degenerate inputs a
@@ -73,7 +75,7 @@ describe('deriveAutoSplits', () => {
 		// auto-split writes can come back as a rejectedSplit.
 		const quadLengths = [7, 3, 9, 4, 6, 8, 5, 2, 9, 4, 7, 3];
 		const subunitCount = 2;
-		const splits = deriveAutoSplits({ quadLengths, contentLength: 20, subunitCount });
+		const splits = deriveAutoSplits({ quadLengths, pieceLengthBudget: 20, subunitCount });
 
 		expect(splits.length).toBeGreaterThan(0);
 		splits.forEach((quad) => {
@@ -86,7 +88,7 @@ describe('deriveAutoSplits', () => {
 	it('returns strictly ascending, unique positions', () => {
 		const splits = deriveAutoSplits({
 			quadLengths: [10, 10, 10, 10, 10, 10, 10, 10],
-			contentLength: 15,
+			pieceLengthBudget: 15,
 			subunitCount: 1
 		});
 		expect(splits).toEqual([1, 2, 3, 4, 5, 6, 7]);
@@ -97,7 +99,7 @@ describe('deriveAutoSplits', () => {
 	it('is deterministic: the same input yields an equal, freshly built array', () => {
 		const input = {
 			quadLengths: [12, 4, 9, 13, 6, 2, 11, 5, 8, 3],
-			contentLength: 30,
+			pieceLengthBudget: 30,
 			subunitCount: 1
 		};
 		const first = deriveAutoSplits(input);
@@ -106,31 +108,71 @@ describe('deriveAutoSplits', () => {
 		expect(second).not.toBe(first);
 	});
 
-	it('keeps the splits it has already found when a later group is oversized', () => {
+	it('reports the whole band unsplittable when a later group is oversized', () => {
 		// The oversized group is checked before any push, so the whole band is
 		// reported unsplittable rather than handing back a set that still overflows.
 		expect(
-			deriveAutoSplits({ quadLengths: [10, 10, 10, 10, 500], contentLength: 25, subunitCount: 1 })
+			deriveAutoSplits({
+				quadLengths: [10, 10, 10, 10, 500],
+				pieceLengthBudget: 25,
+				subunitCount: 1
+			})
 		).toEqual([]);
 	});
 
-	it('returns no splits for a non-positive content length', () => {
+	it('returns no splits for a non-positive budget', () => {
 		expect(
-			deriveAutoSplits({ quadLengths: [10, 10, 10], contentLength: 0, subunitCount: 1 })
+			deriveAutoSplits({ quadLengths: [10, 10, 10], pieceLengthBudget: 0, subunitCount: 1 })
 		).toEqual([]);
 	});
 
-	it('returns no splits for a non-positive or non-finite subunitCount', () => {
+	it('returns no splits for a non-positive, non-finite or fractional subunitCount', () => {
 		// A zero or negative group stride would never advance the walk. Guarded so a
-		// bad config value cannot hang the UI thread.
+		// bad config value cannot hang the UI thread. A fractional stride would
+		// advance, but would propose fractional "quad indices", which are not quad
+		// boundaries and could never be legal.
 		expect(
-			deriveAutoSplits({ quadLengths: [10, 10, 10, 10], contentLength: 15, subunitCount: 0 })
+			deriveAutoSplits({ quadLengths: [10, 10, 10, 10], pieceLengthBudget: 15, subunitCount: 0 })
 		).toEqual([]);
 		expect(
-			deriveAutoSplits({ quadLengths: [10, 10, 10, 10], contentLength: 15, subunitCount: -2 })
+			deriveAutoSplits({ quadLengths: [10, 10, 10, 10], pieceLengthBudget: 15, subunitCount: -2 })
 		).toEqual([]);
 		expect(
-			deriveAutoSplits({ quadLengths: [10, 10, 10, 10], contentLength: 15, subunitCount: NaN })
+			deriveAutoSplits({ quadLengths: [10, 10, 10, 10], pieceLengthBudget: 15, subunitCount: NaN })
+		).toEqual([]);
+		expect(
+			deriveAutoSplits({ quadLengths: [10, 10, 10, 10], pieceLengthBudget: 15, subunitCount: 1.5 })
+		).toEqual([]);
+	});
+
+	it('terminates and returns no splits for a NaN or infinite budget', () => {
+		// Without an explicit guard these terminate only by accident: every `>`
+		// against NaN is false, so the band is silently declared fitting. An
+		// infinite budget would say the same thing for a different wrong reason.
+		expect(
+			deriveAutoSplits({ quadLengths: [10, 10, 10, 10], pieceLengthBudget: NaN, subunitCount: 1 })
+		).toEqual([]);
+		expect(
+			deriveAutoSplits({
+				quadLengths: [10, 10, 10, 10],
+				pieceLengthBudget: Infinity,
+				subunitCount: 1
+			})
+		).toEqual([]);
+	});
+
+	it('terminates and returns no splits when a quad length is not finite', () => {
+		// One unmeasurable quad poisons every accumulation it takes part in, so no
+		// proposal derived from it could be trusted.
+		expect(
+			deriveAutoSplits({ quadLengths: [10, NaN, 10, 10], pieceLengthBudget: 15, subunitCount: 1 })
+		).toEqual([]);
+		expect(
+			deriveAutoSplits({
+				quadLengths: [10, 10, Infinity, 10],
+				pieceLengthBudget: 15,
+				subunitCount: 1
+			})
 		).toEqual([]);
 	});
 
@@ -141,7 +183,11 @@ describe('deriveAutoSplits', () => {
 		// The last group is short, but 4 is still a legal boundary: a multiple of 2
 		// and strictly inside a 5-quad band.
 		expect(
-			deriveAutoSplits({ quadLengths: [10, 10, 10, 10, 10], contentLength: 25, subunitCount: 2 })
+			deriveAutoSplits({
+				quadLengths: [10, 10, 10, 10, 10],
+				pieceLengthBudget: 25,
+				subunitCount: 2
+			})
 		).toEqual([2, 4]);
 	});
 });

@@ -1,5 +1,6 @@
 /**
- * Derive split positions that make each piece fit the page's content box.
+ * Derive split positions that keep each piece inside the caller's per-piece
+ * length budget.
  *
  * Greedy first-fit along the band, snapped to multiples of subunitCount so
  * both sides of every split stay divisible and generateTiling never refuses a
@@ -16,32 +17,71 @@
  * come back as a `rejectedSplits` entry.
  *
  * `quadLengths` are per-quad extents along the band axis, in the same units as
- * `contentLength`. Adjacent quads share an edge, so their sum over-counts the
- * band's true length; that is harmless here because the sum is only ever
- * compared against the page, and it errs towards smaller pieces.
+ * `pieceLengthBudget`. Adjacent quads share an edge, so their sum over-counts the
+ * band's true length; that over-count is NOT a safety margin and must not be
+ * relied on as one (see the budget contract below).
  *
- * If a single subunit group already exceeds the content box, no split can help
- * and none is returned — the caller surfaces the existing overflow warning.
+ * ## The `pieceLengthBudget` contract — the caller owns the subtraction
+ *
+ * This is deliberately NOT named `contentLength`, because it is not
+ * `PageGeom.contentHeight`. It is **the length available to one piece's raw
+ * geometry, after the caller has subtracted everything the layout adds per
+ * piece.**
+ *
+ * The real overflow rule lives in the layout, not here. `flex-wrap.ts:20-21`
+ * (and `skyline.ts:113-124`) raise overflow as
+ * `it.width > contentWidth || it.height > contentHeight`, and the item measured
+ * is not the band's raw bounds: `toLayoutItems` (`CutPatternRenderer.svelte:147-157`)
+ * builds it from `effectiveBoundsForBand` (`cut-pattern/band-layout.ts:33-49`),
+ * i.e. geometry **plus the external self-tag / label footprint**. Splitting adds
+ * pieces, and every piece carries its own tag, so a run sized at exactly
+ * `contentHeight` can still overflow once it is laid out. The caller must
+ * therefore reduce `contentHeight` by that per-piece footprint before calling
+ * in. This module stays pure and renderer-free on purpose and cannot do it.
+ *
+ * ## Preconditions the caller must gate on
+ *
+ * Overflow is a two-dimensional test, and splitting along the band only ever
+ * shortens a piece:
+ *
+ * - **Width.** `width > contentWidth` cannot be fixed by any number of splits —
+ *   a piece is as wide as its band. Do not call here to fix that; it needs a
+ *   bigger page or a smaller `pageScale`.
+ * - **Rotation.** `skyline.ts:113-124` minimises over orientations when
+ *   `allowRotation` is set, so a band that fits rotated is not overflowing at
+ *   all and must not be split.
+ *
+ * If a single subunit group already exceeds the budget, no split can help and
+ * none is returned — the caller surfaces the existing overflow warning.
  */
 export const deriveAutoSplits = ({
 	quadLengths,
-	contentLength,
+	pieceLengthBudget,
 	subunitCount
 }: {
 	quadLengths: number[];
-	contentLength: number;
+	/** Length available to ONE piece's geometry. See the budget contract above. */
+	pieceLengthBudget: number;
 	subunitCount: number;
 }): number[] => {
 	const quadCount = quadLengths.length;
-	if (quadCount === 0 || contentLength <= 0) return [];
-	// A zero, negative or non-finite stride would never advance the group walk
-	// below, hanging whichever thread called in. Real callers resolve this through
-	// `resolveSplitSubunitCount`, which already floors at 1; this is a guard
-	// against a bad config value, not an expected path.
-	if (!Number.isFinite(subunitCount) || subunitCount < 1) return [];
+	if (quadCount === 0) return [];
+	// Degenerate numerics terminate the walk below only by accident of NaN
+	// comparison semantics (every `>` is false, so nothing is ever pushed and the
+	// band is silently declared fitting). Rejected explicitly instead, so a bad
+	// measurement proposes nothing rather than proposing nonsense.
+	if (!Number.isFinite(pieceLengthBudget) || pieceLengthBudget <= 0) return [];
+	if (!quadLengths.every((l) => Number.isFinite(l))) return [];
+	// The stride must be a positive integer: zero or negative never advances the
+	// group walk (an infinite loop on whichever thread called in), and a
+	// fractional one yields fractional "quad indices", which are not quad
+	// boundaries at all. Real callers resolve this through
+	// `resolveSplitSubunitCount`, which already floors at 1; this guards a bad
+	// config value, not an expected path.
+	if (!Number.isInteger(subunitCount) || subunitCount < 1) return [];
 
 	const total = quadLengths.reduce((sum, l) => sum + l, 0);
-	if (total <= contentLength) return [];
+	if (total <= pieceLengthBudget) return [];
 
 	const splits: number[] = [];
 	let runLength = 0;
@@ -57,9 +97,9 @@ export const deriveAutoSplits = ({
 		// push, so a late oversized group cannot silently discard the splits
 		// already found — and the caller surfaces the existing overflow warning
 		// instead of receiving a set of splits that still overflows.
-		if (groupLength > contentLength) return [];
+		if (groupLength > pieceLengthBudget) return [];
 
-		if (runLength > 0 && runLength + groupLength > contentLength) {
+		if (runLength > 0 && runLength + groupLength > pieceLengthBudget) {
 			splits.push(start);
 			runLength = groupLength;
 		} else {
