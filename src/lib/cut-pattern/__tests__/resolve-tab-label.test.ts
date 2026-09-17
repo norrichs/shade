@@ -108,4 +108,42 @@ describe('resolveTabLabel', () => {
 		const result = resolveTabLabel(tab({ position: 'mid', midIndex: 0, midCount: 1 }), band, tube);
 		expect(result).toBe('t1/b2');
 	});
+
+	describe('split bands', () => {
+		type PieceRef = GlobuleAddress_Band & { piece: number };
+		const piece = (tube: number, band: number, p: number): PieceRef => ({
+			globule: 0,
+			tube,
+			band,
+			piece: p
+		});
+		const bandAt = (address: GlobuleAddress_Band | PieceRef): BandCutPattern =>
+			({ address }) as unknown as BandCutPattern;
+		// Tube 1 split tube-wide: b0 and b1 into two pieces each; b2 too short to cut.
+		const splitTube = (): TubeCutPattern =>
+			({
+				projectionType: 'patterned',
+				address: { globule: 0, tube: 1 },
+				bands: [
+					bandAt(piece(1, 0, 0)),
+					bandAt(piece(1, 0, 1)),
+					bandAt(piece(1, 1, 0)),
+					bandAt(piece(1, 1, 1)),
+					bandAt(addr(1, 2))
+				]
+			}) as unknown as TubeCutPattern;
+		const firstMid = tab({ position: 'mid', midIndex: 0, midCount: 3 });
+
+		it('names the next PARENT band, not the seam sibling, as the same-index piece', () => {
+			const tube = splitTube();
+			expect(resolveTabLabel(firstMid, tube.bands[0], tube)).toBe('t1/b1p0');
+			expect(resolveTabLabel(firstMid, tube.bands[1], tube)).toBe('t1/b1p1');
+		});
+
+		it('resolves an uncut next band exactly and wraps an uncut last band to piece 0', () => {
+			const tube = splitTube();
+			expect(resolveTabLabel(firstMid, tube.bands[3], tube)).toBe('t1/b2');
+			expect(resolveTabLabel(firstMid, tube.bands[4], tube)).toBe('t1/b0p0');
+		});
+	});
 });

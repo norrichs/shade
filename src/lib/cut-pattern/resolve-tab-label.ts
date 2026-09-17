@@ -1,5 +1,6 @@
 import type { BandCutPattern, TubeCutPattern } from '$lib/types';
-import { concatAddress } from '$lib/util';
+import { concatAddress, isSameAddress } from '$lib/util';
+import { findAdjacentSideNeighbour } from './resolve-partner-band';
 
 type BandTab = NonNullable<BandCutPattern['tabs']>[number];
 
@@ -9,7 +10,8 @@ type BandTab = NonNullable<BandCutPattern['tabs']>[number];
  * Rules:
  *  - start tab → partner band at start (if any), else ''
  *  - end tab   → partner band at end (if any), else ''
- *  - mid tab, midIndex === 0 → next band in the tube (wraps around)
+ *  - mid tab, midIndex === 0 → next band in the tube (parent band + 1, wraps
+ *    around; for a split band, the same-index piece of it)
  *  - other mid tabs → ''
  *
  * Note: the current band's own identity is rendered separately via the
@@ -34,14 +36,20 @@ export const resolveTabLabel = (
 	if (tab.position === 'mid') {
 		const midIndex = tab.midIndex ?? 0;
 
-		// First mid tab → next band in tube (wraps).
+		// First mid tab → next band in tube (wraps): the side neighbour at parent
+		// band + 1, resolved by address. A piece's seam sibling joins end to end
+		// and is named on its start/end tab instead, so it is never this label.
 		if (midIndex === 0) {
 			const bands = tube.bands;
 			if (bands.length === 0) return '';
-			const currentIdx = bands.findIndex((b) => b.address.band === band.address.band);
-			const baseIdx = currentIdx >= 0 ? currentIdx : band.address.band;
-			const nextBand = bands[(baseIdx + 1) % bands.length];
-			return concatAddress(nextBand.address, 'tb-slash');
+			const currentIdx = bands.findIndex((b) => isSameAddress(b.address, band.address));
+			if (currentIdx < 0) {
+				// Band not in this tube's array: positional fallback by band index.
+				const nextBand = bands[(band.address.band + 1) % bands.length];
+				return concatAddress(nextBand.address, 'tb-slash');
+			}
+			const nextBand = findAdjacentSideNeighbour(bands, currentIdx, 1, true);
+			return nextBand ? concatAddress(nextBand.address, 'tb-slash') : '';
 		}
 
 		return '';
