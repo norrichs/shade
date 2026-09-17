@@ -441,13 +441,17 @@ export const generateTiling = ({
 		// in this same `quadBands.map` callback.
 		const seamAt = bands?.[bandIndex]?.seamAt;
 		const seamPiece = piece;
-		const siblingAddress = (offset: number): GlobuleAddress_Band | GlobuleAddress_BandPiece => ({
+		const siblingAddress = (
+			ofPiece: number,
+			offset: number
+		): GlobuleAddress_Band | GlobuleAddress_BandPiece => ({
 			...addressWithPiece,
-			piece: (seamPiece as number) + offset
+			piece: ofPiece + offset
 		});
 		const seamStartPartner =
-			seamAt?.start && seamPiece !== undefined ? siblingAddress(-1) : undefined;
-		const seamEndPartner = seamAt?.end && seamPiece !== undefined ? siblingAddress(+1) : undefined;
+			seamAt?.start && seamPiece !== undefined ? siblingAddress(seamPiece, -1) : undefined;
+		const seamEndPartner =
+			seamAt?.end && seamPiece !== undefined ? siblingAddress(seamPiece, +1) : undefined;
 
 		const resolvedStartPartner = seamStartPartner ?? startPartnerBand;
 		const resolvedEndPartner = seamEndPartner ?? endPartnerBand;
