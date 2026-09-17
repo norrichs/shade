@@ -27,6 +27,14 @@
 		geometrySourceOfPattern,
 		patternBandSelectionToReal
 	} from '$lib/cut-pattern/pattern-band-space';
+	import SplitTargets from './SplitTargets.svelte';
+	import {
+		applySplitToggle,
+		resolveSplitSubunitCount,
+		splitQuadsForTube
+	} from '$lib/cut-pattern/split-boundaries';
+	import { interactionMode } from '../three-renderer/interaction-mode';
+	import { get } from 'svelte/store';
 
 	let {
 		band,
@@ -71,6 +79,31 @@
 		buildSelfTagLines(concatAddress(band.address, 'tb-slash'), groupCode, externalTagEnabled)
 	);
 	let hasTabs = $derived(!!band.tabs && band.tabs.length > 0);
+
+	// Splitting: one `patternTypeConfig` serves every tube (`types.ts:1429`), so
+	// this is not per-tube, and it is the same value generation judges splits
+	// with — if the two diverged, a click would place a split that generation
+	// then rejects.
+	let subunitCount = $derived(resolveSplitSubunitCount(patternTypeConfig));
+	let isSplitMode = $derived($interactionMode.type === 'quad-split-select');
+	// Splits are persisted per tube as absolute quad indices, found by tube
+	// number rather than by position in the array.
+	let splitQuads = $derived(
+		splitQuadsForTube($patternConfigStore.patternConfig.splits, band.address.tube)
+	);
+
+	/**
+	 * Place or remove a split at one quad boundary.
+	 *
+	 * `quad` is already an absolute parent quad index, so this is correct whether
+	 * the clicked band is an uncut band or a piece of an already-split one. The
+	 * write is `.set(rebuilt)` (the `PatternView.svelte:39` idiom) because panels
+	 * read `splits` through a `$derived` chain that would go stale on an in-place
+	 * assignment. One click costs one regeneration, by design.
+	 */
+	const toggleSplit = (quad: number) => {
+		patternConfigStore.set(applySplitToggle(get(patternConfigStore), band.address.tube, quad));
+	};
 
 	let colors = {
 		default: 'orange',
@@ -179,6 +212,15 @@
 			stroke-width={1}
 		/>{/if}
 	{@render children?.()}
+	<!-- Existing splits draw at all times; every legal boundary becomes clickable
+	     only while split mode is on. -->
+	<SplitTargets
+		{band}
+		{subunitCount}
+		{splitQuads}
+		interactive={isSplitMode}
+		onToggle={toggleSplit}
+	/>
 	{#if onTabEnabled && hasTabs}
 		{#each band.tabs ?? [] as tab, tabIndex (tabIndex)}
 			<OnTabLabel

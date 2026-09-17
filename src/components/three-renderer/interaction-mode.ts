@@ -5,7 +5,13 @@ import { writable } from 'svelte/store';
 export type InteractionMode =
 	| { type: 'standard' }
 	| PointSelectInteractionMode
-	| BandSelectInteractionMode;
+	| BandSelectInteractionMode
+	/**
+	 * Clicks in the 2D pattern view place or remove a split at a quad boundary.
+	 * 2D only: `Scene.svelte`'s `handleClick` branches on the point-select and
+	 * band-select families, so this type falls through to no 3D action.
+	 */
+	| { type: 'quad-split-select' };
 
 export type PointSelectInteractionMode =
 	| {
@@ -123,6 +129,13 @@ export const interactions: {
 		prompt: 'Pick two touching bands',
 		buttonPrompt: 'Pick',
 		buttonReady: 'Apply'
+	},
+	// Mandatory: `PointPick.svelte` dereferences `interactions[$mode.type]`, so a
+	// mode with no entry here leaves it undefined.
+	'quad-split-select': {
+		prompt: 'Click a quad boundary in the pattern view to place or remove a split',
+		buttonPrompt: 'Place splits',
+		buttonReady: 'Done'
 	},
 	'band-select-multiple': {
 		prompt: 'Pick bands to highlight',

@@ -76,6 +76,16 @@
 		interactionMode.set({ type: 'standard' });
 	};
 
+	// Split placing is a 2D-only interaction mode: `BandComponent` renders a click
+	// target on every legal quad boundary while it is on.
+	let isPlacingSplits = $derived($interactionMode.type === 'quad-split-select');
+	const startSplits = () => {
+		interactionMode.set({ type: 'quad-split-select' });
+	};
+	const stopSplits = () => {
+		interactionMode.set({ type: 'standard' });
+	};
+
 	/**
 	 * Only completed pairs get a readout; an open point is still being placed.
 	 * The open measurement (if any) is always last in `$measurements` (see
@@ -368,6 +378,20 @@
 			</label>
 		</div>
 	{/if}
+
+	<!-- Splits. Task 14 wires only the mode toggle; Task 16 grows this into the
+	     full Splits group (auto-split, per-tube counts, clear, dropped-split
+	     warnings). Outside the `page` branch on purpose: splits apply to the
+	     pattern in every layout mode. -->
+	<div class="derived">
+		<strong>Splits</strong>
+		<button class="measure-button" onclick={isPlacingSplits ? stopSplits : startSplits}>
+			{isPlacingSplits ? 'Done placing splits' : 'Place splits'}
+		</button>
+		{#if isPlacingSplits}
+			<div class="measure-hint">Click a quad boundary in the pattern view</div>
+		{/if}
+	</div>
 </div>
 
 <style>
