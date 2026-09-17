@@ -1,4 +1,4 @@
-import type { Band } from '$lib/types';
+import type { Band, SplitConfig, TubeSplitRejection } from '$lib/types';
 
 export type SplitRejection = { quad: number; reason: string };
 export type SplitFlatBandsResult = { bands: Band[]; rejected: SplitRejection[] };
@@ -38,6 +38,52 @@ export const classifySplitQuads = (
 			return true;
 		});
 	return { legal, rejected };
+};
+
+/**
+ * One report per (tube, quad), first reason wins, sorted by tube then quad.
+ * Splits are persisted per tube, so this is the identity of a rejection.
+ */
+export const dedupeSplitRejections = (rejections: TubeSplitRejection[]): TubeSplitRejection[] => {
+	const byKey = new Map<string, TubeSplitRejection>();
+	for (const rejection of rejections) {
+		const key = `${rejection.tube}:${rejection.quad}`;
+		if (!byKey.has(key)) byKey.set(key, rejection);
+	}
+	return [...byKey.values()].sort((a, b) => a.tube - b.tube || a.quad - b.quad);
+};
+
+/**
+ * Judge every configured tube's splits, independent of the tube and band range.
+ *
+ * Cheap by construction: a tube's quad count is read from its bands' facet
+ * counts, so no pattern is generated for tubes outside the rendered range.
+ * A split on a tube that does not exist is rejected outright. Uses the same
+ * rules (`classifySplitQuads`) and the same bound (`tubeQuadCountOf` over the
+ * tube's visible bands) that `splitFlatBands` applies during generation, so the
+ * report matches what generation actually dropped for the tubes it generates.
+ * `tubes` must be the same band set generation splits (fill bands removed for
+ * tiled, kept for outlined).
+ */
+export const judgeTubeSplits = (
+	tubes: { address: { tube: number }; bands: Band[] }[],
+	splits: SplitConfig | undefined,
+	subunitCount: number
+): TubeSplitRejection[] => {
+	const rejections: TubeSplitRejection[] = [];
+	for (const { tube, quads } of splits?.tubeSplits ?? []) {
+		if (quads.length === 0) continue;
+		const target = tubes.find((t) => t.address.tube === tube);
+		if (!target) {
+			const reason = `no such tube (${tubes.length} tubes)`;
+			for (const quad of new Set(quads)) rejections.push({ tube, quad, reason });
+			continue;
+		}
+		const quadCount = tubeQuadCountOf(target.bands.filter((b) => b.visible));
+		const { rejected } = classifySplitQuads(quads, quadCount, subunitCount);
+		for (const r of rejected) rejections.push({ tube, ...r });
+	}
+	return dedupeSplitRejections(rejections);
 };
 
 /**

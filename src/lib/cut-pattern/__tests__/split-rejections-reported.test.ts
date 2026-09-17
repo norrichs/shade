@@ -194,22 +194,93 @@ describe('out of range is judged against the whole tube, not the selected band r
 		});
 		expect(result.rejectedSplits).toEqual([]);
 	});
+
+	it('outlined control: the whole range does not reject the split either', () => {
+		const { superConfig, superGlobule } = shortenedGeometry();
+		const result = runPatternGeneration({
+			superConfig,
+			superGlobule,
+			gates,
+			genConfig: genConfigFor(defaultOutlinedPatternConfig() as PatternTypeConfig, splits)
+		});
+		expect(result.rejectedSplits).toEqual([]);
+	});
+});
+
+describe('every configured tube is judged, whatever the tube range', () => {
+	const patternTypes: [string, () => PatternTypeConfig][] = [
+		['tiled', () => ({ ...tiledPatternConfigs['tiledGridPattern-0'] }) as PatternTypeConfig],
+		['outlined', () => defaultOutlinedPatternConfig() as PatternTypeConfig]
+	];
+
+	it.each(patternTypes)(
+		'%s: reports splits on a tube that does not exist',
+		(_name, patternType) => {
+			const superConfig = generateDefaultSuperGlobuleConfig();
+			const superGlobule = generateSuperGlobule(superConfig, gates);
+			const tubeCount = superGlobule.projections[0].tubes.length;
+			const missing = tubeCount + 5;
+
+			const result = runPatternGeneration({
+				superConfig,
+				superGlobule,
+				gates,
+				genConfig: genConfigFor(
+					patternType(),
+					{ tubeSplits: [{ tube: missing, quads: [5, 2, 2] }] },
+					{ tubes: undefined, bands: undefined, facets: undefined }
+				)
+			});
+
+			expect(result.rejectedSplits).toEqual([
+				{ tube: missing, quad: 2, reason: `no such tube (${tubeCount} tubes)` },
+				{ tube: missing, quad: 5, reason: `no such tube (${tubeCount} tubes)` }
+			]);
+		}
+	);
+
+	it.each(patternTypes)(
+		'%s: reports rejections on tubes outside the tube range, stub tubes included',
+		(_name, patternType) => {
+			const superConfig = generateDefaultSuperGlobuleConfig();
+			const superGlobule = generateSuperGlobule(superConfig, gates);
+			// Tube 0's cross-tube partner is generated only as a stub on the tiled
+			// path when the range is tube 0 alone; tube 3 is simply out of range.
+			const stubTube = superGlobule.projections[0].tubes[0].bands[0].facets[0].meta?.ab?.partner
+				?.tube as number;
+			expect(stubTube).toBeGreaterThan(0);
+
+			const result = runPatternGeneration({
+				superConfig,
+				superGlobule,
+				gates,
+				genConfig: genConfigFor(patternType(), {
+					tubeSplits: [
+						{ tube: 3, quads: [2, 9] },
+						{ tube: stubTube, quads: [7] }
+					]
+				})
+			});
+
+			expect(result.rejectedSplits).toEqual(
+				[
+					{ tube: 3, quad: 9, reason: 'out of range for 4 quads' },
+					{ tube: stubTube, quad: 7, reason: 'out of range for 4 quads' }
+				].sort((a, b) => a.tube - b.tube)
+			);
+		}
+	);
 });
 
 describe('collectSplitRejections', () => {
+	// Rejections are carried per projection pattern; the per-tube grouping in
+	// these fixtures is flattened onto it.
 	const cutPattern = (tubes: { tube: number; quad: number; reason: string }[][]) =>
 		({
 			type: 'SuperGlobuleProjectionCutPattern',
 			superGlobuleConfigId: 'x',
-			projectionCutPattern: {
-				address: { globule: 0 },
-				tubes: tubes.map((rejectedSplits, t) => ({
-					projectionType: 'patterned',
-					address: { globule: 0, tube: t },
-					bands: [],
-					...(rejectedSplits.length ? { rejectedSplits } : {})
-				}))
-			}
+			projectionCutPattern: { address: { globule: 0 }, tubes: [] },
+			rejectedSplits: tubes.flat()
 		}) as unknown as SuperGlobuleProjectionCutPattern;
 
 	it('reports a split once per tube across pattern variants, sorted by tube then quad', () => {

@@ -14,6 +14,7 @@ import type {
 } from '$lib/stores/superGlobuleStores';
 import { generateProjectionPattern, generateSuperGlobulePattern } from './generate-pattern';
 import { resolvePatternGenerationTargets } from './pattern-generation-gates';
+import { dedupeSplitRejections } from './split-flat-bands';
 
 export type PatternGenerationResult = {
 	superGlobulePattern: SuperGlobuleBandPattern | null;
@@ -37,7 +38,7 @@ export const EMPTY_PATTERN_RESULT: PatternGenerationResult = {
 };
 
 /**
- * Gather the split rejections carried on each tube of the generated patterns.
+ * Gather the split rejections each generated projection pattern carries.
  *
  * Splits are persisted per tube, so a rejection is identified by (tube, quad):
  * the same split is reported once per tube however many pattern variants were
@@ -45,19 +46,14 @@ export const EMPTY_PATTERN_RESULT: PatternGenerationResult = {
  */
 export const collectSplitRejections = (
 	patterns: (SuperGlobuleProjectionPattern | null | undefined)[]
-): TubeSplitRejection[] => {
-	const byKey = new Map<string, TubeSplitRejection>();
-	for (const pattern of patterns) {
-		if (pattern?.type !== 'SuperGlobuleProjectionCutPattern') continue;
-		for (const tube of (pattern as SuperGlobuleProjectionCutPattern).projectionCutPattern.tubes) {
-			for (const rejection of tube.rejectedSplits ?? []) {
-				const key = `${rejection.tube}:${rejection.quad}`;
-				if (!byKey.has(key)) byKey.set(key, rejection);
-			}
-		}
-	}
-	return [...byKey.values()].sort((a, b) => a.tube - b.tube || a.quad - b.quad);
-};
+): TubeSplitRejection[] =>
+	dedupeSplitRejections(
+		patterns.flatMap((pattern) =>
+			pattern?.type === 'SuperGlobuleProjectionCutPattern'
+				? ((pattern as SuperGlobuleProjectionCutPattern).rejectedSplits ?? [])
+				: []
+		)
+	);
 
 export type PatternGenerationInput = {
 	superGlobule: SuperGlobule;

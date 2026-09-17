@@ -757,13 +757,7 @@ const generateOutlinedTubePattern = (
 	return {
 		projectionType: 'patterned',
 		address,
-		bands: bandPatterns,
-		// Reported to the page via PatternGenerationResult.rejectedSplits.
-		...(splitResult.rejected.length
-			? {
-					rejectedSplits: splitResult.rejected.map((r) => ({ tube: address.tube, ...r }))
-				}
-			: {})
+		bands: bandPatterns
 	};
 };
 

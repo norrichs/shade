@@ -14,7 +14,8 @@ import type {
 	BandGeometry,
 	SuperGlobuleGeometry,
 	PipelineGates,
-	PatternSource
+	PatternSource,
+	TubeSplitRejection
 } from '$lib/types';
 import { collectRenderedPoints } from '$lib/collect-rendered-points';
 import type { GlobuleAddress_Facet, Tube } from '$lib/projection-geometry/types';
@@ -660,4 +661,8 @@ export type SuperGlobuleProjectionCutPattern = {
 	type: 'SuperGlobuleProjectionCutPattern';
 	superGlobuleConfigId: Id;
 	projectionCutPattern: ProjectionCutPattern;
+	// Persisted splits this projection's generation drops, over ALL configured
+	// tubes (not only the rendered range). Set only when non-empty, so output
+	// without rejections is byte-identical to before.
+	rejectedSplits?: TubeSplitRejection[];
 };

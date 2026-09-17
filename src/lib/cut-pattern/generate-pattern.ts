@@ -30,6 +30,7 @@ import {
 } from './generate-tiled-pattern';
 import { resolvePatternEntry } from '$lib/patterns/resolve-pattern';
 import { generateOutlinedProjectionPattern } from './generate-outlined-pattern';
+import { judgeTubeSplits } from './split-flat-bands';
 import { getEdge } from '$lib/projection-geometry/generate-projection';
 import type {
 	SuperGlobuleBandPattern,
@@ -136,14 +137,31 @@ export const generateProjectionPattern = (
 		? tubes
 		: tubes.map((t) => ({ ...t, bands: t.bands.filter((b) => !b.isFill) }));
 
+	// Every configured tube's splits are judged against that tube's full quad
+	// count (or rejected when the tube does not exist), independent of the tube
+	// and band range — narrowing the view must not hide a rejection.
+	const withRejections = (
+		pattern: SuperGlobuleProjectionPattern,
+		subunitCount: number
+	): SuperGlobuleProjectionPattern => {
+		// Panel patterns do not split. (Type check inline: importing the store
+		// module's guard would pull Svelte stores into the worker bundle.)
+		if (pattern.type !== 'SuperGlobuleProjectionCutPattern') return pattern;
+		const rejectedSplits = judgeTubeSplits(effectiveTubes, splits, subunitCount);
+		return rejectedSplits.length ? { ...pattern, rejectedSplits } : pattern;
+	};
+
 	if (isOutlinedPatternConfig(patternTypeConfig)) {
-		return generateOutlinedProjectionPattern(
-			effectiveTubes,
-			id,
-			patternTypeConfig,
-			pixelScale,
-			projectionRange,
-			splits
+		return withRejections(
+			generateOutlinedProjectionPattern(
+				effectiveTubes,
+				id,
+				patternTypeConfig,
+				pixelScale,
+				projectionRange,
+				splits
+			),
+			1
 		);
 	} else if (shouldUsePanelPattern(patternTypeConfig)) {
 		const projectionPanelPattern = generateProjectionPanelPattern({
@@ -274,14 +292,17 @@ export const generateProjectionPattern = (
 			}
 		}
 
-		return {
-			type: 'SuperGlobuleProjectionCutPattern',
-			superGlobuleConfigId: id,
-			projectionCutPattern: {
-				address: { globule: tubes[0].address.globule },
-				tubes: outputTubePatterns
-			}
-		};
+		return withRejections(
+			{
+				type: 'SuperGlobuleProjectionCutPattern',
+				superGlobuleConfigId: id,
+				projectionCutPattern: {
+					address: { globule: tubes[0].address.globule },
+					tubes: outputTubePatterns
+				}
+			},
+			entry.subunitCount ?? 1
+		);
 	}
 };
 

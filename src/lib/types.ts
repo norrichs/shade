@@ -506,9 +506,6 @@ export type TubeCutPattern = {
 	projectionType: 'patterned';
 	address: GlobuleAddress_Tube;
 	bands: BandCutPattern[];
-	// Set only when this tube dropped at least one split, so unsplit output is
-	// byte-identical to before.
-	rejectedSplits?: TubeSplitRejection[];
 };
 
 export type ProjectionCutPattern = {

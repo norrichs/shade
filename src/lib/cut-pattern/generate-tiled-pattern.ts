@@ -135,10 +135,8 @@ export const generateTubeCutPattern = ({
 		subunitCount,
 		tubeQuadCountOf(visibleBands)
 	);
-	if (splitResult.rejected.length) {
-		// Reported to the page via PatternGenerationResult.rejectedSplits.
-		tubeCutPattern.rejectedSplits = splitResult.rejected.map((r) => ({ tube: address.tube, ...r }));
-	}
+	// Rejections are reported per projection by judgeTubeSplits (generate-pattern.ts),
+	// which also covers tubes outside the range; nothing to do with them here.
 
 	// Decide the flip once per PARENT, then hand it to that parent's pieces, so
 	// pieces of one band all come off the page the same way round while each still
