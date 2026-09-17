@@ -221,3 +221,15 @@ Close `shades-azt` when done.
 **Tests (must fail before the fix):** real geometry, Shield with `endsMatched: true` (and `endsTrimmed` both ways), split giving a 1-quad piece at a seam: assert the 1-quad piece's seam end strokes coincide with its sibling's (seam edge crossing points equal, in the quad frame, as in the Task 3 glue test / the verification pass's seam-crossing check) and its outer end is matched to its partner. Remove the one-facet exemption at `hidden-band-end-partners.test.ts:~341` if it becomes unnecessary.
 
 **Constraint:** never delete or modify files outside your task (including untracked directories such as `test-results/`).
+
+---
+
+### Task 12: Map pattern band addresses back to 3D bands correctly
+
+**Defect (Task 9 review, pre-existing):** code that maps a cut-pattern address back onto 3D geometry indexes the 3D band array by the pattern address's band number — e.g. `selectionStores.ts:~683` `tubes?.[addr.tube]?.bands[addr.band]` for the partner highlight. Pattern band indices are **pattern band space** (visible bands only; for fillAll surface projections the fill bands shift them — see Task 8, `pattern-band-index.ts`, and the spec's hidden-bands amendment), while the 3D band array is **real** band space. With a hidden band or a fillAll projection, the highlight lands on a neighbouring 3D band, split or not.
+
+**Required behaviour:** one shared mapping from pattern band space → real 3D band (the inverse of Task 8's `buildPatternBandIndex` mapping, or derived from the same source), used by **every** site that maps a pattern address onto 3D geometry. Find them all: grep `src/lib/stores`, `src/components/three-renderer`, `src/components/cut-pattern`, and the assembler/selection code for band lookups into 3D tube/band arrays driven by pattern addresses (partner highlight, selection highlight, band click/hover sync between the pattern pane and the 3D view, `sameGlobuleBand` consumers in `materials.ts`, `bandRingStore`/assembler highlight). Also check the reverse direction (3D click → pattern address). List every site in the report with its direction and fix. Pieces map to their parent's real band (and to parent quad via `parentQuadOffset` where a quad is involved). All-visible, non-fill output unchanged.
+
+**Tests (must fail before the fix):** with a hidden band (and separately a fillAll projection), a pattern address for band _k_ maps to the correct real 3D band for each site with pure logic; round-trip real → pattern → real is identity; unsplit all-visible unchanged.
+
+**Constraint:** never delete or modify files outside your task (including untracked directories).
