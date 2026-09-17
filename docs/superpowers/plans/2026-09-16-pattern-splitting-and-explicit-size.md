@@ -2147,11 +2147,21 @@ const partnerFacetIndex =
 ```ts
 		const startAddress = meta.startPartnerBand;
 		const endAddress = meta.endPartnerBand;
+		// The asking band's own piece index. MUST be passed: a cross-band partner
+		// address is stored as a bare {globule,tube,band} triple, so it falls to
+		// findBandByAddress's pass 2, and with fromPiece omitted pass 2 resolves to
+		// the partner's LAST piece no matter which piece is asking. A two-argument
+		// call type-checks perfectly and fails silently — this is the third site in
+		// this plan to hit that trap, after getEndPartnerTransforms and
+		// getTransformedPartnerCutPattern.
+		const fromPiece = isGlobuleAddress_BandPiece(band.address) ? band.address.piece : undefined;
 		// Resolve by address, not by position: once a tube holds pieces its bands
 		// array is longer than its band count, so bands[address.band] is wrong.
 		// findBandByAddress also handles a plain address whose band was split.
-		const startBand = startAddress ? findBandByAddress(tubes, startAddress) : undefined;
-		const endBand = endAddress ? findBandByAddress(tubes, endAddress) : undefined;
+		const startBand = startAddress
+			? findBandByAddress(tubes, startAddress, fromPiece)
+			: undefined;
+		const endBand = endAddress ? findBandByAddress(tubes, endAddress, fromPiece) : undefined;
 		// An outer end with no partner is normal for a split piece; render the
 		// ends that did resolve rather than dropping both.
 		if (!startBand && !endBand) return undefined;
