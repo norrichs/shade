@@ -1,4 +1,5 @@
 import { resolveTabLabel } from '../resolve-tab-label';
+import { sliceProjectionCutPattern } from '$lib/projection-geometry/filters';
 import type { BandCutPattern, TubeCutPattern } from '$lib/types';
 import type { GlobuleAddress_Band } from '$lib/projection-geometry/types';
 
@@ -242,6 +243,19 @@ describe('resolveTabLabel', () => {
 			const midAt = (quad: number) => tab({ position: 'mid', midIndex: 0, midCount: 2, quad });
 			expect(resolveTabLabel(midAt(3), uncut, tubes[1], tubes)).toBe('t1/b1p1');
 			expect(resolveTabLabel(midAt(1), uncut, tubes[1], tubes)).toBe('t1/b1p0');
+		});
+
+		it('ranges survive a facet-range view: they come from quadCount, not the sliced facets', () => {
+			// Generation stamps `quadCount` on every band of a split tube; a facet
+			// range slices `facets` to one entry per band.
+			const withCount = (b: BandCutPattern) =>
+				({ ...b, quadCount: b.facets.length }) as unknown as BandCutPattern;
+			const tubes = sideTubes().map((t) => ({ ...t, bands: t.bands.map(withCount) }));
+			const [, view] = sliceProjectionCutPattern(tubes, { facets: [0, 1] });
+			const uncut = view.bands[0];
+			expect(uncut.facets).toHaveLength(1);
+			const midAt3 = tab({ position: 'mid', midIndex: 0, midCount: 2, quad: 3 });
+			expect(resolveTabLabel(midAt3, uncut, view, tubes)).toBe('t1/b1p1');
 		});
 
 		it('guard: a split piece beside an uncut neighbour names the plain neighbour', () => {

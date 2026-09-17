@@ -468,6 +468,12 @@ export type BandCutPattern = {
 	 * is parent facet `parentQuadOffset + f`. Absent on unsplit bands.
 	 */
 	parentQuadOffset?: number;
+	/**
+	 * Every band of a split tube (pieces and uncut bands): its own quad count as
+	 * generated. Absent in unsplit tubes. Label and CSV piece ranges read this
+	 * because a facet-range view slices `facets`.
+	 */
+	quadCount?: number;
 	bounds?: {
 		left: number;
 		top: number;

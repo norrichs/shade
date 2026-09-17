@@ -1,5 +1,6 @@
 import { buildPatternCsv } from '../build-pattern-csv';
 import { buildBandCodeMap } from '../band-sort-index';
+import { sliceProjectionCutPattern } from '$lib/projection-geometry/filters';
 import type { BandSortIndex, TubeCutPattern, BandRef as GlobuleAddress_Band } from '$lib/types';
 
 const addr = (tube: number, band: number): GlobuleAddress_Band => ({ globule: 0, tube, band });
@@ -254,6 +255,15 @@ describe('buildPatternCsv — labels name the physical piece', () => {
 		const r = rows();
 		expect(r[4]).toBe('t1/b0p0,t1/b1p0,"t0/b0 t1/b0p1"');
 		expect(r[5]).toBe('t1/b0p1,t1/b1p1,t1/b0p0');
+	});
+
+	test('overlap survives a facet-range view: ranges come from quadCount, not the sliced facets', () => {
+		const withCount = (b: TubeCutPattern['bands'][number]) =>
+			({ ...b, quadCount: b.facets.length }) as unknown as TubeCutPattern['bands'][number];
+		const counted = tubes().map((t) => ({ ...t, bands: t.bands.map(withCount) }));
+		const view = sliceProjectionCutPattern(counted, { facets: [0, 1] });
+		const r = buildPatternCsv({ mode: 'tube-order', groups: [] }, view).split('\n');
+		expect(r[1]).toBe('t0/b0,"t0/b1p0 t0/b1p1","t1/b0p0 t1/b1p1"');
 	});
 
 	test('guard: a split band beside an uncut neighbour names the plain neighbour', () => {

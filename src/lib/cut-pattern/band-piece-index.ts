@@ -25,6 +25,7 @@ type BandAddress = GlobuleAddress_Band | GlobuleAddress_BandPiece;
 export type PieceIndexedBand = {
 	address: BandAddress;
 	parentQuadOffset?: number;
+	quadCount?: number;
 	facets?: { quad?: unknown }[];
 };
 
@@ -47,13 +48,17 @@ const parentKey = (a: BandAddress): string => `${a.globule}:${a.tube}:${a.band}`
 
 /**
  * The parent quads `band` covers: from `parentQuadOffset` (0 for an uncut band)
- * over its quad count. Both tiled output (one facet per quad) and outlined
- * output (the outline, one facet per quad, optional fill) mark quad facets with
- * `quad`, so the count is the number of those. Undefined when none are present.
+ * over its quad count.
+ *
+ * The count is `quadCount`, which generation stamps on every band of a split
+ * tube; it survives a facet-range view, which slices `facets`. Without it, the
+ * quad-bearing facets are counted: tiled output has one facet per quad and
+ * outlined output has the outline, one facet per quad, then an optional fill,
+ * and both mark quad facets with `quad`. Undefined when neither gives a count.
  */
 export const quadRangeOf = (band: PieceIndexedBand): QuadRange | undefined => {
-	let count = 0;
-	for (const facet of band.facets ?? []) if (facet?.quad) count++;
+	let count = band.quadCount ?? 0;
+	if (band.quadCount === undefined) for (const facet of band.facets ?? []) if (facet?.quad) count++;
 	if (count === 0) return undefined;
 	const first = band.parentQuadOffset ?? 0;
 	return { first, last: first + count - 1 };

@@ -77,6 +77,24 @@ describe('runPatternGeneration — splits (real generation)', () => {
 		expect(band0Pieces.map((b) => (b.address as { piece?: number }).piece)).toEqual([0, 1]);
 	});
 
+	it('stamps quadCount on every band of a split tube only (tiled)', () => {
+		// Facet-range views slice `facets`; label ranges read this instead.
+		const superConfig = buildSuperConfig();
+		const superGlobule = generateSuperGlobule(superConfig, gates);
+		const result = runPatternGeneration({
+			superGlobule,
+			superConfig,
+			genConfig: { ...baseGenConfig(), splits: { tubeSplits: [{ tube: 0, quads: [2] }] } },
+			gates
+		});
+		const tubes = getCutPatternTubes(result);
+		expect(tubes[0].bands.map((b) => b.quadCount)).toEqual(
+			tubes[0].bands.map((b) => b.facets.length)
+		);
+		expect(tubes[0].bands.every((b) => b.quadCount !== undefined)).toBe(true);
+		expect(tubes[1].bands.every((b) => !('quadCount' in b))).toBe(true);
+	});
+
 	it('is a no-op when no splits are configured', () => {
 		const superConfig = buildSuperConfig();
 		const superGlobule = generateSuperGlobule(superConfig, gates);

@@ -23,7 +23,7 @@ import { applyStrokeWidth, getFlatStripV2 } from './generate-cut-pattern';
 import { resolvePatternEntry } from '$lib/patterns/resolve-pattern';
 import { computeTiledLabelAngle } from './compute-tiled-label-angle';
 import { getQuadWidth, svgPathStringFromSegments } from '$lib/patterns/utils';
-import { splitFlatBands, tubeQuadCountOf } from './split-flat-bands';
+import { bandQuadCount, splitFlatBands, tubeQuadCountOf } from './split-flat-bands';
 import { buildPatternBandIndex, type PatternBandIndexOf } from './pattern-band-index';
 import type {
 	GlobuleAddress_Band,
@@ -572,6 +572,10 @@ export const generateTiling = ({
 			...(bands[bandIndex].parentQuadOffset === undefined
 				? {}
 				: { parentQuadOffset: bands[bandIndex].parentQuadOffset }),
+			// Every band of a split tube carries `parentIndex`; unsplit tubes gain no key.
+			...(bands[bandIndex].parentIndex === undefined
+				? {}
+				: { quadCount: bandQuadCount(bands[bandIndex]) }),
 			bounds: bands[bandIndex].bounds,
 			// Both ends having a partner is the historical condition, kept exactly
 			// for unsplit bands: with no `seamAt` and no hidden band this reduces

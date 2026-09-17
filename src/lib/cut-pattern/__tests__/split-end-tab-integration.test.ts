@@ -27,7 +27,8 @@ import { describe, it, expect } from '@jest/globals';
 import { Vector3, Triangle } from 'three';
 
 import { generateOutlinedBandPattern } from '../generate-outlined-pattern';
-import type { Band, OutlinedPatternConfig, Quadrilateral } from '$lib/types';
+import { resolveEndPartner } from '../resolve-partner-band';
+import type { Band, OutlinedPatternConfig, Quadrilateral, TubeCutPattern } from '$lib/types';
 
 /**
  * This test drives the REAL production path — `generateOutlinedBandPattern`'s
@@ -179,5 +180,119 @@ describe('generateOutlinedBandPattern — pieces carry their parent quad offset'
 			);
 		expect(generate(piece, 1).parentQuadOffset).toBe(2);
 		expect('parentQuadOffset' in generate(makeBand(0, {}))).toBe(false);
+	});
+});
+
+describe('generateOutlinedBandPattern — partner meta at seams and open rims', () => {
+	// A one-quad band whose first / last facet carries an `ab` partner (cap edge)
+	// only where given. Outlined reads cap partners from those two facets.
+	const capBand = (
+		start: { tube: number; band: number } | undefined,
+		end: { tube: number; band: number } | undefined,
+		extra: Partial<Band> = {}
+	): Band => {
+		const facet = (partner?: { tube: number; band: number }) => ({
+			triangle: new Triangle(),
+			orientation: 'axial-right' as const,
+			...(partner ? { meta: { ab: { partner: { globule: 0, ...partner, facet: 0 } } } } : {})
+		});
+		return {
+			facets: [facet(start), facet(end)] as unknown as Band['facets'],
+			orientation: 'axial-right',
+			...extra
+		};
+	};
+	const generate = (band: Band, tube: number, bandIndex: number, piece?: number) =>
+		generateOutlinedBandPattern(
+			band,
+			bandIndex,
+			config,
+			{ value: 1, unit: 'cm' },
+			{ globule: 0, tube },
+			[quad],
+			undefined,
+			undefined,
+			1,
+			0,
+			piece
+		);
+
+	it('stores seam siblings as piece addresses, overriding the facet partner at the cut', () => {
+		// At a cut the facet partner is the band's own parent (t2/b0), as on real
+		// geometry; the stored partner must be the adjacent piece instead.
+		const own = { tube: 2, band: 0 };
+		const p0 = generate(
+			capBand({ tube: 1, band: 3 }, own, { pieceIndex: 0, seamAt: { end: true } }),
+			2,
+			0,
+			0
+		);
+		const p1 = generate(
+			capBand(own, own, { pieceIndex: 1, seamAt: { start: true, end: true } }),
+			2,
+			0,
+			1
+		);
+		const p2 = generate(
+			capBand(own, { tube: 4, band: 5 }, { pieceIndex: 2, seamAt: { start: true } }),
+			2,
+			0,
+			2
+		);
+		expect(p0.meta).toEqual({
+			startPartnerBand: { globule: 0, tube: 1, band: 3 },
+			endPartnerBand: { globule: 0, tube: 2, band: 0, piece: 1 }
+		});
+		expect(p1.meta).toEqual({
+			startPartnerBand: { globule: 0, tube: 2, band: 0, piece: 0 },
+			endPartnerBand: { globule: 0, tube: 2, band: 0, piece: 2 }
+		});
+		expect(p2.meta).toEqual({
+			startPartnerBand: { globule: 0, tube: 2, band: 0, piece: 1 },
+			endPartnerBand: { globule: 0, tube: 4, band: 5 }
+		});
+	});
+
+	it('an open-rim piece keeps meta, so a start join still resolves to piece 0', () => {
+		// Partner parent t2/b0 is split; its cut facets carry no partner and its
+		// far end is an open rim. Asker t1/b3's start meets t2/b0's start.
+		const p0 = generate(
+			capBand({ tube: 1, band: 3 }, undefined, { pieceIndex: 0, seamAt: { end: true } }),
+			2,
+			0,
+			0
+		);
+		const p1 = generate(
+			capBand(undefined, undefined, { pieceIndex: 1, seamAt: { start: true } }),
+			2,
+			0,
+			1
+		);
+		expect(p0.meta?.startPartnerBand).toEqual({ globule: 0, tube: 1, band: 3 });
+		expect(p1.meta).toEqual({
+			startPartnerBand: { globule: 0, tube: 2, band: 0, piece: 0 },
+			endPartnerBand: undefined
+		});
+		const asker = generate(capBand({ tube: 2, band: 0 }, { tube: 9, band: 9 }), 1, 3);
+		const tubes = [
+			undefined,
+			{ projectionType: 'patterned', address: { globule: 0, tube: 1 }, bands: [asker] },
+			{ projectionType: 'patterned', address: { globule: 0, tube: 2 }, bands: [p0, p1] }
+		] as unknown as TubeCutPattern[];
+		expect(resolveEndPartner(tubes, asker, 'start')?.band.address).toEqual({
+			globule: 0,
+			tube: 2,
+			band: 0,
+			piece: 0
+		});
+	});
+
+	it('GUARD: an unsplit band keeps meta only when both ends have a partner', () => {
+		expect(generate(capBand({ tube: 1, band: 0 }, undefined), 0, 0).meta).toBeUndefined();
+		expect(generate(capBand(undefined, undefined), 0, 0).meta).toBeUndefined();
+		expect(generate(capBand({ tube: 1, band: 0 }, { tube: 3, band: 2 }), 0, 0).meta).toEqual({
+			startPartnerBand: { globule: 0, tube: 1, band: 0 },
+			endPartnerBand: { globule: 0, tube: 3, band: 2 }
+		});
 	});
 });

@@ -1,5 +1,9 @@
 import { Vector3 } from 'three';
-import type { GlobuleAddress_Band, Tube } from '$lib/projection-geometry/types';
+import type {
+	GlobuleAddress_Band,
+	GlobuleAddress_BandPiece,
+	Tube
+} from '$lib/projection-geometry/types';
 import type {
 	Band,
 	BandCutPattern,
@@ -17,7 +21,7 @@ import type { SuperGlobuleConfig } from '$lib/types';
 import { resolveRangeIndices, type ProjectionRange } from '$lib/projection-geometry/filters';
 import { getFlatStripV2 } from './generate-cut-pattern';
 import { alignBands, computeBandAscending } from './generate-tiled-pattern';
-import { splitFlatBands, tubeQuadCountOf } from './split-flat-bands';
+import { bandQuadCount, splitFlatBands, tubeQuadCountOf } from './split-flat-bands';
 import { svgPathStringFromSegments } from '$lib/patterns/utils';
 import { getQuadrilaterals } from '$lib/patterns/quadrilateral';
 import {
@@ -600,8 +604,25 @@ export const generateOutlinedBandPattern = (
 	const endPartnerBand: GlobuleAddress_Band | undefined = endPartner
 		? { globule: endPartner.globule, tube: endPartner.tube, band: endPartner.band }
 		: undefined;
+	// A seam end's facet partner is the band's own parent (the cut runs through
+	// one flat band), so seam ends store the adjacent sibling piece instead,
+	// built exactly like this piece's own address below. Same rule and meta
+	// condition as the tiled path (generate-tiled-pattern.ts): an unsplit band
+	// keeps meta only when both ends have a partner; a piece keeps it when
+	// either does, so its seam still resolves beside an open rim.
+	// Tab allocation reads `seamAt` / `splitEnd` on the outline edges, never
+	// `meta`, so this changes no tab.
+	const seamAt = band.seamAt;
+	const sibling = (offset: number): GlobuleAddress_BandPiece | undefined =>
+		piece === undefined ? undefined : { ...tubeAddress, band: bandIndex, piece: piece + offset };
+	const seamStartPartner = seamAt?.start ? sibling(-1) : undefined;
+	const seamEndPartner = seamAt?.end ? sibling(+1) : undefined;
+	const resolvedStart = seamStartPartner ?? startPartnerBand;
+	const resolvedEnd = seamEndPartner ?? endPartnerBand;
 	const meta =
-		startPartnerBand && endPartnerBand ? { startPartnerBand, endPartnerBand } : undefined;
+		(resolvedStart && resolvedEnd) || (seamAt && (resolvedStart || resolvedEnd))
+			? { startPartnerBand: resolvedStart, endPartnerBand: resolvedEnd }
+			: undefined;
 
 	// Extract structured tab records for label rendering. We only pass the
 	// fields collectOutlinedBandTabs needs — `side`, `endIsStartCap` and the side
@@ -651,6 +672,8 @@ export const generateOutlinedBandPattern = (
 		// Pieces only, as on the tiled path; spread so unsplit bands gain no key.
 		// Tab labels place a piece's tab at parent quad `parentQuadOffset + quad`.
 		...(band.parentQuadOffset === undefined ? {} : { parentQuadOffset: band.parentQuadOffset }),
+		// Every band of a split tube carries `parentIndex`; unsplit tubes gain no key.
+		...(band.parentIndex === undefined ? {} : { quadCount: bandQuadCount(band) }),
 		bounds,
 		meta
 	};
