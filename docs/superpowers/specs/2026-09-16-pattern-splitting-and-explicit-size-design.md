@@ -28,15 +28,15 @@ otherwise independent and can be built in either order.
 Settled during brainstorming; recorded here with rationale because several of them narrow the
 implementation substantially.
 
-| Decision | Choice | Consequence |
-| --- | --- | --- |
-| Split sources | Both hand-placed and auto-derived, from the start | Needs a persisted split list and a solver |
-| Split address | Absolute quad index, scoped to a tube | Propagation to sibling bands is inherent, not a separate action; a band with fewer quads than the index gets no split there |
-| Authority across regeneration | Auto-split materializes into the list; thereafter it is plain hand data | No live solver, no dual authority; out-of-range indices are dropped |
-| Seam joinery | Pattern-type dependent | Tiled: existing band-end overlap. Outlined: new split-end tab. Panel: not applicable |
-| Split site in pipeline | Partition the **flattened** band | Pieces are a literal partition of one flat layout, so the glued result is exactly the original pattern |
-| Legal split positions | Only where `quadIndex % subunitCount === 0` | The `subunitCount` divisibility check needs no escape hatch |
-| Explicit size intent | One-shot: sets `pageScale`, then forgotten | No persisted lock, no re-derivation on regeneration |
+| Decision                      | Choice                                                                  | Consequence                                                                                                                 |
+| ----------------------------- | ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Split sources                 | Both hand-placed and auto-derived, from the start                       | Needs a persisted split list and a solver                                                                                   |
+| Split address                 | Absolute quad index, scoped to a tube                                   | Propagation to sibling bands is inherent, not a separate action; a band with fewer quads than the index gets no split there |
+| Authority across regeneration | Auto-split materializes into the list; thereafter it is plain hand data | No live solver, no dual authority; out-of-range indices are dropped                                                         |
+| Seam joinery                  | Pattern-type dependent                                                  | Tiled: existing band-end overlap. Outlined: new split-end tab. Panel: not applicable                                        |
+| Split site in pipeline        | Partition the **flattened** band                                        | Pieces are a literal partition of one flat layout, so the glued result is exactly the original pattern                      |
+| Legal split positions         | Only where `quadIndex % subunitCount === 0`                             | The `subunitCount` divisibility check needs no escape hatch                                                                 |
+| Explicit size intent          | One-shot: sets `pageScale`, then forgotten                              | No persisted lock, no re-derivation on regeneration                                                                         |
 
 ### Why the flattened band, and not the 3D band
 
@@ -125,7 +125,7 @@ Keeping `band` stable matters because band indices are load-bearing elsewhere:
 `finishOuterEdge`'s last-band test (`generate-tiled-pattern.ts:284`), `totalBandCount`, the band
 sort index, and saved selections. It also means `bandExpand`'s range expansion for
 `adjustAfterTiling` (`generate-pattern.ts:167`) still reaches the correct neighbours without
-change, because pieces live *inside* a band index rather than shifting indices.
+change, because pieces live _inside_ a band index rather than shifting indices.
 
 A band with no splits keeps a plain `GlobuleAddress_Band` and is byte-identical to today, so
 unsplit output is provably unchanged.
@@ -135,14 +135,14 @@ unsplit output is provably unchanged.
 Each of these is currently wrong for a piece-bearing address. All five must be fixed, and each
 gets a characterization test locking today's behaviour **before** it is touched.
 
-| Site | Current behaviour | Fix |
-| --- | --- | --- |
-| `util.ts:294` `isSameAddress` | `strict` mode bails on `Object.keys(a).length !== Object.keys(b).length`, so a piece-bearing address never matches a plain one; with `strict = false` the field walk covers only globule/tube/band/facet/edge, so `piece` is silently ignored and two siblings match each other | Replace the key-length heuristic with an explicit granularity comparison; add a `piece` clause |
-| `util.ts:277` `concatAddress` | Dispatches Facet → Band → Tube by `Object.hasOwn`. A piece address (band + `piece`, no `facet`) falls through to `concatAddress_Band` and drops `piece`, so sibling pieces produce identical strings — duplicate keys in `CutPatternRenderer`'s keyed `{#each}` | Insert a piece branch **before** the band branch; add `concatAddress_BandPiece` producing e.g. `g0t0b2p1` |
-| `generate-pattern.ts:525` `findBandByAddress` | `tube.bands.find((b) => b.address.band === address.band)` — first match wins, so siblings always resolve to piece 0 | Match on `band` **and** `piece` |
-| `helpers.ts:123-125` | Inline duplicate of the same lookup, with a positional fallback | Extract and share the one fixed helper |
-| `bandKey`, in **four** copies: `band-sort-index.ts:10`, `band-partner-info.ts:52`, `build-pattern-csv.ts:5`, and a variant at `ProjectionGeometryComponent.svelte:96` used as a Svelte `{#each}` key | All are `` `${globule}-${tube}-${band}` `` and so collide between siblings | Export **one** shared `bandKey` and delete the copies, rather than editing four. `build-pattern-csv.ts:5` even carries the comment "WS-B's `bandKey` is module-private; we mirror its shape" — the duplication is known and this is the occasion to remove it |
-| `band.id` generation, at **four** sites fed by `globalBandIndex` (`generate-tiled-pattern.ts:270`): `id` and `address` on the error-band return (`:303`, `:306`) and on the normal return (`:453`, `:463`) | Collide between siblings | Include `piece` in both the id string and the address at all four |
+| Site                                                                                                                                                                                                       | Current behaviour                                                                                                                                                                                                                                                               | Fix                                                                                                                                                                                                                                                           |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `util.ts:294` `isSameAddress`                                                                                                                                                                              | `strict` mode bails on `Object.keys(a).length !== Object.keys(b).length`, so a piece-bearing address never matches a plain one; with `strict = false` the field walk covers only globule/tube/band/facet/edge, so `piece` is silently ignored and two siblings match each other | Replace the key-length heuristic with an explicit granularity comparison; add a `piece` clause                                                                                                                                                                |
+| `util.ts:277` `concatAddress`                                                                                                                                                                              | Dispatches Facet → Band → Tube by `Object.hasOwn`. A piece address (band + `piece`, no `facet`) falls through to `concatAddress_Band` and drops `piece`, so sibling pieces produce identical strings — duplicate keys in `CutPatternRenderer`'s keyed `{#each}`                 | Insert a piece branch **before** the band branch; add `concatAddress_BandPiece` producing e.g. `g0t0b2p1`                                                                                                                                                     |
+| `generate-pattern.ts:525` `findBandByAddress`                                                                                                                                                              | `tube.bands.find((b) => b.address.band === address.band)` — first match wins, so siblings always resolve to piece 0                                                                                                                                                             | Match on `band` **and** `piece`                                                                                                                                                                                                                               |
+| `helpers.ts:123-125`                                                                                                                                                                                       | Inline duplicate of the same lookup, with a positional fallback                                                                                                                                                                                                                 | Extract and share the one fixed helper                                                                                                                                                                                                                        |
+| `bandKey`, in **four** copies: `band-sort-index.ts:10`, `band-partner-info.ts:52`, `build-pattern-csv.ts:5`, and a variant at `ProjectionGeometryComponent.svelte:96` used as a Svelte `{#each}` key       | All are `` `${globule}-${tube}-${band}` `` and so collide between siblings                                                                                                                                                                                                      | Export **one** shared `bandKey` and delete the copies, rather than editing four. `build-pattern-csv.ts:5` even carries the comment "WS-B's `bandKey` is module-private; we mirror its shape" — the duplication is known and this is the occasion to remove it |
+| `band.id` generation, at **four** sites fed by `globalBandIndex` (`generate-tiled-pattern.ts:270`): `id` and `address` on the error-band return (`:303`, `:306`) and on the normal return (`:453`, `:463`) | Collide between siblings                                                                                                                                                                                                                                                        | Include `piece` in both the id string and the address at all four                                                                                                                                                                                             |
 
 `band.id` is called out separately from the address because `collate-tubes.ts:34-38` documents
 that `mergedBandPaths` is keyed by `band.id` and that ids like `outlined-band-{idx}` already
@@ -217,7 +217,7 @@ Two consequences:
   satisfies that check — which it must today, or it would already be an error band — then
   cutting at a multiple of `subunitCount` leaves both pieces multiples too. The check passes
   untouched.
-- **The even-facet constraint is subsumed.** Quad *k* begins at facet *2k*, always even, so
+- **The even-facet constraint is subsumed.** Quad _k_ begins at facet _2k_, always even, so
   `getQuadrilaterals`' `i % 2 === 1` pairing (`quadrilateral.ts:317`) can never drop a trailing
   facet. "Split at a quad boundary" is the only rule needed.
 
@@ -248,7 +248,7 @@ different after renumbering, while `quadEdge` and `anchorUnitPoint` anchors are 
 `segmentIndex` anchors are resolved in parent coordinates via `parentQuadOffset` so existing
 labels stay put.
 
-`seamAt` only *declares* which ends are cuts. How each pattern family consumes it is Section 3.
+`seamAt` only _declares_ which ends are cuts. How each pattern family consumes it is Section 3.
 
 ### Return shape and degenerate input
 
@@ -290,8 +290,8 @@ it there would widen behaviour for no benefit.
 - Widen `BandCutPattern.meta.startPartnerBand` / `endPartnerBand` to optional
   (`types.ts:437-444`). This is deliberately type-driven: the compiler then enumerates every
   consumer that assumed both were present.
-- `generateTiling`'s condition becomes *both resolve* **OR** *this band has a seam and at least
-  one end resolves*. For a band with no `seamAt` this reduces to the current condition exactly,
+- `generateTiling`'s condition becomes _both resolve_ **OR** _this band has a seam and at least
+  one end resolves_. For a band with no `seamAt` this reduces to the current condition exactly,
   so unsplit output is provably unchanged.
 - `getEndPartnerTransforms` computes each end's transform independently rather than gating both
   on both. Where both are present — every band today — the result is identical.
@@ -329,8 +329,10 @@ sibling pieces share a tube, so the comparison is degenerate.
 - `OutlineEdge` (`generate-outlined-pattern.ts:83-106`) gains `seamPartnerPiece?: number`, set
   by `getOutlineEdges` on a cap edge when the band has `seamAt`.
 - `shouldHaveTab` gains a seam branch **before** the generic `side === 'end'` branch, comparing
-  **piece** indices: `'before'` means the lower-indexed piece owns the tab, `'after'` the
-  higher. This yields a tab on exactly one side of each split.
+  **piece** indices: `'after'` means the lower-indexed piece owns the tab (the tab sits after
+  that piece's end), `'before'` the higher. This matches `bandEnd`'s convention so the two
+  selects read the same way, and yields a tab on exactly one side of each split. _(Amended
+  2026-09-16 — Ben's ruling on `shades-0he`; the original wording had the two reversed.)_
 
 Unset by default, like `bandEnd` (`shades-config.ts:520-539`), so enabling splitting never
 silently changes outlined output.
@@ -370,7 +372,7 @@ a visible boundary line plus a fat transparent `<line>` as the click target, wit
 `stopPropagation()` so the band-level `onclick` (`:130`) does not also fire — the guard
 `SegmentPathEditor.svelte:82-108` already uses for its per-vertex circles.
 
-Boundary geometry needs no new math: quad *k*'s boundary with *k+1* is its `d→c` edge
+Boundary geometry needs no new math: quad _k_'s boundary with _k+1_ is its `d→c` edge
 (`quad[k+1].a === quad[k].d`, `quad[k+1].b === quad[k].c`), and `CutPattern.quad` is present on
 every facet (`types.ts:281-297`).
 
@@ -498,15 +500,15 @@ pane requires Geometry switched to Voronoi to be non-empty.
 
 ## Build order
 
-| Phase | Content | Verified by |
-| --- | --- | --- |
-| 0 | Characterization snapshots | Tests pass, nothing changed |
-| 1 | Address generalization (the five sites) | Snapshots byte-identical |
-| 2 | `splitFlatBands` + config + validator + pipeline insertion, no UI | Unit tests, hardcoded split |
-| 3 | Seam wiring: `meta` widening + three consumers | Tiled seam overlaps end to end |
-| 4 | Outlined `splitEnd` tab + its input | Visual check; outlined unchanged when unset |
-| 5 | Split-placement UI + auto-split | Headless Playwright |
-| 6 | Explicit size inputs | Unit tests + panel check |
+| Phase | Content                                                           | Verified by                                 |
+| ----- | ----------------------------------------------------------------- | ------------------------------------------- |
+| 0     | Characterization snapshots                                        | Tests pass, nothing changed                 |
+| 1     | Address generalization (the five sites)                           | Snapshots byte-identical                    |
+| 2     | `splitFlatBands` + config + validator + pipeline insertion, no UI | Unit tests, hardcoded split                 |
+| 3     | Seam wiring: `meta` widening + three consumers                    | Tiled seam overlaps end to end              |
+| 4     | Outlined `splitEnd` tab + its input                               | Visual check; outlined unchanged when unset |
+| 5     | Split-placement UI + auto-split                                   | Headless Playwright                         |
+| 6     | Explicit size inputs                                              | Unit tests + panel check                    |
 
 Phase 6 touches nothing that phases 0–5 touch, and can land first as a standalone.
 
@@ -517,3 +519,49 @@ Phase 6 touches nothing that phases 0–5 touch, and can land first as a standal
 - A persisted size lock that holds one dimension across regeneration; size setting is one-shot.
 - Guarding `sliceBandSortIndex` against positional drift once pieces exist.
 - Splitting in more than one axis; splits partition a band along its length only.
+
+---
+
+## Amendments — 2026-09-16 verification rulings
+
+Rulings Ben made after in-app verification of Phases 0–4 surfaced defects. They bind the fix
+work tracked in `shades-guk`, `shades-umy`, `shades-at0`, `shades-a2a`, `shades-0he`.
+
+### Neighbour identity is by address, never by array position
+
+Once a tube's band array holds pieces (`[b0p0, b0p1, b1p0, …]`), array position no longer
+identifies a band. Every consumer that finds a neighbour by `bands[i ± 1]`, counts bands with
+`bands.length`, or pairs facets by position across bands must instead resolve by address.
+
+### Partner resolution has two rules, by relationship
+
+- **Side neighbours** (adjacent band in the same tube, `band ± 1`): the piece with the **same
+  piece index**. Splits are tube-wide at identical quad indices, so same-index pieces share
+  `parentQuadOffset` and are geometrically adjacent, and facet _f_ of one lines up with facet
+  _f_ of the other. If the neighbour was too short to be cut there and so has fewer pieces, fall
+  back to its last piece.
+- **End partners** (the band a band end meets, typically in another tube): resolved by **which
+  end joins**, independent of the asking band's own piece index. If the partner's _start_ meets
+  this end, it is the partner's **piece 0**; if the partner's _end_ meets it, the partner's
+  **last piece**. Only a band's first piece carries its outer start partner and only its last
+  piece carries its outer end partner.
+- Deciding "does the partner's start meet me" compares **parent** band addresses (tube, band),
+  ignoring `piece` on either side. Partner addresses stored in `meta` are plain; a piece address
+  is never equal to a plain one under `isSameAddress`, so start/end detection must not use it
+  directly across that boundary.
+- Seam partners (sibling pieces) keep the exact piece-bearing match from Section 3.
+
+### Dropped splits are reported, data is untouched
+
+Generation drops illegal/out-of-range splits (unchanged). The rejections travel back with the
+pattern result and are surfaced in the page, not only in the worker console. The persisted
+`splits` list is **not** pruned — a temporary pattern or geometry change must not permanently
+delete splits. `validateSplitConfig` is for the UI's reporting, not for rewriting saved data.
+
+### Hidden bands and the "unchanged" guarantee
+
+Pending investigation (fix plan Task on hidden bands). The unsplit-output guarantee above was
+found not to hold byte-for-byte when bands are hidden, because independent end resolution
+(`getEndPartnerTransforms`) changed a pre-existing all-or-nothing behaviour. The outcome of that
+investigation is recorded here when it lands.
+
