@@ -2,7 +2,6 @@ import { describe, it, expect } from '@jest/globals';
 
 import { getEndPartnerTransforms, findBandByAddress } from '../generate-pattern';
 import type { BandCutPattern, TubeCutPattern } from '$lib/types';
-import type { GlobuleAddress_Band } from '$lib/projection-geometry/types';
 
 // Two quads' worth of path so getEndPartnerTransform has geometry to read.
 const band = (address: BandCutPattern['address'], meta: BandCutPattern['meta']): BandCutPattern =>
@@ -36,20 +35,19 @@ describe('getEndPartnerTransforms — each end resolved independently', () => {
 		// This is the whole point of the widening. Previously both transforms were
 		// gated on both addresses, so a piece whose outer end is unpartnered got
 		// NEITHER — and its seam silently failed to overlap.
-		// The sibling-piece meta addresses below carry a `piece` field that
-		// `GlobuleAddress_Band` doesn't declare; findBandByAddress's `fromPiece`
-		// pass reads it structurally at runtime, so the cast preserves the exact
-		// values while satisfying the excess-property check.
+		// The sibling-piece meta addresses below are piece-bearing
+		// (GlobuleAddress_BandPiece) — this is the seam-partner shape Task 11
+		// produces, not a fixture quirk, and the meta field's type admits it.
 		const p0 = band(
 			{ globule: 0, tube: 0, band: 0, piece: 0 },
 			{
-				endPartnerBand: { globule: 0, tube: 0, band: 0, piece: 1 } as GlobuleAddress_Band
+				endPartnerBand: { globule: 0, tube: 0, band: 0, piece: 1 }
 			}
 		);
 		const p1 = band(
 			{ globule: 0, tube: 0, band: 0, piece: 1 },
 			{
-				startPartnerBand: { globule: 0, tube: 0, band: 0, piece: 0 } as GlobuleAddress_Band
+				startPartnerBand: { globule: 0, tube: 0, band: 0, piece: 0 }
 			}
 		);
 

@@ -462,8 +462,14 @@ export type BandCutPattern = {
 		// an unpartnered outer end at the other. Previously both were required and
 		// meta was dropped entirely unless both resolved, which would have
 		// disabled seam matching for such a piece.
-		startPartnerBand?: GlobuleAddress_Band;
-		endPartnerBand?: GlobuleAddress_Band;
+		// The union covers two distinct kinds of partner: a cross-band partner is
+		// a plain band address (the partner tube/band as a whole, resolved to a
+		// specific piece at read time via `fromPiece`), while a seam partner —
+		// the sibling piece across a split cut — is itself piece-bearing, since
+		// it names one specific piece of the same band, not the band as a whole.
+		// Both are stored in the same field.
+		startPartnerBand?: GlobuleAddress_Band | GlobuleAddress_BandPiece;
+		endPartnerBand?: GlobuleAddress_Band | GlobuleAddress_BandPiece;
 		startPartnerTransform?: TransformConfig;
 		endPartnerTransform?: TransformConfig;
 		translatedStartPartnerFacet?: CutPattern;
