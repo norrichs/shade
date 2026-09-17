@@ -78,6 +78,15 @@ describe('persistable', () => {
 		expect(stored('test-key')).toEqual({ A: { n: 1 }, B: { m: 2 } });
 	});
 
+	it('applies the updater and persists the resulting value', () => {
+		localStorage.setItem('test-key', JSON.stringify({ Thing: { n: 0, x: 1 } }));
+		const store = persistable({ n: 0, x: 1 }, 'Thing', 'test-key', false);
+		store.update((v) => ({ ...v, x: 2 }));
+		expect(get(store)).toEqual({ n: 0, x: 2 });
+		jest.runAllTimers();
+		expect(stored('test-key')).toEqual({ Thing: { n: 0, x: 2 } });
+	});
+
 	it('does not log the config on set', () => {
 		const spy = jest.spyOn(console, 'log').mockImplementation(() => {});
 		const store = persistable({ n: 0 }, 'Thing', 'test-key', false);
