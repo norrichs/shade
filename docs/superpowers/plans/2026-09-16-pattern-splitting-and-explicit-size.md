@@ -2474,7 +2474,17 @@ Expected: PASS. **Phase 0's snapshot must be unchanged** — an unsplit band has
 
 - [ ] **Step 6: Verify the seam visually**
 
-Start the dev server (`npm run dev`, port 9776). Open `/designer2`, switch Geometry to **Voronoi** so the pattern pane is populated, pick a tiled pattern with `endsMatched` on, and set a split via the browser console against the config store. Confirm two pieces render and their strokes meet at the seam.
+Start the dev server (`npm run dev`, port 9776), then drive the check with the
+**Claude-in-Chrome extension** (`mcp__claude-in-chrome__*`) rather than a
+hand-written script. Load those tools in ONE `ToolSearch` call, then:
+`tabs_context_mcp{createIfEmpty:true}` → `navigate` to
+`http://localhost:9776/designer2` → switch Geometry to **Voronoi** (the pattern
+pane stays empty otherwise) → pick a tiled pattern with `endsMatched` on →
+set a split with `javascript_tool` against the config store → `computer`
+screenshot to confirm two pieces render with their strokes meeting at the seam.
+`read_console_messages` with a pattern will surface any worker error.
+
+Close any tab you opened with `tabs_close_mcp` when done.
 
 If the seam does not overlap, check in this order: (1) `endsMatched` is actually on for this pattern; (2) `spec.adjustments.partner.startEnd`/`.endEnd` exist for it; (3) `findBandByAddress` resolves the sibling (log it).
 
@@ -2806,7 +2816,18 @@ Copy the Band End row's markup exactly and change the label, the bound field and
 
 - [ ] **Step 2: Verify in the browser**
 
-Start `npm run dev`. Open `/designer2`, open the Pattern View floater (target it by index into `nav .hover-button-container button` — the rail renders titles as split letters so text selectors do not work), switch the pattern type to an outlined pattern, enable Tabs, and confirm the Split End select appears and persists a value.
+Start `npm run dev` (port 9776) and drive this with the **Claude-in-Chrome
+extension** (`mcp__claude-in-chrome__*`), not a hand-written script. Navigate to
+`http://localhost:9776/designer2`, open the Pattern View floater, switch the
+pattern type to an outlined pattern, enable Tabs, and confirm the Split End
+select appears and persists a value.
+
+**Target the floater by index into `nav .hover-button-container button`, not by
+text** — the HoverSidebar rail renders titles as split letters (`C rossS
+ection`), so text selectors do not match. Index 0 is the showMode toggle.
+`read_page{filter:"interactive"}` gives the button list; `computer` clicks it.
+
+Close any tab you opened with `tabs_close_mcp` when done.
 
 - [ ] **Step 3: Run the type check**
 
@@ -3403,7 +3424,30 @@ Start `npm run dev`. Open `/designer2`, Geometry → Voronoi, open the Pattern L
 
 - [ ] **Step 3: Write a headless check**
 
-Create a `.mjs` script **at the repo root** (so it resolves `@playwright/test`) that loads `/designer2` on port 9776, switches Geometry to Voronoi, opens the Pattern Layout floater by index into `nav .hover-button-container button`, clicks Auto-split, and asserts the SVG band-group count increased. Run it with `node`.
+Drive this with the **Claude-in-Chrome extension** (`mcp__claude-in-chrome__*`).
+An earlier revision of this plan called for a hand-written `.mjs` Playwright
+script at the repo root; that was written when the extension was unavailable in
+this project. It is available now, so use it — it needs no script file, no
+`@playwright/test` resolution, and leaves nothing behind to maintain.
+
+Sequence, batched with `browser_batch` where steps are predictable:
+
+1. `navigate` to `http://localhost:9776/designer2` (dev server on 9776).
+2. Switch Geometry to **Voronoi** — the pattern pane is empty otherwise, so
+   every later assertion would trivially pass against zero bands.
+3. Open the Pattern Layout floater **by index** into
+   `nav .hover-button-container button` (index 0 is the showMode toggle); the
+   rail renders titles as split letters, so text selectors do not match.
+4. Count SVG band groups via `javascript_tool`, then set a page size small
+   enough to overflow, click **Auto-split**, and count again.
+5. Assert the count **increased**, and that the `(overflow)` warning cleared.
+6. Click **Clear splits** and assert the count returns to its original value —
+   without this, a stuck-on count would pass step 5 trivially.
+
+Close any tab you opened with `tabs_close_mcp`.
+
+Note `npm test` (Playwright) remains the project's E2E runner and is unaffected
+by this; only ad-hoc verification moves to the extension.
 
 - [ ] **Step 4: Commit**
 
