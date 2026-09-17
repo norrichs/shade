@@ -151,18 +151,86 @@ describe('resolveTabLabel', () => {
 			expect(resolveTabLabel(after, tube.bands[2], tube, [tube])).toBe('t1/b3');
 		});
 
-		it('guard: later tabs on a side stay empty', () => {
+		it('guard: on an unsplit neighbour, later tabs on a side stay empty', () => {
+			// The neighbour never changes along an unsplit side, so only the first tab
+			// is labelled.
 			const tube = makeTube(1, 5);
-			const before = tab({
-				position: 'mid',
-				midIndex: 1,
-				midCount: 8,
-				side: 'before',
-				sideIndex: 1
+			const sideTabs = (side: 'before' | 'after', quads: number[]) =>
+				quads.map((quad, i) =>
+					tab({
+						position: 'mid',
+						midCount: 8,
+						side,
+						sideIndex: i,
+						quad,
+						...(i === 0 ? {} : { prevSideQuad: quads[i - 1] })
+					})
+				);
+			const labels = (tabs: BandTab[]) =>
+				tabs.map((t) => resolveTabLabel(t, tube.bands[2], tube, [tube]));
+			expect(labels(sideTabs('before', [0, 1, 2, 3]))).toEqual(['t1/b1', '', '', '']);
+			expect(labels(sideTabs('after', [3, 2, 1, 0]))).toEqual(['t1/b3', '', '', '']);
+		});
+
+		describe('beside a split neighbour: a label at each piece boundary', () => {
+			// Tube 1: uncut b0 (5 quads), b1 cut into UNEQUAL pieces (parent quads 0..1
+			// and 2..4), uncut b2 (5 quads).
+			const quadBand = (address: GlobuleAddress_Band, quads: number, offset?: number) =>
+				({
+					address,
+					facets: Array.from({ length: quads }, () => ({ quad: {} })),
+					...(offset === undefined ? {} : { parentQuadOffset: offset })
+				}) as unknown as BandCutPattern;
+			const tube = {
+				projectionType: 'patterned',
+				address: { globule: 0, tube: 1 },
+				bands: [
+					quadBand(addr(1, 0), 5),
+					quadBand({ ...addr(1, 1), piece: 0 } as GlobuleAddress_Band, 2, 0),
+					quadBand({ ...addr(1, 1), piece: 1 } as GlobuleAddress_Band, 3, 2),
+					quadBand(addr(1, 2), 5)
+				]
+			} as unknown as TubeCutPattern;
+			// Tabs on every quad of one side, in walk order (before: low → high quad,
+			// after: high → low), as collectOutlinedBandTabs records them.
+			const sideTabs = (side: 'before' | 'after', quads: (number | undefined)[]) =>
+				quads.map((quad, i) =>
+					tab({
+						position: 'mid',
+						midCount: 10,
+						side,
+						sideIndex: i,
+						...(quad === undefined ? {} : { quad }),
+						...(i === 0 || quads[i - 1] === undefined ? {} : { prevSideQuad: quads[i - 1] })
+					})
+				);
+			const labels = (band: BandCutPattern, tabs: BandTab[]) =>
+				tabs.map((t) => resolveTabLabel(t, band, tube, [tube]));
+
+			it('before side walked low → high: one label per piece, at its low-quad end', () => {
+				expect(labels(tube.bands[3], sideTabs('before', [0, 1, 2, 3, 4]))).toEqual([
+					't1/b1p0',
+					'',
+					't1/b1p1',
+					'',
+					''
+				]);
 			});
-			const after = tab({ position: 'mid', midIndex: 5, midCount: 8, side: 'after', sideIndex: 1 });
-			expect(resolveTabLabel(before, tube.bands[2], tube, [tube])).toBe('');
-			expect(resolveTabLabel(after, tube.bands[2], tube, [tube])).toBe('');
+
+			it('after side walked high → low: one label per piece, at its high-quad end', () => {
+				expect(labels(tube.bands[0], sideTabs('after', [4, 3, 2, 1, 0]))).toEqual([
+					't1/b1p1',
+					'',
+					'',
+					't1/b1p0',
+					''
+				]);
+			});
+
+			it('guard: tabs without a quad get one label per side', () => {
+				const noQuads = [undefined, undefined, undefined];
+				expect(labels(tube.bands[3], sideTabs('before', noQuads))).toEqual(['t1/b1p0', '', '']);
+			});
 		});
 
 		it('a before-edge tab beside a split previous band names the piece covering its quad', () => {

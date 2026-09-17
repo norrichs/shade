@@ -517,8 +517,18 @@ export type BandCutPattern = {
 		 * names that band.
 		 */
 		side?: 'before' | 'after';
-		/** Mid tabs of outlined bands: 0..n-1 in walk order among this side's tabs. */
+		/**
+		 * Mid tabs of outlined bands: 0..n-1 in walk order among this side's tabs.
+		 * Before edges are walked from low quad to high, after edges from high
+		 * quad to low.
+		 */
 		sideIndex?: number;
+		/**
+		 * Mid tabs of outlined bands with `sideIndex` > 0: the `quad` of the
+		 * previous same-side tab (sideIndex - 1), when both tabs have one. The
+		 * label resolver compares the two neighbour pieces to label boundaries.
+		 */
+		prevSideQuad?: number;
 	}>;
 };
 

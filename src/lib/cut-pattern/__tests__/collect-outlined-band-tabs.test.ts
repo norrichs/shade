@@ -136,13 +136,15 @@ describe('collectOutlinedBandTabs', () => {
 	it('mid records carry their edge side and a walk-order index within that side', () => {
 		// A before edge borders band - 1 and an after edge band + 1, so the label
 		// resolver needs the side itself; midIndex runs across both sides.
+		// Each later same-side record also carries the previous same-side tab's
+		// quad, so the resolver can label piece boundaries without scanning tabs.
 		const edges: OutlinedTabEdge[] = [
-			beforeEdge(),
-			beforeEdge(),
+			{ side: 'before', quad: 0 },
+			{ side: 'before', quad: 1 },
 			endEdge(false),
-			afterEdge(),
-			afterEdge(),
-			afterEdge(),
+			{ side: 'after', quad: 2 },
+			{ side: 'after', quad: 1 },
+			{ side: 'after', quad: 0 },
 			endEdge(true)
 		];
 		const tabs = new Map<number, TabGeometry>();
@@ -154,10 +156,11 @@ describe('collectOutlinedBandTabs', () => {
 		const mids = result.filter((r) => r.position === 'mid');
 		expect(mids.map((r) => r.side)).toEqual(['before', 'before', 'after', 'after', 'after']);
 		expect(mids.map((r) => r.sideIndex)).toEqual([0, 1, 0, 1, 2]);
+		expect(mids.map((r) => r.prevSideQuad)).toEqual([undefined, 0, undefined, 2, 1]);
 		const caps = result.filter((r) => r.position !== 'mid');
-		expect(caps.map((r) => [r.side, r.sideIndex])).toEqual([
-			[undefined, undefined],
-			[undefined, undefined]
+		expect(caps.map((r) => [r.side, r.sideIndex, r.prevSideQuad])).toEqual([
+			[undefined, undefined, undefined],
+			[undefined, undefined, undefined]
 		]);
 	});
 

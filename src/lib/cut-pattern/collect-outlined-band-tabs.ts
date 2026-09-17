@@ -88,6 +88,9 @@ const extractTabOuter = (tab: TabGeometry): Point[] => {
  * also carry their edge's `quad` when the edge has one, their edge `side`, and a
  * `sideIndex` (0..n-1 in walk order among that side's tabs): a before edge
  * borders band - 1 and an after edge band + 1, which `resolveTabLabel` names.
+ * A later same-side record also carries `prevSideQuad`, the previous same-side
+ * tab's quad, so the resolver can label piece boundaries without scanning the
+ * band's tabs.
  *
  * Returns undefined when there are no tabs, so callers can leave
  * `BandCutPattern.tabs` unset (matches the non-outlined paths' convention).
@@ -101,29 +104,28 @@ export const collectOutlinedBandTabs = (
 	const records: BandTabRecord[] = [];
 	let midCount = 0;
 	const sideCounts = { before: 0, after: 0 };
+	const lastSideQuad: { before?: number; after?: number } = {};
 
 	for (let i = 0; i < edges.length; i++) {
 		const tab = tabsByIndex.get(i);
 		if (!tab) continue;
 		const edge = edges[i];
 
-		let position: BandTabRecord['position'];
-		if (edge.side === 'end') {
-			position = edge.endIsStartCap ? 'start' : 'end';
-		} else {
-			position = 'mid';
-		}
-
 		const outer = extractTabOuter(tab);
 		const base: [Point, Point] = [pointFromXY(tab.edgeStart), pointFromXY(tab.edgeEnd)];
 
-		const record: BandTabRecord = { outer, base, position };
-		if (position === 'mid' && edge.side !== 'end') {
-			record.midIndex = midCount++;
-			if (edge.quad !== undefined) record.quad = edge.quad;
-			record.side = edge.side;
-			record.sideIndex = sideCounts[edge.side]++;
+		if (edge.side === 'end') {
+			records.push({ outer, base, position: edge.endIsStartCap ? 'start' : 'end' });
+			continue;
 		}
+
+		const record: BandTabRecord = { outer, base, position: 'mid', midIndex: midCount++ };
+		if (edge.quad !== undefined) record.quad = edge.quad;
+		record.side = edge.side;
+		record.sideIndex = sideCounts[edge.side]++;
+		const prevQuad = lastSideQuad[edge.side];
+		if (record.sideIndex > 0 && prevQuad !== undefined) record.prevSideQuad = prevQuad;
+		lastSideQuad[edge.side] = edge.quad;
 		records.push(record);
 	}
 
