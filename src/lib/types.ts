@@ -525,8 +525,10 @@ export type BandCutPattern = {
 		sideIndex?: number;
 		/**
 		 * Mid tabs of outlined bands with `sideIndex` > 0: the `quad` of the
-		 * previous same-side tab (sideIndex - 1), when both tabs have one. The
-		 * label resolver compares the two neighbour pieces to label boundaries.
+		 * previous same-side tab (sideIndex - 1), whenever that previous tab has
+		 * one, whether or not this tab does. The label resolver compares the two
+		 * neighbour pieces to label boundaries, and reads this only when this
+		 * tab's own `quad` is also set.
 		 */
 		prevSideQuad?: number;
 	}>;
