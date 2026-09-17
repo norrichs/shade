@@ -33,6 +33,7 @@ import { collectOutlinedBandTabs, type OutlinedTabEdge } from './collect-outline
 import { computeOutlinedLabelAnchor } from './compute-label-anchor';
 import { chooseMiddleQuadEdge } from './select-middle-quad-edge';
 import { seamTabOwner } from './seam-tab-layout';
+import { findSideNeighbourInBands, pieceIndexOf } from './resolve-partner-band';
 import { dedupePolygon, type Polygon } from '$lib/patterns/procedural/polygon-2d';
 import { generateProceduralFill } from '$lib/patterns/procedural/procedural-fill';
 
@@ -184,8 +185,8 @@ const transformPartnerPoints = (
 const getOutlineEdges = (
 	quads: Quadrilateral[],
 	band: Band,
-	neighborBefore?: Quadrilateral[],
-	neighborAfter?: Quadrilateral[]
+	neighborBefore?: (Quadrilateral | undefined)[],
+	neighborAfter?: (Quadrilateral | undefined)[]
 ): OutlineEdge[] => {
 	if (quads.length === 0) return [];
 
@@ -537,8 +538,8 @@ export const generateOutlinedBandPattern = (
 	pixelScale: PixelScale,
 	tubeAddress: { globule: number; tube: number },
 	quads: Quadrilateral[],
-	neighborBefore?: Quadrilateral[],
-	neighborAfter?: Quadrilateral[],
+	neighborBefore?: (Quadrilateral | undefined)[],
+	neighborAfter?: (Quadrilateral | undefined)[],
 	bandCount = 0,
 	localBandIndex = bandIndex, // LOCAL: index within the aligned/selected set
 	piece?: number
@@ -649,6 +650,54 @@ export const generateOutlinedBandPattern = (
 };
 
 /**
+ * The quads of the band alongside `bands[bandIndex]` on its parent band
+ * `neighbourParent`'s side, re-indexed so entry `q` pairs with the asker's
+ * quad `q`. Undefined when there is no such parent (outlined tubes do not wrap).
+ *
+ * Flat bands carry `parentIndex` / `pieceIndex` rather than a piece-bearing
+ * address, so each is given its would-be cut-pattern address (tube address,
+ * parent index as `band`, `piece` when it is a piece) and the side-neighbour
+ * rule is `findSideNeighbourInBands` — the same function the tiled path uses:
+ * same piece index, else the neighbour's last piece.
+ *
+ * Quads are paired in parent quad coordinates, as in `findPreviousBandFacets`:
+ * the asker's quad `q` is parent quad `parentQuadOffset + q`, which is the
+ * neighbour's quad `P - neighbour.parentQuadOffset` when that is in range, and
+ * otherwise has no counterpart (no partner geometry for that edge).
+ *
+ * For an unsplit tube `parentIndex` is unset, so parents are array positions,
+ * the exact match is `bands[bandIndex ± 1]`, offsets are 0 and the result
+ * equals the positional `allQuads[i ± 1]` at every index the outline reads.
+ */
+const sideNeighbourQuads = (
+	bands: Band[],
+	allQuads: Quadrilateral[][],
+	bandIndex: number,
+	neighbourParent: number,
+	tubeAddress: { globule: number; tube: number }
+): (Quadrilateral | undefined)[] | undefined => {
+	const candidates = bands.map((b, i) => ({
+		address:
+			b.pieceIndex === undefined
+				? { ...tubeAddress, band: b.parentIndex ?? i }
+				: { ...tubeAddress, band: b.parentIndex ?? i, piece: b.pieceIndex },
+		index: i
+	}));
+	const self = bands[bandIndex];
+	const neighbour = findSideNeighbourInBands(
+		candidates,
+		{ ...tubeAddress, band: neighbourParent },
+		pieceIndexOf(candidates[bandIndex].address)
+	);
+	if (!neighbour) return undefined;
+	const neighbourQuads = allQuads[neighbour.index];
+	const shift = (self.parentQuadOffset ?? 0) - (bands[neighbour.index].parentQuadOffset ?? 0);
+	return allQuads[bandIndex].map((_, q) =>
+		q + shift >= 0 && q + shift < neighbourQuads.length ? neighbourQuads[q + shift] : undefined
+	);
+};
+
+/**
  * Generate outlined pattern for a tube.
  */
 const generateOutlinedTubePattern = (
@@ -686,23 +735,28 @@ const generateOutlinedTubePattern = (
 	const scale = pixelScale?.value || 1;
 	const allQuads = alignedBands.map((band) => getQuadrilaterals(band, scale, band.sideOrientation));
 
-	const bandCount = alignedBands.length;
-	const bandPatterns = alignedBands.map((band, i) =>
-		generateOutlinedBandPattern(
+	// Neighbour identity is by address, never by array position (spec amendment
+	// 2026-09-16): a split tube's array interleaves pieces, so `i ± 1` may be the
+	// band's own sibling. Tab layout alternates per PARENT band, so it counts and
+	// indexes parents, exactly as the unsplit run does.
+	const bandCount = flatBands.length;
+	const bandPatterns = alignedBands.map((band, i) => {
+		const localIndex = band.parentIndex ?? i;
+		return generateOutlinedBandPattern(
 			band,
 			// Parent band index, so a split does not renumber bands.
-			(band.parentIndex ?? i) + rangeStart,
+			localIndex + rangeStart,
 			config,
 			pixelScale,
 			address,
 			allQuads[i],
-			allQuads[i - 1],
-			allQuads[i + 1],
+			sideNeighbourQuads(alignedBands, allQuads, i, localIndex - 1, address),
+			sideNeighbourQuads(alignedBands, allQuads, i, localIndex + 1, address),
 			bandCount,
-			i,
+			localIndex,
 			band.pieceIndex
-		)
-	);
+		);
+	});
 
 	return {
 		projectionType: 'patterned',
