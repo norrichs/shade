@@ -1,4 +1,4 @@
-import { describe, it, expect } from '@jest/globals';
+import { beforeAll, describe, it, expect } from '@jest/globals';
 import { generateSuperGlobule } from '$lib/generate-superglobule';
 import {
 	generateDefaultSuperGlobuleConfig,
@@ -55,19 +55,38 @@ const gates: PipelineGates = {
 const QUADS_PER_BAND = 8;
 const TOLERANCE = 1e-6;
 
-const buildSuperConfig = (): SuperGlobuleConfig => {
+const buildSuperConfig = (quadsPerBand: number): SuperGlobuleConfig => {
 	const config = generateDefaultSuperGlobuleConfig();
 	for (const projection of config.projectionConfigs) {
 		for (const edgeCurve of projection.projectorConfig.polyhedron.edgeCurves) {
-			edgeCurve.sampleMethod = { method: 'divideCurvePath', divisions: QUADS_PER_BAND };
+			edgeCurve.sampleMethod = { method: 'divideCurvePath', divisions: quadsPerBand };
 		}
 	}
 	return config;
 };
 
-const superConfig = buildSuperConfig();
-const superGlobule = generateSuperGlobule(superConfig, gates);
-const tubeCount = superGlobule.projections[0].tubes.length;
+type Geometry = {
+	superConfig: SuperGlobuleConfig;
+	superGlobule: ReturnType<typeof generateSuperGlobule>;
+	tubeCount: number;
+};
+
+/**
+ * One real geometry per quads-per-band count, built on first use. Called only
+ * from `beforeAll`, never at describe-collection time, so `-t` filtering skips
+ * the cost and a generation error is reported against the test that needed it.
+ */
+const geometries = new Map<number, Geometry>();
+const geometryFor = (quadsPerBand: number): Geometry => {
+	let geometry = geometries.get(quadsPerBand);
+	if (!geometry) {
+		const superConfig = buildSuperConfig(quadsPerBand);
+		const superGlobule = generateSuperGlobule(superConfig, gates);
+		geometry = { superConfig, superGlobule, tubeCount: superGlobule.projections[0].tubes.length };
+		geometries.set(quadsPerBand, geometry);
+	}
+	return geometry;
+};
 
 const withEndsMatched = (config: TiledPatternConfig, endsMatched: boolean): TiledPatternConfig => ({
 	...config,
@@ -84,11 +103,12 @@ const patternCases: [string, TiledPatternConfig][] = [
 	['Carnation 1', tiledPatternConfigs['tiledCarnationPattern-1']]
 ];
 
-const splitAllTubesAt = (quads: number[]) => ({
-	tubeSplits: Array.from({ length: tubeCount }, (_, tube) => ({ tube, quads }))
+const splitAllTubesAt = (geometry: Geometry, quads: number[]) => ({
+	tubeSplits: Array.from({ length: geometry.tubeCount }, (_, tube) => ({ tube, quads }))
 });
 
 const generate = (
+	geometry: Geometry,
 	patternTypeConfig: TiledPatternConfig,
 	splits?: PatternGenerationConfig['splits']
 ): TubeCutPattern[] => {
@@ -102,8 +122,8 @@ const generate = (
 		splits
 	};
 	const result: PatternGenerationResult = runPatternGeneration({
-		superGlobule,
-		superConfig,
+		superGlobule: geometry.superGlobule,
+		superConfig: geometry.superConfig,
 		genConfig,
 		gates
 	});
@@ -212,12 +232,17 @@ const measureGlue = (unsplit: TubeCutPattern[], split: TubeCutPattern[]) => {
 };
 
 describe('tiled splits reach the adjuster without crashing (real geometry)', () => {
+	let geometry: Geometry;
+	beforeAll(() => {
+		geometry = geometryFor(QUADS_PER_BAND);
+	});
+
 	it.each(patternCases)('%s: an unequal split (3 + 5 quads) generates every piece', (_, config) => {
 		let tubes: TubeCutPattern[] = [];
 		expect(() => {
-			tubes = generate(config, splitAllTubesAt([3]));
+			tubes = generate(geometry, config, splitAllTubesAt(geometry, [3]));
 		}).not.toThrow();
-		expect(tubes).toHaveLength(tubeCount);
+		expect(tubes).toHaveLength(geometry.tubeCount);
 		for (const tube of tubes) {
 			expect(tube.bands.length).toBeGreaterThan(0);
 			for (const band of tube.bands) {
@@ -238,7 +263,12 @@ describe('glue invariant: pieces reproduce the unsplit pattern (real geometry)',
 	];
 
 	describe.each(patternCases)('%s', (_, config) => {
-		const unsplit = generate(config);
+		let geometry: Geometry;
+		let unsplit: TubeCutPattern[];
+		beforeAll(() => {
+			geometry = geometryFor(QUADS_PER_BAND);
+			unsplit = generate(geometry, config);
+		});
 
 		it('has the expected geometry (8 quads per band, unsplit)', () => {
 			for (const tube of unsplit) {
@@ -250,7 +280,7 @@ describe('glue invariant: pieces reproduce the unsplit pattern (real geometry)',
 		});
 
 		it.each(splitCases)('%s: every interior piece facet matches its parent facet', (__, quads) => {
-			const split = generate(config, splitAllTubesAt(quads));
+			const split = generate(geometry, config, splitAllTubesAt(geometry, quads));
 			const { maxDeviation, maxQuadDeviation, compared, worst } = measureGlue(unsplit, split);
 			// Guards on the metric itself: facets were compared, and the quads are
 			// congruent (the partition is rigid before any pattern adjustment).
