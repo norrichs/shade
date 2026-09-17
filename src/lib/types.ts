@@ -950,6 +950,31 @@ export type Band = {
 	address?: GeometryAddress<BandAddressed> | GlobuleAddress_Band;
 	/** True for synthetic interior fill bands (fillAll). Drives outlined-only gating. */
 	isFill?: boolean;
+	/** Set only on pieces of a split band. Parent bands leave these undefined. */
+	parentQuadOffset?: number;
+	seamAt?: { start?: true; end?: true };
+	/**
+	 * Index of this piece's parent within the band array that was split, i.e.
+	 * the same index space `generateTiling` already works in (`selectedBands`,
+	 * the post-range slice of visible bands). This is what keeps `address.band`,
+	 * `finishOuterEdge`, `bandContext.bandIndex` and `leftPartnerBand` in the
+	 * space they use today — see Task 9 Step 4.
+	 *
+	 * NOT an address component: two of the three band-construction branches in
+	 * generate-projection.ts push bands with no `address` at all (`:714`, `:732`;
+	 * only `:696` sets one), so a piece cannot rely on inheriting one.
+	 */
+	parentIndex?: number;
+	/** This piece's ordinal within its parent, 0-based. */
+	pieceIndex?: number;
+	/**
+	 * The parent's reAlignBand flip decision, inherited so every piece of one
+	 * band comes off the page in the same orientation. Not a correctness
+	 * requirement — a pi rotation is rigid and seam matching derives its
+	 * transform from live geometry — but pieces matched up by hand should agree.
+	 * Set by the caller of splitFlatBands (Task 9 Step 5), not by splitFlatBands.
+	 */
+	parentAscending?: boolean;
 };
 export type BezierConfig = {
 	[key: string]: PointConfig2[] | string;
