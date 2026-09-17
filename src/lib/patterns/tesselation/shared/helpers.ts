@@ -6,7 +6,7 @@ import type {
 	SkipEdges,
 	TubeCutPattern
 } from '$lib/types';
-import { isSameAddress } from '$lib/util';
+import { isSameAddress, isGlobuleAddress_BandPiece } from '$lib/util';
 import { findBandByAddress } from '$lib/cut-pattern/generate-pattern';
 import type { IndexPair } from '../../spec-types';
 
@@ -122,7 +122,10 @@ export const getTransformedPartnerCutPattern = (
 	// findBandByAddress already returns undefined for a missing tube, so the
 	// separate partnerTube guard goes too — leaving it would make `partnerTube`
 	// an unused local and fail `npm run lint`.
-	const partnerBand = findBandByAddress(tubes, partnerAddress);
+	// `band.address` isn't widened to admit `piece` until Task 9, so read it
+	// defensively rather than assuming today's type.
+	const fromPiece = isGlobuleAddress_BandPiece(band.address) ? band.address.piece : 0;
+	const partnerBand = findBandByAddress(tubes, partnerAddress, fromPiece);
 	if (!partnerBand?.meta) return undefined;
 	const partnerFacetIndex = isSameAddress(partnerBand.meta.startPartnerBand, band.address)
 		? 0

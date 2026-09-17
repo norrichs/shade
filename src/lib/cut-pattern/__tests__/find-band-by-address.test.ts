@@ -43,14 +43,23 @@ describe('findBandByAddress', () => {
 		// granularity 3 vs 3.5), so an exact-match-only lookup returns undefined
 		// here and every cross-band end partner transform silently disappears for a
 		// split tube, while the seam transforms keep working.
+		//
+		// Three pieces, not two: with only pieces [0, 1] and fromPiece=1, dropping
+		// `fromPiece` entirely falls back to the *last* piece, which happens to
+		// also be piece 1 — so a two-piece version of this test passes whether or
+		// not `fromPiece` is wired at all. A third piece makes same-index
+		// resolution (piece 1) and the last-piece fallback (piece 2) diverge, so
+		// this only passes when `fromPiece` is genuinely threaded through.
 		const tubes = [
 			tube([
 				band({ globule: 0, tube: 0, band: 0, piece: 0 }),
-				band({ globule: 0, tube: 0, band: 0, piece: 1 })
+				band({ globule: 0, tube: 0, band: 0, piece: 1 }),
+				band({ globule: 0, tube: 0, band: 0, piece: 2 })
 			])
 		];
-		// Piece 1 asking resolves onto piece 1, not piece 0: tube-wide splits at
-		// identical quad indices mean corresponding pieces physically abut.
+		// Piece 1 asking resolves onto piece 1, not piece 0 and not the last
+		// piece (2): tube-wide splits at identical quad indices mean
+		// corresponding pieces physically abut.
 		const found = findBandByAddress(tubes, { globule: 0, tube: 0, band: 0 }, 1);
 		expect(found?.address).toEqual({ globule: 0, tube: 0, band: 0, piece: 1 });
 	});
