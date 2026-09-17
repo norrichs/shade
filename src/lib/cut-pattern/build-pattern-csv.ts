@@ -1,9 +1,16 @@
 import type { BandSortIndex, TubeCutPattern, BandRef as GlobuleAddress_Band } from '$lib/types';
 import { buildBandCodeMap } from './band-sort-index';
 import { bandKey } from './band-key';
+import { findAdjacentSideNeighbour } from './resolve-partner-band';
+import type { GlobuleAddress_BandPiece } from '$lib/projection-geometry/types';
+import { concatAddress } from '$lib/util';
 
-/** Display form for an address. Globule omitted per spec `t{tube}/b{band}`. */
-const formatBandAddress = (a: GlobuleAddress_Band): string => `t${a.tube}/b${a.band}`;
+/**
+ * Display form for an address. Globule omitted per spec `t{tube}/b{band}`; a
+ * piece appends `p{piece}` (`t0/b1p0`), the same form as the band's self tag.
+ */
+const formatBandAddress = (a: GlobuleAddress_Band | GlobuleAddress_BandPiece): string =>
+	concatAddress(a, 'tb-slash');
 
 /**
  * RFC 4180-aligned cell encoder. Quotes the field iff it contains a comma,
@@ -22,33 +29,42 @@ const csvCell = (value: string): string => {
 const multiCell = (values: string[]): string => csvCell(values.join(' '));
 
 /**
- * Within-tube adjacency: the before/after neighbor bands in the SAME tube
- * (index +/- 1 of the band's position in `TubeCutPattern.bands`). This matches
+ * Within-tube adjacency: the side-neighbour bands before and after this band in
+ * the SAME tube, i.e. its parent band ± 1 (no wrap), matching
  * `buildTubeOrderIndex` ordering. The facet-level `meta.ab/ac.partner` data is
  * not present on `BandCutPattern`, so adjacency is structural by design.
+ *
+ * For a split band the neighbour is resolved by address with the side-neighbour
+ * rule (same piece index, else the neighbour's last piece), never by array
+ * position. A piece's seam sibling is NOT an adjacent band: it joins end to end
+ * and is listed among the end partners instead.
  */
 const withinTubeAdjacentPartners = (
-	address: GlobuleAddress_Band,
+	address: GlobuleAddress_Band | GlobuleAddress_BandPiece,
 	tubes: TubeCutPattern[]
-): GlobuleAddress_Band[] => {
+): (GlobuleAddress_Band | GlobuleAddress_BandPiece)[] => {
 	const tube = tubes.find(
 		(t) => t.address.globule === address.globule && t.address.tube === address.tube
 	);
 	if (!tube) return [];
 	const i = tube.bands.findIndex((b) => bandKey(b.address) === bandKey(address));
 	if (i < 0) return [];
-	const out: GlobuleAddress_Band[] = [];
-	if (i - 1 >= 0) out.push(tube.bands[i - 1].address);
-	if (i + 1 < tube.bands.length) out.push(tube.bands[i + 1].address);
-	return out;
+	return [
+		findAdjacentSideNeighbour(tube.bands, i, -1, false),
+		findAdjacentSideNeighbour(tube.bands, i, 1, false)
+	]
+		.filter((b) => b !== undefined)
+		.map((b) => b.address);
 };
 
 /**
  * End-partner addresses from `meta.startPartnerBand`/`endPartnerBand`,
  * deduped, missing entries omitted.
  */
-const endPartnerAddresses = (band: TubeCutPattern['bands'][number]): GlobuleAddress_Band[] => {
-	const partners: GlobuleAddress_Band[] = [];
+const endPartnerAddresses = (
+	band: TubeCutPattern['bands'][number]
+): (GlobuleAddress_Band | GlobuleAddress_BandPiece)[] => {
+	const partners: (GlobuleAddress_Band | GlobuleAddress_BandPiece)[] = [];
 	if (band.meta?.startPartnerBand) partners.push(band.meta.startPartnerBand);
 	if (band.meta?.endPartnerBand) partners.push(band.meta.endPartnerBand);
 	const seen = new Set<string>();

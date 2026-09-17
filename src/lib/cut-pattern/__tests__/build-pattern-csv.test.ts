@@ -131,3 +131,64 @@ describe('buildPatternCsv — end-connection-tube', () => {
 		expect(rows[1]).toBe('0000,,t0/b0');
 	});
 });
+
+describe('buildPatternCsv — split bands', () => {
+	type PieceRef = GlobuleAddress_Band & { piece: number };
+	const p = (t: number, b: number, piece: number): PieceRef => ({
+		globule: 0,
+		tube: t,
+		band: b,
+		piece
+	});
+	const pieceBand = (
+		a: GlobuleAddress_Band | PieceRef,
+		meta?: {
+			startPartnerBand: GlobuleAddress_Band | PieceRef;
+			endPartnerBand: GlobuleAddress_Band | PieceRef;
+		}
+	) => ({ address: a, meta }) as unknown as TubeCutPattern['bands'][number];
+
+	// Tube 0 is split tube-wide: b0 and b1 into two pieces each; b2 was too short
+	// to cut and stays whole. The array interleaves pieces, so array position no
+	// longer identifies the band alongside.
+	const splitTubes = (): TubeCutPattern[] => [
+		tube(0, [
+			pieceBand(p(0, 0, 0), { startPartnerBand: addr(1, 0), endPartnerBand: p(0, 0, 1) }),
+			pieceBand(p(0, 0, 1), { startPartnerBand: p(0, 0, 0), endPartnerBand: addr(2, 0) }),
+			pieceBand(p(0, 1, 0)),
+			pieceBand(p(0, 1, 1)),
+			pieceBand(addr(0, 2))
+		])
+	];
+
+	test('tube-order: adjacency is the side neighbour at parent band ± 1; a seam sibling is an end partner', () => {
+		const rows = buildPatternCsv({ mode: 'tube-order', groups: [] }, splitTubes()).split('\n');
+		expect(rows.slice(1)).toEqual([
+			// First parent: no band before it (no wrap), piece 0 of b1 alongside.
+			't0/b0p0,t0/b1p0,"t1/b0 t0/b0p1"',
+			't0/b0p1,t0/b1p1,"t0/b0p0 t2/b0"',
+			// The uncut b2 is alongside both pieces of b1.
+			't0/b1p0,"t0/b0p0 t0/b2",',
+			't0/b1p1,"t0/b0p1 t0/b2",',
+			// An uncut band resolves a split neighbour to its piece 0.
+			't0/b2,t0/b1p0,'
+		]);
+	});
+
+	test('end-connection: members print their piece', () => {
+		const index: BandSortIndex = {
+			mode: 'end-connection-tube',
+			groups: [
+				{ label: 'Ring 0', code: '0000', bands: [p(0, 0, 0), p(0, 0, 1)] },
+				{ label: 'Ring 1', code: '0001', bands: [p(0, 1, 0), p(0, 1, 1)] },
+				{ label: 'Ring 2', code: '0002', bands: [addr(0, 2)] }
+			]
+		};
+		const rows = buildPatternCsv(index, splitTubes()).split('\n');
+		expect(rows.slice(1)).toEqual([
+			'0000,0001,t0/b0p0,t0/b0p1',
+			'0001,"0000 0002",t0/b1p0,t0/b1p1',
+			'0002,0001,t0/b2'
+		]);
+	});
+});

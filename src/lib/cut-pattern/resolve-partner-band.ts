@@ -174,6 +174,47 @@ export const findBandCarryingEnd = <B extends { address: BandAddress }>(
 	return end === 'start' ? parts[0] : parts[parts.length - 1];
 };
 
+/**
+ * The side neighbour of `bands[bandIndex]` one PARENT band before (`step` -1)
+ * or after (`step` +1) it in the same tube.
+ *
+ * Neighbour identity is by address, never by array position (spec amendment
+ * 2026-09-16): a split tube's array interleaves pieces (`[b0p0, b0p1, b1p0,
+ * …]`), so `bands[i ± 1]` may be the asker's own seam sibling.
+ *
+ * - Parent order is the order parents first appear in `bands`. For an unsplit
+ *   array that is exactly positional `bands[i ± 1]`, including over a sparse
+ *   band range or hidden bands.
+ * - Past either end: wraps when `wrap`, otherwise undefined.
+ * - The piece of that parent is chosen by the side-neighbour rule
+ *   (`findSideNeighbourInBands`: same piece index as the asker, else its last
+ *   piece; an uncut asker counts as piece 0).
+ *
+ * All of `bands` must carry an address.
+ */
+export const findAdjacentSideNeighbour = <B extends { address: BandAddress }>(
+	bands: B[],
+	bandIndex: number,
+	step: -1 | 1,
+	wrap: boolean
+): B | undefined => {
+	const self = bands[bandIndex]?.address;
+	if (!self) return undefined;
+	const parents: BandAddress[] = [];
+	for (const b of bands) {
+		if (!parents.some((p) => isSameParentBand(p, b.address))) parents.push(b.address);
+	}
+	const target = parents.findIndex((p) => isSameParentBand(p, self)) + step;
+	if (!wrap && (target < 0 || target >= parents.length)) return undefined;
+	// The parent's plain address: drop `piece` (keeping every other component
+	// exactly as stored) so the side-neighbour rule picks the piece.
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	const { piece, ...parent } = parents[
+		(parents.length + target) % parents.length
+	] as GlobuleAddress_BandPiece;
+	return findSideNeighbourInBands(bands, parent, pieceIndexOf(self));
+};
+
 /** The shape the previous-band lookup needs; `BandCutPattern` satisfies it. */
 export type SideNeighbourCandidate<F> = {
 	address?: BandAddress;
@@ -218,19 +259,7 @@ export const findPreviousBandFacets = <F>(
 		return band.facets.map((_, f) => prev.facets[f]);
 	}
 	const addressed = bands as (SideNeighbourCandidate<F> & { address: BandAddress })[];
-	const parents: BandAddress[] = [];
-	for (const b of addressed) {
-		if (!parents.some((p) => isSameParentBand(p, b.address))) parents.push(b.address);
-	}
-	const self = addressed[bandIndex].address;
-	const parentPosition = parents.findIndex((p) => isSameParentBand(p, self));
-	// The parent's plain address: drop `piece` (keeping every other component
-	// exactly as stored) so the side-neighbour rule picks the piece.
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	const { piece, ...previousParent } = parents[
-		(parents.length + parentPosition - 1) % parents.length
-	] as GlobuleAddress_BandPiece;
-	const neighbour = findSideNeighbourInBands(addressed, previousParent, pieceIndexOf(self));
+	const neighbour = findAdjacentSideNeighbour(addressed, bandIndex, -1, true);
 	if (!neighbour) return band.facets.map(() => undefined);
 	const offset = band.parentQuadOffset ?? 0;
 	const neighbourOffset = neighbour.parentQuadOffset ?? 0;
