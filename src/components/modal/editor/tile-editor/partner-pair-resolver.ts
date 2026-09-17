@@ -1,8 +1,15 @@
 import type { BandCutPattern, PathSegment, Quadrilateral } from '$lib/types';
-import type { GlobuleAddress_Band, GlobuleAddress_Facet } from '$lib/projection-geometry/types';
+import type {
+	GlobuleAddress_Band,
+	GlobuleAddress_BandPiece,
+	GlobuleAddress_Facet
+} from '$lib/projection-geometry/types';
 import type { TransformConfig } from '$lib/projection-geometry/types';
 import { newTransformPS } from '$lib/patterns/tesselation/shared/helpers';
-import { isSameAddress } from '$lib/util';
+import {
+	findBandCarryingEnd,
+	resolveEndPartnerInBands
+} from '$lib/cut-pattern/resolve-partner-band';
 
 const transformQuad = (quad: Quadrilateral, transform: TransformConfig): Quadrilateral => {
 	const {
@@ -39,40 +46,36 @@ export type ResolvedPair = {
 	ghostOriginalPath?: PathSegment[];
 };
 
-const findBandByAddress = (
-	allBands: BandCutPattern[],
-	address: GlobuleAddress_Band
-): BandCutPattern | undefined =>
-	allBands.find(
-		(b) =>
-			b.address.globule === address.globule &&
-			b.address.tube === address.tube &&
-			b.address.band === address.band
-	);
+type BandAddress = GlobuleAddress_Band | GlobuleAddress_BandPiece;
 
+/**
+ * The main band's end and the partner end that meets it.
+ *
+ * `allBands` may hold pieces of split bands, so bands are resolved by address
+ * with the shared rules rather than by (globule, tube, band) alone:
+ * - the main band is the piece carrying the requested end (`findBandCarryingEnd`:
+ *   exact for a piece address; first/last piece for a plain split parent);
+ * - its partner is resolved by the end-partner rule (`resolveEndPartnerInBands`),
+ *   which covers both an outer end (partner's piece 0 or last piece, by which
+ *   end joins) and a seam (the exact sibling piece).
+ */
 export const resolvePair = (
 	allBands: BandCutPattern[],
-	mainAddress: GlobuleAddress_Band,
+	mainAddress: BandAddress,
 	mode: PartnerMode
 ): ResolvedPair | null => {
-	const mainBand = findBandByAddress(allBands, mainAddress);
+	const askerEnd = mode === 'partnerStart' ? 'start' : 'end';
+	const mainBand = findBandCarryingEnd(allBands, mainAddress, askerEnd);
 	if (!mainBand?.meta) return null;
 
-	const partnerKey = mode === 'partnerStart' ? 'startPartnerBand' : 'endPartnerBand';
 	const transformKey = mode === 'partnerStart' ? 'startPartnerTransform' : 'endPartnerTransform';
 
-	const partnerBandAddress = mainBand.meta[partnerKey];
-	if (!partnerBandAddress) return null;
-
-	const partnerBand = findBandByAddress(allBands, partnerBandAddress);
-	if (!partnerBand) return null;
+	const resolved = resolveEndPartnerInBands(allBands, mainBand, askerEnd);
+	if (!resolved) return null;
+	const partnerBand = resolved.band;
 
 	const facetIndex = mode === 'partnerStart' ? 0 : mainBand.facets.length - 1;
-	const ghostFacetIndex =
-		partnerBand.meta?.startPartnerBand &&
-		isSameAddress(partnerBand.meta.startPartnerBand, mainBand.address)
-			? 0
-			: partnerBand.facets.length - 1;
+	const ghostFacetIndex = resolved.partnerEnd === 'start' ? 0 : partnerBand.facets.length - 1;
 
 	const mainFacet = mainBand.facets[facetIndex];
 	const ghostFacet = partnerBand.facets[ghostFacetIndex];
@@ -95,8 +98,8 @@ export const resolvePair = (
 		: undefined;
 
 	return {
-		mainAddress: { ...mainAddress, facet: facetIndex },
-		ghostAddress: { ...partnerBandAddress, facet: ghostFacetIndex },
+		mainAddress: { ...mainBand.address, facet: facetIndex },
+		ghostAddress: { ...partnerBand.address, facet: ghostFacetIndex },
 		mainQuad: mainFacet.quad,
 		ghostQuad,
 		mainPath: structuredClone(mainFacet.path),

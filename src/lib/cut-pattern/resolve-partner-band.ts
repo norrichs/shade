@@ -120,16 +120,31 @@ export const resolveEndPartner = (
 ): ResolvedEndPartner | undefined => {
 	const address = askerEnd === 'start' ? asker.meta?.startPartnerBand : asker.meta?.endPartnerBand;
 	if (!address) return undefined;
+	return resolveEndPartnerInBands(tubes[address.tube]?.bands ?? [], asker, askerEnd);
+};
+
+/**
+ * `resolveEndPartner` over a flat band array (any mix of tubes) rather than
+ * `tubes` indexed by tube number. Same rule; `resolveEndPartner` delegates here.
+ * Used where only a flattened band list is at hand (the tile editor).
+ */
+export const resolveEndPartnerInBands = (
+	bands: BandCutPattern[],
+	asker: BandCutPattern,
+	askerEnd: BandEnd
+): ResolvedEndPartner | undefined => {
+	const address = askerEnd === 'start' ? asker.meta?.startPartnerBand : asker.meta?.endPartnerBand;
+	if (!address) return undefined;
 
 	if (isGlobuleAddress_BandPiece(address)) {
-		const band = findBandByExactAddress(tubes, address);
+		const band = bands.find((b) => isSameAddress(b.address, address));
 		if (!band) return undefined;
 		const start = band.meta?.startPartnerBand;
 		const partnerEnd: BandEnd = start && isSameAddress(start, asker.address) ? 'start' : 'end';
 		return { band, partnerEnd };
 	}
 
-	const parts = bandsOfParent(tubes[address.tube]?.bands ?? [], address);
+	const parts = bandsOfParent(bands, address);
 	if (parts.length === 0) return undefined;
 	const first = parts[0];
 	const outerStart = first.meta?.startPartnerBand;
@@ -137,6 +152,26 @@ export const resolveEndPartner = (
 		return { band: first, partnerEnd: 'start' };
 	}
 	return { band: parts[parts.length - 1], partnerEnd: 'end' };
+};
+
+/**
+ * The band that carries `end` of the band `address` names, from a flat array.
+ *
+ * A piece address names its piece exactly. A plain address names a parent band:
+ * an unsplit band is its own start and end; a split one's start lives on its
+ * first piece and its end on its last piece (the same rule `resolveEndPartner`
+ * applies to the partner side).
+ */
+export const findBandCarryingEnd = <B extends { address: BandAddress }>(
+	bands: B[],
+	address: BandAddress,
+	end: BandEnd
+): B | undefined => {
+	if (isGlobuleAddress_BandPiece(address)) {
+		return bands.find((b) => isSameAddress(b.address, address));
+	}
+	const parts = bandsOfParent(bands, address);
+	return end === 'start' ? parts[0] : parts[parts.length - 1];
 };
 
 /** The shape the previous-band lookup needs; `BandCutPattern` satisfies it. */

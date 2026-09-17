@@ -128,6 +128,110 @@ describe('resolvePair', () => {
 	});
 });
 
+// Split bands: `allBands` holds pieces carrying `address.piece`. Pieces are of
+// UNEQUAL length so a wrong piece shows up in the facet index as well as the path.
+type PieceAddress = GlobuleAddress_Band & { piece: number };
+const makePiece = (
+	address: PieceAddress,
+	facetIds: number[],
+	meta: {
+		startPartnerBand?: GlobuleAddress_Band | PieceAddress;
+		endPartnerBand?: GlobuleAddress_Band | PieceAddress;
+	}
+): BandCutPattern =>
+	({
+		projectionType: 'patterned',
+		address,
+		facets: facetIds.map(makeFacet),
+		meta
+	}) as any;
+
+describe('resolvePair — split bands', () => {
+	const plain = (tube: number, band: number): GlobuleAddress_Band => ({ globule: 0, tube, band });
+	const piece = (tube: number, band: number, p: number): PieceAddress => ({
+		globule: 0,
+		tube,
+		band,
+		piece: p
+	});
+
+	it("end partner: a split partner whose END meets us resolves to its last piece's last facet", () => {
+		const main = makeBand(0, 0, { startPartnerBand: plain(1, 5) });
+		// Partner t1/b5 cut into p0 (2 facets) and p1 (3 facets); its end meets t0/b0.
+		const p0 = makePiece(piece(1, 5, 0), [500, 501], {
+			startPartnerBand: plain(9, 9),
+			endPartnerBand: piece(1, 5, 1)
+		});
+		const p1 = makePiece(piece(1, 5, 1), [510, 511, 512], {
+			startPartnerBand: piece(1, 5, 0),
+			endPartnerBand: plain(0, 0)
+		});
+		const result = resolvePair([main, p0, p1], main.address, 'partnerStart');
+		expect(result).not.toBeNull();
+		expect(result!.ghostAddress).toEqual({ ...piece(1, 5, 1), facet: 2 });
+		expect(result!.ghostPath).toEqual(p1.facets[2].path);
+	});
+
+	it("end partner: a piece asker's outer end resolves to the partner's piece 0 when the partner's start meets it", () => {
+		// Asker t0/b0 cut into p0 (3 facets) and p1 (2 facets); p1 carries the outer end.
+		const m0 = makePiece(piece(0, 0, 0), [0, 1, 2], {
+			startPartnerBand: plain(2, 2),
+			endPartnerBand: piece(0, 0, 1)
+		});
+		const m1 = makePiece(piece(0, 0, 1), [3, 4], {
+			startPartnerBand: piece(0, 0, 0),
+			endPartnerBand: plain(1, 5)
+		});
+		// Partner t1/b5 cut into p0 (1 facet) and p1 (4 facets); its start meets t0/b0.
+		const q0 = makePiece(piece(1, 5, 0), [500], {
+			startPartnerBand: plain(0, 0),
+			endPartnerBand: piece(1, 5, 1)
+		});
+		const q1 = makePiece(piece(1, 5, 1), [510, 511, 512, 513], {
+			startPartnerBand: piece(1, 5, 0),
+			endPartnerBand: plain(8, 8)
+		});
+		const result = resolvePair([m0, m1, q0, q1], m1.address, 'partnerEnd');
+		expect(result).not.toBeNull();
+		expect(result!.mainAddress).toEqual({ ...piece(0, 0, 1), facet: 1 });
+		expect(result!.mainPath).toEqual(m1.facets[1].path);
+		expect(result!.ghostAddress).toEqual({ ...piece(1, 5, 0), facet: 0 });
+		expect(result!.ghostPath).toEqual(q0.facets[0].path);
+	});
+
+	it('seam: a piece end resolves exactly to its sibling piece', () => {
+		const m0 = makePiece(piece(0, 0, 0), [0, 1, 2], {
+			startPartnerBand: plain(2, 2),
+			endPartnerBand: piece(0, 0, 1)
+		});
+		const m1 = makePiece(piece(0, 0, 1), [3, 4], {
+			startPartnerBand: piece(0, 0, 0),
+			endPartnerBand: plain(1, 5)
+		});
+		const result = resolvePair([m0, m1], m0.address, 'partnerEnd');
+		expect(result).not.toBeNull();
+		expect(result!.mainAddress).toEqual({ ...piece(0, 0, 0), facet: 2 });
+		expect(result!.ghostAddress).toEqual({ ...piece(0, 0, 1), facet: 0 });
+		expect(result!.ghostPath).toEqual(m1.facets[0].path);
+	});
+
+	it('a plain address for a split band takes the end from the piece that carries it', () => {
+		const m0 = makePiece(piece(0, 0, 0), [0, 1, 2], {
+			startPartnerBand: plain(2, 2),
+			endPartnerBand: piece(0, 0, 1)
+		});
+		const m1 = makePiece(piece(0, 0, 1), [3, 4], {
+			startPartnerBand: piece(0, 0, 0),
+			endPartnerBand: plain(1, 5)
+		});
+		const partner = makeBand(5, 1, { endPartnerBand: plain(0, 0) });
+		const result = resolvePair([m0, m1, partner], plain(0, 0), 'partnerEnd');
+		expect(result).not.toBeNull();
+		expect(result!.mainAddress).toEqual({ ...piece(0, 0, 1), facet: 1 });
+		expect(result!.ghostAddress).toEqual({ ...plain(1, 5), facet: 2 });
+	});
+});
+
 describe('pairsEqual', () => {
 	it('returns true for two null pairs', () => {
 		expect(pairsEqual(null, null)).toBe(true);
