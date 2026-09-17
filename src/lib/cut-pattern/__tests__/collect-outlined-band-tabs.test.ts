@@ -133,6 +133,34 @@ describe('collectOutlinedBandTabs', () => {
 		expect(mids.every((r) => r.midCount === 3)).toBe(true);
 	});
 
+	it('mid records carry their edge side and a walk-order index within that side', () => {
+		// A before edge borders band - 1 and an after edge band + 1, so the label
+		// resolver needs the side itself; midIndex runs across both sides.
+		const edges: OutlinedTabEdge[] = [
+			beforeEdge(),
+			beforeEdge(),
+			endEdge(false),
+			afterEdge(),
+			afterEdge(),
+			afterEdge(),
+			endEdge(true)
+		];
+		const tabs = new Map<number, TabGeometry>();
+		for (let i = 0; i < edges.length; i++) {
+			tabs.set(i, rectTab([i, 0], [i + 1, 0], [i, 1], [i + 1, 1]));
+		}
+
+		const result = collectOutlinedBandTabs(edges, tabs)!;
+		const mids = result.filter((r) => r.position === 'mid');
+		expect(mids.map((r) => r.side)).toEqual(['before', 'before', 'after', 'after', 'after']);
+		expect(mids.map((r) => r.sideIndex)).toEqual([0, 1, 0, 1, 2]);
+		const caps = result.filter((r) => r.position !== 'mid');
+		expect(caps.map((r) => [r.side, r.sideIndex])).toEqual([
+			[undefined, undefined],
+			[undefined, undefined]
+		]);
+	});
+
 	it('mid records carry the band-local quad of their edge; cap records carry none', () => {
 		// Tab labels name the neighbour piece whose parent-quad range contains the
 		// tab's parent quad, so each mid tab must know which quad its edge is on.

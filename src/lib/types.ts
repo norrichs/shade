@@ -511,6 +511,14 @@ export type BandCutPattern = {
 		 * the neighbour piece covering it.
 		 */
 		quad?: number;
+		/**
+		 * Mid tabs of outlined bands: the side edge the tab sits on. A before edge
+		 * borders parent band - 1, an after edge parent band + 1; the tab label
+		 * names that band.
+		 */
+		side?: 'before' | 'after';
+		/** Mid tabs of outlined bands: 0..n-1 in walk order among this side's tabs. */
+		sideIndex?: number;
 	}>;
 };
 

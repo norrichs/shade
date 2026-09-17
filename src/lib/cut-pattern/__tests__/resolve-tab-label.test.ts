@@ -120,6 +120,77 @@ describe('resolveTabLabel', () => {
 		expect(result).toBe('t1/b2');
 	});
 
+	describe('the edge side the tab sits on', () => {
+		it('the first before-edge tab names the previous band', () => {
+			const tube = makeTube(1, 5);
+			const before = tab({
+				position: 'mid',
+				midIndex: 0,
+				midCount: 8,
+				side: 'before',
+				sideIndex: 0
+			});
+			expect(resolveTabLabel(before, tube.bands[2], tube, [tube])).toBe('t1/b1');
+		});
+
+		it('a before-edge tab on the first band wraps to the last band', () => {
+			const tube = makeTube(1, 4);
+			const before = tab({
+				position: 'mid',
+				midIndex: 0,
+				midCount: 8,
+				side: 'before',
+				sideIndex: 0
+			});
+			expect(resolveTabLabel(before, tube.bands[0], tube, [tube])).toBe('t1/b3');
+		});
+
+		it('the first after-edge tab names the next band even after before-edge tabs', () => {
+			const tube = makeTube(1, 5);
+			const after = tab({ position: 'mid', midIndex: 4, midCount: 8, side: 'after', sideIndex: 0 });
+			expect(resolveTabLabel(after, tube.bands[2], tube, [tube])).toBe('t1/b3');
+		});
+
+		it('guard: later tabs on a side stay empty', () => {
+			const tube = makeTube(1, 5);
+			const before = tab({
+				position: 'mid',
+				midIndex: 1,
+				midCount: 8,
+				side: 'before',
+				sideIndex: 1
+			});
+			const after = tab({ position: 'mid', midIndex: 5, midCount: 8, side: 'after', sideIndex: 1 });
+			expect(resolveTabLabel(before, tube.bands[2], tube, [tube])).toBe('');
+			expect(resolveTabLabel(after, tube.bands[2], tube, [tube])).toBe('');
+		});
+
+		it('a before-edge tab beside a split previous band names the piece covering its quad', () => {
+			// b1 is cut into UNEQUAL pieces (parent quads 0..1 and 2..4); uncut b2's
+			// before edge at quad 3 borders b1p1.
+			const quadBand = (address: GlobuleAddress_Band, quads: number, offset?: number) =>
+				({
+					address,
+					facets: Array.from({ length: quads }, () => ({ quad: {} })),
+					...(offset === undefined ? {} : { parentQuadOffset: offset })
+				}) as unknown as BandCutPattern;
+			const tube = {
+				projectionType: 'patterned',
+				address: { globule: 0, tube: 1 },
+				bands: [
+					quadBand(addr(1, 0), 5),
+					quadBand({ ...addr(1, 1), piece: 0 } as GlobuleAddress_Band, 2, 0),
+					quadBand({ ...addr(1, 1), piece: 1 } as GlobuleAddress_Band, 3, 2),
+					quadBand(addr(1, 2), 5)
+				]
+			} as unknown as TubeCutPattern;
+			const beforeAt = (quad: number) =>
+				tab({ position: 'mid', midIndex: 0, midCount: 5, side: 'before', sideIndex: 0, quad });
+			expect(resolveTabLabel(beforeAt(3), tube.bands[3], tube, [tube])).toBe('t1/b1p1');
+			expect(resolveTabLabel(beforeAt(0), tube.bands[3], tube, [tube])).toBe('t1/b1p0');
+		});
+	});
+
 	describe('split bands', () => {
 		type PieceRef = GlobuleAddress_Band & { piece: number };
 		const piece = (tube: number, band: number, p: number): PieceRef => ({

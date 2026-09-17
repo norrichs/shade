@@ -12,10 +12,12 @@ import { buildPatternCsv } from '../build-pattern-csv';
 import { buildBandSortIndex } from '../band-sort-index';
 import type { SuperGlobuleProjectionCutPattern } from '$lib/stores/superGlobuleStores';
 import type { PatternGenerationConfig } from '$lib/stores/globulePatternStores';
-import type { PatternTypeConfig, PipelineGates, TubeCutPattern } from '$lib/types';
+import type { PatternTypeConfig, PipelineGates, TabEdgeOption, TubeCutPattern } from '$lib/types';
 
 /**
  * GUARD (Task 10): unsplit tab labels and CSV text must not change.
+ * Task 13 deliberately changed the `beforeAndAfter` mid tab labels (see
+ * OUTLINED) and added the default `after` edge, recorded before that change.
  *
  * Real, unmocked generation on the default superglobule (30 tubes × 6 bands).
  * Values were recorded from `494fcb6`, which a side-by-side run against the
@@ -34,12 +36,12 @@ const gates: PipelineGates = {
 
 const sha = (text: string) => createHash('sha256').update(text).digest('hex').slice(0, 16);
 
-const outlinedWithTabs = (): PatternTypeConfig => {
+const outlinedWithTabs = (bandEdge: TabEdgeOption = 'beforeAndAfter'): PatternTypeConfig => {
 	const config = defaultOutlinedPatternConfig();
 	config.tabConfig = {
 		...config.tabConfig!,
 		shape: 'rectangle',
-		bandEdge: 'beforeAndAfter',
+		bandEdge,
 		bandEnd: 'beforeAndAfter'
 	};
 	return config;
@@ -91,6 +93,21 @@ describe('GUARD: unsplit tab labels and CSV are unchanged (real default geometry
 		}).toEqual(OUTLINED);
 	});
 
+	it("outlined, default bandEdge 'after': every tab label (Task 13 leaves it unchanged)", () => {
+		const tubes = generate(outlinedWithTabs('after'));
+		const labels = tubes.flatMap((tube) =>
+			tube.bands.flatMap((band) =>
+				(band.tabs ?? []).map((tab) => resolveTabLabel(tab, band, tube, tubes))
+			)
+		);
+		expect({
+			tabs: labels.length,
+			nonEmptyLabels: labels.filter(Boolean).length,
+			labelsSample: labels.slice(0, 12),
+			labelsSha: sha(labels.join('\n'))
+		}).toEqual(OUTLINED_AFTER);
+	});
+
 	it('tiled: both CSV modes', () => {
 		const tubes = generate(generateDefaultGlobulePatternConfig().patternTypeConfig);
 		const { tubeOrder, endConnection } = csvs(tubes);
@@ -109,9 +126,14 @@ describe('GUARD: unsplit tab labels and CSV are unchanged (real default geometry
 const OUTLINED = {
 	bands: 180,
 	tabs: 1800,
-	nonEmptyLabels: 540,
-	labelsSample: ['t0/b1', '', '', '', 't4/b5', '', '', '', '', 't6/b5', 't0/b2', ''],
-	labelsSha: '6bbfe66e635b55d9',
+	// Task 13 (deliberate): mid tab labels name the band across the edge they sit
+	// on. Each band's first before tab now names band - 1 (was band + 1: sample
+	// [0] t0/b1 → t0/b5 wrapping, [10] t0/b2 → t0/b0) and its first after tab
+	// names band + 1 (was blank: sample [5] → t0/b1), so 180 labels changed and
+	// 180 were added (540 → 720). Cap labels and both CSVs are unchanged.
+	nonEmptyLabels: 720,
+	labelsSample: ['t0/b5', '', '', '', 't4/b5', 't0/b1', '', '', '', 't6/b5', 't0/b0', ''],
+	labelsSha: '3a0ba612126a48fa',
 	tubeOrderRows: [
 		'band,adjacent,endPartners',
 		't0/b0,t0/b1,"t6/b5 t4/b5"',
@@ -125,6 +147,15 @@ const OUTLINED = {
 		'0001,"0000 0002",t0/b1,t6/b4,t4/b4'
 	],
 	endConnectionSha: 'b5fcc2b6271e0a87'
+};
+
+// Recorded before Task 13 (HEAD 4322923): an after-only band's first mid tab
+// is already an after edge, so side-aware labels leave this output unchanged.
+const OUTLINED_AFTER = {
+	tabs: 1080,
+	nonEmptyLabels: 540,
+	labelsSample: ['t4/b5', 't0/b1', '', '', '', 't6/b5', 't4/b4', 't0/b2', '', '', '', 't6/b4'],
+	labelsSha: '42cfc441192ffb71'
 };
 
 const TILED = {
