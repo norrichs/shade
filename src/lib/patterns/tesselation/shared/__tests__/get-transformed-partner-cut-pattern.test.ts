@@ -63,12 +63,13 @@ describe('getTransformedPartnerCutPattern', () => {
 		const asker = askingPiece(1);
 		const result = getTransformedPartnerCutPattern(
 			asker,
-			0,
+			'start',
 			tubes(asker, partnerPieces(3, { start: ASKER, end: OTHER })),
 			true
 		);
-		expect(result?.path).toEqual([['M', 0, 0]]);
-		expect(result?.label).toBe('0');
+		expect(result?.facet.path).toEqual([['M', 0, 0]]);
+		expect(result?.facet.label).toBe('0');
+		expect(result?.partnerEnd).toBe('start');
 	});
 
 	it("matches the partner's last piece, last facet when the partner's end meets this end", () => {
@@ -77,11 +78,64 @@ describe('getTransformedPartnerCutPattern', () => {
 		const asker = askingPiece(1);
 		const result = getTransformedPartnerCutPattern(
 			asker,
-			1,
+			'end',
 			tubes(asker, partnerPieces(3, { start: OTHER, end: ASKER })),
 			true
 		);
-		expect(result?.path).toEqual([['M', 2, 1]]);
-		expect(result?.label).toBe('1');
+		expect(result?.facet.path).toEqual([['M', 2, 1]]);
+		expect(result?.facet.label).toBe('1');
+		expect(result?.partnerEnd).toBe('end');
+	});
+
+	// A one-facet band's facet 0 is both its start and its end, so a facet index
+	// cannot name the end; the caller names it. And a one-facet partner's facet
+	// label is '0' for either of its ends, so `partnerEnd` says which one joins.
+	const onePieceAsker = (): BandCutPattern =>
+		({
+			facets: [{ path: [], label: 'only' }],
+			id: 'one-facet-asker',
+			tagAnchorPoint: { x: 0, y: 0 },
+			projectionType: 'patterned',
+			address: { ...ASKER },
+			meta: { startPartnerBand: PARTNER, endPartnerBand: OTHER }
+		}) as unknown as BandCutPattern;
+	const onePiecePartner = (outer: {
+		start: BandCutPattern['address'];
+		end: BandCutPattern['address'];
+	}): BandCutPattern =>
+		({
+			facets: [{ path: [['M', 7, 7]], label: 'only' }],
+			id: 'one-facet-partner',
+			tagAnchorPoint: { x: 0, y: 0 },
+			projectionType: 'patterned',
+			address: { ...PARTNER },
+			meta: { startPartnerBand: outer.start, endPartnerBand: outer.end }
+		}) as unknown as BandCutPattern;
+
+	it("resolves a one-facet band's start and end independently", () => {
+		const asker = onePieceAsker();
+		// Start partner (tube 1) joins at its start; end partner (tube 9) at its end.
+		const all: TubeCutPattern[] = Array.from({ length: 10 }, (_, tube) => ({
+			projectionType: 'patterned',
+			address: { globule: 0, tube },
+			bands: []
+		}));
+		all[0].bands = [asker];
+		all[1].bands = [onePiecePartner({ start: ASKER, end: OTHER })];
+		all[9].bands = [{ ...onePiecePartner({ start: PARTNER, end: ASKER }), address: OTHER }];
+		expect(getTransformedPartnerCutPattern(asker, 'start', all, true)?.partnerEnd).toBe('start');
+		expect(getTransformedPartnerCutPattern(asker, 'end', all, true)?.partnerEnd).toBe('end');
+	});
+
+	it("reports that a one-facet partner's END joins, although its facet label is 0", () => {
+		const asker = askingPiece(0);
+		const result = getTransformedPartnerCutPattern(
+			asker,
+			'end',
+			tubes(asker, [onePiecePartner({ start: OTHER, end: ASKER })]),
+			true
+		);
+		expect(result?.facet.label).toBe('0');
+		expect(result?.partnerEnd).toBe('end');
 	});
 });

@@ -6,7 +6,7 @@ import type {
 	SkipEdges,
 	TubeCutPattern
 } from '$lib/types';
-import { resolveEndPartner } from '$lib/cut-pattern/resolve-partner-band';
+import { resolveEndPartner, type BandEnd } from '$lib/cut-pattern/resolve-partner-band';
 import type { IndexPair } from '../../spec-types';
 
 export const scaleSegment = (seg: PathSegment, w: number, h: number): PathSegment => {
@@ -107,28 +107,44 @@ export const removeInPlace = ({
 	}
 };
 
+/** The partner facet that meets one end of a band, and which partner end it is. */
+export type TransformedEndPartner = {
+	/** The partner's joining facet, transformed into the asker's frame. */
+	facet: CutPattern;
+	/** Which end of the partner joins the asker's end. */
+	partnerEnd: BandEnd;
+};
+
+/**
+ * The partner facet that `end` of `band` meets, transformed into `band`'s frame.
+ *
+ * The caller names the end explicitly. A one-facet band's facet 0 is both its
+ * start and its end, so a facet index cannot say which end is meant; likewise
+ * the returned `partnerEnd` (not the facet label, which is 0 for either end of
+ * a one-facet partner) says which of the partner's ends joins.
+ */
 export const getTransformedPartnerCutPattern = (
 	band: BandCutPattern,
-	f: number,
+	end: BandEnd,
 	tubes: TubeCutPattern[],
 	endsMatched: boolean
-): CutPattern | undefined => {
-	if (!endsMatched || !band.meta || (f !== 0 && f !== band.facets.length - 1)) return undefined;
+): TransformedEndPartner | undefined => {
+	if (!endsMatched || !band.meta) return undefined;
 
 	// An end with no partner (an outer end, or a seam whose sibling is out of the
 	// rendered range) simply is not matched. The partner resolves by which of its
 	// ends joins this one, independent of this band's own piece index.
-	const resolved = resolveEndPartner(tubes, band, f === 0 ? 'start' : 'end');
+	const resolved = resolveEndPartner(tubes, band, end);
 	if (!resolved?.band.meta) return undefined;
 	const { band: partnerBand, partnerEnd } = resolved;
 	const transform: TransformConfig | undefined =
-		f === 0 ? band.meta.startPartnerTransform : band.meta.endPartnerTransform;
+		end === 'start' ? band.meta.startPartnerTransform : band.meta.endPartnerTransform;
 	const partnerFacetIndex = partnerEnd === 'start' ? 0 : partnerBand.facets.length - 1;
 	const partnerFacet: CutPattern = partnerBand.facets[partnerFacetIndex];
 	const partnerPath = structuredClone(partnerFacet.path);
 	const transformedPartnerPath = transform ? newTransformPS(partnerPath, transform) : partnerPath;
 
-	return { path: transformedPartnerPath, label: `${partnerFacetIndex}` };
+	return { facet: { path: transformedPartnerPath, label: `${partnerFacetIndex}` }, partnerEnd };
 };
 
 export const newTransformPS = (path: PathSegment[], transform: TransformConfig) => {

@@ -183,11 +183,6 @@ describe.each([1, 5])(
 							failures.push(`${name} ${end}: partner edge lands ${gap.toFixed(2)}px away`);
 							continue;
 						}
-						// A one-facet piece's end is never end-matched by the adjuster, hidden
-						// bands or not: facet 0 is both first and last and only the start
-						// branch runs (a separate, pre-existing defect recorded in the Task 8
-						// report). Its address and transform are still checked above.
-						if (end === 'end' && band.facets.length === 1) continue;
 						const expectedLabel = partnerEnd === 'start' ? 0 : partner.facets.length - 1;
 						if (!translated || Number(translated.label) !== expectedLabel) {
 							failures.push(

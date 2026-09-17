@@ -5,7 +5,7 @@ import type {
 	TiledPatternConfig,
 	TubeCutPattern
 } from '$lib/types';
-import { findPreviousBandFacets } from '$lib/cut-pattern/resolve-partner-band';
+import { findPreviousBandFacets, type BandEnd } from '$lib/cut-pattern/resolve-partner-band';
 import type { IndexPair, TiledPatternSpec } from '../../spec-types';
 import { alignPrevBandPath } from '../../adjust/align-prev-band';
 import {
@@ -47,6 +47,19 @@ const retargetPairs = (
 	}
 	return sources.map((s, i) => ({ source: s, target: targets[i] }));
 };
+
+/**
+ * The band ends that facet `f` of a `facetCount`-facet band carries: `start` on
+ * the first facet, `end` on the last, both on the only facet of a one-facet band.
+ */
+export const bandEndsAtFacet = (f: number, facetCount: number): BandEnd[] => [
+	...(f === 0 ? (['start'] as const) : []),
+	...(f === facetCount - 1 ? (['end'] as const) : [])
+];
+
+/** The spec's partner pairs for one band end (its targets, or a partner's sources). */
+const partnerPairsAt = (spec: TiledPatternSpec, end: BandEnd): IndexPair[] =>
+	end === 'start' ? spec.adjustments.partner.startEnd : spec.adjustments.partner.endEnd;
 
 export const adjustTesselation = (
 	bands: BandCutPattern[],
@@ -115,29 +128,28 @@ export const adjustTesselation = (
 			const nextPath = band.facets[(f + 1) % band.facets.length].path;
 
 			const doEndMatching = true;
-			if (doEndMatching && endsMatched && (f === 0 || f === band.facets.length - 1)) {
-				const partner = getTransformedPartnerCutPattern(
-					band as BandCutPattern,
-					f,
-					tubes,
-					tiledPatternConfig.config.endsMatched
-				);
-				if (partner) {
+			if (doEndMatching && endsMatched) {
+				// A one-facet band's facet is both its start and its end: match each
+				// end against its own partner. They write disjoint vertices (each
+				// end's own target group) and read only the partner's path, so the
+				// order of the two cannot matter.
+				for (const end of bandEndsAtFacet(f, band.facets.length)) {
+					const partner = getTransformedPartnerCutPattern(
+						band as BandCutPattern,
+						end,
+						tubes,
+						tiledPatternConfig.config.endsMatched
+					);
+					if (!partner) continue;
 					newBands[b].meta = {
 						...newBands[b].meta,
-						...(f === 0
-							? { translatedStartPartnerFacet: partner }
-							: { translatedEndPartnerFacet: partner })
+						...(end === 'start'
+							? { translatedStartPartnerFacet: partner.facet }
+							: { translatedEndPartnerFacet: partner.facet })
 					} as BandCutPattern['meta'];
 
-					const partnerSources =
-						Number(partner.label) === 0
-							? spec.adjustments.partner.startEnd.map((p) => p.source)
-							: spec.adjustments.partner.endEnd.map((p) => p.source);
-					const partnerTargets =
-						f === 0
-							? spec.adjustments.partner.startEnd.map((p) => p.target)
-							: spec.adjustments.partner.endEnd.map((p) => p.target);
+					const partnerSources = partnerPairsAt(spec, partner.partnerEnd).map((p) => p.source);
+					const partnerTargets = partnerPairsAt(spec, end).map((p) => p.target);
 					const partnerPairs = partnerSources.map((source, i) => ({
 						source,
 						target: partnerTargets[i]
@@ -146,7 +158,7 @@ export const adjustTesselation = (
 					replaceInPlace({
 						pairs: retargetPairs(partnerPairs, rows, columns, startCount, middleCount, endCount),
 						target: newBands[b].facets[f].path,
-						source: partner.path
+						source: partner.facet.path
 					});
 				}
 			}
@@ -180,35 +192,25 @@ export const adjustTesselation = (
 		}
 
 		if (endsTrimmed && spec.adjustments.trimsEnds && band.facets.length > 0) {
-			if (startCount > 0) {
-				const allStartCanonical = Array.from({ length: startCount }, (_, i) => i);
-				const expanded = retarget(
-					allStartCanonical,
-					rows,
-					columns,
-					startCount,
-					middleCount,
-					endCount
-				);
-				removeInPlace({ indices: expanded, target: newBands[b].facets[0].path });
-			}
-			if (endCount > 0) {
-				const allEndCanonical = Array.from(
-					{ length: endCount },
-					(_, i) => startCount + middleCount + i
-				);
-				const expanded = retarget(
-					allEndCanonical,
-					rows,
-					columns,
-					startCount,
-					middleCount,
-					endCount
-				);
+			const expand = (canonical: number[]) =>
+				retarget(canonical, rows, columns, startCount, middleCount, endCount);
+			const startGroup =
+				startCount > 0 ? expand(Array.from({ length: startCount }, (_, i) => i)) : [];
+			const endGroup =
+				endCount > 0
+					? expand(Array.from({ length: endCount }, (_, i) => startCount + middleCount + i))
+					: [];
+			const last = band.facets.length - 1;
+			if (last === 0) {
+				// One facet carries both groups. Remove them in one pass: removing the
+				// start group first would shift the end group's indices.
 				removeInPlace({
-					indices: expanded,
-					target: newBands[b].facets[band.facets.length - 1].path
+					indices: [...startGroup, ...endGroup],
+					target: newBands[b].facets[0].path
 				});
+			} else {
+				removeInPlace({ indices: startGroup, target: newBands[b].facets[0].path });
+				removeInPlace({ indices: endGroup, target: newBands[b].facets[last].path });
 			}
 		}
 	}
