@@ -450,6 +450,12 @@ export type BandCutPattern = {
 	leftPartnerBand?: number;
 	projectionType: 'patterned';
 	address: GlobuleAddress_Band | GlobuleAddress_BandPiece;
+	/**
+	 * Pieces only: this piece's first quad in parent coordinates (copied from the
+	 * split `Band`). Tiled output has one facet per quad, so facet `f` of a piece
+	 * is parent facet `parentQuadOffset + f`. Absent on unsplit bands.
+	 */
+	parentQuadOffset?: number;
 	bounds?: {
 		left: number;
 		top: number;

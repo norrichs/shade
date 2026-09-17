@@ -1,4 +1,11 @@
-import type { BandCutPattern, CutPattern, TiledPatternConfig, TubeCutPattern } from '$lib/types';
+import type {
+	BandCutPattern,
+	CutPattern,
+	PathSegment,
+	TiledPatternConfig,
+	TubeCutPattern
+} from '$lib/types';
+import { findPreviousBandFacets } from '$lib/cut-pattern/resolve-partner-band';
 import type { IndexPair, TiledPatternSpec } from '../../spec-types';
 import { alignPrevBandPath } from '../../adjust/align-prev-band';
 import {
@@ -58,8 +65,13 @@ export const adjustTesselation = (
 	for (let b = 0; b < bands.length; b++) {
 		const band = bands[b];
 
-		const prevBandPaths = bands[(bands.length + b - 1) % bands.length].facets.map(
-			(facet: CutPattern, f) => {
+		// The previous band by address, paired in parent quad coordinates — never
+		// `bands[b - 1]`, which in a split tube is often this piece's own sibling.
+		// A facet with no counterpart (a piece beside a shorter uncut band) gets
+		// no cross-band adjustment.
+		const prevBandPaths = findPreviousBandFacets<CutPattern>(bands, b).map(
+			(facet, f): PathSegment[] | undefined => {
+				if (!facet) return undefined;
 				const { path, quad } = facet;
 				const referenceQuad = band.facets[f].quad;
 				if (!quad || !referenceQuad) throw new Error('missing quad');
@@ -147,11 +159,14 @@ export const adjustTesselation = (
 				});
 			}
 
-			replaceInPlace({
-				pairs: acrossBandsPairs,
-				target: newBands[b].facets[f].path,
-				source: prevBandPaths[f]
-			});
+			const prevBandPath = prevBandPaths[f];
+			if (prevBandPath) {
+				replaceInPlace({
+					pairs: acrossBandsPairs,
+					target: newBands[b].facets[f].path,
+					source: prevBandPath
+				});
+			}
 
 			const shouldRemove = evaluateSkipEdge(
 				tiledPatternConfig.config.skipEdges || 'none',

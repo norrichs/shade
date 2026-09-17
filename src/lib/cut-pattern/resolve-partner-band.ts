@@ -52,11 +52,11 @@ export const findBandByExactAddress = (
 	tubes[address.tube]?.bands.find((b) => isSameAddress(b.address, address));
 
 /**
- * All bands that are `address`'s parent band: the unsplit band itself, or its
- * pieces in piece order. Empty when the tube or band is absent.
+ * All of `bands` that are `address`'s parent band: the unsplit band itself, or
+ * its pieces in piece order. Empty when the band is absent.
  */
-const bandsOfParent = (tubes: TubeCutPattern[], address: BandAddress): BandCutPattern[] =>
-	(tubes[address.tube]?.bands ?? [])
+const bandsOfParent = <B extends { address: BandAddress }>(bands: B[], address: BandAddress): B[] =>
+	bands
 		.filter((b) => isSameParentBand(b.address, address))
 		.sort((a, b) => pieceIndexOf(a.address) - pieceIndexOf(b.address));
 
@@ -74,10 +74,23 @@ export const findSideNeighbourBand = (
 	tubes: TubeCutPattern[],
 	address: BandAddress,
 	askerPiece: number
-): BandCutPattern | undefined => {
-	const exact = findBandByExactAddress(tubes, address);
+): BandCutPattern | undefined =>
+	findSideNeighbourInBands(tubes[address.tube]?.bands ?? [], address, askerPiece);
+
+/**
+ * `findSideNeighbourBand` over one tube's band array rather than all tubes.
+ * The adjusters work on a single tube's bands, which are not necessarily the
+ * ones stored in `tubes` (the pipeline replaces tubes as it adjusts them, and
+ * the carnation adjuster is never given `tubes` at all).
+ */
+export const findSideNeighbourInBands = <B extends { address: BandAddress }>(
+	bands: B[],
+	address: BandAddress,
+	askerPiece: number
+): B | undefined => {
+	const exact = bands.find((b) => isSameAddress(b.address, address));
 	if (exact || isGlobuleAddress_BandPiece(address)) return exact;
-	const pieces = bandsOfParent(tubes, address).filter((b) => isGlobuleAddress_BandPiece(b.address));
+	const pieces = bandsOfParent(bands, address).filter((b) => isGlobuleAddress_BandPiece(b.address));
 	if (pieces.length === 0) return undefined;
 	return pieces.find((b) => pieceIndexOf(b.address) === askerPiece) ?? pieces[pieces.length - 1];
 };
@@ -116,7 +129,7 @@ export const resolveEndPartner = (
 		return { band, partnerEnd };
 	}
 
-	const parts = bandsOfParent(tubes, address);
+	const parts = bandsOfParent(tubes[address.tube]?.bands ?? [], address);
 	if (parts.length === 0) return undefined;
 	const first = parts[0];
 	const outerStart = first.meta?.startPartnerBand;
@@ -124,4 +137,70 @@ export const resolveEndPartner = (
 		return { band: first, partnerEnd: 'start' };
 	}
 	return { band: parts[parts.length - 1], partnerEnd: 'end' };
+};
+
+/** The shape the previous-band lookup needs; `BandCutPattern` satisfies it. */
+export type SideNeighbourCandidate<F> = {
+	address?: BandAddress;
+	parentQuadOffset?: number;
+	facets: F[];
+};
+
+/**
+ * The facets of the band on `bands[bandIndex]`'s previous (left-hand, unit
+ * x = 0) side, paired one-to-one with its own facets. Tiled output has one
+ * facet per quad, so facet index and quad index coincide.
+ *
+ * Neighbour identity is by address, never by array position (spec amendment
+ * 2026-09-16). A split tube's array interleaves pieces (`[b0p0, b0p1, b1p0,
+ * …]`), so the array predecessor may be the asker's own sibling.
+ *
+ * - The previous PARENT band is the one before the asker's parent in the order
+ *   parents first appear in `bands`, wrapping from the first to the last. For an
+ *   unsplit array that is exactly the positional `bands[i - 1]` with wrap-around
+ *   used before, including over a sparse band range or hidden bands.
+ * - The piece of it is chosen by the side-neighbour rule
+ *   (`findSideNeighbourInBands`: same piece index, else its last piece).
+ * - Facets are paired in PARENT quad coordinates: this band's facet `f` sits at
+ *   parent quad `P = parentQuadOffset + f` (0 for an uncut band), and pairs
+ *   with the neighbour's facet `P - neighbour.parentQuadOffset`. Same-index
+ *   pieces share their offset (splits are tube-wide), so that is facet `f`;
+ *   an uncut band beside a split neighbour lands in the neighbour's piece 0,
+ *   which spans the uncut band's whole length. A parent quad the neighbour
+ *   piece does not cover yields `undefined` — there is no counterpart, and the
+ *   caller skips the cross-band adjustment for that facet.
+ *
+ * If any band lacks an address (never so on the tiled pipeline), falls back to
+ * the positional behaviour.
+ */
+export const findPreviousBandFacets = <F>(
+	bands: SideNeighbourCandidate<F>[],
+	bandIndex: number
+): (F | undefined)[] => {
+	const band = bands[bandIndex];
+	if (!bands.every((b) => b.address)) {
+		const prev = bands[(bands.length + bandIndex - 1) % bands.length];
+		return band.facets.map((_, f) => prev.facets[f]);
+	}
+	const addressed = bands as (SideNeighbourCandidate<F> & { address: BandAddress })[];
+	const parents: BandAddress[] = [];
+	for (const b of addressed) {
+		if (!parents.some((p) => isSameParentBand(p, b.address))) parents.push(b.address);
+	}
+	const self = addressed[bandIndex].address;
+	const parentPosition = parents.findIndex((p) => isSameParentBand(p, self));
+	// The parent's plain address: drop `piece` (keeping every other component
+	// exactly as stored) so the side-neighbour rule picks the piece.
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	const { piece, ...previousParent } = parents[
+		(parents.length + parentPosition - 1) % parents.length
+	] as GlobuleAddress_BandPiece;
+	const neighbour = findSideNeighbourInBands(addressed, previousParent, pieceIndexOf(self));
+	if (!neighbour) return band.facets.map(() => undefined);
+	const offset = band.parentQuadOffset ?? 0;
+	const neighbourOffset = neighbour.parentQuadOffset ?? 0;
+	return band.facets.map((_, f) => {
+		const index = offset + f - neighbourOffset;
+		return index >= 0 && index < neighbour.facets.length ? neighbour.facets[index] : undefined;
+	});
 };

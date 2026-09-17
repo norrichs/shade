@@ -535,6 +535,10 @@ export const generateTiling = ({
 			tagAngle: tiledPatternConfig.labels?.selfTag?.angle ?? tagAnchor?.angle ?? 0,
 			projectionType: 'patterned',
 			address: addressWithPiece,
+			// Pieces only; spread so unsplit bands gain no key.
+			...(bands[bandIndex].parentQuadOffset === undefined
+				? {}
+				: { parentQuadOffset: bands[bandIndex].parentQuadOffset }),
 			bounds: bands[bandIndex].bounds,
 			// Both ends resolving is the historical condition, kept exactly for
 			// unsplit bands: with no `seamAt` this reduces to

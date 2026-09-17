@@ -2,6 +2,10 @@ import type { PathSegment, CutPattern, MovePathSegment } from '$lib/types';
 import { transformPatternByQuad } from './quadrilateral';
 import { translatePS, getAngle, rotatePoint } from './utils';
 import { Vector3 } from 'three';
+import {
+	findPreviousBandFacets,
+	type SideNeighbourCandidate
+} from '$lib/cut-pattern/resolve-partner-band';
 
 export const generateCarnation = ({
 	size = 1,
@@ -58,7 +62,10 @@ export const generateCarnation = ({
 	return patternSegments;
 };
 
-export const adjustCarnation = (tiledBands: { facets: CutPattern[] }[], variant: 0 | 1) => {
+export const adjustCarnation = (
+	tiledBands: SideNeighbourCandidate<CutPattern>[],
+	variant: 0 | 1
+) => {
 	const patternPrototype = generateCarnation({ variant, size: 1, rows: 1, columns: 1 });
 	const addendaPrototype = [
 		['M', patternPrototype[3][5], patternPrototype[3][6]] as MovePathSegment,
@@ -66,63 +73,72 @@ export const adjustCarnation = (tiledBands: { facets: CutPattern[] }[], variant:
 		['M', patternPrototype[8][5], patternPrototype[8][6]] as MovePathSegment,
 		patternPrototype[9]
 	];
-	const adjusted = tiledBands.map((band, bandIndex, bands) => ({
-		...band,
-		facets: band.facets.map((facet, facetIndex) => {
-			const addendaFacet0 = structuredClone(
-				bands[(bandIndex + bands.length - 1) % bands.length].facets[facetIndex]
-			);
+	const adjusted = tiledBands.map((band, bandIndex, bands) => {
+		// Previous band by address, paired in parent quad coordinates (see
+		// findPreviousBandFacets) — not `bands[bandIndex - 1]`, which in a split
+		// tube is often this piece's own sibling.
+		const previousFacets = findPreviousBandFacets(bands, bandIndex);
+		return {
+			...band,
+			facets: band.facets.map((facet, facetIndex) => {
+				const previousFacet = previousFacets[facetIndex];
+				// No counterpart facet (a piece beside a shorter uncut band): no addenda.
+				if (!previousFacet) return { ...facet, addenda: [] };
+				const addendaFacet0 = structuredClone(previousFacet);
 
-			if (facet.quad && addendaFacet0.quad) {
-				const offset = {
-					x: facet.quad.a.x - addendaFacet0.quad.b.x,
-					y: facet.quad?.a.y - addendaFacet0.quad?.b.y
-				};
-				const offsetAngle =
-					getAngle(facet.quad.a, facet.quad.d) -
-					getAngle(addendaFacet0.quad.b, addendaFacet0.quad.c);
-				const anchorPoint = {
-					x: addendaFacet0.quad.b.x + offset.x,
-					y: addendaFacet0.quad.b.y + offset.y
-				};
-				const rotatedA = rotatePoint(
-					anchorPoint,
-					{ x: addendaFacet0.quad.a.x + offset.x, y: addendaFacet0.quad.a.y + offset.y },
-					offsetAngle
-				);
-				const rotatedC = rotatePoint(
-					anchorPoint,
-					{ x: addendaFacet0.quad.c.x + offset.x, y: addendaFacet0.quad.c.y + offset.y },
-					offsetAngle
-				);
-				const rotatedD = rotatePoint(
-					anchorPoint,
-					{ x: addendaFacet0.quad.d.x + offset.x, y: addendaFacet0.quad.d.y + offset.y },
-					offsetAngle
-				);
-				addendaFacet0.quad = {
-					a: new Vector3(rotatedA.x, rotatedA.y, 0),
-					b: new Vector3(anchorPoint.x, anchorPoint.y, 0),
-					c: new Vector3(rotatedC.x, rotatedC.y, 0),
-					d: new Vector3(rotatedD.x, rotatedD.y, 0)
-				};
-			}
+				if (facet.quad && addendaFacet0.quad) {
+					const offset = {
+						x: facet.quad.a.x - addendaFacet0.quad.b.x,
+						y: facet.quad?.a.y - addendaFacet0.quad?.b.y
+					};
+					const offsetAngle =
+						getAngle(facet.quad.a, facet.quad.d) -
+						getAngle(addendaFacet0.quad.b, addendaFacet0.quad.c);
+					const anchorPoint = {
+						x: addendaFacet0.quad.b.x + offset.x,
+						y: addendaFacet0.quad.b.y + offset.y
+					};
+					const rotatedA = rotatePoint(
+						anchorPoint,
+						{ x: addendaFacet0.quad.a.x + offset.x, y: addendaFacet0.quad.a.y + offset.y },
+						offsetAngle
+					);
+					const rotatedC = rotatePoint(
+						anchorPoint,
+						{ x: addendaFacet0.quad.c.x + offset.x, y: addendaFacet0.quad.c.y + offset.y },
+						offsetAngle
+					);
+					const rotatedD = rotatePoint(
+						anchorPoint,
+						{ x: addendaFacet0.quad.d.x + offset.x, y: addendaFacet0.quad.d.y + offset.y },
+						offsetAngle
+					);
+					addendaFacet0.quad = {
+						a: new Vector3(rotatedA.x, rotatedA.y, 0),
+						b: new Vector3(anchorPoint.x, anchorPoint.y, 0),
+						c: new Vector3(rotatedC.x, rotatedC.y, 0),
+						d: new Vector3(rotatedD.x, rotatedD.y, 0)
+					};
+				}
 
-			// addendaPath0 =
-			const addenda0 = {
-				quad: addendaFacet0.quad,
-				quadWidth: addendaFacet0.quadWidth,
-				path: addendaFacet0.quad ? transformPatternByQuad(addendaPrototype, addendaFacet0.quad) : []
-			};
-			// const addendaFacet1 = bands[(bandIndex + bands.length + 1) % bands.length].facets[facetIndex];
-			// const addenda1 = {
-			// 	quad: addendaFacet1.quad,
-			// 	quadWidth: addendaFacet1.quadWidth,
-			// 	path: addendaFacet1.path
-			// };
+				// addendaPath0 =
+				const addenda0 = {
+					quad: addendaFacet0.quad,
+					quadWidth: addendaFacet0.quadWidth,
+					path: addendaFacet0.quad
+						? transformPatternByQuad(addendaPrototype, addendaFacet0.quad)
+						: []
+				};
+				// const addendaFacet1 = bands[(bandIndex + bands.length + 1) % bands.length].facets[facetIndex];
+				// const addenda1 = {
+				// 	quad: addendaFacet1.quad,
+				// 	quadWidth: addendaFacet1.quadWidth,
+				// 	path: addendaFacet1.path
+				// };
 
-			return { ...facet, addenda: [addenda0] };
-		})
-	}));
+				return { ...facet, addenda: [addenda0] };
+			})
+		};
+	});
 	return adjusted;
 };
