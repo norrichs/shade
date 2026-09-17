@@ -38,7 +38,7 @@
 		type GeometrySource
 	} from '$lib/stores';
 	import { handleFacetSelect, highlightRealBand } from '../three-renderer/selection-helpers';
-	import { assemblerHighlightToReal } from '$lib/cut-pattern/pattern-band-space';
+	import { assemblerHighlightOnSource } from '$lib/cut-pattern/pattern-band-space';
 	import { get } from 'svelte/store';
 	import { interactionMode, isMeasureInteractionMode } from '../three-renderer/interaction-mode';
 	import { nearestVertexFromEvent } from '../three-renderer/nearest-vertex';
@@ -104,8 +104,9 @@
 	const bandKeyOf = (band: { address?: GlobuleAddress_Band; geometry: BufferGeometry }) =>
 		band.address ? bandKey(band.address) : band.geometry.uuid;
 
-	// The Assembler highlight is in pattern band space; each source's meshes carry
-	// real band addresses. Mapped once per source per highlight (not per mesh).
+	// The Assembler highlight is in its source's pattern band space; each source's
+	// meshes carry real band addresses and light only their own source's highlight.
+	// Mapped once per source per highlight (not per mesh).
 	let highlightFor = $derived.by(() => {
 		const highlight = $assemblerHighlight;
 		const spaceOf = $patternBandSpaces;
@@ -113,10 +114,7 @@
 		return (source: GeometrySource): AssemblerHighlight => {
 			if (!highlight) return null;
 			if (!cache.has(source))
-				cache.set(
-					source,
-					assemblerHighlightToReal(spaceOf(source, highlight.band.globule), highlight)
-				);
+				cache.set(source, assemblerHighlightOnSource(spaceOf, highlight, source));
 			return cache.get(source) ?? null;
 		};
 	});

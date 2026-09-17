@@ -17,10 +17,11 @@ import type { GlobuleAddress_Band } from '$lib/projection-geometry/types';
 import { buildBandRingLookup, type BandRingLookup } from '$lib/cut-pattern/band-ring-lookup';
 import { collateTubes } from '$lib/cut-pattern/collate-tubes';
 import { buildBandSortIndex } from '$lib/cut-pattern/band-sort-index';
-import { superGlobulePatternStore } from './superGlobuleStores';
+import { patternSourceStore, superGlobulePatternStore } from './superGlobuleStores';
 import { patternConfigStore } from './globulePatternStores';
 import { viewControlStore } from './viewControlStore';
-import { setAssemblerHighlight } from './selectionStores';
+import { setAssemblerHighlight, type GeometrySource } from './selectionStores';
+import { assemblerHighlightRing } from '$lib/cut-pattern/pattern-band-space';
 
 export type { BandRingLookup };
 
@@ -61,13 +62,27 @@ export const bandRingLookup = derived(
 );
 
 /**
- * Highlight `band` along with its ring, resolved through `bandRingLookup`.
- *
- * The single entry point for a band click in ANY of the three Assembler
- * contexts (3D geometry, SVG pattern, data grid), so they cannot disagree about
- * which bands belong to the clicked band's ring. Re-clicking the highlighted
- * band clears the highlight (see `setAssemblerHighlight`).
+ * The ring of a band of `source`: resolved through `bandRingLookup` when `source`
+ * is the current pattern source (the lookup is built from the pattern pane's
+ * tubes), empty otherwise.
  */
-export const setAssemblerHighlightForBand = (band: GlobuleAddress_Band): void => {
-	setAssemblerHighlight(band, get(bandRingLookup)(band));
+export const assemblerRingOf =
+	(source: GeometrySource) =>
+	(band: GlobuleAddress_Band): GlobuleAddress_Band[] =>
+		assemblerHighlightRing(source, get(patternSourceStore), get(bandRingLookup), band);
+
+/**
+ * Highlight `band` of `source` (pattern band space) along with its ring.
+ *
+ * The single entry point for a band click in the SVG pattern and the data grid,
+ * and (through `assemblerHighlightForRealClick`) the ring source for 3D clicks,
+ * so the three contexts cannot disagree about which bands belong to the clicked
+ * band's ring. Re-clicking the highlighted band clears the highlight (see
+ * `setAssemblerHighlight`).
+ */
+export const setAssemblerHighlightForBand = (
+	source: GeometrySource,
+	band: GlobuleAddress_Band
+): void => {
+	setAssemblerHighlight(source, band, assemblerRingOf(source)(band));
 };

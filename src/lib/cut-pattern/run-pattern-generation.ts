@@ -15,6 +15,7 @@ import type {
 import { generateProjectionPattern, generateSuperGlobulePattern } from './generate-pattern';
 import { resolvePatternGenerationTargets } from './pattern-generation-gates';
 import { dedupeSplitRejections } from './split-flat-bands';
+import { keepsFillBands } from './pattern-band-space';
 
 export type PatternGenerationResult = {
 	superGlobulePattern: SuperGlobuleBandPattern | null;
@@ -25,6 +26,10 @@ export type PatternGenerationResult = {
 	voronoiSurfacePattern: SuperGlobuleProjectionPattern | undefined;
 	// Persisted splits that generation dropped, for the page to report.
 	rejectedSplits: TubeSplitRejection[];
+	// The fill-band rule every projection pattern above was generated with, so the
+	// pattern ↔ 3D band space follows this result rather than the (possibly newer)
+	// config. See `patternBandSpaceLookup`.
+	keepsFillBands: boolean;
 };
 
 export const EMPTY_PATTERN_RESULT: PatternGenerationResult = {
@@ -34,7 +39,8 @@ export const EMPTY_PATTERN_RESULT: PatternGenerationResult = {
 	surfaceProjectionPattern: undefined,
 	voronoiPattern: undefined,
 	voronoiSurfacePattern: undefined,
-	rejectedSplits: []
+	rejectedSplits: [],
+	keepsFillBands: false
 };
 
 /**
@@ -136,6 +142,7 @@ export const runPatternGeneration = ({
 			surfaceProjectionPattern,
 			voronoiPattern,
 			voronoiSurfacePattern
-		])
+		]),
+		keepsFillBands: keepsFillBands(genConfig.patternTypeConfig)
 	};
 };

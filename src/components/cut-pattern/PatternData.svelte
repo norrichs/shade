@@ -23,7 +23,16 @@
 	 */
 	import type { BandSortIndex, TubeCutPattern } from '$lib/types';
 	import type { GlobuleAddress_Band } from '$lib/projection-geometry/types';
-	import { assemblerHighlight, sameGlobuleBand, setAssemblerHighlightForBand } from '$lib/stores';
+	import {
+		assemblerHighlight,
+		patternSourceStore,
+		sameGlobuleBand,
+		setAssemblerHighlightForBand
+	} from '$lib/stores';
+	import {
+		assemblerHighlightInPattern,
+		geometrySourceOfPattern
+	} from '$lib/cut-pattern/pattern-band-space';
 	import { HIGHLIGHT_PRIMARY, HIGHLIGHT_SECONDARY } from '$lib/highlight-colors';
 	import { findBandRow } from '$lib/cut-pattern/band-row-lookup';
 
@@ -161,9 +170,15 @@
 	const isTubeMatch = (cell: string): boolean =>
 		isActive(tubeFilter) && cellHasTube(cell, tubeFilter);
 
+	// The grid lists the current pattern source's bands: a highlight set on another
+	// 3D source names bands in that source's space, so it is not shown here.
+	let paneHighlight = $derived(
+		assemblerHighlightInPattern($assemblerHighlight, $patternSourceStore)
+	);
+
 	/** Cross-view selection state of a cell, for grid highlighting. */
 	const cellSelection = (r: number, c: number): 'primary' | 'secondary' | null => {
-		const h = $assemblerHighlight;
+		const h = paneHighlight;
 		if (!h) return null;
 		const resolved = resolveCell(r, c);
 		if (!resolved) return null;
@@ -187,7 +202,7 @@
 	const handleCellClick = (r: number, c: number) => {
 		const resolved = resolveCell(r, c);
 		if (!resolved) return;
-		setAssemblerHighlightForBand(resolved.band);
+		setAssemblerHighlightForBand(geometrySourceOfPattern($patternSourceStore), resolved.band);
 	};
 
 	const handleCellKeydown = (e: KeyboardEvent, r: number, c: number) => {
@@ -211,7 +226,7 @@
 	 * relative to the wrong element.
 	 */
 	$effect(() => {
-		const highlight = $assemblerHighlight;
+		const highlight = paneHighlight;
 		const rows = filteredRows;
 		const container = gridScrollEl;
 		if (!autoScroll || !highlight || !container) return;

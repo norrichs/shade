@@ -23,6 +23,7 @@
 	import { buildSelfTagLines } from '$lib/cut-pattern/build-self-tag-lines';
 	import { bandTransform } from '$lib/cut-pattern/band-transform';
 	import {
+		assemblerHighlightInPattern,
 		geometrySourceOfPattern,
 		patternBandSelectionToReal
 	} from '$lib/cut-pattern/pattern-band-space';
@@ -84,7 +85,8 @@
 	// Assembler cross-view highlight: fill this band's bounds when it (or its
 	// ring) is the band clicked in the data grid.
 	let highlightFill = $derived.by(() => {
-		const h = $assemblerHighlight;
+		// Only a highlight of this pattern's source names bands in its space.
+		const h = assemblerHighlightInPattern($assemblerHighlight, selectionTarget);
 		if (!h) return null;
 		if (sameGlobuleBand(band.address, h.band)) return HIGHLIGHT_PRIMARY;
 		if (h.ring.some((b) => sameGlobuleBand(band.address, b))) return HIGHLIGHT_SECONDARY;
@@ -132,7 +134,7 @@
 				$selectedProjection = facetAddress;
 			}
 		}
-		setAssemblerHighlightForBand(address);
+		setAssemblerHighlightForBand(geometrySourceOfPattern(selectionTarget), address);
 	};
 </script>
 

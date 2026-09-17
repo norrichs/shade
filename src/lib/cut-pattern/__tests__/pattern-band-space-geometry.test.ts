@@ -5,9 +5,13 @@ import {
 	generateDefaultSuperGlobuleConfig
 } from '$lib/shades-config';
 import { generateProjectionPattern } from '../generate-pattern';
+import { runPatternGeneration, type PatternGenerationResult } from '../run-pattern-generation';
+import { rehydratePatternResult } from '$lib/workers/rehydrate-pattern';
+import type { PatternGenerationConfig } from '$lib/stores/globulePatternStores';
 import {
 	bandSpaceForTubes,
 	keepsFillBands,
+	patternBandSpaceLookup,
 	patternBandToReal,
 	patternFacetToReal,
 	realBandToPattern
@@ -215,5 +219,70 @@ describe('pattern → 3D band mapping on real geometry', () => {
 					band: b.address.band
 				})
 			);
+	});
+});
+
+/**
+ * Task 15: generation records the fill-band rule it used, the record survives the
+ * worker round trip, and the mapping built from it stays right while the config
+ * has moved on (paused pattern updates: tiled pattern shown, config now outlined).
+ */
+describe('band space follows the generated pattern', () => {
+	const fillAllSurface = () => {
+		const superConfig = generateDefaultSuperGlobuleConfig();
+		superConfig.projectionConfigs[0].surfaceProjectionConfig = { divisions: 2, fillAll: true };
+		return { superConfig, superGlobule: generateSuperGlobule(superConfig, gates) };
+	};
+	const genConfigOf = (patternTypeConfig: PatternGenerationConfig['patternTypeConfig']) => {
+		const patternConfig = generateDefaultGlobulePatternConfig();
+		return {
+			patternTypeConfig,
+			pixelScale: patternConfig.patternConfig.pixelScale,
+			showBands: true,
+			range: RANGE,
+			patternSource: 'surfaceProjection'
+		} as PatternGenerationConfig;
+	};
+	const surfaceTubesOf = (result: PatternGenerationResult) =>
+		(result.surfaceProjectionPattern as SuperGlobuleProjectionCutPattern).projectionCutPattern
+			.tubes;
+
+	it('records the fill rule it generated with, through the worker round trip', () => {
+		const { superConfig, superGlobule } = fillAllSurface();
+		const tiled = generateDefaultGlobulePatternConfig().patternTypeConfig;
+		const outlined = { ...tiled, type: 'outlined' } as typeof tiled;
+		const run = (patternTypeConfig: typeof tiled) =>
+			rehydratePatternResult(
+				structuredClone(
+					runPatternGeneration({
+						superGlobule,
+						superConfig,
+						genConfig: genConfigOf(patternTypeConfig),
+						gates
+					})
+				)
+			);
+		expect(run(tiled).keepsFillBands).toBe(false);
+		expect(run(outlined).keepsFillBands).toBe(true);
+	});
+
+	it('paused: a tiled pattern still maps through the tiled space after the config says outlined', () => {
+		const { superConfig, superGlobule } = fillAllSurface();
+		const genConfig = genConfigOf(generateDefaultGlobulePatternConfig().patternTypeConfig);
+		const result = runPatternGeneration({ superGlobule, superConfig, genConfig, gates });
+		const tubes = superGlobule.projections[0].surfaceProjectionTubes!;
+		const patternTubes = surfaceTubesOf(result);
+		// The config now says outlined; the pattern pane still shows `result`.
+		const spaceOf = patternBandSpaceLookup(() => tubes, result);
+		const space = spaceOf('surfaceProjection');
+		const tiledSpace = bandSpaceForTubes(tubes, false)!;
+		patternTubes
+			.flatMap((t) => t.bands)
+			.forEach((b) =>
+				expect(patternBandToReal(space, b.address)).toEqual(
+					patternBandToReal(tiledSpace, b.address)
+				)
+			);
+		expect(judge(tubes, patternTubes, false).failures).toEqual([]);
 	});
 });

@@ -22,7 +22,7 @@ import type {
 } from '$lib/projection-geometry/types';
 import type { PatternSource, PatternTypeConfig } from '$lib/types';
 import { isOutlinedPatternConfig } from '$lib/types';
-import type { AssemblerHighlight } from '$lib/assembler-highlight';
+import { toggleAssemblerHighlight, type AssemblerHighlight } from '$lib/assembler-highlight';
 import type { GeometrySource } from '$lib/stores/selectionStores';
 import type { PartnerHighlightSource } from '$lib/stores/partnerHighlightStore';
 import { buildBandSpace, patternedTubes, type BandSpace } from './pattern-band-index';
@@ -103,5 +103,88 @@ export const assemblerHighlightToReal = (
 	const ring = highlight.ring
 		.map((member) => patternBandToReal(space, member))
 		.filter((member): member is GlobuleAddress_Band => !!member);
-	return { band, ring };
+	return { source: highlight.source, band, ring };
+};
+
+/** Looks up the band space of one 3D geometry source's pattern. */
+export type PatternBandSpaceOf = (
+	source: GeometrySource,
+	globule?: number
+) => BandSpace | undefined;
+
+/**
+ * The band-space facts a pattern generation recorded (`PatternGenerationResult`).
+ * Plain data, so it survives the worker round trip.
+ */
+export type GeneratedBandSpaceFacts = { keepsFillBands: boolean };
+
+/**
+ * Pattern ↔ real band space for each 3D geometry source, under the fill-band rule
+ * the GENERATED pattern used. Generation can lag the config (paused updates,
+ * manual mode with pending changes), and the pane shows the generated pattern, so
+ * the config's current pattern type must not decide the mapping. Built lazily,
+ * once per source and globule.
+ */
+export const patternBandSpaceLookup = (
+	tubesOf: (source: GeometrySource, globule: number) => Tube[] | undefined,
+	generated: GeneratedBandSpaceFacts
+): PatternBandSpaceOf => {
+	const cache = new Map<string, BandSpace | undefined>();
+	return (source, globule = 0) => {
+		const key = `${source}:${globule}`;
+		if (!cache.has(key))
+			cache.set(key, bandSpaceForTubes(tubesOf(source, globule), generated.keepsFillBands));
+		return cache.get(key);
+	};
+};
+
+/**
+ * The assembler highlight as one 3D source's meshes should draw it: null unless
+ * the highlight belongs to that source, otherwise mapped through its band space.
+ * A highlight names bands in its own source's pattern space, which means nothing
+ * on another source's tubes.
+ */
+export const assemblerHighlightOnSource = (
+	spaceOf: PatternBandSpaceOf,
+	highlight: AssemblerHighlight,
+	source: GeometrySource
+): AssemblerHighlight =>
+	highlight && highlight.source === source
+		? assemblerHighlightToReal(spaceOf(source, highlight.band.globule), highlight)
+		: null;
+
+/** The assembler highlight as the pattern pane should draw it: only the pattern source's. */
+export const assemblerHighlightInPattern = (
+	highlight: AssemblerHighlight,
+	patternSource: PatternSource
+): AssemblerHighlight =>
+	highlight && highlight.source === geometrySourceOfPattern(patternSource) ? highlight : null;
+
+/**
+ * The ring for a highlight on `source`. The ring lookup is built from the pattern
+ * pane's tubes, so it only applies to the current pattern source; any other
+ * source highlights the band alone.
+ */
+export const assemblerHighlightRing = (
+	source: GeometrySource,
+	patternSource: PatternSource,
+	ringOf: (band: GlobuleAddress_Band) => GlobuleAddress_Band[],
+	band: GlobuleAddress_Band
+): GlobuleAddress_Band[] => (source === geometrySourceOfPattern(patternSource) ? ringOf(band) : []);
+
+/**
+ * The assembler highlight after a 3D click on a real band of `source`. The band
+ * is mapped to its pattern band; a band that was never patterned (hidden, or a
+ * fill band a tiled pattern drops) clears the highlight, so a stale highlight does
+ * not read as the click's result. Otherwise the usual toggle applies.
+ */
+export const assemblerHighlightForRealClick = (
+	current: AssemblerHighlight,
+	source: GeometrySource,
+	space: BandSpace | undefined,
+	address: GlobuleAddress_Band,
+	ringOf: (band: GlobuleAddress_Band) => GlobuleAddress_Band[]
+): AssemblerHighlight => {
+	const band = realBandToPattern(space, address);
+	return band ? toggleAssemblerHighlight(current, source, band, ringOf(band)) : null;
 };

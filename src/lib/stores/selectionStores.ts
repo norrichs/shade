@@ -33,14 +33,16 @@ import {
 	isGlobuleAddress_Facet,
 	isGlobuleAddress_Tube
 } from '$lib/util';
-import { sameGlobuleBand, type AssemblerHighlight } from '$lib/assembler-highlight';
-import { patternConfigStore } from './globulePatternStores';
 import {
-	bandSpaceForTubes,
+	sameGlobuleBand,
+	toggleAssemblerHighlight,
+	type AssemblerHighlight
+} from '$lib/assembler-highlight';
+import {
 	geometrySourceOfPartnerHighlight,
-	keepsFillBands,
+	patternBandSpaceLookup,
 	patternFacetToReal,
-	type BandSpace
+	type PatternBandSpaceOf
 } from '$lib/cut-pattern/pattern-band-space';
 
 /**
@@ -54,16 +56,15 @@ export { sameGlobuleBand, type AssemblerHighlight };
 export const assemblerHighlight = writable<AssemblerHighlight>(null);
 
 /**
- * Highlight `band` (with its `ring`). Clicking the already-highlighted band
- * clears the highlight; clicking a different band replaces it.
+ * Highlight `band` of `source` (with its `ring`). Clicking the already-highlighted
+ * band of the same source clears the highlight; anything else replaces it.
  */
 export const setAssemblerHighlight = (
+	source: GeometrySource,
 	band: GlobuleAddress_Band,
 	ring: GlobuleAddress_Band[] = []
 ): void => {
-	assemblerHighlight.update((cur) =>
-		cur && sameGlobuleBand(cur.band, band) ? null : { band, ring }
-	);
+	assemblerHighlight.update((cur) => toggleAssemblerHighlight(cur, source, band, ring));
 };
 
 /** Union type for address types that can be selected */
@@ -584,36 +585,31 @@ export const tubesForGeometrySource = (
 	}
 };
 
-/** Whether the current pattern type keeps fill bands; primitive, so it only notifies on change. */
-const patternKeepsFillBands = derived(patternConfigStore, ($patternConfigStore) =>
-	keepsFillBands($patternConfigStore.patternTypeConfig)
+/**
+ * The fill-band rule of the GENERATED pattern; primitive, so it only notifies on
+ * change. Read from the result, not the config: while pattern updates are paused
+ * (or manual mode has pending changes) the pane keeps showing the last result.
+ */
+const generatedKeepsFillBands = derived(
+	superGlobulePatternStore,
+	($result) => $result.keepsFillBands
 );
 
-/** Looks up the band space of one 3D geometry source's pattern. */
-export type PatternBandSpaceOf = (
-	source: GeometrySource,
-	globule?: number
-) => BandSpace | undefined;
+export type { PatternBandSpaceOf };
 
 /**
  * Pattern ↔ real band space for each 3D geometry source, built lazily from the
- * source's tubes with the same fill-band rule pattern generation uses. Every
- * site that maps a cut-pattern address onto 3D geometry, or a 3D click onto a
- * pattern address, goes through this (see `pattern-band-space.ts`).
+ * source's tubes with the fill-band rule the generated pattern used. Every site
+ * that maps a cut-pattern address onto 3D geometry, or a 3D click onto a pattern
+ * address, goes through this (see `pattern-band-space.ts`).
  */
 export const patternBandSpaces = derived(
-	[superGlobuleStore, patternKeepsFillBands],
-	([$superGlobuleStore, $keepFillBands]): PatternBandSpaceOf => {
-		const cache = new Map<string, BandSpace | undefined>();
-		return (source, globule = 0) => {
-			const key = `${source}:${globule}`;
-			if (!cache.has(key)) {
-				const tubes = tubesForGeometrySource($superGlobuleStore, source, globule);
-				cache.set(key, bandSpaceForTubes(tubes, $keepFillBands));
-			}
-			return cache.get(key);
-		};
-	}
+	[superGlobuleStore, generatedKeepsFillBands],
+	([$superGlobuleStore, $keepsFillBands]): PatternBandSpaceOf =>
+		patternBandSpaceLookup(
+			(source, globule) => tubesForGeometrySource($superGlobuleStore, source, globule),
+			{ keepsFillBands: $keepsFillBands }
+		)
 );
 
 export type SelectedBandEntry = { source: GeometrySource; address: GlobuleAddress_Band };

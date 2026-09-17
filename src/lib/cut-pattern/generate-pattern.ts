@@ -29,6 +29,7 @@ import {
 	applyTubePatternPostProcessing
 } from './generate-tiled-pattern';
 import { buildPatternBandIndex, patternedTubes } from './pattern-band-index';
+import { keepsFillBands } from './pattern-band-space';
 import { resolvePatternEntry } from '$lib/patterns/resolve-pattern';
 import { generateOutlinedProjectionPattern } from './generate-outlined-pattern';
 import { judgeTubeSplits } from './split-flat-bands';
@@ -134,7 +135,7 @@ export const generateProjectionPattern = (
 
 	// fillAll produces interior fill BANDS (one degenerate facet per quad) inside normal tubes.
 	// Tiled/panel patterns cannot tile degenerate facets — keep fill bands for outlined only.
-	const effectiveTubes = patternedTubes(tubes, isOutlinedPatternConfig(patternTypeConfig));
+	const effectiveTubes = patternedTubes(tubes, keepsFillBands(patternTypeConfig));
 
 	// Every configured tube's splits are judged against that tube's full quad
 	// count (or rejected when the tube does not exist), independent of the tube

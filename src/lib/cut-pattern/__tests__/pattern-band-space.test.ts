@@ -1,14 +1,20 @@
 import { describe, it, expect } from '@jest/globals';
 import { buildBandSpace } from '../pattern-band-index';
 import {
+	assemblerHighlightForRealClick,
+	assemblerHighlightInPattern,
+	assemblerHighlightOnSource,
+	assemblerHighlightRing,
 	assemblerHighlightToReal,
 	bandSpaceForTubes,
+	patternBandSpaceLookup,
 	patternBandSelectionToReal,
 	patternBandToReal,
 	patternFacetToReal,
 	realBandToPattern
 } from '../pattern-band-space';
-import type { Tube } from '$lib/projection-geometry/types';
+import type { GlobuleAddress_Band, Tube } from '$lib/projection-geometry/types';
+import type { AssemblerHighlight } from '$lib/assembler-highlight';
 
 /**
  * Task 12: pattern band addresses count only the bands that were patterned
@@ -145,33 +151,129 @@ describe('address mapping used by the pattern ↔ 3D sites', () => {
 		expect(realBandToPattern(visible, plain(1, 2))).toEqual(plain(1, 2));
 	});
 
-	it('real → pattern → real is the identity for every patterned band', () => {
-		for (const [space, tubes] of [
-			[hidden, hiddenTubes],
-			[fill, fillTubes]
-		] as const) {
-			tubes.forEach((tb, t) =>
-				tb.bands.forEach((_, b) => {
-					const pattern = realBandToPattern(space, plain(t, b));
-					if (pattern) expect(patternBandToReal(space, pattern)).toEqual(plain(t, b));
-				})
-			);
-		}
-	});
-
 	it('assemblerHighlightToReal (3D materials): band and ring on real bands', () => {
 		const highlight = {
+			source: 'projection' as const,
 			band: { ...plain(0, 1), piece: 0 },
 			ring: [{ ...plain(0, 1), piece: 0 }, { ...plain(0, 1), piece: 1 }, plain(1, 0), plain(1, 3)]
 		};
 		expect(assemblerHighlightToReal(hidden, highlight)).toEqual({
+			source: 'projection',
 			band: plain(0, 2),
 			ring: [plain(0, 2), plain(0, 2), plain(1, 1)]
 		});
-		expect(assemblerHighlightToReal(hidden, { band: plain(0, 3), ring: [] })).toBeNull();
+		expect(
+			assemblerHighlightToReal(hidden, { source: 'projection', band: plain(0, 3), ring: [] })
+		).toBeNull();
 		expect(assemblerHighlightToReal(hidden, null)).toBeNull();
 		expect(
-			assemblerHighlightToReal(visible, { band: plain(0, 1), ring: [plain(0, 1), plain(1, 2)] })
-		).toEqual({ band: plain(0, 1), ring: [plain(0, 1), plain(1, 2)] });
+			assemblerHighlightToReal(visible, {
+				source: 'projection',
+				band: plain(0, 1),
+				ring: [plain(0, 1), plain(1, 2)]
+			})
+		).toEqual({ source: 'projection', band: plain(0, 1), ring: [plain(0, 1), plain(1, 2)] });
+	});
+});
+
+/**
+ * Task 15: the band space follows the GENERATED pattern (its recorded fill rule),
+ * not the live config, and the highlight records the 3D source it belongs to.
+ */
+describe('band space from the generated pattern', () => {
+	// Paused updates: the config has moved on, the pane still shows what was generated.
+	const tubesOf = () => fillTubes;
+
+	it('a pattern generated tiled maps through the tiled space, whatever the config now says', () => {
+		const spaceOf = patternBandSpaceLookup(tubesOf, { keepsFillBands: false });
+		expect(patternBandToReal(spaceOf('surfaceProjection'), plain(0, 0))).toEqual(plain(0, 1));
+		expect(realBandToPattern(spaceOf('surfaceProjection'), plain(0, 0))).toBeNull();
+	});
+
+	it('a pattern generated outlined keeps the fill bands, whatever the config now says', () => {
+		const spaceOf = patternBandSpaceLookup(tubesOf, { keepsFillBands: true });
+		expect(patternBandToReal(spaceOf('surfaceProjection'), plain(0, 0))).toEqual(plain(0, 0));
+		expect(realBandToPattern(spaceOf('surfaceProjection'), plain(0, 3))).toEqual(plain(0, 3));
+	});
+});
+
+describe('assembler highlight source', () => {
+	// Projection hides real band 1 of tube 0; the surface projection has fill bands.
+	const spaceOf = patternBandSpaceLookup(
+		(source) => (source === 'projection' ? hiddenTubes : fillTubes),
+		{ keepsFillBands: false }
+	);
+	const fromSurface: AssemblerHighlight = {
+		source: 'surfaceProjection',
+		band: plain(0, 1),
+		ring: [plain(0, 1), plain(1, 0)]
+	};
+
+	it('lights only the meshes of the source it came from, mapped through that space', () => {
+		// Projection meshes would map band 1 through their own space (real band 2).
+		expect(assemblerHighlightOnSource(spaceOf, fromSurface, 'projection')).toBeNull();
+		expect(assemblerHighlightOnSource(spaceOf, fromSurface, 'surfaceProjection')).toEqual({
+			source: 'surfaceProjection',
+			band: plain(0, 2),
+			ring: [plain(0, 2), plain(1, 1)]
+		});
+		expect(assemblerHighlightOnSource(spaceOf, null, 'projection')).toBeNull();
+	});
+
+	it('the pattern pane shows it only when its source is the current pattern source', () => {
+		expect(assemblerHighlightInPattern(fromSurface, 'surfaceProjection')).toBe(fromSurface);
+		expect(assemblerHighlightInPattern(fromSurface, 'projection')).toBeNull();
+		const fromGlobuleTube: AssemblerHighlight = { ...fromSurface!, source: 'globuleTube' };
+		expect(assemblerHighlightInPattern(fromGlobuleTube, 'globule')).toBe(fromGlobuleTube);
+	});
+
+	it('a ring comes from the pattern pane only for the pattern source', () => {
+		const ringOf = (band: GlobuleAddress_Band) => [band, plain(1, 1)];
+		expect(assemblerHighlightRing('projection', 'projection', ringOf, plain(0, 2))).toEqual([
+			plain(0, 2),
+			plain(1, 1)
+		]);
+		expect(assemblerHighlightRing('surfaceProjection', 'projection', ringOf, plain(0, 2))).toEqual(
+			[]
+		);
+	});
+});
+
+describe('3D click → assembler highlight', () => {
+	const fill = bandSpaceForTubes(fillTubes, false);
+	const hidden = bandSpaceForTubes(hiddenTubes, false);
+	const noRing = () => [];
+	const lit: AssemblerHighlight = { source: 'surfaceProjection', band: plain(0, 0), ring: [] };
+
+	it('a click on a fill band (no pattern band) clears the highlight', () => {
+		expect(
+			assemblerHighlightForRealClick(lit, 'surfaceProjection', fill, plain(0, 0), noRing)
+		).toBeNull();
+		expect(
+			assemblerHighlightForRealClick(lit, 'surfaceProjection', fill, plain(1, 3), noRing)
+		).toBeNull();
+	});
+
+	it('a click on a hidden band clears the highlight', () => {
+		expect(
+			assemblerHighlightForRealClick(lit, 'projection', hidden, plain(0, 1), noRing)
+		).toBeNull();
+	});
+
+	it('a click on a patterned band highlights its pattern band with the clicked source', () => {
+		expect(
+			assemblerHighlightForRealClick(null, 'surfaceProjection', fill, plain(0, 2), noRing)
+		).toEqual({ source: 'surfaceProjection', band: plain(0, 1), ring: [] });
+	});
+
+	it('re-clicking toggles off only for the same source; another source replaces it', () => {
+		expect(
+			assemblerHighlightForRealClick(lit, 'surfaceProjection', fill, plain(0, 1), noRing)
+		).toBeNull();
+		expect(assemblerHighlightForRealClick(lit, 'projection', hidden, plain(0, 0), noRing)).toEqual({
+			source: 'projection',
+			band: plain(0, 0),
+			ring: []
+		});
 	});
 });
