@@ -1,6 +1,12 @@
 import type { BandCutPattern, PathSegment, Quadrilateral } from '$lib/types';
 import type { GlobuleAddress_Facet } from '$lib/projection-geometry/types';
 import { resolvePair } from './partner-pair-resolver';
+import {
+	alongsideFacetIndex,
+	findAdjacentSideNeighbour,
+	findBandByExactAddressInBands
+} from '$lib/cut-pattern/resolve-partner-band';
+import { bandAddressOf } from './base-quad-selection';
 
 export type PartnerRole = 'top' | 'bottom' | 'left' | 'right';
 export type RuleSetKey = 'withinBand' | 'acrossBands' | 'partner.startEnd' | 'partner.endEnd';
@@ -69,18 +75,24 @@ const transformPathFn = (path: PathSegment[], fn: (p: Pt) => Pt): PathSegment[] 
 		return seg;
 	});
 
-const findBand = (
-	bands: BandCutPattern[],
-	tube: number,
-	band: number
-): BandCutPattern | undefined =>
-	bands.find((b) => b.address.tube === tube && b.address.band === band);
-
+/**
+ * The base quad and its four partners, as the tiled adjusters see them.
+ *
+ * `allBands` may hold pieces of split bands, so every band is identified by
+ * address, never by array position (spec amendment 2026-09-16):
+ * - base: the band or piece `baseAddress` names exactly (a piece selection
+ *   carries `piece`; `facet` is local to that piece);
+ * - top/bottom: within the base band or piece; past its ends, the end partner
+ *   (`resolvePair`: outer end by which end joins, seam exactly);
+ * - left/right: side neighbours by the side-neighbour rule
+ *   (`findAdjacentSideNeighbour`, no wrap), paired in parent quad coordinates
+ *   (`alongsideFacetIndex`).
+ */
 export const resolveBaseAndPartners = (
 	allBands: BandCutPattern[],
 	baseAddress: GlobuleAddress_Facet
 ): PartnerBundle | null => {
-	const baseBand = findBand(allBands, baseAddress.tube, baseAddress.band);
+	const baseBand = findBandByExactAddressInBands(allBands, bandAddressOf(baseAddress));
 	if (!baseBand) return null;
 	const baseFacet = baseBand.facets[baseAddress.facet];
 	if (!baseFacet?.quad) return null;
@@ -128,7 +140,7 @@ export const resolveBaseAndPartners = (
 
 	const crossTubeBottom = (): ResolvedPartner | null => {
 		if (baseAddress.facet !== 0) return null;
-		const pair = resolvePair(allBands, baseAddress, 'partnerStart');
+		const pair = resolvePair(allBands, baseBand.address, 'partnerStart');
 		if (!pair) return null;
 		return {
 			role: 'bottom',
@@ -143,7 +155,7 @@ export const resolveBaseAndPartners = (
 
 	const crossTubeTop = (): ResolvedPartner | null => {
 		if (baseAddress.facet !== baseBand.facets.length - 1) return null;
-		const pair = resolvePair(allBands, baseAddress, 'partnerEnd');
+		const pair = resolvePair(allBands, baseBand.address, 'partnerEnd');
 		if (!pair) return null;
 		return {
 			role: 'top',
@@ -159,11 +171,21 @@ export const resolveBaseAndPartners = (
 	const top = sameBandTop() ?? crossTubeTop();
 	const bottom = sameBandBottom() ?? crossTubeBottom();
 
+	// Side neighbours live in the base's own tube. Parent order, and so which band
+	// is "previous", is the order parents appear in the tube's band array.
+	const tubeBands = allBands.filter(
+		(b) =>
+			b.address.globule === baseBand.address.globule && b.address.tube === baseBand.address.tube
+	);
+	const baseIndex = tubeBands.indexOf(baseBand);
+
 	const resolveLeft = (): ResolvedPartner | null => {
-		const left = findBand(allBands, baseAddress.tube, baseAddress.band - 1);
+		// The adjuster processes base with its previous side neighbour as source.
+		const left = findAdjacentSideNeighbour(tubeBands, baseIndex, -1, false);
 		if (!left) return null;
-		const facet = left.facets[baseAddress.facet];
-		if (!facet?.quad) return null;
+		const index = alongsideFacetIndex(baseBand, baseAddress.facet, left);
+		const facet = index === undefined ? undefined : left.facets[index];
+		if (index === undefined || !facet?.quad) return null;
 		// partner's right edge (b-c) coincides with base's left edge (a-d):
 		const fn = rigidFromTwoPoints(facet.quad.b, facet.quad.c, baseFacet.quad.a, baseFacet.quad.d);
 		// Runtime processes base with prevBand=left as source → base IS current; baseIsTarget=true.
@@ -171,12 +193,7 @@ export const resolveBaseAndPartners = (
 			role: 'left',
 			ruleSet: 'acrossBands',
 			baseIsTarget: true,
-			address: {
-				globule: baseAddress.globule,
-				tube: baseAddress.tube,
-				band: baseAddress.band - 1,
-				facet: baseAddress.facet
-			},
+			address: { ...left.address, facet: index },
 			quad: transformQuadFn(facet.quad, fn),
 			path: transformPathFn(structuredClone(facet.path), fn),
 			originalPath: facet.meta?.originalPath
@@ -186,34 +203,71 @@ export const resolveBaseAndPartners = (
 	};
 
 	const resolveRight = (): ResolvedPartner | null => {
-		const right = findBand(allBands, baseAddress.tube, baseAddress.band + 1);
-		if (!right) return null;
-		const facet = right.facets[baseAddress.facet];
-		if (!facet?.quad) return null;
-		// partner's left edge (a-d) coincides with base's right edge (b-c):
-		const fn = rigidFromTwoPoints(facet.quad.a, facet.quad.d, baseFacet.quad.b, baseFacet.quad.c);
-		// Runtime processes right (band+1) with base (band) as its source → right is current,
-		// base is neighbor. rule.target lives on the right partner; baseIsTarget=false.
-		return {
-			role: 'right',
-			ruleSet: 'acrossBands',
-			baseIsTarget: false,
-			address: {
-				globule: baseAddress.globule,
-				tube: baseAddress.tube,
-				band: baseAddress.band + 1,
-				facet: baseAddress.facet
-			},
-			quad: transformQuadFn(facet.quad, fn),
-			path: transformPathFn(structuredClone(facet.path), fn),
-			originalPath: facet.meta?.originalPath
-				? transformPathFn(structuredClone(facet.meta.originalPath), fn)
-				: undefined
-		};
+		// The adjuster processes the right-hand band with ITS previous side neighbour
+		// as source, so the right partner is the band whose previous neighbour (by the
+		// side-neighbour rule) is base and which covers base's parent quad. For an
+		// unsplit tube that is band + 1, facet f. An uncut base beside a split band
+		// is the previous neighbour of every piece, so the piece covering the quad wins.
+		for (let i = 0; i < tubeBands.length; i++) {
+			const right = tubeBands[i];
+			if (findAdjacentSideNeighbour(tubeBands, i, -1, false) !== baseBand) continue;
+			const index = alongsideFacetIndex(baseBand, baseAddress.facet, right);
+			if (index === undefined) continue;
+			const facet = right.facets[index];
+			if (!facet?.quad) return null;
+			// partner's left edge (a-d) coincides with base's right edge (b-c):
+			const fn = rigidFromTwoPoints(facet.quad.a, facet.quad.d, baseFacet.quad.b, baseFacet.quad.c);
+			// Runtime processes right (band+1) with base (band) as its source → right is current,
+			// base is neighbor. rule.target lives on the right partner; baseIsTarget=false.
+			return {
+				role: 'right',
+				ruleSet: 'acrossBands',
+				baseIsTarget: false,
+				address: { ...right.address, facet: index },
+				quad: transformQuadFn(facet.quad, fn),
+				path: transformPathFn(structuredClone(facet.path), fn),
+				originalPath: facet.meta?.originalPath
+					? transformPathFn(structuredClone(facet.meta.originalPath), fn)
+					: undefined
+			};
+		}
+		return null;
 	};
 
 	const left = resolveLeft();
 	const right = resolveRight();
 
 	return { base, top, bottom, left, right };
+};
+
+export type PartnerHighlightAddresses = Record<
+	'base' | 'top' | 'bottom' | 'left' | 'right',
+	GlobuleAddress_Facet | null
+>;
+
+/**
+ * The 3D highlight addresses for a bundle. The 3D view has no pieces: it indexes
+ * the parent band's facets by quad. A piece-local facet `f` is parent quad
+ * `parentQuadOffset + f`, on the parent band (piece dropped). Unsplit addresses
+ * pass through unchanged. An address whose band is not in `allBands` is dropped.
+ */
+export const partnerHighlightAddresses = (
+	allBands: BandCutPattern[],
+	bundle: PartnerBundle | null
+): PartnerHighlightAddresses => {
+	const toParentQuad = (address: GlobuleAddress_Facet | undefined): GlobuleAddress_Facet | null => {
+		if (!address) return null;
+		const bandAddress = bandAddressOf(address);
+		const band = findBandByExactAddressInBands(allBands, bandAddress);
+		if (!band) return null;
+		const { globule, tube, band: bandIndex } = bandAddress;
+		return { globule, tube, band: bandIndex, facet: (band.parentQuadOffset ?? 0) + address.facet };
+	};
+	return {
+		base: toParentQuad(bundle?.base.address),
+		top: toParentQuad(bundle?.top?.address),
+		bottom: toParentQuad(bundle?.bottom?.address),
+		left: toParentQuad(bundle?.left?.address),
+		right: toParentQuad(bundle?.right?.address)
+	};
 };

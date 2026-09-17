@@ -1,5 +1,6 @@
-import { resolveBaseAndPartners } from '../partner-neighbors';
+import { resolveBaseAndPartners, partnerHighlightAddresses } from '../partner-neighbors';
 import type { BandCutPattern } from '$lib/types';
+import type { GlobuleAddress_Facet } from '$lib/projection-geometry/types';
 
 const makeQuad = (id: number) => ({
 	a: { x: id * 10, y: 0, z: 0 } as any,
@@ -191,5 +192,156 @@ describe('left/right partner resolution', () => {
 		expect(r!.quad.a.y).toBeCloseTo(0);
 		expect(r!.quad.d.x).toBeCloseTo(5);
 		expect(r!.quad.d.y).toBeCloseTo(5);
+	});
+});
+
+describe('split tubes', () => {
+	type Addr = { globule: number; tube: number; band: number; piece?: number };
+	const plain = (tube: number, band: number): Addr => ({ globule: 0, tube, band });
+	const piece = (tube: number, band: number, p: number): Addr => ({
+		globule: 0,
+		tube,
+		band,
+		piece: p
+	});
+
+	// Facet ids are unique per band/piece so paths identify where a facet came from.
+	const makePiece = (
+		address: Addr,
+		facetIds: number[],
+		parentQuadOffset: number | undefined,
+		meta?: Record<string, unknown>
+	): BandCutPattern =>
+		({
+			projectionType: 'patterned',
+			address,
+			facets: facetIds.map(makeFacet),
+			...(parentQuadOffset === undefined ? {} : { parentQuadOffset }),
+			meta
+		}) as unknown as BandCutPattern;
+
+	// Tube 0: b0 cut into p0 (3 quads) and p1 (2 quads); b1 the same (splits are
+	// tube-wide); b2 uncut (5 quads). Unequal pieces, so piece 0 and piece 1 never
+	// coincide by length or offset.
+	const tube0 = () => [
+		makePiece(piece(0, 0, 0), [0, 1, 2], 0, {
+			startPartnerBand: plain(1, 0),
+			endPartnerBand: piece(0, 0, 1)
+		}),
+		makePiece(piece(0, 0, 1), [10, 11], 3, {
+			startPartnerBand: piece(0, 0, 0),
+			endPartnerBand: plain(1, 0)
+		}),
+		makePiece(piece(0, 1, 0), [100, 101, 102], 0),
+		makePiece(piece(0, 1, 1), [110, 111], 3),
+		makePiece(plain(0, 2), [200, 201, 202, 203, 204], undefined)
+	];
+	// Tube 1: b0 uncut; its start meets t0/b0's end, its end meets t0/b0's start.
+	const tube1 = () => [
+		makePiece(plain(1, 0), [1000, 1001, 1002, 1003, 1004], undefined, {
+			startPartnerBand: plain(0, 0),
+			endPartnerBand: plain(0, 0)
+		})
+	];
+	const all = () => [...tube0(), ...tube1()];
+
+	it("resolves the base band by its piece address, not the parent's first piece", () => {
+		const bands = all();
+		const result = resolveBaseAndPartners(bands, {
+			...piece(0, 0, 1),
+			facet: 0
+		} as GlobuleAddress_Facet);
+		expect(result).not.toBeNull();
+		expect(result!.base.path).toEqual(bands[1].facets[0].path);
+		expect(result!.base.address).toEqual({ ...piece(0, 0, 1), facet: 0 });
+	});
+
+	it("end ghost: the last piece's last quad gets the outer end partner", () => {
+		const bands = all();
+		// b0p1 facet 1 is the end of parent b0 (piece 0 has 3 facets, so facet 1 is
+		// not its last).
+		const result = resolveBaseAndPartners(bands, {
+			...piece(0, 0, 1),
+			facet: 1
+		} as GlobuleAddress_Facet);
+		expect(result?.top?.ruleSet).toBe('partner.endEnd');
+		expect(result?.top?.address).toEqual({ ...plain(1, 0), facet: 0 });
+	});
+
+	it("seam ghost: piece 0's last quad gets its sibling piece's first quad", () => {
+		const bands = all();
+		const result = resolveBaseAndPartners(bands, {
+			...piece(0, 0, 0),
+			facet: 2
+		} as GlobuleAddress_Facet);
+		expect(result?.top?.ruleSet).toBe('partner.endEnd');
+		expect(result?.top?.address).toEqual({ ...piece(0, 0, 1), facet: 0 });
+	});
+
+	it('left neighbour: the same-index piece of the previous band, same parent quad', () => {
+		const bands = all();
+		const result = resolveBaseAndPartners(bands, {
+			...piece(0, 1, 1),
+			facet: 1
+		} as GlobuleAddress_Facet);
+		expect(result?.left?.address).toEqual({ ...piece(0, 0, 1), facet: 1 });
+	});
+
+	it('right neighbour: the band whose left neighbour at that parent quad is the base', () => {
+		const bands = all();
+		// Base b0p1 facet 1 = parent quad 4; right is b1p1 facet 1.
+		const fromPiece = resolveBaseAndPartners(bands, {
+			...piece(0, 0, 1),
+			facet: 1
+		} as GlobuleAddress_Facet);
+		expect(fromPiece?.right?.address).toEqual({ ...piece(0, 1, 1), facet: 1 });
+	});
+
+	it('right neighbour of an uncut band beside a split band is the piece covering that quad', () => {
+		// Tube: b0 uncut (5 quads), b1 cut into p0 (3) and p1 (2). The adjuster pairs
+		// b1p1 facet f with b0 facet 3 + f, so b0 facet 4's right partner is b1p1 facet 1.
+		const bands = [
+			makePiece(plain(0, 0), [0, 1, 2, 3, 4], undefined),
+			makePiece(piece(0, 1, 0), [100, 101, 102], 0),
+			makePiece(piece(0, 1, 1), [110, 111], 3)
+		];
+		const result = resolveBaseAndPartners(bands, {
+			...plain(0, 0),
+			facet: 4
+		} as GlobuleAddress_Facet);
+		expect(result?.right?.address).toEqual({ ...piece(0, 1, 1), facet: 1 });
+	});
+
+	it("guard: no left neighbour where the adjuster has none (uncut band past a split neighbour's piece 0)", () => {
+		const bands = all();
+		const result = resolveBaseAndPartners(bands, {
+			...plain(0, 2),
+			facet: 4
+		} as GlobuleAddress_Facet);
+		expect(result?.left).toBeNull();
+	});
+
+	it("3D highlight maps a later piece's facet to parentQuadOffset + facet on the parent band", () => {
+		const bands = all();
+		const bundle = resolveBaseAndPartners(bands, {
+			...piece(0, 0, 1),
+			facet: 1
+		} as GlobuleAddress_Facet);
+		const highlight = partnerHighlightAddresses(bands, bundle);
+		expect(highlight.base).toEqual({ ...plain(0, 0), facet: 4 });
+		expect(highlight.right).toEqual({ ...plain(0, 1), facet: 4 });
+		expect(highlight.top).toEqual({ ...plain(1, 0), facet: 0 });
+		expect(highlight.left).toBeNull();
+	});
+
+	it('3D highlight leaves unsplit addresses unchanged', () => {
+		const bands = [makeBand(0, 0), makeBand(1, 0)];
+		const bundle = resolveBaseAndPartners(bands, { globule: 0, tube: 0, band: 1, facet: 1 });
+		const highlight = partnerHighlightAddresses(bands, bundle);
+		expect(highlight.base).toEqual({ globule: 0, tube: 0, band: 1, facet: 1 });
+		expect(highlight.left).toEqual({ globule: 0, tube: 0, band: 0, facet: 1 });
+		expect(highlight.top).toEqual({ globule: 0, tube: 0, band: 1, facet: 2 });
+		expect(highlight.bottom).toEqual({ globule: 0, tube: 0, band: 1, facet: 0 });
+		expect(highlight.right).toBeNull();
 	});
 });

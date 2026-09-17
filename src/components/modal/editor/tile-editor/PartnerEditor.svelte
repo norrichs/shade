@@ -4,10 +4,12 @@
 	import { superGlobulePatternStore } from '$lib/stores/superGlobuleStores';
 	import { partnerHighlightStore } from '$lib/stores/partnerHighlightStore';
 	import type { BandCutPattern } from '$lib/types';
-	import BaseQuadSelector, { type BaseQuadAddress } from './BaseQuadSelector.svelte';
+	import BaseQuadSelector from './BaseQuadSelector.svelte';
+	import { facetAddressOf, type BaseQuadAddress } from './base-quad-selection';
 	import PartnersViewport from './PartnersViewport.svelte';
 	import PartnerRulesPanel from './PartnerRulesPanel.svelte';
 	import {
+		partnerHighlightAddresses,
 		resolveBaseAndPartners,
 		type PartnerBundle,
 		type ResolvedPartner,
@@ -42,14 +44,11 @@
 		return tubes?.flatMap((t) => t.bands) ?? [];
 	};
 
+	// The 3D view indexes parent bands by quad; pieces are mapped to parent quads.
 	const writeHighlight = (source: any, b: PartnerBundle | null) => {
 		partnerHighlightStore.set({
 			source,
-			base: b?.base.address ?? null,
-			top: b?.top?.address ?? null,
-			bottom: b?.bottom?.address ?? null,
-			left: b?.left?.address ?? null,
-			right: b?.right?.address ?? null
+			...partnerHighlightAddresses(source ? flattenBands(source) : [], b)
 		});
 	};
 
@@ -68,12 +67,7 @@
 			return;
 		}
 		const bands = flattenBands(next.source);
-		const fresh = resolveBaseAndPartners(bands, {
-			globule: next.globule,
-			tube: next.tube,
-			band: next.band,
-			facet: next.facet
-		});
+		const fresh = resolveBaseAndPartners(bands, facetAddressOf(next));
 		snapshot = fresh;
 		writeHighlight(next.source as any, fresh);
 	};
@@ -81,12 +75,7 @@
 	const livePair = $derived.by((): PartnerBundle | null => {
 		if (!address) return null;
 		const bands = flattenBands(address.source);
-		return resolveBaseAndPartners(bands, {
-			globule: address.globule,
-			tube: address.tube,
-			band: address.band,
-			facet: address.facet
-		});
+		return resolveBaseAndPartners(bands, facetAddressOf(address));
 	});
 
 	const isStale = $derived.by(() => {

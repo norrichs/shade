@@ -49,7 +49,17 @@ export const findBandByExactAddress = (
 	address: BandAddress
 ): BandCutPattern | undefined =>
 	// Bands may be a sparse subset, so look up by address rather than by index.
-	tubes[address.tube]?.bands.find((b) => isSameAddress(b.address, address));
+	findBandByExactAddressInBands(tubes[address.tube]?.bands ?? [], address);
+
+/**
+ * `findBandByExactAddress` over a flat band array (any mix of tubes). Same rule;
+ * `findBandByExactAddress` delegates here. Used where only a flattened band list
+ * is at hand (the tile editor).
+ */
+export const findBandByExactAddressInBands = <B extends { address: BandAddress }>(
+	bands: B[],
+	address: BandAddress
+): B | undefined => bands.find((b) => isSameAddress(b.address, address));
 
 /**
  * All of `bands` that are `address`'s parent band: the unsplit band itself, or
@@ -261,10 +271,24 @@ export const findPreviousBandFacets = <F>(
 	const addressed = bands as (SideNeighbourCandidate<F> & { address: BandAddress })[];
 	const neighbour = findAdjacentSideNeighbour(addressed, bandIndex, -1, true);
 	if (!neighbour) return band.facets.map(() => undefined);
-	const offset = band.parentQuadOffset ?? 0;
-	const neighbourOffset = neighbour.parentQuadOffset ?? 0;
 	return band.facets.map((_, f) => {
-		const index = offset + f - neighbourOffset;
-		return index >= 0 && index < neighbour.facets.length ? neighbour.facets[index] : undefined;
+		const index = alongsideFacetIndex(band, f, neighbour);
+		return index === undefined ? undefined : neighbour.facets[index];
 	});
+};
+
+/**
+ * The index of `neighbour`'s facet alongside `band`'s facet `facet`, pairing
+ * them in PARENT quad coordinates: facet `f` sits at parent quad
+ * `parentQuadOffset + f` (0 offset for an uncut band). Undefined when the
+ * neighbour does not cover that parent quad. Tiled output has one facet per
+ * quad, so facet and quad indices coincide.
+ */
+export const alongsideFacetIndex = (
+	band: { parentQuadOffset?: number },
+	facet: number,
+	neighbour: { parentQuadOffset?: number; facets: unknown[] }
+): number | undefined => {
+	const index = (band.parentQuadOffset ?? 0) + facet - (neighbour.parentQuadOffset ?? 0);
+	return index >= 0 && index < neighbour.facets.length ? index : undefined;
 };

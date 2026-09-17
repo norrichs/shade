@@ -3,14 +3,12 @@
 	import { superGlobulePatternStore } from '$lib/stores/superGlobuleStores';
 	import type { BandCutPattern } from '$lib/types';
 	import type { PartnerHighlightSource } from '$lib/stores/partnerHighlightStore';
-
-	export type BaseQuadAddress = {
-		source: PartnerHighlightSource;
-		globule: number;
-		tube: number;
-		band: number;
-		facet: number;
-	};
+	import {
+		bandKeyOf,
+		bandOptionsForTube,
+		baseQuadAddressOf,
+		type BaseQuadAddress
+	} from './base-quad-selection';
 
 	let {
 		value,
@@ -40,7 +38,9 @@
 
 	let pendingSource: PartnerHighlightSource | null = $state(null);
 	let pendingTube: number | null = $state(null);
-	let pendingBand: number | null = $state(null);
+	// The selected band row's key (`b3` or `b3p1`), never an array position: a
+	// split tube's band array interleaves pieces.
+	let pendingBand: string | null = $state(null);
 	let pendingFacet: number | null = $state(null);
 
 	// Sync pending state from external value only when value transitions externally
@@ -58,7 +58,7 @@
 		} else {
 			pendingSource = value.source;
 			pendingTube = value.tube;
-			pendingBand = value.band;
+			pendingBand = bandKeyOf(value);
 			pendingFacet = value.facet;
 		}
 		lastValue = value;
@@ -67,15 +67,16 @@
 	const setSelections = (
 		s: PartnerHighlightSource | null,
 		t: number | null,
-		b: number | null,
+		b: string | null,
 		f: number | null
 	) => {
 		pendingSource = s;
 		pendingTube = t;
 		pendingBand = b;
 		pendingFacet = f;
-		if (s !== null && t !== null && b !== null && f !== null) {
-			onChange({ source: s, globule: 0, tube: t, band: b, facet: f });
+		const option = b === null ? undefined : optionsOf(s, t).find((o) => o.key === b);
+		if (s !== null && t !== null && option && f !== null) {
+			onChange(baseQuadAddressOf(s, option.address, f));
 		} else {
 			onChange(null);
 		}
@@ -91,21 +92,22 @@
 	};
 	const onBandChange = (e: Event) => {
 		const v = (e.currentTarget as HTMLSelectElement).value;
-		setSelections(pendingSource, pendingTube, v === '' ? null : Number(v), null);
+		setSelections(pendingSource, pendingTube, v === '' ? null : v, null);
 	};
 	const onFacetChange = (e: Event) => {
 		const v = (e.currentTarget as HTMLSelectElement).value;
 		setSelections(pendingSource, pendingTube, pendingBand, v === '' ? null : Number(v));
 	};
 
-	const tubesForCurrent = $derived(
-		pendingSource ? (allSources.find((s) => s.source === pendingSource)?.tubes ?? []) : []
-	);
-	const bandsForCurrent = $derived(
-		pendingTube !== null ? (tubesForCurrent[pendingTube]?.bands ?? []) : []
-	);
+	const tubesOfSource = (s: PartnerHighlightSource | null) =>
+		s ? (allSources.find((x) => x.source === s)?.tubes ?? []) : [];
+	const optionsOf = (s: PartnerHighlightSource | null, t: number | null) =>
+		t !== null ? bandOptionsForTube(tubesOfSource(s)[t]?.bands ?? []) : [];
+
+	const tubesForCurrent = $derived(tubesOfSource(pendingSource));
+	const bandOptions = $derived(optionsOf(pendingSource, pendingTube));
 	const facetsForCurrent = $derived(
-		pendingBand !== null ? (bandsForCurrent[pendingBand]?.facets.length ?? 0) : 0
+		pendingBand !== null ? (bandOptions.find((o) => o.key === pendingBand)?.facetCount ?? 0) : 0
 	);
 </script>
 
@@ -128,8 +130,8 @@
 
 		<select value={pendingBand ?? ''} onchange={onBandChange} disabled={pendingTube === null}>
 			<option value="">— band —</option>
-			{#each bandsForCurrent as _, i (i)}
-				<option value={i}>Band {i}</option>
+			{#each bandOptions as o (o.key)}
+				<option value={o.key}>{o.label}</option>
 			{/each}
 		</select>
 
