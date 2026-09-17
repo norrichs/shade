@@ -1,6 +1,4 @@
 import type {
-	GlobuleAddress_Band,
-	GlobuleAddress_BandPiece,
 	TransformConfig,
 	TriangleEdge,
 	TriangleEdgePermissive,
@@ -45,7 +43,7 @@ import {
 	applyHolesToEdgeMeta,
 	type PanelHoleConfig
 } from './generate-panel-pattern';
-import { isSameAddress, isGlobuleAddress_BandPiece } from '$lib/util';
+import { resolveEndPartner, type BandEnd } from './resolve-partner-band';
 import { resolveRangeIndices, type ProjectionRange } from '$lib/projection-geometry/filters';
 
 // Re-export panel functions for backwards compatibility
@@ -459,9 +457,20 @@ const nullTransform: TransformConfig = {
 	rotate: { x: 0, y: 0, z: 0 }
 };
 
+/**
+ * The transform that carries `partnerBand`'s joining end edge onto
+ * `originBand`'s end edge.
+ *
+ * Which ends join is passed in, not re-derived here: comparing stored partner
+ * addresses with `isSameAddress` cannot tell ends apart once either band is a
+ * piece (a plain outer address never equals a piece address), and silently
+ * picked the far end. Resolve the partner and its joining end with
+ * `resolveEndPartner`.
+ */
 export const getEndPartnerTransform = (
 	originBand: BandCutPattern,
-	partnerBand: BandCutPattern
+	partnerBand: BandCutPattern,
+	ends: { originEnd: BandEnd; partnerEnd: BandEnd }
 ): TransformConfig => {
 	// A tube-end partner band may have been refused by generateTiling (quad count not
 	// divisible by the pattern's subunitCount): it has `facets: []` and no `meta`. Bail
@@ -475,13 +484,8 @@ export const getEndPartnerTransform = (
 		return nullTransform;
 	}
 
-	const isStartOrigin =
-		originBand.meta?.startPartnerBand &&
-		isSameAddress(originBand.meta?.startPartnerBand, partnerBand.address);
-
-	const isStartPartner =
-		partnerBand.meta?.startPartnerBand &&
-		isSameAddress(partnerBand.meta?.startPartnerBand, originBand.address);
+	const isStartOrigin = ends.originEnd === 'start';
+	const isStartPartner = ends.partnerEnd === 'start';
 
 	const originPair = isStartOrigin
 		? [originBand.facets[0].quad?.b, originBand.facets[0].quad?.a]
@@ -533,105 +537,28 @@ export const getEndPartnerTransform = (
 	};
 };
 
-/**
- * Resolve a band (or band piece) within a sparse set of tube patterns.
- *
- * Two passes, because the two kinds of caller ask different questions:
- *
- * 1. Exact match. A seam partner names a specific sibling
- *    (`{…, band, piece}`), and matching on `band` alone returned the first
- *    sibling, so seam transforms resolved against the wrong piece.
- * 2. Band-level match. Every *cross-band* partner address in the codebase is a
- *    plain `{globule, tube, band}` triple (`generate-tiled-pattern.ts:375-384`,
- *    `generate-outlined-pattern.ts:549-554`, `generate-cut-pattern.ts:282-295`),
- *    but once its target band is split there is no band with that exact
- *    address any more. `isSameAddress` cannot bridge this: it reports a piece
- *    and a non-piece address as never the same address, in either mode
- *    (`util.ts:331`, granularity 3 vs 3.5). Without pass 2, splitting a tube
- *    silently drops every cross-band end partner transform in it while the
- *    seam transforms keep working.
- *
- * Pass 2 is deliberately one-directional: a plain query resolves onto pieces,
- * a piece query never resolves onto an unsplit band.
- *
- * Pass 2 resolves to the partner piece with the SAME piece index as the
- * querying band, falling back to the partner's LAST piece when it has fewer
- * pieces. This is geometry, not convention: splits are tube-wide at identical
- * absolute quad indices, so band A's piece 1 physically abuts band B's piece 1.
- * Resolving to the lowest piece instead would point A-p1 at B-p0, which it
- * never touches. A band shorter than the split index is not cut there, so it
- * has one piece and every querying piece falls back onto it.
- *
- * The querying piece index cannot be recovered from the address alone — every
- * cross-band partner address in the codebase is destructured down to a plain
- * {globule, tube, band} triple at construction (generate-tiled-pattern.ts:375-384,
- * generate-outlined-pattern.ts:549-554, generate-cut-pattern.ts:282-295), and
- * widening those would mean a new persisted field and a migration. It does not
- * need to be: the only callers are getEndPartnerTransforms
- * (generate-pattern.ts:543-544), which iterates tubePattern.bands and therefore
- * already holds the querying band. So it is passed in.
- */
-export const findBandByAddress = (
-	tubePatterns: TubeCutPattern[],
-	address: GlobuleAddress_Band | GlobuleAddress_BandPiece,
-	/** Piece index of the band doing the asking; see pass 2 above. */
-	fromPiece?: number
-): BandCutPattern | undefined => {
-	const tube = tubePatterns[address.tube];
-	if (!tube) return undefined;
-	// Bands may be a sparse subset, so look up by address rather than by index.
-	const exact = tube.bands.find((b) => isSameAddress(b.address, address));
-	if (exact) return exact;
-	if (isGlobuleAddress_BandPiece(address)) return undefined;
-	// `isGlobuleAddress_BandPiece` narrows the read so this compiles before
-	// Task 9 widens BandCutPattern['address'] to admit `piece`.
-	const pieces = tube.bands.filter(
-		(b) => b.address.band === address.band && isGlobuleAddress_BandPiece(b.address)
-	);
-	if (pieces.length === 0) return undefined;
-	const pieceOf = (b: BandCutPattern): number =>
-		isGlobuleAddress_BandPiece(b.address) ? b.address.piece : 0;
-	if (fromPiece !== undefined) {
-		const sameIndex = pieces.find((b) => pieceOf(b) === fromPiece);
-		if (sameIndex) return sameIndex;
-	}
-	// Partner has fewer pieces than the querying band (it was shorter than the
-	// split index and so was never cut there): fall back to its last piece.
-	return pieces.reduce((last, b) => (pieceOf(b) > pieceOf(last) ? b : last));
-};
-
 export const getEndPartnerTransforms = (tubePatterns: TubeCutPattern[]) => {
 	tubePatterns.forEach((tubePattern) => {
 		if (!tubePattern) return;
 		tubePattern.bands.forEach((band) => {
 			if (!band.meta) return;
-			// The asking band's own piece index. Task 6's findBandByAddress resolves a
-			// plain cross-band partner address onto the partner piece with the SAME
-			// index, so this MUST be passed — omit it and every cross-band partner
-			// silently falls back to the partner's last piece.
-			// `: 0`, not `: undefined`. An unsplit asker has no piece index, and the
-			// two possible readings diverge: `undefined` skips pass 2's same-index
-			// find and lands on the partner's LAST piece, while `0` lands on its
-			// FIRST. Task 6 implemented `0` at helpers.ts:127 and its test
-			// "resolves to piece 0 when the asker is unsplit" asserts it, so all
-			// three call sites use `0` and an unsplit asker resolves identically
-			// through every path.
-			const fromPiece = isGlobuleAddress_BandPiece(band.address) ? band.address.piece : 0;
 			// Each end is resolved on its own. Previously both were gated on both,
 			// so one unresolvable end silently disabled matching at the other.
-			const startAddress = band.meta.startPartnerBand;
-			if (startAddress) {
-				const startPartner = findBandByAddress(tubePatterns, startAddress, fromPiece);
-				if (startPartner) {
-					band.meta.startPartnerTransform = getEndPartnerTransform(band, startPartner);
-				}
+			// End partners resolve by which end joins, independent of this band's
+			// own piece index (spec amendment 2026-09-16).
+			const start = resolveEndPartner(tubePatterns, band, 'start');
+			if (start) {
+				band.meta.startPartnerTransform = getEndPartnerTransform(band, start.band, {
+					originEnd: 'start',
+					partnerEnd: start.partnerEnd
+				});
 			}
-			const endAddress = band.meta.endPartnerBand;
-			if (endAddress) {
-				const endPartner = findBandByAddress(tubePatterns, endAddress, fromPiece);
-				if (endPartner) {
-					band.meta.endPartnerTransform = getEndPartnerTransform(band, endPartner);
-				}
+			const end = resolveEndPartner(tubePatterns, band, 'end');
+			if (end) {
+				band.meta.endPartnerTransform = getEndPartnerTransform(band, end.band, {
+					originEnd: 'end',
+					partnerEnd: end.partnerEnd
+				});
 			}
 		});
 	});

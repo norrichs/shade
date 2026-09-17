@@ -36,8 +36,8 @@
 	import QuadPattern from '../pattern-svg/QuadPattern.svelte';
 	import type { GlobuleAddress_Band, TransformConfig, Tube } from '$lib/projection-geometry/types';
 	import { getTransform } from './distrubute-panels';
-	import { concatAddress, isSameAddress, isGlobuleAddress_BandPiece } from '$lib/util';
-	import { findBandByAddress } from '$lib/cut-pattern/generate-pattern';
+	import { concatAddress } from '$lib/util';
+	import { resolveEndPartner } from '$lib/cut-pattern/resolve-partner-band';
 	import { PATTERN_PORTAL_ID, LABEL_TEXT_PORTAL_ID, LABEL_TAG_PORTAL_ID } from './constants';
 	import { buildBandCodeMap } from '$lib/cut-pattern/band-sort-index';
 	import PageGeometry from './PageGeometry.svelte';
@@ -181,23 +181,14 @@
 			scale: { x: 1, y: 1, z: 1 },
 			rotate: { x: 0, y: 0, z: 0 }
 		};
-		const startAddress = meta.startPartnerBand;
-		const endAddress = meta.endPartnerBand;
-		// The asking band's own piece index. MUST be passed: a cross-band partner
-		// address is stored as a bare {globule,tube,band} triple, so it falls to
-		// findBandByAddress's pass 2, and with fromPiece omitted pass 2 resolves to
-		// the partner's LAST piece no matter which piece is asking. A two-argument
-		// call type-checks perfectly and fails silently — this is the third site in
-		// this plan to hit that trap, after getEndPartnerTransforms and
-		// getTransformedPartnerCutPattern.
-		// `: 0` for consistency with helpers.ts:127 and getEndPartnerTransforms —
-		// see the note in Step 3 on why undefined and 0 are not interchangeable.
-		const fromPiece = isGlobuleAddress_BandPiece(originBand.address) ? originBand.address.piece : 0;
-		// Resolve by address, not by position: once a tube holds pieces its bands
-		// array is longer than its band count, so bands[address.band] is wrong.
-		// findBandByAddress also handles a plain address whose band was split.
-		const startBand = startAddress ? findBandByAddress(tubes, startAddress, fromPiece) : undefined;
-		const endBand = endAddress ? findBandByAddress(tubes, endAddress, fromPiece) : undefined;
+		// End partners resolve by which of the partner's ends joins this band, not
+		// by this band's own piece index — the same rule getEndPartnerTransforms
+		// used to compute meta.startPartnerTransform / endPartnerTransform, so each
+		// transform is applied to the band it was computed against. Resolution is
+		// by address, never position: a tube holding pieces has more bands than
+		// band indices.
+		const startBand = resolveEndPartner(tubes, originBand, 'start')?.band;
+		const endBand = resolveEndPartner(tubes, originBand, 'end')?.band;
 		// An outer end with no partner is normal for a split piece; render the
 		// ends that did resolve rather than dropping both.
 		if (!startBand && !endBand) return undefined;

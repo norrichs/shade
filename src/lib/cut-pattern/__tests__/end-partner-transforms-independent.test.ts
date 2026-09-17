@@ -1,6 +1,6 @@
 import { describe, it, expect } from '@jest/globals';
 
-import { getEndPartnerTransforms, findBandByAddress } from '../generate-pattern';
+import { getEndPartnerTransforms } from '../generate-pattern';
 import type { BandCutPattern, TubeCutPattern } from '$lib/types';
 
 // Two quads' worth of path so getEndPartnerTransform has geometry to read.
@@ -86,28 +86,5 @@ describe('getEndPartnerTransforms — each end resolved independently', () => {
 		const plain = band({ globule: 0, tube: 0, band: 0 }, undefined);
 		getEndPartnerTransforms([tube([plain])]);
 		expect(plain.meta).toBeUndefined();
-	});
-
-	it('resolves a cross-band partner to the piece with the matching index', () => {
-		// p1 asking must land on the partner's p1. With fromPiece omitted this
-		// returns the partner's LAST piece and the assertion catches it.
-		const partner0 = band({ globule: 0, tube: 1, band: 0, piece: 0 }, undefined);
-		const partner1 = band({ globule: 0, tube: 1, band: 0, piece: 1 }, undefined);
-		const asker = band(
-			{ globule: 0, tube: 0, band: 0, piece: 1 },
-			{
-				startPartnerBand: { globule: 0, tube: 1, band: 0 }
-			}
-		);
-
-		getEndPartnerTransforms([tube([asker]), tube([partner0, partner1])]);
-
-		expect(
-			findBandByAddress(
-				[tube([asker]), tube([partner0, partner1])],
-				{ globule: 0, tube: 1, band: 0 },
-				1
-			)?.address
-		).toEqual({ globule: 0, tube: 1, band: 0, piece: 1 });
 	});
 });

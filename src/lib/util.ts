@@ -325,6 +325,18 @@ const addressGranularity = (a: GlobuleAddress): number => {
 	return 1;
 };
 
+/**
+ * Whether two band-granular addresses name the same PARENT band: same globule,
+ * tube and band, with `piece` ignored on both sides. Use this — not
+ * `isSameAddress`, which never equates a piece with a plain address — to ask
+ * whether a stored (plain) outer partner address refers to a band that may now
+ * be a piece.
+ */
+export const isSameParentBand = (
+	a: GlobuleAddress_Band | GlobuleAddress_BandPiece,
+	b: GlobuleAddress_Band | GlobuleAddress_BandPiece
+): boolean => a.globule === b.globule && a.tube === b.tube && a.band === b.band;
+
 export const isSameAddress = (a: GlobuleAddress, b: GlobuleAddress, strict = true) => {
 	// Previously an Object.keys length comparison. That made `piece` invisible in
 	// non-strict mode (so siblings compared equal) and made any extra field break

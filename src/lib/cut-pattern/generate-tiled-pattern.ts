@@ -434,7 +434,7 @@ export const generateTiling = ({
 		// `band.address` instead would use the flat band's address, whose `band`
 		// component is a real tube band index rather than the visible-band index
 		// `addressWithPiece` carries — so for any band past the first, or any tube
-		// with more than one band, `findBandByAddress` would never resolve the
+		// with more than one band, `findBandByExactAddress` would never resolve the
 		// sibling and the seam would silently fail to match.
 		//
 		// `seamPiece` rather than `piece`: Task 9 Step 4 already declared `piece`

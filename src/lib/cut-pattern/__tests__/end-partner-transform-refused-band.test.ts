@@ -10,6 +10,7 @@ import type { BandCutPattern } from '$lib/types';
 // TypeError ("Cannot read properties of undefined (reading 'quad')").
 describe('getEndPartnerTransform with a refused partner band', () => {
 	const address = { globule: 0, tube: 0, band: 0 };
+	const ends = { originEnd: 'start', partnerEnd: 'end' } as const;
 
 	const patternedOriginBand: BandCutPattern = {
 		facets: [
@@ -40,9 +41,11 @@ describe('getEndPartnerTransform with a refused partner band', () => {
 	};
 
 	it('does not throw and returns a null-ish transform when the partner band has no facets', () => {
-		expect(() => getEndPartnerTransform(patternedOriginBand, refusedPartnerBand)).not.toThrow();
+		expect(() =>
+			getEndPartnerTransform(patternedOriginBand, refusedPartnerBand, ends)
+		).not.toThrow();
 
-		const transform = getEndPartnerTransform(patternedOriginBand, refusedPartnerBand);
+		const transform = getEndPartnerTransform(patternedOriginBand, refusedPartnerBand, ends);
 		expect(transform).toEqual({
 			translate: { x: 0, y: 0, z: 0 },
 			scale: { x: 1, y: 1, z: 1 },
@@ -51,6 +54,8 @@ describe('getEndPartnerTransform with a refused partner band', () => {
 	});
 
 	it('does not throw and returns a null-ish transform when the origin band has no facets', () => {
-		expect(() => getEndPartnerTransform(refusedPartnerBand, patternedOriginBand)).not.toThrow();
+		expect(() =>
+			getEndPartnerTransform(refusedPartnerBand, patternedOriginBand, ends)
+		).not.toThrow();
 	});
 });

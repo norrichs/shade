@@ -6,8 +6,7 @@ import type {
 	SkipEdges,
 	TubeCutPattern
 } from '$lib/types';
-import { isSameAddress, isGlobuleAddress_BandPiece } from '$lib/util';
-import { findBandByAddress } from '$lib/cut-pattern/generate-pattern';
+import { resolveEndPartner } from '$lib/cut-pattern/resolve-partner-band';
 import type { IndexPair } from '../../spec-types';
 
 export const scaleSegment = (seg: PathSegment, w: number, h: number): PathSegment => {
@@ -116,23 +115,15 @@ export const getTransformedPartnerCutPattern = (
 ): CutPattern | undefined => {
 	if (!endsMatched || !band.meta || (f !== 0 && f !== band.facets.length - 1)) return undefined;
 
-	const partnerAddress = f === 0 ? band.meta.startPartnerBand : band.meta.endPartnerBand;
 	// An end with no partner (an outer end, or a seam whose sibling is out of the
-	// rendered range) simply is not matched.
-	if (!partnerAddress) return undefined;
+	// rendered range) simply is not matched. The partner resolves by which of its
+	// ends joins this one, independent of this band's own piece index.
+	const resolved = resolveEndPartner(tubes, band, f === 0 ? 'start' : 'end');
+	if (!resolved?.band.meta) return undefined;
+	const { band: partnerBand, partnerEnd } = resolved;
 	const transform: TransformConfig | undefined =
 		f === 0 ? band.meta.startPartnerTransform : band.meta.endPartnerTransform;
-	// findBandByAddress already returns undefined for a missing tube, so the
-	// separate partnerTube guard goes too — leaving it would make `partnerTube`
-	// an unused local and fail `npm run lint`.
-	const fromPiece = isGlobuleAddress_BandPiece(band.address) ? band.address.piece : 0;
-	const partnerBand = findBandByAddress(tubes, partnerAddress, fromPiece);
-	if (!partnerBand?.meta) return undefined;
-	const partnerFacetIndex =
-		partnerBand.meta.startPartnerBand &&
-		isSameAddress(partnerBand.meta.startPartnerBand, band.address)
-			? 0
-			: partnerBand.facets.length - 1;
+	const partnerFacetIndex = partnerEnd === 'start' ? 0 : partnerBand.facets.length - 1;
 	const partnerFacet: CutPattern = partnerBand.facets[partnerFacetIndex];
 	const partnerPath = structuredClone(partnerFacet.path);
 	const transformedPartnerPath = transform ? newTransformPS(partnerPath, transform) : partnerPath;
