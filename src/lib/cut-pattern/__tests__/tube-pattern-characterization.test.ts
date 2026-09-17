@@ -2,6 +2,7 @@ import { describe, it, expect } from '@jest/globals';
 import { Triangle, Vector3 } from 'three';
 
 import { generateTubeCutPattern } from '../generate-tiled-pattern';
+import { isGlobuleAddress_BandPiece } from '$lib/util';
 import type { Band, Facet, PixelScale, TiledPatternConfig } from '$lib/types';
 
 // A flat-ish strip of `facetCount` triangles zig-zagging up the y axis. This
@@ -107,6 +108,36 @@ describe('generateTubeCutPattern — with splits', () => {
 		expect(new Set(result.bands.map((b) => b.id)).size).toBe(4);
 		// Neither piece may be refused.
 		expect(result.bands.map((b) => b.error)).toEqual([undefined, undefined, undefined, undefined]);
+	});
+
+	it('keeps an uncut band’s identity stable when an earlier, longer sibling splits', () => {
+		// Regression for: splits are tube-wide, and bands in one tube can have
+		// unequal quad counts. Band 0 has 4 quads and IS split at quad 2; band 1
+		// has only 2 quads and is NOT split there (quad 2 is not < quadCount 2).
+		// The split band comes FIRST, so band 1's position in the post-split
+		// array (index 2: [b0p0, b0p1, band1]) no longer matches its pre-split
+		// index (1). If splitFlatBands failed to stamp parentIndex on the
+		// pass-through band, generateTiling would fall back to array position
+		// and mislabel band 1 as band 2.
+		const bands = [buildBand(0, 8), buildBand(1, 4)]; // band 0: 4 quads, band 1: 2 quads
+
+		const result = generateTubeCutPattern({
+			address: { globule: 0, tube: 0 },
+			bands,
+			tiledPatternConfig,
+			pixelScale,
+			splitQuads: [2]
+		});
+
+		expect(result.bands).toHaveLength(3);
+		const uncutBand = result.bands[2];
+		expect(uncutBand.address.band).toBe(1);
+		// `isGlobuleAddress_BandPiece` narrows the union so this compiles without a
+		// cast, unlike a direct `.piece` read (the known, separately-queued gap at
+		// this file's :77/:104).
+		expect(isGlobuleAddress_BandPiece(uncutBand.address)).toBe(false);
+		expect(uncutBand.id).not.toMatch(/-p\d+$/);
+		expect(uncutBand.id.endsWith('-1')).toBe(true);
 	});
 
 	it('leaves output identical to the baseline when splitQuads is empty', () => {

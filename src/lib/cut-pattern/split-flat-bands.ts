@@ -48,10 +48,19 @@ export const splitFlatBands = (
 	const bands = flatBands.flatMap((band, parentIndex) => {
 		const quadCount = Math.floor(band.facets.length / 2);
 		// Splits are tube-wide, so a band shorter than the split index is simply
-		// not cut there. An uncut band is returned as-is — no piece fields at all,
-		// so it stays byte-identical to the unsplit path.
+		// not cut there. Its facets/orientation/etc. stay byte-identical to the
+		// unsplit path, but its ARRAY POSITION is not stable: splits are per-tube,
+		// so other bands in the same tube can split while this one does not,
+		// shifting this band's index in the returned array relative to its index
+		// in `flatBands`. `parentIndex` must therefore be stamped unconditionally
+		// here too, so every downstream consumer (generateTiling's
+		// globalBandIndex, the outlined path's band-index fix) can recover this
+		// band's true pre-split position from the band itself rather than from
+		// where it happens to land in the post-split array. `pieceIndex` is
+		// deliberately left unset: an uncut band has no pieces, so its `id`/
+		// `address` must carry no piece suffix.
 		const cuts = legal.filter((quad) => quad < quadCount);
-		if (cuts.length === 0) return [band];
+		if (cuts.length === 0) return [{ ...band, parentIndex }];
 
 		const boundaries = [0, ...cuts, quadCount];
 		return boundaries.slice(0, -1).map((startQuad, i): Band => {

@@ -120,11 +120,14 @@ describe('splitFlatBands', () => {
 	});
 
 	it('does not split a band with fewer quads than the index', () => {
-		// Splits are tube-wide; a short band simply is not cut. The uncut band is
-		// returned as-is, so it carries no pieceIndex at all.
+		// Splits are tube-wide; a short band simply is not cut. The uncut band
+		// carries no pieceIndex, but it DOES carry parentIndex: its position in
+		// the returned array is not stable (siblings can split while it does
+		// not), so downstream consumers need parentIndex to recover its true
+		// pre-split index rather than trusting array position.
 		const result = splitFlatBands([buildBand(12), buildBand(4)], [4], 1);
 		expect(result.bands).toHaveLength(3);
 		expect(result.bands.filter((b) => b.pieceIndex !== undefined)).toHaveLength(2);
-		expect(result.bands.map((b) => b.parentIndex)).toEqual([0, 0, undefined]);
+		expect(result.bands.map((b) => b.parentIndex)).toEqual([0, 0, 1]);
 	});
 });
