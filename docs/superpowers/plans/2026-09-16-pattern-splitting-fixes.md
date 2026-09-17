@@ -233,3 +233,17 @@ Close `shades-azt` when done.
 **Tests (must fail before the fix):** with a hidden band (and separately a fillAll projection), a pattern address for band _k_ maps to the correct real 3D band for each site with pure logic; round-trip real → pattern → real is identity; unsplit all-visible unchanged.
 
 **Constraint:** never delete or modify files outside your task (including untracked directories).
+
+---
+
+### Task 13: First mid tab names the band it actually borders
+
+**Defect (Task 10 review, pre-existing):** `resolveTabLabel` (`src/lib/cut-pattern/resolve-tab-label.ts`, mid branch) always labels the first mid tab (`midIndex === 0`) with the **next** band (band + 1). But `midIndex` is allocated in edge-walk order and `getOutlineEdges` walks **before** edges first (`collect-outlined-band-tabs.ts` classification loop); a before edge of band _b_ is seam _b−1_ (`generate-outlined-pattern.ts:~393-395`) and borders band _b−1_. So with `bandEdge: 'before'` or `'beforeAndAfter'`, and under any `tabLayout` (the upper band of a seam gets the `'before'` edge, `seam-tab-layout.ts:~53-56`) — about half of all bands — the tab prints the wrong physical band. Default `bandEdge: 'after'` is unaffected.
+
+**Ruling (controller, 2026-09-17):** fix it. This intentionally changes unsplit labels for before-edge configurations; a label naming the wrong physical band is the defect class covered by the spec amendment "Labels name the physical piece".
+
+**Required behaviour:** a mid/side tab's label names the band on the side of the edge the tab actually sits on — before edge → band − 1 side, after edge → band + 1 side — with the Task 10 piece rule (the neighbour piece whose parent-quad range contains the tab's parent quad) applied on that side. Every mid tab (not only `midIndex === 0`) gets a label if the edge it sits on has a neighbour; decide whether later mid indices currently return `''` deliberately (read the code/tests) and state it. Carry the edge side from where tabs are classified to the label resolver rather than re-deriving it from `midIndex`. Default `bandEdge: 'after'` output unchanged.
+
+**Tests (must fail before the fix):** real outlined geometry with `bandEdge: 'before'`: every mid tab label names band − 1; `'beforeAndAfter'`: before-edge tabs name band − 1 and after-edge tabs band + 1; a `tabLayout` config: each seam's single tab names the band across that seam; wrap-around at the first/last band; `'after'` characterization unchanged.
+
+**Constraint:** never delete or modify files outside your task (including untracked directories).
