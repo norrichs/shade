@@ -2317,6 +2317,25 @@ git commit -m "refactor(pattern): resolve each band end's partner independently"
 - Consumes: optional `meta` partners (Task 10), `seamAt` (Task 8).
 - Produces: `meta.startPartnerBand` / `endPartnerBand` pointing at sibling pieces. Consumed by the existing `endsMatched` machinery.
 
+**Known consequence of this task, tracked as beads `shades-azt` — do not fix it here.**
+Populating piece-bearing seam addresses makes a pre-existing gap live:
+`src/components/modal/editor/tile-editor/partner-pair-resolver.ts:42` declares its
+own local `findBandByAddress` that matches only `globule`/`tube`/`band` and never
+imports the shared piece-aware one. Once this task stores sibling-piece addresses
+in `meta`, that resolver will pick the wrong piece.
+
+Blast radius is contained and does **not** affect manufacturing output: its single
+caller is `partner-neighbors.ts` inside the tile editor, which is not on the
+cut-pattern generation path. So it is a real defect but not this task's job, and
+fixing it here would mean editing an unrelated UI module mid-phase.
+
+It is recorded so that if you notice the tile editor resolving a partner oddly
+while testing, you know why and do not chase it. The fix is to import the shared
+`findBandByAddress` (which takes an optional third `fromPiece` argument) and delete
+the local copy. This is the same shape as the four duplicate `bandKey` copies an
+earlier task consolidated: a local clone of a function that was deliberately made
+piece-aware.
+
 - [ ] **Step 1: Extract the fixture, then write the failing test**
 
 First move the fixture out of the test file that owns it. Task 2's `tube-pattern-characterization.test.ts` has a correct `buildBand` / `pixelScale` / `tiledPatternConfig` at module scope, and this task needs the same three. Do **not** hand-roll a copy — three things that file got right and a copy gets wrong: the registered pattern id is `tiledHexPattern-1`, not `tiledHexPattern`; `TiledPatternConfig['config']` requires its full shape (`dynamicStroke`, `scaleConfig`, `endsMatched`, …), not just `rowCount`/`columnCount`; and `PixelScale` is plainly `{ value: number; unit: 'cm' | 'inch' | 'mm' }`, needing no cast.
