@@ -26,13 +26,47 @@ export type SplitBoundary = {
 	to: Point;
 	/** True when a split already sits here, so clicking removes it. */
 	isSplit: boolean;
+	/**
+	 * Stroke width, in pattern units, for this boundary's transparent hit line.
+	 * Per-boundary rather than fixed, because bands taper (see HIT_WIDTH_FACTOR).
+	 */
+	hitWidth: number;
 };
+
+/** The comfortable hit width where a band has room for it. */
+export const MAX_HIT_WIDTH = 12;
+
+/**
+ * The narrowest a hit zone is allowed to get, so a very dense band stays
+ * clickable at all.
+ *
+ * It is a floor, so it wins over the spacing rule below `MIN_HIT_WIDTH /
+ * HIT_WIDTH_FACTOR` = 2.5 units of spacing, and two zones may abut there. That
+ * is deliberate — an unclickable target is worse than a slightly ambiguous one —
+ * and it is below the real distribution: measured over 840 boundary gaps on the
+ * 90-quad hexparquet config, the minimum gap was 2.82 and the 5th percentile
+ * 3.89, so the floor does not engage on real geometry.
+ */
+export const MIN_HIT_WIDTH = 2;
+
+/**
+ * Fraction of the distance to the NEAREST neighbouring boundary a hit zone may
+ * occupy. Below 1 by construction: two adjacent zones then sum to at most 0.8 of
+ * the gap between them, so they cannot overlap and a click always toggles the
+ * hairline it was aimed at.
+ */
+export const HIT_WIDTH_FACTOR = 0.8;
 
 /**
  * Splits configured for one tube, found by tube number.
  *
- * Mirrors `generateProjectionPattern`'s `splitQuadsFor`: an absent entry means
- * "no splits", which is the documented no-op path.
+ * The single home for this lookup: `generateProjectionPattern` and
+ * `generateOutlinedProjectionPattern` both call it, and so does the pattern view.
+ * This module is worker-safe — it imports nothing from Svelte — which is why it
+ * can be the canonical one.
+ *
+ * An absent entry yields an empty array, which is `splitFlatBands`' documented
+ * no-op path.
  */
 export const splitQuadsForTube = (splits: SplitConfig | undefined, tube: number): number[] =>
 	splits?.tubeSplits.find((t) => t.tube === tube)?.quads ?? [];
@@ -66,9 +100,25 @@ export const resolveSplitSubunitCount = (patternTypeConfig: PatternTypeConfig): 
  * tiled band collapses to a single facet. Filtering handles all three, the same
  * idiom `QuadLabels.svelte` uses.
  *
+ * KNOWN GAP, deliberate: a tiled pattern whose `getPattern` returns a
+ * `DynamicPathCollection` produces ONE facet for the whole band
+ * (`generate-tiled-pattern.ts:396-398`, `:409` — `mappedPatternBand` is a
+ * single-element array), and that facet carries no per-quad `quad`. Such a band
+ * therefore offers no click targets at all, even though generation can still
+ * split it: `splitFlatBands` cuts the 3D `Band`, whose facets are intact,
+ * before any pattern is mapped. Splits on those patterns stay a config-level
+ * operation (Task 16's panel) until the boundary geometry is sourced from
+ * somewhere other than the mapped facets.
+ *
  * Geometry needs no new math: quad k+1's `a`/`b` ARE quad k's `d`/`c`, so a
  * boundary is the previous quad's far (d→c) edge, and a piece's leading seam —
  * which has no previous quad here — is its own first quad's near (a→b) edge.
+ *
+ * Hit width is sized per boundary from the local spacing, because bands taper:
+ * near a band's ends adjacent boundaries can sit under 3 pattern units apart, so
+ * a fixed 12-unit zone would overlap its neighbours and the later-painted one
+ * would win, toggling a split one or more quads from the hairline the user aimed
+ * at. See `HIT_WIDTH_FACTOR` / `MIN_HIT_WIDTH`.
  */
 export const splitBoundariesOfBand = (
 	band: Pick<BandCutPattern, 'facets' | 'parentQuadOffset'>,
@@ -78,7 +128,7 @@ export const splitBoundariesOfBand = (
 	const quads = band.facets.filter((facet) => !!facet.quad).map((facet) => facet.quad!);
 	// 0 on an uncut band: its quads already are the parent's.
 	const offset = band.parentQuadOffset ?? 0;
-	const boundaries: SplitBoundary[] = [];
+	const boundaries: Omit<SplitBoundary, 'hitWidth'>[] = [];
 	for (let i = 0; i < quads.length; i++) {
 		const quad = offset + i;
 		// quad 0 is the start of the whole band, not a boundary inside it. Every
@@ -95,7 +145,25 @@ export const splitBoundariesOfBand = (
 			isSplit: splitQuads.includes(quad)
 		});
 	}
-	return boundaries;
+
+	// Spacing is measured between boundary midpoints, which is the distance along
+	// the band axis even where a tapering band's boundaries are not parallel.
+	const midpoints = boundaries.map((b) => ({
+		x: (b.from.x + b.to.x) / 2,
+		y: (b.from.y + b.to.y) / 2
+	}));
+	const gapTo = (i: number, j: number) =>
+		j < 0 || j >= midpoints.length
+			? Infinity
+			: Math.hypot(midpoints[i].x - midpoints[j].x, midpoints[i].y - midpoints[j].y);
+
+	return boundaries.map((boundary, i) => ({
+		...boundary,
+		hitWidth: Math.max(
+			MIN_HIT_WIDTH,
+			Math.min(MAX_HIT_WIDTH, HIT_WIDTH_FACTOR * Math.min(gapTo(i, i - 1), gapTo(i, i + 1)))
+		)
+	}));
 };
 
 /**
@@ -140,6 +208,9 @@ export const applySplitToggle = (
 	patternConfig: {
 		...config.patternConfig,
 		splits: {
+			// Spread, not replace: `SplitConfig` gains sibling fields in Tasks 15/16,
+			// and a click must not erase them.
+			...config.patternConfig.splits,
 			tubeSplits: toggleTubeSplits(config.patternConfig.splits?.tubeSplits ?? [], tube, quad)
 		}
 	}

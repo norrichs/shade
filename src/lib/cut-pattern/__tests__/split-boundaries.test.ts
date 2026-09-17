@@ -2,6 +2,8 @@ import { describe, it, expect } from '@jest/globals';
 import { Vector3 } from 'three';
 import {
 	applySplitToggle,
+	MAX_HIT_WIDTH,
+	MIN_HIT_WIDTH,
 	resolveSplitSubunitCount,
 	splitBoundariesOfBand,
 	splitQuadsForTube,
@@ -126,6 +128,84 @@ describe('splitBoundariesOfBand', () => {
 	});
 });
 
+describe('hit width', () => {
+	/**
+	 * A band whose quads have the given lengths along the band axis, so boundary
+	 * spacing can be made as tight as a tapering real band's.
+	 */
+	const taperedBand = (lengths: number[]): BandCutPattern => {
+		let y = 0;
+		const facets = lengths.map((length, k) => {
+			const quad: Quadrilateral = {
+				a: new Vector3(0, y, 0),
+				b: new Vector3(1, y, 0),
+				c: new Vector3(1, y + length, 0),
+				d: new Vector3(0, y + length, 0)
+			};
+			y += length;
+			return { path: [], label: `q${k}`, quad } as CutPattern;
+		});
+		return { ...band(0), facets } as BandCutPattern;
+	};
+
+	const midpoint = (b: { from: { x: number; y: number }; to: { x: number; y: number } }) => ({
+		x: (b.from.x + b.to.x) / 2,
+		y: (b.from.y + b.to.y) / 2
+	});
+	const spacing = (
+		a: { from: { x: number; y: number }; to: { x: number; y: number } },
+		b: { from: { x: number; y: number }; to: { x: number; y: number } }
+	) => Math.hypot(midpoint(a).x - midpoint(b).x, midpoint(a).y - midpoint(b).y);
+
+	it('uses the full width where the band is roomy', () => {
+		const boundaries = splitBoundariesOfBand(taperedBand([30, 30, 30]), 1, []);
+		expect(boundaries.map((b) => b.hitWidth)).toEqual([MAX_HIT_WIDTH, MAX_HIT_WIDTH]);
+	});
+
+	it('narrows to the local spacing where quads are much shorter than the full width', () => {
+		// 3 units apart: 0.8 * 3 = 2.4, comfortably under the 12-unit default.
+		const boundaries = splitBoundariesOfBand(taperedBand([3, 3, 3, 3]), 1, []);
+		expect(boundaries).toHaveLength(3);
+		boundaries.forEach((b) => expect(b.hitWidth).toBeCloseTo(2.4, 10));
+	});
+
+	it('leaves no overlap between adjacent hit zones on a short-quad band', () => {
+		const boundaries = splitBoundariesOfBand(taperedBand([3, 3, 3, 3, 3]), 1, []);
+		for (let i = 1; i < boundaries.length; i++) {
+			const halves = (boundaries[i - 1].hitWidth + boundaries[i].hitWidth) / 2;
+			expect(halves).toBeLessThanOrEqual(spacing(boundaries[i - 1], boundaries[i]));
+		}
+	});
+
+	it('leaves no overlap on a tapering band, where spacing differs per boundary', () => {
+		// Real bands taper: wide in the middle, tight at the ends.
+		const boundaries = splitBoundariesOfBand(taperedBand([3, 4, 20, 20, 5, 3]), 1, []);
+		for (let i = 1; i < boundaries.length; i++) {
+			const halves = (boundaries[i - 1].hitWidth + boundaries[i].hitWidth) / 2;
+			expect(halves).toBeLessThanOrEqual(spacing(boundaries[i - 1], boundaries[i]));
+		}
+	});
+
+	it('sizes each boundary by its own NEAREST neighbour, not by the band average', () => {
+		// Boundaries at y = 20, 24, 44: the middle one is 4 from one side and 20
+		// from the other, so it takes the tight side.
+		const boundaries = splitBoundariesOfBand(taperedBand([20, 4, 20, 20]), 1, []);
+		expect(boundaries[0].hitWidth).toBeCloseTo(0.8 * 4, 10);
+		expect(boundaries[1].hitWidth).toBeCloseTo(0.8 * 4, 10);
+		expect(boundaries[2].hitWidth).toBe(MAX_HIT_WIDTH);
+	});
+
+	it('keeps every hit zone wide enough to hold its own hairline', () => {
+		const boundaries = splitBoundariesOfBand(taperedBand([0.5, 0.5, 0.5, 0.5]), 1, []);
+		expect(boundaries.every((b) => b.hitWidth >= MIN_HIT_WIDTH)).toBe(true);
+	});
+
+	it('gives a lone boundary the full width, having no neighbour to crowd', () => {
+		const boundaries = splitBoundariesOfBand(taperedBand([1, 1]), 1, []);
+		expect(boundaries.map((b) => b.hitWidth)).toEqual([MAX_HIT_WIDTH]);
+	});
+});
+
 describe('toggleTubeSplits', () => {
 	const splits: TubeSplits[] = [
 		{ tube: 2, quads: [4] },
@@ -201,6 +281,17 @@ describe('applySplitToggle', () => {
 	it('writes the toggled splits', () => {
 		expect(applySplitToggle(config, 0, 4).patternConfig.splits).toEqual({
 			tubeSplits: [{ tube: 0, quads: [2, 4] }]
+		});
+	});
+
+	it('keeps sibling fields on the split config, which Tasks 15/16 add', () => {
+		const withSibling = {
+			type: 'GlobulePatternConfig',
+			patternConfig: { splits: { autoSplit: true, tubeSplits: [] } }
+		} as unknown as GlobulePatternConfig;
+		expect(applySplitToggle(withSibling, 0, 2).patternConfig.splits).toEqual({
+			autoSplit: true,
+			tubeSplits: [{ tube: 0, quads: [2] }]
 		});
 	});
 

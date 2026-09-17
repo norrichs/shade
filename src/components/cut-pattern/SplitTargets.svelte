@@ -56,6 +56,7 @@
 				x2={boundary.to.x}
 				y2={boundary.to.y}
 				class="hit"
+				stroke-width={boundary.hitWidth}
 				role="button"
 				aria-label={`${boundary.isSplit ? 'Remove' : 'Place'} split at quad ${boundary.quad}`}
 				tabindex="0"
@@ -87,9 +88,10 @@
 		stroke-width: 2;
 		stroke-dasharray: none;
 	}
+	/* Width is per boundary (see `hitWidth`), set inline: bands taper, and a
+	   fixed zone overlaps its neighbours where the quads get short. */
 	.hit {
 		stroke: transparent;
-		stroke-width: 12;
 		cursor: pointer;
 	}
 </style>

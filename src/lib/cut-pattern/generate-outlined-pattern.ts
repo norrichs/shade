@@ -22,6 +22,7 @@ import { resolveRangeIndices, type ProjectionRange } from '$lib/projection-geome
 import { getFlatStripV2 } from './generate-cut-pattern';
 import { alignBands, computeBandAscending } from './generate-tiled-pattern';
 import { bandQuadCount, splitFlatBands, tubeQuadCountOf } from './split-flat-bands';
+import { splitQuadsForTube } from './split-boundaries';
 import { svgPathStringFromSegments } from '$lib/patterns/utils';
 import { getQuadrilaterals } from '$lib/patterns/quadrilateral';
 import { getEdge } from '$lib/projection-geometry/generate-projection';
@@ -817,10 +818,8 @@ export const generateOutlinedProjectionPattern = (
 ): SuperGlobuleProjectionPattern => {
 	const [tubeStart, tubeEnd] = resolveRangeIndices(projectionRange?.tubes, tubes.length);
 
-	// Splits are persisted per tube as absolute quad indices. An absent entry
-	// yields an empty array, which is splitFlatBands' documented no-op path.
-	const splitQuadsFor = (tube: number) =>
-		splits?.tubeSplits.find((t) => t.tube === tube)?.quads ?? [];
+	// Splits are persisted per tube as absolute quad indices.
+	const splitQuadsFor = (tube: number) => splitQuadsForTube(splits, tube);
 
 	const outputTubePatterns: TubeCutPattern[] = [];
 

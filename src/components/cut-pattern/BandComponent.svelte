@@ -213,14 +213,19 @@
 		/>{/if}
 	{@render children?.()}
 	<!-- Existing splits draw at all times; every legal boundary becomes clickable
-	     only while split mode is on. -->
-	<SplitTargets
-		{band}
-		{subunitCount}
-		{splitQuads}
-		interactive={isSplitMode}
-		onToggle={toggleSplit}
-	/>
+	     only while split mode is on. Mounted only when it has something to draw:
+	     `splitQuads` is a fresh array on every `patternConfigStore` write, so an
+	     unconditional mount would re-run the child's derived for every band on
+	     every config change. -->
+	{#if isSplitMode || splitQuads.length > 0}
+		<SplitTargets
+			{band}
+			{subunitCount}
+			{splitQuads}
+			interactive={isSplitMode}
+			onToggle={toggleSplit}
+		/>
+	{/if}
 	{#if onTabEnabled && hasTabs}
 		{#each band.tabs ?? [] as tab, tabIndex (tabIndex)}
 			<OnTabLabel

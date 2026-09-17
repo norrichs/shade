@@ -33,6 +33,7 @@ import { keepsFillBands } from './pattern-band-space';
 import { resolvePatternEntry } from '$lib/patterns/resolve-pattern';
 import { generateOutlinedProjectionPattern } from './generate-outlined-pattern';
 import { judgeTubeSplits } from './split-flat-bands';
+import { splitQuadsForTube } from './split-boundaries';
 import { getEdge } from '$lib/projection-geometry/generate-projection';
 import type {
 	SuperGlobuleBandPattern,
@@ -128,10 +129,8 @@ export const generateProjectionPattern = (
 		patternConfig: { pixelScale, splits }
 	} = globulePatternConfig;
 
-	// Splits are persisted per tube as absolute quad indices. An absent entry
-	// yields an empty array, which is splitFlatBands' documented no-op path.
-	const splitQuadsFor = (tube: number) =>
-		splits?.tubeSplits.find((t) => t.tube === tube)?.quads ?? [];
+	// Splits are persisted per tube as absolute quad indices.
+	const splitQuadsFor = (tube: number) => splitQuadsForTube(splits, tube);
 
 	// fillAll produces interior fill BANDS (one degenerate facet per quad) inside normal tubes.
 	// Tiled/panel patterns cannot tile degenerate facets — keep fill bands for outlined only.
