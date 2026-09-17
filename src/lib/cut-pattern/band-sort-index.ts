@@ -77,15 +77,24 @@ export const createEndConnectionNeighbours = (
 };
 
 /**
- * Put each split band's pieces together, in piece order, within a ring.
+ * Keep a ring in walk order, which lists physically joined bands next to each
+ * other, while presenting each split band's pieces together and ascending.
  *
- * The walk already keeps a band's pieces contiguous, since they are chained by
- * their seams, but lists them in whichever direction it crossed the band, and in
- * a cycle it splits the starting band's pieces across the two ends of the list
- * (the walk leaves by the first piece's outer start and returns by the last
- * piece's outer end). Rotate that trailing run to the front, then sort each run
- * of one parent's pieces. An unsplit ring has no two consecutive refs with the
- * same parent, so it is returned unchanged.
+ * The walk already keeps a band's pieces contiguous, since their seams chain
+ * them. In a cycle, though, it splits the starting band's pieces across the two
+ * ends of the list: it leaves by the first piece's outer start and comes back by
+ * the last piece's outer end. Rotating that trailing run to the front joins them
+ * up, and the wrap from last to first is still a physical join.
+ *
+ * Pieces are never sorted on their own, because that would break the joins on a
+ * band the walk crossed end→start. `walkRing` puts the start partner first, so
+ * in a consistently oriented ring every band is crossed that way and its pieces
+ * come out descending. When descending split runs outnumber ascending ones, the
+ * whole ring is reversed instead. The pieces then read ascending and every
+ * neighbouring pair stays joined.
+ *
+ * A ring without a split band has no two consecutive refs sharing a parent, so
+ * neither step applies and it is returned unchanged.
  */
 const orderPiecesInRing = (ring: BandRef[]): BandRef[] => {
 	if (ring.length < 2) return ring;
@@ -95,16 +104,14 @@ const orderPiecesInRing = (ring: BandRef[]): BandRef[] => {
 		while (tail > 0 && isSameParentBand(ring[tail - 1], ring[0])) tail--;
 		ordered = [...ring.slice(tail), ...ring.slice(0, tail)];
 	}
-	const result: BandRef[] = [];
-	let runStart = 0;
-	for (let i = 1; i <= ordered.length; i++) {
-		if (i < ordered.length && isSameParentBand(ordered[i], ordered[runStart])) continue;
-		const run = ordered.slice(runStart, i);
-		if (run.length > 1) run.sort((x, y) => pieceIndexOf(x) - pieceIndexOf(y));
-		result.push(...run);
-		runStart = i;
+	let ascending = 0;
+	let descending = 0;
+	for (let i = 1; i < ordered.length; i++) {
+		if (!isSameParentBand(ordered[i - 1], ordered[i])) continue;
+		if (pieceIndexOf(ordered[i]) > pieceIndexOf(ordered[i - 1])) ascending++;
+		else descending++;
 	}
-	return result;
+	return descending > ascending ? [...ordered].reverse() : ordered;
 };
 
 const buildEndConnectionIndex = (tubes: TubeCutPattern[]): BandSortIndex => {

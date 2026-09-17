@@ -38,7 +38,7 @@ describe('resolveIndexBands with split bands', () => {
 	it('resolves every piece to its own band object', () => {
 		const tubes = splitTubes();
 		const resolved = resolveIndexBands(tubes, indexOf(tubes));
-		expect(resolved.map((r) => r.band)).toEqual(tubes[0].bands);
+		expect(resolved).toHaveLength(tubes[0].bands.length);
 		resolved.forEach((r, i) => expect(r.band).toBe(tubes[0].bands[i]));
 	});
 

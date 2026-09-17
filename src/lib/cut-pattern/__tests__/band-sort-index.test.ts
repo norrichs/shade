@@ -243,10 +243,35 @@ describe('buildBandSortIndex end-connection with split bands', () => {
 		expect(index.groups[0].bands).toHaveLength(6);
 	});
 
-	test("a band's pieces are adjacent and in piece order", () => {
+	// The fixture's physical joins: seams within A and B, and the outer ends
+	// A.end–B.start, B.end–C.start, C.end–A.start.
+	const joins = [
+		[piece(A, 0), piece(A, 1)],
+		[piece(A, 1), piece(A, 2)],
+		[piece(A, 2), piece(B, 0)],
+		[piece(B, 0), piece(B, 1)],
+		[piece(B, 1), C],
+		[C, piece(A, 0)]
+	].map(([x, y]) => [key(x), key(y)].sort().join('|'));
+	const isJoined = (x: string, y: string) => joins.includes([x, y].sort().join('|'));
+
+	test('ring order keeps every neighbouring pair joined, pieces adjacent and ascending', () => {
 		const index = buildBandSortIndex(splitRingTubes(), 'end-connection-tube');
-		expect(index.groups[0].bands.map(key)).toEqual(
-			[piece(A, 0), piece(A, 1), piece(A, 2), C, piece(B, 0), piece(B, 1)].map(key)
+		const keys = index.groups[0].bands.map(key);
+
+		// Every neighbouring pair, including the wrap from last to first, is joined.
+		keys.forEach((k, i) =>
+			expect([k, keys[(i + 1) % keys.length], isJoined(k, keys[(i + 1) % keys.length])]).toEqual([
+				k,
+				keys[(i + 1) % keys.length],
+				true
+			])
+		);
+
+		// The walk crosses every band end→start, so its pieces come out descending;
+		// the whole ring is reversed so they read ascending with the joins intact.
+		expect(keys).toEqual(
+			[piece(B, 0), piece(B, 1), C, piece(A, 0), piece(A, 1), piece(A, 2)].map(key)
 		);
 	});
 });
