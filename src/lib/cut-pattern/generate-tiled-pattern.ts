@@ -454,7 +454,12 @@ export const generateTiling = ({
 
 		const cuttablePattern: CutPattern[] = adjustedPatternBand.map((facet, facetIndex) => {
 			const quad = structuredClone(quadBand[facetIndex % quadBand.length]);
-			if (tagAnchor && tagAnchor.facetIndex === facetIndex) {
+			// Pieces see a sliced facets array, so a parent-relative anchor index
+			// must be shifted by the piece's offset. parentQuadOffset counts quads;
+			// each quad is one entry in this map.
+			const quadOffset = bands?.[bandIndex]?.parentQuadOffset ?? 0;
+			const parentFacetIndex = facetIndex + quadOffset;
+			if (tagAnchor && tagAnchor.facetIndex === parentFacetIndex) {
 				if (tagAnchor.quadEdge) {
 					// Anchor on a named quad edge at a ratio between its vertices.
 					// Takes precedence over `anchorUnitPoint`/`segmentIndex` so it
