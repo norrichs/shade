@@ -49,4 +49,23 @@ describe('findBandRow', () => {
 		};
 		expect(findBandRow(shared, [], band(5, 0))).toBe(0);
 	});
+
+	describe('split bands (tube-order)', () => {
+		const piece = (tube: number, b: number, p: number): GlobuleAddress_Band =>
+			({ globule: 0, tube, band: b, piece: p }) as GlobuleAddress_Band;
+		const index: BandSortIndex = { mode: 'tube-order', groups: [] };
+		const flat = [piece(0, 0, 0), piece(0, 0, 1), piece(0, 0, 2), band(0, 1)];
+
+		it("finds the clicked piece's own row, not its parent's first piece", () => {
+			expect(findBandRow(index, flat, piece(0, 0, 2))).toBe(2);
+			expect(findBandRow(index, flat, piece(0, 0, 1))).toBe(1);
+		});
+
+		// Preservation guard (passes before the fix too): the 3D view has no pieces,
+		// so a click there sends the plain parent address, which still scrolls to
+		// the parent's first row.
+		it("a plain parent address still resolves to the parent's first row", () => {
+			expect(findBandRow(index, flat, band(0, 0))).toBe(0);
+		});
+	});
 });
