@@ -283,3 +283,17 @@ Close `shades-azt` when done.
 **Tests (must fail before the fix):** paused-updates scenario maps through the generated pattern's facts (pure logic: config says outlined, result says tiled → mapping uses tiled); fill-band click clears; highlight with source A is not applied to source B's meshes and is ignored by the pane when the pattern source is B. All-visible single-source behaviour unchanged.
 
 **Constraint:** never delete or modify files outside your task (including untracked directories).
+
+---
+
+### Task 16: Outlined side partners read the outer edge by band orientation
+
+**Defect (Task 13 review, pre-existing):** `generate-outlined-pattern.ts` (~:237, ~:282) reads `band.facets[2i | 2i+1].meta.ac.partner.band` as a quad's outer (side) partner, and `bandHasPartners` (~:362-371) reads the same `meta.ac.partner`. `ac` is the outer edge only for `axial-right` bands (`generate-projection.ts` `EDGE_MAP`). For `axial-left` bands — the second half of each tube under the default `tubeSymmetry: 'lateral'` (`generate-projection.ts:~676-681`) — the outer edge is `bc`; `ac` is the second/base edge, whose partner is facet f±1 in the **same** band. So mirrored bands list themselves as their own side partner.
+
+Consumers: (a) `chooseMiddleQuadEdge` → `selectMiddleQuadEdgeIndex` tier 3 ("higher partner band", `select-middle-quad-edge.ts:~52`) falls through to the fallback on mirrored bands; (b) `bandHasPartners` → `shouldHaveTab` reports both sides partnered on mirrored bands, putting side tabs on edges with no partner on open surfaces / tubes without a neighbour. Also audit every other `meta.ac` / fixed-edge-name read in the outlined, tiled, label and CSV paths (`grep -rn "meta\.\(ab\|ac\|bc\)"`), and `getFacetEdgeMeta`'s `bandOffset` flip, for the same assumption.
+
+**Required behaviour:** read partner edges via `getEdge('outer' | …, f, band.orientation)` (or the existing orientation-aware helper) everywhere a named edge role is meant. Axial-right output byte-identical. Report every site fixed and which output changed on the default geometry (expected: mirrored bands' middle-quad-edge choice and side-tab presence where no neighbour exists).
+
+**Tests (must fail before the fix):** real default geometry (lateral symmetry): every band's side partners are band ± 1 (never itself); `bandHasPartners` false on the side of an open-rim band with no neighbour for both orientations; middle-quad-edge tier 3 chosen on an axial-left band where it applies; axial-right characterization unchanged.
+
+**Constraint:** never delete or modify files outside your task (including untracked directories).
