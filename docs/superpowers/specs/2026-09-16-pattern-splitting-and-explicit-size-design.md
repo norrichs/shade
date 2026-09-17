@@ -626,3 +626,57 @@ names the exact piece it refers to:
 - The CSV adjacency column lists every neighbour piece a band borders along its length.
 - The tile editor presents each piece as its own selectable row, labelled like the pattern
   (`b3p1`), and selection carries the full piece-bearing address.
+
+### Deliberate unsplit output changes
+
+"Unsplit output is unchanged" holds for this fix work except where a ruling made a pre-existing
+defect visible and fixing it changed unsplit output on purpose. Each change is listed with the
+task that made it. The evidence is in that task's report,
+`.superpowers/sdd/2026-09-16-pattern-splitting-fixes/task-N-report.md`. Anything not listed here must be byte-identical when unsplit;
+`unsplit-geometry-characterization.test.ts` (tiled paths, band meta, outlined tab geometry) and
+`unsplit-labels-csv-characterization.test.ts` (labels, CSV) guard that, and a later deliberate
+change updates those guards and this list together.
+
+- **Task 8 — hidden bands and fillAll end partners.** Tiled `meta.startPartnerBand` /
+  `endPartnerBand` are stored in pattern band space. Output changes only when a band is hidden or
+  a fillAll surface projection drops fill bands: end partners, their transforms and the matched
+  ends now name the true partner (see "Hidden bands and the 'unchanged' guarantee"). With every
+  band visible and no fill band filtered, output is identical to `63f7017`.
+- **Task 11 — one-facet trim.** A one-facet band now matches and trims both its start and its
+  end. The only unsplit output affected is the synthetic one-facet fixture in
+  `patterns/tesselation/hex/__tests__/__snapshots__/snapshot.test.ts.snap`
+  (`adjuster with endsTrimmed=true rows=1 columns=1`), hand-edited from the shifted-index trim to
+  the correct one. Real unsplit bands have more than one facet; their output is unchanged.
+- **Task 13 — outlined mid tab labels.** A mid tab label names the band across the edge it sits
+  on: a before edge names band − 1 (was band + 1), and a band's first after tab names band + 1
+  where it was blank. Changed on real default geometry for `before`, `beforeAndAfter` and every
+  `tabLayout` (`inner` / `outer`) variant; default `after` is unchanged (1080 of 1080). Later
+  same-side mid tabs are labelled only at a neighbour-piece boundary, which never occurs beside
+  an unsplit neighbour. No cap label and no CSV cell changed.
+- **Task 14 — adjust after tiling reads unadjusted partners.**
+  - Shield `endsMatched` with `skipEdges` `all` or `not-first` threw; it now generates.
+  - Shield `not-first` at 2 rows × 2 columns was silently wrong by 75–107 px; it now snaps onto
+    the partner's true vertices.
+  - Shield `endLooped` with `endsMatched`: start snaps no longer read a partner already
+    overwritten by its own loop. Paths changed in 16 of 30 tubes on the default geometry
+    (re-measured `67fdca1` → `56d785a`); some facet-0 start vertices moved.
+  - Debug-only: `meta.translatedStartPartnerFacet` / `translatedEndPartnerFacet` now always show
+    the unadjusted partner path, including for configs whose paths are identical. Only the
+    `showPartnerFacets` overlay reads them.
+- **Task 16 — outlined outer edge on axial-left bands.**
+  - Under `beforeAndAfter`, the middle-quad label anchor on bands 3 and 4 of every default tube
+    moves from the before edge to the after edge. The tier-3 "higher partner band" rule now
+    applies, because axial-left bands no longer list themselves as a side partner.
+  - On open rims (no default-geometry case), a free side of an axial-left band no longer gets side
+    tabs.
+  - Default-geometry paths, tabs and tab records are unchanged.
+- **Task 17 — tesselation rules expand through the generator's tile layout.** Output changes
+  for Shield at any `columnCount` > 1 (1×2, 1×3, …) and at any `rowCount` > 1 (2×1, 2×2, 3×2),
+  and for Hex at `rowCount` > 1 (2×1, 2×2 trimmed). Rules used to land on mid-tile vertices. Each
+  changed index is proven against its unit point (task 17 report, `expand-adjustments.test.ts`).
+  1×1 output is unchanged, and Hex and Box 1×N output hashed identical.
+- **Final review — split hexparquet glue.** `adjustHexparquetAfterTiling` now resolves the left
+  partner by address. Unsplit output is unchanged: every characterization hash is identical
+  before (`c2c0abb`) and after the fix.
+- **UI only — Task 9.** The tile editor lists unsplit bands as `b3` (was `Band 3`), matching piece
+  rows (`b3p1`). Cut-pattern output is unaffected.
