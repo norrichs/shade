@@ -243,6 +243,23 @@ export type PageLayoutConfig = {
 	keepConnected: number; // px-wide uncut bridge left in each prepared cut path (0 = off)
 };
 
+/**
+ * Splits for one tube, as absolute quad indices. Every band in the tube is cut
+ * at these indices; a band with fewer quads than a given index is simply not
+ * cut there.
+ *
+ * An array rather than Record<number, number[]> so it round-trips through JSON
+ * and Drizzle without integer keys becoming strings.
+ */
+export type TubeSplits = {
+	tube: number;
+	quads: number[]; // sorted ascending, deduplicated
+};
+
+export type SplitConfig = {
+	tubeSplits: TubeSplits[];
+};
+
 export type PatternConfig = {
 	[key: string]:
 		| PatternShowConfig
@@ -253,7 +270,8 @@ export type PatternConfig = {
 		| undefined
 		| PixelScale
 		| PageSize
-		| PageLayoutConfig;
+		| PageLayoutConfig
+		| SplitConfig;
 	showPattern: PatternShowConfig;
 	axis: Axis;
 	origin: PointConfig2;
@@ -263,6 +281,7 @@ export type PatternConfig = {
 	pixelScale: PixelScale;
 	page: PageSize;
 	pageLayout: PageLayoutConfig;
+	splits?: SplitConfig;
 	// patternedConfig: CutPatternConfig;
 };
 

@@ -594,6 +594,7 @@ export const defaultPatternConfig = (): PatternConfig => ({
 		allowRotation: false,
 		keepConnected: 0
 	},
+	splits: { tubeSplits: [] },
 	page: { height: 300, width: 300, unit: 'mm' },
 	origin: { type: 'PointConfig2', x: 0, y: 0 },
 	direction: { type: 'PointConfig2', x: 0, y: 1 },
