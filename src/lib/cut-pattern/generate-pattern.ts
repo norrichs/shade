@@ -257,17 +257,27 @@ export const generateProjectionPattern = (
 		// switch the adjuster off for every tube.
 		const doAdjustAfterTiling = hasAdjustAfterTiling && (!needsEndPartners || !!firstBandMeta);
 		if (doAdjustAfterTiling) {
-			for (let t = tubeStart; t < tubeEnd; t++) {
-				const tp = tubePatterns[t];
-				if (!tp) continue;
-				// adjustAfterTiling indexes by tube number, pass the sparse array
-				const adjusted = adjustAfterTiling(
-					tp.bands,
-					tiledPatternConfig,
-					tubePatterns as TubeCutPattern[]
-				);
-				tubePatterns[t] = { ...tp, bands: adjusted };
-			}
+			// Every tube adjusts against the same, unadjusted tiling: partners in
+			// other tubes are read exactly as the adjuster reads its own tube (next
+			// facet, previous band, seam siblings), so the result does not depend
+			// on tube order and never reads indices shifted by a partner's
+			// removals. Adjusters return new bands without mutating their inputs,
+			// so keeping the tiled array and writing results to a new one is the
+			// whole snapshot (`map` keeps the sparse holes tube indexing needs).
+			const tiledTubePatterns = tubePatterns;
+			tubePatterns = tiledTubePatterns.map((tp, t) =>
+				tp && t >= tubeStart && t < tubeEnd
+					? {
+							...tp,
+							// adjustAfterTiling indexes by tube number, pass the sparse array
+							bands: adjustAfterTiling(
+								tp.bands,
+								tiledPatternConfig,
+								tiledTubePatterns as TubeCutPattern[]
+							)
+						}
+					: tp
+			);
 		}
 
 		// After adjustment, trim bands back to the exact requested range (remove expanded neighbors)
