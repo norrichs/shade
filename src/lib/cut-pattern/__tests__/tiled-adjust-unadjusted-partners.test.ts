@@ -1,26 +1,27 @@
-import { describe, it, expect, afterAll } from '@jest/globals';
-import { generateSuperGlobule } from '$lib/generate-superglobule';
-import {
-	generateDefaultSuperGlobuleConfig,
-	generateDefaultGlobulePatternConfig,
-	tiledPatternConfigs
-} from '$lib/shades-config';
-import { runPatternGeneration } from '../run-pattern-generation';
+import { describe, it, expect, afterAll, beforeAll } from '@jest/globals';
+import { generateDefaultGlobulePatternConfig, tiledPatternConfigs } from '$lib/shades-config';
 import { generateProjectionPattern } from '../generate-pattern';
 import { patterns } from '$lib/patterns/pattern-definitions';
-import { isGlobuleAddress_BandPiece } from '$lib/util';
 import { defaultShieldSpec } from '$lib/patterns/tesselation/shield';
 import { evaluateSkipEdge } from '$lib/patterns/tesselation/shared/helpers';
 import { expandTesselationAdjustments } from '$lib/patterns/tesselation/shared/adjuster';
+import {
+	askerEdge,
+	buildDefaultGeometry,
+	endFacetIndex,
+	generateProjectionTubes,
+	partnerEdge,
+	partsOf,
+	pieceOf,
+	splitAllTubesAt,
+	truePartnerOf,
+	vertexInEdgeFrame,
+	type End,
+	type RealGeometry
+} from './helpers/real-geometry';
 import type { PatternGenerationConfig } from '$lib/stores/globulePatternStores';
 import type { SuperGlobuleProjectionCutPattern } from '$lib/stores/superGlobuleStores';
-import type {
-	BandCutPattern,
-	PathSegment,
-	PipelineGates,
-	TiledPatternConfig,
-	TubeCutPattern
-} from '$lib/types';
+import type { BandCutPattern, PathSegment, TiledPatternConfig, TubeCutPattern } from '$lib/types';
 
 /**
  * Task 14: the adjust-after-tiling pass must read every partner from the same,
@@ -37,21 +38,12 @@ import type {
  * patterns) are all read from the input tiling, never from `newBands`.
  */
 
-const gates: PipelineGates = {
-	globule: false,
-	globuleTube: false,
-	projection: true,
-	voronoi: false
-};
-
-type P = { x: number; y: number };
-type End = 'start' | 'end';
-
 const TOLERANCE = 1e-6;
 
-const superConfig = generateDefaultSuperGlobuleConfig();
-const superGlobule = generateSuperGlobule(superConfig, gates);
-const tubeCount = superGlobule.projections[0].tubes.length;
+let geometry: RealGeometry;
+beforeAll(() => {
+	geometry = buildDefaultGeometry();
+});
 
 const shield = tiledPatternConfigs.tiledShieldTesselationPattern;
 const withConfig = (
@@ -60,35 +52,13 @@ const withConfig = (
 ): TiledPatternConfig => ({ ...config, config: { ...config.config, ...overrides } });
 const shieldSkipAll = withConfig(shield, { endsMatched: true, skipEdges: 'all' });
 
-const splitAllTubesAt = (quads: number[]) => ({
-	tubeSplits: Array.from({ length: tubeCount }, (_, tube) => ({ tube, quads }))
-});
+const splitAll = (quads: number[]) => splitAllTubesAt(geometry, quads);
 
 const generate = (
 	patternTypeConfig: TiledPatternConfig,
 	splits?: PatternGenerationConfig['splits'],
 	tubes?: number
-): TubeCutPattern[] => {
-	const { patternConfig } = generateDefaultGlobulePatternConfig();
-	const result = runPatternGeneration({
-		superGlobule,
-		superConfig,
-		genConfig: {
-			patternTypeConfig,
-			pixelScale: patternConfig.pixelScale,
-			showBands: true,
-			range: { tubes, bands: undefined, facets: undefined },
-			patternSource: 'projection',
-			splits
-		},
-		gates
-	});
-	const pattern = result.projectionPattern as SuperGlobuleProjectionCutPattern | undefined;
-	if (pattern?.type !== 'SuperGlobuleProjectionCutPattern') {
-		throw new Error('expected a SuperGlobuleProjectionCutPattern');
-	}
-	return pattern.projectionCutPattern.tubes;
-};
+): TubeCutPattern[] => generateProjectionTubes(geometry, patternTypeConfig, splits, tubes);
 
 describe('adjust after tiling: every tube reads the same unadjusted partners', () => {
 	const PATTERN_ID = 'test-task14-order-probe';
@@ -128,13 +98,13 @@ describe('adjust after tiling: every tube reads the same unadjusted partners', (
 		const patternConfig = generateDefaultGlobulePatternConfig();
 		patternConfig.patternTypeConfig = { ...shield, type: PATTERN_ID } as TiledPatternConfig;
 		const result = generateProjectionPattern(
-			superGlobule.projections[0].tubes,
+			geometry.superGlobule.projections[0].tubes,
 			'super-1',
 			patternConfig,
 			{ tubes: undefined, bands: undefined, facets: undefined }
 		);
 
-		expect(seen.length).toBe(tubeCount);
+		expect(seen.length).toBe(geometry.tubeCount);
 		expect(seen.length).toBeGreaterThan(1);
 		const different = seen.flatMap((state, t) => (state === seen[0] ? [] : [t]));
 		expect(different).toEqual([]);
@@ -161,9 +131,9 @@ describe('adjust after tiling: every tube reads the same unadjusted partners', (
 			['unsplit', []],
 			['split at 1 (1 + 3)', [1]]
 		])('%s', (__, quads) => {
-			const splits = splitAllTubesAt(quads);
+			const splits = splitAll(quads);
 			const full = generate(config, splits);
-			const probeTubes = [1, Math.floor(tubeCount / 2), tubeCount - 1];
+			const probeTubes = [1, Math.floor(geometry.tubeCount / 2), geometry.tubeCount - 1];
 			const different = probeTubes.filter((t) => {
 				const alone = generate(config, splits, t);
 				expect(alone.length).toBe(1);
@@ -178,61 +148,13 @@ describe('adjust after tiling: every tube reads the same unadjusted partners', (
 // Removals that precede the partner source indices (Shield `skipEdges`).
 // ---------------------------------------------------------------------------
 
-const pieceOf = (b: BandCutPattern) =>
-	isGlobuleAddress_BandPiece(b.address) ? b.address.piece : 0;
-
-const partsOf = (tube: TubeCutPattern, band: number) =>
-	tube.bands.filter((b) => b.address.band === band).sort((a, b) => pieceOf(a) - pieceOf(b));
-
-const endFacetIndex = (band: BandCutPattern, end: End) =>
-	end === 'start' ? 0 : band.facets.length - 1;
-
-const askerEdge = (band: BandCutPattern, end: End): [P, P] => {
-	const q = band.facets[endFacetIndex(band, end)].quad!;
-	return end === 'start' ? [q.b, q.a] : [q.d, q.c];
-};
-
-const partnerEdge = (band: BandCutPattern, end: End): [P, P] => {
-	const q = band.facets[endFacetIndex(band, end)].quad!;
-	return end === 'start' ? [q.a, q.b] : [q.c, q.d];
-};
-
-const vertexInEdgeFrame = (seg: PathSegment, [o, e]: [P, P]): P => {
-	const theta = Math.atan2(e.y - o.y, e.x - o.x);
-	const [cos, sin] = [Math.cos(-theta), Math.sin(-theta)];
-	const [dx, dy] = [(seg[1] as number) - o.x, (seg[2] as number) - o.y];
-	return { x: dx * cos - dy * sin, y: dx * sin + dy * cos };
-};
-
 describe('Shield skipEdges + endsMatched: ends snap to the partner’s true vertices', () => {
 	// Partner identities (not geometry) from the default config's unsplit run:
 	// skipEdges, rows and columns do not change which bands meet.
-	const unsplitTruth = generate(shield);
-
-	const partnerOf = (tubes: TubeCutPattern[], t: number, band: BandCutPattern, end: End) => {
-		const parts = partsOf(tubes[t], band.address.band);
-		const index = parts.indexOf(band);
-		const siblingIndex = end === 'start' ? index - 1 : index + 1;
-		if (siblingIndex >= 0 && siblingIndex < parts.length) {
-			return {
-				partner: parts[siblingIndex],
-				partnerEnd: (end === 'start' ? 'end' : 'start') as End
-			};
-		}
-		const truth = unsplitTruth[t].bands.find((b) => b.address.band === band.address.band)!;
-		const address = truth.meta?.[`${end}PartnerBand`];
-		if (!address) return undefined;
-		const partnerTruth = unsplitTruth[address.tube].bands.find(
-			(b) => b.address.band === address.band
-		)!;
-		const joinsAtStart =
-			partnerTruth.meta?.startPartnerBand?.tube === t &&
-			partnerTruth.meta.startPartnerBand.band === band.address.band;
-		const partnerParts = partsOf(tubes[address.tube], address.band);
-		return joinsAtStart
-			? { partner: partnerParts[0], partnerEnd: 'start' as End }
-			: { partner: partnerParts[partnerParts.length - 1], partnerEnd: 'end' as End };
-	};
+	let unsplitTruth: TubeCutPattern[];
+	beforeAll(() => {
+		unsplitTruth = generate(shield);
+	});
 
 	it('fixture: shield trims nothing and skipRemove precedes the end-group partner indices', () => {
 		expect(defaultShieldSpec.adjustments.trimsEnds).toBeFalsy();
@@ -305,7 +227,7 @@ describe('Shield skipEdges + endsMatched: ends snap to the partner’s true vert
 			);
 		};
 
-		const tubes = generate(config, quads ? splitAllTubesAt(quads) : undefined);
+		const tubes = generate(config, quads ? splitAll(quads) : undefined);
 		// Fixture guard: every tube really has the (unequal) pieces named.
 		for (const tube of tubes) {
 			expect(partsOf(tube, 0).map((b) => b.facets.length)).toEqual(expectedLengths);
@@ -318,7 +240,7 @@ describe('Shield skipEdges + endsMatched: ends snap to the partner’s true vert
 		tubes.forEach((tube, t) => {
 			for (const band of tube.bands) {
 				for (const end of ['start', 'end'] as End[]) {
-					const joined = partnerOf(tubes, t, band, end);
+					const joined = truePartnerOf(unsplitTruth, tubes, t, band, end);
 					if (!joined) continue;
 					const { partner, partnerEnd } = joined;
 					const ownF = endFacetIndex(band, end);

@@ -1,14 +1,22 @@
-import { describe, it, expect } from '@jest/globals';
-import { generateSuperGlobule } from '$lib/generate-superglobule';
+import { describe, it, expect, beforeAll } from '@jest/globals';
 import {
 	generateDefaultSuperGlobuleConfig,
 	generateDefaultGlobulePatternConfig
 } from '$lib/shades-config';
 import { generateProjectionPattern } from '../generate-pattern';
 import { isGlobuleAddress_BandPiece } from '$lib/util';
+import {
+	buildDefaultGeometry,
+	pieceOf,
+	projectionGates,
+	truthJoinsAtStart,
+	type End,
+	type P
+} from './helpers/real-geometry';
+import { generateSuperGlobule } from '$lib/generate-superglobule';
 import type { SuperGlobuleProjectionCutPattern } from '$lib/stores/superGlobuleStores';
 import type { TransformConfig } from '$lib/projection-geometry/types';
-import type { BandCutPattern, PipelineGates, TubeCutPattern } from '$lib/types';
+import type { TubeCutPattern } from '$lib/types';
 
 /**
  * Task 8: hidden bands. A hidden band (`visible: false`) is dropped before
@@ -42,16 +50,6 @@ import type { BandCutPattern, PipelineGates, TubeCutPattern } from '$lib/types';
  * a seam would give that band a partner of its own and mask the decision.
  */
 
-const gates: PipelineGates = {
-	globule: false,
-	globuleTube: false,
-	projection: true,
-	voronoi: false
-};
-
-type P = { x: number; y: number };
-type End = 'start' | 'end';
-
 const SPLITS = [
 	{ tube: 3, quads: [1] },
 	{ tube: 6, quads: [3] }
@@ -61,8 +59,8 @@ const generate = (
 	hiddenBand: number | undefined,
 	splits: { tube: number; quads: number[] }[]
 ): TubeCutPattern[] => {
-	const tubes = generateSuperGlobule(generateDefaultSuperGlobuleConfig(), gates).projections[0]
-		.tubes;
+	// Fresh geometry per run: hiding a band mutates the tubes.
+	const tubes = buildDefaultGeometry().superGlobule.projections[0].tubes;
 	if (hiddenBand !== undefined) tubes.forEach((tube) => (tube.bands[hiddenBand].visible = false));
 	const config = generateDefaultGlobulePatternConfig();
 	config.patternConfig.splits = { tubeSplits: splits };
@@ -74,9 +72,6 @@ const generate = (
 	return pattern.projectionCutPattern.tubes;
 };
 
-const pieceOf = (b: BandCutPattern) =>
-	isGlobuleAddress_BandPiece(b.address) ? b.address.piece : 0;
-
 const apply = (t: TransformConfig | undefined, p: P): P => {
 	if (!t) return p;
 	const th = (t.rotate.z * Math.PI) / 180;
@@ -85,7 +80,10 @@ const apply = (t: TransformConfig | undefined, p: P): P => {
 };
 const dist = (a: P, b: P) => Math.hypot(a.x - b.x, a.y - b.y);
 
-const truth = generate(undefined, []);
+let truth: TubeCutPattern[];
+beforeAll(() => {
+	truth = generate(undefined, []);
+});
 const truthMeta = (tube: number, realBand: number) =>
 	truth[tube].bands.find((b) => b.address.band === realBand)?.meta;
 
@@ -96,8 +94,12 @@ describe.each([1, 5])(
 			real === HIDDEN_BAND ? undefined : real > HIDDEN_BAND ? real - 1 : real;
 		const realIndexOf = (visible: number) => (visible >= HIDDEN_BAND ? visible + 1 : visible);
 
+		let tubes: TubeCutPattern[];
+		beforeAll(() => {
+			tubes = generate(HIDDEN_BAND, SPLITS);
+		});
+
 		it('the fixture has unequal pieces and hides a band that is some end partner', () => {
-			const tubes = generate(HIDDEN_BAND, SPLITS);
 			const pieceLengths = (t: number) =>
 				tubes[t].bands.filter((b) => b.address.band === 0).map((b) => b.facets.length);
 			expect(pieceLengths(3)).toEqual([1, 3]);
@@ -113,7 +115,6 @@ describe.each([1, 5])(
 		});
 
 		it('every band end matches its true partner, or is unmatched when that partner is hidden', () => {
-			const tubes = generate(HIDDEN_BAND, SPLITS);
 			const failures: string[] = [];
 			let matchedEnds = 0;
 			let hiddenPartnerEnds = 0;
@@ -157,10 +158,9 @@ describe.each([1, 5])(
 							continue;
 						}
 
-						const partnerTruth = truthMeta(trueAddress.tube, trueAddress.band);
-						const partnerStart = partnerTruth?.startPartnerBand;
-						const partnerEnd: End =
-							partnerStart?.tube === t && partnerStart.band === realBand ? 'start' : 'end';
+						const partnerEnd: End = truthJoinsAtStart(truth, trueAddress, t, realBand)
+							? 'start'
+							: 'end';
 						const partnerParts = tubes[trueAddress.tube].bands
 							.filter((b) => b.address.band === partnerVisible)
 							.sort((a, b) => pieceOf(a) - pieceOf(b));
@@ -215,7 +215,7 @@ describe('end partners on a fillAll surface projection (tiled drops the fill ban
 	it('every stored end partner names a band that names this band back', () => {
 		const superConfig = generateDefaultSuperGlobuleConfig();
 		superConfig.projectionConfigs[0].surfaceProjectionConfig = { divisions: 2, fillAll: true };
-		const geometry = generateSuperGlobule(superConfig, gates).projections[0];
+		const geometry = generateSuperGlobule(superConfig, projectionGates).projections[0];
 		const surfaceTubes = geometry.surfaceProjectionTubes ?? [];
 		expect(surfaceTubes.flatMap((t) => t.bands).filter((b) => b.isFill).length).toBeGreaterThan(0);
 

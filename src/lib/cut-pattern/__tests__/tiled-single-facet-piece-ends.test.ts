@@ -1,23 +1,23 @@
-import { describe, it, expect } from '@jest/globals';
-import { generateSuperGlobule } from '$lib/generate-superglobule';
-import {
-	generateDefaultSuperGlobuleConfig,
-	generateDefaultGlobulePatternConfig,
-	tiledPatternConfigs
-} from '$lib/shades-config';
-import { runPatternGeneration } from '../run-pattern-generation';
-import { isGlobuleAddress_BandPiece } from '$lib/util';
+import { describe, it, expect, beforeAll } from '@jest/globals';
+import { tiledPatternConfigs } from '$lib/shades-config';
 import { defaultShieldSpec } from '$lib/patterns/tesselation/shield';
 import { defaultHexSpec } from '$lib/patterns/tesselation/hex';
+import {
+	askerEdge,
+	buildDefaultGeometry,
+	endFacetIndex,
+	generateProjectionTubes,
+	partnerEdge,
+	partsOf,
+	pieceOf,
+	splitAllTubesAt,
+	truePartnerOf,
+	vertexInEdgeFrame,
+	type End,
+	type RealGeometry
+} from './helpers/real-geometry';
 import type { PatternGenerationConfig } from '$lib/stores/globulePatternStores';
-import type { SuperGlobuleProjectionCutPattern } from '$lib/stores/superGlobuleStores';
-import type {
-	BandCutPattern,
-	PathSegment,
-	PipelineGates,
-	TiledPatternConfig,
-	TubeCutPattern
-} from '$lib/types';
+import type { TiledPatternConfig, TubeCutPattern } from '$lib/types';
 
 /**
  * Task 11: a piece one quad long has ONE facet, so its start and its end live
@@ -50,119 +50,26 @@ import type {
  * involved (all bands visible, so pattern and real band indices coincide).
  */
 
-const gates: PipelineGates = {
-	globule: false,
-	globuleTube: false,
-	projection: true,
-	voronoi: false
-};
-
-type P = { x: number; y: number };
-type End = 'start' | 'end';
-
 const TOLERANCE = 1e-6;
 
-const superConfig = generateDefaultSuperGlobuleConfig();
-const superGlobule = generateSuperGlobule(superConfig, gates);
-const tubeCount = superGlobule.projections[0].tubes.length;
+let geometry: RealGeometry;
+let unsplitShield: TubeCutPattern[];
+beforeAll(() => {
+	geometry = buildDefaultGeometry();
+	unsplitShield = generate(tiledPatternConfigs.tiledShieldTesselationPattern);
+});
 
 const withConfig = (
 	config: TiledPatternConfig,
 	overrides: Partial<TiledPatternConfig['config']>
 ): TiledPatternConfig => ({ ...config, config: { ...config.config, ...overrides } });
 
-const splitAllTubesAt = (quads: number[]) => ({
-	tubeSplits: Array.from({ length: tubeCount }, (_, tube) => ({ tube, quads }))
-});
+const splitAll = (quads: number[]) => splitAllTubesAt(geometry, quads);
 
 const generate = (
 	patternTypeConfig: TiledPatternConfig,
 	splits?: PatternGenerationConfig['splits']
-): TubeCutPattern[] => {
-	const { patternConfig } = generateDefaultGlobulePatternConfig();
-	const result = runPatternGeneration({
-		superGlobule,
-		superConfig,
-		genConfig: {
-			patternTypeConfig,
-			pixelScale: patternConfig.pixelScale,
-			showBands: true,
-			range: { tubes: undefined, bands: undefined, facets: undefined },
-			patternSource: 'projection',
-			splits
-		},
-		gates
-	});
-	const pattern = result.projectionPattern as SuperGlobuleProjectionCutPattern | undefined;
-	if (pattern?.type !== 'SuperGlobuleProjectionCutPattern') {
-		throw new Error('expected a SuperGlobuleProjectionCutPattern');
-	}
-	return pattern.projectionCutPattern.tubes;
-};
-
-const pieceOf = (b: BandCutPattern) =>
-	isGlobuleAddress_BandPiece(b.address) ? b.address.piece : 0;
-
-const partsOf = (tube: TubeCutPattern, band: number) =>
-	tube.bands.filter((b) => b.address.band === band).sort((a, b) => pieceOf(a) - pieceOf(b));
-
-const endFacet = (band: BandCutPattern, end: End) =>
-	end === 'start' ? band.facets[0] : band.facets[band.facets.length - 1];
-
-/** The end's edge as it is ordered when this band is the asker. */
-const askerEdge = (band: BandCutPattern, end: End): [P, P] => {
-	const q = endFacet(band, end).quad!;
-	return end === 'start' ? [q.b, q.a] : [q.d, q.c];
-};
-
-/** The end's edge as it is ordered when this band is the partner. */
-const partnerEdge = (band: BandCutPattern, end: End): [P, P] => {
-	const q = endFacet(band, end).quad!;
-	return end === 'start' ? [q.a, q.b] : [q.c, q.d];
-};
-
-/** A path vertex (the segment's end point) in a frame on `edge`. */
-const vertexInEdgeFrame = (seg: PathSegment, [o, e]: [P, P]): P => {
-	const theta = Math.atan2(e.y - o.y, e.x - o.x);
-	const [cos, sin] = [Math.cos(-theta), Math.sin(-theta)];
-	const [x, y] = [seg[1] as number, seg[2] as number];
-	const [dx, dy] = [x - o.x, y - o.y];
-	return { x: dx * cos - dy * sin, y: dx * sin + dy * cos };
-};
-
-type Joined = { partner: BandCutPattern; partnerEnd: End; kind: 'seam' | 'outer' };
-
-const unsplitShield = generate(tiledPatternConfigs.tiledShieldTesselationPattern);
-
-const partnerOf = (tubes: TubeCutPattern[], t: number, band: BandCutPattern, end: End) => {
-	const parts = partsOf(tubes[t], band.address.band);
-	const index = parts.indexOf(band);
-	const siblingIndex = end === 'start' ? index - 1 : index + 1;
-	if (siblingIndex >= 0 && siblingIndex < parts.length) {
-		return {
-			partner: parts[siblingIndex],
-			partnerEnd: end === 'start' ? 'end' : 'start',
-			kind: 'seam'
-		} as Joined;
-	}
-	const truth = unsplitShield[t].bands.find((b) => b.address.band === band.address.band)!;
-	const address = truth.meta?.[`${end}PartnerBand`];
-	if (!address) return undefined;
-	const partnerTruth = unsplitShield[address.tube].bands.find(
-		(b) => b.address.band === address.band
-	)!;
-	const joinsAtStart =
-		partnerTruth.meta?.startPartnerBand?.tube === t &&
-		partnerTruth.meta.startPartnerBand.band === band.address.band;
-	const partnerParts = partsOf(tubes[address.tube], address.band);
-	return joinsAtStart
-		? ({ partner: partnerParts[0], partnerEnd: 'start', kind: 'outer' } as Joined)
-		: ({
-				partner: partnerParts[partnerParts.length - 1],
-				partnerEnd: 'end',
-				kind: 'outer'
-			} as Joined);
-};
+): TubeCutPattern[] => generateProjectionTubes(geometry, patternTypeConfig, splits);
 
 const pairsFor = (end: End) =>
 	end === 'start'
@@ -180,13 +87,13 @@ const judgeEndMatching = (tubes: TubeCutPattern[]) => {
 	tubes.forEach((tube, t) => {
 		for (const band of tube.bands) {
 			for (const end of ['start', 'end'] as End[]) {
-				const joined = partnerOf(tubes, t, band, end);
+				const joined = truePartnerOf(unsplitShield, tubes, t, band, end);
 				if (!joined) continue;
 				const { partner, partnerEnd, kind } = joined;
 				const targets = pairsFor(end).map((p) => p.target);
 				const sources = pairsFor(partnerEnd).map((p) => p.source);
-				const ownPath = endFacet(band, end).path;
-				const partnerPath = endFacet(partner, partnerEnd).path;
+				const ownPath = band.facets[endFacetIndex(band, end)].path;
+				const partnerPath = partner.facets[endFacetIndex(partner, partnerEnd)].path;
 				const ownFrame = askerEdge(band, end);
 				const partnerFrame = partnerEdge(partner, partnerEnd);
 				const deviation = Math.max(
@@ -230,7 +137,7 @@ describe('one-facet pieces: both ends are end matched (Shield, real geometry)', 
 
 	describe.each(configs)('%s', (_, config) => {
 		it.each(splitCases)('%s', (__, quads, expectedLengths) => {
-			const tubes = generate(config, splitAllTubesAt(quads));
+			const tubes = generate(config, splitAll(quads));
 			// Fixture guard: every tube really has the unequal pieces named.
 			for (const tube of tubes) {
 				expect(partsOf(tube, 0).map((b) => b.facets.length)).toEqual(expectedLengths);
@@ -264,8 +171,8 @@ describe('one-facet pieces: endsTrimmed removes both end groups (Hex, real geome
 	])('%s', (_, quads) => {
 		expect(hex.config.rowCount).toBe(1);
 		expect(hex.config.columnCount).toBe(1);
-		const trimmed = generate(withConfig(hex, { endsTrimmed: true }), splitAllTubesAt(quads));
-		const untrimmed = generate(withConfig(hex, { endsTrimmed: false }), splitAllTubesAt(quads));
+		const trimmed = generate(withConfig(hex, { endsTrimmed: true }), splitAll(quads));
+		const untrimmed = generate(withConfig(hex, { endsTrimmed: false }), splitAll(quads));
 		const failures: string[] = [];
 		let singleFacetBands = 0;
 		trimmed.forEach((tube, t) => {
