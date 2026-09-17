@@ -161,4 +161,6 @@ Suggested route:
 
 `bd list --status=open` currently returns 8 issues, and **some are not from this plan** — `shades-bv5` ("Phase 3: remove the fixed pane and re-grid designer2") and `shades-mx7` ("Phase 4: delete Projection and Cut editors") belong to separate work and their phase numbers collide with this plan's. Don't conflate them.
 
-`shades-1xp` (this plan's Phase 4) does not appear in the open list and I did not close it — **verify its state rather than assuming**. This plan's remaining issues are `shades-rya` (Phase 5), `shades-ehy` (Phase 6), the `shades-5a9` epic, and the `shades-azt` bug.
+`shades-1xp` (this plan's Phase 4) is **`IN_PROGRESS`, deliberately left open.** It is absent from `bd list --status=open` only because that filter excludes `in_progress` — not because of a bookkeeping slip. Both its tasks (12 and 13) are implemented, but **Task 13's control has never been seen to render**, and closing a phase on an unverified task would misrepresent the state. Close it once you have confirmed the `Split End` select appears.
+
+This plan's issues are therefore: `shades-1xp` (Phase 4, in progress, pending that one verification), `shades-rya` (Phase 5), `shades-ehy` (Phase 6), the `shades-5a9` epic, and the `shades-azt` bug. Phases 0–3 are closed (`shades-b9d`, `shades-1qz`, `shades-puy`, `shades-0u5`, `shades-u6z`).
