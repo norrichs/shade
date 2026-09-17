@@ -4,6 +4,13 @@ import type { FacetSnapRule } from './adjust/snap-adjacent-facets';
 import { snapAdjacentFacets } from './adjust/snap-adjacent-facets';
 import { alignPrevBandPath } from './adjust/align-prev-band';
 import { removeInPlace, replaceInPlace } from './tesselation/shared/helpers';
+import {
+	alongsideFacetIndex,
+	findSideNeighbourInBands,
+	pieceIndexOf
+} from '$lib/cut-pattern/resolve-partner-band';
+import { isSameParentBand } from '$lib/util';
+import type { GlobuleAddress_BandPiece } from '$lib/projection-geometry/types';
 
 /**
  * Hexparquet: three subunits cycled along a band, one per quad. Quad i+1 lies
@@ -183,27 +190,78 @@ export const adjustHexparquetAfterMapping = (
 	);
 
 /**
+ * The band on `band`'s left (unit x = 0) side, by address (spec amendment
+ * 2026-09-16: neighbour identity is by address, never by array position).
+ * `leftPartnerBand` names a parent band in the same tube; when that band was
+ * split, the side-neighbour rule picks the piece alongside `band` (same piece
+ * index, else the neighbour's last piece).
+ */
+const findLeftPartner = (
+	bands: BandCutPattern[],
+	band: BandCutPattern
+): BandCutPattern | undefined => {
+	if (band.leftPartnerBand === undefined) return undefined;
+	// The parent's plain address with the partner's band index: drop `piece`,
+	// keep every other component exactly as stored.
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	const { piece, ...parent } = band.address as GlobuleAddress_BandPiece;
+	return findSideNeighbourInBands(
+		bands,
+		{ ...parent, band: band.leftPartnerBand },
+		pieceIndexOf(band.address)
+	);
+};
+
+/**
+ * The parent band's facet count: the sum over its pieces, or the band's own
+ * count when it is unsplit. Tiled output has one facet per quad.
+ */
+const parentFacetCount = (bands: BandCutPattern[], band: BandCutPattern): number =>
+	bands
+		.filter((b) => isSameParentBand(b.address, band.address))
+		.reduce((count, b) => count + b.facets.length, 0);
+
+/**
  * Tube-level adjustment: snap each band's column-0 left apexes onto its left
  * partner band's right apex (brought into this band's frame), then drop segments.
  * All snaps read complete paths, so drops happen last.
+ *
+ * Split tubes (pieces). The snap must reproduce the unsplit band's, so:
+ * - the left partner is resolved by address with the side-neighbour rule
+ *   (`findLeftPartner`), never by band index alone, which cannot tell pieces
+ *   apart;
+ * - the length gate compares PARENT bands, as the unsplit run does;
+ * - facets pair in parent quad coordinates (`alongsideFacetIndex`); a facet the
+ *   partner piece does not cover is left unsnapped.
+ * The subunit (`f % 3`) and the drop rules read the piece-local facet index.
+ * That equals the parent's modulo 3 because splits fall only on multiples of
+ * the subunit count, and `facetIndex > 0` (keep blue's bottom line) is meant
+ * per piece: a piece's first facet is a physical end, seam or not.
+ * `hasLeftPartner` reads the stored partner index exactly as the unsplit run
+ * does (pieces inherit it from the parent), so the drops match the parent's.
  */
 export const adjustHexparquetAfterTiling = (
 	bands: BandCutPattern[],
 	tiledPatternConfig: TiledPatternConfig
 ): BandCutPattern[] => {
 	const columns = tiledPatternConfig.config.columnCount || 1;
-	const byIndex = new Map(bands.map((band) => [band.address.band, band]));
 
 	const snapped = bands.map((band) => {
-		const partner =
-			band.leftPartnerBand === undefined ? undefined : byIndex.get(band.leftPartnerBand);
-		if (band.error || !partner || partner.error || partner.facets.length !== band.facets.length) {
+		const partner = findLeftPartner(bands, band);
+		if (
+			band.error ||
+			!partner ||
+			partner.error ||
+			parentFacetCount(bands, partner) !== parentFacetCount(bands, band)
+		) {
 			return band;
 		}
 		return {
 			...band,
 			facets: band.facets.map((facet, f) => {
-				const partnerFacet = partner.facets[f];
+				const partnerIndex = alongsideFacetIndex(band, f, partner);
+				if (partnerIndex === undefined) return facet;
+				const partnerFacet = partner.facets[partnerIndex];
 				if (!facet.quad || !partnerFacet.quad) return facet;
 				const source = alignPrevBandPath(partnerFacet.path, partnerFacet.quad, facet.quad);
 				const path = structuredClone(facet.path);

@@ -256,25 +256,55 @@ describe('tiled splits reach the adjuster without crashing (real geometry)', () 
 	});
 });
 
-describe('glue invariant: pieces reproduce the unsplit pattern (real geometry)', () => {
-	const splitCases: [string, number[]][] = [
-		['unequal split (3 + 5 quads)', [3]],
-		['equal split (4 + 4 quads)', [4]]
-	];
+type SplitCase = [string, number[]];
 
-	describe.each(patternCases)('%s', (_, config) => {
+/**
+ * Hexparquet cycles three subunits along a band, so a band needs a quad count
+ * divisible by 3 and splits must fall on multiples of 3: it runs on its own
+ * 12-quads-per-band geometry. [3] gives unequal pieces (3 + 9), [6] equal ones
+ * (6 + 6). Its tube-level adjuster snaps each band's left apexes onto the left
+ * partner band, which is where splits went wrong (shades final review).
+ */
+const HEXPARQUET_QUADS_PER_BAND = 12;
+const hexparquet = tiledPatternConfigs['tiledHexparquetPattern-0'];
+const withColumns = (config: TiledPatternConfig, columnCount: number): TiledPatternConfig => ({
+	...config,
+	config: { ...config.config, columnCount }
+});
+const eightQuadSplits: SplitCase[] = [
+	['unequal split (3 + 5 quads)', [3]],
+	['equal split (4 + 4 quads)', [4]]
+];
+const hexparquetSplits: SplitCase[] = [
+	['unequal split (3 + 9 quads)', [3]],
+	['equal split (6 + 6 quads)', [6]]
+];
+const glueCases: [string, TiledPatternConfig, number, SplitCase[]][] = [
+	...patternCases.map(([name, config]): [string, TiledPatternConfig, number, SplitCase[]] => [
+		name,
+		config,
+		QUADS_PER_BAND,
+		eightQuadSplits
+	]),
+	['Hexparquet, 1 column', withColumns(hexparquet, 1), HEXPARQUET_QUADS_PER_BAND, hexparquetSplits],
+	['Hexparquet, 2 columns', withColumns(hexparquet, 2), HEXPARQUET_QUADS_PER_BAND, hexparquetSplits]
+];
+
+describe('glue invariant: pieces reproduce the unsplit pattern (real geometry)', () => {
+	describe.each(glueCases)('%s', (_, config, quadsPerBand, splitCases) => {
 		let geometry: Geometry;
 		let unsplit: TubeCutPattern[];
 		beforeAll(() => {
-			geometry = geometryFor(QUADS_PER_BAND);
+			geometry = geometryFor(quadsPerBand);
 			unsplit = generate(geometry, config);
 		});
 
-		it('has the expected geometry (8 quads per band, unsplit)', () => {
+		it(`has the expected geometry (${quadsPerBand} quads per band, unsplit)`, () => {
 			for (const tube of unsplit) {
 				for (const band of tube.bands) {
 					expect(isGlobuleAddress_BandPiece(band.address)).toBe(false);
-					expect(band.facets).toHaveLength(QUADS_PER_BAND);
+					expect(band.error).toBeUndefined();
+					expect(band.facets).toHaveLength(quadsPerBand);
 				}
 			}
 		});
