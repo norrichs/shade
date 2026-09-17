@@ -237,6 +237,19 @@
 								{#each edgeOptions as option}<option value={option}>{option}</option>{/each}
 							</select>
 						</LabeledControl>
+						<LabeledControl label="Split End">
+							<select
+								value={tabConfig.splitEnd ?? 'none'}
+								onchange={(event) =>
+									setTab({
+										splitEnd: optional(
+											(event.currentTarget as HTMLSelectElement).value
+										) as TabEdgeOption
+									})}
+							>
+								{#each edgeOptions as option}<option value={option}>{option}</option>{/each}
+							</select>
+						</LabeledControl>
 					{/if}
 
 					<header class="group">Procedural Fill</header>
