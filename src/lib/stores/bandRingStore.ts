@@ -14,7 +14,7 @@
  */
 import { derived, get } from 'svelte/store';
 import type { GlobuleAddress_Band } from '$lib/projection-geometry/types';
-import { concatAddress_Band } from '$lib/util';
+import { buildBandRingLookup, type BandRingLookup } from '$lib/cut-pattern/band-ring-lookup';
 import { collateTubes } from '$lib/cut-pattern/collate-tubes';
 import { buildBandSortIndex } from '$lib/cut-pattern/band-sort-index';
 import { superGlobulePatternStore } from './superGlobuleStores';
@@ -22,12 +22,7 @@ import { patternConfigStore } from './globulePatternStores';
 import { viewControlStore } from './viewControlStore';
 import { setAssemblerHighlight } from './selectionStores';
 
-/**
- * Map from a band's concatenated address to every band in its ring (including
- * itself). Empty in modes without rings (tube-order), where a band's ring is
- * just itself and the map is not consulted.
- */
-export type BandRingLookup = (band: GlobuleAddress_Band) => GlobuleAddress_Band[];
+export type { BandRingLookup };
 
 export const bandRingLookup = derived(
 	[superGlobulePatternStore, patternConfigStore, viewControlStore],
@@ -60,14 +55,8 @@ export const bandRingLookup = derived(
 			return empty;
 		}
 
-		const byBand = new Map<string, GlobuleAddress_Band[]>();
-		index.groups.forEach((group) => {
-			group.bands.forEach((band) => {
-				byBand.set(concatAddress_Band(band), group.bands);
-			});
-		});
-
-		return (band: GlobuleAddress_Band) => byBand.get(concatAddress_Band(band)) ?? [];
+		// Piece-aware, with a parent fallback for plain (3D view) addresses.
+		return buildBandRingLookup(index);
 	}
 );
 
