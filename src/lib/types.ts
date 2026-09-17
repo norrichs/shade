@@ -458,8 +458,12 @@ export type BandCutPattern = {
 		center: Vector3;
 	};
 	meta?: {
-		startPartnerBand: GlobuleAddress_Band;
-		endPartnerBand: GlobuleAddress_Band;
+		// Optional because a split piece can have a resolvable seam at one end and
+		// an unpartnered outer end at the other. Previously both were required and
+		// meta was dropped entirely unless both resolved, which would have
+		// disabled seam matching for such a piece.
+		startPartnerBand?: GlobuleAddress_Band;
+		endPartnerBand?: GlobuleAddress_Band;
 		startPartnerTransform?: TransformConfig;
 		endPartnerTransform?: TransformConfig;
 		translatedStartPartnerFacet?: CutPattern;

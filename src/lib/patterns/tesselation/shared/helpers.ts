@@ -117,19 +117,22 @@ export const getTransformedPartnerCutPattern = (
 	if (!endsMatched || !band.meta || (f !== 0 && f !== band.facets.length - 1)) return undefined;
 
 	const partnerAddress = f === 0 ? band.meta.startPartnerBand : band.meta.endPartnerBand;
+	// An end with no partner (an outer end, or a seam whose sibling is out of the
+	// rendered range) simply is not matched.
+	if (!partnerAddress) return undefined;
 	const transform: TransformConfig | undefined =
 		f === 0 ? band.meta.startPartnerTransform : band.meta.endPartnerTransform;
 	// findBandByAddress already returns undefined for a missing tube, so the
 	// separate partnerTube guard goes too — leaving it would make `partnerTube`
 	// an unused local and fail `npm run lint`.
-	// `band.address` isn't widened to admit `piece` until Task 9, so read it
-	// defensively rather than assuming today's type.
 	const fromPiece = isGlobuleAddress_BandPiece(band.address) ? band.address.piece : 0;
 	const partnerBand = findBandByAddress(tubes, partnerAddress, fromPiece);
 	if (!partnerBand?.meta) return undefined;
-	const partnerFacetIndex = isSameAddress(partnerBand.meta.startPartnerBand, band.address)
-		? 0
-		: partnerBand.facets.length - 1;
+	const partnerFacetIndex =
+		partnerBand.meta.startPartnerBand &&
+		isSameAddress(partnerBand.meta.startPartnerBand, band.address)
+			? 0
+			: partnerBand.facets.length - 1;
 	const partnerFacet: CutPattern = partnerBand.facets[partnerFacetIndex];
 	const partnerPath = structuredClone(partnerFacet.path);
 	const transformedPartnerPath = transform ? newTransformPS(partnerPath, transform) : partnerPath;
