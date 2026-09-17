@@ -23,8 +23,10 @@ import { applyStrokeWidth, getFlatStripV2 } from './generate-cut-pattern';
 import { resolvePatternEntry } from '$lib/patterns/resolve-pattern';
 import { computeTiledLabelAngle } from './compute-tiled-label-angle';
 import { getQuadWidth, svgPathStringFromSegments } from '$lib/patterns/utils';
+import { splitFlatBands } from './split-flat-bands';
 import type {
 	GlobuleAddress_Band,
+	GlobuleAddress_BandPiece,
 	GlobuleAddress_FacetEdge,
 	GlobuleAddress_Tube
 } from '$lib/projection-geometry/types';
@@ -91,13 +93,15 @@ export const generateTubeCutPattern = ({
 	bands,
 	tiledPatternConfig,
 	pixelScale,
-	bandRange
+	bandRange,
+	splitQuads
 }: {
 	address: GlobuleAddress_Tube;
 	bands: Band[];
 	tiledPatternConfig: TiledPatternConfig;
 	pixelScale: PixelScale;
 	bandRange?: { start: number; end: number };
+	splitQuads?: number[];
 }): TubeCutPattern => {
 	const tubeCutPattern: TubeCutPattern = { projectionType: 'patterned', address, bands: [] };
 
@@ -117,7 +121,31 @@ export const generateTubeCutPattern = ({
 	const flatBands = selectedBands.map((band) =>
 		getFlatStripV2(band, { bandStyle: 'helical-right', pixelScale })
 	);
-	const alignedBands = alignBands(flatBands);
+
+	// Split before aligning, so each piece is a partition of one flat layout and
+	// gets its own bounding box for packing. subunitCount gates legal positions,
+	// which is why the pattern entry is resolved here rather than only inside
+	// generateTiling.
+	const entry = resolvePatternEntry(tiledPatternConfig.type) as UnitPatternGenerator;
+	const subunitCount = entry.subunitCount ?? 1;
+	const splitResult = splitFlatBands(flatBands, splitQuads ?? [], subunitCount);
+	if (splitResult.rejected.length) {
+		console.warn(
+			`${tiledPatternConfig.type}: ${splitResult.rejected.length} split(s) dropped in tube ${address.tube} — ${splitResult.rejected[0].reason}`
+		);
+	}
+
+	// Decide the flip once per PARENT, then hand it to that parent's pieces, so
+	// pieces of one band all come off the page the same way round while each still
+	// gets its own bounding box for packing.
+	const parentAscending = flatBands.map(computeBandAscending);
+	const splitBands = splitResult.bands.map((band) =>
+		band.parentIndex === undefined
+			? band
+			: { ...band, parentAscending: parentAscending[band.parentIndex] }
+	);
+
+	const alignedBands = alignBands(splitBands);
 
 	const quadBands = alignedBands.map((flatBand) =>
 		getQuadrilaterals(flatBand, pixelScale.value, flatBand.sideOrientation)
@@ -267,7 +295,19 @@ export const generateTiling = ({
 		const entry = resolvePatternEntry(tiledPatternConfig.type) as UnitPatternGenerator;
 		const { getPattern, tagAnchor, adjustAfterMapping, getSubunitPatterns } = entry;
 		const subunitCount = entry.subunitCount ?? 1;
-		const globalBandIndex = bandIndex + bandIndexOffset;
+		// `bands` is the post-split array, so `bandIndex` is a PIECE index. Every
+		// use below wants the parent band's index in the pre-split (selected
+		// visible band) space — which is the space `address.band`, bandCount,
+		// finishOuterEdge and leftPartnerBand have always worked in. An unsplit
+		// band has no parentIndex and falls through to today's value exactly.
+		const parentBandIndex = bands?.[bandIndex]?.parentIndex ?? bandIndex;
+		const globalBandIndex = parentBandIndex + bandIndexOffset;
+		const piece = bands?.[bandIndex]?.pieceIndex;
+		const pieceSuffix = piece === undefined ? '' : `-p${piece}`;
+		const addressWithPiece: GlobuleAddress_Band | GlobuleAddress_BandPiece =
+			piece === undefined
+				? { ...address, band: globalBandIndex }
+				: { ...address, band: globalBandIndex, piece };
 		const { rowCount, columnCount, variant } = tiledPatternConfig.config;
 
 		// The LAST band of a non-tubular (surface-projection) tube has no adjacent band
@@ -281,13 +321,13 @@ export const generateTiling = ({
 		// missing band as having a free side (no outer partner) rather than throwing.
 		const sourceBand = bands?.[bandIndex];
 		const hasFreeSide = sourceBand ? bandHasFreeSide(sourceBand) : true;
-		const finishOuterEdge = bandIndex + bandIndexOffset === bandCount - 1 && hasFreeSide;
+		const finishOuterEdge = globalBandIndex === bandCount - 1 && hasFreeSide;
 		const realLeftPartner = sourceBand ? getLeftPartnerBandIndex(sourceBand) : undefined;
 		const leftPartnerBand =
 			realLeftPartner === undefined ? undefined : toVisibleBandIndex(realLeftPartner);
 		const bandContext = {
 			hasOuterPartner: !hasFreeSide,
-			bandIndex: bandIndex + bandIndexOffset,
+			bandIndex: globalBandIndex,
 			leftPartnerBand
 		};
 
@@ -300,10 +340,10 @@ export const generateTiling = ({
 				facets: [],
 				sideOrientation: bands[bandIndex].sideOrientation,
 				svgPath: undefined,
-				id: `${tiledPatternConfig.type}-band-${tubeAddress.globule}-${tubeAddress.tube}-${globalBandIndex}`,
+				id: `${tiledPatternConfig.type}-band-${tubeAddress.globule}-${tubeAddress.tube}-${globalBandIndex}${pieceSuffix}`,
 				tagAnchorPoint: { x: 0, y: 0 },
 				projectionType: 'patterned',
-				address: { ...address, band: globalBandIndex },
+				address: addressWithPiece,
 				bounds: (bands[bandIndex] as unknown as { bounds?: BandCutPattern['bounds'] }).bounds,
 				error: `${tiledPatternConfig.type} needs a quad count divisible by ${subunitCount} (got ${quadBand.length})`
 			} as BandCutPattern;
@@ -450,7 +490,7 @@ export const generateTiling = ({
 			facets: cuttablePattern,
 			sideOrientation: bands[bandIndex].sideOrientation,
 			svgPath: undefined, //cuttablePattern.map((p) => p.svgPath).join(),
-			id: `${tiledPatternConfig.type}-band-${address.globule}-${address.tube}-${globalBandIndex}`,
+			id: `${tiledPatternConfig.type}-band-${address.globule}-${address.tube}-${globalBandIndex}${pieceSuffix}`,
 			tagAnchorPoint,
 			// Orient the label relative to the quad edge nearest the anchor: text
 			// parallel to that edge, stem perpendicular. `tagAngle` is then applied
@@ -460,7 +500,7 @@ export const generateTiling = ({
 				: undefined,
 			tagAngle: tiledPatternConfig.labels?.selfTag?.angle ?? tagAnchor?.angle ?? 0,
 			projectionType: 'patterned',
-			address: { ...address, band: globalBandIndex },
+			address: addressWithPiece,
 			bounds: bands[bandIndex].bounds,
 			meta: startPartnerBand && endPartnerBand ? { startPartnerBand, endPartnerBand } : undefined,
 			leftPartnerBand
@@ -468,6 +508,22 @@ export const generateTiling = ({
 		return result;
 	});
 	return tiling;
+};
+
+/**
+ * `reAlignBand`'s flip decision for a band, computed without re-aligning it.
+ *
+ * Deliberately mirrors reAlignBand's own test rather than approximating it: the
+ * test reads coordinates AFTER the minimal-bounding-box rotation, so evaluating
+ * `facets[0].a.y < facets[last].a.y` on the un-rotated band answers a different
+ * question. `rotatedCoordinates` is flat, three entries per facet, so facet i's
+ * `a` vertex is at i*3.
+ */
+export const computeBandAscending = (band: Band): boolean => {
+	const { rotatedCoordinates } = getMinimalBoundingBoxAndRotationAngle(getAllTrianglePoints(band));
+	const lastA = (band.facets.length - 1) * 3;
+	if (rotatedCoordinates.length <= lastA) return false;
+	return rotatedCoordinates[0].y < rotatedCoordinates[lastA].y;
 };
 
 export const alignBands = (bands: Band[]) => {
@@ -521,6 +577,7 @@ const reAlignBand = (band: Band, rotatedCoordinates: { x: number; y: number }[])
 		})
 	};
 	const isAscending =
+		band.parentAscending ??
 		newBand.facets[0].triangle.a.y < newBand.facets[newBand.facets.length - 1].triangle.a.y;
 	if (isAscending) {
 		newBand.facets = rotateFacets(newBand.facets, Math.PI);

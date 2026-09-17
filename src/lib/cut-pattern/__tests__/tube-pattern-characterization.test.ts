@@ -14,7 +14,7 @@ import type { Band, Facet, PixelScale, TiledPatternConfig } from '$lib/types';
 // `i % 2 === 1`, so quad k is built from facets 2k and 2k+1 — 4 facets
 // yields exactly 2 whole quads. An odd trailing facet would be silently
 // dropped rather than forming a partial quad.
-const buildBand = (bandIndex: number, facetCount: number): Band =>
+export const buildBand = (bandIndex: number, facetCount: number): Band =>
 	({
 		orientation: 'axial-right',
 		visible: true,
@@ -32,7 +32,7 @@ const buildBand = (bandIndex: number, facetCount: number): Band =>
 		})
 	}) as unknown as Band;
 
-const pixelScale: PixelScale = { value: 1, unit: 'mm' };
+export const pixelScale: PixelScale = { value: 1, unit: 'mm' };
 
 // 'tiledHexPattern-1' is the real default hex spec id registered in
 // pattern-definitions.ts (via pattern-registry.ts's `hex` algorithm), with no
@@ -40,7 +40,7 @@ const pixelScale: PixelScale = { value: 1, unit: 'mm' };
 // object shape (dynamicStroke/scaleConfig/etc.) mirrors the fixture in
 // generate-tiling-subunits.test.ts, since TiledPatternConfig['config']
 // requires all of these fields.
-const tiledPatternConfig: TiledPatternConfig = {
+export const tiledPatternConfig: TiledPatternConfig = {
 	type: 'tiledHexPattern-1',
 	tiling: 'quadrilateral',
 	config: {
@@ -78,5 +78,55 @@ describe('generateTubeCutPattern — characterization (no splits)', () => {
 		expect(result.bands.map((b) => b.id)).toMatchSnapshot('band ids');
 		expect(result.bands.map((b) => b.facets.length)).toMatchSnapshot('facet counts');
 		expect(result.bands.map((b) => b.error)).toMatchSnapshot('errors');
+	});
+});
+
+describe('generateTubeCutPattern — with splits', () => {
+	it('keeps band indices stable and distinguishes pieces', () => {
+		// TWO bands, and the split is asserted on the SECOND one. A one-band
+		// fixture cannot tell a parent band index from a piece index — both
+		// start at 0 — which is exactly the bug this assertion exists to catch.
+		const bands = [buildBand(0, 8), buildBand(1, 8)]; // 8 facets = 4 quads each
+
+		const result = generateTubeCutPattern({
+			address: { globule: 0, tube: 0 },
+			bands,
+			tiledPatternConfig,
+			pixelScale,
+			splitQuads: [2]
+		});
+
+		expect(result.bands).toHaveLength(4);
+		// The band component is the PARENT band index, unchanged by splitting.
+		// If it were the piece index this would read [0, 1, 2, 3] and Task 11's
+		// seam partners could never resolve a sibling.
+		expect(result.bands.map((b) => b.address.band)).toEqual([0, 0, 1, 1]);
+		expect(result.bands.map((b) => b.address.piece)).toEqual([0, 1, 0, 1]);
+		// Ids must differ or mergedBandPaths hands a piece the wrong geometry
+		// (collate-tubes.ts:34-38).
+		expect(new Set(result.bands.map((b) => b.id)).size).toBe(4);
+		// Neither piece may be refused.
+		expect(result.bands.map((b) => b.error)).toEqual([undefined, undefined, undefined, undefined]);
+	});
+
+	it('leaves output identical to the baseline when splitQuads is empty', () => {
+		const bands = [buildBand(0, 4), buildBand(1, 4)];
+		const args = {
+			address: { globule: 0, tube: 0 } as const,
+			bands,
+			tiledPatternConfig,
+			pixelScale
+		};
+
+		const withoutProp = generateTubeCutPattern(args);
+		const withEmpty = generateTubeCutPattern({ ...args, splitQuads: [] });
+		expect(withEmpty.bands.map((b) => b.id)).toEqual(withoutProp.bands.map((b) => b.id));
+		expect(withEmpty.bands.map((b) => b.facets.length)).toEqual(
+			withoutProp.bands.map((b) => b.facets.length)
+		);
+		// Compare addresses too: comparing only id and facet count would pass even
+		// if the piece plumbing perturbed every address or dropped `meta`.
+		expect(withEmpty.bands.map((b) => b.address)).toEqual(withoutProp.bands.map((b) => b.address));
+		expect(withEmpty.bands.map((b) => b.meta)).toEqual(withoutProp.bands.map((b) => b.meta));
 	});
 });

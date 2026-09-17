@@ -15,7 +15,8 @@ import type { SuperGlobuleProjectionPattern } from '$lib/stores/superGlobuleStor
 import type { SuperGlobuleConfig } from '$lib/types';
 import { resolveRangeIndices, type ProjectionRange } from '$lib/projection-geometry/filters';
 import { getFlatStripV2 } from './generate-cut-pattern';
-import { alignBands } from './generate-tiled-pattern';
+import { alignBands, computeBandAscending } from './generate-tiled-pattern';
+import { splitFlatBands } from './split-flat-bands';
 import { svgPathStringFromSegments } from '$lib/patterns/utils';
 import { getQuadrilaterals } from '$lib/patterns/quadrilateral';
 import {
@@ -500,8 +501,10 @@ const generateOutlinedBandPattern = (
 	neighborBefore?: Quadrilateral[],
 	neighborAfter?: Quadrilateral[],
 	bandCount = 0,
-	localBandIndex = bandIndex // LOCAL: index within the aligned/selected set
+	localBandIndex = bandIndex, // LOCAL: index within the aligned/selected set
+	piece?: number
 ): BandCutPattern => {
+	const pieceSuffix = piece === undefined ? '' : `-p${piece}`;
 	const edges = getOutlineEdges(quads, band, neighborBefore, neighborAfter);
 	const hasPartners = bandHasPartners(band);
 	const tabsByIndex = new Map<number, TabGeometry>();
@@ -591,10 +594,13 @@ const generateOutlinedBandPattern = (
 		projectionType: 'patterned',
 		facets: fillFacet ? [outlineFacet, ...quadFacets, fillFacet] : [outlineFacet, ...quadFacets],
 		svgPath: outlineFacet.svgPath,
-		id: `outlined-band-${tubeAddress.globule}-${tubeAddress.tube}-${bandIndex}`,
+		id: `outlined-band-${tubeAddress.globule}-${tubeAddress.tube}-${bandIndex}${pieceSuffix}`,
 		tagAnchorPoint: labelAnchor ? labelAnchor.anchor : { x: 0, y: 0 },
 		tagAnchorAutoAngle: labelAnchor?.autoAngle,
-		address: { ...tubeAddress, band: bandIndex },
+		address:
+			piece === undefined
+				? { ...tubeAddress, band: bandIndex }
+				: { ...tubeAddress, band: bandIndex, piece },
 		bounds,
 		meta
 	};
@@ -610,7 +616,8 @@ const generateOutlinedTubePattern = (
 	bands: Band[],
 	config: OutlinedPatternConfig,
 	pixelScale: PixelScale,
-	bandRange?: { start: number; end: number }
+	bandRange?: { start: number; end: number },
+	splitQuads?: number[]
 ): TubeCutPattern => {
 	const visibleBands = bands.filter((b) => b.visible);
 	const rangeStart = bandRange?.start ?? 0;
@@ -620,7 +627,21 @@ const generateOutlinedTubePattern = (
 	const flatBands = selectedBands.map((band) =>
 		getFlatStripV2(band, { bandStyle: 'helical-right', pixelScale })
 	);
-	const alignedBands = alignBands(flatBands);
+
+	const splitResult = splitFlatBands(flatBands, splitQuads ?? [], 1);
+	if (splitResult.rejected.length) {
+		console.warn(
+			`outlined: ${splitResult.rejected.length} split(s) dropped in tube ${address.tube} — ${splitResult.rejected[0].reason}`
+		);
+	}
+	const parentAscending = flatBands.map(computeBandAscending);
+	const splitBands = splitResult.bands.map((band) =>
+		band.parentIndex === undefined
+			? band
+			: { ...band, parentAscending: parentAscending[band.parentIndex] }
+	);
+
+	const alignedBands = alignBands(splitBands);
 
 	const scale = pixelScale?.value || 1;
 	const allQuads = alignedBands.map((band) => getQuadrilaterals(band, scale, band.sideOrientation));
@@ -629,7 +650,8 @@ const generateOutlinedTubePattern = (
 	const bandPatterns = alignedBands.map((band, i) =>
 		generateOutlinedBandPattern(
 			band,
-			rangeStart + i,
+			// Parent band index, so a split does not renumber bands.
+			(band.parentIndex ?? i) + rangeStart,
 			config,
 			pixelScale,
 			address,
@@ -637,7 +659,8 @@ const generateOutlinedTubePattern = (
 			allQuads[i - 1],
 			allQuads[i + 1],
 			bandCount,
-			i
+			i,
+			band.pieceIndex
 		)
 	);
 

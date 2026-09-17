@@ -4,6 +4,7 @@ import type {
 	Polyhedron,
 	Projection,
 	GlobuleAddress_Band,
+	GlobuleAddress_BandPiece,
 	GlobuleAddress_Facet,
 	GlobuleAddress_FacetEdge,
 	GlobuleAddress_Globule,
@@ -445,7 +446,7 @@ export type BandCutPattern = {
 	/** Band index (same space as address.band) of the band on this band's left (unit x = 0) side. */
 	leftPartnerBand?: number;
 	projectionType: 'patterned';
-	address: GlobuleAddress_Band;
+	address: GlobuleAddress_Band | GlobuleAddress_BandPiece;
 	bounds?: {
 		left: number;
 		top: number;
