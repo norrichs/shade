@@ -412,16 +412,45 @@ export const generateTiling = ({
 			band.facets[0].meta?.[edges[0].base]?.partner;
 		const endPartner: GlobuleAddress_FacetEdge | undefined =
 			band.facets[band.facets.length - 1].meta?.[edges[1].second]?.partner;
-		const startPartnerBand: GlobuleAddress_Band | undefined = startPartner
-			? {
-					globule: startPartner.globule,
-					tube: startPartner.tube,
-					band: startPartner.band
-				}
-			: undefined;
-		const endPartnerBand: GlobuleAddress_Band | undefined = endPartner
+		const startPartnerBand: GlobuleAddress_Band | GlobuleAddress_BandPiece | undefined =
+			startPartner
+				? {
+						globule: startPartner.globule,
+						tube: startPartner.tube,
+						band: startPartner.band
+					}
+				: undefined;
+		const endPartnerBand: GlobuleAddress_Band | GlobuleAddress_BandPiece | undefined = endPartner
 			? { globule: endPartner.globule, tube: endPartner.tube, band: endPartner.band }
 			: undefined;
+
+		// A seam end's partner is the adjacent piece of the same parent band. The
+		// existing endsMatched machinery then produces the overlapping strokes
+		// that form the glue surface — a seam end is an ordinary partnered end.
+		//
+		// Build the sibling address the SAME way Step 4 of Task 9 builds this
+		// band's own `addressWithPiece`: `{ ...address, band: globalBandIndex,
+		// piece }`. That is what makes the two sides agree. Deriving it from
+		// `band.address` instead would use the flat band's address, whose `band`
+		// component is a real tube band index rather than the visible-band index
+		// `addressWithPiece` carries — so for any band past the first, or any tube
+		// with more than one band, `findBandByAddress` would never resolve the
+		// sibling and the seam would silently fail to match.
+		//
+		// `seamPiece` rather than `piece`: Task 9 Step 4 already declared `piece`
+		// in this same `quadBands.map` callback.
+		const seamAt = bands?.[bandIndex]?.seamAt;
+		const seamPiece = piece;
+		const siblingAddress = (offset: number): GlobuleAddress_Band | GlobuleAddress_BandPiece => ({
+			...addressWithPiece,
+			piece: (seamPiece as number) + offset
+		});
+		const seamStartPartner =
+			seamAt?.start && seamPiece !== undefined ? siblingAddress(-1) : undefined;
+		const seamEndPartner = seamAt?.end && seamPiece !== undefined ? siblingAddress(+1) : undefined;
+
+		const resolvedStartPartner = seamStartPartner ?? startPartnerBand;
+		const resolvedEndPartner = seamEndPartner ?? endPartnerBand;
 
 		const cuttablePattern: CutPattern[] = adjustedPatternBand.map((facet, facetIndex) => {
 			const quad = structuredClone(quadBand[facetIndex % quadBand.length]);
@@ -502,7 +531,21 @@ export const generateTiling = ({
 			projectionType: 'patterned',
 			address: addressWithPiece,
 			bounds: bands[bandIndex].bounds,
-			meta: startPartnerBand && endPartnerBand ? { startPartnerBand, endPartnerBand } : undefined,
+			// Both ends resolving is the historical condition, kept exactly for
+			// unsplit bands: with no `seamAt` this reduces to
+			// `startPartnerBand && endPartnerBand ? {…} : undefined`, character for
+			// character what this used to do, so the Phase 0 snapshot is
+			// unaffected. A piece additionally gets meta when only ONE end
+			// resolves, since its outer end may be genuinely unpartnered while its
+			// seam end must still match.
+			//
+			// Written as one condition rather than a nested ternary whose two
+			// branches emit the identical object.
+			meta:
+				(resolvedStartPartner && resolvedEndPartner) ||
+				(seamAt && (resolvedStartPartner || resolvedEndPartner))
+					? { startPartnerBand: resolvedStartPartner, endPartnerBand: resolvedEndPartner }
+					: undefined,
 			leftPartnerBand
 		};
 		return result;
