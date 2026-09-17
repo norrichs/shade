@@ -23,7 +23,7 @@ import { applyStrokeWidth, getFlatStripV2 } from './generate-cut-pattern';
 import { resolvePatternEntry } from '$lib/patterns/resolve-pattern';
 import { computeTiledLabelAngle } from './compute-tiled-label-angle';
 import { getQuadWidth, svgPathStringFromSegments } from '$lib/patterns/utils';
-import { splitFlatBands } from './split-flat-bands';
+import { splitFlatBands, tubeQuadCountOf } from './split-flat-bands';
 import type {
 	GlobuleAddress_Band,
 	GlobuleAddress_BandPiece,
@@ -128,11 +128,16 @@ export const generateTubeCutPattern = ({
 	// generateTiling.
 	const entry = resolvePatternEntry(tiledPatternConfig.type) as UnitPatternGenerator;
 	const subunitCount = entry.subunitCount ?? 1;
-	const splitResult = splitFlatBands(flatBands, splitQuads ?? [], subunitCount);
+	// Range is judged against the whole tube, not just the selected bands.
+	const splitResult = splitFlatBands(
+		flatBands,
+		splitQuads ?? [],
+		subunitCount,
+		tubeQuadCountOf(visibleBands)
+	);
 	if (splitResult.rejected.length) {
-		console.warn(
-			`${tiledPatternConfig.type}: ${splitResult.rejected.length} split(s) dropped in tube ${address.tube} — ${splitResult.rejected[0].reason}`
-		);
+		// Reported to the page via PatternGenerationResult.rejectedSplits.
+		tubeCutPattern.rejectedSplits = splitResult.rejected.map((r) => ({ tube: address.tube, ...r }));
 	}
 
 	// Decide the flip once per PARENT, then hand it to that parent's pieces, so

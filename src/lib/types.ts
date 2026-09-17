@@ -262,6 +262,17 @@ export type SplitConfig = {
 	tubeSplits: TubeSplits[];
 };
 
+/**
+ * A persisted split that generation dropped (illegal position or out of range
+ * for the tube). Reported to the page; the persisted `splits` list is never
+ * pruned (spec amendment "Dropped splits are reported, data is untouched").
+ */
+export type TubeSplitRejection = {
+	tube: number;
+	quad: number;
+	reason: string;
+};
+
 export type PatternConfig = {
 	[key: string]:
 		| PatternShowConfig
@@ -495,6 +506,9 @@ export type TubeCutPattern = {
 	projectionType: 'patterned';
 	address: GlobuleAddress_Tube;
 	bands: BandCutPattern[];
+	// Set only when this tube dropped at least one split, so unsplit output is
+	// byte-identical to before.
+	rejectedSplits?: TubeSplitRejection[];
 };
 
 export type ProjectionCutPattern = {

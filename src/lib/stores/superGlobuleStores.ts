@@ -49,6 +49,7 @@ import {
 } from './workerStore';
 import { browser } from '$app/environment';
 import { toastStore } from './toastStore';
+import { createDroppedSplitsNotifier } from '$lib/cut-pattern/dropped-splits-notice';
 import { viewControlStore, type ViewControls } from './viewControlStore';
 import { Box3, Vector3 } from 'three';
 
@@ -562,6 +563,12 @@ const requestPattern = async (
 };
 
 if (browser) {
+	// Splits that generation dropped are reported in the page (spec amendment
+	// "Dropped splits are reported, data is untouched"); the persisted splits
+	// list is never pruned.
+	const notifyDroppedSplits = createDroppedSplitsNotifier(toastStore);
+	superGlobulePatternStore.subscribe(($result) => notifyDroppedSplits($result.rejectedSplits));
+
 	patternInputs.subscribe(
 		([
 			$superGlobule,

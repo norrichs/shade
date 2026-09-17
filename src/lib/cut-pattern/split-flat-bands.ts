@@ -3,6 +3,43 @@ import type { Band } from '$lib/types';
 export type SplitRejection = { quad: number; reason: string };
 export type SplitFlatBandsResult = { bands: Band[]; rejected: SplitRejection[] };
 
+/** Quad count of a flat (or 3D) band: quad k is facets 2k and 2k+1. */
+export const bandQuadCount = (band: Band): number => Math.floor(band.facets.length / 2);
+
+/** Longest band's quad count, the bound a tube-wide split index is judged against. */
+export const tubeQuadCountOf = (bands: Band[]): number =>
+	bands.length === 0 ? 0 : Math.max(...bands.map(bandQuadCount));
+
+/**
+ * The single source of the split legality rules.
+ *
+ * A split is legal when it is an integer strictly inside the tube's longest
+ * band (0 < quad < quadCount) and a multiple of subunitCount. Everything else is
+ * rejected with a reason; nothing is clamped. Duplicates collapse, output is
+ * ascending. Pure: never touches the persisted config it was read from.
+ */
+export const classifySplitQuads = (
+	splitQuads: number[],
+	quadCount: number,
+	subunitCount: number
+): { legal: number[]; rejected: SplitRejection[] } => {
+	const rejected: SplitRejection[] = [];
+	const legal = [...new Set(splitQuads)]
+		.sort((a, b) => a - b)
+		.filter((quad) => {
+			if (!Number.isInteger(quad) || quad <= 0 || quad >= quadCount) {
+				rejected.push({ quad, reason: `out of range for ${quadCount} quads` });
+				return false;
+			}
+			if (quad % subunitCount !== 0) {
+				rejected.push({ quad, reason: `not a multiple of subunitCount ${subunitCount}` });
+				return false;
+			}
+			return true;
+		});
+	return { legal, rejected };
+};
+
 /**
  * Partition flattened bands at legal quad boundaries.
  *
@@ -15,38 +52,36 @@ export type SplitFlatBandsResult = { bands: Band[]; rejected: SplitRejection[] }
  * generateTiling's divisibility check passes untouched, and it means a split
  * always lands on an even facet index, so getQuadrilaterals never drops a
  * trailing facet.
+ *
+ * `tubeQuadCount` is the quad count of the tube's longest band across ALL its
+ * bands. Callers pass it because `flatBands` is often only the selected band
+ * range: judging range against those alone would report a split that is valid
+ * for the tube as out of range whenever the view is narrowed. When omitted, the
+ * longest of `flatBands` is used.
  */
 export const splitFlatBands = (
 	flatBands: Band[],
 	splitQuads: number[],
-	subunitCount: number
+	subunitCount: number,
+	tubeQuadCount?: number
 ): SplitFlatBandsResult => {
 	if (splitQuads.length === 0) return { bands: flatBands, rejected: [] };
-	// Math.max of an empty array is -Infinity, which would reject every split
-	// with the nonsense reason "out of range for -Infinity quads".
-	if (flatBands.length === 0) return { bands: flatBands, rejected: [] };
+	// With no bands and no (non-zero) caller-supplied bound there is nothing to
+	// judge against: every split would be rejected as "out of range for 0 quads".
+	if (flatBands.length === 0 && !tubeQuadCount) {
+		return { bands: flatBands, rejected: [] };
+	}
 
-	const rejected: SplitRejection[] = [];
-	const maxQuads = Math.max(...flatBands.map((b) => Math.floor(b.facets.length / 2)));
-
-	const legal = [...new Set(splitQuads)]
-		.sort((a, b) => a - b)
-		.filter((quad) => {
-			if (!Number.isInteger(quad) || quad <= 0 || quad >= maxQuads) {
-				rejected.push({ quad, reason: `out of range for ${maxQuads} quads` });
-				return false;
-			}
-			if (quad % subunitCount !== 0) {
-				rejected.push({ quad, reason: `not a multiple of subunitCount ${subunitCount}` });
-				return false;
-			}
-			return true;
-		});
+	const { legal, rejected } = classifySplitQuads(
+		splitQuads,
+		tubeQuadCount ?? tubeQuadCountOf(flatBands),
+		subunitCount
+	);
 
 	if (legal.length === 0) return { bands: flatBands, rejected };
 
 	const bands = flatBands.flatMap((band, parentIndex) => {
-		const quadCount = Math.floor(band.facets.length / 2);
+		const quadCount = bandQuadCount(band);
 		// Splits are tube-wide, so a band shorter than the split index is simply
 		// not cut there. Its facets/orientation/etc. stay byte-identical to the
 		// unsplit path, but its ARRAY POSITION is not stable: splits are per-tube,

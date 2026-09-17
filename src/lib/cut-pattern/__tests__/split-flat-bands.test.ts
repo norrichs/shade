@@ -1,7 +1,7 @@
 import { describe, it, expect } from '@jest/globals';
 import { Triangle, Vector3 } from 'three';
 
-import { splitFlatBands } from '../split-flat-bands';
+import { classifySplitQuads, splitFlatBands } from '../split-flat-bands';
 import type { Band, Facet } from '$lib/types';
 
 // facetCount facets => facetCount/2 quads.
@@ -130,5 +130,50 @@ describe('splitFlatBands', () => {
 		expect(result.bands).toHaveLength(3);
 		expect(result.bands.filter((b) => b.pieceIndex !== undefined)).toHaveLength(2);
 		expect(result.bands.map((b) => b.parentIndex)).toEqual([0, 0, 1]);
+	});
+
+	describe('tubeQuadCount (range judged against the whole tube)', () => {
+		it('keeps a split valid for the tube even when the given bands are all shorter', () => {
+			// The selected range holds only 2-quad bands; the tube's longest band has 4.
+			const result = splitFlatBands([buildBand(4), buildBand(4)], [3], 1, 4);
+			expect(result.rejected).toEqual([]);
+			// Neither short band is cut, but both are stamped as bands of a split tube.
+			expect(result.bands.map((b) => [b.parentIndex, b.pieceIndex])).toEqual([
+				[0, undefined],
+				[1, undefined]
+			]);
+		});
+
+		it('reports out of range against the tube, not the given bands', () => {
+			const result = splitFlatBands([buildBand(12)], [9], 1, 8);
+			expect(result.rejected).toEqual([{ quad: 9, reason: 'out of range for 8 quads' }]);
+		});
+
+		it('still reports rejections when the selected range is empty', () => {
+			const result = splitFlatBands([], [2, 9], 1, 6);
+			expect(result.rejected).toEqual([{ quad: 9, reason: 'out of range for 6 quads' }]);
+		});
+	});
+});
+
+// The legality rules formerly duplicated (range only) in validators.ts
+// validateSplitConfig, which was deleted in favour of this single source.
+describe('classifySplitQuads', () => {
+	it('collapses duplicates and sorts the legal splits', () => {
+		expect(classifySplitQuads([6, 2, 2, 4], 10, 1)).toEqual({ legal: [2, 4, 6], rejected: [] });
+	});
+
+	it('rejects zero, negative, non-integer and at-or-beyond-count splits as out of range', () => {
+		const { legal, rejected } = classifySplitQuads([0, -1, 2.5, 3, 6, 99], 6, 1);
+		expect(legal).toEqual([3]);
+		expect(rejected.map((r) => r.quad)).toEqual([-1, 0, 2.5, 6, 99]);
+		expect(new Set(rejected.map((r) => r.reason))).toEqual(new Set(['out of range for 6 quads']));
+	});
+
+	it('rejects an in-range non-multiple of subunitCount', () => {
+		expect(classifySplitQuads([2, 3], 6, 3)).toEqual({
+			legal: [3],
+			rejected: [{ quad: 2, reason: 'not a multiple of subunitCount 3' }]
+		});
 	});
 });

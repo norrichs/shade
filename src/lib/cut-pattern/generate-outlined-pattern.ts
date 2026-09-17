@@ -17,7 +17,7 @@ import type { SuperGlobuleConfig } from '$lib/types';
 import { resolveRangeIndices, type ProjectionRange } from '$lib/projection-geometry/filters';
 import { getFlatStripV2 } from './generate-cut-pattern';
 import { alignBands, computeBandAscending } from './generate-tiled-pattern';
-import { splitFlatBands } from './split-flat-bands';
+import { splitFlatBands, tubeQuadCountOf } from './split-flat-bands';
 import { svgPathStringFromSegments } from '$lib/patterns/utils';
 import { getQuadrilaterals } from '$lib/patterns/quadrilateral';
 import {
@@ -717,12 +717,8 @@ const generateOutlinedTubePattern = (
 		getFlatStripV2(band, { bandStyle: 'helical-right', pixelScale })
 	);
 
-	const splitResult = splitFlatBands(flatBands, splitQuads ?? [], 1);
-	if (splitResult.rejected.length) {
-		console.warn(
-			`outlined: ${splitResult.rejected.length} split(s) dropped in tube ${address.tube} — ${splitResult.rejected[0].reason}`
-		);
-	}
+	// Range is judged against the whole tube, not just the selected bands.
+	const splitResult = splitFlatBands(flatBands, splitQuads ?? [], 1, tubeQuadCountOf(visibleBands));
 	const parentAscending = flatBands.map(computeBandAscending);
 	const splitBands = splitResult.bands.map((band) =>
 		band.parentIndex === undefined
@@ -761,7 +757,13 @@ const generateOutlinedTubePattern = (
 	return {
 		projectionType: 'patterned',
 		address,
-		bands: bandPatterns
+		bands: bandPatterns,
+		// Reported to the page via PatternGenerationResult.rejectedSplits.
+		...(splitResult.rejected.length
+			? {
+					rejectedSplits: splitResult.rejected.map((r) => ({ tube: address.tube, ...r }))
+				}
+			: {})
 	};
 };
 

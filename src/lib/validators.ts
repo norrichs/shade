@@ -4,9 +4,7 @@ import type {
 	OutlinedPatternConfig,
 	PatternLabelsConfig,
 	ProceduralFillConfig,
-	SplitConfig,
-	TiledPatternConfig,
-	TubeSplits
+	TiledPatternConfig
 } from './types';
 
 export type Validity = {
@@ -148,37 +146,4 @@ export const validateProceduralFillConfig = (config: ProceduralFillConfig): Vali
 	if (config.spacing < 0) fail('spacing must not be negative');
 
 	return validity;
-};
-
-/**
- * Drop splits that no longer make sense against the current geometry.
- *
- * A split is stored as an absolute quad index, so a geometry change that
- * reduces a tube's quad count (fewer edge divisions, say) can leave an index
- * out of range. Per design, such a split is dropped rather than clamped.
- *
- * Returns the dropped indices alongside the cleaned config: a dropped split is
- * meant to be visible rather than mysterious (design L259-261), and the Splits
- * panel cannot reconstruct the loss from the cleaned config alone.
- */
-export const validateSplitConfig = (
-	config: SplitConfig,
-	quadCountsByTube: Record<number, number>
-): { config: SplitConfig; dropped: TubeSplits[] } => {
-	const kept: TubeSplits[] = [];
-	const dropped: TubeSplits[] = [];
-
-	config.tubeSplits.forEach(({ tube, quads }) => {
-		const quadCount = quadCountsByTube[tube];
-		const unique = [...new Set(quads)].sort((a, b) => a - b);
-		// An unknown tube drops everything: there is no quad count to judge against.
-		const isValid = (q: number) =>
-			quadCount !== undefined && Number.isInteger(q) && q > 0 && q < quadCount;
-		const validQuads = unique.filter(isValid);
-		const invalidQuads = unique.filter((q) => !isValid(q));
-		if (validQuads.length > 0) kept.push({ tube, quads: validQuads });
-		if (invalidQuads.length > 0) dropped.push({ tube, quads: invalidQuads });
-	});
-
-	return { config: { tubeSplits: kept }, dropped };
 };
