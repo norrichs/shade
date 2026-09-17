@@ -27,7 +27,8 @@ export type PatternSource =
 	| 'voronoiSurface';
 export type BandSortMode = 'tube-order' | 'end-connection-tube';
 
-export type BandRef = GlobuleAddress_Band;
+/** A band, or one piece of a split band (`piece` present). */
+export type BandRef = GlobuleAddress_Band | GlobuleAddress_BandPiece;
 
 export type BandSortGroup = {
 	label: string;

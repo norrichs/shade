@@ -40,6 +40,11 @@
 	import { resolveEndPartner } from '$lib/cut-pattern/resolve-partner-band';
 	import { PATTERN_PORTAL_ID, LABEL_TEXT_PORTAL_ID, LABEL_TAG_PORTAL_ID } from './constants';
 	import { buildBandCodeMap } from '$lib/cut-pattern/band-sort-index';
+	import {
+		resolveIndexBands,
+		groupCodeForBand,
+		type ResolvedBand
+	} from '$lib/cut-pattern/resolve-index-bands';
 	import PageGeometry from './PageGeometry.svelte';
 	import { buildPageGeom, PAGE_LAYOUT_ALGORITHMS } from '$lib/cut-pattern/page-layout/registry';
 	import type { LayoutItem, PageLayoutResult } from '$lib/cut-pattern/page-layout/types';
@@ -55,32 +60,10 @@
 		selectionTarget?: PatternSource;
 	} = $props();
 
-	type ResolvedBand = { band: BandCutPattern; tube: TubeCutPattern };
-
-	const resolveBandWithTube = (ref: {
-		globule: number;
-		tube: number;
-		band: number;
-	}): ResolvedBand | undefined => {
-		const tube = tubes.find(
-			(t) => t.address.tube === ref.tube && t.address.globule === ref.globule
-		);
-		if (!tube) return undefined;
-		const band = tube.bands.find((b) => b.address.band === ref.band);
-		if (!band) return undefined;
-		return { band, tube };
-	};
-
-	const resolveIndexBands = (index: BandSortIndex): ResolvedBand[] =>
-		index.groups.flatMap((group) =>
-			group.bands.map((ref) => resolveBandWithTube(ref)).filter((r): r is ResolvedBand => !!r)
-		);
-
-	let indexedBands = $derived(sortIndex ? resolveIndexBands(sortIndex) : undefined);
+	let indexedBands = $derived(sortIndex ? resolveIndexBands(tubes, sortIndex) : undefined);
 
 	let codeMap = $derived(sortIndex ? buildBandCodeMap(sortIndex) : undefined);
-	const groupCodeFor = (address: { globule: number; tube: number; band: number }) =>
-		codeMap?.get(`${address.globule}-${address.tube}-${address.band}`);
+	const groupCodeFor = (address: GlobuleAddress_Band) => groupCodeForBand(codeMap, address);
 
 	let patternLabels = $derived($patternConfigStore.patternTypeConfig?.labels);
 	let externalTagEnabled = $derived(patternLabels?.selfTag?.externalTag ?? false);

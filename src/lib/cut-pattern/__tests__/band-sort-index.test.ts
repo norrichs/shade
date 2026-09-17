@@ -3,8 +3,10 @@ import {
 	formatGroupCode,
 	buildBandSortIndex,
 	buildBandCodeMap,
-	sliceBandSortIndex
+	sliceBandSortIndex,
+	createEndConnectionNeighbours
 } from '../band-sort-index';
+import { bandKey } from '../band-key';
 
 describe('BandSortGroup type', () => {
 	test('accepts an optional code string', () => {
@@ -167,5 +169,105 @@ describe('sliceBandSortIndex preserves code', () => {
 		const sliced = sliceBandSortIndex(index, { groups: [0, 1], bandsInGroup: [0, 1] });
 		expect(sliced.groups[0].code).toBe('0000');
 		expect(sliced.groups[0].bands).toHaveLength(1);
+	});
+});
+
+// ---------------------------------------------------------------------------
+// Split bands (shades-a2a). Three parent bands in a cycle, joined end-to-start:
+//   A (tube 0) end -> B (tube 1) start, B end -> C (tube 2) start, C end -> A start.
+// A is split into 3 pieces and B into 2, of UNEQUAL lengths. As generation does,
+// a piece's seam ends name its sibling exactly (piece-bearing) while its outer
+// ends keep the plain parent address; C, unsplit, names A and B plainly.
+// ---------------------------------------------------------------------------
+type Addr = { globule: number; tube: number; band: number; piece?: number };
+const A = { globule: 0, tube: 0, band: 0 };
+const B = { globule: 0, tube: 1, band: 0 };
+const C = { globule: 0, tube: 2, band: 0 };
+const piece = (parent: Addr, p: number): Addr => ({ ...parent, piece: p });
+
+const splitBand = (address: Addr, facetCount: number, start: Addr, end: Addr) =>
+	({
+		address,
+		facets: Array.from({ length: facetCount }, () => ({})),
+		meta: { startPartnerBand: start, endPartnerBand: end }
+	}) as unknown as TubeCutPattern['bands'][number];
+
+const splitRingTubes = (): TubeCutPattern[] => [
+	tube(0, 0, [
+		splitBand(piece(A, 0), 3, C, piece(A, 1)),
+		splitBand(piece(A, 1), 5, piece(A, 0), piece(A, 2)),
+		splitBand(piece(A, 2), 2, piece(A, 1), B)
+	]),
+	tube(0, 1, [
+		splitBand(piece(B, 0), 4, A, piece(B, 1)),
+		splitBand(piece(B, 1), 1, piece(B, 0), C)
+	]),
+	tube(0, 2, [splitBand(C, 6, B, A)])
+];
+
+const key = (a: Addr) => bandKey(a as never);
+
+describe('end-connection neighbours with split bands', () => {
+	test("a last piece's neighbours are its sibling and the first piece of the band its end meets", () => {
+		const neighboursOf = createEndConnectionNeighbours(splitRingTubes());
+		// A's end meets B's START, which lives on B's piece 0.
+		expect(neighboursOf(piece(A, 2) as never).map(key)).toEqual([
+			key(piece(A, 1)),
+			key(piece(B, 0))
+		]);
+	});
+
+	test('an unsplit band resolves each end to the piece of its partner that joins it', () => {
+		const neighboursOf = createEndConnectionNeighbours(splitRingTubes());
+		// C's start meets B's END (B's last piece); C's end meets A's START (A's piece 0).
+		expect(neighboursOf(C as never).map(key)).toEqual([key(piece(B, 1)), key(piece(A, 0))]);
+	});
+
+	test('a first piece resolves its outer start and its seam sibling', () => {
+		const neighboursOf = createEndConnectionNeighbours(splitRingTubes());
+		// B's start meets A's END, which lives on A's LAST piece, not piece 0.
+		expect(neighboursOf(piece(B, 0) as never).map(key)).toEqual([
+			key(piece(A, 2)),
+			key(piece(B, 1))
+		]);
+	});
+});
+
+describe('buildBandSortIndex end-connection with split bands', () => {
+	test('every piece lands in the one ring', () => {
+		const index = buildBandSortIndex(splitRingTubes(), 'end-connection-tube');
+		expect(index.groups).toHaveLength(1);
+		expect(new Set(index.groups[0].bands.map(key))).toEqual(
+			new Set([piece(A, 0), piece(A, 1), piece(A, 2), piece(B, 0), piece(B, 1), C].map(key))
+		);
+		expect(index.groups[0].bands).toHaveLength(6);
+	});
+
+	test("a band's pieces are adjacent and in piece order", () => {
+		const index = buildBandSortIndex(splitRingTubes(), 'end-connection-tube');
+		expect(index.groups[0].bands.map(key)).toEqual(
+			[piece(A, 0), piece(A, 1), piece(A, 2), C, piece(B, 0), piece(B, 1)].map(key)
+		);
+	});
+});
+
+// Characterization, not RED: pins the exact unsplit order and ref objects so the
+// piece handling above cannot move them.
+describe('buildBandSortIndex end-connection unsplit characterization', () => {
+	const unsplitRing = (): TubeCutPattern[] => [
+		tube(0, 0, [splitBand(A, 3, C, B)]),
+		tube(0, 1, [splitBand(B, 4, A, C)]),
+		tube(0, 2, [splitBand(C, 6, B, A)])
+	];
+
+	test('a 3-cycle keeps its walk order, starting band first', () => {
+		const index = buildBandSortIndex(unsplitRing(), 'end-connection-tube');
+		expect(index.groups.map((g) => g.bands.map(key))).toEqual([[key(A), key(C), key(B)]]);
+	});
+
+	test('a partner absent from the tubes is still listed by its stored address', () => {
+		const tubes = [tube(0, 0, [splitBand(A, 3, C, B)])];
+		const index = buildBandSortIndex(tubes, 'end-connection-tube');
+		expect(index.groups.map((g) => g.bands)).toEqual([[B, A, C]]);
 	});
 });
