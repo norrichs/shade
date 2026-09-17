@@ -2068,9 +2068,14 @@ const getEndPartnerTransforms = (tubePatterns: TubeCutPattern[]) => {
 			// plain cross-band partner address onto the partner piece with the SAME
 			// index, so this MUST be passed — omit it and every cross-band partner
 			// silently falls back to the partner's last piece.
-			const fromPiece = isGlobuleAddress_BandPiece(band.address)
-				? band.address.piece
-				: undefined;
+			// `: 0`, not `: undefined`. An unsplit asker has no piece index, and the
+			// two possible readings diverge: `undefined` skips pass 2's same-index
+			// find and lands on the partner's LAST piece, while `0` lands on its
+			// FIRST. Task 6 implemented `0` at helpers.ts:127 and its test
+			// "resolves to piece 0 when the asker is unsplit" asserts it, so all
+			// three call sites use `0` and an unsplit asker resolves identically
+			// through every path.
+			const fromPiece = isGlobuleAddress_BandPiece(band.address) ? band.address.piece : 0;
 			// Each end is resolved on its own. Previously both were gated on both,
 			// so one unresolvable end silently disabled matching at the other.
 			const startAddress = band.meta.startPartnerBand;
@@ -2154,7 +2159,9 @@ const partnerFacetIndex =
 		// call type-checks perfectly and fails silently — this is the third site in
 		// this plan to hit that trap, after getEndPartnerTransforms and
 		// getTransformedPartnerCutPattern.
-		const fromPiece = isGlobuleAddress_BandPiece(band.address) ? band.address.piece : undefined;
+		// `: 0` for consistency with helpers.ts:127 and getEndPartnerTransforms —
+		// see the note in Step 3 on why undefined and 0 are not interchangeable.
+		const fromPiece = isGlobuleAddress_BandPiece(band.address) ? band.address.piece : 0;
 		// Resolve by address, not by position: once a tube holds pieces its bands
 		// array is longer than its band count, so bands[address.band] is wrong.
 		// findBandByAddress also handles a plain address whose band was split.
