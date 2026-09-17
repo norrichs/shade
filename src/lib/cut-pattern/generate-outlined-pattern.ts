@@ -525,8 +525,12 @@ export const outlinePolygonFromEdges = (edges: { start: Vector3 }[]): Polygon =>
 
 /**
  * Generate outlined pattern for a single band.
+ *
+ * Exported (only) so tests can drive the real `piece` → `buildOutlinePath` →
+ * `shouldHaveTab` wiring end to end, rather than calling `shouldHaveTab` in
+ * isolation — see `split-end-tab-integration.test.ts`.
  */
-const generateOutlinedBandPattern = (
+export const generateOutlinedBandPattern = (
 	band: Band,
 	bandIndex: number, // GLOBAL: used for labels/address (unchanged)
 	config: OutlinedPatternConfig,
