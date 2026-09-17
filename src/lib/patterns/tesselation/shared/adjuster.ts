@@ -14,7 +14,15 @@ import {
 	removeInPlace,
 	replaceInPlace
 } from './helpers';
-import { layoutTesselation, placeUnitIndices, unitCounts, type IndexPlacement } from './layout';
+import {
+	layoutTesselation,
+	sideColumn,
+	tiledIndex,
+	unitCounts,
+	unitIndexOf,
+	type UnitGroup,
+	type UnitIndex
+} from './layout';
 
 const DEBUG_METADATA = true;
 
@@ -23,31 +31,47 @@ export type ExpandedAdjustments = {
 	withinBand: IndexPair[];
 	acrossBands: IndexPair[];
 	skipRemove: number[];
-	/** Partner-matching target indices written at each band end. */
-	partnerTargets: Record<BandEnd, number[]>;
-	/** Partner-matching source indices read from a partner's joining end. */
-	partnerSources: Record<BandEnd, number[]>;
+	/**
+	 * Partner-matching pairs, `[end][partnerEnd]`: targets written at this
+	 * band's `end` from sources read at the partner's `partnerEnd`.
+	 */
+	partnerPairs: Record<BandEnd, Record<BandEnd, IndexPair[]>>;
 	/** The start row's and end row's groups, removed by `endsTrimmed`. */
 	trim: Record<BandEnd, number[]>;
 };
 
-/** Facet-to-facet joins along the band: the end row, in every column. */
-const ALONG_BAND: IndexPlacement = { row: 'last', column: 'all' };
-/** Band-to-band joins: every row, only in the column on the joining side. */
-const ACROSS_BANDS: IndexPlacement = { row: 'all', column: 'side' };
+const range = (n: number) => Array.from({ length: n }, (_, i) => i);
+
+/**
+ * The rows a start/end-group index names as a band end: row 0's start row or
+ * the last row's end row. A middle index has no band-end row.
+ */
+const bandEndRow = (group: UnitGroup, rows: number): number | undefined =>
+	group === 'start' ? 0 : group === 'end' ? rows - 1 : undefined;
 
 /**
  * Expand a spec's unit-tile rules into indices of the `rows × columns` tiled
- * path, using the layout the generator assembles that path from. Each rule
- * lands only where the relationship it encodes exists:
+ * path, using the layout the generator assembles that path from. Rules are
+ * expanded pair by pair, so a user-authored rule may mix index groups: both
+ * sides of a pair are placed in the same rows, chosen from that pair alone.
+ * Each rule lands only where the relationship it encodes exists:
  *
- * - `withinBand` joins this facet's end row to the next facet's start row: the
- *   last row (row 0 for start-group sources), every column.
- * - `acrossBands` and `skipRemove` join this band's side to its neighbour's:
- *   every row, in the column on the side the unit vertex lies on (this band's
- *   first column; the previous band's last column for its sources).
- * - Partner matching and end trimming name the start and end groups: row 0's
- *   start row and the last row's end row, every column.
+ * - `withinBand` joins this facet's end row to the next facet's start row, in
+ *   every column. The source is read from the next facet's row 0 whatever its
+ *   group; the target sits in this facet's last row (row 0 if it is a
+ *   start-group index).
+ * - `acrossBands` joins this band's side to its neighbour's: each side in the
+ *   column on the side its unit vertex lies on (this band's first column; the
+ *   previous band's last column for its sources). Rows: a start index allows
+ *   row 0, an end index the last row, a middle index every row; the pair uses
+ *   the rows both sides allow. A start↔end pair shares no row when rows > 1;
+ *   it is placed tile-locally, in every row, as a 1×1 tile relates it.
+ * - `skipRemove` uses the same rows and side column for each index.
+ * - Partner matching and end trimming name band ends: row 0's start group and
+ *   the last row's end group, every column. A partner pair naming a middle
+ *   index is ignored, and a start/end pairing stops at the shorter rule list.
+ *
+ * Indices outside the unit are ignored.
  */
 export const expandTesselationAdjustments = (
 	spec: TiledPatternSpec,
@@ -55,53 +79,83 @@ export const expandTesselationAdjustments = (
 	columns: number
 ): ExpandedAdjustments => {
 	const { unit, adjustments } = spec;
-	const layout = layoutTesselation(unitCounts(unit), rows, columns);
-	const place = (indices: number[], placement: IndexPlacement) =>
-		placeUnitIndices(indices, unit, layout, placement);
-	const placePairs = (pairs: IndexPair[], placement: IndexPlacement): IndexPair[] => {
-		const sources = place(
-			pairs.map((p) => p.source),
-			placement
-		);
-		const targets = place(
-			pairs.map((p) => p.target),
-			placement
-		);
-		if (sources.length !== targets.length) {
-			throw new Error('expanded pairs length mismatch');
-		}
-		return sources.map((source, i) => ({ source, target: targets[i] }));
+	const counts = unitCounts(unit);
+	const layout = layoutTesselation(counts, rows, columns);
+	const at = (u: UnitIndex, row: number, column: number) => tiledIndex(layout, u, row, column);
+	const side = (u: UnitIndex) => sideColumn(unit, u.index, columns);
+	const resolvePair = ({ source, target }: IndexPair) => {
+		const s = unitIndexOf(source, counts);
+		const t = unitIndexOf(target, counts);
+		return s && t ? { s, t } : undefined;
 	};
-	const startGroup = Array.from({ length: unit.start.length }, (_, i) => i);
-	const endGroup = Array.from(
-		{ length: unit.end.length },
-		(_, i) => unit.start.length + unit.middle.length + i
-	);
+
+	const acrossRows = (s: UnitIndex, t: UnitIndex): number[] => {
+		const sRow = bandEndRow(s.group, rows);
+		const tRow = bandEndRow(t.group, rows);
+		if (sRow === undefined && tRow === undefined) return range(rows);
+		if (sRow === undefined) return [tRow!];
+		if (tRow === undefined || sRow === tRow) return [sRow];
+		return range(rows); // start ↔ end: tile-local
+	};
+
+	const withinBand = adjustments.withinBand.flatMap((pair) => {
+		const resolved = resolvePair(pair);
+		if (!resolved) return [];
+		const { s, t } = resolved;
+		const targetRow = t.group === 'start' ? 0 : rows - 1;
+		return range(columns).map((c) => ({ source: at(s, 0, c), target: at(t, targetRow, c) }));
+	});
+
+	const acrossBands = adjustments.acrossBands.flatMap((pair) => {
+		const resolved = resolvePair(pair);
+		if (!resolved) return [];
+		const { s, t } = resolved;
+		return acrossRows(s, t).map((r) => ({ source: at(s, r, side(s)), target: at(t, r, side(t)) }));
+	});
+
+	const skipRemove = adjustments.skipRemove.flatMap((index) => {
+		const u = unitIndexOf(index, counts);
+		if (!u) return [];
+		const row = bandEndRow(u.group, rows);
+		return (row === undefined ? range(rows) : [row]).map((r) => at(u, r, side(u)));
+	});
+
+	const partnerRules = (end: BandEnd) =>
+		end === 'start' ? adjustments.partner.startEnd : adjustments.partner.endEnd;
+	const partnerPairsFor = (end: BandEnd, partnerEnd: BandEnd): IndexPair[] => {
+		const targets = partnerRules(end);
+		const sources = partnerRules(partnerEnd);
+		return range(Math.min(targets.length, sources.length)).flatMap((i) => {
+			const resolved = resolvePair({ source: sources[i].source, target: targets[i].target });
+			if (!resolved) return [];
+			const { s, t } = resolved;
+			const sRow = bandEndRow(s.group, rows);
+			const tRow = bandEndRow(t.group, rows);
+			if (sRow === undefined || tRow === undefined) return [];
+			return range(columns).map((c) => ({ source: at(s, sRow, c), target: at(t, tRow, c) }));
+		});
+	};
+
+	const groupAtBandEnd = (group: 'start' | 'end') => {
+		const u = (local: number): UnitIndex => ({
+			index: (group === 'start' ? 0 : counts.start + counts.middle) + local,
+			group,
+			local
+		});
+		return range(counts[group]).flatMap((local) =>
+			range(columns).map((c) => at(u(local), bandEndRow(group, rows)!, c))
+		);
+	};
+
 	return {
-		withinBand: placePairs(adjustments.withinBand, ALONG_BAND),
-		acrossBands: placePairs(adjustments.acrossBands, ACROSS_BANDS),
-		skipRemove: place(adjustments.skipRemove, ACROSS_BANDS),
-		partnerTargets: {
-			start: place(
-				adjustments.partner.startEnd.map((p) => p.target),
-				ALONG_BAND
-			),
-			end: place(
-				adjustments.partner.endEnd.map((p) => p.target),
-				ALONG_BAND
-			)
+		withinBand,
+		acrossBands,
+		skipRemove,
+		partnerPairs: {
+			start: { start: partnerPairsFor('start', 'start'), end: partnerPairsFor('start', 'end') },
+			end: { start: partnerPairsFor('end', 'start'), end: partnerPairsFor('end', 'end') }
 		},
-		partnerSources: {
-			start: place(
-				adjustments.partner.startEnd.map((p) => p.source),
-				ALONG_BAND
-			),
-			end: place(
-				adjustments.partner.endEnd.map((p) => p.source),
-				ALONG_BAND
-			)
-		},
-		trim: { start: place(startGroup, ALONG_BAND), end: place(endGroup, ALONG_BAND) }
+		trim: { start: groupAtBandEnd('start'), end: groupAtBandEnd('end') }
 	};
 };
 
@@ -177,18 +231,8 @@ export const adjustTesselation = (
 							: { translatedEndPartnerFacet: partner.facet })
 					} as BandCutPattern['meta'];
 
-					const partnerSources = expanded.partnerSources[partner.partnerEnd];
-					const partnerTargets = expanded.partnerTargets[end];
-					if (partnerSources.length !== partnerTargets.length) {
-						throw new Error('partner pairs length mismatch');
-					}
-					const partnerPairs = partnerSources.map((source, i) => ({
-						source,
-						target: partnerTargets[i]
-					}));
-
 					replaceInPlace({
-						pairs: partnerPairs,
+						pairs: expanded.partnerPairs[end][partner.partnerEnd],
 						target: newBands[b].facets[f].path,
 						source: partner.facet.path
 					});

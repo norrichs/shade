@@ -325,8 +325,9 @@ describe('Shield skipEdges + endsMatched: ends snap to the partner’s true vert
 					const partnerF = endFacetIndex(partner, partnerEnd);
 					const ownPath = band.facets[ownF].path;
 					const partnerPath = partner.facets[partnerF].path;
-					const targets = expanded.partnerTargets[end];
-					const sources = expanded.partnerSources[partnerEnd];
+					const pairs = expanded.partnerPairs[end][partnerEnd];
+					const targets = pairs.map((p) => p.target);
+					const sources = pairs.map((p) => p.source);
 					expect(targets.length).toBe(sources.length);
 					const endRowReach = facetHeight(band, end) / rows / 2;
 					let deviation = 0;

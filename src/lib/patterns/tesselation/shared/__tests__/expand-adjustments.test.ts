@@ -1,6 +1,6 @@
 import { describe, it, expect } from '@jest/globals';
 import type { PathSegment } from '$lib/types';
-import type { TiledPatternSpec } from '../../../spec-types';
+import type { AdjustmentRules, IndexPair, TiledPatternSpec } from '../../../spec-types';
 import { translatePS } from '../../../utils';
 import { defaultShieldSpec } from '../../shield';
 import { defaultHexSpec } from '../../hex';
@@ -93,6 +93,20 @@ const describeMismatch = (
 	tilesFor: TilesFor
 ): string[] => {
 	const expected = unitIndices.flatMap((index) => tilesFor(index).map((tile) => ({ index, tile })));
+	return mismatchesAt(spec, path, rows, columns, expected, expanded);
+};
+
+type Placed = { index: number; tile: Tile };
+
+/** Each expanded index must be `expected[i]`: that unit index, in that tile. */
+const mismatchesAt = (
+	spec: TiledPatternSpec,
+	path: PathSegment[],
+	rows: number,
+	columns: number,
+	expected: Placed[],
+	expanded: number[]
+): string[] => {
 	if (expected.length !== expanded.length) {
 		return [`expanded ${expanded.length} indices, expected ${expected.length}`];
 	}
@@ -186,7 +200,7 @@ const check = (spec: TiledPatternSpec, rows: number, columns: number) => {
 							rows,
 							columns,
 							pairs.map((p) => p.target),
-							x.partnerTargets[end],
+							x.partnerPairs[end][end].map((p) => p.target),
 							endTiles(spec, rows, columns)
 						)
 					],
@@ -198,7 +212,7 @@ const check = (spec: TiledPatternSpec, rows: number, columns: number) => {
 							rows,
 							columns,
 							pairs.map((p) => p.source),
-							x.partnerSources[end],
+							x.partnerPairs[end][end].map((p) => p.source),
 							endTiles(spec, rows, columns)
 						)
 					]
@@ -286,10 +300,10 @@ describe('Shield rules expand onto the geometrically correct tiles', () => {
 		// by at most 2/14 of a row).
 		const rowSlack = (2 / defaultShieldSpec.unit.height) * (SIZE / rows) + 1e-9;
 		const x = expandTesselationAdjustments(defaultShieldSpec, rows, columns);
-		for (const i of [...x.partnerTargets.start, ...x.partnerSources.start]) {
+		for (const i of x.partnerPairs.start.start.flatMap((p) => [p.source, p.target])) {
 			expect(Math.abs(pointOf(path[i]).y)).toBeLessThanOrEqual(rowSlack);
 		}
-		for (const i of [...x.partnerTargets.end, ...x.partnerSources.end]) {
+		for (const i of x.partnerPairs.end.end.flatMap((p) => [p.source, p.target])) {
 			expect(Math.abs(pointOf(path[i]).y - SIZE)).toBeLessThanOrEqual(rowSlack);
 		}
 	});
@@ -303,6 +317,206 @@ describe('Hex rules (start/end groups only) expand onto the band end rows', () =
 	])('%i rows × %i columns', (rows, columns) => {
 		const { failures } = check(defaultHexSpec, rows, columns);
 		expect(noFailures(failures)).toEqual({});
+	});
+});
+
+describe('user-authored variants: rules mixing index groups expand pair by pair', () => {
+	// Tile editors let a user pair any two vertices, so a rule's source and
+	// target may belong to different groups. Each pair picks its rows from its
+	// own two indices and places both sides in the same rows:
+	// - acrossBands: start → row 0, end → last row, middle → any row. The pair
+	//   uses the rows both sides allow; a start↔end pair (no common row when
+	//   rows > 1) is placed tile-locally, in every row, as a 1×1 tile relates it.
+	// - withinBand: the source is read from the NEXT facet's start row, so row 0
+	//   whatever its group; the target is this facet's end row (start → row 0).
+	// - partner matching ignores any pair with a middle-group index.
+	const variant = (adjustments: Partial<AdjustmentRules>): TiledPatternSpec => ({
+		...defaultShieldSpec,
+		id: 'user-variant',
+		builtIn: false,
+		adjustments: { ...defaultShieldSpec.adjustments, ...adjustments }
+	});
+	const tile = (row: number, column: number): Tile => ({ row, column });
+	const pathOf = (spec: TiledPatternSpec, rows: number, columns: number) =>
+		generateTesselationTile(spec, {
+			size: SIZE,
+			rows,
+			columns,
+			variant: 'rect',
+			sideOrientation: 'outside'
+		});
+	const expectPairs = (
+		spec: TiledPatternSpec,
+		rows: number,
+		columns: number,
+		pairs: IndexPair[],
+		expected: [Placed, Placed][]
+	) => {
+		const path = pathOf(spec, rows, columns);
+		expect({
+			sources: mismatchesAt(
+				spec,
+				path,
+				rows,
+				columns,
+				expected.map(([source]) => source),
+				pairs.map((p) => p.source)
+			),
+			targets: mismatchesAt(
+				spec,
+				path,
+				rows,
+				columns,
+				expected.map(([, target]) => target),
+				pairs.map((p) => p.target)
+			)
+		}).toEqual({ sources: [], targets: [] });
+	};
+
+	it('fixture: the variant indices have the groups and sides the cases assume', () => {
+		const unit = [
+			...defaultShieldSpec.unit.start,
+			...defaultShieldSpec.unit.middle,
+			...defaultShieldSpec.unit.end
+		];
+		const at = (i: number) => [groupOf(defaultShieldSpec, i).group, pointOf(unit[i]).x];
+		expect(at(0)).toEqual(['start', 0]);
+		expect(at(13)).toEqual(['start', 42]);
+		expect(at(1)).toEqual(['start', 10]);
+		expect(at(66)).toEqual(['end', 0]);
+		expect(at(67)).toEqual(['end', 10]);
+		expect(at(36)).toEqual(['middle', 40]);
+		expect(at(29)).toEqual(['middle', 44]);
+		expect(at(22)).toEqual(['middle', -2]);
+		expect(at(15)).toEqual(['middle', 2]);
+		expect(at(33)[0]).toEqual('middle');
+	});
+
+	it('mixed-group acrossBands at 2×2 expands (no throw) onto the rows both sides share', () => {
+		const spec = variant({
+			acrossBands: [
+				{ source: 36, target: 0 }, // middle → start: row 0 only
+				{ source: 29, target: 66 } // middle → end: last row only
+			]
+		});
+		const x = expandTesselationAdjustments(spec, 2, 2);
+		expectPairs(spec, 2, 2, x.acrossBands, [
+			[
+				{ index: 36, tile: tile(0, 1) },
+				{ index: 0, tile: tile(0, 0) }
+			],
+			[
+				{ index: 29, tile: tile(1, 1) },
+				{ index: 66, tile: tile(1, 0) }
+			]
+		]);
+	});
+
+	it('a balanced mixed acrossBands rule set is not zipped across rows (2×1)', () => {
+		// Flat per-side expansion gives sources [36 r0, 36 r1, 13 r0] and targets
+		// [0 r0, 22 r0, 22 r1]: equal counts, pairing 36 r1 with 22 r0.
+		const spec = variant({
+			acrossBands: [
+				{ source: 36, target: 0 },
+				{ source: 13, target: 22 }
+			]
+		});
+		const x = expandTesselationAdjustments(spec, 2, 1);
+		expectPairs(spec, 2, 1, x.acrossBands, [
+			[
+				{ index: 36, tile: tile(0, 0) },
+				{ index: 0, tile: tile(0, 0) }
+			],
+			[
+				{ index: 13, tile: tile(0, 0) },
+				{ index: 22, tile: tile(0, 0) }
+			]
+		]);
+	});
+
+	it('a start↔end acrossBands pair is placed tile-locally in every row (2×2)', () => {
+		const spec = variant({ acrossBands: [{ source: 13, target: 66 }] });
+		const x = expandTesselationAdjustments(spec, 2, 2);
+		expectPairs(spec, 2, 2, x.acrossBands, [
+			[
+				{ index: 13, tile: tile(0, 1) },
+				{ index: 66, tile: tile(0, 0) }
+			],
+			[
+				{ index: 13, tile: tile(1, 1) },
+				{ index: 66, tile: tile(1, 0) }
+			]
+		]);
+	});
+
+	it.each([
+		[2, 1],
+		[2, 2]
+	])('a withinBand middle source is read from the next facet’s row 0 (%i×%i)', (rows, columns) => {
+		const spec = variant({
+			withinBand: [
+				{ source: 15, target: 33 }, // middle → middle
+				{ source: 1, target: 67 } // start → end (the registered shape)
+			]
+		});
+		const x = expandTesselationAdjustments(spec, rows, columns);
+		const cols = Array.from({ length: columns }, (_, c) => c);
+		expectPairs(spec, rows, columns, x.withinBand, [
+			...cols.map((c): [Placed, Placed] => [
+				{ index: 15, tile: tile(0, c) },
+				{ index: 33, tile: tile(rows - 1, c) }
+			]),
+			...cols.map((c): [Placed, Placed] => [
+				{ index: 1, tile: tile(0, c) },
+				{ index: 67, tile: tile(rows - 1, c) }
+			])
+		]);
+	});
+
+	it('partner matching ignores pairs naming a middle-group index, and pairs up to the shorter list', () => {
+		const registered = expandTesselationAdjustments(defaultShieldSpec, 2, 2).partnerPairs;
+		const { startEnd, endEnd } = defaultShieldSpec.adjustments.partner;
+		const spec = variant({
+			partner: {
+				// Every start/end combination of the extra pairs names a middle index:
+				// [start][start] and [start][end] on both sides, [end][end] and
+				// [end][start] on the source only.
+				startEnd: [...startEnd, { source: 20, target: 22 }],
+				endEnd: [...endEnd, { source: 35, target: 73 }]
+			}
+		});
+		const x = expandTesselationAdjustments(spec, 2, 2);
+		expect(x.partnerPairs).toEqual(registered);
+		expect(x.partnerPairs.end.end).toHaveLength(8);
+		// A middle index on the target side only.
+		const targetOnly = variant({
+			partner: {
+				startEnd: [...startEnd, { source: 7, target: 22 }],
+				endEnd: [...endEnd, { source: 73, target: 33 }]
+			}
+		});
+		expect(expandTesselationAdjustments(targetOnly, 2, 2).partnerPairs).toEqual(registered);
+
+		// One end list shorter: its pairings with the other end stop at its length.
+		const shorter = variant({ partner: { startEnd: startEnd.slice(0, 3), endEnd } });
+		const y = expandTesselationAdjustments(shorter, 2, 2);
+		expect(y.partnerPairs.end.start).toEqual(registered.end.start.slice(0, 6));
+		expect(y.partnerPairs.start.end).toEqual(registered.start.end.slice(0, 6));
+		expect(y.partnerPairs.end.end).toEqual(registered.end.end);
+	});
+
+	it('indices outside the unit are ignored rather than thrown', () => {
+		const spec = variant({
+			withinBand: [{ source: 999, target: 67 }],
+			acrossBands: [{ source: 36, target: -1 }],
+			skipRemove: [22, 500]
+		});
+		const x = expandTesselationAdjustments(spec, 2, 2);
+		expect(x.withinBand).toEqual([]);
+		expect(x.acrossBands).toEqual([]);
+		expect(x.skipRemove).toEqual(
+			expandTesselationAdjustments(variant({ skipRemove: [22] }), 2, 2).skipRemove
+		);
 	});
 });
 

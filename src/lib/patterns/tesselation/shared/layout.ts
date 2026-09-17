@@ -80,24 +80,8 @@ export const unitCounts = (unit: UnitDefinition): Record<UnitGroup, number> => (
 	end: unit.end.length
 });
 
-/**
- * Which rows and columns a spec index expands to.
- *
- * `row` applies to middle-group indices only: a start-group index always
- * names row 0's start row and an end-group index the last row's end row, the
- * only rows where those groups are the band's ends.
- *
- * `column: 'side'` picks, per index, the column on the side of the tile the
- * index's unit vertex lies on: x left of the unit's centre → first column,
- * right of it → last column.
- */
-export type IndexPlacement = {
-	row: 'all' | 'last';
-	column: 'all' | 'side';
-};
-
-const segmentEndX = (seg: PathSegment): number | undefined => {
-	switch (seg[0]) {
+const segmentEndX = (seg: PathSegment | undefined): number | undefined => {
+	switch (seg?.[0]) {
 		case 'M':
 		case 'L':
 			return seg[1];
@@ -112,57 +96,48 @@ const segmentEndX = (seg: PathSegment): number | undefined => {
 	}
 };
 
-const groupOf = (
+/** A unit index's group and its offset inside that group. */
+export type UnitIndex = { index: number; group: UnitGroup; local: number };
+
+/**
+ * Which group a 1×1 unit index (start, middle, end concatenated) belongs to,
+ * or undefined for an index outside the unit.
+ */
+export const unitIndexOf = (
 	index: number,
 	counts: Record<UnitGroup, number>
-): { group: UnitGroup; local: number } => {
-	if (index < 0 || index >= counts.start + counts.middle + counts.end) {
-		throw new Error(`unit index ${index} is outside the unit`);
+): UnitIndex | undefined => {
+	if (!Number.isInteger(index) || index < 0) return undefined;
+	if (index < counts.start) return { index, group: 'start', local: index };
+	if (index < counts.start + counts.middle) {
+		return { index, group: 'middle', local: index - counts.start };
 	}
-	if (index < counts.start) return { group: 'start', local: index };
-	if (index < counts.start + counts.middle) return { group: 'middle', local: index - counts.start };
-	return { group: 'end', local: index - counts.start - counts.middle };
+	if (index < counts.start + counts.middle + counts.end) {
+		return { index, group: 'end', local: index - counts.start - counts.middle };
+	}
+	return undefined;
+};
+
+/** The tiled-path index of `unitIndex` in the tile at (`row`, `column`). */
+export const tiledIndex = (
+	layout: TesselationLayout,
+	{ group, local }: UnitIndex,
+	row: number,
+	column: number
+): number => {
+	const block = layout.blocks.find(
+		(b) => b.group === group && b.row === row && b.column === column
+	);
+	if (!block) throw new Error(`no ${group} block at row ${row}, column ${column}`);
+	return block.offset + local;
 };
 
 /**
- * Expand spec unit indices (start, middle, end concatenated, as a 1×1 tile
- * indexes them) into tiled-path indices, per `placement`. Each index expands
- * in column-then-row order, so two index lists that expand to the same number
- * of tiles pair up tile by tile.
+ * The column on the side of the tile a unit vertex lies on: x left of the
+ * unit's centre → the first column, otherwise the last. A segment with no
+ * vertex (`Z`) counts as the first column.
  */
-export const placeUnitIndices = (
-	indices: number[],
-	unit: UnitDefinition,
-	layout: TesselationLayout,
-	placement: IndexPlacement
-): number[] => {
-	const { rows, columns, counts, blocks } = layout;
-	const byTile = new Map(blocks.map((b) => [`${b.group}:${b.row}:${b.column}`, b.offset]));
-	const unitSegments = [...unit.start, ...unit.middle, ...unit.end];
-
-	return indices.flatMap((index) => {
-		const { group, local } = groupOf(index, counts);
-		const tileRows =
-			group === 'start'
-				? [0]
-				: group === 'end' || placement.row === 'last'
-					? [rows - 1]
-					: Array.from({ length: rows }, (_, r) => r);
-		let tileColumns: number[];
-		if (placement.column === 'all') {
-			tileColumns = Array.from({ length: columns }, (_, c) => c);
-		} else {
-			const x = segmentEndX(unitSegments[index]);
-			if (x === undefined) throw new Error(`unit index ${index} has no vertex to place by side`);
-			tileColumns = [x < unit.width / 2 ? 0 : columns - 1];
-		}
-		return tileColumns.flatMap((column) =>
-			tileRows.map((row) => {
-				const offset = byTile.get(`${group}:${row}:${column}`);
-				if (offset === undefined)
-					throw new Error(`no ${group} block at row ${row}, column ${column}`);
-				return offset + local;
-			})
-		);
-	});
+export const sideColumn = (unit: UnitDefinition, index: number, columns: number): number => {
+	const x = segmentEndX([...unit.start, ...unit.middle, ...unit.end][index]);
+	return x !== undefined && x >= unit.width / 2 ? columns - 1 : 0;
 };
