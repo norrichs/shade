@@ -89,8 +89,16 @@ export const getCubicBezierIntersection = (
  *   on every existing split, plus a transparent `.hit` line with
  *   `role="button"`/`tabindex`. Existing splits draw at all times, so without
  *   this the defect is worst exactly when the feature is in use.
+ * - `.screen-only` — the band overlay rectangles: the bounds debug rect
+ *   (`BoundsPattern.svelte` and `BandComponent.svelte`) and the assembler
+ *   cross-view highlight. A filled rect over a whole band is the worst thing
+ *   to hand a cutter, and the highlight follows the selection, so the export
+ *   silently depended on which band was clicked last.
+ *
+ * Mark any new screen furniture with `screen-only` rather than adding another
+ * selector here.
  */
-const SCREEN_ONLY_SELECTOR = '.svg-pattern-quad, .split-target';
+const SCREEN_ONLY_SELECTOR = '.svg-pattern-quad, .split-target, .screen-only';
 
 export const generateSvgUrl = (id: string) => {
 	const svg = document.getElementById(id);

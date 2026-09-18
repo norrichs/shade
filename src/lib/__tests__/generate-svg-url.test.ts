@@ -87,6 +87,12 @@ const buildPatternSvg = ({ interactive }: { interactive: boolean }): FakeElement
 	const band = new FakeElement('g', ['band']).append(
 		new FakeElement('path', ['band-outline'], { d: 'M0 0 L10 0' }),
 		new FakeElement('g', ['svg-pattern-quad']).append(new FakeElement('path', [], { d: 'M0 0' })),
+		// The assembler cross-view highlight: a filled rect over the whole band.
+		new FakeElement('rect', ['screen-only'], { fill: 'rgb(255,0,0)', width: '10' }),
+		// The bounds debug overlay.
+		new FakeElement('g', ['bounds', 'screen-only']).append(
+			new FakeElement('rect', [], { width: '10' })
+		),
 		seam
 	);
 	return new FakeElement('svg', [], { id: 'pattern-svg' }).append(band);
@@ -145,6 +151,21 @@ describe('generateSvgUrl', () => {
 		generateSvgUrl('pattern-svg');
 
 		expect(serialized).not.toContain('svg-pattern-quad');
+	});
+
+	test('leaves the band overlay rectangles out of the exported SVG', () => {
+		// A filled rect over a whole band is the worst thing to hand a cutter, and
+		// the highlight follows the selection — so the export used to depend on
+		// which band happened to be clicked last.
+		const root = buildPatternSvg({ interactive: false });
+		install(root);
+
+		generateSvgUrl('pattern-svg');
+
+		expect(serialized).not.toContain('screen-only');
+		expect(serialized).not.toContain('bounds');
+		expect(serialized).not.toContain('<rect');
+		expect(serialized).toContain('band-outline');
 	});
 
 	test('does not mutate the live document', () => {

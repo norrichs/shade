@@ -1,4 +1,4 @@
-import { writable, get, type Writable } from 'svelte/store';
+import { derived, writable, get, type Writable } from 'svelte/store';
 import type { PathSegment } from '$lib/types';
 
 export type LabelTextDims = { width: number; height: number };
@@ -13,6 +13,15 @@ export type LabelTextDims = { width: number; height: number };
  * geometry changes.
  */
 export const mergedBandPaths: Writable<Map<string, PathSegment[]>> = writable(new Map());
+
+/**
+ * True once "Prepare Download" has produced a merge. The prepared view is a
+ * preview of the file that will be cut, so incidental screen furniture — the
+ * assembler highlight, the split seam layer — stands down while it is on. The
+ * explicit debug toggles in `patternViewConfig` stay under the user's control
+ * and are stripped at export instead (`SCREEN_ONLY_SELECTOR` in `util.ts`).
+ */
+export const isPrepared = derived(mergedBandPaths, (paths) => paths.size > 0);
 
 /**
  * Per-band measured label-text bbox in label-local coordinate units. Written

@@ -6,6 +6,7 @@
 	import { resolveTabLabel } from '$lib/cut-pattern/resolve-tab-label';
 	import {
 		assemblerHighlight,
+		isPrepared,
 		patternBandSpaces,
 		patternConfigStore,
 		sameGlobuleBand,
@@ -193,6 +194,7 @@
 	stroke={color}
 >
 	{#if showBounds && band.bounds}<rect
+			class="screen-only"
 			x={band.bounds.left}
 			y={band.bounds.top}
 			width={band.bounds.width}
@@ -201,7 +203,8 @@
 			stroke="red"
 			stroke-width={0.1}
 		/>{/if}
-	{#if highlightFill && band.bounds}<rect
+	{#if highlightFill && !$isPrepared && band.bounds}<rect
+			class="screen-only"
 			x={band.bounds.left}
 			y={band.bounds.top}
 			width={band.bounds.width}
@@ -212,12 +215,13 @@
 			stroke-width={1}
 		/>{/if}
 	{@render children?.()}
-	<!-- Existing splits draw at all times; every legal boundary becomes clickable
-	     only while split mode is on. Mounted only when it has something to draw:
+	<!-- Existing splits draw at all times except in the prepared view, which is a
+	     preview of the cut file; every legal boundary becomes clickable only while
+	     split mode is on. Mounted only when it has something to draw:
 	     `splitQuads` is a fresh array on every `patternConfigStore` write, so an
 	     unconditional mount would re-run the child's derived for every band on
 	     every config change. -->
-	{#if isSplitMode || splitQuads.length > 0}
+	{#if !$isPrepared && (isSplitMode || splitQuads.length > 0)}
 		<SplitTargets
 			{band}
 			{subunitCount}

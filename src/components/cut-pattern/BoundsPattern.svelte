@@ -6,7 +6,8 @@
 </script>
 
 {#if showBounds && bounds}
-	<g class="bounds">
+	<!-- `screen-only`: a debug overlay, never part of the cut file. -->
+	<g class="bounds screen-only">
 		<rect x={bounds.left} y={bounds.top} width={bounds.width} height={bounds.height} />
 	</g>
 {/if}
