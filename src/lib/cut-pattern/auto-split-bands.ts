@@ -99,9 +99,9 @@ export const parentQuadExtents = (pieces: BandCutPattern[]): number[] | undefine
  *
  * First-fit on A cuts at 50, filling the budget exactly. B's first piece is
  * then 50 × 1.2 = 60 and still overflows. Nothing here detects that; the
- * overflow it leaves
- * is reported by the page overflow notice, and the panel re-reads the published
- * budget after regenerating. The heuristic is the spec's — keep it.
+ * overflow it leaves is reported by the page overflow notice, and the panel
+ * re-reads the published budget after regenerating. The heuristic is the
+ * spec's — keep it.
  *
  * `[]` when no parent in the tube can be measured, which the solver reads as
  * "propose nothing".

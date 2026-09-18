@@ -214,7 +214,7 @@ describe('proposeTubeSplits', () => {
 	it('KNOWN LIMIT: the longest band does not dominate every quad range, so a sibling can still overflow', () => {
 		// Budget 50. Band A totals 90 and is chosen; band B totals 63, but its
 		// first half is the dense one. The set cut for A leaves B's first piece at
-		// 45 x 1.2 = 54, still over. Characterizing the spec's heuristic, not
+		// 50 x 1.2 = 60, still over. Characterizing the spec's heuristic, not
 		// endorsing it: the leftover overflow is reported, never silently shipped.
 		const tubes = [
 			tube(

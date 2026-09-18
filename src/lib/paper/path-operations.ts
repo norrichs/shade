@@ -77,16 +77,33 @@ export const uniteMany = (outlines: PathSegment[][]): PathSegment[] => {
 	let level: PaperUnitable[] = valid.map((o) => pathSegmentsToPaper(o) as unknown as PaperUnitable);
 	while (level.length > 1) {
 		const next: PaperUnitable[] = [];
-		for (let i = 0; i < level.length; i += 2) {
-			if (i + 1 >= level.length) {
-				// Odd one out: carry it, unmodified and unremoved, to the next level.
-				next.push(level[i]);
-				continue;
+		let i = 0;
+		try {
+			for (; i < level.length; i += 2) {
+				if (i + 1 >= level.length) {
+					// Odd one out: carry it, unmodified and unremoved, to the next level.
+					next.push(level[i]);
+					continue;
+				}
+				const united = level[i].unite(level[i + 1], { insert: false });
+				level[i].remove();
+				level[i + 1].remove();
+				next.push(united);
 			}
-			const united = level[i].unite(level[i + 1], { insert: false });
-			level[i].remove();
-			level[i + 1].remove();
-			next.push(united);
+		} catch (err) {
+			// A throw mid-pairing leaves items live: everything from the pair
+			// being processed (i) onward in `level` was never removed (items
+			// before i were already removed as their unions completed), and
+			// everything already unioned into `next` this level is a fresh,
+			// unremoved item. Remove them all exactly once, then rethrow — the
+			// paper project layer must not be left holding orphaned items.
+			for (let j = i; j < level.length; j++) {
+				level[j].remove();
+			}
+			for (const item of next) {
+				item.remove();
+			}
+			throw err;
 		}
 		level = next;
 	}

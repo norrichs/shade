@@ -1,5 +1,11 @@
 import type { PathSegment } from '$lib/types';
-import { unitePaths, subtractPaths, intersectPaths, excludePaths, uniteMany } from '../path-operations';
+import {
+	unitePaths,
+	subtractPaths,
+	intersectPaths,
+	excludePaths,
+	uniteMany
+} from '../path-operations';
 import { getPaperScope } from '../scope';
 import { pathSegmentsToPaper } from '../path-segment-to-paper';
 
@@ -97,6 +103,43 @@ describe('path-operations', () => {
 			expect(united.filter((s) => s[0] === 'M').length).toBe(2);
 			// Signed area = outer 900 - hole 100 = 800. If the hole were filled it would be 900.
 			expect(area(united)).toBeCloseTo(800, 1);
+		});
+
+		test('a throw mid-reduction leaves no leftover items in the paper project layer', () => {
+			const paper = getPaperScope();
+			const layer = paper.project.activeLayer;
+			const before = layer.children.length;
+
+			// 5 outlines -> level 0 pairs are (0,1), (2,3), with 4 carried as the odd
+			// one out. Let the first pair succeed (its result lives in `next`) and
+			// make the second pair's unite throw, so the throw must clean up: the
+			// already-produced `next` result, the throwing pair's own operands, and
+			// the untouched odd-one-out still sitting in `level`.
+			const realUnite = paper.Path.prototype.unite;
+			let calls = 0;
+			jest.spyOn(paper.Path.prototype, 'unite').mockImplementation(function (
+				this: unknown,
+				...args: unknown[]
+			) {
+				calls += 1;
+				if (calls === 2) {
+					throw new Error('injected unite failure');
+				}
+				return realUnite.apply(this, args as never);
+			});
+
+			const outlines = [
+				rect(0, 0, 10, 10),
+				rect(5, 0, 10, 10),
+				rect(20, 0, 10, 10),
+				rect(25, 0, 10, 10),
+				rect(40, 0, 10, 10)
+			];
+
+			expect(() => uniteMany(outlines)).toThrow('injected unite failure');
+			expect(layer.children.length).toBe(before);
+
+			(paper.Path.prototype.unite as jest.Mock).mockRestore();
 		});
 	});
 });
