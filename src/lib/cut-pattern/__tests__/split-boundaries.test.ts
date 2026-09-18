@@ -81,6 +81,35 @@ describe('splitBoundariesOfBand', () => {
 		expect(splitBoundariesOfBand(band(1), 1, [])).toEqual([]);
 	});
 
+	describe('a facet-range view of a band', () => {
+		/**
+		 * `sliceProjectionCutPattern` slices `band.facets` for the facets range
+		 * control, leaving `parentQuadOffset` and `quadCount` as generated. Facet
+		 * index then no longer equals the parent quad offset, so every target
+		 * would be labelled with the wrong parent quad and a click would write a
+		 * split somewhere the user did not point at. Unreachable while the range
+		 * control clamps to [0, 1], which is why the guard is a bail rather than
+		 * an attempt to recover the missing start index — it cannot be recovered
+		 * from the band alone.
+		 */
+		const sliced = (quadCount: number, start: number, length: number): BandCutPattern => {
+			const full = band(quadCount);
+			return {
+				...full,
+				quadCount,
+				facets: full.facets.slice(start, start + length)
+			} as BandCutPattern;
+		};
+
+		it('offers nothing when the facets are a partial view of the band', () => {
+			expect(splitBoundariesOfBand(sliced(8, 2, 4), 1, [])).toEqual([]);
+		});
+
+		it('still offers targets on a complete band that declares its quad count', () => {
+			expect(splitBoundariesOfBand(sliced(4, 0, 4), 1, []).map((b) => b.quad)).toEqual([1, 2, 3]);
+		});
+	});
+
 	it('marks a boundary that is already a split', () => {
 		const boundaries = splitBoundariesOfBand(band(4), 1, [2]);
 		expect(boundaries.map((b) => [b.quad, b.isSplit])).toEqual([

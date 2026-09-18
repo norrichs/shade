@@ -121,11 +121,22 @@ export const resolveSplitSubunitCount = (patternTypeConfig: PatternTypeConfig): 
  * at. See `HIT_WIDTH_FACTOR` / `MIN_HIT_WIDTH`.
  */
 export const splitBoundariesOfBand = (
-	band: Pick<BandCutPattern, 'facets' | 'parentQuadOffset'>,
+	band: Pick<BandCutPattern, 'facets' | 'parentQuadOffset' | 'quadCount'>,
 	subunitCount: number,
 	splitQuads: number[]
 ): SplitBoundary[] => {
 	const quads = band.facets.filter((facet) => !!facet.quad).map((facet) => facet.quad!);
+	// The mapping below is facet index + `parentQuadOffset`, which holds only
+	// while `facets` is the whole band. `sliceProjectionCutPattern`
+	// (`projection-geometry/filters.ts:47-50`) slices `facets` for the facets
+	// range control, and a non-zero start would shift every target: the boundary
+	// drawn on quad 5's edge would be labelled quad 3, and clicking it would
+	// write a split two quads away from where the user pointed. The missing
+	// start index cannot be recovered from the band, so a partial view offers no
+	// targets at all. `quadCount` is generation's own count and survives the
+	// slice, the same reason `quadRangeOf` prefers it; it is absent on unsplit
+	// tubes, where there is nothing to check against.
+	if (band.quadCount !== undefined && quads.length !== band.quadCount) return [];
 	// 0 on an uncut band: its quads already are the parent's.
 	const offset = band.parentQuadOffset ?? 0;
 	const boundaries: Omit<SplitBoundary, 'hitWidth'>[] = [];
