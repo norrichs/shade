@@ -4,8 +4,7 @@
 	import type { Point } from 'bezier-js';
 	import { tick } from 'svelte';
 	import { numberPathSegments } from './number-path-segments';
-	import { onDestroy, onMount } from 'svelte';
-	import { LABEL_TAG_PORTAL_ID } from './constants';
+	import { onMount } from 'svelte';
 	import LabelText from './LabelText.svelte';
 	import {
 		buildLabelOutlinePath,
@@ -27,8 +26,7 @@
 		anchor = { x: 0, y: 0 },
 		padding = 10,
 		stemLength = 20,
-		stemWidth = 4,
-		portal = undefined
+		stemWidth = 4
 	}: {
 		id?: string | undefined;
 		bandId?: string | undefined;
@@ -43,7 +41,6 @@
 		padding?: number;
 		stemLength?: number;
 		stemWidth?: number;
-		portal?: { transform: string } | undefined;
 	} = $props();
 
 	// Bbox of the rendered LabelText (the addressStrings) — measured via
@@ -61,9 +58,9 @@
 
 	// LabelText element bound here so we can re-measure when its children mount.
 	let labelTextElement: SVGGElement | undefined = $state();
-	// Hidden measurement <g> for the in-flow render path. When `portal` is in
-	// use the LabelText is detached on mount, so we mirror the LabelText into
-	// this hidden measurement node to keep bbox readings stable.
+	// Hidden measurement <g>: a mirror of the LabelText whose position is never
+	// affected by the centering transform applied to the visible copy, so bbox
+	// readings stay stable across re-measures.
 	let measurementHost: SVGGElement | undefined = $state();
 	let measurementText: SVGGElement | undefined = $state();
 
@@ -74,8 +71,7 @@
 		}
 		await tick();
 		// Prefer the bbox of the hidden measurement render — its position is
-		// always stable (sibling of this component, not relocated into a
-		// portal) and it always exists when addressStrings is set.
+		// always stable and it always exists when addressStrings is set.
 		const target = measurementText ?? labelTextElement;
 		if (!target) return;
 		try {
@@ -160,44 +156,10 @@
 		];
 	};
 
-	let tagElement: SVGGElement;
-	let textElement: SVGGElement;
-
-	// Snapshots captured at portal-mount time. The live bindings above can be
-	// reset by the time onDestroy fires (LabelText resets its `$bindable`
-	// element on unmount, and Svelte may already have torn things down). The
-	// snapshots give us stable handles for the elements we relocated so we can
-	// remove them and any children they own (e.g. SvgText glyphs inside the
-	// LabelText <g>) in lock step with this component's destruction.
-	let portaledTag: SVGElement | undefined;
-
 	onMount(() => {
-		if (portal) {
-			// Both the path outline and the LabelText now share a single <g>
-			// wrapper (`tagElement`) so they translate + rotate as a unit. The
-			// dedicated text portal is no longer needed — we send the whole
-			// wrapper to the tag portal.
-			const lableTagContainer = document.getElementById(LABEL_TAG_PORTAL_ID);
-			if (lableTagContainer && tagElement) {
-				lableTagContainer.appendChild(tagElement);
-				portaledTag = tagElement;
-			}
-		}
 		// Trigger an initial measurement after mount — measurement nodes are
 		// in the DOM at this point.
 		void measureText();
-	});
-
-	onDestroy(() => {
-		// Elements were moved into the portal containers via appendChild on mount,
-		// so they are no longer cleaned up automatically when this component is
-		// destroyed. Remove the snapshot (and via DOM tree-removal, every child
-		// rendered inside it — including the SvgText glyphs LabelText renders)
-		// to avoid stale labels persisting after toggles or pattern range changes.
-		(portaledTag ?? tagElement)?.remove();
-		// Remove the measurement host if it was mounted (it lives in the SVG
-		// tree as a sibling and is not portalled, but be explicit for safety).
-		measurementHost?.remove();
 	});
 
 	// Path is now produced purely in path-space (origin at stem tip = (0,0)).
@@ -264,25 +226,23 @@
 	);
 
 	// Wrapper transform: position the path-space origin at `renderAnchor`, then
-	// rotate around it. For the portal branch, prepend the portal transform
-	// so the portal positioning still applies but the rotation is local to
-	// the label coords.
+	// rotate around it. The label renders inside its band's <g>, which already
+	// carries the band transform, so nothing is prepended here.
 	let wrapperTransform = $derived(
-		portal
-			? `${portal.transform} translate(${renderAnchor.x} ${renderAnchor.y}) rotate(${effectiveAngleDeg})`
-			: `translate(${renderAnchor.x} ${renderAnchor.y}) rotate(${effectiveAngleDeg})`
+		`translate(${renderAnchor.x} ${renderAnchor.y}) rotate(${effectiveAngleDeg})`
 	);
 </script>
 
 <!--
-	Hidden measurement render: we always render the LabelText into a
-	non-visible <g> so getBBox() can read its dimensions, regardless of
-	whether the visible LabelText below is later portalled into another
-	container. The host is positioned at (0,0) and not displayed — only its
-	bbox is consumed.
+	Hidden measurement render: the LabelText is mirrored into a non-visible <g>
+	so getBBox() can read its dimensions without the centering transform the
+	visible copy carries. Only its bbox is consumed — it is `screen-only` so the
+	exporter strips it, since its glyph paths are real <path> data a cutter
+	would otherwise trace.
 -->
 {#if addressStrings && addressStrings.length > 0}
 	<g
+		class="screen-only"
 		bind:this={measurementHost}
 		style="visibility: hidden; pointer-events: none;"
 		aria-hidden="true"
@@ -296,42 +256,25 @@
 	</g>
 {/if}
 
-{#if portal}
-	<g
-		id={`band-label${id ? `-${id}` : ''}`}
-		bind:this={tagElement}
-		transform={wrapperTransform}
-		style="visibility: {visible ? 'visible' : 'hidden'};"
-	>
-		{#if !bandId || !$mergedBandPaths.has(bandId)}
-			<path d={path} fill-rule="evenodd" stroke={color} fill="none" />
-		{/if}
-		<g transform={`translate(${textTranslate.x} ${textTranslate.y})`}>
-			<LabelText
-				lines={addressStrings}
-				anchor={{ x: 0, y: 0 }}
-				size={height}
-				bind:element={textElement}
-			/>
-		</g>
+<!--
+	The label renders in flow, inside its band's <g>, so the export groups a
+	band's cut paths and the text naming it as one piece.
+-->
+<g
+	id={`band-label${id ? `-${id}` : ''}`}
+	transform={wrapperTransform}
+	style="visibility: {visible ? 'visible' : 'hidden'};"
+>
+	{#if !bandId || !$mergedBandPaths.has(bandId)}
+		<path d={path} fill-rule="evenodd" fill="none" stroke={color} />
+	{/if}
+	<g transform={`translate(${textTranslate.x} ${textTranslate.y})`}>
+		<LabelText
+			lines={addressStrings}
+			anchor={{ x: 0, y: 0 }}
+			size={height}
+			color="black"
+			bind:element={labelTextElement}
+		/>
 	</g>
-{:else}
-	<g
-		id={`band-label${id ? `-${id}` : ''}`}
-		transform={wrapperTransform}
-		style="visibility: {visible ? 'visible' : 'hidden'};"
-	>
-		{#if !bandId || !$mergedBandPaths.has(bandId)}
-			<path d={path} fill-rule="evenodd" fill="none" stroke={color} />
-		{/if}
-		<g transform={`translate(${textTranslate.x} ${textTranslate.y})`}>
-			<LabelText
-				lines={addressStrings}
-				anchor={{ x: 0, y: 0 }}
-				size={height}
-				color="black"
-				bind:element={labelTextElement}
-			/>
-		</g>
-	</g>
-{/if}
+</g>

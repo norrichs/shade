@@ -168,6 +168,51 @@ describe('generateSvgUrl', () => {
 		expect(serialized).toContain('band-outline');
 	});
 
+	test('keeps each band label inside the band group it names', () => {
+		// Labels used to be appendChild'd out of their band and into a shared
+		// `label-tag-portal-container` sibling, so the cut file arrived as a pile
+		// of band paths followed by a pile of unattached glyphs. Downstream the
+		// grouping IS the identity of a physical piece: a band's outline and the
+		// text naming it have to travel together.
+		const band = new FakeElement('g', ['band'], { id: 'band-b1' }).append(
+			new FakeElement('path', ['band-outline'], { d: 'M0 0 L10 0' }),
+			new FakeElement('g', [], { id: 'band-label-band-self-b1' }).append(
+				new FakeElement('path', [], { d: 'M0 0 L1 1' })
+			)
+		);
+		const root = new FakeElement('svg', [], { id: 'pattern-svg' }).append(band);
+		install(root);
+
+		generateSvgUrl('pattern-svg');
+
+		expect(serialized).toMatch(
+			/<g class="band" id="band-b1">.*id="band-label-band-self-b1".*<\/g>/s
+		);
+		// And no portal container survives as a sibling holding loose labels.
+		expect(serialized).not.toContain('label-tag-portal-container');
+	});
+
+	test('leaves the hidden label measurement mirror out of the exported SVG', () => {
+		// PatternLabel renders a second, invisible copy of the label text purely
+		// so getBBox() has a stable node to read. It is hidden with inline
+		// `visibility`, which the serializer happily carries into the cut file —
+		// real glyph paths the cutter would trace. It must carry `screen-only`.
+		const band = new FakeElement('g', ['band'], { id: 'band-b1' }).append(
+			new FakeElement('path', ['band-outline'], { d: 'M0 0 L10 0' }),
+			new FakeElement('g', ['screen-only'], { style: 'visibility: hidden;' }).append(
+				new FakeElement('path', ['measured-glyph'], { d: 'M5 5 L6 6' })
+			)
+		);
+		const root = new FakeElement('svg', [], { id: 'pattern-svg' }).append(band);
+		install(root);
+
+		generateSvgUrl('pattern-svg');
+
+		expect(serialized).not.toContain('measured-glyph');
+		expect(serialized).not.toContain('visibility: hidden');
+		expect(serialized).toContain('band-outline');
+	});
+
 	test('does not mutate the live document', () => {
 		const root = buildPatternSvg({ interactive: true });
 		install(root);

@@ -46,7 +46,6 @@
 		tube,
 		tubes,
 		showBounds = false,
-		portal = false,
 		tagAnchorPoint,
 		tagAngle,
 		groupCode = undefined,
@@ -62,7 +61,6 @@
 		/** Every tube of the pattern, indexed by tube number: tab labels resolve end partners in them. */
 		tubes: TubeCutPattern[];
 		showBounds?: boolean;
-		portal?: boolean;
 		tagAnchorPoint: Point;
 		tagAngle: number | undefined;
 		groupCode?: string;
@@ -72,7 +70,6 @@
 
 	let patternTypeConfig = $derived($patternConfigStore.patternTypeConfig);
 	let labels = $derived(patternTypeConfig.labels);
-	let isTiled = $derived(patternTypeConfig?.type !== 'outlined');
 	let onTabEnabled = $derived(labels?.onTab?.enabled ?? false);
 	let selfTagEnabled = $derived(labels?.selfTag?.enabled ?? false);
 	let externalTagEnabled = $derived(labels?.selfTag?.externalTag ?? false);
@@ -256,7 +253,6 @@
 			padding={labels?.selfTag?.padding ?? 10}
 			stemLength={labels?.selfTag?.stemLength ?? 20}
 			stemWidth={labels?.selfTag?.stemWidth ?? 4}
-			portal={isTiled ? { transform: bandTransform(origin, rotation, pivot) } : undefined}
 		/>
 	{/if}
 </g>

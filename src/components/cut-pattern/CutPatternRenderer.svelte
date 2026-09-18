@@ -42,7 +42,6 @@
 	import { getTransform } from './distrubute-panels';
 	import { concatAddress } from '$lib/util';
 	import { resolveEndPartner } from '$lib/cut-pattern/resolve-partner-band';
-	import { PATTERN_PORTAL_ID, LABEL_TEXT_PORTAL_ID, LABEL_TAG_PORTAL_ID } from './constants';
 	import { buildBandCodeMap } from '$lib/cut-pattern/band-sort-index';
 	import {
 		resolveIndexBands,
@@ -359,7 +358,6 @@
 				origin={pageResult.origins[i]}
 				rotation={pageResult.rotations[i] ?? 0}
 				pivot={pivots.get(band)}
-				portal={true}
 				tagAnchorPoint={tagAnchors.get(band)!}
 				tagAngle={band.tagAngle}
 				groupCode={groupCodeFor(band.address)}
@@ -393,7 +391,6 @@
 				{tubes}
 				index={i}
 				origin={flatOrigins[i]}
-				portal={true}
 				tagAnchorPoint={tagAnchors.get(band)!}
 				tagAngle={band.tagAngle}
 				groupCode={groupCodeFor(band.address)}
@@ -429,7 +426,6 @@
 						{tubes}
 						index={b}
 						origin={origins.tubes[t].bands[b]}
-						portal={true}
 						tagAnchorPoint={tagAnchors.get(band)!}
 						tagAngle={band.tagAngle}
 						groupCode={groupCodeFor(band.address)}
@@ -458,7 +454,4 @@
 			</g>
 		{/each}
 	{/if}
-	<!-- <svg><g id={PATTERN_PORTAL_ID} /></svg> -->
-	<svg id={LABEL_TAG_PORTAL_ID} />
-	<svg id={LABEL_TEXT_PORTAL_ID} />
 {/if}
