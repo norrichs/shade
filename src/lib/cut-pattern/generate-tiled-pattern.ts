@@ -487,12 +487,14 @@ export const generateTiling = ({
 
 		const cuttablePattern: CutPattern[] = adjustedPatternBand.map((facet, facetIndex) => {
 			const quad = structuredClone(quadBand[facetIndex % quadBand.length]);
-			// Pieces see a sliced facets array, so a parent-relative anchor index
-			// must be shifted by the piece's offset. parentQuadOffset counts quads;
-			// each quad is one entry in this map.
-			const quadOffset = bands?.[bandIndex]?.parentQuadOffset ?? 0;
-			const parentFacetIndex = facetIndex + quadOffset;
-			if (tagAnchor && tagAnchor.facetIndex === parentFacetIndex) {
+			// The anchor index is resolved PER PIECE, not against the parent band:
+			// every piece is its own physical part and needs its own label. A
+			// parent-relative index would match inside one piece only, leaving every
+			// later piece at the initial {0,0} — a label stranded at the origin,
+			// far from the part it names. Resolved locally, piece 0 keeps the
+			// parent's anchor (its offset is 0) and each later piece anchors at its
+			// own leading edge, which is the split it was cut at.
+			if (tagAnchor && tagAnchor.facetIndex === facetIndex) {
 				if (tagAnchor.quadEdge) {
 					// Anchor on a named quad edge at a ratio between its vertices.
 					// Takes precedence over `anchorUnitPoint`/`segmentIndex` so it

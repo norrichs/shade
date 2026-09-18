@@ -53,8 +53,9 @@ describe('seam partners', () => {
 
 describe('label anchors across a split', () => {
 	// The default hex spec's anchor is { facetIndex: 0, segmentIndex: 0 }
-	// (pattern-registry.ts:56), i.e. the FIRST quad of the band. So after a split
-	// only piece 0 may carry it.
+	// (pattern-registry.ts:56), i.e. the FIRST quad of the band. The index is
+	// resolved per piece: every piece is a separate physical part and carries its
+	// own label, anchored at its own leading edge — the split it was cut at.
 	const args = {
 		address: { globule: 0, tube: 0 } as const,
 		bands: [buildBand(0, 12)],
@@ -74,13 +75,30 @@ describe('label anchors across a split', () => {
 		expect(isAnchored(unsplit.bands[0].tagAnchorPoint)).toBe(true);
 	});
 
-	it('anchors piece 0 and only piece 0', () => {
-		// tagAnchor.facetIndex is a parent-relative index. A piece sees a sliced
-		// facets array, so without parentQuadOffset facet 0 of EVERY piece
-		// matches and all three claim the anchor.
+	it('anchors every piece, at its own leading edge', () => {
+		// Resolved against the parent instead, only the piece holding parent facet
+		// 0 would match and the rest would keep the initial {0,0} — the label of
+		// every piece past the first stranded at the origin.
 		const split = generateTubeCutPattern({ ...args, splitQuads: [2, 4] });
 		expect(split.bands).toHaveLength(3);
-		expect(split.bands.map((b) => isAnchored(b.tagAnchorPoint))).toEqual([true, false, false]);
+		expect(split.bands.map((b) => isAnchored(b.tagAnchorPoint))).toEqual([true, true, true]);
+	});
+
+	it("puts each piece's anchor on that piece's own geometry", () => {
+		// The anchor must sit on the part it names: a point inside the piece's own
+		// bounds, not a leftover from the parent's coordinate space.
+		const split = generateTubeCutPattern({ ...args, splitQuads: [2, 4] });
+		for (const band of split.bands) {
+			const quads = band.facets.flatMap((f) => (f.quad ? [f.quad] : []));
+			expect(quads.length).toBeGreaterThan(0);
+			const xs = quads.flatMap((q) => [q.a.x, q.b.x, q.c.x, q.d.x]);
+			const ys = quads.flatMap((q) => [q.a.y, q.b.y, q.c.y, q.d.y]);
+			const pad = 1e-6;
+			expect(band.tagAnchorPoint.x).toBeGreaterThanOrEqual(Math.min(...xs) - pad);
+			expect(band.tagAnchorPoint.x).toBeLessThanOrEqual(Math.max(...xs) + pad);
+			expect(band.tagAnchorPoint.y).toBeGreaterThanOrEqual(Math.min(...ys) - pad);
+			expect(band.tagAnchorPoint.y).toBeLessThanOrEqual(Math.max(...ys) + pad);
+		}
 	});
 
 	// NOTE: the brief's Step 8 originally specified a third assertion here —
