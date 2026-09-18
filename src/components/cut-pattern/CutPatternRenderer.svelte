@@ -7,8 +7,10 @@
 		patternConfigStore,
 		viewControlStore,
 		labelTextDimensions,
-		pageLayoutInfoStore
+		pageLayoutInfoStore,
+		splitBudgetStore
 	} from '$lib/stores';
+	import { computeSplitBudget, EMPTY_SPLIT_BUDGET } from '$lib/cut-pattern/split-budget';
 	import {
 		buildEffectiveBoundsIndex,
 		buildPivotIndex,
@@ -246,6 +248,46 @@
 		if (key === lastPageInfoKey) return;
 		lastPageInfoKey = key;
 		pageLayoutInfoStore.set({ pageCount, overflow });
+	});
+
+	// The per-piece length budget and overflow preconditions the Splits panel
+	// gates Auto-split on. Computed here because only this component has the
+	// EFFECTIVE bounds the layout measures — geometry plus the external self-tag
+	// footprint (`toLayoutItems` builds its items from the same index) — so the
+	// panel cannot disagree with the layout about what overflows.
+	//
+	// Computed in every layout mode, not just `page`: the page size is configured
+	// either way, and splits are not a page-mode-only feature. One extra O(bands)
+	// pass over an index this component already built.
+	let splitBudget = $derived.by(() => {
+		if (!pageLayoutCfg) return EMPTY_SPLIT_BUDGET;
+		const geom = buildPageGeom(pageLayoutCfg);
+		return computeSplitBudget(
+			pageBands.map(({ band }) => {
+				const eff = boundsIndex.get(band);
+				return {
+					width: eff?.width ?? 0,
+					height: eff?.height ?? 0,
+					rawHeight: band.bounds?.height ?? 0
+				};
+			}),
+			{
+				contentWidth: geom.contentWidth,
+				contentHeight: geom.contentHeight,
+				// Only skyline minimises over orientations; flex-wrap ignores the flag.
+				allowRotation: pageLayoutCfg.algorithm === 'skyline' && !!pageLayoutCfg.allowRotation
+			}
+		);
+	});
+
+	// Same value-key guard as the page info above, for the same reason.
+	let lastSplitBudgetKey = '';
+	$effect(() => {
+		const b = splitBudget;
+		const key = `${b.measured}:${b.perPieceFootprint.toFixed(3)}:${b.pieceLengthBudget.toFixed(3)}:${b.lengthOverflow}:${b.widthBlocked}`;
+		if (key === lastSplitBudgetKey) return;
+		lastSplitBudgetKey = key;
+		splitBudgetStore.set(b);
 	});
 
 	// Line-wrap is on in line-wrap mode, and also as the page-mode overflow fallback:

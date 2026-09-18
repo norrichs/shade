@@ -15,7 +15,16 @@
 	} from '$lib/cut-pattern/page-layout/units';
 	import { measurements, removeMeasurement, clearMeasurements } from '$lib/stores/measurementStore';
 	import { interactionMode, isMeasureInteractionMode } from '../../three-renderer/interaction-mode';
-	import type { PatternLayoutMode } from '$lib/types';
+	import { get } from 'svelte/store';
+	import { collatedTubesStore, splitBudgetStore } from '$lib/stores';
+	import { superGlobulePatternStore } from '$lib/stores/superGlobuleStores';
+	import {
+		applyAutoSplits,
+		clearAllSplits,
+		resolveSplitSubunitCount
+	} from '$lib/cut-pattern/split-boundaries';
+	import { proposeTubeSplits } from '$lib/cut-pattern/auto-split-bands';
+	import type { PatternLayoutMode, TubeSplits } from '$lib/types';
 
 	// Shallow copy on purpose. Binding to `$patternConfigStore.…pageLayout.x` mutates
 	// that object in place, so a `$derived` returning the object itself resolves to the
@@ -76,8 +85,12 @@
 		interactionMode.set({ type: 'standard' });
 	};
 
+	// --- Splits ------------------------------------------------------------
+	//
 	// Split placing is a 2D-only interaction mode: `BandComponent` renders a click
-	// target on every legal quad boundary while it is on.
+	// target on every legal quad boundary while it is on. The mode lives in the
+	// module-level `interactionMode` store, not in component state, because this
+	// panel unmounts whenever the sidebar closes.
 	let isPlacingSplits = $derived($interactionMode.type === 'quad-split-select');
 	const startSplits = () => {
 		interactionMode.set({ type: 'quad-split-select' });
@@ -85,6 +98,83 @@
 	const stopSplits = () => {
 		interactionMode.set({ type: 'standard' });
 	};
+
+	let tubeSplits = $derived($patternConfigStore.patternConfig.splits?.tubeSplits ?? []);
+	const countSplits = (list: TubeSplits[]) => list.reduce((n, t) => n + t.quads.length, 0);
+	let splitCount = $derived(countSplits(tubeSplits));
+
+	/**
+	 * Published by `CutPatternRenderer`, which is the only place the EFFECTIVE
+	 * bounds the layout measures are known. Never recomputed here: a second
+	 * measurement could disagree with the layout about what overflows.
+	 */
+	let budget = $derived($splitBudgetStore);
+
+	/**
+	 * Why Auto-split cannot help, or undefined when it can. Splitting only ever
+	 * shortens a piece, so a band that is too WIDE, or one that fits rotated, is
+	 * not a case splits address (`split-budget.ts`).
+	 */
+	let autoSplitBlocked = $derived.by(() => {
+		if (!budget.measured) return 'no bands measured';
+		if (budget.lengthOverflow) return undefined;
+		if (budget.widthBlocked) return 'too wide for the page — no split can help';
+		return 'nothing overflows the page';
+	});
+
+	// Ephemeral feedback on the last click; it is meant to be lost on remount,
+	// unlike the mode above, which must survive it.
+	let autoSplitNote = $state('');
+
+	const autoSplit = () => {
+		const current = get(patternConfigStore);
+		const proposals = proposeTubeSplits(get(collatedTubesStore), {
+			// The renderer's budget is already `contentHeight` MINUS the per-piece
+			// tag/label footprint — every new piece carries its own tag, so the raw
+			// content box would over-promise (`auto-split.ts`, budget contract).
+			pieceLengthBudget: budget.pieceLengthBudget,
+			// The same resolution generation judges splits with, and the same one
+			// the click targets use. If these diverged, auto-split would propose
+			// positions generation then rejects.
+			subunitCount: resolveSplitSubunitCount(current.patternTypeConfig)
+		});
+		if (proposals.length === 0) {
+			autoSplitNote = 'no legal split set makes these bands fit';
+			return;
+		}
+		// UNION, never replace: nothing authorises discarding hand-placed splits,
+		// and proposals derived from parent bands make repeat clicks idempotent.
+		const next = applyAutoSplits(current, proposals);
+		const added =
+			countSplits(next.patternConfig.splits?.tubeSplits ?? []) -
+			countSplits(current.patternConfig.splits?.tubeSplits ?? []);
+		patternConfigStore.set(next);
+		autoSplitNote = added
+			? `added ${added} split(s) across ${proposals.length} tube(s)`
+			: 'already split there — nothing added';
+	};
+
+	const clearSplits = () => {
+		patternConfigStore.set(clearAllSplits(get(patternConfigStore)));
+		autoSplitNote = '';
+	};
+
+	/**
+	 * Splits generation dropped, from the same `rejectedSplits` the page toast
+	 * reports. Deliberately quieter than that toast — a count and the addresses,
+	 * no reasons — because a second full alarm in the panel is noise.
+	 *
+	 * Nothing here prunes: a dropped split stays saved and applies again when it
+	 * becomes valid (spec amendment, "Dropped splits are reported, data is
+	 * untouched").
+	 */
+	let droppedSplits = $derived($superGlobulePatternStore.rejectedSplits ?? []);
+	let droppedSummary = $derived(
+		droppedSplits
+			.slice(0, 6)
+			.map((r) => `t${r.tube} q${r.quad}`)
+			.join(', ') + (droppedSplits.length > 6 ? ', …' : '')
+	);
 
 	/**
 	 * Only completed pairs get a readout; an open point is still being placed.
@@ -379,17 +469,52 @@
 		</div>
 	{/if}
 
-	<!-- Splits. Task 14 wires only the mode toggle; Task 16 grows this into the
-	     full Splits group (auto-split, per-tube counts, clear, dropped-split
-	     warnings). Outside the `page` branch on purpose: splits apply to the
-	     pattern in every layout mode. -->
+	<!-- Splits. The ONE entry point for splitting: the Task 14 mode toggle is
+	     folded in here rather than living beside a second control. Outside the
+	     `page` branch on purpose — splits apply to the pattern in every layout
+	     mode, and the page size they are sized against is configured either way. -->
 	<div class="derived">
 		<strong>Splits</strong>
+
 		<button class="measure-button" onclick={isPlacingSplits ? stopSplits : startSplits}>
 			{isPlacingSplits ? 'Done placing splits' : 'Place splits'}
 		</button>
 		{#if isPlacingSplits}
 			<div class="measure-hint">Click a quad boundary in the pattern view</div>
+		{/if}
+
+		<button class="measure-button" onclick={autoSplit} disabled={!!autoSplitBlocked}>
+			Auto-split
+		</button>
+		{#if autoSplitBlocked}
+			<div class="measure-hint">Auto-split: {autoSplitBlocked}</div>
+		{:else}
+			<div class="measure-hint">
+				Piece budget {fmt(budget.pieceLengthBudget)}
+				{#if budget.perPieceFootprint > 0}(page less {fmt(budget.perPieceFootprint)} label){/if}
+			</div>
+		{/if}
+		{#if autoSplitNote}
+			<div class="measure-hint">{autoSplitNote}</div>
+		{/if}
+
+		{#if splitCount > 0}
+			<div>
+				{splitCount} split{splitCount === 1 ? '' : 's'} in {tubeSplits.length} tube{tubeSplits.length ===
+				1
+					? ''
+					: 's'}
+			</div>
+			{#each tubeSplits as t (t.tube)}
+				<div class="measure-hint">t{t.tube}: {t.quads.join(', ')}</div>
+			{/each}
+			<button class="measure-button" onclick={clearSplits}>Clear splits</button>
+		{:else}
+			<div class="measure-hint">No splits</div>
+		{/if}
+
+		{#if droppedSplits.length > 0}
+			<div class="warn">{droppedSplits.length} dropped: {droppedSummary}</div>
 		{/if}
 	</div>
 </div>

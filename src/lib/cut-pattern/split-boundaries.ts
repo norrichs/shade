@@ -215,3 +215,68 @@ export const applySplitToggle = (
 		}
 	}
 });
+
+/**
+ * Proposed splits merged INTO the existing ones, per tube.
+ *
+ * A union, never a replacement. The spec's decision is that auto-split
+ * materialises into the list and is thereafter plain hand data (design L35,
+ * L520); nothing in it authorises discarding hand-placed splits, so nothing
+ * here does. It stays idempotent because proposals are derived from PARENT
+ * bands (`auto-split-bands.ts`), so running it twice on an unchanged pattern
+ * proposes the same positions and the second union is a no-op.
+ *
+ * Result is ascending and deduplicated per tube, and ascending by tube — the
+ * shape `TubeSplits` promises. Pure: neither input list nor its entries are
+ * touched.
+ */
+export const unionTubeSplits = (
+	tubeSplits: TubeSplits[],
+	proposals: TubeSplits[]
+): TubeSplits[] => {
+	const merged = new Map<number, number[]>();
+	for (const entry of tubeSplits) merged.set(entry.tube, [...entry.quads]);
+	for (const entry of proposals) {
+		merged.set(entry.tube, [...(merged.get(entry.tube) ?? []), ...entry.quads]);
+	}
+	return [...merged.entries()]
+		.map(([tube, quads]) => ({ tube, quads: [...new Set(quads)].sort((a, b) => a - b) }))
+		.filter((entry) => entry.quads.length > 0)
+		.sort((a, b) => a.tube - b.tube);
+};
+
+/**
+ * The whole config with auto-split proposals unioned in, rebuilding every
+ * object on the edited path — the same idiom as `applySplitToggle`, for the
+ * same reason (design L396-402).
+ */
+export const applyAutoSplits = (
+	config: GlobulePatternConfig,
+	proposals: TubeSplits[]
+): GlobulePatternConfig => ({
+	...config,
+	patternConfig: {
+		...config.patternConfig,
+		splits: {
+			...config.patternConfig.splits,
+			tubeSplits: unionTubeSplits(config.patternConfig.splits?.tubeSplits ?? [], proposals)
+		}
+	}
+});
+
+/**
+ * The whole config with every split removed.
+ *
+ * The one deliberate, explicit way to discard splits — which is exactly why the
+ * union above never does it silently. This is a user action on a button, not a
+ * prune during generation: splits generation merely DROPPED are still never
+ * removed from the persisted list (spec amendment, "Dropped splits are
+ * reported, data is untouched").
+ */
+export const clearAllSplits = (config: GlobulePatternConfig): GlobulePatternConfig => ({
+	...config,
+	patternConfig: {
+		...config.patternConfig,
+		splits: { ...config.patternConfig.splits, tubeSplits: [] }
+	}
+});

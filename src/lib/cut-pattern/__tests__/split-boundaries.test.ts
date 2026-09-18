@@ -1,13 +1,16 @@
 import { describe, it, expect } from '@jest/globals';
 import { Vector3 } from 'three';
 import {
+	applyAutoSplits,
 	applySplitToggle,
+	clearAllSplits,
 	MAX_HIT_WIDTH,
 	MIN_HIT_WIDTH,
 	resolveSplitSubunitCount,
 	splitBoundariesOfBand,
 	splitQuadsForTube,
-	toggleTubeSplits
+	toggleTubeSplits,
+	unionTubeSplits
 } from '../split-boundaries';
 import type {
 	BandCutPattern,
@@ -317,5 +320,87 @@ describe('resolveSplitSubunitCount', () => {
 
 	it('is the registered subunit count for hexparquet', () => {
 		expect(resolveSplitSubunitCount({ type: 'tiledHexparquetPattern-0' } as never)).toBe(3);
+	});
+});
+
+describe('unionTubeSplits', () => {
+	it('adds proposed splits to a tube that already has hand-placed ones', () => {
+		expect(unionTubeSplits([{ tube: 0, quads: [5] }], [{ tube: 0, quads: [2, 8] }])).toEqual([
+			{ tube: 0, quads: [2, 5, 8] }
+		]);
+	});
+
+	it('never discards a hand-placed split the proposal did not mention', () => {
+		expect(unionTubeSplits([{ tube: 1, quads: [3, 9] }], [{ tube: 0, quads: [4] }])).toEqual([
+			{ tube: 0, quads: [4] },
+			{ tube: 1, quads: [3, 9] }
+		]);
+	});
+
+	it('deduplicates and sorts ascending, which is what TubeSplits.quads promises', () => {
+		expect(unionTubeSplits([{ tube: 0, quads: [4, 2] }], [{ tube: 0, quads: [2, 6] }])).toEqual([
+			{ tube: 0, quads: [2, 4, 6] }
+		]);
+	});
+
+	it('is idempotent: unioning the same proposals twice changes nothing', () => {
+		const proposals = [{ tube: 0, quads: [2, 4] }];
+		const once = unionTubeSplits([], proposals);
+		expect(unionTubeSplits(once, proposals)).toEqual(once);
+	});
+
+	it('orders tubes ascending by tube number', () => {
+		expect(unionTubeSplits([{ tube: 5, quads: [1] }], [{ tube: 2, quads: [1] }])).toEqual([
+			{ tube: 2, quads: [1] },
+			{ tube: 5, quads: [1] }
+		]);
+	});
+
+	it('leaves its inputs untouched', () => {
+		const existing: TubeSplits[] = [{ tube: 0, quads: [5] }];
+		unionTubeSplits(existing, [{ tube: 0, quads: [2] }]);
+		expect(existing).toEqual([{ tube: 0, quads: [5] }]);
+	});
+});
+
+describe('applyAutoSplits', () => {
+	const config = {
+		type: 'GlobulePatternConfig',
+		patternConfig: { splits: { tubeSplits: [{ tube: 0, quads: [2] }] } }
+	} as unknown as GlobulePatternConfig;
+
+	it('unions rather than replaces, so hand-placed splits survive', () => {
+		expect(applyAutoSplits(config, [{ tube: 0, quads: [6] }]).patternConfig.splits).toEqual({
+			tubeSplits: [{ tube: 0, quads: [2, 6] }]
+		});
+	});
+
+	it('rebuilds every object on the edited path so a $derived chain cannot go stale', () => {
+		const next = applyAutoSplits(config, [{ tube: 0, quads: [6] }]);
+		expect(next).not.toBe(config);
+		expect(next.patternConfig).not.toBe(config.patternConfig);
+		expect(next.patternConfig.splits).not.toBe(config.patternConfig.splits);
+	});
+
+	it('leaves the config it was given untouched', () => {
+		applyAutoSplits(config, [{ tube: 0, quads: [6] }]);
+		expect(config.patternConfig.splits).toEqual({ tubeSplits: [{ tube: 0, quads: [2] }] });
+	});
+});
+
+describe('clearAllSplits', () => {
+	const config = {
+		type: 'GlobulePatternConfig',
+		patternConfig: { splits: { tubeSplits: [{ tube: 0, quads: [2] }] } }
+	} as unknown as GlobulePatternConfig;
+
+	it('empties the tube list', () => {
+		expect(clearAllSplits(config).patternConfig.splits).toEqual({ tubeSplits: [] });
+	});
+
+	it('rebuilds references and leaves the input untouched', () => {
+		const next = clearAllSplits(config);
+		expect(next.patternConfig.splits).not.toBe(config.patternConfig.splits);
+		expect(config.patternConfig.splits!.tubeSplits).toEqual([{ tube: 0, quads: [2] }]);
 	});
 });

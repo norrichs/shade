@@ -3,7 +3,8 @@
 		superGlobulePatternStore,
 		patternConfigStore,
 		patternSourceStore,
-		viewControlStore
+		viewControlStore,
+		collatedTubesStore
 	} from '$lib/stores';
 	import CutPatternControl from './CutPatternControl.svelte';
 	import CutPatternSvg from './CutPatternSvg.svelte';
@@ -11,7 +12,6 @@
 	import ProjectionPanelPatterns from './ProjectionPanelPatterns.svelte';
 	import { mmFromInches } from '$lib/patterns/utils';
 	import CutPatternRenderer from './CutPatternRenderer.svelte';
-	import { collateTubes } from '$lib/cut-pattern/collate-tubes';
 	import { buildBandSortIndex } from '$lib/cut-pattern/band-sort-index';
 	import { collectBandErrors } from '$lib/cut-pattern/collect-band-errors';
 	import type { BandSortIndex, TubeCutPattern } from '$lib/types';
@@ -31,17 +31,10 @@
 
 	let flattenedPatternedSVG: { bands: string[] } = { bands: [] };
 
+	// One shared definition of "the tubes in scope", so this view and the Splits
+	// panel cannot drift (collate-tubes.ts:28-38).
 	let collatedPatterns: TubeCutPattern[] = [];
-	$: collatedPatterns = collateTubes({
-		globuleTubePattern: $superGlobulePatternStore.globuleTubePattern,
-		projectionPattern: $superGlobulePatternStore.projectionPattern,
-		surfaceProjectionPattern: $superGlobulePatternStore.surfaceProjectionPattern,
-		voronoiPattern: $superGlobulePatternStore.voronoiPattern,
-		voronoiSurfacePattern: $superGlobulePatternStore.voronoiSurfacePattern,
-		showGlobuleTubeGeometry: $viewControlStore.showGlobuleTubeGeometry,
-		showProjectionGeometry: $viewControlStore.showProjectionGeometry,
-		patternSource: $patternSourceStore
-	});
+	$: collatedPatterns = $collatedTubesStore;
 
 	let sortMode = $patternConfigStore.patternViewConfig.bandSortMode ?? 'tube-order';
 	$: sortMode = $patternConfigStore.patternViewConfig.bandSortMode ?? 'tube-order';
