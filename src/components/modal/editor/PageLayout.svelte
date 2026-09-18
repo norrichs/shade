@@ -24,6 +24,7 @@
 		resolveSplitSubunitCount
 	} from '$lib/cut-pattern/split-boundaries';
 	import { proposeTubeSplits } from '$lib/cut-pattern/auto-split-bands';
+	import { describeAutoSplitResult } from '$lib/cut-pattern/auto-split-note';
 	import type { PatternLayoutMode, TubeSplits } from '$lib/types';
 
 	// Shallow copy on purpose. Binding to `$patternConfigStore.…pageLayout.x` mutates
@@ -129,7 +130,24 @@
 
 	// Ephemeral feedback on the last click; it is meant to be lost on remount,
 	// unlike the mode above, which must survive it.
-	let autoSplitNote = $state('');
+	//
+	// Two parts: a fixed message (nothing to propose, or cleared), and the result
+	// of a run that DID place splits, which is re-phrased live against the budget
+	// the renderer republishes after regenerating — the solver's sizing is a
+	// heuristic and its set is tube-wide, so a run can add splits and still leave
+	// a piece over the page. Between the click and that republish the budget is
+	// the pre-split one, so the note reads pessimistically for a moment and then
+	// corrects itself; pessimistic is the safe direction for a cut file.
+	let autoSplitMessage = $state('');
+	let autoSplitResult = $state<{ added: number; tubes: number } | null>(null);
+	let autoSplitNote = $derived(
+		autoSplitResult
+			? describeAutoSplitResult({
+					...autoSplitResult,
+					stillOverflows: budget.measured && budget.lengthOverflow
+				})
+			: autoSplitMessage
+	);
 
 	const autoSplit = () => {
 		const current = get(patternConfigStore);
@@ -144,7 +162,8 @@
 			subunitCount: resolveSplitSubunitCount(current.patternTypeConfig)
 		});
 		if (proposals.length === 0) {
-			autoSplitNote = 'no legal split set makes these bands fit';
+			autoSplitResult = null;
+			autoSplitMessage = 'no legal split set makes these bands fit';
 			return;
 		}
 		// UNION, never replace: nothing authorises discarding hand-placed splits,
@@ -154,14 +173,14 @@
 			countSplits(next.patternConfig.splits?.tubeSplits ?? []) -
 			countSplits(current.patternConfig.splits?.tubeSplits ?? []);
 		patternConfigStore.set(next);
-		autoSplitNote = added
-			? `added ${added} split(s) across ${proposals.length} tube(s)`
-			: 'already split there — nothing added';
+		autoSplitMessage = '';
+		autoSplitResult = { added, tubes: proposals.length };
 	};
 
 	const clearSplits = () => {
 		patternConfigStore.set(clearAllSplits(get(patternConfigStore)));
-		autoSplitNote = '';
+		autoSplitResult = null;
+		autoSplitMessage = '';
 	};
 
 	/**
