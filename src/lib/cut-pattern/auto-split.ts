@@ -17,9 +17,34 @@
  * come back as a `rejectedSplits` entry.
  *
  * `quadLengths` are per-quad extents along the band axis, in the same units as
- * `pieceLengthBudget`. Adjacent quads share an edge, so their sum over-counts the
- * band's true length; that over-count is NOT a safety margin and must not be
- * relied on as one (see the budget contract below).
+ * `pieceLengthBudget`.
+ *
+ * ## What the sum of `quadLengths` is, and is not
+ *
+ * It does NOT double-count: quad k+1's near rung IS quad k's far rung, so the
+ * rung-midpoint distances `quadBandExtent` measures chain end to end and their
+ * sum is the band's CENTRELINE ARC LENGTH.
+ *
+ * What overflow is tested against is something else: an axis-aligned BOX
+ * extent. `flex-wrap.ts:20-21` and `skyline.ts:113-124` compare
+ * `effectiveBoundsForBand` height against `PageGeom.contentHeight`
+ * (`page-layout/registry.ts:20-21`). Arc length and box height are equal only
+ * for a straight band laid along its box's long axis, and the gap cuts both
+ * ways:
+ *
+ * - **Curved band, arc > box height.** The solver reads the piece as longer
+ *   than the layout will measure it, so it can propose cuts for a tube that
+ *   already fits. Conservative — a needless cut, not an overflowing one — but
+ *   it is why a "no overflow" gate belongs at the caller (`split-budget.ts`)
+ *   and not in the arithmetic here.
+ * - **Short piece, box height taken from the WIDTH.** `alignBands` re-orients
+ *   every piece onto its own minimal bounding box, so once a piece is short
+ *   enough that the band's width is its longer dimension, the height the layout
+ *   measures is a dimension this solver never looked at. A proposal can
+ *   therefore still overflow. Splitting further cannot fix that case, which is
+ *   the same shape as the `widthBlocked` precondition below.
+ *
+ * Neither gap is a safety margin, and neither may be relied on as one.
  *
  * ## The `pieceLengthBudget` contract — the caller owns the subtraction
  *

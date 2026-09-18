@@ -83,13 +83,25 @@ export const parentQuadExtents = (pieces: BandCutPattern[]): number[] | undefine
  * The extents of the LONGEST parent band in a tube's band list.
  *
  * Longest by total length, not by quad count: two bands with equal quad counts
- * can have very different lengths, and sizing off the shorter one breaks the
- * property that makes one tube-wide split set safe for every sibling
- * (design L409-411). Length is the sum of per-quad extents — the same quantity
- * the solver accumulates — so the band chosen is the one that needs the most
- * cuts under the solver's own arithmetic. (That sum over-counts a band's true
- * length, because adjacent quads share an edge; it is used only to compare
- * bands with each other and against the page, never reported.)
+ * can have very different lengths, and sizing off the shorter one would leave
+ * an obviously worse split set for the siblings (design L409-411). Length is
+ * the sum of per-quad extents — the same quantity the solver accumulates, i.e.
+ * the band's centreline arc length — so the band chosen is the one that needs
+ * the most cuts under the solver's own arithmetic. The sum is used only to
+ * compare bands with each other, never reported.
+ *
+ * **A HEURISTIC, not a guarantee.** One split set is shared by every band of
+ * the tube, but the constraint is per QUAD RANGE, and the greatest TOTAL length
+ * does not dominate every range. Counterexample, budget 50:
+ *
+ * - band A: 90 quads of extent 1.0 → total 90, so A is chosen;
+ * - band B: quads 0-44 of extent 1.2, quads 45-89 of extent 0.2 → total 63.
+ *
+ * First-fit on A cuts at 50, filling the budget exactly. B's first piece is
+ * then 50 × 1.2 = 60 and still overflows. Nothing here detects that; the
+ * overflow it leaves
+ * is reported by the page overflow notice, and the panel re-reads the published
+ * budget after regenerating. The heuristic is the spec's — keep it.
  *
  * `[]` when no parent in the tube can be measured, which the solver reads as
  * "propose nothing".

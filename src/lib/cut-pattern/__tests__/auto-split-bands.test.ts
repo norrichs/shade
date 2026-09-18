@@ -200,7 +200,7 @@ describe('proposeTubeSplits', () => {
 		expect(proposeTubeSplits(tubes, { pieceLengthBudget: 100, subunitCount: 1 })).toEqual([]);
 	});
 
-	it('sizes off the longest band in the tube, so the set is safe for every sibling', () => {
+	it('sizes off the longest band in the tube, the heuristic the tube-wide set follows', () => {
 		const tubes = [
 			tube([band([10, 10, 10, 10], { bandIndex: 0 }), band([60, 60, 60, 60], { bandIndex: 1 })], 0)
 		];
@@ -209,6 +209,32 @@ describe('proposeTubeSplits', () => {
 		expect(proposeTubeSplits(tubes, { pieceLengthBudget: 100, subunitCount: 1 })).toEqual([
 			{ tube: 0, quads: [1, 2, 3] }
 		]);
+	});
+
+	it('KNOWN LIMIT: the longest band does not dominate every quad range, so a sibling can still overflow', () => {
+		// Budget 50. Band A totals 90 and is chosen; band B totals 63, but its
+		// first half is the dense one. The set cut for A leaves B's first piece at
+		// 45 x 1.2 = 54, still over. Characterizing the spec's heuristic, not
+		// endorsing it: the leftover overflow is reported, never silently shipped.
+		const tubes = [
+			tube(
+				[
+					band(
+						Array.from({ length: 90 }, () => 1.0),
+						{ bandIndex: 0 }
+					),
+					band(
+						Array.from({ length: 90 }, (_, i) => (i < 45 ? 1.2 : 0.2)),
+						{ bandIndex: 1 }
+					)
+				],
+				0
+			)
+		];
+		const [proposal] = proposeTubeSplits(tubes, { pieceLengthBudget: 50, subunitCount: 1 });
+		expect(proposal.quads).toEqual([50]);
+		// B's first piece under that set: quads 0-49 at 1.2 = 60 > 50.
+		expect(50 * 1.2).toBeGreaterThan(50);
 	});
 
 	it('derives positions from the PARENT, so a second run on a split tube is idempotent', () => {
