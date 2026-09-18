@@ -21,16 +21,32 @@ import { tubePieceIndex } from './band-piece-index';
  */
 
 /**
- * A quad's extent along the band axis.
+ * A quad's length along the band: the distance between the midpoints of its two
+ * rung edges (`a→b`, the near rung, and `d→c`, the far one).
  *
- * Bands are re-aligned with their long axis on y (`reAlignBand`), so "length
- * along the band" is the span of the quad's four corners in y. Taken as
- * max − min rather than from a nominated pair of corners, so a flipped or
- * skewed quad still measures its true extent.
+ * **Rotation- and translation-invariant, and that is the point.** The obvious
+ * measure — the span of the four corners in y, since bands are re-aligned with
+ * their long axis on y — is only valid within one band's own frame, and pieces
+ * of a split parent do NOT share a frame: `generate-tiled-pattern.ts:136-137`
+ * splits before aligning so each piece gets its own bounding box, and
+ * `alignBands` (:617-628) takes `getMinimalBoundingBoxAndRotationAngle` per
+ * band, inheriting only the flip (`parentAscending`), never the rotation. On a
+ * curved or tapering band the pieces therefore come back rotated relative to
+ * each other, a y-extent sum reads a SHORTER parent after the split than
+ * before, and a second Auto-split click proposes different positions. Measuring
+ * between rung midpoints removes the frame from the answer entirely, which is
+ * what makes the union in `applyAutoSplits` genuinely idempotent.
+ *
+ * Midpoints rather than one nominated corner pair, so a tapering quad (its two
+ * rungs different lengths) measures along its centreline instead of along
+ * whichever side happens to be longer.
  */
-export const quadYExtent = (quad: Quadrilateral): number => {
-	const ys = [quad.a.y, quad.b.y, quad.c.y, quad.d.y];
-	return Math.max(...ys) - Math.min(...ys);
+export const quadBandExtent = (quad: Quadrilateral): number => {
+	const nearX = (quad.a.x + quad.b.x) / 2;
+	const nearY = (quad.a.y + quad.b.y) / 2;
+	const farX = (quad.d.x + quad.c.x) / 2;
+	const farY = (quad.d.y + quad.c.y) / 2;
+	return Math.hypot(farX - nearX, farY - nearY);
 };
 
 /** The quads a band's facets actually carry, the `QuadLabels.svelte` idiom. */
@@ -54,7 +70,7 @@ export const parentQuadExtents = (pieces: BandCutPattern[]): number[] | undefine
 		// 0 on an uncut band: its quads already are the parent's.
 		const offset = piece.parentQuadOffset ?? 0;
 		quadsOf(piece).forEach((quad, i) => {
-			extents[offset + i] = quadYExtent(quad);
+			extents[offset + i] = quadBandExtent(quad);
 			if (offset + i > last) last = offset + i;
 		});
 	}
@@ -113,13 +129,17 @@ export const proposeTubeSplits = (
 ): TubeSplits[] => {
 	const byTube = new Map<number, Set<number>>();
 	for (const tube of tubes) {
+		// A tube with no usable address cannot be named in `TubeSplits.tube`, and
+		// guessing its number from its position in the collated list is exactly
+		// the positional identity this module exists to avoid.
+		const tubeIndex = tube?.address?.tube;
+		if (!Number.isInteger(tubeIndex)) continue;
 		const quads = deriveAutoSplits({
 			quadLengths: longestParentQuadExtents(tube.bands ?? []),
 			pieceLengthBudget,
 			subunitCount
 		});
 		if (quads.length === 0) continue;
-		const tubeIndex = tube.address.tube;
 		const set = byTube.get(tubeIndex) ?? new Set<number>();
 		for (const quad of quads) set.add(quad);
 		byTube.set(tubeIndex, set);

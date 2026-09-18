@@ -36,6 +36,11 @@
 	let unit = $derived(cfg.displayUnit);
 	const toDisplay = (mm: number) => (unit === 'inch' ? mmToInch(mm) : mm);
 	const fromDisplay = (v: number) => (unit === 'inch' ? inchToMm(v) : v);
+	// `pageScale` is pattern-units per mm, so mm = patternUnits / pageScale.
+	// The split budget is measured in pattern units; every readout in this panel
+	// is in the display unit, so it is converted rather than shown raw.
+	const toMm = (patternUnits: number) =>
+		cfg.pageScale ? patternUnits / cfg.pageScale : patternUnits;
 
 	const MODE_ORDER: PatternLayoutMode[] = ['linear', 'line-wrap', 'page'];
 	const MODE_LABEL: Record<PatternLayoutMode, string> = {
@@ -490,8 +495,10 @@
 			<div class="measure-hint">Auto-split: {autoSplitBlocked}</div>
 		{:else}
 			<div class="measure-hint">
-				Piece budget {fmt(budget.pieceLengthBudget)}
-				{#if budget.perPieceFootprint > 0}(page less {fmt(budget.perPieceFootprint)} label){/if}
+				Piece budget {fmt(toDisplay(toMm(budget.pieceLengthBudget)))}
+				{unit}
+				{#if budget.perPieceFootprint > 0}(less {fmt(toDisplay(toMm(budget.perPieceFootprint)))}
+					{unit} label){/if}
 			</div>
 		{/if}
 		{#if autoSplitNote}

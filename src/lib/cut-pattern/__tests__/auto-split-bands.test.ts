@@ -5,26 +5,39 @@ import {
 	longestParentQuadExtents,
 	parentQuadExtents,
 	proposeTubeSplits,
-	quadYExtent
+	quadBandExtent
 } from '../auto-split-bands';
 import type { BandCutPattern, CutPattern, Quadrilateral, TubeCutPattern } from '$lib/types';
 
 /**
- * A quad spanning `length` along y, starting at `top`. Bands are re-aligned with
- * their long axis on y (`reAlignBand`), so a quad's y-extent IS its length along
- * the band.
+ * A quad spanning `length` along the band, starting at `top`, optionally rotated
+ * by `angle` radians about the origin.
+ *
+ * The rotation is the whole point of several tests below: pieces of a split band
+ * are aligned INDEPENDENTLY (`generate-tiled-pattern.ts:136-137` splits before
+ * aligning, and `alignBands` computes a bounding box and rotation per band), so
+ * two pieces of one parent do not share a frame. A frame-dependent measure
+ * therefore reads different lengths before and after a split.
  */
-const quad = (top: number, length: number): Quadrilateral => ({
-	a: new Vector3(0, top, 0),
-	b: new Vector3(1, top, 0),
-	c: new Vector3(1, top + length, 0),
-	d: new Vector3(0, top + length, 0)
-});
+const quad = (top: number, length: number, angle = 0): Quadrilateral => {
+	const at = (x: number, y: number) =>
+		new Vector3(
+			x * Math.cos(angle) - y * Math.sin(angle),
+			x * Math.sin(angle) + y * Math.cos(angle),
+			0
+		);
+	return {
+		a: at(0, top),
+		b: at(1, top),
+		c: at(1, top + length),
+		d: at(0, top + length)
+	};
+};
 
-const quadFacet = (top: number, length: number): CutPattern => ({
+const quadFacet = (top: number, length: number, angle = 0): CutPattern => ({
 	path: [],
 	label: 'q',
-	quad: quad(top, length)
+	quad: quad(top, length, angle)
 });
 const outlineFacet = (): CutPattern => ({ path: [], label: 'outline' });
 
@@ -35,8 +48,15 @@ const band = (
 		offset,
 		piece,
 		bandIndex = 0,
-		lead = false
-	}: { offset?: number; piece?: number; bandIndex?: number; lead?: boolean } = {}
+		lead = false,
+		angle = 0
+	}: {
+		offset?: number;
+		piece?: number;
+		bandIndex?: number;
+		lead?: boolean;
+		angle?: number;
+	} = {}
 ): BandCutPattern => {
 	let top = 0;
 	return {
@@ -50,7 +70,7 @@ const band = (
 		facets: [
 			...(lead ? [outlineFacet()] : []),
 			...lengths.map((length) => {
-				const facet = quadFacet(top, length);
+				const facet = quadFacet(top, length, angle);
 				top += length;
 				return facet;
 			})
@@ -65,19 +85,29 @@ const tube = (bands: BandCutPattern[], tubeIndex = 0): TubeCutPattern =>
 		bands
 	}) as unknown as TubeCutPattern;
 
-describe('quadYExtent', () => {
-	it('is the span of the quad four corners along y', () => {
-		expect(quadYExtent(quad(10, 7))).toBe(7);
+describe('quadBandExtent', () => {
+	it('is the distance between the midpoints of the quad two rung edges', () => {
+		expect(quadBandExtent(quad(10, 7))).toBeCloseTo(7, 10);
 	});
 
-	it('does not care which corner is highest, so a flipped quad still measures', () => {
+	it('does not care which end is higher, so a flipped quad still measures', () => {
 		const flipped: Quadrilateral = {
 			a: new Vector3(0, 12, 0),
 			b: new Vector3(1, 12, 0),
 			c: new Vector3(1, 4, 0),
 			d: new Vector3(0, 4, 0)
 		};
-		expect(quadYExtent(flipped)).toBe(8);
+		expect(quadBandExtent(flipped)).toBeCloseTo(8, 10);
+	});
+
+	it('is ROTATION-INVARIANT, so a piece aligned in its own frame measures the same', () => {
+		// The band-axis y-extent of this quad is 7*cos(0.6) + 1*sin(0.6) = 6.34,
+		// which is what made the reassembled parent shrink after a split.
+		expect(quadBandExtent(quad(10, 7, 0.6))).toBeCloseTo(7, 10);
+	});
+
+	it('is translation-invariant, so where a piece sits in its own box does not matter', () => {
+		expect(quadBandExtent(quad(0, 5))).toBeCloseTo(quadBandExtent(quad(93, 5)), 10);
 	});
 });
 
@@ -99,6 +129,19 @@ describe('parentQuadExtents — reconstructing a parent from its pieces', () => 
 	it('places pieces by their offset, not by their position in the array', () => {
 		const pieces = [band([5, 6], { offset: 2, piece: 1 }), band([3, 4], { offset: 0, piece: 0 })];
 		expect(parentQuadExtents(pieces)).toEqual([3, 4, 5, 6]);
+	});
+
+	it('reassembles pieces that were aligned in DIFFERENT frames', () => {
+		// Each piece is aligned independently after a split, so piece 1 arrives
+		// rotated relative to piece 0. The parent length must not change because
+		// of that: it is the same physical band.
+		const pieces = [
+			band([3, 4], { offset: 0, piece: 0 }),
+			band([5, 6], { offset: 2, piece: 1, angle: 0.7 })
+		];
+		const extents = parentQuadExtents(pieces)!;
+		expect(extents).toHaveLength(4);
+		extents.forEach((e, i) => expect(e).toBeCloseTo([3, 4, 5, 6][i], 10));
 	});
 
 	it('refuses to guess when the pieces leave a hole in the parent range', () => {
@@ -183,6 +226,21 @@ describe('proposeTubeSplits', () => {
 		expect(proposeTubeSplits([split], { pieceLengthBudget: 100, subunitCount: 1 })).toEqual(first);
 	});
 
+	it('is idempotent even when the pieces came back ROTATED relative to each other', () => {
+		const whole = tube([band([60, 60, 60], { bandIndex: 0 })], 0);
+		const first = proposeTubeSplits([whole], { pieceLengthBudget: 100, subunitCount: 1 });
+		// The same tube after those splits, each piece aligned in its own frame.
+		const split = tube(
+			[
+				band([60], { bandIndex: 0, offset: 0, piece: 0 }),
+				band([60], { bandIndex: 0, offset: 1, piece: 1, angle: 0.9 }),
+				band([60], { bandIndex: 0, offset: 2, piece: 2, angle: -0.4 })
+			],
+			0
+		);
+		expect(proposeTubeSplits([split], { pieceLengthBudget: 100, subunitCount: 1 })).toEqual(first);
+	});
+
 	it('honours subunitCount, so nothing it proposes can be rejected as illegal', () => {
 		const tubes = [tube([band([20, 20, 20, 20, 20, 20])], 0)];
 		// Budget 70 holds one 3-quad group (60) but not two, so the only cut is at
@@ -202,6 +260,14 @@ describe('proposeTubeSplits', () => {
 		expect(proposals).toHaveLength(1);
 		expect(proposals[0].tube).toBe(2);
 		expect(proposals[0].quads).toEqual([1, 2]);
+	});
+
+	it('skips a tube with no usable address rather than throwing', () => {
+		const broken = {
+			projectionType: 'patterned',
+			bands: [band([60, 60, 60])]
+		} as unknown as TubeCutPattern;
+		expect(proposeTubeSplits([broken], { pieceLengthBudget: 100, subunitCount: 1 })).toEqual([]);
 	});
 
 	it('returns tubes in ascending tube order', () => {

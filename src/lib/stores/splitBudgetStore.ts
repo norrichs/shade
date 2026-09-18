@@ -1,4 +1,4 @@
-import { writable } from 'svelte/store';
+import { writable, type Subscriber, type Unsubscriber } from 'svelte/store';
 
 import { EMPTY_SPLIT_BUDGET, type SplitBudget } from '$lib/cut-pattern/split-budget';
 
@@ -14,4 +14,38 @@ import { EMPTY_SPLIT_BUDGET, type SplitBudget } from '$lib/cut-pattern/split-bud
  * It is written behind a value-key guard, so a render pass that changes nothing
  * does not write the store and cannot re-enter the reactive flush.
  */
-export const splitBudgetStore = writable<SplitBudget>(EMPTY_SPLIT_BUDGET);
+const inner = writable<SplitBudget>(EMPTY_SPLIT_BUDGET);
+
+/**
+ * True only while something is actually reading the budget.
+ *
+ * Computing it is an O(bands) pass over EVERY collated band, including bands
+ * outside the rendered range, whose effective bounds are not in the render
+ * pass's index and so must be built on the spot. The pattern pane has a history
+ * of render-cascade stalls, so that pass is not run when the Splits panel is
+ * closed — which is almost always. The renderer reads this flag and skips the
+ * work; opening the panel subscribes, flips the flag, and the budget is computed
+ * on the next pass.
+ */
+export const splitBudgetWanted = writable(false);
+
+let readers = 0;
+
+export const splitBudgetStore = {
+	set: inner.set,
+	subscribe: (run: Subscriber<SplitBudget>, invalidate?: () => void): Unsubscriber => {
+		readers += 1;
+		if (readers === 1) splitBudgetWanted.set(true);
+		const stop = inner.subscribe(run, invalidate);
+		return () => {
+			stop();
+			readers -= 1;
+			if (readers === 0) {
+				splitBudgetWanted.set(false);
+				// Do not leave a stale budget behind for the next reader to act on
+				// before the renderer has published a fresh one.
+				inner.set(EMPTY_SPLIT_BUDGET);
+			}
+		};
+	}
+};

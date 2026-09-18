@@ -8,9 +8,11 @@
 		viewControlStore,
 		labelTextDimensions,
 		pageLayoutInfoStore,
-		splitBudgetStore
+		splitBudgetStore,
+		splitBudgetWanted
 	} from '$lib/stores';
 	import { computeSplitBudget, EMPTY_SPLIT_BUDGET } from '$lib/cut-pattern/split-budget';
+	import { createOverflowNotifier } from '$lib/cut-pattern/page-overflow-notice';
 	import {
 		buildEffectiveBoundsIndex,
 		buildPivotIndex,
@@ -256,21 +258,34 @@
 	// footprint (`toLayoutItems` builds its items from the same index) — so the
 	// panel cannot disagree with the layout about what overflows.
 	//
+	// Measured over EVERY collated band, not `pageBands`: `pageBands` is
+	// range-sliced, while the panel proposes splits over every collated tube. A
+	// sliced measurement would (a) call a tube outside the range non-overflowing
+	// and grey out Auto-split, and (b) miss a taller tag footprint out there,
+	// making `perPieceFootprint` — a MAX — too small and the budget over-promise,
+	// which is the under-subtraction the solver cannot detect.
+	//
 	// Computed in every layout mode, not just `page`: the page size is configured
-	// either way, and splits are not a page-mode-only feature. One extra O(bands)
-	// pass over an index this component already built.
+	// either way, and splits are not a page-mode-only feature. Skipped entirely
+	// while nothing reads the budget (see `splitBudgetWanted`), because bands
+	// outside the range are not in `boundsIndex` and cost a fresh measurement.
 	let splitBudget = $derived.by(() => {
-		if (!pageLayoutCfg) return EMPTY_SPLIT_BUDGET;
+		if (!pageLayoutCfg || !$splitBudgetWanted) return EMPTY_SPLIT_BUDGET;
 		const geom = buildPageGeom(pageLayoutCfg);
+		const ctx = boundsContext();
 		return computeSplitBudget(
-			pageBands.map(({ band }) => {
-				const eff = boundsIndex.get(band);
-				return {
-					width: eff?.width ?? 0,
-					height: eff?.height ?? 0,
-					rawHeight: band.bounds?.height ?? 0
-				};
-			}),
+			tubes.flatMap((tube) =>
+				tube.bands.map((band) => {
+					// Reuse the render pass's measurement where there is one; only a
+					// band outside the rendered range is measured again here.
+					const eff = boundsIndex.get(band) ?? effectiveBoundsForBand(band, ctx);
+					return {
+						width: eff?.width ?? 0,
+						height: eff?.height ?? 0,
+						rawHeight: band.bounds?.height ?? 0
+					};
+				})
+			),
 			{
 				contentWidth: geom.contentWidth,
 				contentHeight: geom.contentHeight,
@@ -302,31 +317,19 @@
 		indexedBands ? getFlatOrigins(indexedBands, gap, 'center', lineWrap, wrapWidth) : undefined
 	);
 
-	// Raise a fit-error toast (with a scale-fixing action) when a pattern overflows.
-	let lastOverflowKey = '';
-	$effect(() => {
-		const ov = pageResult?.overflow;
-		if (!ov) {
-			lastOverflowKey = '';
-			return;
+	// Raise a fit-error toast (with a scale-fixing action) when a pattern
+	// overflows — and take it down again when it stops. The notifier owns the
+	// replace-and-clear bookkeeping (`page-overflow-notice.ts`), the same shape
+	// the dropped-splits notifier uses; the effect only reports the latest state.
+	const notifyOverflow = createOverflowNotifier({
+		add: toastStore.add,
+		remove: toastStore.remove,
+		applyScale: (scale) => {
+			$patternConfigStore.patternConfig.pageLayout.pageScale = scale;
 		}
-		const key = `${ov.itemIndex}:${ov.requiredScale.toFixed(4)}`;
-		if (key === lastOverflowKey) return;
-		lastOverflowKey = key;
-		// Round UP: a nearest-rounded value can land a hair under the required scale,
-		// which leaves the pattern overflowing and makes "Fit page" look inert.
-		const suggested = Math.ceil(ov.requiredScale * 10000) / 10000;
-		toastStore.add({
-			type: 'error',
-			message: `A pattern is too large to fit the page. Increase pageScale to ~${suggested} to fit.`,
-			dismissible: true,
-			action: {
-				label: 'Fit page',
-				onClick: () => {
-					$patternConfigStore.patternConfig.pageLayout.pageScale = suggested;
-				}
-			}
-		});
+	});
+	$effect(() => {
+		notifyOverflow(pageResult?.overflow);
 	});
 
 	let usePageLayout = $derived(layoutMode === 'page' && !!pageResult && !pageResult.overflow);
