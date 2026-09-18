@@ -50,23 +50,48 @@ export const excludePaths = (a: PathSegment[], b: PathSegment[]): PathSegment[] 
  *
  * Input contours must each begin with 'M'. Engine-agnostic: it knows nothing
  * about how the outlines were produced.
+ *
+ * Reduction strategy: BALANCED PAIRWISE, not a sequential fold. Folding each
+ * outline into one accumulator makes every step re-process the whole accumulated
+ * result, so the cost grows roughly quadratically in the number of outlines —
+ * and "Prepare Download" hands this ~800 outlines PER BAND (one per expanded
+ * facet edge), which measured at ~17.5s for a single band. Unioning adjacent
+ * pairs and repeating keeps most unions between small operands: the same real
+ * band drops to ~0.5s, with an identical result region (symmetric-difference
+ * area 0). Only the ORDER of the resulting subpaths differs, which no consumer
+ * depends on (rendering uses fill-rule="evenodd"; layout uses bounds).
  */
+type PaperUnitable = {
+	unite: (other: unknown, options?: { insert?: boolean }) => PaperUnitable;
+	remove: () => void;
+};
+
 export const uniteMany = (outlines: PathSegment[][]): PathSegment[] => {
 	const valid = outlines.filter((o) => o.length > 0 && o[0][0] === 'M');
 	if (valid.length === 0) return [];
 	getPaperScope();
-	let acc = pathSegmentsToPaper(valid[0]) as {
-		unite: (other: unknown, options?: { insert?: boolean }) => typeof acc;
-		remove: () => void;
-	};
-	for (let i = 1; i < valid.length; i++) {
-		const next = pathSegmentsToPaper(valid[i]) as { remove: () => void };
-		const united = acc.unite(next, { insert: false });
-		acc.remove();
-		next.remove();
-		acc = united;
+	// Every paper item created here is removed exactly once: the two operands of
+	// each union right after it produces their replacement, an odd trailing item
+	// by the level that finally pairs it (it is carried by REFERENCE, never
+	// copied, so it is never removed twice), and the final survivor below.
+	let level: PaperUnitable[] = valid.map((o) => pathSegmentsToPaper(o) as unknown as PaperUnitable);
+	while (level.length > 1) {
+		const next: PaperUnitable[] = [];
+		for (let i = 0; i < level.length; i += 2) {
+			if (i + 1 >= level.length) {
+				// Odd one out: carry it, unmodified and unremoved, to the next level.
+				next.push(level[i]);
+				continue;
+			}
+			const united = level[i].unite(level[i + 1], { insert: false });
+			level[i].remove();
+			level[i + 1].remove();
+			next.push(united);
+		}
+		level = next;
 	}
-	const out = paperToPathSegments(acc as Parameters<typeof paperToPathSegments>[0]);
+	const acc = level[0];
+	const out = paperToPathSegments(acc as unknown as Parameters<typeof paperToPathSegments>[0]);
 	acc.remove();
 	return out;
 };
