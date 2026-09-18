@@ -37,9 +37,19 @@ export const splitBudgetStore = {
 		readers += 1;
 		if (readers === 1) splitBudgetWanted.set(true);
 		const stop = inner.subscribe(run, invalidate);
+		// Calling an unsubscriber twice is allowed by the store contract and a
+		// component that both runs an effect cleanup and tears down will do it.
+		// Counted twice, `readers` went negative and the NEXT subscribe reached 0
+		// instead of 1, so `splitBudgetWanted` never went true again and the
+		// renderer never computed another budget: Auto-split read "no bands
+		// measured" for the rest of the session. `done` makes the unsubscriber
+		// idempotent; the clamp keeps the count sane even so.
+		let done = false;
 		return () => {
+			if (done) return;
+			done = true;
 			stop();
-			readers -= 1;
+			readers = Math.max(0, readers - 1);
 			if (readers === 0) {
 				splitBudgetWanted.set(false);
 				// Do not leave a stale budget behind for the next reader to act on

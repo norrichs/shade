@@ -305,6 +305,18 @@
 		splitBudgetStore.set(b);
 	});
 
+	// A budget only means anything while the renderer that measured it is mounted.
+	// Without this, unmounting the pattern pane with the Splits panel open leaves
+	// the last budget published: change `pageScale`, click Auto-split, and the
+	// proposals are sized against a page that no longer exists. Clearing it makes
+	// Auto-split read "no bands measured" until a renderer publishes again.
+	$effect(() => {
+		return () => {
+			lastSplitBudgetKey = '';
+			splitBudgetStore.set(EMPTY_SPLIT_BUDGET);
+		};
+	});
+
 	// Line-wrap is on in line-wrap mode, and also as the page-mode overflow fallback:
 	// when a pattern is too large to fit a page we drop pages but still wrap, so
 	// patterns stay visible without running off in one infinite row.
