@@ -349,73 +349,77 @@
 {#if showPattern}
 	{#if usePageLayout && pageResult}
 		<PageGeometry pages={pageResult.pages} />
-		{#each pageBands as { band, tube }, i (concatAddress(band.address))}
-			<BandComponent
-				{band}
-				{tube}
-				{tubes}
-				index={i}
-				origin={pageResult.origins[i]}
-				rotation={pageResult.rotations[i] ?? 0}
-				pivot={pivots.get(band)}
-				tagAnchorPoint={tagAnchors.get(band)!}
-				tagAngle={band.tagAngle}
-				groupCode={groupCodeFor(band.address)}
-				showBounds={false}
-				{selectionTarget}
-			>
-				{#if band.projectionType === 'patterned'}
-					<BandCutPatternComponent
-						{band}
-						renderAsSinglePath={true}
-						highlightFirstFacet={false}
-						partnerBands={getPartnerBands(band, tubes)}
-						showQuadLabels={false}
-						showPathPointIndices={false}
-						partnerFacets={[
-							band.meta?.translatedStartPartnerFacet,
-							band.meta?.translatedEndPartnerFacet
-						].filter((el) => el !== undefined)}
-						showPartnerBands={false}
-						showAdjacentFacets={false}
-						showBounds={false}
-					/>
-				{/if}
-			</BandComponent>
-		{/each}
+		<g id="cut-pattern">
+			{#each pageBands as { band, tube }, i (concatAddress(band.address))}
+				<BandComponent
+					{band}
+					{tube}
+					{tubes}
+					index={i}
+					origin={pageResult.origins[i]}
+					rotation={pageResult.rotations[i] ?? 0}
+					pivot={pivots.get(band)}
+					tagAnchorPoint={tagAnchors.get(band)!}
+					tagAngle={band.tagAngle}
+					groupCode={groupCodeFor(band.address)}
+					showBounds={false}
+					{selectionTarget}
+				>
+					{#if band.projectionType === 'patterned'}
+						<BandCutPatternComponent
+							{band}
+							renderAsSinglePath={true}
+							highlightFirstFacet={false}
+							partnerBands={getPartnerBands(band, tubes)}
+							showQuadLabels={false}
+							showPathPointIndices={false}
+							partnerFacets={[
+								band.meta?.translatedStartPartnerFacet,
+								band.meta?.translatedEndPartnerFacet
+							].filter((el) => el !== undefined)}
+							showPartnerBands={false}
+							showAdjacentFacets={false}
+							showBounds={false}
+						/>
+					{/if}
+				</BandComponent>
+			{/each}
+		</g>
 	{:else if indexedBands && flatOrigins}
-		{#each indexedBands as { band, tube }, i (concatAddress(band.address))}
-			<BandComponent
-				{band}
-				{tube}
-				{tubes}
-				index={i}
-				origin={flatOrigins[i]}
-				tagAnchorPoint={tagAnchors.get(band)!}
-				tagAngle={band.tagAngle}
-				groupCode={groupCodeFor(band.address)}
-				showBounds={false}
-				{selectionTarget}
-			>
-				{#if band.projectionType === 'patterned'}
-					<BandCutPatternComponent
-						{band}
-						renderAsSinglePath={true}
-						highlightFirstFacet={false}
-						partnerBands={getPartnerBands(band, tubes)}
-						showQuadLabels={false}
-						showPathPointIndices={false}
-						partnerFacets={[
-							band.meta?.translatedStartPartnerFacet,
-							band.meta?.translatedEndPartnerFacet
-						].filter((el) => el !== undefined)}
-						showPartnerBands={false}
-						showAdjacentFacets={false}
-						showBounds={false}
-					/>
-				{/if}
-			</BandComponent>
-		{/each}
+		<g id="cut-pattern">
+			{#each indexedBands as { band, tube }, i (concatAddress(band.address))}
+				<BandComponent
+					{band}
+					{tube}
+					{tubes}
+					index={i}
+					origin={flatOrigins[i]}
+					tagAnchorPoint={tagAnchors.get(band)!}
+					tagAngle={band.tagAngle}
+					groupCode={groupCodeFor(band.address)}
+					showBounds={false}
+					{selectionTarget}
+				>
+					{#if band.projectionType === 'patterned'}
+						<BandCutPatternComponent
+							{band}
+							renderAsSinglePath={true}
+							highlightFirstFacet={false}
+							partnerBands={getPartnerBands(band, tubes)}
+							showQuadLabels={false}
+							showPathPointIndices={false}
+							partnerFacets={[
+								band.meta?.translatedStartPartnerFacet,
+								band.meta?.translatedEndPartnerFacet
+							].filter((el) => el !== undefined)}
+							showPartnerBands={false}
+							showAdjacentFacets={false}
+							showBounds={false}
+						/>
+					{/if}
+				</BandComponent>
+			{/each}
+		</g>
 	{:else}
 		{#each filteredTubes || [] as tube, t}
 			<g id={`${concatAddress(tube.address)}`}>
