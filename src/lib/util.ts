@@ -78,16 +78,33 @@ export const getCubicBezierIntersection = (
 	// })
 };
 
+/**
+ * Markup that exists for the screen only and must never reach the exported SVG.
+ *
+ * The export drives a cutter/plotter, so every serialised stroke is something
+ * somebody has to cut:
+ * - `.svg-pattern-quad` — the per-quad debug overlay (`QuadPattern.svelte`).
+ * - `.split-target` — the split seam layer (`SplitTargets.svelte`): a grey
+ *   dashed hairline on every legal boundary while split mode is on, a red one
+ *   on every existing split, plus a transparent `.hit` line with
+ *   `role="button"`/`tabindex`. Existing splits draw at all times, so without
+ *   this the defect is worst exactly when the feature is in use.
+ */
+const SCREEN_ONLY_SELECTOR = '.svg-pattern-quad, .split-target';
+
 export const generateSvgUrl = (id: string) => {
 	const svg = document.getElementById(id);
-
-	if (svg) {
-		const quads = svg.querySelectorAll('.svg-pattern-quad');
-		quads?.forEach((q) => q.remove());
-	}
 	if (!svg) return;
+
+	// Stripped from a CLONE, not from the live tree. The nodes removed here are
+	// Svelte-owned (`{#each}` blocks over reactive geometry); deleting them from
+	// the document behind Svelte's back leaves the split-placing UI dead until
+	// the next full re-render, and an export is a read, not an edit.
+	const exported = svg.cloneNode(true) as Element;
+	exported.querySelectorAll(SCREEN_ONLY_SELECTOR).forEach((node) => node.remove());
+
 	const serializer = new XMLSerializer();
-	const svg_blob = new Blob([serializer.serializeToString(svg)], { type: 'image/svg+xml' });
+	const svg_blob = new Blob([serializer.serializeToString(exported)], { type: 'image/svg+xml' });
 	const url = URL.createObjectURL(svg_blob);
 	return url;
 };
