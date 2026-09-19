@@ -25,6 +25,8 @@
 	} from '$lib/cut-pattern/split-boundaries';
 	import { proposeTubeSplits } from '$lib/cut-pattern/auto-split-bands';
 	import { describeAutoSplitResult } from '$lib/cut-pattern/auto-split-note';
+	import { derivePageScaleForTarget } from '$lib/cut-pattern/page-layout/derive-page-scale';
+	import { Vector3 } from 'three';
 	import type { PatternLayoutMode, TubeSplits } from '$lib/types';
 
 	// Shallow copy on purpose. Binding to `$patternConfigStore.…pageLayout.x` mutates
@@ -81,6 +83,32 @@
 	let derived3d = $derived(
 		$model3dBoundsStore ? derivePageDimensions($model3dBoundsStore, cfg.pageScale) : null
 	);
+
+	// Raw model extents in pattern units, straight off the bounds — the inverse
+	// input to derivePageScaleForTarget. Deliberately NOT `derived3d`, which is
+	// already divided by pageScale and would give a scale of a scale.
+	let rawSize = $derived($model3dBoundsStore ? $model3dBoundsStore.getSize(new Vector3()) : null);
+
+	// Values are typed in the current display unit; pageScale is per mm.
+	// `fromDisplay` already does that conversion — reuse it rather than
+	// re-deriving, so the two cannot drift.
+	const applyTargetSize = (rawPatternUnits: number, targetInDisplayUnit: number) => {
+		const targetMm = fromDisplay(targetInDisplayUnit);
+		const next = derivePageScaleForTarget(rawPatternUnits, targetMm);
+		if (next === undefined) return;
+		// Same effect as the "Fit page" toast but at full precision rather than
+		// rounded up — the goal is the number typed, not a fit safety margin.
+		// Written with `.set` and rebuilt references rather than `.update(cb)`,
+		// which is a silent no-op on this store.
+		const store = get(patternConfigStore);
+		patternConfigStore.set({
+			...store,
+			patternConfig: {
+				...store.patternConfig,
+				pageLayout: { ...store.patternConfig.pageLayout, pageScale: next }
+			}
+		});
+	};
 
 	let isMeasuring = $derived(isMeasureInteractionMode($interactionMode));
 
@@ -454,12 +482,42 @@
 			</div>
 		</div>
 
+		<!-- Type a target size on any row and pageScale is solved so that row reads
+		     it; every other readout rescales with it. Commits on `change` (Enter or
+		     blur), never on `input` — per-keystroke would regenerate per digit. The
+		     field clears afterwards so it reads as "set to…" and not as a stale
+		     mirror of a value the row above already shows. -->
+		{#snippet targetInput(raw: number)}
+			<input
+				class="target-size"
+				type="number"
+				min="0"
+				step="any"
+				placeholder="set {unit === 'inch' ? 'in' : 'mm'}"
+				title="Set this measurement to a target size in {unit}"
+				onchange={(e) => {
+					const target = Number(e.currentTarget.value);
+					if (target > 0) applyTargetSize(raw, target);
+					e.currentTarget.value = '';
+				}}
+			/>
+		{/snippet}
+
 		<div class="derived">
 			<strong>Model size</strong>
-			{#if derived3d}
-				<div class="axis-x">X: {fmt(derived3d.mm.x)} mm / {fmt(derived3d.inch.x)} in</div>
-				<div class="axis-y">Y: {fmt(derived3d.mm.y)} mm / {fmt(derived3d.inch.y)} in</div>
-				<div class="axis-z">Z: {fmt(derived3d.mm.z)} mm / {fmt(derived3d.inch.z)} in</div>
+			{#if derived3d && rawSize}
+				<div class="sized axis-x">
+					<span>X: {fmt(derived3d.mm.x)} mm / {fmt(derived3d.inch.x)} in</span>
+					{@render targetInput(rawSize.x)}
+				</div>
+				<div class="sized axis-y">
+					<span>Y: {fmt(derived3d.mm.y)} mm / {fmt(derived3d.inch.y)} in</span>
+					{@render targetInput(rawSize.y)}
+				</div>
+				<div class="sized axis-z">
+					<span>Z: {fmt(derived3d.mm.z)} mm / {fmt(derived3d.inch.z)} in</span>
+					{@render targetInput(rawSize.z)}
+				</div>
 			{:else}
 				<div>—</div>
 			{/if}
@@ -468,6 +526,9 @@
 				{@const d = deriveDistance(m.a, m.b, cfg.pageScale)}
 				<div class="measurement">
 					<span>{m.label}: {fmt(d.mm)} mm / {fmt(d.inch)} in</span>
+					<!-- `m.a.distanceTo(m.b)` is exactly what deriveDistance divides, so
+					     the row reads back the number typed. -->
+					{@render targetInput(m.a.distanceTo(m.b))}
 					<button
 						class="clear-measurement"
 						title="Remove this measurement"
@@ -612,6 +673,19 @@
 		align-items: center;
 		gap: 6px;
 		color: black;
+	}
+	/* A readout row that carries a "set target size" input to its right. */
+	.sized {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		gap: 6px;
+	}
+	.target-size {
+		width: 64px;
+		flex: 0 0 auto;
+		font-family: monospace;
+		font-size: 11px;
 	}
 	.clear-measurement {
 		border: 0;
