@@ -136,16 +136,9 @@ unused today and exists so a later size filter needs no re-analysis.
 dropHoles(path: PathSegment[], index: BandHoleIndex, config: HoleDropConfig): PathSegment[]
 ```
 
-Pure. A mulberry32 PRNG seeded from `seedFor(index.seed, runSeed)`, rolled over
-`index.holes` in order, so the result is reproducible across runs and
-independent of how the pool scheduled the bands. Worker and stage-2 code never
-call `Math.random()`.
-
-`index.seed` is the band's base seed, `seedForBand(0, bandId)`, baked into the
-payload at extraction time — before the merge. `runSeed` therefore cannot be
-part of it: changing it there would mean re-extracting and re-merging, which is
-the cost this split exists to avoid. Mixing the two here keeps Reroll a stage-2
-change: same merge, new arrangement.
+Pure. A mulberry32 PRNG seeded from `index.seed`, rolled over `index.holes` in
+order, so the result is reproducible across runs and independent of how the pool
+scheduled the bands. Worker and stage-2 code never call `Math.random()`.
 
 - `none` — returns the input by reference.
 - `all` — drops every hole.
@@ -174,8 +167,8 @@ postProcess?: { dropHoles: HoleDropConfig; runSeed: number };
 The curve is stored as `BezierConfig[]` — what `PathEditor` emits — and sampled to
 the LUT at the store boundary, so the geometry code never sees a curve type and
 nothing structured-cloned carries a bezier-js instance. `runSeed` is persisted, so
-a reopened config re-cuts identically, and it is read by stage 2 only. Validators
-default the block when absent and clamp `chance` and curve values into `[0, 1]`.
+a reopened config re-cuts identically. Validators default the block when absent
+and clamp `chance` and curve values into `[0, 1]`.
 
 ## Stores and invalidation
 
