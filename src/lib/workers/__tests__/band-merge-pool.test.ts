@@ -328,6 +328,97 @@ describe('band merge pool', () => {
 		expect(result2.cancelled).toBe(true);
 	});
 
+	// This scenario alone cancels synchronously before run 1 can ever
+	// complete, so it exercises neither the round-1 bug (a settling run
+	// nulling another run's slot) nor an intervening empty run losing the
+	// cancellation. The two tests below supplement it with those cases; see
+	// the fix-round-2 report for why this one is kept anyway (it still
+	// documents the intended "current generation only" behaviour).
+
+	it('cancel still reaches an in-flight run after an unrelated empty run in between (P3a)', async () => {
+		const { createWorker } = makeFakeWorkers(ok);
+		const pool = createBandMergePool({ createWorker, poolSize: 2 });
+
+		const running = pool.run([payload('a'), payload('b'), payload('c')], ctx);
+		// An unrelated empty run must not disarm the cancellation of the run
+		// still in flight above it.
+		await pool.run([], ctx);
+		pool.cancel();
+
+		const result = await running;
+		expect(result.cancelled).toBe(true);
+	});
+
+	it('cancel still reaches run 2 after run 1 settles on its own first (P3b)', async () => {
+		const { workers, createWorker } = makeManualWorkers();
+		const pool = createBandMergePool({ createWorker, poolSize: 1 });
+
+		const run1 = pool.run([payload('a')], ctx);
+		const run2 = pool.run([payload('x')], ctx);
+		// Each run() call creates its own worker(s) up front and synchronously,
+		// so with poolSize 1 the first worker created belongs to run 1 and the
+		// second to run 2.
+		const [w0, w1] = workers;
+
+		// Let run 1 finish entirely on its own, well before cancelling run 2.
+		w0.onmessage?.({ data: ok(w0.messages[0]) });
+		const result1 = await run1;
+		expect(result1.cancelled).toBe(false);
+
+		// cancel() must still reach run 2 — the slot it owns — even though a
+		// different, older run holding the slot before it already settled.
+		pool.cancel();
+
+		const result2 = await run2;
+		expect(result2.cancelled).toBe(true);
+	});
+
+	it('resolves instead of hanging when every worker in the pool dies (P1)', async () => {
+		const { workers, createWorker } = makeManualWorkers();
+		const pool = createBandMergePool({ createWorker, poolSize: 1 });
+
+		const running = pool.run([payload('a'), payload('b')], ctx);
+		const [worker] = workers;
+
+		// The single worker dies on its first band. It must never be
+		// re-dispatched to, and since it was the pool's only worker, the run
+		// must resolve with the remaining band recorded as failed rather than
+		// hang forever waiting for a dead worker to reply.
+		worker.onerror?.({ message: 'worker crashed' });
+
+		const result = await running;
+		expect(result.errors.get('a')).toBe('worker crashed');
+		expect(result.errors.has('b')).toBe(true);
+		expect(result.paths.size).toBe(0);
+	});
+
+	it('ignores a late response for a band the worker has already moved on from (P2)', async () => {
+		const { workers, createWorker } = makeManualWorkers();
+		const pool = createBandMergePool({ createWorker, poolSize: 1 });
+
+		const running = pool.run([payload('a'), payload('b')], ctx);
+		const [worker] = workers;
+
+		// Finish a; the single worker is reused for b.
+		worker.onmessage?.({ data: ok(worker.messages[0]) });
+		expect(worker.messages[1].bandId).toBe('b');
+
+		// A late/duplicate response for a arrives after the worker has moved on
+		// to b. Guarding only on "does this worker have something in flight"
+		// would accept it and wrongly count it as b's completion.
+		worker.onmessage?.({ data: ok(worker.messages[0]) });
+
+		// b's real reply arrives after — this must be what actually completes
+		// the run, not the stale message above.
+		worker.onmessage?.({ data: ok(worker.messages[1]) });
+
+		const result = await running;
+		expect(result.paths.size).toBe(2);
+		expect(result.paths.get('a')).toBeDefined();
+		expect(result.paths.get('b')).toBeDefined();
+		expect(result.errors.size).toBe(0);
+	});
+
 	it('resolves with recorded errors and tears down partial workers when spawning throws (I3)', async () => {
 		const createdWorkers: { terminated: boolean }[] = [];
 		let calls = 0;

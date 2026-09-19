@@ -21,7 +21,8 @@ export type PoolRunResult = {
 	 * exactly one on every `run()` call, including empty-payload and
 	 * spawn-failure calls.
 	 *
-	 * `cancel()` always targets the most recently started run, but it can
+	 * `cancel()` always targets the most recently started non-empty run
+	 * (an empty-payload `run([])` never takes the slot), but it can
 	 * still race that run's final response and lose (see the module doc on
 	 * `createBandMergePool`) — `cancelled` alone cannot enforce "a superseded
 	 * run's paths must never be published." A caller that starts a new run to
@@ -80,10 +81,11 @@ const errorMessage = (error: unknown): string =>
  * holds the SuperGlobule — a merge worker retains nothing between runs, so
  * keeping threads resident would cost memory and buy nothing.
  *
- * `cancel()` always affects only the most recently started run, tracked by a
- * generation counter: an older run still finishing in the background is left
- * alone, and a later empty-payload short-circuit never disarms a run that is
- * still in flight. Cancellation is latched the instant a run starts — before
+ * `cancel()` always affects only the most recently started non-empty run,
+ * tracked by a generation counter: an older run still finishing in the
+ * background is left alone, and a later empty-payload `run([])` never takes
+ * over the slot, so it can never disarm a run that is still in flight.
+ * Cancellation is latched the instant a run starts — before
  * any `await` — so a `cancel()` that arrives while the pool is still
  * resolving its default worker factory is never a silent no-op.
  */
@@ -113,6 +115,12 @@ export const createBandMergePool = (options: BandMergePoolOptions = {}) => {
 		// names no band — can still be attributed, and so a stray onerror on a
 		// worker with nothing in flight can be told apart from a real one.
 		const inFlight = new Map<PoolWorker, string>();
+		// Workers that errored once are never dispatched to again: a worker that
+		// failed to run one band (script load failure, CSP block, missing
+		// chunk, ...) has no reason to succeed at the next one, and handing it
+		// more work is how a broken bundle turns into a permanent hang instead
+		// of a loud failure.
+		const deadWorkers = new Set<PoolWorker>();
 
 		let resolveRun!: (result: PoolRunResult) => void;
 		const resultPromise = new Promise<PoolRunResult>((resolve) => {
@@ -207,6 +215,23 @@ export const createBandMergePool = (options: BandMergePoolOptions = {}) => {
 				finish(false);
 				return;
 			}
+			if (deadWorkers.has(worker)) {
+				if (deadWorkers.size >= workers.length) {
+					// Every worker in the pool has died. Nothing will ever call
+					// dispatch again to drain the rest of the queue, so this would
+					// hang forever if we didn't fail loudly here instead.
+					const failureMessage = 'no live workers remain to process this band';
+					for (const remaining of payloads) {
+						if (!paths.has(remaining.id) && !errors.has(remaining.id)) {
+							errors.set(remaining.id, failureMessage);
+						}
+					}
+					finish(false);
+				}
+				// A live worker will pick up the rest of the queue the next time it
+				// finishes its own band — do not hand more work to this one.
+				return;
+			}
 			dispatch(worker);
 		};
 
@@ -220,11 +245,15 @@ export const createBandMergePool = (options: BandMergePoolOptions = {}) => {
 				workers.push(worker);
 				worker.onmessage = (event) => {
 					if (settled) return;
-					// A response naming a band this worker isn't currently running
-					// (already completed, or never dispatched) must not be double
-					// counted.
-					if (!inFlight.has(worker)) return;
 					const response = event.data;
+					// A response must match the band this worker is CURRENTLY
+					// running, not merely have some band in flight: a late or
+					// duplicate response for a band this worker already finished
+					// (and has since been redispatched past) must not be counted as
+					// the completion of whatever it is running now — that would
+					// silently drop the real band, the same failure mode as an
+					// unattributed onerror.
+					if (inFlight.get(worker) !== response.bandId) return;
 					if (response.type === 'merge-result') {
 						if (response.path.length > 0) paths.set(response.bandId, response.path);
 					} else {
@@ -243,6 +272,8 @@ export const createBandMergePool = (options: BandMergePoolOptions = {}) => {
 					// both `paths` and `errors` when the run finishes early.
 					if (bandId === undefined) return;
 					errors.set(bandId, event.message);
+					// This worker just failed to run a band; it gets no more.
+					deadWorkers.add(worker);
 					completeBand(worker);
 				};
 			}
