@@ -380,6 +380,15 @@ Reactive Svelte stores with complex derivation chains:
 - Current branch: `feature/update-globule-surface`
 - Recent focus: async geometry (worker implementation), pattern invariability, color improvements, geometry calculations
 
+**Never revert or drop a commit you did not author in this session.** Several
+sessions work this branch at once, and a commit that looks out of scope for your
+task is usually another session's in-flight work — design docs and plans under
+`docs/superpowers/**` especially, which are written by a planning session while
+an implementation session works the same branch. If a commit genuinely blocks
+you, say so and leave it alone; do not `git revert` it, drop it in a rebase, or
+"tidy" it away. The same goes for files: only touch documents your own task
+names.
+
 ## Debugging
 
 - Use `/sandbox-*` routes for isolated testing
