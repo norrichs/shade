@@ -107,3 +107,74 @@ describe('band merge worker core', () => {
 		for (const [id, path] of oracle) expect(fanned.get(id)).toEqual(path);
 	});
 });
+
+describe('stage 1b: hole index', () => {
+	it('returns a hole index alongside the merged path', () => {
+		const geometry = buildDefaultGeometry();
+		const tubes = generateProjectionTubes(geometry, tiledConfig, undefined, 1);
+		const payloads = toBandMergePayloads(tubes, new Map());
+		const core = createBandMergeCore();
+		const posted: MergeResponse[] = [];
+
+		for (const payload of payloads) {
+			core.handle(
+				{
+					type: 'merge',
+					bandId: payload.id,
+					payload,
+					ctx: { patternType: 'tiledHexPattern-1', keepConnected: 0 }
+				},
+				(r) => posted.push(r)
+			);
+		}
+
+		const results = posted.filter((r) => r.type === 'merge-result');
+		expect(results.length).toBeGreaterThan(0);
+
+		let totalHoles = 0;
+		for (const result of results) {
+			if (result.type !== 'merge-result') continue;
+			const payload = payloads.find((p) => p.id === result.bandId)!;
+			expect(result.holes.seed).toBe(payload.seed);
+			totalHoles += result.holes.holes.length;
+			for (const hole of result.holes.holes) {
+				expect(result.path[hole.start][0]).toBe('M');
+				expect(hole.bandFraction).toBeGreaterThanOrEqual(payload.pieceStartFraction - 1e-9);
+				expect(hole.bandFraction).toBeLessThanOrEqual(payload.pieceEndFraction + 1e-9);
+			}
+		}
+		// A real tiled band is a tessellation; it must have interior cells.
+		expect(totalHoles).toBeGreaterThan(0);
+	});
+
+	it('returns an empty index for an outlined band', () => {
+		const core = createBandMergeCore();
+		const posted: MergeResponse[] = [];
+		core.handle(
+			{
+				type: 'merge',
+				bandId: 'b',
+				payload: {
+					id: 'b',
+					facets: [
+						{
+							path: [['M', 0, 0], ['L', 10, 0], ['L', 10, 10], ['Z']]
+						}
+					],
+					tagAnchorPoint: { x: 5, y: 5 },
+					tagAnchorAutoAngle: 0,
+					pieceStartFraction: 0,
+					pieceEndFraction: 1,
+					seed: 42
+				},
+				ctx: { patternType: 'outlined', selfTag: labels.selfTag, keepConnected: 0 }
+			},
+			(r) => posted.push(r)
+		);
+
+		const [result] = posted;
+		expect(result.type).toBe('merge-result');
+		if (result.type !== 'merge-result') return;
+		expect(result.holes).toEqual({ seed: 42, holes: [] });
+	});
+});

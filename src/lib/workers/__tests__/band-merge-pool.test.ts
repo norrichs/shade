@@ -65,10 +65,14 @@ const makeManualWorkers = () => {
 	return { workers, createWorker };
 };
 
+/** An empty hole index: the pool carries indexes through, it never builds them. */
+const noHoles = (m: MergeMessage) => ({ seed: m.payload.seed, holes: [] });
+
 const ok = (m: MergeMessage): MergeResponse => ({
 	type: 'merge-result',
 	bandId: m.bandId,
-	path: [['M', 1, 1]]
+	path: [['M', 1, 1]],
+	holes: noHoles(m)
 });
 
 describe('band merge pool', () => {
@@ -123,7 +127,8 @@ describe('band merge pool', () => {
 		const { createWorker } = makeFakeWorkers((m) => ({
 			type: 'merge-result',
 			bandId: m.bandId,
-			path: []
+			path: [],
+			holes: noHoles(m)
 		}));
 		const pool = createBandMergePool({ createWorker, poolSize: 2 });
 
@@ -453,7 +458,9 @@ describe('band merge pool', () => {
 
 		// a legitimately merges to nothing: no path, no error — that is a
 		// valid outcome, not a failure. The worker is reused for b.
-		worker.onmessage?.({ data: { type: 'merge-result', bandId: 'a', path: [] } });
+		worker.onmessage?.({
+			data: { type: 'merge-result', bandId: 'a', path: [], holes: { seed: 0, holes: [] } }
+		});
 		expect(worker.messages[1].bandId).toBe('b');
 
 		// The pool's only worker then dies running b, with c still queued and
@@ -623,6 +630,7 @@ describe('band merge pool', () => {
 					['a', 'boom'],
 					['b', 'boom']
 				]),
+				holes: new Map(),
 				cancelled: false,
 				generation: 1
 			};
@@ -634,6 +642,7 @@ describe('band merge pool', () => {
 			const result = {
 				paths: new Map([['a', [['M', 0, 0]] as unknown as PathSegment[]]]),
 				errors: new Map([['b', 'boom']]),
+				holes: new Map(),
 				cancelled: false,
 				generation: 1
 			};
@@ -645,6 +654,7 @@ describe('band merge pool', () => {
 			const result = {
 				paths: new Map([['a', [['M', 0, 0]] as unknown as PathSegment[]]]),
 				errors: new Map(),
+				holes: new Map(),
 				cancelled: false,
 				generation: 1
 			};
@@ -653,7 +663,13 @@ describe('band merge pool', () => {
 		});
 
 		it('is false for an empty payload run (nothing to fail)', () => {
-			const result = { paths: new Map(), errors: new Map(), cancelled: false, generation: 1 };
+			const result = {
+				paths: new Map(),
+				holes: new Map(),
+				errors: new Map(),
+				cancelled: false,
+				generation: 1
+			};
 
 			expect(isTotalPoolFailure(result, 0)).toBe(false);
 		});
