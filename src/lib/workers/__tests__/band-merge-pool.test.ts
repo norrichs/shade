@@ -37,6 +37,33 @@ const makeFakeWorkers = (reply: (m: MergeMessage) => MergeResponse) => {
 	return { created, createWorker };
 };
 
+/**
+ * A fake worker that never replies on its own: the test decides exactly when
+ * (and whether) each message is answered, by calling `onmessage`/`onerror`
+ * directly. This is what lets a test assert on the pool's state *between*
+ * dispatch and reply — something a queueMicrotask-based fake can't do, since
+ * everything it posts resolves itself on the very next microtask tick.
+ */
+type ManualWorker = PoolWorker & { messages: MergeMessage[] };
+
+const makeManualWorkers = () => {
+	const workers: ManualWorker[] = [];
+	const createWorker = (): PoolWorker => {
+		const worker: ManualWorker = {
+			messages: [],
+			onmessage: null,
+			onerror: null,
+			postMessage: (message) => {
+				worker.messages.push(message);
+			},
+			terminate: () => {}
+		};
+		workers.push(worker);
+		return worker;
+	};
+	return { workers, createWorker };
+};
+
 const ok = (m: MergeMessage): MergeResponse => ({
 	type: 'merge-result',
 	bandId: m.bandId,
@@ -153,5 +180,201 @@ describe('band merge pool', () => {
 		const result = await pool.run([payload('a')], ctx);
 
 		expect(result.errors.get('a')).toBe('worker died');
+	});
+
+	// --- Fix round 1: lifecycle correctness (C1, C2, I1-I6) ---------------
+
+	it('is a no-op to cancel before any run has started', () => {
+		const pool = createBandMergePool({ createWorker: makeFakeWorkers(ok).createWorker });
+		expect(() => pool.cancel()).not.toThrow();
+	});
+
+	it('is a no-op to cancel after the run has already settled', async () => {
+		const { createWorker } = makeFakeWorkers(ok);
+		const pool = createBandMergePool({ createWorker, poolSize: 2 });
+
+		const result = await pool.run([payload('a'), payload('b')], ctx);
+		expect(() => pool.cancel()).not.toThrow();
+		expect(result.cancelled).toBe(false);
+	});
+
+	it('cancels during the default-factory import window without spawning workers (C1)', async () => {
+		let resolveFactory!: (fn: () => PoolWorker) => void;
+		const factoryPromise = new Promise<() => PoolWorker>((resolve) => {
+			resolveFactory = resolve;
+		});
+		let spawned = 0;
+		const pool = createBandMergePool({
+			loadDefaultCreateWorker: () => factoryPromise
+		});
+
+		const running = pool.run([payload('a'), payload('b')], ctx);
+		// The pool is suspended awaiting the factory; nothing has spawned yet.
+		pool.cancel();
+		resolveFactory(() => {
+			spawned += 1;
+			return { onmessage: null, onerror: null, postMessage: () => {}, terminate: () => {} };
+		});
+
+		const result = await running;
+
+		expect(result.cancelled).toBe(true);
+		expect(spawned).toBe(0);
+	});
+
+	it('ignores a worker-level error when nothing is in flight for that worker (C2)', async () => {
+		const { workers, createWorker } = makeManualWorkers();
+		const pool = createBandMergePool({ createWorker, poolSize: 2 });
+
+		const running = pool.run([payload('a'), payload('b'), payload('c')], ctx);
+		const [w0, w1] = workers;
+		// Initial dispatch: w0 <- a, w1 <- b.
+
+		// Finish b first: w1 is freed and picks up c.
+		w1.onmessage?.({ data: ok(w1.messages[0]) });
+		expect(w1.messages).toHaveLength(2);
+		expect(w1.messages[1].bandId).toBe('c');
+
+		// Finish a: the queue is now exhausted, so w0 goes idle with nothing in
+		// flight — but the run is not done, since c is still outstanding on w1.
+		w0.onmessage?.({ data: ok(w0.messages[0]) });
+
+		// A stray worker-level error on the now-idle w0 must not be attributed to
+		// any band, must not count as a completion, and must not make the run
+		// finish early while c is still genuinely in flight.
+		w0.onerror?.({ message: 'stray failure with nothing in flight' });
+
+		// c finishing for real must still land normally.
+		w1.onmessage?.({ data: ok(w1.messages[1]) });
+
+		const result = await running;
+		expect(result.paths.size).toBe(3);
+		expect(result.errors.size).toBe(0);
+	});
+
+	it('attributes an error to the band a reused worker is currently running, not its previous one', async () => {
+		const { workers, createWorker } = makeManualWorkers();
+		const pool = createBandMergePool({ createWorker, poolSize: 1 });
+
+		const running = pool.run([payload('a'), payload('b')], ctx);
+		const [worker] = workers;
+
+		// Finish a; the single worker is reused for b.
+		worker.onmessage?.({ data: ok(worker.messages[0]) });
+		expect(worker.messages).toHaveLength(2);
+		expect(worker.messages[1].bandId).toBe('b');
+
+		// A worker-level error now must land on b, the band it is currently
+		// running, not on a, which already completed.
+		worker.onerror?.({ message: 'reused-worker failure' });
+
+		const result = await running;
+		expect(result.paths.get('a')).toBeDefined();
+		expect(result.errors.get('a')).toBeUndefined();
+		expect(result.errors.get('b')).toBe('reused-worker failure');
+	});
+
+	it('streams work across free workers instead of batching by round (I5)', async () => {
+		const { workers, createWorker } = makeManualWorkers();
+		const pool = createBandMergePool({ createWorker, poolSize: 3 });
+
+		const running = pool.run(
+			[payload('a'), payload('b'), payload('c'), payload('d'), payload('e'), payload('f')],
+			ctx
+		);
+
+		// Initial fan-out: exactly one band per worker, three outstanding at once.
+		expect(workers).toHaveLength(3);
+		expect(workers.map((w) => w.messages.length)).toEqual([1, 1, 1]);
+		expect(workers.map((w) => w.messages[0].bandId).sort()).toEqual(['a', 'b', 'c']);
+
+		// Releasing ONE worker's reply must dispatch a fourth band immediately,
+		// while the other two remain untouched. A batching implementation that
+		// waits for every reply in a round before sending the next would leave
+		// worker[0] at 1 message here, not 2.
+		const [w0, w1, w2] = workers;
+		w0.onmessage?.({ data: ok(w0.messages[0]) });
+
+		expect(w0.messages).toHaveLength(2);
+		expect(w0.messages[1].bandId).toBe('d');
+		expect(w1.messages).toHaveLength(1);
+		expect(w2.messages).toHaveLength(1);
+
+		// Drain the rest in the same manually-controlled fashion.
+		w1.onmessage?.({ data: ok(w1.messages[0]) }); // b done -> dispatch e
+		w2.onmessage?.({ data: ok(w2.messages[0]) }); // c done -> dispatch f
+		w0.onmessage?.({ data: ok(w0.messages[1]) }); // d done -> queue exhausted
+		w1.onmessage?.({ data: ok(w1.messages[1]) }); // e done -> queue exhausted
+		w2.onmessage?.({ data: ok(w2.messages[1]) }); // f done -> run finishes
+
+		const result = await running;
+		expect(result.paths.size).toBe(6);
+		expect(result.cancelled).toBe(false);
+	});
+
+	it('cancel only affects the run that owns the current generation (I1)', async () => {
+		const { createWorker } = makeFakeWorkers(ok);
+		const pool = createBandMergePool({ createWorker, poolSize: 2 });
+
+		const run1 = pool.run([payload('a'), payload('b'), payload('c')], ctx);
+		const run2 = pool.run([payload('x'), payload('y')], ctx);
+		// run2 is the current generation; cancel must leave run1 alone.
+		pool.cancel();
+
+		const [result1, result2] = await Promise.all([run1, run2]);
+
+		expect(result1.cancelled).toBe(false);
+		expect(result1.paths.size).toBe(3);
+		expect(result2.cancelled).toBe(true);
+	});
+
+	it('resolves with recorded errors and tears down partial workers when spawning throws (I3)', async () => {
+		const createdWorkers: { terminated: boolean }[] = [];
+		let calls = 0;
+		const createWorker = (): PoolWorker => {
+			calls += 1;
+			if (calls === 2) throw new Error('spawn failed');
+			const record = { terminated: false };
+			createdWorkers.push(record);
+			return {
+				onmessage: null,
+				onerror: null,
+				postMessage: () => {},
+				terminate: () => {
+					record.terminated = true;
+				}
+			};
+		};
+		const pool = createBandMergePool({ createWorker, poolSize: 2 });
+
+		const result = await pool.run([payload('a'), payload('b')], ctx);
+
+		expect(result.cancelled).toBe(false);
+		expect(result.errors.size).toBeGreaterThan(0);
+		expect(createdWorkers).toHaveLength(1);
+		for (const worker of createdWorkers) expect(worker.terminated).toBe(true);
+	});
+
+	it('resolves with a recorded error when the default worker factory fails to load (I3)', async () => {
+		const pool = createBandMergePool({
+			loadDefaultCreateWorker: () => Promise.reject(new Error('import failed'))
+		});
+
+		const result = await pool.run([payload('a')], ctx);
+
+		expect(result.cancelled).toBe(false);
+		expect(result.errors.get('a')).toBe('import failed');
+	});
+
+	it('does not deadlock when onProgress throws (I4)', async () => {
+		const { createWorker } = makeFakeWorkers(ok);
+		const pool = createBandMergePool({ createWorker, poolSize: 2 });
+
+		const result = await pool.run([payload('a'), payload('b'), payload('c')], ctx, () => {
+			throw new Error('boom in ui code');
+		});
+
+		expect(result.paths.size).toBe(3);
+		expect(result.cancelled).toBe(false);
 	});
 });
