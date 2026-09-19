@@ -1,40 +1,86 @@
 import { derived, writable, get, type Writable } from 'svelte/store';
 import type { PathSegment } from '$lib/types';
+import type { BandHoleIndex } from '$lib/cut-pattern/hole-index';
+import { dropHoles } from '$lib/cut-pattern/drop-holes';
+import { DEFAULT_POST_PROCESS, type PostProcessConfig } from '$lib/cut-pattern/hole-drop-config';
+import { patternConfigStore } from './globulePatternStores';
 
 export type LabelTextDims = { width: number; height: number };
-
-/**
- * Per-band merged outline+label path, keyed by band.id. Presence of an entry
- * means the band's merge has been prepared and should be rendered in place of
- * the standalone band path + label outline. Empty map = "not prepared".
- *
- * Populated by `publish()` in `NavHeader.svelte` (via `postProcessBandPaths`,
- * driven by the "Prepare Download" button).
- * Cleared by an invalidation $effect in NavHeader when relevant config or
- * geometry changes.
- */
-export const mergedBandPaths: Writable<Map<string, PathSegment[]>> = writable(new Map());
 
 /**
  * Stage 1 output: the merged band paths as the worker pool produced them,
  * before any post-processing.
  *
- * Stage 1 (stroke expansion plus boolean union) costs seconds; the per-band
- * post-processing in `docs/specs/pattern-post-processing.md` costs
- * milliseconds. Keeping the raw result means a change to post-process config
+ * Stage 1 (stroke expansion plus boolean union) costs seconds; stage 2 costs
+ * milliseconds. Keeping the raw result means a change to the hole-drop config
  * re-runs only stage 2, instead of paying for the union again.
+ *
+ * Written by `publish()` in `NavHeader.svelte`, together with
+ * `bandHoleIndexes`. Cleared by NavHeader's invalidation block when the
+ * geometry or label config changes.
  */
 export const mergedBandPathsRaw: Writable<Map<string, PathSegment[]>> = writable(new Map());
 
 /**
- * Stage 2: derive the render-facing paths from the raw merge.
+ * Stage 1b output: where each band's internal holes are, keyed by band.id.
  *
- * Identity until hole dropping lands. Callers must route through it rather than
- * writing `mergedBandPaths` directly, so that feature becomes a change to this
- * one function.
+ * Written by the same prepare run that writes `mergedBandPathsRaw`, and cleared
+ * with it — a band must never hold a path without its index.
  */
-export const postProcessBandPaths = (raw: Map<string, PathSegment[]>): Map<string, PathSegment[]> =>
-	raw;
+export const bandHoleIndexes: Writable<Map<string, BandHoleIndex>> = writable(new Map());
+
+/**
+ * The post-process block of the pattern config.
+ *
+ * A plain `derived` over the whole config store would emit on every unrelated
+ * config edit, and each emission rebuilds every band's path. The JSON compare
+ * narrows it to real changes, mirroring what `patternGenerationConfig` does to
+ * avoid re-triggering the geometry worker.
+ */
+let lastPostProcessJson = '';
+export const postProcessConfig = derived<typeof patternConfigStore, PostProcessConfig>(
+	patternConfigStore,
+	($config, set) => {
+		const next = $config.patternConfig.postProcess ?? DEFAULT_POST_PROCESS;
+		const json = JSON.stringify(next);
+		if (json === lastPostProcessJson) return;
+		lastPostProcessJson = json;
+		set(next);
+	},
+	DEFAULT_POST_PROCESS
+);
+
+/** Stage 2 over every band. A band with no index is passed through unchanged. */
+export const applyPostProcess = (
+	raw: Map<string, PathSegment[]>,
+	indexes: Map<string, BandHoleIndex>,
+	config: PostProcessConfig
+): Map<string, PathSegment[]> => {
+	if (config.dropHoles.mode === 'none') return raw;
+	const out = new Map<string, PathSegment[]>();
+	for (const [bandId, path] of raw) {
+		const index = indexes.get(bandId);
+		out.set(bandId, index ? dropHoles(path, index, config) : path);
+	}
+	return out;
+};
+
+/**
+ * Per-band merged outline+label path, keyed by band.id, as it should RENDER.
+ * Presence of an entry means the band's merge has been prepared and should be
+ * drawn in place of the standalone band path + label outline. Empty map = "not
+ * prepared".
+ *
+ * Derived, not written: stage 1 (seconds, in the pool) lands in
+ * `mergedBandPathsRaw`, and stage 2 (milliseconds, here) re-runs on its own
+ * whenever the hole-drop config changes. That is the point of the split — a
+ * nudged drop chance must never pay for the union again. `runSeed` takes part
+ * because rerolling has to change the result.
+ */
+export const mergedBandPaths = derived(
+	[mergedBandPathsRaw, bandHoleIndexes, postProcessConfig],
+	([$raw, $indexes, $config]) => applyPostProcess($raw, $indexes, $config)
+);
 
 /**
  * True once "Prepare Download" has produced a merge. The prepared view is a
