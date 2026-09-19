@@ -530,24 +530,32 @@ describe('band merge pool', () => {
 			};
 		};
 		const pool = createBandMergePool({ createWorker, poolSize: 2 });
+		const progress: number[] = [];
 
-		const result = await pool.run([payload('a'), payload('b')], ctx);
+		const result = await pool.run([payload('a'), payload('b')], ctx, (done) => progress.push(done));
 
 		expect(result.cancelled).toBe(false);
 		expect(result.errors.size).toBeGreaterThan(0);
 		expect(createdWorkers).toHaveLength(1);
 		for (const worker of createdWorkers) expect(worker.terminated).toBe(true);
+		// A loud failure must still complete the progress bar (round 4): the
+		// caller has nothing further to wait on once this resolves.
+		expect(progress[progress.length - 1]).toBe(2);
 	});
 
 	it('resolves with a recorded error when the default worker factory fails to load (I3)', async () => {
 		const pool = createBandMergePool({
 			loadDefaultCreateWorker: () => Promise.reject(new Error('import failed'))
 		});
+		const progress: number[] = [];
 
-		const result = await pool.run([payload('a')], ctx);
+		const result = await pool.run([payload('a')], ctx, (done) => progress.push(done));
 
 		expect(result.cancelled).toBe(false);
 		expect(result.errors.get('a')).toBe('import failed');
+		// Same as above: the default-factory rejection is a loud, terminal
+		// failure, so progress must still reach total (round 4).
+		expect(progress[progress.length - 1]).toBe(1);
 	});
 
 	it('does not deadlock when onProgress throws (I4)', async () => {

@@ -188,6 +188,9 @@ export const createBandMergePool = (options: BandMergePoolOptions = {}) => {
 				finish(true);
 			} else {
 				for (const payload of payloads) errors.set(payload.id, errorMessage(error));
+				// A loud failure still completes the progress bar: nothing further will
+				// ever run, so there is nothing left for the caller to wait on.
+				safeProgress(payloads.length, payloads.length);
 				finish(false);
 			}
 			return resultPromise;
@@ -299,6 +302,9 @@ export const createBandMergePool = (options: BandMergePoolOptions = {}) => {
 					errors.set(payload.id, errorMessage(error));
 				}
 			}
+			// Same reasoning as the default-factory failure above: this is a loud,
+			// terminal failure, so the progress bar should read as complete too.
+			safeProgress(payloads.length, payloads.length);
 			finish(false);
 			return resultPromise;
 		}
