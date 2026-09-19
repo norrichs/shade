@@ -178,6 +178,28 @@ export const endPointsInRange: LimitFunction = ({ curveIndex, pointIndex, curveD
 	return curveDef;
 };
 
+/**
+ * Clamp EVERY dragged point to the unit square.
+ *
+ * `endPointsInRange` constrains only the terminal anchors. A hole-drop curve is
+ * read as x = position along the band, y = drop chance, so a control handle
+ * outside [0, 1] would bow the sampled curve past a probability.
+ */
+export const allPointsInUnitSquare: LimitFunction = ({
+	curveIndex,
+	pointIndex,
+	curveDef,
+	newPoint
+}) => {
+	const clamp = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
+	curveDef[curveIndex].points[pointIndex] = {
+		...newPoint,
+		x: clamp(newPoint.x),
+		y: clamp(newPoint.y)
+	};
+	return curveDef;
+};
+
 export const endPointsLockedY: LimitFunction = ({
 	curveIndex,
 	pointIndex,
