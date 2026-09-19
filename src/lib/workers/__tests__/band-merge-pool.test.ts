@@ -392,6 +392,99 @@ describe('band merge pool', () => {
 		expect(result.paths.size).toBe(0);
 	});
 
+	it('lets a surviving worker drain the queue after a partial death (P1)', async () => {
+		const { workers, createWorker } = makeManualWorkers();
+		const pool = createBandMergePool({ createWorker, poolSize: 2 });
+
+		const running = pool.run([payload('a'), payload('b'), payload('c')], ctx);
+		const [w0, w1] = workers; // initial dispatch: w0 <- a, w1 <- b
+
+		// w0 dies on its first band. It must never be handed more work.
+		w0.onerror?.({ message: 'w0 crashed' });
+
+		// The survivor, w1, finishes b and must be the one handed c next.
+		w1.onmessage?.({ data: ok(w1.messages[0]) });
+		expect(w1.messages).toHaveLength(2);
+		expect(w1.messages[1].bandId).toBe('c');
+		expect(w0.messages).toHaveLength(1);
+
+		w1.onmessage?.({ data: ok(w1.messages[1]) });
+
+		const result = await running;
+		expect(result.errors.get('a')).toBe('w0 crashed');
+		expect(result.paths.get('b')).toBeDefined();
+		expect(result.paths.get('c')).toBeDefined();
+		expect(result.cancelled).toBe(false);
+	});
+
+	it('records every still-queued band as an error when the last live worker dies (P1)', async () => {
+		const { workers, createWorker } = makeManualWorkers();
+		const pool = createBandMergePool({ createWorker, poolSize: 1 });
+
+		const running = pool.run([payload('a'), payload('b'), payload('c')], ctx);
+		const [worker] = workers;
+
+		// a completes; the single worker is reused for b.
+		worker.onmessage?.({ data: ok(worker.messages[0]) });
+		expect(worker.messages[1].bandId).toBe('b');
+
+		// The worker dies while running b. c is still queued and was never
+		// dispatched to anyone — it must not be silently lost.
+		worker.onerror?.({ message: 'died on b' });
+
+		const result = await running;
+		expect(result.paths.get('a')).toBeDefined();
+		expect(result.errors.get('b')).toBe('died on b');
+		expect(result.errors.has('c')).toBe(true);
+		// c was never sent to the dead worker.
+		expect(worker.messages).toHaveLength(2);
+	});
+
+	it('does not mislabel a band that legitimately merged to nothing when the pool then dies (Minor 3)', async () => {
+		const { workers, createWorker } = makeManualWorkers();
+		const pool = createBandMergePool({ createWorker, poolSize: 1 });
+
+		// Three bands, so the all-dead sweep actually has to run: with only two
+		// bands, the plain completion count reaches the total before the sweep
+		// is ever consulted, and the bug this test targets never fires.
+		const running = pool.run([payload('a'), payload('b'), payload('c')], ctx);
+		const [worker] = workers;
+
+		// a legitimately merges to nothing: no path, no error — that is a
+		// valid outcome, not a failure. The worker is reused for b.
+		worker.onmessage?.({ data: { type: 'merge-result', bandId: 'a', path: [] } });
+		expect(worker.messages[1].bandId).toBe('b');
+
+		// The pool's only worker then dies running b, with c still queued and
+		// never dispatched. The sweep must record c (and only c) as failed —
+		// a lookup keyed on `paths`/`errors` membership would also catch a,
+		// which never appears in either map despite having completed cleanly.
+		worker.onerror?.({ message: 'died on b' });
+
+		const result = await running;
+		expect(result.paths.has('a')).toBe(false);
+		expect(result.errors.has('a')).toBe(false);
+		expect(result.errors.get('b')).toBe('died on b');
+		expect(result.errors.has('c')).toBe(true);
+	});
+
+	it('reports progress for every band, including ones swept as errors, so done reaches total (Minor 4)', async () => {
+		const { workers, createWorker } = makeManualWorkers();
+		const pool = createBandMergePool({ createWorker, poolSize: 1 });
+		const progress: number[] = [];
+
+		const running = pool.run([payload('a'), payload('b'), payload('c')], ctx, (done) =>
+			progress.push(done)
+		);
+		const [worker] = workers;
+
+		worker.onmessage?.({ data: ok(worker.messages[0]) }); // a done -> 1/3
+		worker.onerror?.({ message: 'died on b' }); // b done, then c swept -> 2/3, 3/3
+
+		await running;
+		expect(progress).toEqual([1, 2, 3]);
+	});
+
 	it('ignores a late response for a band the worker has already moved on from (P2)', async () => {
 		const { workers, createWorker } = makeManualWorkers();
 		const pool = createBandMergePool({ createWorker, poolSize: 1 });

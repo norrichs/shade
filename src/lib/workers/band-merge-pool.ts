@@ -115,6 +115,12 @@ export const createBandMergePool = (options: BandMergePoolOptions = {}) => {
 		// names no band — can still be attributed, and so a stray onerror on a
 		// worker with nothing in flight can be told apart from a real one.
 		const inFlight = new Map<PoolWorker, string>();
+		// Bands that have actually completed (successfully or as an error),
+		// tracked independently of `paths`/`errors` membership: `paths` only
+		// records non-empty results, so a band that legitimately merged to
+		// nothing would otherwise look indistinguishable from one that was
+		// never processed at all, and get wrongly swept into an error below.
+		const completedBands = new Set<string>();
 		// Workers that errored once are never dispatched to again: a worker that
 		// failed to run one band (script load failure, CSP block, missing
 		// chunk, ...) has no reason to succeed at the next one, and handing it
@@ -207,7 +213,8 @@ export const createBandMergePool = (options: BandMergePoolOptions = {}) => {
 			worker.postMessage({ type: 'merge', bandId: payload.id, payload, ctx });
 		};
 
-		const completeBand = (worker: PoolWorker) => {
+		const completeBand = (worker: PoolWorker, bandId: string) => {
+			completedBands.add(bandId);
 			inFlight.delete(worker);
 			done += 1;
 			safeProgress(done, payloads.length);
@@ -219,12 +226,17 @@ export const createBandMergePool = (options: BandMergePoolOptions = {}) => {
 				if (deadWorkers.size >= workers.length) {
 					// Every worker in the pool has died. Nothing will ever call
 					// dispatch again to drain the rest of the queue, so this would
-					// hang forever if we didn't fail loudly here instead.
+					// hang forever if we didn't fail loudly here instead. This sweep
+					// covers bands still sitting unassigned in the queue too, not
+					// just ones that were in flight: nobody is ever going to hand
+					// them to anyone.
 					const failureMessage = 'no live workers remain to process this band';
 					for (const remaining of payloads) {
-						if (!paths.has(remaining.id) && !errors.has(remaining.id)) {
-							errors.set(remaining.id, failureMessage);
-						}
+						if (completedBands.has(remaining.id)) continue;
+						completedBands.add(remaining.id);
+						errors.set(remaining.id, failureMessage);
+						done += 1;
+						safeProgress(done, payloads.length);
 					}
 					finish(false);
 				}
@@ -259,7 +271,7 @@ export const createBandMergePool = (options: BandMergePoolOptions = {}) => {
 					} else {
 						errors.set(response.bandId, response.error);
 					}
-					completeBand(worker);
+					completeBand(worker, response.bandId);
 				};
 				worker.onerror = (event) => {
 					if (settled) return;
@@ -274,7 +286,7 @@ export const createBandMergePool = (options: BandMergePoolOptions = {}) => {
 					errors.set(bandId, event.message);
 					// This worker just failed to run a band; it gets no more.
 					deadWorkers.add(worker);
-					completeBand(worker);
+					completeBand(worker, bandId);
 				};
 			}
 		} catch (error) {
