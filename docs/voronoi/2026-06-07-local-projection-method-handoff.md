@@ -14,7 +14,7 @@ design with the user, then write a spec and an implementation plan.
 
 The current inset/inner-edge computation casts rays **from a single center point
 outward** to the surface (see "Current pipeline" below). That assumes a roughly
-star-convex / spherical surface, and it bakes the inset *shape* into a direction
+star-convex / spherical surface, and it bakes the inset _shape_ into a direction
 interpolation. The new "local projection" method instead:
 
 - **Removes the spherical assumption** — it should work on toroidal and concave
@@ -37,7 +37,7 @@ do the inset/offset work in that 2D plane, then project back onto the surface.
 
 1. **Generate seeds** with the current methods.
 2. **Map the Voronoi diagram onto the surface and subdivide the edges** using the
-   *current* method (`edgeDivisions`), with **adaptive subdivision carried through**.
+   _current_ method (`edgeDivisions`), with **adaptive subdivision carried through**.
    This yields the 3D points of the divided Voronoi edges (and the seed points on
    the surface).
 3. **Gather all the 3D points** forming the divided Voronoi edges (the sample set).
@@ -76,10 +76,12 @@ do the inset/offset work in that 2D plane, then project back onto the surface.
 All under `src/lib/voronoi/` unless noted.
 
 **Seeds (step 1)**
+
 - `generate-seeds.ts` → `generateSeeds(seedMethod, center, intersect, surfaceTriangles)`.
   Seed methods: `centerProjection`, `areaWeighted` (`VoronoiSeedConfig` in `types.ts`).
 
 **Voronoi diagram + current surface mapping & subdivision (step 2)**
+
 - Diagram: `compute-voronoi-spherical.ts` (`computeVoronoiSpherical`, geo/spherical)
   and `compute-voronoi.ts` (`computeVoronoi`, planar UV). Selected in
   `generate-voronoi.ts` via `computeVoronoiFromSeeds`. Edges return as **2D
@@ -101,12 +103,14 @@ All under `src/lib/voronoi/` unless noted.
   starting on-surface Voronoi edge points.
 
 **Adaptive subdivision (carries through — step 2)**
+
 - `edge-divisions.ts` → `computeAdaptiveEdgeDivisions(lengths, edgeDivisions)` and
   `normalizeEdgeDivisions`. `edgeDivisions` is `[min, max]`; per-edge division
   count is interpolated by edge length (shortest → min, longest → max). The new
   method must preserve this adaptive behavior.
 
 **Surface (steps 2, 8, 12)**
+
 - `generate-projection.ts` → `generateSurface`. Helpers in `generate-voronoi.ts`:
   `getSurfaceCenter`, `extractSurfaceTriangles`, `createSurfaceIntersector`
   (single-hit raycaster). Supported surfaces today: sphere, capsule, globule.
@@ -116,8 +120,9 @@ All under `src/lib/voronoi/` unless noted.
   `intersectObject(..., true)` returns all hits) and pick by proximity.
 
 **Tube generation pipeline (step 13 — reuse as-is)**
+
 - `apply-cross-sections.ts` → `applyCrossSectionsToEdge(edgePoints3d, curvePoints,
-  normals, crossSectionConfig)`.
+normals, crossSectionConfig)`.
 - `generate-projection.ts` → `generateProjectionBands(...)`.
 - Downstream in `makeVoronoi`: surface-projection tubes, `fillAll`
   (`fill-bands.ts`), partner matching (`matchFacets`, `matchTubeEnds`). Output
@@ -126,6 +131,7 @@ All under `src/lib/voronoi/` unless noted.
   (edge points + the two inset polylines + normals), so this stage is unchanged.
 
 **Config & defaults**
+
 - `types.ts` → `VoronoiConfig`, `VoronoiResult`, `VoronoiEdge`, `VoronoiSeedConfig`.
   Relevant fields: `curveOffsetFactor`, `surfaceProjectionDivisions`,
   `edgeDivisions`, `voronoiMethod`, `crossSectionConfig`, `bandConfig`.
@@ -133,6 +139,7 @@ All under `src/lib/voronoi/` unless noted.
 - UI: `src/components/controls/VoronoiControl.svelte`.
 
 **Execution model (important)**
+
 - Geometry generation runs in a **Web Worker**
   (`src/lib/workers/super-globule.worker.ts`); `src/lib/stores/workerStore.ts`
   rehydrates three.js objects (`Vector3`, `Triangle`) after `postMessage`. Keep

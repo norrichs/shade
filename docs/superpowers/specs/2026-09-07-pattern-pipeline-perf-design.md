@@ -11,12 +11,12 @@ roughly a minute on every interaction.
 Measured with a CDP CPU profile (scripts: `perf-profile.mjs`, `perf-run.ts` at the
 worktree root, throwaway):
 
-| Action | Wall time | Dominant cost |
-|---|---|---|
-| Load config | 47 s | geometry worker: brute-force closest-point scan in `smooth-chains.ts` (out of scope here, see Tier 3 below) |
-| Pattern generation (flatten, tile, path strings) | 0.4 s | negligible |
-| One pan click | 75 s dev / 91 s prod | render cascade on the main thread |
-| One zoom click | 58 s prod | same cascade; only a `viewBox` string needed to change |
+| Action                                           | Wall time            | Dominant cost                                                                                               |
+| ------------------------------------------------ | -------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Load config                                      | 47 s                 | geometry worker: brute-force closest-point scan in `smooth-chains.ts` (out of scope here, see Tier 3 below) |
+| Pattern generation (flatten, tile, path strings) | 0.4 s                | negligible                                                                                                  |
+| One pan click                                    | 75 s dev / 91 s prod | render cascade on the main thread                                                                           |
+| One zoom click                                   | 58 s prod            | same cascade; only a `viewBox` string needed to change                                                      |
 
 The cascade: any write to `patternConfigStore` (zoom, pan, toggles, range) re-runs the
 `$:` block in `PatternViewer.svelte` because it reads
@@ -58,8 +58,14 @@ branches with a single `$derived` array of placed bands:
 
 ```ts
 type PlacedBand = {
-  band; tube; key; origin: Point; rotation: number; pivot: Point;
-  tagAnchorPoint: Point; groupCode?: string;
+	band;
+	tube;
+	key;
+	origin: Point;
+	rotation: number;
+	pivot: Point;
+	tagAnchorPoint: Point;
+	groupCode?: string;
 };
 ```
 
@@ -80,7 +86,14 @@ live Three.js objects) keyed by its `requestId`, so the pattern request carries 
 small inputs:
 
 ```ts
-{ type: 'pattern'; requestId; geometryRequestId; superConfig; genConfig; gates; }
+{
+	type: 'pattern';
+	requestId;
+	geometryRequestId;
+	superConfig;
+	genConfig;
+	gates;
+}
 ```
 
 The body of today's `superGlobulePatternStoreInternal` moves to a pure function

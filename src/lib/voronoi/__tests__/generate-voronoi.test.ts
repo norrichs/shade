@@ -316,30 +316,34 @@ describe('makeVoronoi', () => {
 		// Per the mocked getEdgeMatchedTriangles this matches facetA edge 'ab' to
 		// facetB edge 'bc' — a key absent from facetB's partial meta {ab:{...}}.
 		const facetA: Facet = {
-			triangle: new Triangle(
-				new Vector3(1, 0, 0),
-				new Vector3(1, 1, 0),
-				new Vector3(5, 5, 0)
-			),
+			triangle: new Triangle(new Vector3(1, 0, 0), new Vector3(1, 1, 0), new Vector3(5, 5, 0)),
 			address: { globule: 0, tube: 0, band: 0, facet: 0 },
 			orientation: 'axial-right'
 		};
 		const facetB: Facet = {
-			triangle: new Triangle(
-				new Vector3(0, 0, 0),
-				new Vector3(1, 0, 0),
-				new Vector3(1, 1, 0)
-			),
+			triangle: new Triangle(new Vector3(0, 0, 0), new Vector3(1, 0, 0), new Vector3(1, 1, 0)),
 			address: { globule: 0, tube: 0, band: 1, facet: 0 },
 			orientation: 'axial-right',
 			isDegenerate: true,
 			// Partial meta as matchTubeEnds would leave it (only the 'ab' key).
-			meta: { ab: { partner: { globule: 0, tube: 9, band: 0, facet: 0, edge: 'ab' } } } as Facet['meta']
+			meta: {
+				ab: { partner: { globule: 0, tube: 9, band: 0, facet: 0, edge: 'ab' } }
+			} as Facet['meta']
 		};
 		const tube = {
 			bands: [
-				{ orientation: 'axial-right', facets: [facetA], visible: true, address: { globule: 0, tube: 0, band: 0 } },
-				{ orientation: 'axial-right', facets: [facetB], visible: true, address: { globule: 0, tube: 0, band: 1 } }
+				{
+					orientation: 'axial-right',
+					facets: [facetA],
+					visible: true,
+					address: { globule: 0, tube: 0, band: 0 }
+				},
+				{
+					orientation: 'axial-right',
+					facets: [facetB],
+					visible: true,
+					address: { globule: 0, tube: 0, band: 1 }
+				}
 			],
 			sections: [],
 			orientation: 'axial-right' as const,

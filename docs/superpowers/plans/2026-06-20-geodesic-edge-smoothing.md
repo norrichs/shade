@@ -28,6 +28,7 @@
 ## Task 1: `smoothSeries` — discrete cubic smoothing spline
 
 **Files:**
+
 - Create: `src/lib/voronoi/geodesic/smooth-chains.ts`
 - Test: `src/lib/voronoi/geodesic/__tests__/smooth-chains.test.ts`
 
@@ -186,6 +187,7 @@ git commit -m "feat(voronoi): smoothSeries — discrete cubic smoothing spline"
 ## Task 2: `smoothChainPoints` — smooth a Vector3 polyline
 
 **Files:**
+
 - Modify: `src/lib/voronoi/geodesic/smooth-chains.ts`
 - Test: `src/lib/voronoi/geodesic/__tests__/smooth-chains.test.ts`
 
@@ -288,6 +290,7 @@ git commit -m "feat(voronoi): smoothChainPoints — per-coordinate polyline smoo
 ## Task 3: Export `weldKey` from mesh-graph (DRY prep for the projector)
 
 **Files:**
+
 - Modify: `src/lib/voronoi/geodesic/mesh-graph.ts:17-22`
 
 - [ ] **Step 1: Replace the private key helper with an exported one**
@@ -322,13 +325,13 @@ export function weldKey(p: Vector3): string {
 Then update the single internal call site inside `buildMeshGraph`'s `idFor`:
 
 ```ts
-		const k = keyOf(p);
+const k = keyOf(p);
 ```
 
 to:
 
 ```ts
-		const k = weldKey(p);
+const k = weldKey(p);
 ```
 
 - [ ] **Step 2: Verify existing mesh-graph tests still pass**
@@ -348,6 +351,7 @@ git commit -m "refactor(voronoi): export weldKey from mesh-graph"
 ## Task 4: `SurfaceProjector` — raycast smoothed points back onto the surface
 
 **Files:**
+
 - Modify: `src/lib/voronoi/geodesic/smooth-chains.ts`
 - Test: `src/lib/voronoi/geodesic/__tests__/smooth-chains.test.ts`
 
@@ -547,6 +551,7 @@ git commit -m "feat(voronoi): SurfaceProjector — raycast smoothed points onto 
 ## Task 5: Add `geodesicSmoothing` to config type + default
 
 **Files:**
+
 - Modify: `src/lib/voronoi/types.ts:11-30`
 - Modify: `src/lib/shades-config.ts:701-728`
 
@@ -586,6 +591,7 @@ git commit -m "feat(voronoi): add geodesicSmoothing config field (default 0)"
 ## Task 6: Wire the smoothing pipeline into `generateGeodesicVoronoi`
 
 **Files:**
+
 - Modify: `src/lib/voronoi/geodesic/geodesic-voronoi.ts:1-9,126-139`
 - Test: `src/lib/voronoi/geodesic/__tests__/geodesic-voronoi.test.ts`
 
@@ -595,7 +601,10 @@ Append to `src/lib/voronoi/geodesic/__tests__/geodesic-voronoi.test.ts` (the fil
 
 ```ts
 describe('generateGeodesicVoronoi smoothing', () => {
-	const withLambda = (lambda: number): VoronoiConfig => ({ ...baseConfig(), geodesicSmoothing: lambda });
+	const withLambda = (lambda: number): VoronoiConfig => ({
+		...baseConfig(),
+		geodesicSmoothing: lambda
+	});
 
 	it('leaves edge endpoints (shared corners) identical to the unsmoothed run', () => {
 		const off = generateGeodesicVoronoi(withLambda(0), sphereMesh(24));
@@ -655,57 +664,57 @@ import { smoothChainPoints, SurfaceProjector } from './smooth-chains';
 Then replace the emit loop (lines 126-139, from `const edges` through the closing `});`):
 
 ```ts
-	const edges: VoronoiEdge[] = [];
-	const edgeProjections: EdgeProjection[] = [];
-	chains.forEach((chain, i) => {
-		const { points, normals } = resample(chain.points, chain.normals, divisionCounts[i]);
-		if (points.length < 2) return;
-		edges.push({
-			vertices: [
-				[chain.vertices[0], 0],
-				[chain.vertices[1], 0]
-			],
-			cellIndices: chain.cellIndices
-		});
-		edgeProjections.push({ edgePoints3d: points, normals });
+const edges: VoronoiEdge[] = [];
+const edgeProjections: EdgeProjection[] = [];
+chains.forEach((chain, i) => {
+	const { points, normals } = resample(chain.points, chain.normals, divisionCounts[i]);
+	if (points.length < 2) return;
+	edges.push({
+		vertices: [
+			[chain.vertices[0], 0],
+			[chain.vertices[1], 0]
+		],
+		cellIndices: chain.cellIndices
 	});
+	edgeProjections.push({ edgePoints3d: points, normals });
+});
 ```
 
 with:
 
 ```ts
-	const lambda = Math.max(0, config.geodesicSmoothing ?? 0);
-	const projector = lambda > 0 ? new SurfaceProjector(surfaceTriangles, graph) : null;
+const lambda = Math.max(0, config.geodesicSmoothing ?? 0);
+const projector = lambda > 0 ? new SurfaceProjector(surfaceTriangles, graph) : null;
 
-	const edges: VoronoiEdge[] = [];
-	const edgeProjections: EdgeProjection[] = [];
-	chains.forEach((chain, i) => {
-		// Smooth (and later re-project) only chains with enough points; shorter
-		// chains (e.g. single-vertex rim runs) keep the original behavior.
-		const smoothing = lambda > 0 && chain.points.length >= 4;
-		const srcPoints = smoothing ? smoothChainPoints(chain.points, lambda) : chain.points;
-		const { points, normals } = resample(srcPoints, chain.normals, divisionCounts[i]);
-		if (points.length < 2) return;
+const edges: VoronoiEdge[] = [];
+const edgeProjections: EdgeProjection[] = [];
+chains.forEach((chain, i) => {
+	// Smooth (and later re-project) only chains with enough points; shorter
+	// chains (e.g. single-vertex rim runs) keep the original behavior.
+	const smoothing = lambda > 0 && chain.points.length >= 4;
+	const srcPoints = smoothing ? smoothChainPoints(chain.points, lambda) : chain.points;
+	const { points, normals } = resample(srcPoints, chain.normals, divisionCounts[i]);
+	if (points.length < 2) return;
 
-		// Re-project interior points onto the surface; endpoints are left exactly
-		// as resampled so shared corners stay bit-identical across chains.
-		if (smoothing && projector) {
-			for (let k = 1; k < points.length - 1; k++) {
-				const pr = projector.project(points[k], normals[k]);
-				points[k] = pr.point;
-				normals[k] = pr.normal;
-			}
+	// Re-project interior points onto the surface; endpoints are left exactly
+	// as resampled so shared corners stay bit-identical across chains.
+	if (smoothing && projector) {
+		for (let k = 1; k < points.length - 1; k++) {
+			const pr = projector.project(points[k], normals[k]);
+			points[k] = pr.point;
+			normals[k] = pr.normal;
 		}
+	}
 
-		edges.push({
-			vertices: [
-				[chain.vertices[0], 0],
-				[chain.vertices[1], 0]
-			],
-			cellIndices: chain.cellIndices
-		});
-		edgeProjections.push({ edgePoints3d: points, normals });
+	edges.push({
+		vertices: [
+			[chain.vertices[0], 0],
+			[chain.vertices[1], 0]
+		],
+		cellIndices: chain.cellIndices
 	});
+	edgeProjections.push({ edgePoints3d: points, normals });
+});
 ```
 
 - [ ] **Step 4: Run tests to verify they pass**
@@ -730,6 +739,7 @@ git commit -m "feat(voronoi): smooth + re-project geodesic boundary chains behin
 ## Task 7: Add the smoothing slider to the controls panel
 
 **Files:**
+
 - Modify: `src/components/controls/VoronoiControl.svelte:9-79,184-220`
 
 - [ ] **Step 1: Add the field to the `update` union and a branch**
@@ -754,19 +764,19 @@ Then add a branch in `update` (next to the `voronoiMethod` branch):
 In the template, after the "Method" `<label>` block (the `voronoiMethod` select, ending at its `</label>`), add:
 
 ```svelte
-		<label>
-			Smoothing
-			<input
-				type="range"
-				min="0"
-				max="50"
-				step="1"
-				value={config.geodesicSmoothing ?? 0}
-				disabled={!isGeodesic}
-				oninput={(e) => update('geodesicSmoothing', Number(e.currentTarget.value))}
-			/>
-			<span>{config.geodesicSmoothing ?? 0}</span>
-		</label>
+<label>
+	Smoothing
+	<input
+		type="range"
+		min="0"
+		max="50"
+		step="1"
+		value={config.geodesicSmoothing ?? 0}
+		disabled={!isGeodesic}
+		oninput={(e) => update('geodesicSmoothing', Number(e.currentTarget.value))}
+	/>
+	<span>{config.geodesicSmoothing ?? 0}</span>
+</label>
 ```
 
 - [ ] **Step 3: Verify types + lint**

@@ -25,6 +25,7 @@ The existing back-half of `makeVoronoi` (src/lib/voronoi/generate-voronoi.ts:318
 ## File Structure
 
 **New files:**
+
 - `src/lib/voronoi/geodesic/mesh-graph.ts` — welded vertex/edge/face adjacency graph + per-vertex normals, built from `SurfaceTriangle[]`.
 - `src/lib/voronoi/geodesic/geodesic-solver.ts` — `GeodesicSolver` interface + `DijkstraGeodesicSolver`.
 - `src/lib/voronoi/geodesic/extract-boundaries.ts` — dual-edge tracing: labels → boundary chains (raw polylines + normals + corner ids + cell pairs).
@@ -36,6 +37,7 @@ The existing back-half of `makeVoronoi` (src/lib/voronoi/generate-voronoi.ts:318
 - `src/routes/sandbox-geodesic-voronoi/+page.svelte` — optional visual check (Task 10).
 
 **Modified files:**
+
 - `src/lib/voronoi/types.ts` — add `'geodesic'` to `VoronoiMethod`.
 - `src/lib/voronoi/generate-voronoi.ts` — extract shared `assembleVoronoiTubes`; dispatch to geodesic front-half.
 - `src/lib/voronoi/migrate-voronoi-config.ts` — coerce invalid combos when geodesic.
@@ -49,6 +51,7 @@ The existing back-half of `makeVoronoi` (src/lib/voronoi/generate-voronoi.ts:318
 Builds a connectivity graph from surface triangles, welding coincident vertices by quantized position so UV seams don't disconnect the graph.
 
 **Files:**
+
 - Create: `src/lib/voronoi/geodesic/mesh-graph.ts`
 - Test: `src/lib/voronoi/geodesic/__tests__/mesh-graph.test.ts`
 
@@ -217,6 +220,7 @@ git commit -m "feat(voronoi): add welded mesh graph for geodesic pipeline"
 `GeodesicSolver` interface (clean seam for a future heat-method solver) with a binary-heap multi-source Dijkstra implementation.
 
 **Files:**
+
 - Create: `src/lib/voronoi/geodesic/geodesic-solver.ts`
 - Test: `src/lib/voronoi/geodesic/__tests__/geodesic-solver.test.ts`
 
@@ -402,10 +406,12 @@ git commit -m "feat(voronoi): add multi-source Dijkstra geodesic solver"
 Turn per-vertex nearest-seed labels into per-cell-pair boundary chains, each a raw polyline of 3D points + normals, with stable corner ids at the ends.
 
 **Files:**
+
 - Create: `src/lib/voronoi/geodesic/extract-boundaries.ts`
 - Test: `src/lib/voronoi/geodesic/__tests__/extract-boundaries.test.ts`
 
 **Algorithm:**
+
 - For each face `(a,b,c)` with labels `(la,lb,lc)`:
   - all equal → interior, skip.
   - exactly two distinct labels (one vertex differs, e.g. `la==lb != lc`) → one boundary **segment** crossing the two differing mesh edges. Crossing point on edge `(vi:li, vj:lj)` (li≠lj) is at parameter `t = clamp((dj - di + L) / (2L), 0, 1)` where `L=|vi-vj|`, `di/dj` the geodesic distances — the point where the two cells' distances balance. Segment endpoints are the two edge-crossing points; segment separates cells `(li, lj)`.
@@ -464,7 +470,8 @@ describe('extractBoundaries', () => {
 		const chains = extractBoundaries(g, field);
 		// Collect all corner ids; a triple point id should appear in >= 2 chains.
 		const counts = new Map<number, number>();
-		for (const c of chains) for (const cid of c.vertices) counts.set(cid, (counts.get(cid) ?? 0) + 1);
+		for (const c of chains)
+			for (const cid of c.vertices) counts.set(cid, (counts.get(cid) ?? 0) + 1);
 		const shared = [...counts.values()].some((n) => n >= 2);
 		expect(shared).toBe(true);
 	});
@@ -594,7 +601,11 @@ export function extractBoundaries(graph: MeshGraph, field: GeodesicField): Bound
 				.addScaledVector(pc, wc)
 				.divideScalar(wa + wb + wc);
 		}
-		const tpNormal = graph.normals[a].clone().add(graph.normals[b]).add(graph.normals[c]).normalize();
+		const tpNormal = graph.normals[a]
+			.clone()
+			.add(graph.normals[b])
+			.add(graph.normals[c])
+			.normalize();
 		const tpNode = addNode(`t${faceIndex}`, tp, tpNormal);
 		const nAB = crossingNode(a, b);
 		const nBC = crossingNode(b, c);
@@ -691,10 +702,12 @@ git commit -m "feat(voronoi): add dual-edge boundary extraction for geodesic Vor
 Ties seeds → graph → solve (+ optional Lloyd) → boundaries → resample into the `{ edges, edgeProjections, seedPoints3d }` shape the back-half consumes.
 
 **Files:**
+
 - Create: `src/lib/voronoi/geodesic/geodesic-voronoi.ts`
 - Test: `src/lib/voronoi/geodesic/__tests__/geodesic-voronoi.test.ts`
 
 **Notes:**
+
 - Seeds are area-weighted (center-free); snapped to nearest graph vertex.
 - Lloyd: repeat `relaxationIterations` times — solve, then move each cell's seed to the centroid of the vertices labeled to it, re-snap to nearest graph vertex; final solve after the loop.
 - `vertices` of each emitted `VoronoiEdge` packs the chain's corner ids as `[cid, 0]` so `vertexKey` sees a shared key at shared corners.
@@ -821,7 +834,8 @@ function resample(
 		return { points: points.map((p) => p.clone()), normals: normals.map((n) => n.clone()) };
 	}
 	const cum: number[] = [0];
-	for (let i = 1; i < points.length; i++) cum.push(cum[i - 1] + points[i].distanceTo(points[i - 1]));
+	for (let i = 1; i < points.length; i++)
+		cum.push(cum[i - 1] + points[i].distanceTo(points[i - 1]));
 	const total = cum[cum.length - 1];
 	if (total < 1e-12) {
 		return { points: points.map((p) => p.clone()), normals: normals.map((n) => n.clone()) };
@@ -871,7 +885,9 @@ export function generateGeodesicVoronoi(
 	// Seeds: area-weighted (center-free), snapped to graph vertices.
 	const sm = config.seedConfig.seedMethod;
 	const seedMethod =
-		sm.type === 'areaWeighted' ? sm : { type: 'areaWeighted' as const, pointCount: sm.pointCount, seed: sm.seed };
+		sm.type === 'areaWeighted'
+			? sm
+			: { type: 'areaWeighted' as const, pointCount: sm.pointCount, seed: sm.seed };
 	const seeds3d = generateAreaWeightedSeeds(seedMethod, surfaceTriangles);
 	let seedVerts = seeds3d.map((p) => nearestVertex(graph, p));
 	const cellCount = seedVerts.length;
@@ -931,6 +947,7 @@ git commit -m "feat(voronoi): add geodesic Voronoi orchestrator"
 ## Task 5: Add `'geodesic'` to the method type
 
 **Files:**
+
 - Modify: `src/lib/voronoi/types.ts:7`
 
 - [ ] **Step 1: Edit the union**
@@ -966,6 +983,7 @@ git commit -m "feat(voronoi): add 'geodesic' voronoi method type"
 Extract the shared inset→tube→fill→partner-matching tail so both pipelines use one copy. Pure refactor — no behavior change; the existing `generate-voronoi.test.ts` is the safety net.
 
 **Files:**
+
 - Modify: `src/lib/voronoi/generate-voronoi.ts`
 
 - [ ] **Step 1: Run the existing voronoi tests to capture green baseline**
@@ -976,6 +994,7 @@ Expected: PASS. Record the passing test count.
 - [ ] **Step 2: Add the shared back-half function**
 
 Add this function to generate-voronoi.ts (above `makeVoronoi`). Its body is the **existing lines 293-499** of `makeVoronoi` (the tube-build loop, the `fillAll` block, and the two partner-matching `try/catch` blocks) moved verbatim, with two parameterizations:
+
 1. it receives `edges`, `edgeProjections`, `edgeInsets`, `address`, `config`, `surfaceCenter`, and `cellApex` instead of reading locals;
 2. the `fillAll` apex source changes from `intersect(coordToDirection(seed))` to the passed-in `cellApex[cellIndex]`.
 
@@ -1020,8 +1039,10 @@ function assembleVoronoiTubes(params: {
 			const meta = spFillMeta[t];
 			const firstEdge = outerBorderPolyline(tube.sections, 'first');
 			const lastEdge = outerBorderPolyline(tube.sections, 'last');
-			const firstApex = cellApex[meta.firstCell] ?? (firstEdge.length ? averageOf(firstEdge) : undefined);
-			const lastApex = cellApex[meta.lastCell] ?? (lastEdge.length ? averageOf(lastEdge) : undefined);
+			const firstApex =
+				cellApex[meta.firstCell] ?? (firstEdge.length ? averageOf(firstEdge) : undefined);
+			const lastApex =
+				cellApex[meta.lastCell] ?? (lastEdge.length ? averageOf(lastEdge) : undefined);
 			// ... existing fill-band build verbatim (lines 467-490), using center as projCenter.
 		});
 	}
@@ -1044,24 +1065,24 @@ function assembleVoronoiTubes(params: {
 Replace the body of `makeVoronoi` after `edgeInsets` is computed with:
 
 ```ts
-	// Per-cell apex for fillAll: ray-cast the seed direction onto the surface.
-	const cellApex: (Vector3 | undefined)[] = relaxedSeeds.map((seed) => {
-		const hit = intersect(coordToDirection(seed[0], seed[1]));
-		if (!hit) console.warn('fillAll: cell seed ray missed surface; using averaged border point');
-		return hit ?? undefined;
-	});
+// Per-cell apex for fillAll: ray-cast the seed direction onto the surface.
+const cellApex: (Vector3 | undefined)[] = relaxedSeeds.map((seed) => {
+	const hit = intersect(coordToDirection(seed[0], seed[1]));
+	if (!hit) console.warn('fillAll: cell seed ray missed surface; using averaged border point');
+	return hit ?? undefined;
+});
 
-	const { tubes, surfaceProjectionTubes } = assembleVoronoiTubes({
-		edges: voronoiResult.edges,
-		edgeProjections,
-		edgeInsets,
-		address,
-		config,
-		surfaceCenter: center,
-		cellApex
-	});
+const { tubes, surfaceProjectionTubes } = assembleVoronoiTubes({
+	edges: voronoiResult.edges,
+	edgeProjections,
+	edgeInsets,
+	address,
+	config,
+	surfaceCenter: center,
+	cellApex
+});
 
-	return { tubes, surfaceProjectionTubes, surface };
+return { tubes, surfaceProjectionTubes, surface };
 ```
 
 Keep the adaptive-division / `projectEdgesOntoSurface` / `computeEdgeInsets*` computation above unchanged.
@@ -1088,6 +1109,7 @@ git commit -m "refactor(voronoi): extract shared assembleVoronoiTubes back-half"
 ## Task 7: Dispatch `makeVoronoi` to the geodesic front-half
 
 **Files:**
+
 - Modify: `src/lib/voronoi/generate-voronoi.ts`
 - Test: `src/lib/voronoi/__tests__/generate-voronoi.test.ts` (add a geodesic case)
 
@@ -1129,33 +1151,33 @@ import { generateGeodesicVoronoi } from './geodesic/geodesic-voronoi';
 Insert this branch in `makeVoronoi` immediately after `const surfaceTriangles = extractSurfaceTriangles(surface);` (so geodesic never touches the center-based seed/voronoi/projection code):
 
 ```ts
-	if (config.voronoiMethod === 'geodesic') {
-		const { edges, edgeProjections, seedPoints3d } = generateGeodesicVoronoi(
-			config,
-			surfaceTriangles
-		);
-		const edgeInsets = computeEdgeInsetsLocalProjection({
-			edges,
-			edgeProjections,
-			seedPoints3d,
-			surface,
-			surfaceCenter: center,
-			curveOffsetFactor: config.curveOffsetFactor ?? DEFAULT_CURVE_OFFSET_FACTOR,
-			surfaceProjectionDivisions: config.surfaceProjectionDivisions ?? 0,
-			curvedInset: config.curvedInset ?? false
-		});
-		const cellApex: (Vector3 | undefined)[] = seedPoints3d.map((p) => p ?? undefined);
-		const { tubes, surfaceProjectionTubes } = assembleVoronoiTubes({
-			edges,
-			edgeProjections,
-			edgeInsets,
-			address,
-			config,
-			surfaceCenter: center,
-			cellApex
-		});
-		return { tubes, surfaceProjectionTubes, surface };
-	}
+if (config.voronoiMethod === 'geodesic') {
+	const { edges, edgeProjections, seedPoints3d } = generateGeodesicVoronoi(
+		config,
+		surfaceTriangles
+	);
+	const edgeInsets = computeEdgeInsetsLocalProjection({
+		edges,
+		edgeProjections,
+		seedPoints3d,
+		surface,
+		surfaceCenter: center,
+		curveOffsetFactor: config.curveOffsetFactor ?? DEFAULT_CURVE_OFFSET_FACTOR,
+		surfaceProjectionDivisions: config.surfaceProjectionDivisions ?? 0,
+		curvedInset: config.curvedInset ?? false
+	});
+	const cellApex: (Vector3 | undefined)[] = seedPoints3d.map((p) => p ?? undefined);
+	const { tubes, surfaceProjectionTubes } = assembleVoronoiTubes({
+		edges,
+		edgeProjections,
+		edgeInsets,
+		address,
+		config,
+		surfaceCenter: center,
+		cellApex
+	});
+	return { tubes, surfaceProjectionTubes, surface };
+}
 ```
 
 - [ ] **Step 4: Run the geodesic test**
@@ -1182,6 +1204,7 @@ git commit -m "feat(voronoi): wire geodesic front-half into makeVoronoi"
 When `voronoiMethod === 'geodesic'`, force `seedMethod → areaWeighted` and `insetMethod → localProjection` (the center-based modes are invalid for geodesic).
 
 **Files:**
+
 - Modify: `src/lib/voronoi/migrate-voronoi-config.ts`
 - Test: `src/lib/voronoi/__tests__/migrate-voronoi-config.test.ts`
 
@@ -1223,17 +1246,17 @@ Expected: FAIL — no coercion yet.
 In `normalizeVoronoiConfig`, after building `voronoiConfig`, add:
 
 ```ts
-	if (voronoiConfig.voronoiMethod === 'geodesic') {
-		const sm = voronoiConfig.seedConfig.seedMethod;
-		voronoiConfig.insetMethod = 'localProjection';
-		voronoiConfig.seedConfig = {
-			...voronoiConfig.seedConfig,
-			seedMethod:
-				sm.type === 'areaWeighted'
-					? sm
-					: { type: 'areaWeighted', pointCount: sm.pointCount, seed: sm.seed }
-		};
-	}
+if (voronoiConfig.voronoiMethod === 'geodesic') {
+	const sm = voronoiConfig.seedConfig.seedMethod;
+	voronoiConfig.insetMethod = 'localProjection';
+	voronoiConfig.seedConfig = {
+		...voronoiConfig.seedConfig,
+		seedMethod:
+			sm.type === 'areaWeighted'
+				? sm
+				: { type: 'areaWeighted', pointCount: sm.pointCount, seed: sm.seed }
+	};
+}
 ```
 
 (Convert the `const voronoiConfig` to a `let`, or build a coerced copy — either is fine as long as the returned object reflects the coercion.)
@@ -1255,6 +1278,7 @@ git commit -m "feat(voronoi): coerce geodesic configs to center-free seed/inset 
 ## Task 9: UI — add "Geodesic" option and disable center-only controls
 
 **Files:**
+
 - Modify: `src/components/controls/VoronoiControl.svelte`
 
 - [ ] **Step 1: Add the method option**
@@ -1262,7 +1286,7 @@ git commit -m "feat(voronoi): coerce geodesic configs to center-free seed/inset 
 In the "Method" `<select>` (VoronoiControl.svelte:104-110), add:
 
 ```svelte
-				<option value="geodesic">Geodesic (center-free)</option>
+<option value="geodesic">Geodesic (center-free)</option>
 ```
 
 - [ ] **Step 2: Disable center-only controls when geodesic**
@@ -1270,19 +1294,19 @@ In the "Method" `<select>` (VoronoiControl.svelte:104-110), add:
 Add a derived flag in the `<script>` block:
 
 ```ts
-	let isGeodesic = $derived((config.voronoiMethod ?? 'spherical') === 'geodesic');
+let isGeodesic = $derived((config.voronoiMethod ?? 'spherical') === 'geodesic');
 ```
 
 Then disable the Seed Method and Inset Method selects when geodesic (they are forced to areaWeighted / localProjection). On the Seed Method `<select>` (line 93) and Inset Method `<select>` (line 115) add:
 
 ```svelte
-					disabled={isGeodesic}
+disabled={isGeodesic}
 ```
 
 And update the Curved Inset checkbox's `disabled` (line 128) so geodesic (which always uses localProjection) keeps it enabled:
 
 ```svelte
-					disabled={!isGeodesic && (config.insetMethod ?? 'centerOut') !== 'localProjection'}
+disabled={!isGeodesic && (config.insetMethod ?? 'centerOut') !== 'localProjection'}
 ```
 
 - [ ] **Step 3: Type-check + lint**
@@ -1308,6 +1332,7 @@ git commit -m "feat(voronoi): expose geodesic method in VoronoiControl"
 A throwaway isolated page to eyeball geodesic cells without the full designer.
 
 **Files:**
+
 - Create: `src/routes/sandbox-geodesic-voronoi/+page.svelte`
 
 - [ ] **Step 1: Create the page**
@@ -1343,4 +1368,7 @@ git commit -m "chore(voronoi): add geodesic Voronoi sandbox route"
 - **`vertices` are keys, not coordinates.** Never feed geodesic edge `vertices` to `edgeArcLength`/`sampleEdgeAsDirections`/`coordToDirection` — those are center-based and are bypassed for geodesic.
 - **Worker compatibility:** all new code is pure TS over `Vector3`/arrays and runs inside the existing worker via `makeVoronoi`; nothing new is serialized across `postMessage`.
 - **Future seams (out of scope):** swap `DijkstraGeodesicSolver` for a heat-method solver behind `GeodesicSolver`; replace nearest-vertex seed snapping with virtual-node sources; build the independent volumetric foam pipeline on a separate 3D Euclidean bisector-clipping core.
+
+```
+
 ```

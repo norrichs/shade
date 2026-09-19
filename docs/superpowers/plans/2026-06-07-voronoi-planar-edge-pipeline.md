@@ -27,6 +27,7 @@
 ## Task 1: Pure 2D edge-profile math module
 
 **Files:**
+
 - Create: `src/lib/voronoi/edge-profiles-2d.ts`
 - Test: `src/lib/voronoi/__tests__/edge-profiles-2d.test.ts`
 
@@ -77,14 +78,7 @@ describe('edgeLength2D', () => {
 
 describe('buildEdgeProfiles2D', () => {
 	it('builds outer + two inset polylines, each divisions + 1 long', () => {
-		const { outer, insetA, insetB } = buildEdgeProfiles2D(
-			[0, 0],
-			[4, 0],
-			[2, 4],
-			[2, -4],
-			2,
-			0.5
-		);
+		const { outer, insetA, insetB } = buildEdgeProfiles2D([0, 0], [4, 0], [2, 4], [2, -4], 2, 0.5);
 		expect(outer).toEqual([
 			[0, 0],
 			[2, 0],
@@ -205,6 +199,7 @@ git commit -m "feat(voronoi): pure 2D edge-profile math for planar pipeline"
 ## Task 2: Add the `planarEdges` config field
 
 **Files:**
+
 - Modify: `src/lib/voronoi/types.ts`
 - Modify: `src/lib/shades-config.ts`
 
@@ -251,6 +246,7 @@ git commit -m "feat(voronoi): add planarEdges config flag (default false)"
 This is a behavior-preserving refactor. The existing `generate-voronoi.test.ts` suite is the guard — it must stay green with no changes.
 
 **Files:**
+
 - Modify: `src/lib/voronoi/generate-voronoi.ts`
 
 - [ ] **Step 1: Add the shared types and the `computeEdgeProfiles3D` function**
@@ -351,71 +347,68 @@ function computeEdgeProfiles3D(args: EdgeProfileArgs): EdgeProfiles {
 In `makeVoronoi`, find this block (currently around lines 359–405):
 
 ```ts
-		// Sample directions along the great circle arc between edge vertices
-		const edgeDirections = sampleEdgeAsDirections(
-			voronoiEdge.vertices[0],
-			voronoiEdge.vertices[1],
-			edgeDivisionCounts[edgeIndex],
-			coordToDirection
-		);
+// Sample directions along the great circle arc between edge vertices
+const edgeDirections = sampleEdgeAsDirections(
+	voronoiEdge.vertices[0],
+	voronoiEdge.vertices[1],
+	edgeDivisionCounts[edgeIndex],
+	coordToDirection
+);
 
-		// Map each direction to 3D surface point, compute normals and curve offsets
-		const edgePoints3d: Vector3[] = [];
-		const curvePointsA: Vector3[] = [];
-		const curvePointsB: Vector3[] = [];
-		const normals: Vector3[] = [];
+// Map each direction to 3D surface point, compute normals and curve offsets
+const edgePoints3d: Vector3[] = [];
+const curvePointsA: Vector3[] = [];
+const curvePointsB: Vector3[] = [];
+const normals: Vector3[] = [];
 
-		for (const dir of edgeDirections) {
-			const point3d = intersect(dir);
-			if (!point3d) continue;
+for (const dir of edgeDirections) {
+	const point3d = intersect(dir);
+	if (!point3d) continue;
 
-			edgePoints3d.push(point3d);
+	edgePoints3d.push(point3d);
 
-			// Compute surface normal at this point
-			normalRaycaster.set(center, dir.clone().normalize());
-			const hits = normalRaycaster.intersectObject(surface, true);
-			let normal: Vector3;
-			if (hits.length > 0 && hits[0].face) {
-				normal = hits[0].face.normal
-					.clone()
-					.transformDirection(hits[0].object.matrixWorld)
-					.normalize();
-			} else {
-				normal = dir.clone().normalize();
-			}
-			normals.push(normal);
+	// Compute surface normal at this point
+	normalRaycaster.set(center, dir.clone().normalize());
+	const hits = normalRaycaster.intersectObject(surface, true);
+	let normal: Vector3;
+	if (hits.length > 0 && hits[0].face) {
+		normal = hits[0].face.normal.clone().transformDirection(hits[0].object.matrixWorld).normalize();
+	} else {
+		normal = dir.clone().normalize();
+	}
+	normals.push(normal);
 
-			// Compute curve offset points by slerping toward cell centers and raycasting
-			const edgeDir = point3d.clone().sub(center).normalize();
-			const cellDirA = coordToDirection(cellCenterA[0], cellCenterA[1]).normalize();
-			const cellDirB = coordToDirection(cellCenterB[0], cellCenterB[1]).normalize();
+	// Compute curve offset points by slerping toward cell centers and raycasting
+	const edgeDir = point3d.clone().sub(center).normalize();
+	const cellDirA = coordToDirection(cellCenterA[0], cellCenterA[1]).normalize();
+	const cellDirB = coordToDirection(cellCenterB[0], cellCenterB[1]).normalize();
 
-			const curveDirA = slerp(edgeDir, cellDirA, curveOffsetFactor);
-			const curveHitA = intersect(curveDirA);
-			curvePointsA.push(curveHitA ?? point3d.clone());
+	const curveDirA = slerp(edgeDir, cellDirA, curveOffsetFactor);
+	const curveHitA = intersect(curveDirA);
+	curvePointsA.push(curveHitA ?? point3d.clone());
 
-			const curveDirB = slerp(edgeDir, cellDirB, curveOffsetFactor);
-			const curveHitB = intersect(curveDirB);
-			curvePointsB.push(curveHitB ?? point3d.clone());
-		}
+	const curveDirB = slerp(edgeDir, cellDirB, curveOffsetFactor);
+	const curveHitB = intersect(curveDirB);
+	curvePointsB.push(curveHitB ?? point3d.clone());
+}
 ```
 
 Replace that entire block with:
 
 ```ts
-		const { edgePoints3d, curvePointsA, curvePointsB, normals } = computeEdgeProfiles3D({
-			v0: voronoiEdge.vertices[0],
-			v1: voronoiEdge.vertices[1],
-			divisions: edgeDivisionCounts[edgeIndex],
-			cellCenterA,
-			cellCenterB,
-			coordToDirection,
-			intersect,
-			center,
-			curveOffsetFactor,
-			surface,
-			normalRaycaster
-		});
+const { edgePoints3d, curvePointsA, curvePointsB, normals } = computeEdgeProfiles3D({
+	v0: voronoiEdge.vertices[0],
+	v1: voronoiEdge.vertices[1],
+	divisions: edgeDivisionCounts[edgeIndex],
+	cellCenterA,
+	cellCenterB,
+	coordToDirection,
+	intersect,
+	center,
+	curveOffsetFactor,
+	surface,
+	normalRaycaster
+});
 ```
 
 The next line, `if (edgePoints3d.length < 2) continue;`, is unchanged and stays.
@@ -442,6 +435,7 @@ git commit -m "refactor(voronoi): extract computeEdgeProfiles3D from makeVoronoi
 ## Task 4: Add `computeEdgeProfiles2D` and the strategy branch
 
 **Files:**
+
 - Modify: `src/lib/voronoi/generate-voronoi.ts`
 - Test: `src/lib/voronoi/__tests__/generate-voronoi.test.ts`
 
@@ -483,7 +477,7 @@ describe('makeVoronoi with planarEdges', () => {
 Run: `npm run test:unit -- src/lib/voronoi/__tests__/generate-voronoi.test.ts -t "planarEdges"`
 Expected: FAIL — `planarEdges: true` currently behaves identically to 3D, so the first test may pass, but `computeEdgeProfiles2D` does not exist yet; once Step 3's branch is added it must stay green. (If both tests already pass because `planarEdges` is ignored, that is expected before the branch — proceed to Step 3, which makes the flag actually select the 2D path.)
 
-> Note: this test asserts *valid geometry + parity*, not exact coordinates (matches the topological+close bar). It will pass once the 2D path is wired and produces sane geometry.
+> Note: this test asserts _valid geometry + parity_, not exact coordinates (matches the topological+close bar). It will pass once the 2D path is wired and produces sane geometry.
 
 - [ ] **Step 3: Add the import for the pure 2D module**
 
@@ -574,19 +568,19 @@ function computeEdgeProfiles2D(args: EdgeProfileArgs): EdgeProfiles {
 In `makeVoronoi`, find the `edgeLengths` computation (currently around lines 348–350):
 
 ```ts
-	const edgeLengths = voronoiResult.edges.map((e) =>
-		edgeArcLength(e.vertices[0], e.vertices[1], coordToDirection)
-	);
+const edgeLengths = voronoiResult.edges.map((e) =>
+	edgeArcLength(e.vertices[0], e.vertices[1], coordToDirection)
+);
 ```
 
 Replace it with:
 
 ```ts
-	const edgeLengths = voronoiResult.edges.map((e) =>
-		config.planarEdges
-			? edgeLength2D(e.vertices[0], e.vertices[1])
-			: edgeArcLength(e.vertices[0], e.vertices[1], coordToDirection)
-	);
+const edgeLengths = voronoiResult.edges.map((e) =>
+	config.planarEdges
+		? edgeLength2D(e.vertices[0], e.vertices[1])
+		: edgeArcLength(e.vertices[0], e.vertices[1], coordToDirection)
+);
 ```
 
 - [ ] **Step 6: Branch the profile strategy in the loop**
@@ -594,40 +588,40 @@ Replace it with:
 In `makeVoronoi`, find the call added in Task 3:
 
 ```ts
-		const { edgePoints3d, curvePointsA, curvePointsB, normals } = computeEdgeProfiles3D({
-			v0: voronoiEdge.vertices[0],
-			v1: voronoiEdge.vertices[1],
-			divisions: edgeDivisionCounts[edgeIndex],
-			cellCenterA,
-			cellCenterB,
-			coordToDirection,
-			intersect,
-			center,
-			curveOffsetFactor,
-			surface,
-			normalRaycaster
-		});
+const { edgePoints3d, curvePointsA, curvePointsB, normals } = computeEdgeProfiles3D({
+	v0: voronoiEdge.vertices[0],
+	v1: voronoiEdge.vertices[1],
+	divisions: edgeDivisionCounts[edgeIndex],
+	cellCenterA,
+	cellCenterB,
+	coordToDirection,
+	intersect,
+	center,
+	curveOffsetFactor,
+	surface,
+	normalRaycaster
+});
 ```
 
 Replace it with:
 
 ```ts
-		const edgeProfileArgs = {
-			v0: voronoiEdge.vertices[0],
-			v1: voronoiEdge.vertices[1],
-			divisions: edgeDivisionCounts[edgeIndex],
-			cellCenterA,
-			cellCenterB,
-			coordToDirection,
-			intersect,
-			center,
-			curveOffsetFactor,
-			surface,
-			normalRaycaster
-		};
-		const { edgePoints3d, curvePointsA, curvePointsB, normals } = config.planarEdges
-			? computeEdgeProfiles2D(edgeProfileArgs)
-			: computeEdgeProfiles3D(edgeProfileArgs);
+const edgeProfileArgs = {
+	v0: voronoiEdge.vertices[0],
+	v1: voronoiEdge.vertices[1],
+	divisions: edgeDivisionCounts[edgeIndex],
+	cellCenterA,
+	cellCenterB,
+	coordToDirection,
+	intersect,
+	center,
+	curveOffsetFactor,
+	surface,
+	normalRaycaster
+};
+const { edgePoints3d, curvePointsA, curvePointsB, normals } = config.planarEdges
+	? computeEdgeProfiles2D(edgeProfileArgs)
+	: computeEdgeProfiles3D(edgeProfileArgs);
 ```
 
 - [ ] **Step 7: Run the new tests to verify they pass**
@@ -652,6 +646,7 @@ git commit -m "feat(voronoi): planar 2D edge pipeline gated by planarEdges"
 ## Task 5: UI toggle in VoronoiControl
 
 **Files:**
+
 - Modify: `src/components/controls/VoronoiControl.svelte`
 
 - [ ] **Step 1: Widen the `update` field union and value type**
@@ -690,14 +685,14 @@ In the same `update` function, add a branch alongside the others (e.g. after the
 In the template's `.config-block`, after the "Edge Divisions (max)" label block, add:
 
 ```svelte
-		<label>
-			Planar Edges (2D)
-			<input
-				type="checkbox"
-				checked={config.planarEdges ?? false}
-				onchange={(e) => update('planarEdges', e.currentTarget.checked)}
-			/>
-		</label>
+<label>
+	Planar Edges (2D)
+	<input
+		type="checkbox"
+		checked={config.planarEdges ?? false}
+		onchange={(e) => update('planarEdges', e.currentTarget.checked)}
+	/>
+</label>
 ```
 
 - [ ] **Step 4: Verify types and build**
@@ -724,6 +719,7 @@ git commit -m "feat(voronoi): planarEdges toggle in VoronoiControl"
 ## Self-Review
 
 **Spec coverage:**
+
 - Config & gating (optional `planarEdges`, default false, no migration, UI toggle) → Tasks 2 + 5. ✓
 - Extraction seam (`EdgeProfiles`, two strategy fns, single branch, shared downstream) → Tasks 3 + 4. ✓
 - `computeEdgeProfiles2D` internals (3 polylines, sample divisions+1, project, miss-handling parity) → Task 4 Step 4 + Task 1. ✓

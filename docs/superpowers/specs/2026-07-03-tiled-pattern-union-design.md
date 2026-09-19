@@ -30,15 +30,15 @@ feature is that TODO.
 
 ## Decisions (from brainstorming)
 
-| Decision | Choice |
-| --- | --- |
-| Expansion engine (first pass) | `svg-path-outline` (already a dependency) |
-| Expander/union coupling | **Fully decoupled.** Union takes generic `PathSegment[][]` and has zero knowledge of `svg-path-outline`, so Clipper or hand-rolled geometry can replace the expander later. |
-| When computed | **On-demand**, via the existing `runPrepare()` action — not eagerly in the worker. |
-| Scope | **Union only.** No gap insertion this iteration. |
-| Line cap / join | **Round**, matching the current `stroke-linecap="round"` render. |
-| Interior holes | **Must be preserved.** |
-| Render representation | Filled silhouette `fill="rgba(200,200,200,0.1)"`, `fill-rule="evenodd"`, plus a 1px black stroke outline. |
+| Decision                      | Choice                                                                                                                                                                      |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Expansion engine (first pass) | `svg-path-outline` (already a dependency)                                                                                                                                   |
+| Expander/union coupling       | **Fully decoupled.** Union takes generic `PathSegment[][]` and has zero knowledge of `svg-path-outline`, so Clipper or hand-rolled geometry can replace the expander later. |
+| When computed                 | **On-demand**, via the existing `runPrepare()` action — not eagerly in the worker.                                                                                          |
+| Scope                         | **Union only.** No gap insertion this iteration.                                                                                                                            |
+| Line cap / join               | **Round**, matching the current `stroke-linecap="round"` render.                                                                                                            |
+| Interior holes                | **Must be preserved.**                                                                                                                                                      |
+| Render representation         | Filled silhouette `fill="rgba(200,200,200,0.1)"`, `fill-rule="evenodd"`, plus a 1px black stroke outline.                                                                   |
 
 Approach rejected: eager computation in the worker (pays the slow expansion cost
 on every edit); a parallel toggle/store/component (the existing merge pipeline
@@ -114,7 +114,7 @@ export const buildBandUnionPath = (
 ```
 
 - For each facet: `expandFacetStroke({ path: facet.path, strokeWidth:
-  facet.strokeWidth ?? 1, cap: 'round' })`.
+facet.strokeWidth ?? 1, cap: 'round' })`.
 - Concatenate all contours from all facets → `uniteMany(...)`.
 - `expander` defaults to `expandFacetStroke`; injectable for tests and future
   engine swaps.
@@ -145,11 +145,11 @@ For a tiled union path, render:
 
 ```svelte
 <path
-  d={svgPathStringFromSegments(unionPath)}
-  fill="rgba(200,200,200,0.1)"
-  fill-rule="evenodd"
-  stroke="black"
-  stroke-width={1}
+	d={svgPathStringFromSegments(unionPath)}
+	fill="rgba(200,200,200,0.1)"
+	fill-rule="evenodd"
+	stroke="black"
+	stroke-width={1}
 />
 ```
 

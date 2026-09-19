@@ -19,13 +19,13 @@ feature adds explicit edges/tubes along that rim.
 
 ## Decisions (from brainstorming)
 
-| Decision | Choice | Rationale |
-|----------|--------|-----------|
-| Method scope | Geodesic only | The only center-free method that works on open surfaces; it has the welded mesh graph needed for topological boundary detection. UV/spherical are center-based and can't render open surfaces. |
-| Open/closed classification | Topological | A surface is open iff its welded mesh graph has boundary edges (an edge used by exactly one face). Subsumes a per-type config switch, handles partial caps and arbitrary meshes for free, and is the same data the rim tracing needs. |
-| Rim → edges | Per-cell segments | Split each rim loop where the nearest-cell label changes, so each segment borders exactly one cell. Integrates with the existing per-edge/per-cell inset + tube model; split points coincide with interior cell-cell corners. |
-| Opening-side representation | Sentinel cell index `OPENING = -1` | A rim edge's `cellIndices` is `[cell, -1]`. Existing inset/tube code adapts by skipping the sentinel side. |
-| Asymmetric tube (v1) | One-sided | Cross-section applied only from the rim edge toward the cell-interior inset; no opening-side curve. A symmetric "ideal" version is explicitly out of scope for now. |
+| Decision                    | Choice                             | Rationale                                                                                                                                                                                                                             |
+| --------------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Method scope                | Geodesic only                      | The only center-free method that works on open surfaces; it has the welded mesh graph needed for topological boundary detection. UV/spherical are center-based and can't render open surfaces.                                        |
+| Open/closed classification  | Topological                        | A surface is open iff its welded mesh graph has boundary edges (an edge used by exactly one face). Subsumes a per-type config switch, handles partial caps and arbitrary meshes for free, and is the same data the rim tracing needs. |
+| Rim → edges                 | Per-cell segments                  | Split each rim loop where the nearest-cell label changes, so each segment borders exactly one cell. Integrates with the existing per-edge/per-cell inset + tube model; split points coincide with interior cell-cell corners.         |
+| Opening-side representation | Sentinel cell index `OPENING = -1` | A rim edge's `cellIndices` is `[cell, -1]`. Existing inset/tube code adapts by skipping the sentinel side.                                                                                                                            |
+| Asymmetric tube (v1)        | One-sided                          | Cross-section applied only from the rim edge toward the cell-interior inset; no opening-side curve. A symmetric "ideal" version is explicitly out of scope for now.                                                                   |
 
 ## Background: what already exists
 
@@ -54,9 +54,11 @@ feature adds explicit edges/tubes along that rim.
 ### New / changed modules
 
 **`mesh-graph.ts` — boundary loop tracing (new export)**
+
 ```
 traceBoundaryLoops(graph: MeshGraph): number[][]
 ```
+
 - Count each undirected welded edge's face incidence from `graph.faces`.
 - Boundary edges = incidence exactly 1.
 - Chain boundary edges into ordered loops of welded-vertex ids (each loop encircles
@@ -66,9 +68,11 @@ traceBoundaryLoops(graph: MeshGraph): number[][]
   are consumed; this yields valid loops without infinite looping.
 
 **`rim-edges.ts` (new)**
+
 ```
 buildRimChains(graph: MeshGraph, field: GeodesicField, loops: number[][]): BoundaryChain[]
 ```
+
 - For each loop, walk its ordered vertices; the cell label of a rim vertex is
   `field[v].nearestSeed`.
 - Split the loop into maximal runs of the same label. Each run → one rim chain for
@@ -82,21 +86,25 @@ buildRimChains(graph: MeshGraph, field: GeodesicField, loops: number[][]): Bound
   points.
 
 **`types.ts`**
+
 - Export `export const OPENING = -1;` (the opening sentinel cell index).
 
 **`geodesic-voronoi.ts`**
+
 - After `extractBoundaries`, call `traceBoundaryLoops` + `buildRimChains` and append
   the rim chains to the chain list before resampling/emit. Rim chains flow through
   the exact same resample → `VoronoiEdge` emission path; their `cellIndices` carry
   the `OPENING` sentinel.
 
 **`local-projection.ts`**
+
 - In the cell→edges grouping loop, skip the sentinel: `if (cell < 0) continue;`.
   This computes the inset only toward the real cell's seed; the opening side keeps
   its default (edge points). No other change — the real cell processes the rim edge
   as one of its edges and assigns the correct side (A or B).
 
 **`generate-voronoi.ts` (`assembleVoronoiTubes`)**
+
 - Detect a sentinel edge (`cellIndices` contains `OPENING`). For it, build a
   **one-sided tube**:
   - Determine the real side: if `cellIndices[0] === OPENING`, the real side is B

@@ -36,6 +36,7 @@
 This task widens the config/geometry/result types, keeps `flex-wrap` byte-for-byte identical in behaviour, and backfills the two new config fields. It must leave the project type-checking and all existing tests green.
 
 **Files:**
+
 - Modify: `src/lib/cut-pattern/page-layout/types.ts`
 - Modify: `src/lib/types.ts:183-191`
 - Modify: `src/lib/cut-pattern/page-layout/flex-wrap.ts:11-92`
@@ -49,31 +50,31 @@ This task widens the config/geometry/result types, keeps `flex-wrap` byte-for-by
 Append these two tests inside the `describe('migrateGlobulePatternConfig — page layout', ...)` block in `src/lib/__tests__/migrate-page-layout.test.ts`:
 
 ```ts
-	it('backfills reorderWindow and allowRotation when the pageLayout block is missing', () => {
-		const out = migrateGlobulePatternConfig({
-			patternConfig: {}
-		} as Partial<GlobulePatternConfig>);
-		expect(out.patternConfig?.pageLayout?.reorderWindow).toBe(8);
-		expect(out.patternConfig?.pageLayout?.allowRotation).toBe(false);
-	});
+it('backfills reorderWindow and allowRotation when the pageLayout block is missing', () => {
+	const out = migrateGlobulePatternConfig({
+		patternConfig: {}
+	} as Partial<GlobulePatternConfig>);
+	expect(out.patternConfig?.pageLayout?.reorderWindow).toBe(8);
+	expect(out.patternConfig?.pageLayout?.allowRotation).toBe(false);
+});
 
-	it('backfills reorderWindow and allowRotation on an existing pageLayout that lacks them', () => {
-		const out = migrateGlobulePatternConfig({
-			patternConfig: {
-				pageLayout: {
-					pageSize: { width: 304.8, height: 304.8 },
-					pageScale: 0.6562,
-					margin: 12.7,
-					gap: 20,
-					displayUnit: 'inch',
-					algorithm: 'flex-wrap',
-					keepConnected: 0
-				}
+it('backfills reorderWindow and allowRotation on an existing pageLayout that lacks them', () => {
+	const out = migrateGlobulePatternConfig({
+		patternConfig: {
+			pageLayout: {
+				pageSize: { width: 304.8, height: 304.8 },
+				pageScale: 0.6562,
+				margin: 12.7,
+				gap: 20,
+				displayUnit: 'inch',
+				algorithm: 'flex-wrap',
+				keepConnected: 0
 			}
-		} as unknown as Partial<GlobulePatternConfig>);
-		expect(out.patternConfig?.pageLayout?.reorderWindow).toBe(8);
-		expect(out.patternConfig?.pageLayout?.allowRotation).toBe(false);
-	});
+		}
+	} as unknown as Partial<GlobulePatternConfig>);
+	expect(out.patternConfig?.pageLayout?.reorderWindow).toBe(8);
+	expect(out.patternConfig?.pageLayout?.allowRotation).toBe(false);
+});
 ```
 
 - [ ] **Step 2: Run the new tests to verify they fail**
@@ -104,9 +105,9 @@ export type PageLayoutConfig = {
 In `src/lib/cut-pattern/page-layout/types.ts`, add two fields to `PageGeom` (after `gap`):
 
 ```ts
-	gap: number; // spacing between items, pattern units
-	reorderWindow: number; // skyline lookahead window (>= 1)
-	allowRotation: boolean; // skyline: permit 90° rotation
+gap: number; // spacing between items, pattern units
+reorderWindow: number; // skyline lookahead window (>= 1)
+allowRotation: boolean; // skyline: permit 90° rotation
 ```
 
 And add `rotations` to `PageLayoutResult`:
@@ -127,18 +128,18 @@ In `src/lib/cut-pattern/page-layout/flex-wrap.ts`, update the overflow early-ret
 Overflow return becomes:
 
 ```ts
-		return {
-			origins: [],
-			rotations: [],
-			pages: [],
-			overflow: { itemIndex: worst, requiredScale: pageScale * factor }
-		};
+return {
+	origins: [],
+	rotations: [],
+	pages: [],
+	overflow: { itemIndex: worst, requiredScale: pageScale * factor }
+};
 ```
 
 Final return becomes:
 
 ```ts
-	return { origins, rotations: origins.map(() => 0), pages };
+return { origins, rotations: origins.map(() => 0), pages };
 ```
 
 - [ ] **Step 6: Populate new fields in `buildPageGeom`**
@@ -174,27 +175,25 @@ In `src/lib/shades-config.ts`, replace the `pageLayout` block (lines 553-561) wi
 In `src/lib/validators.ts`, update `migrateGlobulePatternConfig`. Replace the entire existing `const pc = ...` declaration and its `if` block (lines 78-88 — the `const pc` line through the closing `}` of the `pageLayout === undefined` branch) with the following. Do not leave the old `const pc` line in place:
 
 ```ts
-	const pc = config.patternConfig as
-		| { pageLayout?: Record<string, unknown> }
-		| undefined;
-	if (pc && pc.pageLayout === undefined) {
-		pc.pageLayout = {
-			pageSize: { width: 304.8, height: 304.8 },
-			pageScale: 0.6562,
-			margin: 12.7,
-			gap: 20,
-			displayUnit: 'inch',
-			algorithm: 'flex-wrap',
-			reorderWindow: 8,
-			allowRotation: false,
-			keepConnected: 0
-		};
-	} else if (pc && pc.pageLayout) {
-		const pl = pc.pageLayout;
-		if (pl.reorderWindow === undefined) pl.reorderWindow = 8;
-		if (pl.allowRotation === undefined) pl.allowRotation = false;
-		if (pl.algorithm === undefined) pl.algorithm = 'flex-wrap';
-	}
+const pc = config.patternConfig as { pageLayout?: Record<string, unknown> } | undefined;
+if (pc && pc.pageLayout === undefined) {
+	pc.pageLayout = {
+		pageSize: { width: 304.8, height: 304.8 },
+		pageScale: 0.6562,
+		margin: 12.7,
+		gap: 20,
+		displayUnit: 'inch',
+		algorithm: 'flex-wrap',
+		reorderWindow: 8,
+		allowRotation: false,
+		keepConnected: 0
+	};
+} else if (pc && pc.pageLayout) {
+	const pl = pc.pageLayout;
+	if (pl.reorderWindow === undefined) pl.reorderWindow = 8;
+	if (pl.allowRotation === undefined) pl.allowRotation = false;
+	if (pl.algorithm === undefined) pl.algorithm = 'flex-wrap';
+}
 ```
 
 - [ ] **Step 9: Run the migration tests to verify they pass**
@@ -226,6 +225,7 @@ git commit -m "feat(page-layout): add reorderWindow/allowRotation config and rot
 Implements `skylinePageLayout` and registers it. Pure function, fully unit-tested.
 
 **Files:**
+
 - Create: `src/lib/cut-pattern/page-layout/skyline.ts`
 - Create: `src/lib/cut-pattern/page-layout/__tests__/skyline.test.ts`
 - Modify: `src/lib/cut-pattern/page-layout/registry.ts:5-7`
@@ -439,7 +439,11 @@ const bestPlacement = (
 			if (top === null || top + o.h > contentHeight + EPS) continue;
 			const score = top + o.h;
 			const x = sky[i].x;
-			if (!best || score < best.score - EPS || (Math.abs(score - best.score) < EPS && x < best.x - EPS)) {
+			if (
+				!best ||
+				score < best.score - EPS ||
+				(Math.abs(score - best.score) < EPS && x < best.x - EPS)
+			) {
 				best = { o, x, top, score };
 			}
 		}
@@ -588,6 +592,7 @@ git commit -m "feat(page-layout): implement skyline packer with bounded lookahea
 Thread `rotation` + `pivot` from the page-layout result into the band's SVG transform. Introduce a tested pure helper so the transform string is verified in isolation.
 
 **Files:**
+
 - Create: `src/lib/cut-pattern/band-transform.ts`
 - Create: `src/lib/cut-pattern/__tests__/band-transform.test.ts`
 - Modify: `src/components/cut-pattern/BandComponent.svelte:21-45,96-97,155`
@@ -644,7 +649,7 @@ Expected: PASS.
 In `src/components/cut-pattern/BandComponent.svelte`, add the import at the top of the `<script>` (with the other imports):
 
 ```ts
-	import { bandTransform, type Point2 } from '$lib/cut-pattern/band-transform';
+import { bandTransform, type Point2 } from '$lib/cut-pattern/band-transform';
 ```
 
 Add `rotation` and `pivot` to the `$props()` destructure and its type (lines 21-45). Add to the destructured names:
@@ -666,13 +671,13 @@ And to the type block:
 In `src/components/cut-pattern/BandComponent.svelte`, replace the group transform (line 97):
 
 ```svelte
-	transform={bandTransform(origin, rotation, pivot)}
+transform={bandTransform(origin, rotation, pivot)}
 ```
 
 And the PatternLabel portal transform (line 155):
 
 ```svelte
-			portal={isTiled ? { transform: bandTransform(origin, rotation, pivot) } : undefined}
+portal={isTiled ? { transform: bandTransform(origin, rotation, pivot) } : undefined}
 ```
 
 - [ ] **Step 7: Pass `rotation`/`pivot` from the page-mode render loop**
@@ -680,18 +685,18 @@ And the PatternLabel portal transform (line 155):
 In `src/components/cut-pattern/CutPatternRenderer.svelte`, the page-mode loop begins at line 314 (`{#each pageBands as { band, tube }, i ...}`) rendering `<BandComponent ... origin={pageResult.origins[i]} ...>`. Add rotation and pivot props. Change the opening `<BandComponent>` prop list (around lines 315-325) to include:
 
 ```svelte
-				origin={pageResult.origins[i]}
-				rotation={pageResult.rotations[i] ?? 0}
-				pivot={pivotFor(band)}
+origin={pageResult.origins[i]}
+rotation={pageResult.rotations[i] ?? 0}
+pivot={pivotFor(band)}
 ```
 
 Then add the `pivotFor` helper next to `toLayoutItems` (after line 173) so it uses the SAME bounds source the layout used (`effBoundsFor`):
 
 ```ts
-	const pivotFor = (band: BandCutPattern) => {
-		const b = effBoundsFor(band);
-		return { x: (b?.left ?? 0) + (b?.width ?? 0) / 2, y: (b?.top ?? 0) + (b?.height ?? 0) / 2 };
-	};
+const pivotFor = (band: BandCutPattern) => {
+	const b = effBoundsFor(band);
+	return { x: (b?.left ?? 0) + (b?.width ?? 0) / 2, y: (b?.top ?? 0) + (b?.height ?? 0) / 2 };
+};
 ```
 
 - [ ] **Step 8: Type-check**
@@ -718,6 +723,7 @@ git commit -m "feat(page-layout): render skyline rotation via band transform"
 Add the algorithm selector and skyline-only controls. UI-only; verified manually against the running app.
 
 **Files:**
+
 - Modify: `src/components/modal/editor/PageLayout.svelte:175-187` (inside the `{#if mode === 'page'}` block)
 
 - [ ] **Step 1: Add the algorithm select and skyline controls**
@@ -725,32 +731,32 @@ Add the algorithm selector and skyline-only controls. UI-only; verified manually
 In `src/components/modal/editor/PageLayout.svelte`, inside the `{#if mode === 'page'}` block, immediately after the opening `{#if mode === 'page'}` (line 175) and before the `Preset` label, insert:
 
 ```svelte
-		<label>
-			Algorithm
-			<select bind:value={$patternConfigStore.patternConfig.pageLayout.algorithm}>
-				<option value="flex-wrap">Flex-wrap</option>
-				<option value="skyline">Skyline</option>
-			</select>
-		</label>
+<label>
+	Algorithm
+	<select bind:value={$patternConfigStore.patternConfig.pageLayout.algorithm}>
+		<option value="flex-wrap">Flex-wrap</option>
+		<option value="skyline">Skyline</option>
+	</select>
+</label>
 
-		{#if $patternConfigStore.patternConfig.pageLayout.algorithm === 'skyline'}
-			<label>
-				reorder window
-				<input
-					type="number"
-					min="1"
-					step="1"
-					bind:value={$patternConfigStore.patternConfig.pageLayout.reorderWindow}
-				/>
-			</label>
-			<label class="indicator-toggle">
-				<input
-					type="checkbox"
-					bind:checked={$patternConfigStore.patternConfig.pageLayout.allowRotation}
-				/>
-				allow rotation
-			</label>
-		{/if}
+{#if $patternConfigStore.patternConfig.pageLayout.algorithm === 'skyline'}
+	<label>
+		reorder window
+		<input
+			type="number"
+			min="1"
+			step="1"
+			bind:value={$patternConfigStore.patternConfig.pageLayout.reorderWindow}
+		/>
+	</label>
+	<label class="indicator-toggle">
+		<input
+			type="checkbox"
+			bind:checked={$patternConfigStore.patternConfig.pageLayout.allowRotation}
+		/>
+		allow rotation
+	</label>
+{/if}
 ```
 
 - [ ] **Step 2: Type-check**
@@ -763,6 +769,7 @@ Expected: no new type errors.
 Run: `npm run dev`
 
 Then, in the designer, open the pattern view and the Page Layout editor and verify:
+
 1. Switch **Layout** to `Page`. The **Algorithm** select appears.
 2. With **Flex-wrap**: layout is identical to before this change (rows with the old push-up). `reorder window` / `allow rotation` controls are hidden.
 3. Switch **Algorithm** to **Skyline**: patterns re-pack more tightly (items drop into notches). The `reorder window` and `allow rotation` controls appear.

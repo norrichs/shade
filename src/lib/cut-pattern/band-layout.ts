@@ -1,4 +1,10 @@
-import type { BandCutPattern, BoundingBox, CutPattern, PatternLabelsConfig, Point } from '$lib/types';
+import type {
+	BandCutPattern,
+	BoundingBox,
+	CutPattern,
+	PatternLabelsConfig,
+	Point
+} from '$lib/types';
 import type { GlobuleAddress_Band } from '$lib/projection-geometry/types';
 import type { LabelTextDims } from '$lib/stores/mergedPathStore';
 import { buildSelfTagLines } from './build-self-tag-lines';

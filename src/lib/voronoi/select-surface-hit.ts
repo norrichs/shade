@@ -16,15 +16,12 @@ export function chooseHit(
 	tieEpsilon: number = DEFAULT_TIE_EPSILON
 ): SurfaceHit | null {
 	if (hits.length === 0) return null;
-	const scored = hits
-		.map((h) => ({ h, d: h.point.distanceTo(anchor) }))
-		.sort((a, b) => a.d - b.d);
+	const scored = hits.map((h) => ({ h, d: h.point.distanceTo(anchor) })).sort((a, b) => a.d - b.d);
 	const best = scored[0].d;
 	const tied = scored.filter((s) => s.d - best <= tieEpsilon);
 	if (tied.length === 1) return tied[0].h;
 	tied.sort(
-		(a, b) =>
-			Math.abs(b.h.normalWorld.dot(cellNormal)) - Math.abs(a.h.normalWorld.dot(cellNormal))
+		(a, b) => Math.abs(b.h.normalWorld.dot(cellNormal)) - Math.abs(a.h.normalWorld.dot(cellNormal))
 	);
 	return tied[0].h;
 }

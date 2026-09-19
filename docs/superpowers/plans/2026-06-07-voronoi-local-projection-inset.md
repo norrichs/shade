@@ -21,6 +21,7 @@ git checkout main && git pull && git checkout -b feature/voronoi-local-projectio
 ## File Structure
 
 **New files (all `src/lib/voronoi/`):**
+
 - `fit-plane.ts` — `fitPlane(points, opts)` → `{ normal, centroid }` (PCA via Jacobi).
 - `source-projection.ts` — plane basis + ray/plane flatten and inverse.
 - `inset-2d.ts` — `insetPoint2D` / `insetIntermediates2D` (homothety; the swappable seam).
@@ -32,6 +33,7 @@ git checkout main && git pull && git checkout -b feature/voronoi-local-projectio
 - `local-projection.ts` — `computeEdgeInsetsLocalProjection(...)` → `EdgeInsets[]`.
 
 **Modified files:**
+
 - `src/lib/voronoi/types.ts` — add `InsetMethod`, `VoronoiConfig.insetMethod`.
 - `src/lib/shades-config.ts` — `defaultVoronoiConfig.insetMethod`.
 - `src/lib/voronoi/migrate-voronoi-config.ts` — default missing `insetMethod`.
@@ -47,6 +49,7 @@ git checkout main && git pull && git checkout -b feature/voronoi-local-projectio
 ## Task 1: Config plumbing for `insetMethod`
 
 **Files:**
+
 - Modify: `src/lib/voronoi/types.ts`
 - Modify: `src/lib/shades-config.ts:700-727`
 - Modify: `src/lib/voronoi/migrate-voronoi-config.ts:44-47`
@@ -89,7 +92,7 @@ export type InsetMethod = 'centerOut' | 'localProjection';
 In the `VoronoiConfig` type, after `voronoiMethod: VoronoiMethod;` (line 22) add:
 
 ```ts
-	insetMethod: InsetMethod;
+insetMethod: InsetMethod;
 ```
 
 - [ ] **Step 4: Add the default**
@@ -97,7 +100,7 @@ In the `VoronoiConfig` type, after `voronoiMethod: VoronoiMethod;` (line 22) add
 In `src/lib/shades-config.ts`, in `defaultVoronoiConfig` after `voronoiMethod: 'spherical'` (line 726) add (mind the trailing comma on the prior line):
 
 ```ts
-	insetMethod: 'centerOut'
+insetMethod: 'centerOut';
 ```
 
 - [ ] **Step 5: Add the migration default**
@@ -105,11 +108,11 @@ In `src/lib/shades-config.ts`, in `defaultVoronoiConfig` after `voronoiMethod: '
 In `src/lib/voronoi/migrate-voronoi-config.ts`, replace the `voronoiConfig` construction (lines 44-47) with:
 
 ```ts
-	const voronoiConfig: VoronoiConfig = {
-		...resolved,
-		edgeDivisions: normalizeEdgeDivisions(resolved.edgeDivisions),
-		insetMethod: resolved.insetMethod ?? 'centerOut'
-	};
+const voronoiConfig: VoronoiConfig = {
+	...resolved,
+	edgeDivisions: normalizeEdgeDivisions(resolved.edgeDivisions),
+	insetMethod: resolved.insetMethod ?? 'centerOut'
+};
 ```
 
 - [ ] **Step 6: Run the tests, verify they pass**
@@ -120,6 +123,7 @@ Expected: PASS (all migration tests).
 - [ ] **Step 7: Add the UI selector**
 
 In `src/components/controls/VoronoiControl.svelte`:
+
 - In the import on line 4, add `InsetMethod`: `import type { VoronoiConfig, VoronoiMethod, InsetMethod } from '$lib/voronoi/types';`
 - In the `update` `field` union (lines 9-18), add `| 'insetMethod'`.
 - In `update`, after the `voronoiMethod` branch (line 70) add:
@@ -132,16 +136,16 @@ In `src/components/controls/VoronoiControl.svelte`:
 - In the template, after the `Method` (voronoiMethod) `<label>` block (lines 96-105) add:
 
 ```svelte
-		<label>
-			Inset Method
-			<select
-				value={config.insetMethod ?? 'centerOut'}
-				onchange={(e) => update('insetMethod', e.currentTarget.value)}
-			>
-				<option value="centerOut">Center Out</option>
-				<option value="localProjection">Local Projection</option>
-			</select>
-		</label>
+<label>
+	Inset Method
+	<select
+		value={config.insetMethod ?? 'centerOut'}
+		onchange={(e) => update('insetMethod', e.currentTarget.value)}
+	>
+		<option value="centerOut">Center Out</option>
+		<option value="localProjection">Local Projection</option>
+	</select>
+</label>
 ```
 
 - [ ] **Step 8: Type check and commit**
@@ -159,6 +163,7 @@ git commit -m "feat(voronoi): add insetMethod config field (centerOut|localProje
 ## Task 2: `fit-plane.ts` — PCA plane fit
 
 **Files:**
+
 - Create: `src/lib/voronoi/fit-plane.ts`
 - Test: `src/lib/voronoi/__tests__/fit-plane.test.ts`
 
@@ -203,11 +208,7 @@ describe('fitPlane', () => {
 	});
 
 	it('orients the normal away from a given center', () => {
-		const pts = [
-			new Vector3(0, 0, 5),
-			new Vector3(1, 0, 5),
-			new Vector3(0, 1, 5)
-		];
+		const pts = [new Vector3(0, 0, 5), new Vector3(1, 0, 5), new Vector3(0, 1, 5)];
 		const center = new Vector3(0, 0, 0);
 		const { normal } = fitPlane(pts, { orientAwayFrom: center });
 		// centroid is at z=5, away-from-center means +z.
@@ -385,6 +386,7 @@ git commit -m "feat(voronoi): add fitPlane PCA helper for local projection"
 ## Task 3: `source-projection.ts` — flatten via source / inverse
 
 **Files:**
+
 - Create: `src/lib/voronoi/source-projection.ts`
 - Test: `src/lib/voronoi/__tests__/source-projection.test.ts`
 
@@ -538,6 +540,7 @@ git commit -m "feat(voronoi): add source-projection flatten/inverse helpers"
 ## Task 4: `inset-2d.ts` — homothety inset (swappable seam)
 
 **Files:**
+
 - Create: `src/lib/voronoi/inset-2d.ts`
 - Test: `src/lib/voronoi/__tests__/inset-2d.test.ts`
 
@@ -656,6 +659,7 @@ git commit -m "feat(voronoi): add inset-2d homothety primitive"
 ## Task 5: `select-surface-hit.ts` — hit selection (proximity + normal tiebreak)
 
 **Files:**
+
 - Create: `src/lib/voronoi/select-surface-hit.ts`
 - Test: `src/lib/voronoi/__tests__/select-surface-hit.test.ts`
 
@@ -708,7 +712,10 @@ describe('chooseHit (pure)', () => {
 describe('selectSurfaceHit (raycast wrapper)', () => {
 	function sphereSurface(radius: number): Object3D {
 		const surface = new Object3D();
-		const mesh = new Mesh(new SphereGeometry(radius, 32, 32), new MeshBasicMaterial({ side: DoubleSide }));
+		const mesh = new Mesh(
+			new SphereGeometry(radius, 32, 32),
+			new MeshBasicMaterial({ side: DoubleSide })
+		);
 		surface.add(mesh);
 		surface.updateMatrixWorld(true);
 		return surface;
@@ -720,7 +727,13 @@ describe('selectSurfaceHit (raycast wrapper)', () => {
 		const source = new Vector3(0, 0, 500);
 		const through = new Vector3(0, 0, 0);
 		const anchor = new Vector3(0, 0, 100); // near side
-		const hit = selectSurfaceHit({ surface, source, through, anchor, cellNormal: new Vector3(0, 0, 1) });
+		const hit = selectSurfaceHit({
+			surface,
+			source,
+			through,
+			anchor,
+			cellNormal: new Vector3(0, 0, 1)
+		});
 		expect(hit).not.toBeNull();
 		expect(hit!.z).toBeCloseTo(100, 0);
 	});
@@ -769,15 +782,12 @@ export function chooseHit(
 	tieEpsilon: number = DEFAULT_TIE_EPSILON
 ): SurfaceHit | null {
 	if (hits.length === 0) return null;
-	const scored = hits
-		.map((h) => ({ h, d: h.point.distanceTo(anchor) }))
-		.sort((a, b) => a.d - b.d);
+	const scored = hits.map((h) => ({ h, d: h.point.distanceTo(anchor) })).sort((a, b) => a.d - b.d);
 	const best = scored[0].d;
 	const tied = scored.filter((s) => s.d - best <= tieEpsilon);
 	if (tied.length === 1) return tied[0].h;
 	tied.sort(
-		(a, b) =>
-			Math.abs(b.h.normalWorld.dot(cellNormal)) - Math.abs(a.h.normalWorld.dot(cellNormal))
+		(a, b) => Math.abs(b.h.normalWorld.dot(cellNormal)) - Math.abs(a.h.normalWorld.dot(cellNormal))
 	);
 	return tied[0].h;
 }
@@ -834,6 +844,7 @@ git commit -m "feat(voronoi): add surface-hit selection (proximity + normal tieb
 This is a pure move so both methods share it; behavior is guarded by the existing `generate-voronoi.test.ts`.
 
 **Files:**
+
 - Create: `src/lib/voronoi/edge-sampling.ts`
 - Modify: `src/lib/voronoi/generate-voronoi.ts` (remove the moved functions, import them)
 - Test: `src/lib/voronoi/__tests__/edge-sampling.test.ts`
@@ -945,11 +956,17 @@ export function slerp(a: Vector3, b: Vector3, t: number): Vector3 {
 - [ ] **Step 4: Remove the moved code from `generate-voronoi.ts` and import it**
 
 In `src/lib/voronoi/generate-voronoi.ts`:
+
 - Delete the `sampleEdgeAsDirections` function (lines 101-116), the `edgeArcLength` function (lines 118-132), the `slerp` function (lines 134-144), and the `type CoordToDirection` line (line 283).
 - Add an import near the other `./` imports (after line 27):
 
 ```ts
-import { slerp, edgeArcLength, sampleEdgeAsDirections, type CoordToDirection } from './edge-sampling';
+import {
+	slerp,
+	edgeArcLength,
+	sampleEdgeAsDirections,
+	type CoordToDirection
+} from './edge-sampling';
 ```
 
 (`slerp` is still used by the surface-projection section; `edgeArcLength`/`sampleEdgeAsDirections` by the edge loop; `CoordToDirection` by `computeVoronoiFromSeeds`.)
@@ -974,6 +991,7 @@ git commit -m "refactor(voronoi): extract edge-sampling helpers (no behavior cha
 ## Task 7: `project-edges-onto-surface.ts` — Phase 1 helper
 
 **Files:**
+
 - Create: `src/lib/voronoi/project-edges-onto-surface.ts`
 - Modify: `src/lib/voronoi/generate-voronoi.ts` (use the helper for `edgePoints3d` + `normals`)
 - Test: `src/lib/voronoi/__tests__/project-edges-onto-surface.test.ts`
@@ -998,7 +1016,10 @@ import type { CoordToDirection } from '../edge-sampling';
 
 function sphereSurface(radius: number): Object3D {
 	const surface = new Object3D();
-	const mesh = new Mesh(new SphereGeometry(radius, 48, 48), new MeshBasicMaterial({ side: DoubleSide }));
+	const mesh = new Mesh(
+		new SphereGeometry(radius, 48, 48),
+		new MeshBasicMaterial({ side: DoubleSide })
+	);
 	surface.add(mesh);
 	surface.updateMatrixWorld(true);
 	return surface;
@@ -1010,11 +1031,7 @@ describe('projectEdgesOntoSurface', () => {
 	const surface = sphereSurface(R);
 	// coordToDirection: (lon,lat) radians -> unit direction.
 	const coordToDirection: CoordToDirection = (lon, lat) =>
-		new Vector3(
-			Math.cos(lat) * Math.cos(lon),
-			Math.cos(lat) * Math.sin(lon),
-			Math.sin(lat)
-		);
+		new Vector3(Math.cos(lat) * Math.cos(lon), Math.cos(lat) * Math.sin(lon), Math.sin(lat));
 	const intersect = (dir: Vector3): Vector3 | null => {
 		const rc = new Raycaster(center, dir.clone().normalize(), undefined, 2000);
 		const hits = rc.intersectObject(surface, true);
@@ -1022,7 +1039,15 @@ describe('projectEdgesOntoSurface', () => {
 	};
 
 	it('places edge points on the sphere with radial normals', () => {
-		const edges: VoronoiEdge[] = [{ vertices: [[0, 0], [Math.PI / 4, 0]], cellIndices: [0, 1] }];
+		const edges: VoronoiEdge[] = [
+			{
+				vertices: [
+					[0, 0],
+					[Math.PI / 4, 0]
+				],
+				cellIndices: [0, 1]
+			}
+		];
 		const result = projectEdgesOntoSurface({
 			edges,
 			edgeDivisionCounts: [4],
@@ -1116,6 +1141,7 @@ Expected: PASS (1 test).
 - [ ] **Step 5: Wire the helper into `makeVoronoi` (Phase 1)**
 
 In `src/lib/voronoi/generate-voronoi.ts`:
+
 - Import the helper (after the edge-sampling import added in Task 6):
 
 ```ts
@@ -1125,35 +1151,35 @@ import { projectEdgesOntoSurface, type EdgeProjection } from './project-edges-on
 - After `edgeDivisionCounts` is computed (currently line 351), add:
 
 ```ts
-		const edgeProjections: EdgeProjection[] = projectEdgesOntoSurface({
-			edges: voronoiResult.edges,
-			edgeDivisionCounts,
-			coordToDirection,
-			center,
-			surface,
-			intersect
-		});
+const edgeProjections: EdgeProjection[] = projectEdgesOntoSurface({
+	edges: voronoiResult.edges,
+	edgeDivisionCounts,
+	coordToDirection,
+	center,
+	surface,
+	intersect
+});
 ```
 
 - Inside the per-edge loop, replace the direction-sampling + per-point raycast block that builds `edgePoints3d` and `normals` (currently the `edgeDirections` declaration plus the `for (const dir of edgeDirections)` loop, lines 360-405) so that `edgePoints3d` and `normals` come from `edgeProjections`, while the curve-offset points stay computed for now from the existing inline slerp. Concretely, replace lines 359-405 with:
 
 ```ts
-		const { edgePoints3d, normals } = edgeProjections[edgeIndex];
+const { edgePoints3d, normals } = edgeProjections[edgeIndex];
 
-		// Curve offset points (still center-out here; replaced by EdgeInsets in Task 8).
-		const curvePointsA: Vector3[] = [];
-		const curvePointsB: Vector3[] = [];
-		for (const point3d of edgePoints3d) {
-			const edgeDir = point3d.clone().sub(center).normalize();
-			const cellDirA = coordToDirection(cellCenterA[0], cellCenterA[1]).normalize();
-			const cellDirB = coordToDirection(cellCenterB[0], cellCenterB[1]).normalize();
+// Curve offset points (still center-out here; replaced by EdgeInsets in Task 8).
+const curvePointsA: Vector3[] = [];
+const curvePointsB: Vector3[] = [];
+for (const point3d of edgePoints3d) {
+	const edgeDir = point3d.clone().sub(center).normalize();
+	const cellDirA = coordToDirection(cellCenterA[0], cellCenterA[1]).normalize();
+	const cellDirB = coordToDirection(cellCenterB[0], cellCenterB[1]).normalize();
 
-			const curveHitA = intersect(slerp(edgeDir, cellDirA, curveOffsetFactor));
-			curvePointsA.push(curveHitA ?? point3d.clone());
+	const curveHitA = intersect(slerp(edgeDir, cellDirA, curveOffsetFactor));
+	curvePointsA.push(curveHitA ?? point3d.clone());
 
-			const curveHitB = intersect(slerp(edgeDir, cellDirB, curveOffsetFactor));
-			curvePointsB.push(curveHitB ?? point3d.clone());
-		}
+	const curveHitB = intersect(slerp(edgeDir, cellDirB, curveOffsetFactor));
+	curvePointsB.push(curveHitB ?? point3d.clone());
+}
 ```
 
 (This preserves identical behavior — same points, same normals, same curve offsets — but `edgePoints3d`/`normals` now come from the shared Phase-1 helper. The `normalRaycaster` declaration at line 343 is now unused; delete it.)
@@ -1180,6 +1206,7 @@ git commit -m "refactor(voronoi): use shared Phase-1 edge projection helper"
 Pull both inset computations (curve points AND surface-projection intermediates) out of `makeVoronoi` into one function returning `EdgeInsets[]`, so the per-edge loop just consumes a precomputed structure. Behavior guarded by the existing `generate-voronoi.test.ts` (including the fold-back regression).
 
 **Files:**
+
 - Create: `src/lib/voronoi/inset-types.ts`
 - Create: `src/lib/voronoi/inset-center-out.ts`
 - Modify: `src/lib/voronoi/generate-voronoi.ts`
@@ -1229,7 +1256,10 @@ import type { CoordToDirection } from '../edge-sampling';
 
 function sphereSurface(radius: number): Object3D {
 	const surface = new Object3D();
-	const mesh = new Mesh(new SphereGeometry(radius, 48, 48), new MeshBasicMaterial({ side: DoubleSide }));
+	const mesh = new Mesh(
+		new SphereGeometry(radius, 48, 48),
+		new MeshBasicMaterial({ side: DoubleSide })
+	);
 	surface.add(mesh);
 	surface.updateMatrixWorld(true);
 	return surface;
@@ -1248,7 +1278,15 @@ describe('computeEdgeInsetsCenterOut', () => {
 	};
 
 	// One edge between two cells whose seeds straddle the edge.
-	const edges: VoronoiEdge[] = [{ vertices: [[0, -0.3], [0, 0.3]], cellIndices: [0, 1] }];
+	const edges: VoronoiEdge[] = [
+		{
+			vertices: [
+				[0, -0.3],
+				[0, 0.3]
+			],
+			cellIndices: [0, 1]
+		}
+	];
 	const relaxedSeeds: [number, number][] = [
 		[-0.4, 0],
 		[0.4, 0]
@@ -1356,8 +1394,14 @@ export function computeEdgeInsetsCenterOut(params: {
 	return edges.map((edge, edgeIndex) => {
 		const edgePoints3d = edgeProjections[edgeIndex].edgePoints3d;
 		const [cellIdxA, cellIdxB] = edge.cellIndices;
-		const cellDirA = coordToDirection(relaxedSeeds[cellIdxA][0], relaxedSeeds[cellIdxA][1]).normalize();
-		const cellDirB = coordToDirection(relaxedSeeds[cellIdxB][0], relaxedSeeds[cellIdxB][1]).normalize();
+		const cellDirA = coordToDirection(
+			relaxedSeeds[cellIdxA][0],
+			relaxedSeeds[cellIdxA][1]
+		).normalize();
+		const cellDirB = coordToDirection(
+			relaxedSeeds[cellIdxB][0],
+			relaxedSeeds[cellIdxB][1]
+		).normalize();
 
 		const curvePointsA: Vector3[] = [];
 		const curvePointsB: Vector3[] = [];
@@ -1405,6 +1449,7 @@ Expected: PASS (2 tests).
 - [ ] **Step 6: Consume `EdgeInsets` in `makeVoronoi`**
 
 In `src/lib/voronoi/generate-voronoi.ts`:
+
 - Add imports:
 
 ```ts
@@ -1415,35 +1460,35 @@ import { computeEdgeInsetsCenterOut } from './inset-center-out';
 - After the `edgeProjections` assignment (added in Task 7), add:
 
 ```ts
-		const edgeInsets: EdgeInsets[] = computeEdgeInsetsCenterOut({
-			edges: voronoiResult.edges,
-			edgeProjections,
-			relaxedSeeds,
-			coordToDirection,
-			center,
-			intersect,
-			curveOffsetFactor,
-			surfaceProjectionDivisions: config.surfaceProjectionDivisions ?? 0
-		});
+const edgeInsets: EdgeInsets[] = computeEdgeInsetsCenterOut({
+	edges: voronoiResult.edges,
+	edgeProjections,
+	relaxedSeeds,
+	coordToDirection,
+	center,
+	intersect,
+	curveOffsetFactor,
+	surfaceProjectionDivisions: config.surfaceProjectionDivisions ?? 0
+});
 ```
 
 - In the per-edge loop, replace the inline `curvePointsA`/`curvePointsB` computation (the block added in Task 7 Step 5) with:
 
 ```ts
-		const { edgePoints3d, normals } = edgeProjections[edgeIndex];
-		const { curvePointsA, curvePointsB, divsA, divsB } = edgeInsets[edgeIndex];
+const { edgePoints3d, normals } = edgeProjections[edgeIndex];
+const { curvePointsA, curvePointsB, divsA, divsB } = edgeInsets[edgeIndex];
 ```
 
 - In the surface-projection section, replace the inline `divA`/`divB` computation inside the `spSections` map (original lines 458-491) so it uses the precomputed divisions. Replace the body of the `edgePoints3d.map((edgePoint, idx)...)` callback with:
 
 ```ts
-		const spSections: Section[] = edgePoints3d.map((edgePoint, idx): Section => {
-			const cA = curvePointsA[idx];
-			const cB = curvePointsB[idx];
-			return {
-				points: [cA.clone(), ...divsA[idx], edgePoint.clone(), ...divsB[idx], cB.clone()]
-			};
-		});
+const spSections: Section[] = edgePoints3d.map((edgePoint, idx): Section => {
+	const cA = curvePointsA[idx];
+	const cB = curvePointsB[idx];
+	return {
+		points: [cA.clone(), ...divsA[idx], edgePoint.clone(), ...divsB[idx], cB.clone()]
+	};
+});
 ```
 
 - The local `curveOffsetFactor` const (line 340) is still used for the `computeEdgeInsetsCenterOut` call; keep it. The `cellCenterA`/`cellCenterB` locals (lines 356-357), the `spDivisions` local (original line 456, now superseded by the precomputed `divsA`/`divsB`), and the `slerp` import may now be unused in `generate-voronoi.ts` — remove each if `npm run check` flags it as unused.
@@ -1468,6 +1513,7 @@ git commit -m "refactor(voronoi): consume EdgeInsets; extract centerOut inset co
 ## Task 9: `local-projection.ts` — per-cell inset + wire `insetMethod` branch
 
 **Files:**
+
 - Create: `src/lib/voronoi/local-projection.ts`
 - Modify: `src/lib/voronoi/generate-voronoi.ts` (branch on `insetMethod`; precompute seed 3D points)
 - Test: `src/lib/voronoi/__tests__/local-projection.test.ts`
@@ -1495,7 +1541,10 @@ import type { CoordToDirection } from '../edge-sampling';
 
 function sphereSurface(radius: number): Object3D {
 	const surface = new Object3D();
-	const mesh = new Mesh(new SphereGeometry(radius, 64, 64), new MeshBasicMaterial({ side: DoubleSide }));
+	const mesh = new Mesh(
+		new SphereGeometry(radius, 64, 64),
+		new MeshBasicMaterial({ side: DoubleSide })
+	);
 	surface.add(mesh);
 	surface.updateMatrixWorld(true);
 	return surface;
@@ -1516,11 +1565,41 @@ describe('computeEdgeInsetsLocalProjection', () => {
 	// Two cells (0,1) sharing one edge near lon=0; each cell also has two more edges so the
 	// per-cell plane fit has enough non-collinear points.
 	const edges: VoronoiEdge[] = [
-		{ vertices: [[0, -0.3], [0, 0.3]], cellIndices: [0, 1] }, // shared edge
-		{ vertices: [[-0.3, -0.3], [0, -0.3]], cellIndices: [0, 2] },
-		{ vertices: [[-0.3, 0.3], [0, 0.3]], cellIndices: [0, 2] },
-		{ vertices: [[0.3, -0.3], [0, -0.3]], cellIndices: [1, 3] },
-		{ vertices: [[0.3, 0.3], [0, 0.3]], cellIndices: [1, 3] }
+		{
+			vertices: [
+				[0, -0.3],
+				[0, 0.3]
+			],
+			cellIndices: [0, 1]
+		}, // shared edge
+		{
+			vertices: [
+				[-0.3, -0.3],
+				[0, -0.3]
+			],
+			cellIndices: [0, 2]
+		},
+		{
+			vertices: [
+				[-0.3, 0.3],
+				[0, 0.3]
+			],
+			cellIndices: [0, 2]
+		},
+		{
+			vertices: [
+				[0.3, -0.3],
+				[0, -0.3]
+			],
+			cellIndices: [1, 3]
+		},
+		{
+			vertices: [
+				[0.3, 0.3],
+				[0, 0.3]
+			],
+			cellIndices: [1, 3]
+		}
 	];
 	const relaxedSeeds: [number, number][] = [
 		[-0.2, 0], // cell 0
@@ -1529,12 +1608,15 @@ describe('computeEdgeInsetsLocalProjection', () => {
 		[0.5, 0] // cell 3
 	];
 	const edgeProjections: EdgeProjection[] = edges.map((e) => {
-		const dirs = [e.vertices[0], e.vertices[1]].map((v) =>
-			intersect(coordToDirection(v[0], v[1]))!
+		const dirs = [e.vertices[0], e.vertices[1]].map(
+			(v) => intersect(coordToDirection(v[0], v[1]))!
 		);
 		// subdivide: endpoints + midpoint
 		const mid = intersect(
-			coordToDirection((e.vertices[0][0] + e.vertices[1][0]) / 2, (e.vertices[0][1] + e.vertices[1][1]) / 2)
+			coordToDirection(
+				(e.vertices[0][0] + e.vertices[1][0]) / 2,
+				(e.vertices[0][1] + e.vertices[1][1]) / 2
+			)
 		)!;
 		return { edgePoints3d: [dirs[0], mid, dirs[1]], normals: [] };
 	});
@@ -1698,7 +1780,10 @@ export function computeEdgeInsetsLocalProjection(params: {
 		if (seedForInset) samples.push(seedForInset);
 
 		const fallbackNormal = averageNormal(edgeIdxs, edgeProjections);
-		const { normal, centroid } = fitPlane(samples, { fallbackNormal, orientAwayFrom: surfaceCenter });
+		const { normal, centroid } = fitPlane(samples, {
+			fallbackNormal,
+			orientAwayFrom: surfaceCenter
+		});
 		const size = maxPairwiseDistance(samples);
 		if (size < 1e-9) continue;
 		const sourceDistance = distanceFactor * size;
@@ -1729,12 +1814,22 @@ export function computeEdgeInsetsLocalProjection(params: {
 				const inset2d = insetPoint2D(e2d, seed2d, curveOffsetFactor);
 				const insetThrough = plane2DToPoint3D(inset2d, planePoint, basis);
 				const insetPt =
-					selectSurfaceHit({ surface, source, through: insetThrough, anchor, cellNormal: normal }) ??
-					anchor.clone();
+					selectSurfaceHit({
+						surface,
+						source,
+						through: insetThrough,
+						anchor,
+						cellNormal: normal
+					}) ?? anchor.clone();
 				curve.push(insetPt);
 
 				// Intermediates ordered inset -> edge (== cA -> edge for side A).
-				const inter2d = insetIntermediates2D(e2d, seed2d, curveOffsetFactor, surfaceProjectionDivisions);
+				const inter2d = insetIntermediates2D(
+					e2d,
+					seed2d,
+					curveOffsetFactor,
+					surfaceProjectionDivisions
+				);
 				const interPts = inter2d.map((p2) => {
 					const through = plane2DToPoint3D(p2, planePoint, basis);
 					return (
@@ -1768,6 +1863,7 @@ Expected: PASS (3 tests).
 - [ ] **Step 5: Wire the branch into `makeVoronoi`**
 
 In `src/lib/voronoi/generate-voronoi.ts`:
+
 - Add the import:
 
 ```ts
@@ -1777,31 +1873,31 @@ import { computeEdgeInsetsLocalProjection } from './local-projection';
 - Replace the `edgeInsets` assignment (added in Task 8 Step 6) with a branch. First, precompute the per-cell seed 3D points (reuse the pattern already used by `fillAll` at the bottom of the file):
 
 ```ts
-		const seedPoints3d = relaxedSeeds.map((seed) => intersect(coordToDirection(seed[0], seed[1])));
+const seedPoints3d = relaxedSeeds.map((seed) => intersect(coordToDirection(seed[0], seed[1])));
 
-		const edgeInsets: EdgeInsets[] =
-			config.insetMethod === 'localProjection'
-				? computeEdgeInsetsLocalProjection({
-						edges: voronoiResult.edges,
-						edgeProjections,
-						relaxedSeeds,
-						seedPoints3d,
-						coordToDirection,
-						surface,
-						surfaceCenter: center,
-						curveOffsetFactor,
-						surfaceProjectionDivisions: config.surfaceProjectionDivisions ?? 0
-					})
-				: computeEdgeInsetsCenterOut({
-						edges: voronoiResult.edges,
-						edgeProjections,
-						relaxedSeeds,
-						coordToDirection,
-						center,
-						intersect,
-						curveOffsetFactor,
-						surfaceProjectionDivisions: config.surfaceProjectionDivisions ?? 0
-					});
+const edgeInsets: EdgeInsets[] =
+	config.insetMethod === 'localProjection'
+		? computeEdgeInsetsLocalProjection({
+				edges: voronoiResult.edges,
+				edgeProjections,
+				relaxedSeeds,
+				seedPoints3d,
+				coordToDirection,
+				surface,
+				surfaceCenter: center,
+				curveOffsetFactor,
+				surfaceProjectionDivisions: config.surfaceProjectionDivisions ?? 0
+			})
+		: computeEdgeInsetsCenterOut({
+				edges: voronoiResult.edges,
+				edgeProjections,
+				relaxedSeeds,
+				coordToDirection,
+				center,
+				intersect,
+				curveOffsetFactor,
+				surfaceProjectionDivisions: config.surfaceProjectionDivisions ?? 0
+			});
 ```
 
 - [ ] **Step 6: Add a smoke test for the wired branch**
@@ -1809,15 +1905,15 @@ import { computeEdgeInsetsLocalProjection } from './local-projection';
 Add to `src/lib/voronoi/__tests__/generate-voronoi.test.ts`, inside the `describe('makeVoronoi', ...)` block:
 
 ```ts
-	it('generates tubes with insetMethod localProjection', () => {
-		const address: GlobuleAddress = { globule: 0 };
-		const config: VoronoiConfig = { ...makeTestConfig(), insetMethod: 'localProjection' };
-		const result = makeVoronoi(config, address, testSurfaceConfig);
-		expect(result.tubes.length).toBeGreaterThan(0);
-		result.tubes.forEach((tube) => {
-			tube.bands.forEach((band) => expect(band.facets.length).toBeGreaterThan(0));
-		});
+it('generates tubes with insetMethod localProjection', () => {
+	const address: GlobuleAddress = { globule: 0 };
+	const config: VoronoiConfig = { ...makeTestConfig(), insetMethod: 'localProjection' };
+	const result = makeVoronoi(config, address, testSurfaceConfig);
+	expect(result.tubes.length).toBeGreaterThan(0);
+	result.tubes.forEach((tube) => {
+		tube.bands.forEach((band) => expect(band.facets.length).toBeGreaterThan(0));
 	});
+});
 ```
 
 Also add `insetMethod: 'centerOut'` to the object returned by `makeTestConfig()` (after `voronoiMethod: 'spherical'`, line 200) so the base test config is type-complete.
@@ -1853,9 +1949,10 @@ Run: `npm run dev`
 - [ ] **Step 2: Compare methods on each surface**
 
 In the designer, with a Voronoi config on a **sphere**, toggle the new **Inset Method** control between **Center Out** and **Local Projection**. Confirm:
+
 - Local Projection produces inset tubes in roughly the same places as Center Out (rough parity).
 - No obviously inverted/exploded geometry (which would indicate a wrong back-projection hit).
-Repeat on **capsule** and **globule** surfaces.
+  Repeat on **capsule** and **globule** surfaces.
 
 - [ ] **Step 3: Record the outcome**
 
@@ -1867,4 +1964,7 @@ Note any surface where parity is poor or geometry is wrong. If issues appear, th
 
 - **Spec coverage:** granularity per-cell (Task 9); hit selection proximity+normal (Task 5, used in Task 9); gating via orthogonal `insetMethod` (Task 1); homothety behind swappable `inset-2d` (Task 4); SVD/PCA plane fit (Task 2); per-cell diameter size + 10× source distance (Task 9); Phase-1 shared helper (Task 7); EdgeInsets seam keeping Phase 3 unchanged (Task 8); migration default (Task 1); tests incl. sphere rough-parity and seam invariant (Task 9). Scope limitation (Phase 1 stays center-based) is documented in the spec; no task changes Phase 1's diagram mapping, consistent with that.
 - **Type consistency:** `EdgeInsets` (curvePointsA/curvePointsB/divsA/divsB) defined in `inset-types.ts` and produced identically by `inset-center-out.ts` and `local-projection.ts`; `EdgeProjection` (edgePoints3d/normals) from `project-edges-onto-surface.ts`; `CoordToDirection` from `edge-sampling.ts`; `InsetMethod` from `types.ts`. `divsA` ordered cA→edge, `divsB` ordered edge→cB in both producers (local-projection reverses side B to match).
+
+```
+
 ```

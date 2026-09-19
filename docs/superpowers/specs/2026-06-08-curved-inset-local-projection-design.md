@@ -170,7 +170,7 @@ config.curvedInset ──► generate-voronoi ──► computeEdgeInsetsLocalPr
   on the surface (radius check) and inner-curve endpoints lie on vertex→seed lines; an open
   / boundary edge exercises the straight-inset fallback.
 - `generate-voronoi.test.ts` — smoke test generating tubes with `insetMethod:
-  'localProjection'` and `curvedInset: true`.
+'localProjection'` and `curvedInset: true`.
 
 ## Non-goals
 

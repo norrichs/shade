@@ -7,7 +7,8 @@ import type { SurfaceProjector } from './smooth-chains';
 export function resamplePolyline(points: Vector3[], count: number): Vector3[] {
 	if (points.length < 2 || count <= 1) return points.map((p) => p.clone());
 	const cum: number[] = [0];
-	for (let i = 1; i < points.length; i++) cum.push(cum[i - 1] + points[i].distanceTo(points[i - 1]));
+	for (let i = 1; i < points.length; i++)
+		cum.push(cum[i - 1] + points[i].distanceTo(points[i - 1]));
 	const total = cum[cum.length - 1];
 	if (total < 1e-12) return points.map((p) => p.clone());
 	const out: Vector3[] = [];
@@ -56,7 +57,10 @@ export function straightenToGeodesic(
 		const next = cur.map((p) => p.clone());
 		let maxMove = 0;
 		for (let i = 1; i < n - 1; i++) {
-			const mid = cur[i - 1].clone().add(cur[i + 1]).multiplyScalar(0.5);
+			const mid = cur[i - 1]
+				.clone()
+				.add(cur[i + 1])
+				.multiplyScalar(0.5);
 			const moved = cur[i].clone().lerp(mid, stepFactor);
 			const snapped = projector.projectClosest(moved).point;
 			maxMove = Math.max(maxMove, snapped.distanceTo(cur[i]));

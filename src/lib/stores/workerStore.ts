@@ -242,7 +242,10 @@ function getWorker(): Worker {
 				pendingPatternResolvers.delete(data.requestId);
 				if (pendingPatternResolvers.size === 0) isPatternWorking.set(false);
 				if (!resolver) {
-					console.warn('[WorkerStore] Received pattern response for unknown request:', data.requestId);
+					console.warn(
+						'[WorkerStore] Received pattern response for unknown request:',
+						data.requestId
+					);
 					return;
 				}
 				if (data.type === 'pattern-result') {

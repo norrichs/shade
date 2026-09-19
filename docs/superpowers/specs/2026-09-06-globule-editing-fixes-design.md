@@ -64,8 +64,8 @@ Today:
 ```ts
 const totalLength = shape.getLength();
 shape.curves.forEach((curve) => {
-  const ratio = curve.getLength() / totalLength;
-  points.push(...curve.getPoints(Math.ceil(sampleMethod.divisions * ratio)).slice(1));
+	const ratio = curve.getLength() / totalLength;
+	points.push(...curve.getPoints(Math.ceil(sampleMethod.divisions * ratio)).slice(1));
 });
 ```
 
@@ -77,7 +77,7 @@ symmetric, which is the opposite of what this method is for.
 **Required behavior:** join every bezier of the entire cross-section into one
 `CurvePath` and divide it evenly by arc length. For a 7-side radial section with
 2 beziers per side that is a 14-curve path divided into `divisions` spans, and
-the boundaries are deliberately *not* radially symmetric.
+the boundaries are deliberately _not_ radially symmetric.
 
 **Implementation:** the joined `CurvePath` is exactly what `generateRadialShape`
 already returns, and `CurvePath.getPoint(t)` already maps `t` through cumulative
@@ -152,11 +152,11 @@ Then in `generateRadialShapeLevelPrototype`:
 Gap between each curve's start point and the previous curve's end point,
 measured on the radius-100 default config:
 
-| case | source | max gap |
-| --- | --- | --- |
-| `radial`, 7 sides | generator (`generateRadialShape`) | **0.000** |
-| `radial`, 7 sides | editor preview (`radializeCurves`) | **156.4** |
-| `radial-lateral`, 7 sides | generator | **200.0** (alternating 180.2 / 200.0) |
+| case                      | source                             | max gap                               |
+| ------------------------- | ---------------------------------- | ------------------------------------- |
+| `radial`, 7 sides         | generator (`generateRadialShape`)  | **0.000**                             |
+| `radial`, 7 sides         | editor preview (`radializeCurves`) | **156.4**                             |
+| `radial-lateral`, 7 sides | generator                          | **200.0** (alternating 180.2 / 200.0) |
 
 Two distinct defects.
 
@@ -169,9 +169,9 @@ config that midline is exactly `y = 0`, so the transform is `y → −y`.
 `PathEditor` hands overlay snippets `curveDef: displayCurveDef`
 (`PathEditor.svelte:215`) — already reflected. `radializeCurves` then rotates
 copies by `+angle * i`. But mirroring is orientation-reversing: where the model
-has `p3 = rot(p0, +a)` (so copy *i* ends exactly where copy *i+1* begins),
-display space has `p0' = rot(p3', +a)`, so copy *i+1* starts a full wedge angle
-past where copy *i* ended. Seven gaps of one wedge each — the seven tangential
+has `p3 = rot(p0, +a)` (so copy _i_ ends exactly where copy _i+1_ begins),
+display space has `p0' = rot(p3', +a)`, so copy _i+1_ starts a full wedge angle
+past where copy _i_ ended. Seven gaps of one wedge each — the seven tangential
 lobes and the uncovered center wedge in the reported screenshot.
 
 `pathFromCurves` hides this: it emits `M p0` once and then chains `C` segments,
@@ -199,7 +199,7 @@ while the design note at `generate-shape.ts:143` states radial-lateral should
 use `π / symmetryNumber` with the authored run spanning a half wedge.
 
 **Fix (scope confirmed with the user):** correct both inside
-`radialSideCurvePaths` — mirror about the bisector of the *authored run* rather
+`radialSideCurvePaths` — mirror about the bisector of the _authored run_ rather
 than a fixed ray, and use the symmetry-appropriate wedge angle. Because
 `radialSideCurvePaths` is the single source of truth shared by the generator and
 the preview, the 3D geometry and the editor overlay are correct together by
@@ -263,7 +263,7 @@ pixels and would otherwise be classified as camera drags) and
 `if (event.delta > CLICK_DELTA_THRESHOLD) return`. Nearest-node snapping reuses
 `getNearestPoint` from `generate-globulegeometry.ts`.
 
-### What is deliberately *not* reused
+### What is deliberately _not_ reused
 
 `Scene.svelte`'s `selectPoint` implements a fixed-size ring buffer
 (`points.unshift(point); points.slice(0, pick)`), correct for the existing

@@ -37,7 +37,12 @@ export type WorkerMessage = GenerateMessage | PatternMessage;
 export type WorkerResponse =
 	| { type: 'result'; payload: SuperGlobule; requestId: number }
 	| { type: 'error'; error: string; requestId: number }
-	| { type: 'pattern-result'; payload: PatternGenerationResult; requestId: number; durationMs: number }
+	| {
+			type: 'pattern-result';
+			payload: PatternGenerationResult;
+			requestId: number;
+			durationMs: number;
+	  }
 	| { type: 'pattern-error'; error: string; requestId: number }
 	/** The worker no longer holds the geometry the request named; the caller should drop the request. */
 	| {

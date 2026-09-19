@@ -30,12 +30,7 @@ describe('buildBandUnionPath hole preservation', () => {
 		const seenPaths: PathSegment[][] = [];
 		const spy = (s: StrokeInput): PathSegment[] => {
 			seenPaths.push(s.path);
-			return [
-				['M', 0, 0],
-				['L', 1, 0],
-				['L', 1, 1],
-				['Z']
-			];
+			return [['M', 0, 0], ['L', 1, 0], ['L', 1, 1], ['Z']];
 		};
 
 		buildBandUnionPath(band, spy);

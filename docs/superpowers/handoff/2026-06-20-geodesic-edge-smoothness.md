@@ -37,6 +37,7 @@ The boundary between two cells is the locus where `dist_A == dist_B`. Two things
 make that locus jagged:
 
 ### Cause 1 (primary): graph-Dijkstra distance is faceted/anisotropic
+
 `DijkstraGeodesicSolver` (`geodesic-solver.ts:61`) computes shortest paths **along
 mesh edges only** (`solveMultiSource`, graph distance). This systematically
 overestimates true geodesic distance and is **direction-dependent** (a path can
@@ -49,6 +50,7 @@ reads as jagged. This was a known, deliberate v1 tradeoff (the original spec cho
 seam).
 
 ### Cause 2 (secondary): boundary follows mesh-edge crossings
+
 `extract-boundaries.ts` places each boundary point at the tie-point on a **mesh
 edge** (`crossingNode`, `extract-boundaries.ts:45`, `t = (dj-di+L)/(2L)`) and a
 triple-point inside tri-labeled faces. So even with a perfectly smooth field, the
@@ -61,10 +63,11 @@ The same `field` and boundary machinery drive the **rim** chains
 ## Options (with tradeoffs)
 
 ### Option A — Better geodesic solver (the "adjust the solver" path)
+
 Swap `DijkstraGeodesicSolver` for a more accurate solver behind the existing
 `GeodesicSolver` interface (`geodesic-solver.ts:5`). Candidates:
 
-- **Heat method (Crane et al.)** — *principled, smooth at any resolution.* Solve
+- **Heat method (Crane et al.)** — _principled, smooth at any resolution._ Solve
   `(M − t·L)u = δ_sources` (heat), normalize `X = −∇u/|∇u|`, solve `L·φ = ∇·X`
   (Poisson); `φ` is the smooth geodesic distance. Needs a **cotangent Laplacian +
   mass matrix** and **two sparse linear solves**. No sparse solver in the repo today
@@ -72,7 +75,7 @@ Swap `DijkstraGeodesicSolver` for a more accurate solver behind the existing
   wasm/JS sparse-Cholesky dep. Highest quality, highest effort. Note: heat method
   gives smooth distances but is **single-source**; for the multi-source Voronoi we
   need per-vertex nearest-seed + distance — run it with all seeds as the heat source
-  set for the *distance-to-nearest-seed* field, but recovering the **nearest-seed
+  set for the _distance-to-nearest-seed_ field, but recovering the **nearest-seed
   label** needs care (e.g., a separate multi-source Dijkstra/region-grow for labels,
   then heat-method distances per region, or compare per-seed fields — more solves).
   This label-vs-distance split is the main design wrinkle to work out.
@@ -82,6 +85,7 @@ Swap `DijkstraGeodesicSolver` for a more accurate solver behind the existing
   Reduces anisotropy without a linear solver. Diminishing returns; still a graph metric.
 
 ### Option B — Smooth the extracted boundary polylines (solver-independent)
+
 After `extractBoundaries` / `buildRimChains`, before/with `resample`, smooth each
 chain's polyline and **re-project each smoothed point back onto the surface**
 (raycast against the surface mesh, or nearest-point-on-mesh). Keep chain **endpoints
@@ -93,6 +97,7 @@ can pull the curve off the true bisector and across thin features; keep it light
 surface-constrained.
 
 ### Recommendation
+
 Likely **B first** (fast, large visible improvement, low risk, no new deps), then
 **A (heat method)** if you want geometrically-accurate smoothness independent of
 mesh tessellation. They compose: a heat-method field plus light boundary smoothing
@@ -101,7 +106,7 @@ gives the best result. Decide with the user — they may specifically want A.
 ## Where to plug in
 
 - **Solver swap (Option A):** implement `class HeatMethodGeodesicSolver implements
-  GeodesicSolver` in `geodesic-solver.ts`; select it in
+GeodesicSolver` in `geodesic-solver.ts`; select it in
   `geodesic-voronoi.ts:93` (`const solver = new DijkstraGeodesicSolver(graph)`).
   The `config.geodesicSolver?: 'dijkstra'` field was specced but not implemented —
   add `'heat'` and branch here. Mind the multi-source label-vs-distance wrinkle above.
@@ -109,7 +114,7 @@ gives the best result. Decide with the user — they may specifically want A.
   `geodesic-voronoi.ts` right after `extractBoundaries`/`buildRimChains`
   (`geodesic-voronoi.ts:120-121`) and before `resample`. Will need the surface
   `Object3D` for re-projection — currently `generateGeodesicVoronoi(config,
-  surfaceTriangles)` only receives triangles, not the surface mesh; either pass the
+surfaceTriangles)` only receives triangles, not the surface mesh; either pass the
   surface in, or re-project using the triangle list (closest-point-on-triangle).
 
 ## Testing approach for the next session
@@ -138,11 +143,11 @@ gives the best result. Decide with the user — they may specifically want A.
 
 ## Key files
 
-| File | Role |
-|------|------|
-| `src/lib/voronoi/geodesic/geodesic-solver.ts` | `GeodesicSolver` interface + `DijkstraGeodesicSolver` (swap target) |
-| `src/lib/voronoi/geodesic/geodesic-voronoi.ts` | Orchestrator: solve (line 93/106), extract (120), resample (37), emit |
-| `src/lib/voronoi/geodesic/extract-boundaries.ts` | Dual-edge tracing; tie-points on mesh edges (`crossingNode`, line 45) |
-| `src/lib/voronoi/geodesic/rim-edges.ts` | Rim chains (reuse `field` + tie-points) |
-| `src/lib/voronoi/geodesic/mesh-graph.ts` | Welded graph (cotangent Laplacian would be built from `faces`/`positions` here) |
-| `docs/superpowers/specs/2026-06-20-geodesic-surface-voronoi-design.md` | Original design (notes heat-method as deferred work) |
+| File                                                                   | Role                                                                            |
+| ---------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `src/lib/voronoi/geodesic/geodesic-solver.ts`                          | `GeodesicSolver` interface + `DijkstraGeodesicSolver` (swap target)             |
+| `src/lib/voronoi/geodesic/geodesic-voronoi.ts`                         | Orchestrator: solve (line 93/106), extract (120), resample (37), emit           |
+| `src/lib/voronoi/geodesic/extract-boundaries.ts`                       | Dual-edge tracing; tie-points on mesh edges (`crossingNode`, line 45)           |
+| `src/lib/voronoi/geodesic/rim-edges.ts`                                | Rim chains (reuse `field` + tie-points)                                         |
+| `src/lib/voronoi/geodesic/mesh-graph.ts`                               | Welded graph (cotangent Laplacian would be built from `faces`/`positions` here) |
+| `docs/superpowers/specs/2026-06-20-geodesic-surface-voronoi-design.md` | Original design (notes heat-method as deferred work)                            |

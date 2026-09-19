@@ -20,7 +20,12 @@ describe('rehydrateDeep', () => {
 	});
 
 	it('keeps a quadrilateral as a plain object with Vector3 corners', () => {
-		const quad = { a: new Vector3(), b: new Vector3(1, 0, 0), c: new Vector3(1, 1, 0), d: new Vector3(0, 1, 0) };
+		const quad = {
+			a: new Vector3(),
+			b: new Vector3(1, 0, 0),
+			c: new Vector3(1, 1, 0),
+			d: new Vector3(0, 1, 0)
+		};
 		const out = rehydrateDeep(roundTrip({ quad }));
 		expect(out.quad).not.toBeInstanceOf(Triangle);
 		expect(out.quad.d).toBeInstanceOf(Vector3);
@@ -76,7 +81,11 @@ describe('rehydratePatternResult', () => {
 			]
 		};
 		const result = roundTrip({
-			superGlobulePattern: { type: 'SuperGlobulePattern', superGlobuleConfigId: 'c', bandPatterns: [band] },
+			superGlobulePattern: {
+				type: 'SuperGlobulePattern',
+				superGlobuleConfigId: 'c',
+				bandPatterns: [band]
+			},
 			projectionPattern: undefined,
 			globuleTubePattern: null,
 			surfaceProjectionPattern: undefined,
@@ -89,8 +98,8 @@ describe('rehydratePatternResult', () => {
 		}) as unknown as PatternGenerationResult;
 
 		const out = rehydratePatternResult(result) as unknown as {
-			superGlobulePattern: { bandPatterns: typeof band[] };
-			voronoiPattern: { projectionCutPattern: { tubes: { bands: typeof band[] }[] } };
+			superGlobulePattern: { bandPatterns: (typeof band)[] };
+			voronoiPattern: { projectionCutPattern: { tubes: { bands: (typeof band)[] }[] } };
 		};
 		expect(out.superGlobulePattern.bandPatterns[0].bounds.center).toBeInstanceOf(Vector3);
 		const vb = out.voronoiPattern.projectionCutPattern.tubes[0].bands[0];

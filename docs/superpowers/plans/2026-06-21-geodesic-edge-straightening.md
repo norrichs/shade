@@ -28,6 +28,7 @@
 ## Task 1: `SurfaceProjector.projectClosest` (public closest-point projection)
 
 **Files:**
+
 - Modify: `src/lib/voronoi/geodesic/smooth-chains.ts`
 - Test: `src/lib/voronoi/geodesic/__tests__/smooth-chains.test.ts`
 
@@ -86,6 +87,7 @@ git commit -m "feat(voronoi): expose SurfaceProjector.projectClosest"
 ## Task 2: `resamplePolyline` (points-only arc-length resample)
 
 **Files:**
+
 - Create: `src/lib/voronoi/geodesic/geodesic-straighten.ts`
 - Test: `src/lib/voronoi/geodesic/__tests__/geodesic-straighten.test.ts`
 
@@ -135,7 +137,8 @@ import { Vector3 } from 'three';
 export function resamplePolyline(points: Vector3[], count: number): Vector3[] {
 	if (points.length < 2 || count <= 1) return points.map((p) => p.clone());
 	const cum: number[] = [0];
-	for (let i = 1; i < points.length; i++) cum.push(cum[i - 1] + points[i].distanceTo(points[i - 1]));
+	for (let i = 1; i < points.length; i++)
+		cum.push(cum[i - 1] + points[i].distanceTo(points[i - 1]));
 	const total = cum[cum.length - 1];
 	if (total < 1e-12) return points.map((p) => p.clone());
 	const out: Vector3[] = [];
@@ -168,6 +171,7 @@ git commit -m "feat(voronoi): resamplePolyline arc-length helper"
 ## Task 3: `straightenToGeodesic` (iterated curve-shortening)
 
 **Files:**
+
 - Modify: `src/lib/voronoi/geodesic/geodesic-straighten.ts`
 - Test: `src/lib/voronoi/geodesic/__tests__/geodesic-straighten.test.ts`
 
@@ -228,7 +232,11 @@ describe('straightenToGeodesic', () => {
 			const y = i === 0 || i === n - 1 ? 0 : i % 2 === 0 ? 0.25 : -0.25;
 			return new Vector3(x, y, 0);
 		});
-		const out = straightenToGeodesic(input, projector, { stepFactor: 0.5, tolerance: 1e-9, cap: 400 });
+		const out = straightenToGeodesic(input, projector, {
+			stepFactor: 0.5,
+			tolerance: 1e-9,
+			cap: 400
+		});
 		expect(out.length).toBe(n);
 		expect(out[0].equals(input[0])).toBe(true);
 		expect(out[n - 1].equals(input[n - 1])).toBe(true);
@@ -250,10 +258,17 @@ describe('straightenToGeodesic', () => {
 			const base = a.clone().lerp(b, t).normalize(); // arc-ish
 			if (i === 0 || i === n - 1) return base;
 			// push off the arc toward +y, then snap to sphere.
-			return base.clone().add(new Vector3(0, i % 2 === 0 ? 0.3 : -0.3, 0)).normalize();
+			return base
+				.clone()
+				.add(new Vector3(0, i % 2 === 0 ? 0.3 : -0.3, 0))
+				.normalize();
 		});
 		const before = polylineLength(input);
-		const out = straightenToGeodesic(input, projector, { stepFactor: 0.5, tolerance: 1e-9, cap: 150 });
+		const out = straightenToGeodesic(input, projector, {
+			stepFactor: 0.5,
+			tolerance: 1e-9,
+			cap: 150
+		});
 		expect(out[0].equals(input[0])).toBe(true);
 		expect(out[n - 1].equals(input[n - 1])).toBe(true);
 		expect(polylineLength(out)).toBeLessThan(before); // curve-shortening
@@ -264,7 +279,11 @@ describe('straightenToGeodesic', () => {
 		const tris = gridMesh(4);
 		const projector = new SurfaceProjector(tris, buildMeshGraph(tris));
 		const input = [new Vector3(0, 0, 0), new Vector3(0.5, 0.1, 0), new Vector3(0.9, 0, 0)];
-		const out = straightenToGeodesic(input, projector, { stepFactor: 0.5, tolerance: 1e-9, cap: 50 });
+		const out = straightenToGeodesic(input, projector, {
+			stepFactor: 0.5,
+			tolerance: 1e-9,
+			cap: 50
+		});
 		expect(out.map((p) => p.toArray())).toEqual(input.map((p) => p.toArray()));
 		expect(out[0]).not.toBe(input[0]);
 	});
@@ -322,7 +341,10 @@ export function straightenToGeodesic(
 		const next = cur.map((p) => p.clone());
 		let maxMove = 0;
 		for (let i = 1; i < n - 1; i++) {
-			const mid = cur[i - 1].clone().add(cur[i + 1]).multiplyScalar(0.5);
+			const mid = cur[i - 1]
+				.clone()
+				.add(cur[i + 1])
+				.multiplyScalar(0.5);
 			const moved = cur[i].clone().lerp(mid, stepFactor);
 			const snapped = projector.projectClosest(moved).point;
 			maxMove = Math.max(maxMove, snapped.distanceTo(cur[i]));
@@ -358,6 +380,7 @@ git commit -m "feat(voronoi): straightenToGeodesic via curve-shortening"
 ## Task 4: Config — `geodesicEdgeStyle` + `geodesicStraightenCap`
 
 **Files:**
+
 - Modify: `src/lib/voronoi/types.ts`
 - Modify: `src/lib/shades-config.ts`
 
@@ -410,6 +433,7 @@ git commit -m "feat(voronoi): geodesicEdgeStyle + geodesicStraightenCap config"
 ## Task 5: Wire edge styles into `generateGeodesicVoronoi`
 
 **Files:**
+
 - Modify: `src/lib/voronoi/geodesic/geodesic-voronoi.ts`
 - Test: `src/lib/voronoi/geodesic/__tests__/geodesic-voronoi.test.ts`
 
@@ -441,14 +465,20 @@ describe('generateGeodesicVoronoi edge styles', () => {
 
 	it('geodesic style reduces total edge turning vs bisector', () => {
 		const bis = generateGeodesicVoronoi(withStyle('bisector'), sphereMesh(24));
-		const geo = generateGeodesicVoronoi(withStyle('geodesic', { geodesicStraightenCap: 120 }), sphereMesh(24));
+		const geo = generateGeodesicVoronoi(
+			withStyle('geodesic', { geodesicStraightenCap: 120 }),
+			sphereMesh(24)
+		);
 		expect(geo.edges.length).toBe(bis.edges.length);
 		expect(totalTurning(geo)).toBeLessThan(totalTurning(bis));
 	});
 
 	it('keeps edge endpoints (shared corners) identical across all three styles', () => {
 		const bis = generateGeodesicVoronoi(withStyle('bisector'), sphereMesh(24));
-		const sm = generateGeodesicVoronoi(withStyle('smoothed', { geodesicSmoothing: 8 }), sphereMesh(24));
+		const sm = generateGeodesicVoronoi(
+			withStyle('smoothed', { geodesicSmoothing: 8 }),
+			sphereMesh(24)
+		);
 		const geo = generateGeodesicVoronoi(withStyle('geodesic'), sphereMesh(24));
 		for (let i = 0; i < bis.edges.length; i++) {
 			const a = bis.edgeProjections[i].edgePoints3d;
@@ -465,7 +495,10 @@ describe('generateGeodesicVoronoi edge styles', () => {
 		// Open surface -> some edges border an OPENING. With smoothing off, rim
 		// edges must be identical between bisector and geodesic; at least one
 		// cell-cell edge must differ (proving straightening ran on non-rim edges).
-		const bis = generateGeodesicVoronoi(withStyle('bisector', { geodesicSmoothing: 0 }), gridMesh(16));
+		const bis = generateGeodesicVoronoi(
+			withStyle('bisector', { geodesicSmoothing: 0 }),
+			gridMesh(16)
+		);
 		const geo = generateGeodesicVoronoi(
 			withStyle('geodesic', { geodesicSmoothing: 0, geodesicStraightenCap: 60 }),
 			gridMesh(16)
@@ -511,104 +544,109 @@ import { OPENING } from '$lib/types';
 Also add `GeodesicEdgeStyle` to the existing type import from `$lib/voronoi/types`:
 
 ```ts
-import type { SurfaceTriangle, VoronoiConfig, VoronoiEdge, GeodesicEdgeStyle } from '$lib/voronoi/types';
+import type {
+	SurfaceTriangle,
+	VoronoiConfig,
+	VoronoiEdge,
+	GeodesicEdgeStyle
+} from '$lib/voronoi/types';
 ```
 
 (b) The emit loop currently looks EXACTLY like this:
 
 ```ts
-	const lambda = Math.max(0, config.geodesicSmoothing ?? 0);
-	const projector = lambda > 0 ? new SurfaceProjector(surfaceTriangles, graph) : null;
+const lambda = Math.max(0, config.geodesicSmoothing ?? 0);
+const projector = lambda > 0 ? new SurfaceProjector(surfaceTriangles, graph) : null;
 
-	const edges: VoronoiEdge[] = [];
-	const edgeProjections: EdgeProjection[] = [];
-	chains.forEach((chain, i) => {
-		// Smooth (and later re-project) only chains with enough points; shorter
-		// chains (e.g. single-vertex rim runs) keep the original behavior.
-		const smoothing = lambda > 0 && chain.points.length >= 4;
-		const srcPoints = smoothing ? smoothChainPoints(chain.points, lambda) : chain.points;
-		const { points, normals } = resample(srcPoints, chain.normals, divisionCounts[i]);
-		if (points.length < 2) return;
+const edges: VoronoiEdge[] = [];
+const edgeProjections: EdgeProjection[] = [];
+chains.forEach((chain, i) => {
+	// Smooth (and later re-project) only chains with enough points; shorter
+	// chains (e.g. single-vertex rim runs) keep the original behavior.
+	const smoothing = lambda > 0 && chain.points.length >= 4;
+	const srcPoints = smoothing ? smoothChainPoints(chain.points, lambda) : chain.points;
+	const { points, normals } = resample(srcPoints, chain.normals, divisionCounts[i]);
+	if (points.length < 2) return;
 
-		// Re-project interior points onto the surface; endpoints are left exactly
-		// as resampled so shared corners stay bit-identical across chains.
-		// (smoothChainPoints hard-pins chain endpoints, and resample reproduces
-		// the first/last source point exactly, so points[0]/points[last] already
-		// equal the original chain corners — we just never touch them here.)
-		if (smoothing && projector) {
-			for (let k = 1; k < points.length - 1; k++) {
-				const pr = projector.project(points[k], normals[k]);
-				points[k] = pr.point;
-				normals[k] = pr.normal;
-			}
+	// Re-project interior points onto the surface; endpoints are left exactly
+	// as resampled so shared corners stay bit-identical across chains.
+	// (smoothChainPoints hard-pins chain endpoints, and resample reproduces
+	// the first/last source point exactly, so points[0]/points[last] already
+	// equal the original chain corners — we just never touch them here.)
+	if (smoothing && projector) {
+		for (let k = 1; k < points.length - 1; k++) {
+			const pr = projector.project(points[k], normals[k]);
+			points[k] = pr.point;
+			normals[k] = pr.normal;
 		}
+	}
 
-		edges.push({
-			vertices: [
-				[chain.vertices[0], 0],
-				[chain.vertices[1], 0]
-			],
-			cellIndices: chain.cellIndices
-		});
-		edgeProjections.push({ edgePoints3d: points, normals });
+	edges.push({
+		vertices: [
+			[chain.vertices[0], 0],
+			[chain.vertices[1], 0]
+		],
+		cellIndices: chain.cellIndices
 	});
+	edgeProjections.push({ edgePoints3d: points, normals });
+});
 ```
 
 Replace that entire block with:
 
 ```ts
-	const edgeStyle: GeodesicEdgeStyle = config.geodesicEdgeStyle ?? 'bisector';
-	const lambda = Math.max(0, config.geodesicSmoothing ?? 0);
-	const straightenCap = Math.max(0, Math.floor(config.geodesicStraightenCap ?? 60));
-	// A projector is needed whenever points get re-projected (smoothed or geodesic).
-	const projector = edgeStyle !== 'bisector' ? new SurfaceProjector(surfaceTriangles, graph) : null;
+const edgeStyle: GeodesicEdgeStyle = config.geodesicEdgeStyle ?? 'bisector';
+const lambda = Math.max(0, config.geodesicSmoothing ?? 0);
+const straightenCap = Math.max(0, Math.floor(config.geodesicStraightenCap ?? 60));
+// A projector is needed whenever points get re-projected (smoothed or geodesic).
+const projector = edgeStyle !== 'bisector' ? new SurfaceProjector(surfaceTriangles, graph) : null;
 
-	const edges: VoronoiEdge[] = [];
-	const edgeProjections: EdgeProjection[] = [];
-	chains.forEach((chain, i) => {
-		const isRim = chain.cellIndices.includes(OPENING);
-		// Geodesic straightening applies to cell-cell edges only; rim edges trace
-		// an opening and must stay on the rim, so they keep the smoothed treatment.
-		const straighten = edgeStyle === 'geodesic' && !isRim && chain.points.length >= 4;
-		const smoothing =
-			(edgeStyle === 'smoothed' || (edgeStyle === 'geodesic' && isRim)) &&
-			lambda > 0 &&
-			chain.points.length >= 4;
+const edges: VoronoiEdge[] = [];
+const edgeProjections: EdgeProjection[] = [];
+chains.forEach((chain, i) => {
+	const isRim = chain.cellIndices.includes(OPENING);
+	// Geodesic straightening applies to cell-cell edges only; rim edges trace
+	// an opening and must stay on the rim, so they keep the smoothed treatment.
+	const straighten = edgeStyle === 'geodesic' && !isRim && chain.points.length >= 4;
+	const smoothing =
+		(edgeStyle === 'smoothed' || (edgeStyle === 'geodesic' && isRim)) &&
+		lambda > 0 &&
+		chain.points.length >= 4;
 
-		const srcPoints = smoothing ? smoothChainPoints(chain.points, lambda) : chain.points;
-		const { points, normals } = resample(srcPoints, chain.normals, divisionCounts[i]);
-		if (points.length < 2) return;
+	const srcPoints = smoothing ? smoothChainPoints(chain.points, lambda) : chain.points;
+	const { points, normals } = resample(srcPoints, chain.normals, divisionCounts[i]);
+	if (points.length < 2) return;
 
-		// Interior points get re-projected; endpoints are left exactly as resampled
-		// so shared corners stay bit-identical across chains.
-		if (straighten && projector) {
-			const tolerance = 1e-4 * polylineLength(points);
-			const straightened = straightenToGeodesic(points, projector, {
-				stepFactor: 0.5,
-				tolerance,
-				cap: straightenCap
-			});
-			for (let k = 1; k < points.length - 1; k++) {
-				points[k] = straightened[k];
-				normals[k] = projector.projectClosest(straightened[k]).normal;
-			}
-		} else if (smoothing && projector) {
-			for (let k = 1; k < points.length - 1; k++) {
-				const pr = projector.project(points[k], normals[k]);
-				points[k] = pr.point;
-				normals[k] = pr.normal;
-			}
-		}
-
-		edges.push({
-			vertices: [
-				[chain.vertices[0], 0],
-				[chain.vertices[1], 0]
-			],
-			cellIndices: chain.cellIndices
+	// Interior points get re-projected; endpoints are left exactly as resampled
+	// so shared corners stay bit-identical across chains.
+	if (straighten && projector) {
+		const tolerance = 1e-4 * polylineLength(points);
+		const straightened = straightenToGeodesic(points, projector, {
+			stepFactor: 0.5,
+			tolerance,
+			cap: straightenCap
 		});
-		edgeProjections.push({ edgePoints3d: points, normals });
+		for (let k = 1; k < points.length - 1; k++) {
+			points[k] = straightened[k];
+			normals[k] = projector.projectClosest(straightened[k]).normal;
+		}
+	} else if (smoothing && projector) {
+		for (let k = 1; k < points.length - 1; k++) {
+			const pr = projector.project(points[k], normals[k]);
+			points[k] = pr.point;
+			normals[k] = pr.normal;
+		}
+	}
+
+	edges.push({
+		vertices: [
+			[chain.vertices[0], 0],
+			[chain.vertices[1], 0]
+		],
+		cellIndices: chain.cellIndices
 	});
+	edgeProjections.push({ edgePoints3d: points, normals });
+});
 ```
 
 - [ ] **Step 4: Run tests to verify they pass**
@@ -635,6 +673,7 @@ git commit -m "feat(voronoi): branch geodesic edges by style (bisector/smoothed/
 ## Task 6: Controls — Edge Style selector + Straighten Iterations slider
 
 **Files:**
+
 - Modify: `src/components/controls/VoronoiControl.svelte`
 
 Read the file first to match its `update(field, value)` pattern and slider markup.
@@ -644,7 +683,12 @@ Read the file first to match its `update(field, value)` pattern and slider marku
 In `src/components/controls/VoronoiControl.svelte`, add `GeodesicEdgeStyle` to the existing type import from `$lib/voronoi/types`:
 
 ```ts
-	import type { VoronoiConfig, VoronoiMethod, InsetMethod, GeodesicEdgeStyle } from '$lib/voronoi/types';
+import type {
+	VoronoiConfig,
+	VoronoiMethod,
+	InsetMethod,
+	GeodesicEdgeStyle
+} from '$lib/voronoi/types';
 ```
 
 Add `'geodesicEdgeStyle'` and `'geodesicStraightenCap'` to the `field` union in the `update` signature, right after `'geodesicSmoothing'`:
@@ -671,36 +715,36 @@ Add these branches inside `update`, right after the existing `} else if (field =
 In the template, find the existing "Smoothing" `<label>` block (the range input bound to `config.geodesicSmoothing`). Immediately BEFORE that block, add the Edge Style selector:
 
 ```svelte
-		<label>
-			Edge Style
-			<select
-				value={config.geodesicEdgeStyle ?? 'bisector'}
-				onchange={(e) => update('geodesicEdgeStyle', e.currentTarget.value)}
-				disabled={!isGeodesic}
-			>
-				<option value="bisector">Bisector</option>
-				<option value="smoothed">Smoothed</option>
-				<option value="geodesic">Geodesic (straight)</option>
-			</select>
-		</label>
+<label>
+	Edge Style
+	<select
+		value={config.geodesicEdgeStyle ?? 'bisector'}
+		onchange={(e) => update('geodesicEdgeStyle', e.currentTarget.value)}
+		disabled={!isGeodesic}
+	>
+		<option value="bisector">Bisector</option>
+		<option value="smoothed">Smoothed</option>
+		<option value="geodesic">Geodesic (straight)</option>
+	</select>
+</label>
 ```
 
 Then, immediately AFTER the existing "Smoothing" `<label>` block, add the Straighten Iterations slider:
 
 ```svelte
-		<label>
-			Straighten Iterations
-			<input
-				type="range"
-				min="0"
-				max="200"
-				step="1"
-				value={config.geodesicStraightenCap ?? 60}
-				disabled={!isGeodesic || (config.geodesicEdgeStyle ?? 'bisector') !== 'geodesic'}
-				oninput={(e) => update('geodesicStraightenCap', Number(e.currentTarget.value))}
-			/>
-			<span>{config.geodesicStraightenCap ?? 60}</span>
-		</label>
+<label>
+	Straighten Iterations
+	<input
+		type="range"
+		min="0"
+		max="200"
+		step="1"
+		value={config.geodesicStraightenCap ?? 60}
+		disabled={!isGeodesic || (config.geodesicEdgeStyle ?? 'bisector') !== 'geodesic'}
+		oninput={(e) => update('geodesicStraightenCap', Number(e.currentTarget.value))}
+	/>
+	<span>{config.geodesicStraightenCap ?? 60}</span>
+</label>
 ```
 
 - [ ] **Step 4: Verify types + svelte check**

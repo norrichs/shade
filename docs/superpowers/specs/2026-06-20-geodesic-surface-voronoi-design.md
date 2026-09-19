@@ -15,7 +15,7 @@ The current pipeline is center-based at three stages:
 2. **Voronoi computation** — performed in a 2D parameterization (UV or spherical
    lon/lat), which is itself a center/sphere-relative flattening that distorts on
    non-spherical shapes.
-3. **Edge projection** — every Voronoi edge is sampled as directions *from center*
+3. **Edge projection** — every Voronoi edge is sampled as directions _from center_
    and ray-cast onto the surface (`project-edges-onto-surface.ts`).
 
 The result is cells distorted relative to the geometry's center, only suited to
@@ -30,22 +30,22 @@ geometry.
   output shape as today, computed without center distortion).
 - **Out of scope (future):** volumetric foam / lattice cells. This is a genuinely
   different algorithm (true 3D Euclidean polyhedral cells via bisector-plane
-  clipping). When built, *its* 3D polyhedral cell generator will be the standalone,
+  clipping). When built, _its_ 3D polyhedral cell generator will be the standalone,
   reusable piece. The geodesic surface path does **not** share a core with it.
 
 ## Key Decisions (from brainstorming)
 
-| Decision | Choice | Rationale |
-|----------|--------|-----------|
-| Output domain | Surface cells now; volumetric foam later (separate module) | Matches current manufacturing output; foam is a future, independent algorithm. |
-| Distance metric | **Geodesic** (along the surface) from the start | No "through-the-air" artifacts on non-convex shapes; correct for any geometry. |
-| Geodesic method | **Graph Dijkstra first**, behind a clean solver interface; upgrade to heat method later | Lowest-risk path to a working result; swap solver without touching the rest. |
-| Relaxation (CVT) | Reuse existing `relaxationIterations`; wire to geodesic Lloyd if simple, else degrade to 0 | Decide during implementation; uniform cells are desirable but not blocking. |
-| Boundary extraction | **Dual-edge tracing** (tie-points + triple-points → stitched polylines) | Produces a proper Voronoi boundary *network* with shared corners — what inset/tube code expects. Per-cell-outline rejected (gaps/overlap at shared edges). |
+| Decision            | Choice                                                                                     | Rationale                                                                                                                                                  |
+| ------------------- | ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Output domain       | Surface cells now; volumetric foam later (separate module)                                 | Matches current manufacturing output; foam is a future, independent algorithm.                                                                             |
+| Distance metric     | **Geodesic** (along the surface) from the start                                            | No "through-the-air" artifacts on non-convex shapes; correct for any geometry.                                                                             |
+| Geodesic method     | **Graph Dijkstra first**, behind a clean solver interface; upgrade to heat method later    | Lowest-risk path to a working result; swap solver without touching the rest.                                                                               |
+| Relaxation (CVT)    | Reuse existing `relaxationIterations`; wire to geodesic Lloyd if simple, else degrade to 0 | Decide during implementation; uniform cells are desirable but not blocking.                                                                                |
+| Boundary extraction | **Dual-edge tracing** (tie-points + triple-points → stitched polylines)                    | Produces a proper Voronoi boundary _network_ with shared corners — what inset/tube code expects. Per-cell-outline rejected (gaps/overlap at shared edges). |
 
 ### Why not the SDF/raymarching shader approach
 
-The shader/raymarching starting point only *visualizes* cell coloring in a fragment
+The shader/raymarching starting point only _visualizes_ cell coloring in a fragment
 shader — it produces **no polygonal geometry**, so it cannot feed the
 flattening → SVG manufacturing pipeline that is the entire point of Shades. The new
 pipeline must produce real on-surface polyline geometry (`Band`s).
@@ -103,7 +103,7 @@ surface mesh (worker)
 ### Reuse decisions
 
 - **Inset:** geodesic path forces `insetMethod: 'localProjection'`. `centerOut` is
-  center-based (slerps toward the seed *direction from center*), so it is disallowed
+  center-based (slerps toward the seed _direction from center_), so it is disallowed
   for geodesic.
 - **Seeding:** forces `seedMethod: 'areaWeighted'`. The `centerProjection` seed mode
   is center-based and disallowed.

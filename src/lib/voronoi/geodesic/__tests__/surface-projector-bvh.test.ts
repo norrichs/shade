@@ -77,7 +77,11 @@ describe('SurfaceProjector.projectClosest (BVH)', () => {
 	 * triangle order) is off by tens of degrees and tilts every cross-section.
 	 */
 	const analyticNormal = (x: number, y: number) =>
-		new Vector3(-0.9 * Math.cos(3 * x) * Math.cos(2 * y), 0.6 * Math.sin(3 * x) * Math.sin(2 * y), 1).normalize();
+		new Vector3(
+			-0.9 * Math.cos(3 * x) * Math.cos(2 * y),
+			0.6 * Math.sin(3 * x) * Math.sin(2 * y),
+			1
+		).normalize();
 
 	it('blends the normal from the triangle actually hit (closest point)', () => {
 		const r = rng(7);

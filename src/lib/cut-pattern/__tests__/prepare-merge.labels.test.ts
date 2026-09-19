@@ -57,7 +57,9 @@ describe('computeTiledUnionPaths label merge', () => {
 	});
 
 	test('does not add a label when selfTag is disabled', () => {
-		const disabled: PatternLabelsConfig = { selfTag: { ...labelsEnabled.selfTag!, enabled: false } };
+		const disabled: PatternLabelsConfig = {
+			selfTag: { ...labelsEnabled.selfTag!, enabled: false }
+		};
 		const bandOnly = computeTiledUnionPaths([gridTube('t0b0')]).get('t0b0')!;
 		const withDisabled = computeTiledUnionPaths(
 			[gridTube('t0b0')],
@@ -89,7 +91,9 @@ describe('computeTiledUnionPaths label merge', () => {
 		// autoAngle 0 → stem points down, label extends well below the grid.
 		const down = computeTiledUnionPaths([autoTube('t0b0', 0)], labelsEnabled, dims).get('t0b0')!;
 		// autoAngle π → stem points up, so the silhouette does NOT extend downward.
-		const up = computeTiledUnionPaths([autoTube('t0b0', Math.PI)], labelsEnabled, dims).get('t0b0')!;
+		const up = computeTiledUnionPaths([autoTube('t0b0', Math.PI)], labelsEnabled, dims).get(
+			't0b0'
+		)!;
 
 		expect(bottomY(down)).toBeGreaterThan(bottomY(up) + 15);
 	});

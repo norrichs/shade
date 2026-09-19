@@ -1,4 +1,10 @@
-import type { BandCutPattern, BoundingBox, PathSegment, PatternLabelsConfig, Point } from '$lib/types';
+import type {
+	BandCutPattern,
+	BoundingBox,
+	PathSegment,
+	PatternLabelsConfig,
+	Point
+} from '$lib/types';
 import type { LabelTextDims } from '$lib/stores/mergedPathStore';
 import { buildLabelOutlinePath } from './label-outline-path';
 import { transformLabelOutlineToBandSpace } from './transform-label-outline';
@@ -85,8 +91,17 @@ export type LabelFootprintInput = {
  * + translate into band space.
  */
 export const computeLabelFootprintBox = (input: LabelFootprintInput): BoundingBox => {
-	const { anchor, autoAngle, angle, textWidth, textHeight, radius, padding, stemLength, stemWidth } =
-		input;
+	const {
+		anchor,
+		autoAngle,
+		angle,
+		textWidth,
+		textHeight,
+		radius,
+		padding,
+		stemLength,
+		stemWidth
+	} = input;
 
 	const localPath = buildLabelOutlinePath({
 		measuredWidth: textWidth,

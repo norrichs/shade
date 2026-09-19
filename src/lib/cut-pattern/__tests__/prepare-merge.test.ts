@@ -161,13 +161,7 @@ describe('computeTiledUnionPaths', () => {
 	});
 
 	test('dispatcher routes non-outlined pattern types to tiled union', () => {
-		const result = computeMergedBandPaths(
-			[tubeWithBand('t0b0')],
-			undefined,
-			'grid',
-			new Map(),
-			0
-		);
+		const result = computeMergedBandPaths([tubeWithBand('t0b0')], undefined, 'grid', new Map(), 0);
 		expect(result.has('t0b0')).toBe(true);
 	});
 });

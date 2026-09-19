@@ -15,12 +15,14 @@
 ## File Structure
 
 **New files:**
+
 - `src/lib/voronoi/bezier-2d.ts` — pure 2D quadratic bezier helpers (`sampleQuadratic`, `quadraticLineSplitT`).
 - `src/lib/voronoi/curved-inset-2d.ts` — builds per-edge curved inner-curve samples (2D) for one cell, plus `vertexKey`.
 - `src/lib/voronoi/__tests__/bezier-2d.test.ts`
 - `src/lib/voronoi/__tests__/curved-inset-2d.test.ts`
 
 **Modified files:**
+
 - `src/lib/voronoi/types.ts` — add `curvedInset?: boolean` to `VoronoiConfig`.
 - `src/lib/shades-config.ts` — `curvedInset: false` in `defaultVoronoiConfig`.
 - `src/lib/voronoi/migrate-voronoi-config.ts` — default `curvedInset` on normalize.
@@ -30,6 +32,7 @@
 - `src/components/controls/VoronoiControl.svelte` — add a `curvedInset` checkbox.
 
 **Test commands:**
+
 - Single test file: `npm run test:unit -- src/lib/voronoi/__tests__/<file>.test.ts`
 - Typecheck: `npm run check`
 - Lint/format: `npm run lint` / `npm run format`
@@ -39,6 +42,7 @@
 ## Task 1: Config flag plumbing
 
 **Files:**
+
 - Modify: `src/lib/voronoi/types.ts:11-27`
 - Modify: `src/lib/shades-config.ts:700-728`
 - Modify: `src/lib/voronoi/migrate-voronoi-config.ts:44-48`
@@ -91,12 +95,12 @@ In `src/lib/shades-config.ts`, in `defaultVoronoiConfig`, add after `insetMethod
 In `src/lib/voronoi/migrate-voronoi-config.ts`, extend the normalized object:
 
 ```ts
-	const voronoiConfig: VoronoiConfig = {
-		...resolved,
-		edgeDivisions: normalizeEdgeDivisions(resolved.edgeDivisions),
-		insetMethod: resolved.insetMethod ?? 'centerOut',
-		curvedInset: resolved.curvedInset ?? false
-	};
+const voronoiConfig: VoronoiConfig = {
+	...resolved,
+	edgeDivisions: normalizeEdgeDivisions(resolved.edgeDivisions),
+	insetMethod: resolved.insetMethod ?? 'centerOut',
+	curvedInset: resolved.curvedInset ?? false
+};
 ```
 
 - [ ] **Step 6: Run test to verify it passes**
@@ -116,6 +120,7 @@ git commit -m "feat(voronoi): add curvedInset config flag (default false)"
 ## Task 2: `bezier-2d.ts` quadratic bezier helpers
 
 **Files:**
+
 - Create: `src/lib/voronoi/bezier-2d.ts`
 - Test: `src/lib/voronoi/__tests__/bezier-2d.test.ts`
 
@@ -246,6 +251,7 @@ git commit -m "feat(voronoi): add 2D quadratic bezier sample + line-split helper
 This is a DRY refactor so both the straight and curved paths share one 2D-subdivision primitive. Behavior of `insetIntermediates2D` is unchanged.
 
 **Files:**
+
 - Modify: `src/lib/voronoi/inset-2d.ts`
 - Test: `src/lib/voronoi/__tests__/inset-2d.test.ts` (create if it does not exist)
 
@@ -356,6 +362,7 @@ git commit -m "refactor(voronoi): extract segmentIntermediates2D from insetInter
 This pure module builds the curved inner-curve samples for one cell entirely in plane-2D. No Three.js surface / raycasting.
 
 **Files:**
+
 - Create: `src/lib/voronoi/curved-inset-2d.ts`
 - Test: `src/lib/voronoi/__tests__/curved-inset-2d.test.ts`
 
@@ -541,7 +548,14 @@ function buildEdgeInnerCurve(
 	const eInset = insetToward(ePos, seed2d, f);
 	const mE = midpoint(sInset, eInset); // this edge's inset midpoint (shared by both halves)
 
-	const mOtherStart = otherEdgeInsetMidpoint(e.vKeyStart, e.edgeId, adjacency, vertexPos2d, seed2d, f);
+	const mOtherStart = otherEdgeInsetMidpoint(
+		e.vKeyStart,
+		e.edgeId,
+		adjacency,
+		vertexPos2d,
+		seed2d,
+		f
+	);
 	const mOtherEnd = otherEdgeInsetMidpoint(e.vKeyEnd, e.edgeId, adjacency, vertexPos2d, seed2d, f);
 	if (!mOtherStart || !mOtherEnd) return null;
 
@@ -626,6 +640,7 @@ git commit -m "feat(voronoi): per-cell curved inset inner curves in plane-2D"
 Add an optional `curvedInset` param. When set, build the cell's curved inner curves and, per edge, use them (back-projecting each 2D sample through `source`); otherwise use the existing straight inset. Both paths share one inner loop. Edges with a `null` curved result fall back to straight automatically.
 
 **Files:**
+
 - Modify: `src/lib/voronoi/local-projection.ts`
 - Test: `src/lib/voronoi/__tests__/local-projection.test.ts`
 
@@ -634,32 +649,32 @@ Add an optional `curvedInset` param. When set, build the cell's curved inner cur
 Append to `src/lib/voronoi/__tests__/local-projection.test.ts`, inside the existing `describe('computeEdgeInsetsLocalProjection', ...)` block (it can use the `common`, `seedPoints3d`, `R`, `center`, `relaxedSeeds`, `edgeProjections` already defined in that file):
 
 ```ts
-	it('curvedInset: shared edge is curved and still lands on the sphere', () => {
-		const straight = computeEdgeInsetsLocalProjection({ ...common, seedPoints3d });
-		const curved = computeEdgeInsetsLocalProjection({ ...common, seedPoints3d, curvedInset: true });
+it('curvedInset: shared edge is curved and still lands on the sphere', () => {
+	const straight = computeEdgeInsetsLocalProjection({ ...common, seedPoints3d });
+	const curved = computeEdgeInsetsLocalProjection({ ...common, seedPoints3d, curvedInset: true });
 
-		// edgePoints3d are length 3, so curve points stay length 3.
-		expect(curved[0].curvePointsA).toHaveLength(3);
-		curved[0].curvePointsA.forEach((p) => expect(p.distanceTo(center)).toBeCloseTo(R, -1));
-		curved[0].curvePointsB.forEach((p) => expect(p.distanceTo(center)).toBeCloseTo(R, -1));
+	// edgePoints3d are length 3, so curve points stay length 3.
+	expect(curved[0].curvePointsA).toHaveLength(3);
+	curved[0].curvePointsA.forEach((p) => expect(p.distanceTo(center)).toBeCloseTo(R, -1));
+	curved[0].curvePointsB.forEach((p) => expect(p.distanceTo(center)).toBeCloseTo(R, -1));
 
-		// The shared edge (index 0) has both vertices at cell-interior degree 2 for cells 0
-		// and 1, so it is curved -> differs from the straight inset.
-		const moved = curved[0].curvePointsA.reduce(
-			(acc, p, i) => acc + p.distanceTo(straight[0].curvePointsA[i]),
-			0
-		);
-		expect(moved).toBeGreaterThan(1e-3);
-	});
+	// The shared edge (index 0) has both vertices at cell-interior degree 2 for cells 0
+	// and 1, so it is curved -> differs from the straight inset.
+	const moved = curved[0].curvePointsA.reduce(
+		(acc, p, i) => acc + p.distanceTo(straight[0].curvePointsA[i]),
+		0
+	);
+	expect(moved).toBeGreaterThan(1e-3);
+});
 
-	it('curvedInset: open-chain edges fall back to the straight inset', () => {
-		const straight = computeEdgeInsetsLocalProjection({ ...common, seedPoints3d });
-		const curved = computeEdgeInsetsLocalProjection({ ...common, seedPoints3d, curvedInset: true });
-		// Edge 1 touches vertex (0.7,-0.3) which is degree 1 in cell 0 -> fallback (== straight).
-		curved[1].curvePointsA.forEach((p, i) =>
-			expect(p.distanceTo(straight[1].curvePointsA[i])).toBeCloseTo(0, 6)
-		);
-	});
+it('curvedInset: open-chain edges fall back to the straight inset', () => {
+	const straight = computeEdgeInsetsLocalProjection({ ...common, seedPoints3d });
+	const curved = computeEdgeInsetsLocalProjection({ ...common, seedPoints3d, curvedInset: true });
+	// Edge 1 touches vertex (0.7,-0.3) which is degree 1 in cell 0 -> fallback (== straight).
+	curved[1].curvePointsA.forEach((p, i) =>
+		expect(p.distanceTo(straight[1].curvePointsA[i])).toBeCloseTo(0, 6)
+	);
+});
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -675,11 +690,7 @@ Add to the imports at the top:
 
 ```ts
 import { insetPoint2D, insetIntermediates2D, segmentIntermediates2D } from './inset-2d';
-import {
-	buildCellCurvedInsets2d,
-	vertexKey,
-	type CurvedCellEdge
-} from './curved-inset-2d';
+import { buildCellCurvedInsets2d, vertexKey, type CurvedCellEdge } from './curved-inset-2d';
 ```
 
 (Replace the existing `import { insetPoint2D, insetIntermediates2D } from './inset-2d';` line with the expanded one above.)
@@ -716,34 +727,34 @@ export function computeEdgeInsetsLocalProjection(params: {
 In the `for (const [cell, edgeIdxs] of cellEdges)` block, after `const seed2d = ...` is computed (right before `for (const ei of edgeIdxs) {`), insert:
 
 ```ts
-		// When curvedInset is on, precompute this cell's curved inner curves (plane-2D).
-		// Map edgeId -> samples | null; null edges fall back to the straight inset below.
-		let curvedByEdge: Map<number, Vector2[] | null> | null = null;
-		if (curvedInset) {
-			const vertexPos2d = new Map<string, Vector2>();
-			const cellEdgeInputs: CurvedCellEdge[] = [];
-			for (const ei of edgeIdxs) {
-				const pts3d = edgeProjections[ei].edgePoints3d;
-				if (pts3d.length < 2) continue;
-				const vS = vertexKey(edges[ei].vertices[0]);
-				const vE = vertexKey(edges[ei].vertices[1]);
-				if (!vertexPos2d.has(vS)) {
-					const p = projectToPlane2D(pts3d[0], source, planePoint, normal, basis);
-					if (p) vertexPos2d.set(vS, p);
-				}
-				if (!vertexPos2d.has(vE)) {
-					const p = projectToPlane2D(pts3d[pts3d.length - 1], source, planePoint, normal, basis);
-					if (p) vertexPos2d.set(vE, p);
-				}
-				cellEdgeInputs.push({ edgeId: ei, vKeyStart: vS, vKeyEnd: vE, sampleCount: pts3d.length });
-			}
-			curvedByEdge = buildCellCurvedInsets2d({
-				edges: cellEdgeInputs,
-				vertexPos2d,
-				seed2d,
-				curveOffsetFactor
-			});
+// When curvedInset is on, precompute this cell's curved inner curves (plane-2D).
+// Map edgeId -> samples | null; null edges fall back to the straight inset below.
+let curvedByEdge: Map<number, Vector2[] | null> | null = null;
+if (curvedInset) {
+	const vertexPos2d = new Map<string, Vector2>();
+	const cellEdgeInputs: CurvedCellEdge[] = [];
+	for (const ei of edgeIdxs) {
+		const pts3d = edgeProjections[ei].edgePoints3d;
+		if (pts3d.length < 2) continue;
+		const vS = vertexKey(edges[ei].vertices[0]);
+		const vE = vertexKey(edges[ei].vertices[1]);
+		if (!vertexPos2d.has(vS)) {
+			const p = projectToPlane2D(pts3d[0], source, planePoint, normal, basis);
+			if (p) vertexPos2d.set(vS, p);
 		}
+		if (!vertexPos2d.has(vE)) {
+			const p = projectToPlane2D(pts3d[pts3d.length - 1], source, planePoint, normal, basis);
+			if (p) vertexPos2d.set(vE, p);
+		}
+		cellEdgeInputs.push({ edgeId: ei, vKeyStart: vS, vKeyEnd: vE, sampleCount: pts3d.length });
+	}
+	curvedByEdge = buildCellCurvedInsets2d({
+		edges: cellEdgeInputs,
+		vertexPos2d,
+		seed2d,
+		curveOffsetFactor
+	});
+}
 ```
 
 - [ ] **Step 5: Branch the per-sample inset inside the edge loop**
@@ -751,56 +762,55 @@ In the `for (const [cell, edgeIdxs] of cellEdges)` block, after `const seed2d = 
 Replace the inner `for (let i = 0; i < pts.length; i++) { ... }` body so the inset point and intermediates come from the curved curve when available. The full replacement for the edge loop body (from `const pts = ...` down to the `divs.push(interPts);` closing) is:
 
 ```ts
-			const pts = edgeProjections[ei].edgePoints3d;
-			const isSideA = edges[ei].cellIndices[0] === cell;
-			const curve: Vector3[] = [];
-			const divs: Vector3[][] = [];
+const pts = edgeProjections[ei].edgePoints3d;
+const isSideA = edges[ei].cellIndices[0] === cell;
+const curve: Vector3[] = [];
+const divs: Vector3[][] = [];
 
-			// Curved samples for this edge, only if every sample is present (length match).
-			const curvedRaw = curvedByEdge?.get(ei) ?? null;
-			const inner2dArr = curvedRaw && curvedRaw.length === pts.length ? curvedRaw : null;
+// Curved samples for this edge, only if every sample is present (length match).
+const curvedRaw = curvedByEdge?.get(ei) ?? null;
+const inner2dArr = curvedRaw && curvedRaw.length === pts.length ? curvedRaw : null;
 
-			for (let i = 0; i < pts.length; i++) {
-				const anchor = pts[i];
-				const e2d = projectToPlane2D(anchor, source, planePoint, normal, basis);
-				if (!e2d) {
-					curve.push(anchor.clone());
-					divs.push([]);
-					continue;
-				}
+for (let i = 0; i < pts.length; i++) {
+	const anchor = pts[i];
+	const e2d = projectToPlane2D(anchor, source, planePoint, normal, basis);
+	if (!e2d) {
+		curve.push(anchor.clone());
+		divs.push([]);
+		continue;
+	}
 
-				// inset2d: the inner point (curved or straight). interSource2d: rung
-				// intermediates ordered inset -> edge in 2D.
-				let inset2d: Vector2;
-				let interSource2d: Vector2[];
-				if (inner2dArr) {
-					inset2d = inner2dArr[i];
-					interSource2d = segmentIntermediates2D(inset2d, e2d, surfaceProjectionDivisions);
-				} else {
-					inset2d = insetPoint2D(e2d, seed2d, curveOffsetFactor);
-					interSource2d = insetIntermediates2D(
-						e2d,
-						seed2d,
-						curveOffsetFactor,
-						surfaceProjectionDivisions
-					);
-				}
+	// inset2d: the inner point (curved or straight). interSource2d: rung
+	// intermediates ordered inset -> edge in 2D.
+	let inset2d: Vector2;
+	let interSource2d: Vector2[];
+	if (inner2dArr) {
+		inset2d = inner2dArr[i];
+		interSource2d = segmentIntermediates2D(inset2d, e2d, surfaceProjectionDivisions);
+	} else {
+		inset2d = insetPoint2D(e2d, seed2d, curveOffsetFactor);
+		interSource2d = insetIntermediates2D(
+			e2d,
+			seed2d,
+			curveOffsetFactor,
+			surfaceProjectionDivisions
+		);
+	}
 
-				const insetThrough = plane2DToPoint3D(inset2d, planePoint, basis);
-				const insetPt =
-					selectSurfaceHit({ surface, source, through: insetThrough, anchor, cellNormal: normal }) ??
-					anchor.clone();
-				curve.push(insetPt);
+	const insetThrough = plane2DToPoint3D(inset2d, planePoint, basis);
+	const insetPt =
+		selectSurfaceHit({ surface, source, through: insetThrough, anchor, cellNormal: normal }) ??
+		anchor.clone();
+	curve.push(insetPt);
 
-				const interPts = interSource2d.map((p2) => {
-					const through = plane2DToPoint3D(p2, planePoint, basis);
-					return (
-						selectSurfaceHit({ surface, source, through, anchor, cellNormal: normal }) ??
-						anchor.clone()
-					);
-				});
-				divs.push(interPts);
-			}
+	const interPts = interSource2d.map((p2) => {
+		const through = plane2DToPoint3D(p2, planePoint, basis);
+		return (
+			selectSurfaceHit({ surface, source, through, anchor, cellNormal: normal }) ?? anchor.clone()
+		);
+	});
+	divs.push(interPts);
+}
 ```
 
 Leave the existing `if (isSideA) { ... } else { ... }` block that follows (the side-A / side-B assignment with the `divsB` reversal) exactly as-is.
@@ -822,6 +832,7 @@ git commit -m "feat(voronoi): curvedInset path in localProjection with straight 
 ## Task 6: Thread `curvedInset` through `generate-voronoi.ts`
 
 **Files:**
+
 - Modify: `src/lib/voronoi/generate-voronoi.ts:319-329`
 - Test: `src/lib/voronoi/__tests__/generate-voronoi.test.ts`
 
@@ -830,19 +841,19 @@ git commit -m "feat(voronoi): curvedInset path in localProjection with straight 
 Append inside `describe('makeVoronoi', ...)` in `src/lib/voronoi/__tests__/generate-voronoi.test.ts`:
 
 ```ts
-	it('generates tubes with insetMethod localProjection + curvedInset', () => {
-		const address: GlobuleAddress = { globule: 0 };
-		const config: VoronoiConfig = {
-			...makeTestConfig(),
-			insetMethod: 'localProjection',
-			curvedInset: true
-		};
-		const result = makeVoronoi(config, address, testSurfaceConfig);
-		expect(result.tubes.length).toBeGreaterThan(0);
-		result.tubes.forEach((tube) => {
-			tube.bands.forEach((band) => expect(band.facets.length).toBeGreaterThan(0));
-		});
+it('generates tubes with insetMethod localProjection + curvedInset', () => {
+	const address: GlobuleAddress = { globule: 0 };
+	const config: VoronoiConfig = {
+		...makeTestConfig(),
+		insetMethod: 'localProjection',
+		curvedInset: true
+	};
+	const result = makeVoronoi(config, address, testSurfaceConfig);
+	expect(result.tubes.length).toBeGreaterThan(0);
+	result.tubes.forEach((tube) => {
+		tube.bands.forEach((band) => expect(band.facets.length).toBeGreaterThan(0));
 	});
+});
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -855,16 +866,16 @@ Expected: FAIL — `curvedInset` is not passed through, so the curved path never
 In `src/lib/voronoi/generate-voronoi.ts`, in the `if (config.insetMethod === 'localProjection')` branch, add `curvedInset` to the `computeEdgeInsetsLocalProjection` call:
 
 ```ts
-		edgeInsets = computeEdgeInsetsLocalProjection({
-			edges: voronoiResult.edges,
-			edgeProjections,
-			seedPoints3d,
-			surface,
-			surfaceCenter: center,
-			curveOffsetFactor,
-			surfaceProjectionDivisions: config.surfaceProjectionDivisions ?? 0,
-			curvedInset: config.curvedInset ?? false
-		});
+edgeInsets = computeEdgeInsetsLocalProjection({
+	edges: voronoiResult.edges,
+	edgeProjections,
+	seedPoints3d,
+	surface,
+	surfaceCenter: center,
+	curveOffsetFactor,
+	surfaceProjectionDivisions: config.surfaceProjectionDivisions ?? 0,
+	curvedInset: config.curvedInset ?? false
+});
 ```
 
 - [ ] **Step 4: Run test to verify it passes**
@@ -886,6 +897,7 @@ git commit -m "feat(voronoi): wire curvedInset config into generate-voronoi"
 Make the flag reachable from the designer. Follows the existing `update(field, value)` pattern in the component.
 
 **Files:**
+
 - Modify: `src/components/controls/VoronoiControl.svelte`
 
 - [ ] **Step 1: Extend the `update` field union and handler**
@@ -911,15 +923,15 @@ Note: the existing `update` signature is `(field, value: number | string)`. Pass
 In the template, immediately after the "Inset Method" `<label>...</label>` block (the `<select>` for `insetMethod`, around line 119), add:
 
 ```svelte
-			<label class="checkbox">
-				<input
-					type="checkbox"
-					checked={config.curvedInset ?? false}
-					disabled={(config.insetMethod ?? 'centerOut') !== 'localProjection'}
-					onchange={(e) => update('curvedInset', String(e.currentTarget.checked))}
-				/>
-				Curved Inset
-			</label>
+<label class="checkbox">
+	<input
+		type="checkbox"
+		checked={config.curvedInset ?? false}
+		disabled={(config.insetMethod ?? 'centerOut') !== 'localProjection'}
+		onchange={(e) => update('curvedInset', String(e.currentTarget.checked))}
+	/>
+	Curved Inset
+</label>
 ```
 
 (The `disabled` reflects that `curvedInset` only affects `localProjection`.)

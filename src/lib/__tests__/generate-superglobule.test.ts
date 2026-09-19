@@ -32,7 +32,13 @@ import { generateSuperGlobule, type PipelineGates } from '../generate-superglobu
 import type { SuperGlobuleConfig } from '../types';
 
 const VORONOI_RESULT = { tubes: [], surfaceProjectionTubes: [], surface: {} as never };
-const PROJECTION = { projection: {}, polyhedron: {}, tubes: [], surfaceProjectionTubes: [], surface: {} };
+const PROJECTION = {
+	projection: {},
+	polyhedron: {},
+	tubes: [],
+	surfaceProjectionTubes: [],
+	surface: {}
+};
 
 const baseConfig = (): SuperGlobuleConfig => ({
 	type: 'SuperGlobuleConfig',

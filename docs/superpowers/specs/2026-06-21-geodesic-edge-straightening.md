@@ -3,6 +3,7 @@
 **Date:** 2026-06-21
 **Branch:** `3d-voronoi-gen`
 **Related:**
+
 - `docs/superpowers/specs/2026-06-20-geodesic-edge-smoothing.md` (the smoothing work this builds on)
 - `docs/superpowers/handoff/2026-06-20-geodesic-edge-smoothness.md` (jaggedness root-cause)
 
@@ -160,11 +161,11 @@ it if straightening feels slow.
 
 ## Key files
 
-| File | Change |
-|------|--------|
+| File                                              | Change                                                |
+| ------------------------------------------------- | ----------------------------------------------------- |
 | `src/lib/voronoi/geodesic/geodesic-straighten.ts` | **new** — `straightenToGeodesic` + `resamplePolyline` |
-| `src/lib/voronoi/geodesic/smooth-chains.ts` | add `SurfaceProjector.projectClosest` |
-| `src/lib/voronoi/geodesic/geodesic-voronoi.ts` | branch emit loop by `geodesicEdgeStyle` |
-| `src/lib/voronoi/types.ts` | add `geodesicEdgeStyle`, `geodesicStraightenCap` |
-| `src/lib/shades-config.ts` | defaults (`'bisector'`, `60`) |
-| `src/components/controls/VoronoiControl.svelte` | Edge Style selector + Straighten Iterations slider |
+| `src/lib/voronoi/geodesic/smooth-chains.ts`       | add `SurfaceProjector.projectClosest`                 |
+| `src/lib/voronoi/geodesic/geodesic-voronoi.ts`    | branch emit loop by `geodesicEdgeStyle`               |
+| `src/lib/voronoi/types.ts`                        | add `geodesicEdgeStyle`, `geodesicStraightenCap`      |
+| `src/lib/shades-config.ts`                        | defaults (`'bisector'`, `60`)                         |
+| `src/components/controls/VoronoiControl.svelte`   | Edge Style selector + Straighten Iterations slider    |

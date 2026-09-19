@@ -26,7 +26,13 @@ const makeCore = () => {
 		now: () => 0,
 		log: () => {}
 	});
-	return { core, posted, post: (r: WorkerResponse) => posted.push(r), generateSuperGlobule, runPatternGeneration };
+	return {
+		core,
+		posted,
+		post: (r: WorkerResponse) => posted.push(r),
+		generateSuperGlobule,
+		runPatternGeneration
+	};
 };
 
 describe('worker core', () => {
@@ -34,7 +40,9 @@ describe('worker core', () => {
 		const { core, posted, post, generateSuperGlobule } = makeCore();
 		core.handle({ type: 'generate', payload: {} as never, gates: {} as never, requestId: 1 }, post);
 		expect(generateSuperGlobule).toHaveBeenCalledTimes(1);
-		expect(posted).toEqual([{ type: 'result', payload: { ...geometry, stripped: true }, requestId: 1 }]);
+		expect(posted).toEqual([
+			{ type: 'result', payload: { ...geometry, stripped: true }, requestId: 1 }
+		]);
 		expect(core.heldGeometryRequestId()).toBe(1);
 	});
 

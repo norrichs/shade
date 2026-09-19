@@ -70,6 +70,5 @@ export const rehydrateDeep = <T>(value: T): T => {
 	return value;
 };
 
-export const rehydratePatternResult = (
-	result: PatternGenerationResult
-): PatternGenerationResult => rehydrateDeep(result);
+export const rehydratePatternResult = (result: PatternGenerationResult): PatternGenerationResult =>
+	rehydrateDeep(result);

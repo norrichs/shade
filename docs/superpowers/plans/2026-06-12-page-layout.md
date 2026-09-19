@@ -11,6 +11,7 @@
 **Spec:** `docs/superpowers/specs/2026-06-12-page-layout-design.md`
 
 **Conventions:**
+
 - Run a single test file: `npm run test:unit -- <path>`
 - Type-check: `npm run check`
 - Pattern-units and 3D-model-units share one metric scale (flattening is isometric). `pageScale` = pattern-units per mm.
@@ -21,6 +22,7 @@
 ## File Structure
 
 **Create:**
+
 - `src/lib/cut-pattern/page-layout/types.ts` — `LayoutItem`, `PageGeom`, `PageLayoutResult`, `PageLayoutFn`.
 - `src/lib/cut-pattern/page-layout/flex-wrap.ts` — `flexWrapPageLayout`, `PAGE_STACK_GAP`.
 - `src/lib/cut-pattern/page-layout/registry.ts` — `PAGE_LAYOUT_ALGORITHMS`, `buildPageGeom`.
@@ -33,6 +35,7 @@
 - `src/components/cut-pattern/PageLayoutEditor.svelte` — floating editor.
 
 **Modify:**
+
 - `src/lib/types.ts` — add `PageLayoutConfig`, `patternLayoutMode`; extend `PatternConfig`/`PatternViewConfig`.
 - `src/lib/shades-config.ts` — defaults for `pageLayout` + `patternLayoutMode`.
 - `src/lib/validators.ts:59` — migrate `lineWrap` → `patternLayoutMode`, add `pageLayout`.
@@ -49,6 +52,7 @@
 ## Task 1: Config types, defaults, and migration
 
 **Files:**
+
 - Modify: `src/lib/types.ts`
 - Modify: `src/lib/shades-config.ts`
 - Modify: `src/lib/validators.ts:59`
@@ -141,23 +145,23 @@ Expected: FAIL (migration does not set `patternLayoutMode` / `pageLayout` yet).
 In `migrateGlobulePatternConfig`, before `return config;`, add:
 
 ```ts
-	const pvc = config.patternViewConfig as
-		| { lineWrap?: boolean; patternLayoutMode?: string }
-		| undefined;
-	if (pvc && pvc.patternLayoutMode === undefined) {
-		pvc.patternLayoutMode = pvc.lineWrap ? 'line-wrap' : 'linear';
-	}
-	const pc = config.patternConfig as { pageLayout?: unknown } | undefined;
-	if (pc && pc.pageLayout === undefined) {
-		pc.pageLayout = {
-			pageSize: { width: 304.8, height: 304.8 },
-			pageScale: 0.6562,
-			margin: 12.7,
-			gap: 20,
-			displayUnit: 'inch',
-			algorithm: 'flex-wrap'
-		};
-	}
+const pvc = config.patternViewConfig as
+	| { lineWrap?: boolean; patternLayoutMode?: string }
+	| undefined;
+if (pvc && pvc.patternLayoutMode === undefined) {
+	pvc.patternLayoutMode = pvc.lineWrap ? 'line-wrap' : 'linear';
+}
+const pc = config.patternConfig as { pageLayout?: unknown } | undefined;
+if (pc && pc.pageLayout === undefined) {
+	pc.pageLayout = {
+		pageSize: { width: 304.8, height: 304.8 },
+		pageScale: 0.6562,
+		margin: 12.7,
+		gap: 20,
+		displayUnit: 'inch',
+		algorithm: 'flex-wrap'
+	};
+}
 ```
 
 - [ ] **Step 6: Run the test to verify it passes**
@@ -182,6 +186,7 @@ git commit -m "feat(page-layout): add PageLayoutConfig, patternLayoutMode, and m
 ## Task 2: Pure layout types and `flexWrapPageLayout`
 
 **Files:**
+
 - Create: `src/lib/cut-pattern/page-layout/types.ts`
 - Create: `src/lib/cut-pattern/page-layout/flex-wrap.ts`
 - Test: `src/lib/cut-pattern/page-layout/__tests__/flex-wrap.test.ts`
@@ -420,6 +425,7 @@ git commit -m "feat(page-layout): pure flex-wrap page layout algorithm with push
 ## Task 3: Geometry builder, registry, and unit helpers
 
 **Files:**
+
 - Create: `src/lib/cut-pattern/page-layout/registry.ts`
 - Create: `src/lib/cut-pattern/page-layout/units.ts`
 - Create: `src/lib/cut-pattern/page-layout/page-presets.ts`
@@ -538,6 +544,7 @@ git commit -m "feat(page-layout): geometry builder, algorithm registry, unit hel
 ## Task 4: Toast action button
 
 **Files:**
+
 - Modify: `src/lib/stores/toastStore.ts`
 - Modify: `src/components/Toast.svelte`
 
@@ -563,35 +570,35 @@ export interface Toast {
 Add the button between the `toast-message` span and the dismiss button:
 
 ```svelte
-			<span class="toast-message">{toast.message}</span>
-			{#if toast.action}
-				<button
-					class="toast-action"
-					on:click={() => {
-						toast.action?.onClick();
-						handleDismiss(toast.id);
-					}}>{toast.action.label}</button
-				>
-			{/if}
+<span class="toast-message">{toast.message}</span>
+{#if toast.action}
+	<button
+		class="toast-action"
+		on:click={() => {
+			toast.action?.onClick();
+			handleDismiss(toast.id);
+		}}>{toast.action.label}</button
+	>
+{/if}
 ```
 
 Add to the `<style>` block:
 
 ```css
-	.toast-action {
-		pointer-events: auto;
-		background: rgba(0, 0, 0, 0.08);
-		border: 1px solid rgba(0, 0, 0, 0.2);
-		border-radius: 3px;
-		padding: 4px 8px;
-		font-family: monospace;
-		font-size: 12px;
-		cursor: pointer;
-		flex-shrink: 0;
-	}
-	.toast-action:hover {
-		background: rgba(0, 0, 0, 0.16);
-	}
+.toast-action {
+	pointer-events: auto;
+	background: rgba(0, 0, 0, 0.08);
+	border: 1px solid rgba(0, 0, 0, 0.2);
+	border-radius: 3px;
+	padding: 4px 8px;
+	font-family: monospace;
+	font-size: 12px;
+	cursor: pointer;
+	flex-shrink: 0;
+}
+.toast-action:hover {
+	background: rgba(0, 0, 0, 0.16);
+}
 ```
 
 - [ ] **Step 3: Type-check**
@@ -611,6 +618,7 @@ git commit -m "feat(toast): optional action button on toasts"
 ## Task 5: `model3dBoundsStore` derived store
 
 **Files:**
+
 - Modify: `src/lib/stores/superGlobuleStores.ts`
 
 - [ ] **Step 1: Add the derived store**
@@ -644,6 +652,7 @@ git commit -m "feat(page-layout): model3dBoundsStore for derived real-world unit
 ## Task 6: `PageGeometry.svelte` render component
 
 **Files:**
+
 - Create: `src/components/cut-pattern/PageGeometry.svelte`
 
 - [ ] **Step 1: Create the component**
@@ -699,6 +708,7 @@ git commit -m "feat(page-layout): PageGeometry svg component"
 ## Task 7: Wire page mode into `CutPatternRenderer`
 
 **Files:**
+
 - Modify: `src/components/cut-pattern/CutPatternRenderer.svelte`
 
 The renderer currently reads `lineWrap` from config. Page mode needs a flat, ordered band list and the page layout result. We add a `mode`-derived value, a flat band list, a page-layout computation, and a `page`-mode render branch with `<PageGeometry>`.
@@ -708,10 +718,10 @@ The renderer currently reads `lineWrap` from config. Page mode needs a flat, ord
 In the `<script>` block, add:
 
 ```ts
-	import PageGeometry from './PageGeometry.svelte';
-	import { buildPageGeom, PAGE_LAYOUT_ALGORITHMS } from '$lib/cut-pattern/page-layout/registry';
-	import type { LayoutItem, PageLayoutResult } from '$lib/cut-pattern/page-layout/types';
-	import { toastStore } from '$lib/stores/toastStore';
+import PageGeometry from './PageGeometry.svelte';
+import { buildPageGeom, PAGE_LAYOUT_ALGORITHMS } from '$lib/cut-pattern/page-layout/registry';
+import type { LayoutItem, PageLayoutResult } from '$lib/cut-pattern/page-layout/types';
+import { toastStore } from '$lib/stores/toastStore';
 ```
 
 - [ ] **Step 2: Derive mode and map it to lineWrap**
@@ -719,15 +729,15 @@ In the `<script>` block, add:
 Replace the existing line:
 
 ```ts
-	let lineWrap = $derived($patternConfigStore.patternViewConfig.lineWrap ?? false);
+let lineWrap = $derived($patternConfigStore.patternViewConfig.lineWrap ?? false);
 ```
 
 with:
 
 ```ts
-	let layoutMode = $derived($patternConfigStore.patternViewConfig.patternLayoutMode ?? 'linear');
-	let lineWrap = $derived(layoutMode === 'line-wrap');
-	let pageLayoutCfg = $derived($patternConfigStore.patternConfig.pageLayout);
+let layoutMode = $derived($patternConfigStore.patternViewConfig.patternLayoutMode ?? 'linear');
+let lineWrap = $derived(layoutMode === 'line-wrap');
+let pageLayoutCfg = $derived($patternConfigStore.patternConfig.pageLayout);
 ```
 
 - [ ] **Step 3: Add a helper that builds `LayoutItem[]` (top-aligned) from resolved bands**
@@ -735,17 +745,17 @@ with:
 After the `getFlatOrigins` function, add:
 
 ```ts
-	const toLayoutItems = (bands: ResolvedBand[]): LayoutItem[] =>
-		bands.map(({ band }) => {
-			const bounds = effBoundsFor(band);
-			return {
-				width: bounds?.width || 0,
-				height: bounds?.height || 0,
-				left: bounds?.left || 0,
-				top: bounds?.top || 0,
-				alignedYOffset: 0 // page mode is top-aligned (flex-start)
-			};
-		});
+const toLayoutItems = (bands: ResolvedBand[]): LayoutItem[] =>
+	bands.map(({ band }) => {
+		const bounds = effBoundsFor(band);
+		return {
+			width: bounds?.width || 0,
+			height: bounds?.height || 0,
+			left: bounds?.left || 0,
+			top: bounds?.top || 0,
+			alignedYOffset: 0 // page mode is top-aligned (flex-start)
+		};
+	});
 ```
 
 - [ ] **Step 4: Build the flat ordered band list and compute the page layout**
@@ -753,49 +763,49 @@ After the `getFlatOrigins` function, add:
 After the `flatOrigins` derived declaration, add:
 
 ```ts
-	// Flat, ordered band list for page mode: use the sort-index order when present,
-	// else flatten filtered tubes in tube order.
-	let pageBands = $derived.by((): ResolvedBand[] => {
-		if (indexedBands) return indexedBands;
-		return filteredTubes.flatMap((tube) => tube.bands.map((band) => ({ band, tube })));
-	});
+// Flat, ordered band list for page mode: use the sort-index order when present,
+// else flatten filtered tubes in tube order.
+let pageBands = $derived.by((): ResolvedBand[] => {
+	if (indexedBands) return indexedBands;
+	return filteredTubes.flatMap((tube) => tube.bands.map((band) => ({ band, tube })));
+});
 
-	let pageResult = $derived.by((): PageLayoutResult | undefined => {
-		if (layoutMode !== 'page' || !pageLayoutCfg) return undefined;
-		const items = toLayoutItems(pageBands);
-		const geom = buildPageGeom(pageLayoutCfg);
-		const algo = PAGE_LAYOUT_ALGORITHMS[pageLayoutCfg.algorithm];
-		return algo(items, geom);
-	});
+let pageResult = $derived.by((): PageLayoutResult | undefined => {
+	if (layoutMode !== 'page' || !pageLayoutCfg) return undefined;
+	const items = toLayoutItems(pageBands);
+	const geom = buildPageGeom(pageLayoutCfg);
+	const algo = PAGE_LAYOUT_ALGORITHMS[pageLayoutCfg.algorithm];
+	return algo(items, geom);
+});
 
-	// Raise a fit-error toast (with a scale-fixing action) when a pattern overflows.
-	let lastOverflowKey = '';
-	$effect(() => {
-		const ov = pageResult?.overflow;
-		if (!ov) {
-			lastOverflowKey = '';
-			return;
-		}
-		const key = `${ov.itemIndex}:${ov.requiredScale.toFixed(4)}`;
-		if (key === lastOverflowKey) return;
-		lastOverflowKey = key;
-		const suggested = Number(ov.requiredScale.toFixed(4));
-		toastStore.add({
-			type: 'error',
-			message: `A pattern is too large to fit the page. Increase pageScale to ~${suggested} to fit.`,
-			dismissible: true,
-			action: {
-				label: 'Fit page',
-				onClick: () => {
-					$patternConfigStore.patternConfig.pageLayout.pageScale = suggested;
-				}
+// Raise a fit-error toast (with a scale-fixing action) when a pattern overflows.
+let lastOverflowKey = '';
+$effect(() => {
+	const ov = pageResult?.overflow;
+	if (!ov) {
+		lastOverflowKey = '';
+		return;
+	}
+	const key = `${ov.itemIndex}:${ov.requiredScale.toFixed(4)}`;
+	if (key === lastOverflowKey) return;
+	lastOverflowKey = key;
+	const suggested = Number(ov.requiredScale.toFixed(4));
+	toastStore.add({
+		type: 'error',
+		message: `A pattern is too large to fit the page. Increase pageScale to ~${suggested} to fit.`,
+		dismissible: true,
+		action: {
+			label: 'Fit page',
+			onClick: () => {
+				$patternConfigStore.patternConfig.pageLayout.pageScale = suggested;
 			}
-		});
+		}
 	});
+});
 
-	// In page mode without overflow, bands render flat at the page-layout origins.
-	let pageMarginPx = $derived(pageLayoutCfg ? buildPageGeom(pageLayoutCfg).marginPx : 0);
-	let usePageLayout = $derived(layoutMode === 'page' && !!pageResult && !pageResult.overflow);
+// In page mode without overflow, bands render flat at the page-layout origins.
+let pageMarginPx = $derived(pageLayoutCfg ? buildPageGeom(pageLayoutCfg).marginPx : 0);
+let usePageLayout = $derived(layoutMode === 'page' && !!pageResult && !pageResult.overflow);
 ```
 
 - [ ] **Step 5: Add the page-mode render branch**
@@ -877,6 +887,7 @@ git commit -m "feat(page-layout): render page mode with PageGeometry and overflo
 ## Task 8: Mode cycle button + open-editor button in `CutPatternControl`
 
 **Files:**
+
 - Create: `src/lib/stores/pageEditorStore.ts`
 - Modify: `src/components/cut-pattern/CutPatternControl.svelte`
 
@@ -894,21 +905,21 @@ export const pageEditorOpen = writable(false);
 In the `<script>` block add:
 
 ```ts
-	import { pageEditorOpen } from '$lib/stores/pageEditorStore';
-	import type { PatternLayoutMode } from '$lib/types';
+import { pageEditorOpen } from '$lib/stores/pageEditorStore';
+import type { PatternLayoutMode } from '$lib/types';
 
-	const MODE_ORDER: PatternLayoutMode[] = ['linear', 'line-wrap', 'page'];
-	const MODE_LABEL: Record<PatternLayoutMode, string> = {
-		linear: 'Linear',
-		'line-wrap': 'Line-wrap',
-		page: 'Page'
-	};
-	const cycleMode = () => {
-		const cur = $patternConfigStore.patternViewConfig.patternLayoutMode ?? 'linear';
-		const next = MODE_ORDER[(MODE_ORDER.indexOf(cur) + 1) % MODE_ORDER.length];
-		$patternConfigStore.patternViewConfig.patternLayoutMode = next;
-		if (next === 'page') $pageEditorOpen = true;
-	};
+const MODE_ORDER: PatternLayoutMode[] = ['linear', 'line-wrap', 'page'];
+const MODE_LABEL: Record<PatternLayoutMode, string> = {
+	linear: 'Linear',
+	'line-wrap': 'Line-wrap',
+	page: 'Page'
+};
+const cycleMode = () => {
+	const cur = $patternConfigStore.patternViewConfig.patternLayoutMode ?? 'linear';
+	const next = MODE_ORDER[(MODE_ORDER.indexOf(cur) + 1) % MODE_ORDER.length];
+	$patternConfigStore.patternViewConfig.patternLayoutMode = next;
+	if (next === 'page') $pageEditorOpen = true;
+};
 ```
 
 - [ ] **Step 3: Replace the "line wrap" checkbox with the cycle button**
@@ -958,14 +969,14 @@ with:
 In the `<style>` block add:
 
 ```css
-	.mode-cycle {
-		display: block;
-		margin: 2px 0;
-		padding: 2px 8px;
-		font-family: monospace;
-		font-size: 12px;
-		cursor: pointer;
-	}
+.mode-cycle {
+	display: block;
+	margin: 2px 0;
+	padding: 2px 8px;
+	font-family: monospace;
+	font-size: 12px;
+	cursor: pointer;
+}
 ```
 
 - [ ] **Step 5: Type-check**
@@ -989,6 +1000,7 @@ git commit -m "feat(page-layout): mode cycle button replacing line-wrap checkbox
 ## Task 9: Floating `PageLayoutEditor`
 
 **Files:**
+
 - Create: `src/components/cut-pattern/PageLayoutEditor.svelte`
 - Modify: `src/components/cut-pattern/PatternViewer.svelte`
 
@@ -1010,16 +1022,21 @@ git commit -m "feat(page-layout): mode cycle button replacing line-wrap checkbox
 	// Preset selection (matches stored mm dims, else 'custom').
 	let presetId = $derived.by(() => {
 		const p = PAGE_PRESETS.find(
-			(p) => Math.abs(p.width - cfg.pageSize.width) < 0.5 && Math.abs(p.height - cfg.pageSize.height) < 0.5
+			(p) =>
+				Math.abs(p.width - cfg.pageSize.width) < 0.5 &&
+				Math.abs(p.height - cfg.pageSize.height) < 0.5
 		);
 		return p?.id ?? 'custom';
 	});
 	const applyPreset = (id: string) => {
 		const p = PAGE_PRESETS.find((p) => p.id === id);
-		if (p) $patternConfigStore.patternConfig.pageLayout.pageSize = { width: p.width, height: p.height };
+		if (p)
+			$patternConfigStore.patternConfig.pageLayout.pageSize = { width: p.width, height: p.height };
 	};
 
-	let derived3d = $derived($model3dBoundsStore ? derivePageDimensions($model3dBoundsStore, cfg.pageScale) : null);
+	let derived3d = $derived(
+		$model3dBoundsStore ? derivePageDimensions($model3dBoundsStore, cfg.pageScale) : null
+	);
 
 	// SVG preview: fit the page proportions into a 120×120 box.
 	let preview = $derived.by(() => {
@@ -1112,7 +1129,14 @@ git commit -m "feat(page-layout): mode cycle button replacing line-wrap checkbox
 		</label>
 
 		<svg class="preview" viewBox="0 0 120 120" width="120" height="120">
-			<rect x={preview.x} y={preview.y} width={preview.w} height={preview.h} fill="#fff" stroke="#999" />
+			<rect
+				x={preview.x}
+				y={preview.y}
+				width={preview.w}
+				height={preview.h}
+				fill="#fff"
+				stroke="#999"
+			/>
 			<rect
 				x={preview.x + preview.m}
 				y={preview.y + preview.m}
@@ -1199,13 +1223,13 @@ git commit -m "feat(page-layout): mode cycle button replacing line-wrap checkbox
 In the `<script>` block add:
 
 ```ts
-	import PageLayoutEditor from './PageLayoutEditor.svelte';
+import PageLayoutEditor from './PageLayoutEditor.svelte';
 ```
 
 In the template, after `<CutPatternControl />`, add:
 
 ```svelte
-	<PageLayoutEditor />
+<PageLayoutEditor />
 ```
 
 - [ ] **Step 3: Type-check**
@@ -1216,6 +1240,7 @@ Expected: no new errors.
 - [ ] **Step 4: Manual verification**
 
 Run: `npm run dev`. In `/designer2`, cycle Layout to `Page`. The floating editor appears top-right. Verify:
+
 - Selecting a preset (e.g. 8.5 × 11 in) changes the page rects in the viewer.
 - Switching Units between inch/mm reformats the width/height/margin inputs without changing the stored geometry.
 - Editing `pageScale` rescales pages and live-updates the "Model size" readout.

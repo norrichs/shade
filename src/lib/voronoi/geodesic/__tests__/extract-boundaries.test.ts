@@ -39,7 +39,8 @@ describe('extractBoundaries', () => {
 		});
 		const chains = extractBoundaries(g, field);
 		const counts = new Map<number, number>();
-		for (const c of chains) for (const cid of c.vertices) counts.set(cid, (counts.get(cid) ?? 0) + 1);
+		for (const c of chains)
+			for (const cid of c.vertices) counts.set(cid, (counts.get(cid) ?? 0) + 1);
 		const shared = [...counts.values()].some((n) => n >= 2);
 		expect(shared).toBe(true);
 	});
@@ -56,7 +57,9 @@ describe('extractBoundaries', () => {
 				: { nearestSeed: 0, distance: 1 }
 		);
 		const chains = extractBoundaries(g, field);
-		const pair = chains.filter((c) => new Set(c.cellIndices).has(0) && new Set(c.cellIndices).has(1));
+		const pair = chains.filter(
+			(c) => new Set(c.cellIndices).has(0) && new Set(c.cellIndices).has(1)
+		);
 		expect(pair.length).toBe(1); // one stitched chain, not two disjoint segments
 		expect(pair[0].points.length).toBe(3); // crossing on top edge, shared crossing, crossing on bottom edge
 	});

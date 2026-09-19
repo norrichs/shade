@@ -24,10 +24,12 @@
 ## File Structure
 
 **New:**
+
 - `src/lib/voronoi/geodesic/rim-edges.ts` — `buildRimChains`.
 - `src/lib/voronoi/geodesic/__tests__/rim-edges.test.ts`
 
 **Modified:**
+
 - `src/lib/voronoi/geodesic/mesh-graph.ts` — add `traceBoundaryLoops` (+ test in existing `__tests__/mesh-graph.test.ts`).
 - `src/lib/types.ts` — add `OPENING` sentinel.
 - `src/lib/voronoi/geodesic/geodesic-voronoi.ts` — append rim chains (+ test in existing `__tests__/geodesic-voronoi.test.ts`).
@@ -39,6 +41,7 @@
 ## Task 1: Boundary loop tracing in mesh-graph
 
 **Files:**
+
 - Modify: `src/lib/voronoi/geodesic/mesh-graph.ts`
 - Test: `src/lib/voronoi/geodesic/__tests__/mesh-graph.test.ts`
 
@@ -172,6 +175,7 @@ git commit -m "feat(voronoi): trace mesh boundary loops for open surfaces"
 ## Task 2: Rim chains (`OPENING` sentinel + buildRimChains)
 
 **Files:**
+
 - Modify: `src/lib/types.ts` (add `OPENING`)
 - Create: `src/lib/voronoi/geodesic/rim-edges.ts`
 - Test: `src/lib/voronoi/geodesic/__tests__/rim-edges.test.ts`
@@ -324,6 +328,7 @@ git commit -m "feat(voronoi): build per-cell rim chains with OPENING sentinel"
 ## Task 3: Append rim chains in the geodesic orchestrator
 
 **Files:**
+
 - Modify: `src/lib/voronoi/geodesic/geodesic-voronoi.ts`
 - Test: `src/lib/voronoi/geodesic/__tests__/geodesic-voronoi.test.ts`
 
@@ -377,10 +382,10 @@ import { buildRimChains } from './rim-edges';
 Replace the single `const chains = extractBoundaries(graph, field)` line with:
 
 ```ts
-	// Cell-cell boundaries plus, for open surfaces, per-cell rim chains tracing the openings.
-	const cellChains = extractBoundaries(graph, field);
-	const rimChains = buildRimChains(graph, field, traceBoundaryLoops(graph));
-	const chains: BoundaryChain[] = [...cellChains, ...rimChains];
+// Cell-cell boundaries plus, for open surfaces, per-cell rim chains tracing the openings.
+const cellChains = extractBoundaries(graph, field);
+const rimChains = buildRimChains(graph, field, traceBoundaryLoops(graph));
+const chains: BoundaryChain[] = [...cellChains, ...rimChains];
 ```
 
 (The existing `lengths`/`divisionCounts`/`chains.forEach` emit code is unchanged — rim chains are `BoundaryChain`s and flow through it, carrying the `OPENING` sentinel in `cellIndices`.)
@@ -402,6 +407,7 @@ git commit -m "feat(voronoi): append rim chains to geodesic Voronoi output"
 ## Task 4: Inset skips the opening sentinel
 
 **Files:**
+
 - Modify: `src/lib/voronoi/local-projection.ts`
 - Test: `src/lib/voronoi/__tests__/local-projection.test.ts`
 
@@ -420,14 +426,18 @@ function planeSurface(): Object3D {
 
 it('insets only the real-cell side for an opening-sentinel edge', () => {
 	const surface = planeSurface();
-	const edgePoints3d = [
-		new Vector3(-50, 0, 0),
-		new Vector3(0, 0, 0),
-		new Vector3(50, 0, 0)
-	];
+	const edgePoints3d = [new Vector3(-50, 0, 0), new Vector3(0, 0, 0), new Vector3(50, 0, 0)];
 	const normals = edgePoints3d.map(() => new Vector3(0, 0, 1));
 	const insets = computeEdgeInsetsLocalProjection({
-		edges: [{ vertices: [[-2, 0], [-3, 0]], cellIndices: [0, OPENING] }],
+		edges: [
+			{
+				vertices: [
+					[-2, 0],
+					[-3, 0]
+				],
+				cellIndices: [0, OPENING]
+			}
+		],
 		edgeProjections: [{ edgePoints3d, normals }],
 		seedPoints3d: [new Vector3(0, 80, 0)], // cell 0 seed, off the edge toward +y
 		surface,
@@ -457,16 +467,16 @@ Expected: FAIL — without the skip, cell `-1` is processed and insets the B (op
 In the cell→edges grouping loop, skip the sentinel:
 
 ```ts
-	// cell -> list of its edge indices
-	const cellEdges = new Map<number, number[]>();
-	edges.forEach((edge, edgeIndex) => {
-		for (const cell of edge.cellIndices) {
-			if (cell < 0) continue; // OPENING sentinel — the opening side has no cell to inset toward
-			const list = cellEdges.get(cell);
-			if (list) list.push(edgeIndex);
-			else cellEdges.set(cell, [edgeIndex]);
-		}
-	});
+// cell -> list of its edge indices
+const cellEdges = new Map<number, number[]>();
+edges.forEach((edge, edgeIndex) => {
+	for (const cell of edge.cellIndices) {
+		if (cell < 0) continue; // OPENING sentinel — the opening side has no cell to inset toward
+		const list = cellEdges.get(cell);
+		if (list) list.push(edgeIndex);
+		else cellEdges.set(cell, [edgeIndex]);
+	}
+});
 ```
 
 - [ ] **Step 4: Run to verify it passes**
@@ -486,6 +496,7 @@ git commit -m "feat(voronoi): skip OPENING sentinel in local-projection inset"
 ## Task 5: One-sided (asymmetric) tube for sentinel edges
 
 **Files:**
+
 - Modify: `src/lib/voronoi/generate-voronoi.ts`
 - Test: `src/lib/voronoi/__tests__/generate-voronoi.test.ts`
 
@@ -494,7 +505,10 @@ git commit -m "feat(voronoi): skip OPENING sentinel in local-projection inset"
 This reuses the file's mocked `generateSurface`/`generateProjectionBands`. Add `import { OPENING } from '$lib/types';` and import the mocked fns so they can be inspected/overridden — the file already imports `makeVoronoi`; add:
 
 ```ts
-import { generateSurface, generateProjectionBands } from '$lib/projection-geometry/generate-projection';
+import {
+	generateSurface,
+	generateProjectionBands
+} from '$lib/projection-geometry/generate-projection';
 import { Mesh, MeshBasicMaterial, Object3D, PlaneGeometry, DoubleSide } from 'three';
 ```
 
@@ -504,7 +518,9 @@ Test:
 it('builds a one-sided tube for rim (opening-sentinel) edges', () => {
 	// Open plane surface -> geodesic produces both cell-cell and rim edges.
 	const openSurface = new Object3D();
-	openSurface.add(new Mesh(new PlaneGeometry(800, 800, 6, 6), new MeshBasicMaterial({ side: DoubleSide })));
+	openSurface.add(
+		new Mesh(new PlaneGeometry(800, 800, 6, 6), new MeshBasicMaterial({ side: DoubleSide }))
+	);
 	openSurface.updateMatrixWorld(true);
 	jest.mocked(generateSurface).mockReturnValueOnce(openSurface);
 
@@ -551,34 +567,34 @@ import { OPENING } from '$lib/types';
 In `assembleVoronoiTubes`, inside the per-edge loop, right after the `if (edgePoints3d.length < 2) continue;` line, insert the one-sided branch:
 
 ```ts
-		// One-sided (asymmetric) tube for rim edges: one side borders an opening, so
-		// only the surface side gets bands (no opening-side curve, no surface-projection tube).
-		const openingA = cellIdxA === OPENING;
-		const openingB = cellIdxB === OPENING;
-		if (openingA !== openingB) {
-			const realCurve = openingA ? curvePointsB : curvePointsA;
-			const sideSections = applyCrossSectionsToEdge(
-				edgePoints3d,
-				realCurve,
-				normals,
-				crossSectionConfig
-			);
-			const oneSided: Section[] = sideSections.map((s) => ({ points: s.crossSectionPoints }));
-			const tubeAddress: GlobuleAddress_Tube = { ...address, tube: tubes.length };
-			const bands = generateProjectionBands(
-				oneSided,
-				config.bandConfig.orientation,
-				tubeAddress,
-				config.bandConfig.tubeSymmetry
-			);
-			tubes.push({
-				bands,
-				sections: oneSided,
-				orientation: config.bandConfig.orientation,
-				address: tubeAddress
-			});
-			continue; // skip the symmetric main tube + surface-projection tube
-		}
+// One-sided (asymmetric) tube for rim edges: one side borders an opening, so
+// only the surface side gets bands (no opening-side curve, no surface-projection tube).
+const openingA = cellIdxA === OPENING;
+const openingB = cellIdxB === OPENING;
+if (openingA !== openingB) {
+	const realCurve = openingA ? curvePointsB : curvePointsA;
+	const sideSections = applyCrossSectionsToEdge(
+		edgePoints3d,
+		realCurve,
+		normals,
+		crossSectionConfig
+	);
+	const oneSided: Section[] = sideSections.map((s) => ({ points: s.crossSectionPoints }));
+	const tubeAddress: GlobuleAddress_Tube = { ...address, tube: tubes.length };
+	const bands = generateProjectionBands(
+		oneSided,
+		config.bandConfig.orientation,
+		tubeAddress,
+		config.bandConfig.tubeSymmetry
+	);
+	tubes.push({
+		bands,
+		sections: oneSided,
+		orientation: config.bandConfig.orientation,
+		address: tubeAddress
+	});
+	continue; // skip the symmetric main tube + surface-projection tube
+}
 ```
 
 (`Section`, `GlobuleAddress_Tube`, `applyCrossSectionsToEdge`, `generateProjectionBands`, `curvePointsA/B`, `cellIdxA/B`, `crossSectionConfig` are all already in scope in this function.)

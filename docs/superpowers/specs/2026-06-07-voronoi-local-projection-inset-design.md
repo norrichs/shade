@@ -54,16 +54,16 @@ rehydrated by `workerStore.ts`.
 
 ## 3. Approach (decisions)
 
-| Decision | Choice |
-| --- | --- |
-| Granularity ("local") | **Per cell** — one average-plane + source per Voronoi cell |
-| Back-projection hit selection | **Proximity to known step-2 points, with normal-agreement tiebreak** |
-| Gating | **New orthogonal config field `insetMethod: 'centerOut' \| 'localProjection'`**, independent of `voronoiMethod` |
-| 2D inset primitive | **Homothety (scale toward seed) by `curveOffsetFactor`**, behind a swappable `insetPolygon2D` interface so perpendicular/bezier offset can replace it later |
-| Plane fit | **SVD** of the centered cell sample points |
-| Per-cell `size` | **Cell diameter** (max pairwise distance among the cell's sample points) |
-| `sourceDistance` | `10 × size` (constant factor, not configurable) |
-| Phase 1 (diagram + edge placement) | **Unchanged** — still center-based for this milestone |
+| Decision                           | Choice                                                                                                                                                      |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Granularity ("local")              | **Per cell** — one average-plane + source per Voronoi cell                                                                                                  |
+| Back-projection hit selection      | **Proximity to known step-2 points, with normal-agreement tiebreak**                                                                                        |
+| Gating                             | **New orthogonal config field `insetMethod: 'centerOut' \| 'localProjection'`**, independent of `voronoiMethod`                                             |
+| 2D inset primitive                 | **Homothety (scale toward seed) by `curveOffsetFactor`**, behind a swappable `insetPolygon2D` interface so perpendicular/bezier offset can replace it later |
+| Plane fit                          | **SVD** of the centered cell sample points                                                                                                                  |
+| Per-cell `size`                    | **Cell diameter** (max pairwise distance among the cell's sample points)                                                                                    |
+| `sourceDistance`                   | `10 × size` (constant factor, not configurable)                                                                                                             |
+| Phase 1 (diagram + edge placement) | **Unchanged** — still center-based for this milestone                                                                                                       |
 
 ---
 
@@ -161,6 +161,7 @@ All under `src/lib/voronoi/` unless noted. Each new file is small and
 single-purpose.
 
 **New**
+
 - `project-edges-onto-surface.ts` — Phase 1 helper (extracted, shared).
 - `fit-plane.ts` — `fitPlaneSVD(points) → { normal, centroid }`.
 - `inset-2d.ts` — `insetPolygon2D(points2d, seed2d, factor)` (swappable seam).
@@ -169,6 +170,7 @@ single-purpose.
   flatten → inset → back-project → emit per-edge insets).
 
 **Changed**
+
 - `generate-voronoi.ts` — `makeVoronoi` Phase-2 block becomes a branch on
   `insetMethod`; Phase-1 block replaced by a call to the extracted helper.
 - `types.ts` — add `InsetMethod` and `VoronoiConfig.insetMethod`.
@@ -201,33 +203,39 @@ TDD against pure pieces, with synthetic geometry where the answer is known. Test
 colocated in `src/lib/voronoi/__tests__/`.
 
 **`fit-plane.ts`**
+
 - Points sampled from a known plane (+ noise) → recovered normal matches up to sign.
 - Normal signed away from a given surface center.
 - Degenerate inputs (collinear, <3 points) → fallback, no throw.
 
 **`inset-2d.ts`**
+
 - `factor = 0` → unchanged; `factor = 1` → all points at seed; `0.5` → midpoints.
 - A shared corner point maps identically regardless of source edge
   (corner-continuity invariant).
 - `surfaceProjectionDivisions` intermediates are monotonic lerps edge→inset.
 
 **`select-surface-hit.ts`**
+
 - Two hits (near/far from anchor) → picks near.
 - Near-equidistant pair → normal-agreement tiebreak picks the cell-plane-aligned
   face.
 - No hits → returns anchor fallback.
 
 **`project-edges-onto-surface.ts`**
+
 - Characterization test: on a sphere, the extracted helper reproduces the current
   inline output (guards the refactor).
 
 **`local-projection.ts`**
+
 - **Sphere rough-parity:** `localProjection` insets land close to `centerOut`
   insets within a tolerance — the milestone acceptance check.
 - An edge shared by two cells yields identical `edgePoints3d` on both sides
   (seam-alignment invariant) while `curvePointsA ≠ curvePointsB`.
 
 **Migration**
+
 - A config without `insetMethod` migrates to `'centerOut'`; other fields preserved.
 
 **Manual/visual** (plan checkpoint, not automated): generate on sphere/capsule/

@@ -14,12 +14,20 @@ const spec = (id: string, builtIn = false): TiledPatternSpec & { rowId?: number 
 	algorithm: 'grid',
 	builtIn,
 	unit: { width: 1, height: 1, start: [], middle: [], end: [] },
-	adjustments: { withinBand: [], acrossBands: [], partner: { startEnd: [], endEnd: [] }, skipRemove: [] },
+	adjustments: {
+		withinBand: [],
+		acrossBands: [],
+		partner: { startEnd: [], endEnd: [] },
+		skipRemove: []
+	},
 	rowId: 1
 });
 
 const patternConfig = (typeId: string): GlobulePatternConfig =>
-	({ type: 'GlobulePatternConfig', patternTypeConfig: { type: typeId } } as unknown as GlobulePatternConfig);
+	({
+		type: 'GlobulePatternConfig',
+		patternTypeConfig: { type: typeId }
+	}) as unknown as GlobulePatternConfig;
 
 const superConfig: SuperGlobuleConfig = {
 	type: 'SuperGlobuleConfig',

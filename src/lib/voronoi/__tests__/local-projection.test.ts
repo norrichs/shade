@@ -174,7 +174,9 @@ describe('computeEdgeInsetsLocalProjection', () => {
 	it('insets only the real-cell side for an opening-sentinel edge', () => {
 		function planeSurface(): Object3D {
 			const o = new Object3D();
-			o.add(new Mesh(new PlaneGeometry(400, 400, 1, 1), new MeshBasicMaterial({ side: DoubleSide })));
+			o.add(
+				new Mesh(new PlaneGeometry(400, 400, 1, 1), new MeshBasicMaterial({ side: DoubleSide }))
+			);
 			o.updateMatrixWorld(true);
 			return o;
 		}
@@ -182,7 +184,15 @@ describe('computeEdgeInsetsLocalProjection', () => {
 		const edgePoints3d = [new Vector3(-50, 0, 0), new Vector3(0, 0, 0), new Vector3(50, 0, 0)];
 		const normals = edgePoints3d.map(() => new Vector3(0, 0, 1));
 		const insets = computeEdgeInsetsLocalProjection({
-			edges: [{ vertices: [[-2, 0], [-3, 0]] as [[number, number], [number, number]], cellIndices: [0, OPENING] as [number, number] }],
+			edges: [
+				{
+					vertices: [
+						[-2, 0],
+						[-3, 0]
+					] as [[number, number], [number, number]],
+					cellIndices: [0, OPENING] as [number, number]
+				}
+			],
 			edgeProjections: [{ edgePoints3d, normals }],
 			seedPoints3d: [new Vector3(0, 80, 0)],
 			surface,
@@ -194,7 +204,9 @@ describe('computeEdgeInsetsLocalProjection', () => {
 		// Real side (A, since cellIndices[0] === 0) is inset toward the seed.
 		expect(insets[0].curvePointsA.some((p, i) => p.distanceTo(edgePoints3d[i]) > 1e-6)).toBe(true);
 		// Opening side (B) is NOT inset — it stays at the edge points.
-		insets[0].curvePointsB.forEach((p, i) => expect(p.distanceTo(edgePoints3d[i])).toBeLessThan(1e-6));
+		insets[0].curvePointsB.forEach((p, i) =>
+			expect(p.distanceTo(edgePoints3d[i])).toBeLessThan(1e-6)
+		);
 	});
 
 	it('curvedInset: corners at coincident 3D points round even when vertex ids differ', () => {
@@ -204,7 +216,9 @@ describe('computeEdgeInsetsLocalProjection', () => {
 		// inset must recognise them as one corner from geometry, not from the id.
 		function planeSurface(): Object3D {
 			const o = new Object3D();
-			o.add(new Mesh(new PlaneGeometry(400, 400, 1, 1), new MeshBasicMaterial({ side: DoubleSide })));
+			o.add(
+				new Mesh(new PlaneGeometry(400, 400, 1, 1), new MeshBasicMaterial({ side: DoubleSide }))
+			);
 			o.updateMatrixWorld(true);
 			return o;
 		}
@@ -224,9 +238,27 @@ describe('computeEdgeInsetsLocalProjection', () => {
 		// edge2 C->A (rim edge). Corner C is given id 3 on edge1 but a DIFFERENT id 99
 		// on the rim edge2 — coincident in 3D, distinct ids.
 		const edges: VoronoiEdge[] = [
-			{ vertices: [[1, 0], [2, 0]], cellIndices: [0, 1] },
-			{ vertices: [[2, 0], [3, 0]], cellIndices: [0, 2] },
-			{ vertices: [[99, 0], [1, 0]], cellIndices: [0, OPENING] }
+			{
+				vertices: [
+					[1, 0],
+					[2, 0]
+				],
+				cellIndices: [0, 1]
+			},
+			{
+				vertices: [
+					[2, 0],
+					[3, 0]
+				],
+				cellIndices: [0, 2]
+			},
+			{
+				vertices: [
+					[99, 0],
+					[1, 0]
+				],
+				cellIndices: [0, OPENING]
+			}
 		];
 		const edgeProjections: EdgeProjection[] = [
 			proj(A.clone(), mid(A, B), B.clone()),
@@ -247,7 +279,10 @@ describe('computeEdgeInsetsLocalProjection', () => {
 		const curved = computeEdgeInsetsLocalProjection({ ...common, curvedInset: true });
 
 		const moved = (i: number) =>
-			curved[i].curvePointsA.reduce((acc, p, k) => acc + p.distanceTo(straight[i].curvePointsA[k]), 0);
+			curved[i].curvePointsA.reduce(
+				(acc, p, k) => acc + p.distanceTo(straight[i].curvePointsA[k]),
+				0
+			);
 
 		// edge0's corners (A,B) match by id either way -> always curved (sanity).
 		expect(moved(0)).toBeGreaterThan(1e-3);

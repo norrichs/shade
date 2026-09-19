@@ -13,7 +13,7 @@
 ## Global Constraints
 
 - Branch: `feat/globule-editing-fixes` (already created, off `main`).
-- **`npm run check` baseline is 434 errors / 76 warnings / 67 files with problems.** This is CLEAN — all pre-existing. Never expect zero. The regression signal is an *increase* in the total. Verify with `npm run check 2>&1 | tail -1`.
+- **`npm run check` baseline is 434 errors / 76 warnings / 67 files with problems.** This is CLEAN — all pre-existing. Never expect zero. The regression signal is an _increase_ in the total. Verify with `npm run check 2>&1 | tail -1`.
 - **`npx jest` baseline is 87 suites / 675 tests / 66 snapshots, all passing.** Any new failure is a regression.
 - `npm run lint` (`prettier --check . && eslint .`) must pass. Run `npm run format` before committing if prettier complains.
 - Jest config: `testMatch` is `**/__tests__/**/*.test.ts`. Tests are colocated. `$lib/*` is mapped. `testEnvironment` is `node`, so **no test may import a `.svelte` file** — all new logic that needs testing must live in `.ts` modules.
@@ -26,6 +26,7 @@
 ## File Structure
 
 **Created**
+
 - `src/lib/geometry/radial-shape.ts` — pure radial repetition of a cross-section's authored curve run. No Three.js. Exports `radialUnitAngle`, `radialSideCurveConfigs`, `radialShapeCurveConfigs`.
 - `src/lib/geometry/__tests__/radial-shape.test.ts`
 - `src/lib/stores/measurementStore.ts` — user-placed measurement pairs.
@@ -37,6 +38,7 @@
 - `src/components/three-renderer/__tests__/nearest-vertex.test.ts`
 
 **Modified**
+
 - `src/components/modal/Floater.svelte` — invert `closeOnClickAway`, drop duplicated markup.
 - `src/components/modal/HoverSidebar.svelte:50` — `?? true` → `?? false`.
 - `src/components/modal/sidebar-definitions.ts` — remove redundant opt-outs.
@@ -60,11 +62,13 @@
 ## Task 1: Floating editor persistence
 
 **Files:**
+
 - Modify: `src/components/modal/Floater.svelte`
 - Modify: `src/components/modal/HoverSidebar.svelte:50`
 - Modify: `src/components/modal/sidebar-definitions.ts`
 
 **Interfaces:**
+
 - Consumes: nothing.
 - Produces: `FloaterContent.closeOnClickAway?: boolean` now defaults to `false` (stay open). Opt in with `closeOnClickAway: true`.
 
@@ -134,13 +138,13 @@ Leave the `<style>` block exactly as it is.
 Line 50 currently reads:
 
 ```svelte
-	closeOnClickAway={currentFloater?.closeOnClickAway ?? true}
+closeOnClickAway={currentFloater?.closeOnClickAway ?? true}
 ```
 
 Change to:
 
 ```svelte
-	closeOnClickAway={currentFloater?.closeOnClickAway ?? false}
+closeOnClickAway={currentFloater?.closeOnClickAway ?? false}
 ```
 
 - [ ] **Step 3: Remove the now-redundant opt-outs in `sidebar-definitions.ts`**
@@ -198,11 +202,13 @@ time, so toggling it no longer remounts panel content."
 This is the foundation for Tasks 3-7. It fixes the generator bug for `lateral` / `radial-lateral` while leaving `radial` and `asymmetric` bit-identical.
 
 **Files:**
+
 - Create: `src/lib/geometry/radial-shape.ts`
 - Create: `src/lib/geometry/__tests__/radial-shape.test.ts`
 - Modify: `src/lib/generate-shape.ts:150-205`
 
 **Interfaces:**
+
 - Consumes: `BezierConfig`, `ShapeConfig` from `$lib/types`.
 - Produces:
   - `radialUnitAngle(config: Pick<ShapeConfig, 'symmetry' | 'symmetryNumber'>): number`
@@ -219,21 +225,21 @@ The old `rotatedCurve` reflected a point at angle θ to `angle − θ`, i.e. it 
 The correct construction, verified numerically:
 
 1. Mirror the authored run about the ray through its **own end point** (`phi = angle of the last curve's p3`). That ray is a fixed point of the mirror, so the reflected run touches the forward run exactly there.
-2. Reverse both the point order within each curve **and** the order of the curves, so the reflected run *starts* at that shared point instead of ending there.
+2. Reverse both the point order within each curve **and** the order of the curves, so the reflected run _starts_ at that shared point instead of ending there.
 3. Repeat `[forward, reflected]` `symmetryNumber` times, rotating by `2π / symmetryNumber` each time.
 
 For this to close the circle, the authored run must span `π / symmetryNumber` when reflected, and `2π / symmetryNumber` when not. That is `radialUnitAngle`, and it matches the design note at `generate-shape.ts:143`.
 
 Verified results — max gap between each curve's start and the previous curve's end, radius-100 default:
 
-| symmetry | n | sides emitted | max gap |
-| --- | --- | --- | --- |
-| radial | 7 | 7 | 0.000000 |
-| radial | 3 | 3 | 0.000000 |
-| radial-lateral | 7 | 14 | 0.000000 |
-| radial-lateral | 3 | 6 | 0.000000 |
-| lateral | 1 | 2 | 0.000000 |
-| asymmetric | 1 | 1 | 0.000000 |
+| symmetry       | n   | sides emitted | max gap  |
+| -------------- | --- | ------------- | -------- |
+| radial         | 7   | 7             | 0.000000 |
+| radial         | 3   | 3             | 0.000000 |
+| radial-lateral | 7   | 14            | 0.000000 |
+| radial-lateral | 3   | 6             | 0.000000 |
+| lateral        | 1   | 2             | 0.000000 |
+| asymmetric     | 1   | 1             | 0.000000 |
 
 And `radial` output is bit-identical to the current generator (max delta `0.000000000000` at n = 3, 5, 7, 12).
 
@@ -244,11 +250,7 @@ Create `src/lib/geometry/__tests__/radial-shape.test.ts`:
 ```ts
 import { describe, it, expect } from '@jest/globals';
 
-import {
-	radialSideCurveConfigs,
-	radialShapeCurveConfigs,
-	radialUnitAngle
-} from '../radial-shape';
+import { radialSideCurveConfigs, radialShapeCurveConfigs, radialUnitAngle } from '../radial-shape';
 import type { BezierConfig, ShapeConfig } from '$lib/types';
 
 /** A single bezier spanning `unitAngle`, in the codebase's (-sin, cos) convention. */
@@ -556,11 +558,13 @@ output is bit-identical to before."
 Task 2 made the generator expect a half-wedge run for `lateral` / `radial-lateral`. The default-config generator and the editor's end-lock still assume a full wedge, so a newly created reflected shape would not close. This task aligns them.
 
 **Files:**
+
 - Modify: `src/lib/shades-config.ts:155-189`
 - Modify: `src/components/modal/editor/GlobuleCrossSection.svelte`
 - Modify: `src/lib/geometry/__tests__/radial-shape.test.ts` (add a case)
 
 **Interfaces:**
+
 - Consumes: `radialUnitAngle` from Task 2.
 - Produces: `generateDefaultRadialShapeConfig(symmetryNumber, sampleMethod, symmetry?)` — new optional third parameter defaulting to `'radial'`.
 
@@ -666,125 +670,111 @@ In `src/components/modal/editor/GlobuleCrossSection.svelte`, the two call sites 
 In `setSymmetryNumber`, replace:
 
 ```ts
-			return {
-				...generateDefaultRadialShapeConfig(symmetryNumber, shape.sampleMethod),
-				symmetry: shape.symmetry
-			};
+return {
+	...generateDefaultRadialShapeConfig(symmetryNumber, shape.sampleMethod),
+	symmetry: shape.symmetry
+};
 ```
 
 with:
 
 ```ts
-			return generateDefaultRadialShapeConfig(
-				symmetryNumber,
-				shape.sampleMethod,
-				shape.symmetry
-			);
+return generateDefaultRadialShapeConfig(symmetryNumber, shape.sampleMethod, shape.symmetry);
 ```
 
 In `setSymmetry`, replace:
 
 ```ts
-			return isNowRadial
-				? {
-						...generateDefaultRadialShapeConfig(
-							Math.max(3, shape.symmetryNumber),
-							shape.sampleMethod
-						),
-						symmetry: value
-					}
-				: { ...generateDefaultAsymmetricShapeConfig(shape.sampleMethod), symmetry: value };
+return isNowRadial
+	? {
+			...generateDefaultRadialShapeConfig(Math.max(3, shape.symmetryNumber), shape.sampleMethod),
+			symmetry: value
+		}
+	: { ...generateDefaultAsymmetricShapeConfig(shape.sampleMethod), symmetry: value };
 ```
 
 with:
 
 ```ts
-			return isNowRadial
-				? generateDefaultRadialShapeConfig(
-						Math.max(3, shape.symmetryNumber),
-						shape.sampleMethod,
-						value
-					)
-				: { ...generateDefaultAsymmetricShapeConfig(shape.sampleMethod), symmetry: value };
+return isNowRadial
+	? generateDefaultRadialShapeConfig(Math.max(3, shape.symmetryNumber), shape.sampleMethod, value)
+	: { ...generateDefaultAsymmetricShapeConfig(shape.sampleMethod), symmetry: value };
 ```
 
 Note the `wasRadial === isNowRadial` early return above these lines returns `{ ...shape, symmetry: value }` — switching between `radial` and `radial-lateral` takes that path and keeps the existing curves, which now span the wrong angle. Change that early return to rebuild when the reflected-ness changes:
 
 ```ts
-			const wasRadial = shape.symmetry === 'radial' || shape.symmetry === 'radial-lateral';
-			const isNowRadial = value === 'radial' || value === 'radial-lateral';
-			// Reflected and unreflected runs span different angles (half wedge vs
-			// whole), so crossing that boundary needs a rebuild too, not just a
-			// relabel.
-			const reflectionChanged =
-				isReflectedSymmetry(shape.symmetry) !== isReflectedSymmetry(value);
-			if (wasRadial === isNowRadial && !reflectionChanged) return { ...shape, symmetry: value };
+const wasRadial = shape.symmetry === 'radial' || shape.symmetry === 'radial-lateral';
+const isNowRadial = value === 'radial' || value === 'radial-lateral';
+// Reflected and unreflected runs span different angles (half wedge vs
+// whole), so crossing that boundary needs a rebuild too, not just a
+// relabel.
+const reflectionChanged = isReflectedSymmetry(shape.symmetry) !== isReflectedSymmetry(value);
+if (wasRadial === isNowRadial && !reflectionChanged) return { ...shape, symmetry: value };
 ```
 
 Add to the component's imports:
 
 ```ts
-	import { isReflectedSymmetry, radialUnitAngle } from '$lib/geometry/radial-shape';
+import { isReflectedSymmetry, radialUnitAngle } from '$lib/geometry/radial-shape';
 ```
 
 - [ ] **Step 6: Make the end lock and side length use the unit angle**
 
-Still in `GlobuleCrossSection.svelte`, `wedgeAngle` feeds `radialEndLock`, which pins the run's two terminal anchors to the rays bounding it. It must be the *run's* span, not the wedge.
+Still in `GlobuleCrossSection.svelte`, `wedgeAngle` feeds `radialEndLock`, which pins the run's two terminal anchors to the rays bounding it. It must be the _run's_ span, not the wedge.
 
 Replace:
 
 ```ts
-	/** The angle one symmetry wedge spans. */
-	let wedgeAngle = $derived((Math.PI * 2) / (shapeConfig?.symmetryNumber || 1));
+/** The angle one symmetry wedge spans. */
+let wedgeAngle = $derived((Math.PI * 2) / (shapeConfig?.symmetryNumber || 1));
 ```
 
 with:
 
 ```ts
-	/**
-	 * The angle the authored run spans — half a wedge when the shape is
-	 * reflected, a whole wedge otherwise. This is what the terminal anchors are
-	 * locked to, so it must match what the generator expects.
-	 */
-	let unitAngle = $derived(
-		shapeConfig
-			? radialUnitAngle(shapeConfig)
-			: (Math.PI * 2) / (shapeConfig?.symmetryNumber || 1)
-	);
+/**
+ * The angle the authored run spans — half a wedge when the shape is
+ * reflected, a whole wedge otherwise. This is what the terminal anchors are
+ * locked to, so it must match what the generator expects.
+ */
+let unitAngle = $derived(
+	shapeConfig ? radialUnitAngle(shapeConfig) : (Math.PI * 2) / (shapeConfig?.symmetryNumber || 1)
+);
 ```
 
 Update the `limits` derivation:
 
 ```ts
-	let limits = $derived(
-		isRadial ? [radialEndLock(unitAngle), neighborPointMatch] : [neighborPointMatch]
-	);
+let limits = $derived(
+	isRadial ? [radialEndLock(unitAngle), neighborPointMatch] : [neighborPointMatch]
+);
 ```
 
 And in `setSideLength`, replace the two lines that assume a full wedge:
 
 ```ts
-		const alpha = Math.PI / shapeConfig.symmetryNumber;
-		const radius = value / (2 * Math.sin(alpha));
+const alpha = Math.PI / shapeConfig.symmetryNumber;
+const radius = value / (2 * Math.sin(alpha));
 ```
 
 with:
 
 ```ts
-		// `unitAngle` is the chord's subtended angle; half of it gives the
-		// right-triangle angle relating chord to radius.
-		const alpha = unitAngle / 2;
-		const radius = value / (2 * Math.sin(alpha));
+// `unitAngle` is the chord's subtended angle; half of it gives the
+// right-triangle angle relating chord to radius.
+const alpha = unitAngle / 2;
+const radius = value / (2 * Math.sin(alpha));
 ```
 
 and the terminal-anchor placement:
 
 ```ts
-			curves[0].points[0] = { ...curves[0].points[0], ...pointOnRay(radius, 0) } as PointConfig2;
-			curves[last].points[3] = {
-				...curves[last].points[3],
-				...pointOnRay(radius, unitAngle)
-			} as PointConfig2;
+curves[0].points[0] = { ...curves[0].points[0], ...pointOnRay(radius, 0) } as PointConfig2;
+curves[last].points[3] = {
+	...curves[last].points[3],
+	...pointOnRay(radius, unitAngle)
+} as PointConfig2;
 ```
 
 - [ ] **Step 7: Verify**
@@ -818,10 +808,12 @@ terminal anchors and side length to the run's span rather than the wedge."
 Small and independent; landed early so Task 10 can consume it.
 
 **Files:**
+
 - Modify: `src/lib/cut-pattern/page-layout/units.ts`
 - Create: `src/lib/cut-pattern/page-layout/__tests__/distance.test.ts`
 
 **Interfaces:**
+
 - Produces: `deriveDistance(a: Vector3, b: Vector3, pageScale: number): { mm: number; inch: number }`
 
 - [ ] **Step 1: Write the failing test**
@@ -913,10 +905,12 @@ git commit -m "feat(page-layout): add deriveDistance for arbitrary two-point mea
 ## Task 5: Fix `divideCurvePath` (By Whole Curve)
 
 **Files:**
+
 - Modify: `src/lib/generate-shape.ts:249-272` (`generateRadialShapeLevelPrototype`)
 - Create: `src/lib/__tests__/cross-section-sampling.test.ts`
 
 **Interfaces:**
+
 - Consumes: `generateLevelPrototype(config: ShapeConfig, levelConfig: LevelConfig)` (already exported).
 - Produces: nothing new.
 
@@ -934,7 +928,7 @@ git commit -m "feat(page-layout): add deriveDistance for arbitrary two-point mea
 
 Three faults: it divides per sub-curve rather than across the joined path; `Curve.getPoints` is parameter-space, not arc-length; and `Math.ceil` per curve overshoots the requested total. The output stays radially symmetric, which is the opposite of the method's purpose.
 
-The required behavior is to join every bezier of the whole cross-section and divide *that* evenly by arc length, deliberately producing non-radially-symmetric boundaries. `generateRadialShape` already returns exactly that joined `CurvePath`, and `CurvePath.getPoint(t)` already maps `t` through cumulative curve lengths — so one call does it.
+The required behavior is to join every bezier of the whole cross-section and divide _that_ evenly by arc length, deliberately producing non-radially-symmetric boundaries. `generateRadialShape` already returns exactly that joined `CurvePath`, and `CurvePath.getPoint(t)` already maps `t` through cumulative curve lengths — so one call does it.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -1077,12 +1071,14 @@ joined CurvePath once with getSpacedPoints instead."
 ## Task 6: Add `divideSide` (By Side)
 
 **Files:**
+
 - Modify: `src/lib/types.ts:947-956`
 - Modify: `src/lib/generate-shape.ts` (`generateRadialShapeLevelPrototype`)
 - Modify: `src/components/modal/editor/GlobuleCrossSection.svelte`
 - Modify: `src/lib/__tests__/cross-section-sampling.test.ts`
 
 **Interfaces:**
+
 - Consumes: `radialSideCurvePaths` (Task 2), `radialSideCurveConfigs` (Task 2).
 - Produces: `CurveSampleMethod` gains `{ method: 'divideSide'; divisions: number }`.
 
@@ -1149,9 +1145,7 @@ export type CurveSampleMethod =
 export type CurveSampleMethodMethod = CurveSampleMethod['method'];
 
 export const isCurveSampleMethodMethod = (m: string): m is CurveSampleMethodMethod =>
-	['divideCurvePath', 'divideCurve', 'divideSide', 'preserveAspectRatio', 'spineCurve'].includes(
-		m
-	);
+	['divideCurvePath', 'divideCurve', 'divideSide', 'preserveAspectRatio', 'spineCurve'].includes(m);
 ```
 
 - [ ] **Step 4: Add the sampling branch**
@@ -1159,14 +1153,14 @@ export const isCurveSampleMethodMethod = (m: string): m is CurveSampleMethodMeth
 In `generateRadialShapeLevelPrototype`, the function currently normalizes the config into a local before building the shape:
 
 ```ts
-	const shape = generateRadialShape(normalizeConfigPoints(config, { normalizationRatio: 1 / 200 }));
+const shape = generateRadialShape(normalizeConfigPoints(config, { normalizationRatio: 1 / 200 }));
 ```
 
 Hoist the normalized config so the new branch can reuse it:
 
 ```ts
-	const normalized = normalizeConfigPoints(config, { normalizationRatio: 1 / 200 });
-	const shape = generateRadialShape(normalized);
+const normalized = normalizeConfigPoints(config, { normalizationRatio: 1 / 200 });
+const shape = generateRadialShape(normalized);
 ```
 
 Then add, after the `divideCurvePath` branch:
@@ -1195,11 +1189,11 @@ Expected: PASS, 7 tests.
 In `src/components/modal/editor/GlobuleCrossSection.svelte`, replace the Sampling select's options:
 
 ```svelte
-						<select value={shapeConfig.sampleMethod.method} onchange={setSampleMethod}>
-							<option value="divideCurvePath">By Whole Curve</option>
-							<option value="divideCurve">By Sub-curve</option>
-							<option value="divideSide">By Side</option>
-						</select>
+<select value={shapeConfig.sampleMethod.method} onchange={setSampleMethod}>
+	<option value="divideCurvePath">By Whole Curve</option>
+	<option value="divideCurve">By Sub-curve</option>
+	<option value="divideSide">By Side</option>
+</select>
 ```
 
 - [ ] **Step 7: Verify**
@@ -1230,12 +1224,14 @@ side is the authored curve run, so a reflected shape has two per repeat."
 ## Task 7: Fix the cross-section preview
 
 **Files:**
+
 - Modify: `src/components/modal/editor/curve-preview.ts`
 - Modify: `src/components/modal/editor/PathEditor.svelte:35-45,214-219`
 - Modify: `src/components/modal/editor/GlobuleCrossSection.svelte`
 - Create: `src/components/modal/editor/__tests__/curve-preview.test.ts`
 
 **Interfaces:**
+
 - Consumes: `radialShapeCurveConfigs` (Task 2).
 - Produces: `PathEditorOverlayContext` gains `modelCurveDef: BezierConfig[]` and `toDisplay(curves: BezierConfig[]): BezierConfig[]`.
 
@@ -1243,7 +1239,7 @@ side is the authored curve run, so a reflected shape has two per repeat."
 
 `PathEditor` renders in "display space" — with `flipY`, the model reflected about the viewBox's horizontal midline. For the Globule Cross Section editor config (`contentBounds.top = -100`, `padding = 100`) that midline is exactly `y = 0`, so the transform is `y → -y`.
 
-`PathEditor.svelte:215` hands overlay snippets `curveDef: displayCurveDef` — already reflected. `radializeCurves` then rotates copies by `+angle * i`. Mirroring is orientation-reversing, so where the model has `p3 = rot(p0, +a)` (copies chain end-to-start), display space has `p0' = rot(p3', +a)` — copy *i+1* starts a **full wedge angle** past where copy *i* ended. Measured on the radius-100 default at 7 sides, the gap is **156.4 units at every joint**: seven tangential lobes and an uncovered center wedge.
+`PathEditor.svelte:215` hands overlay snippets `curveDef: displayCurveDef` — already reflected. `radializeCurves` then rotates copies by `+angle * i`. Mirroring is orientation-reversing, so where the model has `p3 = rot(p0, +a)` (copies chain end-to-start), display space has `p0' = rot(p3', +a)` — copy _i+1_ starts a **full wedge angle** past where copy _i_ ended. Measured on the radius-100 default at 7 sides, the gap is **156.4 units at every joint**: seven tangential lobes and an uncovered center wedge.
 
 `pathFromCurves` hides it by emitting `M p0` once and chaining `C` segments, so each gap is silently bridged by the next bezier bulging outward.
 
@@ -1369,10 +1365,7 @@ import type { ShapeConfig } from '$lib/types';
  */
 export const radializeCurves = (
 	curves: BezierConfig[],
-	{
-		symmetryNumber,
-		symmetry
-	}: { symmetryNumber: number; symmetry: ShapeConfig['symmetry'] }
+	{ symmetryNumber, symmetry }: { symmetryNumber: number; symmetry: ShapeConfig['symmetry'] }
 ): BezierConfig[] =>
 	radialShapeCurveConfigs({
 		type: 'ShapeConfig',
@@ -1392,10 +1385,8 @@ Still in `curve-preview.ts`, replace `curveSegments` and `pathFromCurves` with:
 const JOINT_EPSILON = 1e-9;
 
 const isContiguous = (previous: BezierConfig, next: BezierConfig): boolean =>
-	Math.hypot(
-		next.points[0].x - previous.points[3].x,
-		next.points[0].y - previous.points[3].y
-	) <= JOINT_EPSILON;
+	Math.hypot(next.points[0].x - previous.points[3].x, next.points[0].y - previous.points[3].y) <=
+	JOINT_EPSILON;
 
 const cubicSegment = (curve: BezierConfig): string =>
 	`C ${curve.points[1].x} ${curve.points[1].y}, ${curve.points[2].x} ${curve.points[2].y}, ${curve.points[3].x} ${curve.points[3].y}`;
@@ -1423,13 +1414,13 @@ export const pathFromCurves = (curves: BezierConfig[]): string => {
 `fillPathToAxis` also calls `curveSegments`. Update it to use the same joined form:
 
 ```ts
-	return [
-		`M ${onAxis(start)}`,
-		`L ${start.x} ${start.y}`,
-		curves.map(cubicSegment).join(' '),
-		`L ${onAxis(end)}`,
-		'Z'
-	].join(' ');
+return [
+	`M ${onAxis(start)}`,
+	`L ${start.x} ${start.y}`,
+	curves.map(cubicSegment).join(' '),
+	`L ${onAxis(end)}`,
+	'Z'
+].join(' ');
 ```
 
 - [ ] **Step 5: Run the test to verify it passes**
@@ -1463,13 +1454,13 @@ export type PathEditorOverlayContext = {
 Keep whatever fields the existing type already declares; add the two new ones. Then extend the context value (around line 214):
 
 ```ts
-	const overlayContext = $derived({
-		curveDef: displayCurveDef,
-		modelCurveDef: curveDef,
-		toDisplay: reflectCurves,
-		canv,
-		config
-	} as PathEditorOverlayContext);
+const overlayContext = $derived({
+	curveDef: displayCurveDef,
+	modelCurveDef: curveDef,
+	toDisplay: reflectCurves,
+	canv,
+	config
+} as PathEditorOverlayContext);
 ```
 
 `reflectCurves` is already defined at line 112 and is its own inverse, so it serves as the model → display conversion directly. It returns the input unchanged when `flipY` is false, so overlays are correct in both orientations.
@@ -1537,11 +1528,13 @@ pathFromCurves emits a fresh M at a real discontinuity."
 ## Task 8: Measurement store
 
 **Files:**
+
 - Create: `src/lib/stores/measurementStore.ts`
 - Create: `src/lib/stores/__tests__/measurementStore.test.ts`
 - Modify: `src/lib/stores/index.ts`
 
 **Interfaces:**
+
 - Produces:
   - `type Measurement = { id: string; a: Vector3; b: Vector3 | null }`
   - `measurements: Readable<Measurement[]>`
@@ -1758,6 +1751,7 @@ survives pattern and layout parameter changes."
 ## Task 9: Nearest-vertex picking and the measure interaction mode
 
 **Files:**
+
 - Create: `src/components/three-renderer/nearest-vertex.ts`
 - Create: `src/components/three-renderer/__tests__/nearest-vertex.test.ts`
 - Modify: `src/components/three-renderer/interaction-mode.ts`
@@ -1765,6 +1759,7 @@ survives pattern and layout parameter changes."
 - Modify: `src/components/three-renderer/Scene.svelte`
 
 **Interfaces:**
+
 - Consumes: `addMeasurementPoint`, `measurements` (Task 8).
 - Produces:
   - `nearestVertexFromEvent(ev): Vector3 | null`
@@ -1779,6 +1774,7 @@ This is already solved in the codebase twice and **must be reused, not reinvente
 2. `selection-helpers.ts`'s `isNearestIntersection(ev)` returns `ev.intersections?.[0]?.object === ev.object` — used by projection facets, which have many overlapping meshes.
 
 Two guards must survive untouched:
+
 - `interactivity({ clickDistanceThreshold: 25 })` at `Scene.svelte:54` — a touchpad tap drifts a few pixels and the default 8px gate misclassifies it as a camera orbit.
 - `if (event.delta > CLICK_DELTA_THRESHOLD) return` — rejects genuine drags.
 
@@ -1986,36 +1982,33 @@ In `src/components/three-renderer/materials.ts`, alongside `axisX` / `axisY` / `
 Add imports:
 
 ```ts
-	import {
-		addMeasurementPoint,
-		measurements
-	} from '$lib/stores/measurementStore';
-	import { isMeasureInteractionMode } from './interaction-mode';
-	import { nearestVertexFromEvent } from './nearest-vertex';
+import { addMeasurementPoint, measurements } from '$lib/stores/measurementStore';
+import { isMeasureInteractionMode } from './interaction-mode';
+import { nearestVertexFromEvent } from './nearest-vertex';
 ```
 
 In `handleClick`, add the measure branch **before** the generic point-select branch, since `isPointSelectInteractionMode` also matches the measure mode:
 
 ```ts
-	const handleClick = (event: any, geometry: BandGeometry) => {
-		event.stopPropagation();
+const handleClick = (event: any, geometry: BandGeometry) => {
+	event.stopPropagation();
 
-		if (event.delta > CLICK_DELTA_THRESHOLD) return;
+	if (event.delta > CLICK_DELTA_THRESHOLD) return;
 
-		const mode = get(interactionMode);
-		if (mode.type === 'standard') {
-			standardSelect(geometry);
-		} else if (isBandSelectInteractionMode(mode)) {
-			selectBand(geometry);
-		} else if (isMeasureInteractionMode(mode)) {
-			// Measurement collects an unbounded list of pairs, so it must not go
-			// through selectPoint's fixed-size ring buffer.
-			const vertex = nearestVertexFromEvent(event);
-			if (vertex) addMeasurementPoint(vertex);
-		} else if (isPointSelectInteractionMode(mode)) {
-			selectPoint(event, geometry);
-		}
-	};
+	const mode = get(interactionMode);
+	if (mode.type === 'standard') {
+		standardSelect(geometry);
+	} else if (isBandSelectInteractionMode(mode)) {
+		selectBand(geometry);
+	} else if (isMeasureInteractionMode(mode)) {
+		// Measurement collects an unbounded list of pairs, so it must not go
+		// through selectPoint's fixed-size ring buffer.
+		const vertex = nearestVertexFromEvent(event);
+		if (vertex) addMeasurementPoint(vertex);
+	} else if (isPointSelectInteractionMode(mode)) {
+		selectPoint(event, geometry);
+	}
+};
 ```
 
 Guard the existing transform-mode indicator block so measure mode does not render through it:
@@ -2076,10 +2069,12 @@ static indicatorGeometry to stay clear of effect_update_depth."
 ## Task 10: Measure on projection geometry
 
 **Files:**
+
 - Modify: `src/components/three-renderer/selection-helpers.ts`
 - Modify: `src/components/projection/ProjectionGeometryComponent.svelte`
 
 **Interfaces:**
+
 - Consumes: `nearestVertexFromEvent` (Task 9), `addMeasurementPoint` (Task 8), `isMeasureInteractionMode` (Task 9).
 - Produces: `handleFacetSelect` now no-ops selection and places a measurement point instead while measure mode is active.
 
@@ -2164,9 +2159,11 @@ is. Keeps the existing nearest-intersection gate."
 ## Task 11: Pattern Layout measurement UI
 
 **Files:**
+
 - Modify: `src/components/modal/editor/PageLayout.svelte`
 
 **Interfaces:**
+
 - Consumes: `measurements`, `addMeasurementPoint`, `removeMeasurement`, `clearMeasurements` (Task 8); `deriveDistance` (Task 4); `interactionMode`, `isMeasureInteractionMode` (Task 9).
 - Produces: nothing.
 
@@ -2175,28 +2172,23 @@ is. Keeps the existing nearest-intersection gate."
 In the `<script>` block of `src/components/modal/editor/PageLayout.svelte`, add:
 
 ```ts
-	import { measurements, removeMeasurement, clearMeasurements } from '$lib/stores/measurementStore';
-	import {
-		interactionMode,
-		isMeasureInteractionMode
-	} from '../../three-renderer/interaction-mode';
-	import { deriveDistance } from '$lib/cut-pattern/page-layout/units';
+import { measurements, removeMeasurement, clearMeasurements } from '$lib/stores/measurementStore';
+import { interactionMode, isMeasureInteractionMode } from '../../three-renderer/interaction-mode';
+import { deriveDistance } from '$lib/cut-pattern/page-layout/units';
 
-	let isMeasuring = $derived(isMeasureInteractionMode($interactionMode));
+let isMeasuring = $derived(isMeasureInteractionMode($interactionMode));
 
-	const startMeasuring = () => {
-		interactionMode.set({ type: 'point-select-measure', data: { pick: 2, points: [] } });
-	};
-	const stopMeasuring = () => {
-		interactionMode.set({ type: 'standard' });
-	};
+const startMeasuring = () => {
+	interactionMode.set({ type: 'point-select-measure', data: { pick: 2, points: [] } });
+};
+const stopMeasuring = () => {
+	interactionMode.set({ type: 'standard' });
+};
 
-	/** Only completed pairs get a readout; an open point is still being placed. */
-	let completedMeasurements = $derived(
-		$measurements
-			.map((m, index) => ({ ...m, label: index + 1 }))
-			.filter((m) => m.b !== null)
-	);
+/** Only completed pairs get a readout; an open point is still being placed. */
+let completedMeasurements = $derived(
+	$measurements.map((m, index) => ({ ...m, label: index + 1 })).filter((m) => m.b !== null)
+);
 ```
 
 - [ ] **Step 2: Add the rows and the button**
@@ -2248,38 +2240,38 @@ Replace the "Model size" `<div class="derived">` block with:
 Append to the `<style>` block:
 
 ```css
-	/* Arbitrary measurements are numbered and black, distinguishing them from
+/* Arbitrary measurements are numbered and black, distinguishing them from
 	   the axis-coloured X/Y/Z extents above. */
-	.measurement {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		gap: 6px;
-		color: black;
-	}
-	.clear-measurement {
-		border: 0;
-		background: transparent;
-		cursor: pointer;
-		font-family: monospace;
-		font-size: 11px;
-		padding: 0 4px;
-		line-height: 1;
-	}
-	.clear-measurement:hover {
-		color: #c00;
-	}
-	.measure-button {
-		margin-top: 4px;
-		padding: 2px 8px;
-		font-family: monospace;
-		font-size: 12px;
-		cursor: pointer;
-	}
-	.measure-hint {
-		color: #666;
-		font-size: 11px;
-	}
+.measurement {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 6px;
+	color: black;
+}
+.clear-measurement {
+	border: 0;
+	background: transparent;
+	cursor: pointer;
+	font-family: monospace;
+	font-size: 11px;
+	padding: 0 4px;
+	line-height: 1;
+}
+.clear-measurement:hover {
+	color: #c00;
+}
+.measure-button {
+	margin-top: 4px;
+	padding: 2px 8px;
+	font-family: monospace;
+	font-size: 12px;
+	cursor: pointer;
+}
+.measure-hint {
+	color: #666;
+	font-size: 11px;
+}
 ```
 
 - [ ] **Step 4: Verify**

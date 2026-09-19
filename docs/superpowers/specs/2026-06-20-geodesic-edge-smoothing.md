@@ -21,9 +21,9 @@ composes with this and is out of scope here.
 The raw chain points are jagged for two reasons: (1) the Dijkstra distance
 field zigzags side-to-side (faceted/anisotropic graph metric), and (2) the
 extracted polyline is piecewise-linear through mesh-edge crossings. An
-*interpolating* spline (e.g. Catmull-Rom) fixes (2) — angular corners become
+_interpolating_ spline (e.g. Catmull-Rom) fixes (2) — angular corners become
 curves — but still threads through every zigzag point from (1). Only an
-*approximating* spline that does **not** pass through the noisy interior points
+_approximating_ spline that does **not** pass through the noisy interior points
 flattens the zigzag. Hence a cubic smoothing spline with a penalty on the
 second derivative.
 
@@ -174,10 +174,10 @@ raycast mesh is built internally.
 
 ## Key files
 
-| File | Change |
-|------|--------|
-| `src/lib/voronoi/geodesic/smooth-chains.ts` | **new** — spline solver, polyline smoother, `SurfaceProjector` |
-| `src/lib/voronoi/geodesic/geodesic-voronoi.ts` | wire smoothing pipeline into chain loop; build `SurfaceProjector` |
-| `src/lib/voronoi/types.ts` | add `geodesicSmoothing?: number` to `VoronoiConfig` |
-| `src/lib/shades-config.ts` | default `geodesicSmoothing` in `defaultVoronoiConfig` |
-| `src/components/controls/VoronoiControl.svelte` | smoothing slider |
+| File                                            | Change                                                            |
+| ----------------------------------------------- | ----------------------------------------------------------------- |
+| `src/lib/voronoi/geodesic/smooth-chains.ts`     | **new** — spline solver, polyline smoother, `SurfaceProjector`    |
+| `src/lib/voronoi/geodesic/geodesic-voronoi.ts`  | wire smoothing pipeline into chain loop; build `SurfaceProjector` |
+| `src/lib/voronoi/types.ts`                      | add `geodesicSmoothing?: number` to `VoronoiConfig`               |
+| `src/lib/shades-config.ts`                      | default `geodesicSmoothing` in `defaultVoronoiConfig`             |
+| `src/components/controls/VoronoiControl.svelte` | smoothing slider                                                  |

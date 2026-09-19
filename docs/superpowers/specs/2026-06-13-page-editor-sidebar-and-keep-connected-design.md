@@ -37,7 +37,7 @@ the other sidebar buttons.
   unconditionally for free.
 - `CutPatternControl.svelte`: remove the `{#if … 'page'}` "Page editor" button, the
   `pageEditorOpen` import, and the `if (next === 'page') $pageEditorOpen = true` auto-open.
-  Keep the original "Layout: …" mode cycle button (the editor renders a *separate copy*).
+  Keep the original "Layout: …" mode cycle button (the editor renders a _separate copy_).
 - Remove the now-unused standalone panel and store: delete
   `src/components/cut-pattern/PageLayoutEditor.svelte`, remove `<PageLayoutEditor />` from
   `PatternViewer.svelte`, and delete `src/lib/stores/pageEditorStore.ts`.

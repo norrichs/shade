@@ -14,18 +14,18 @@
 
 ## File Structure
 
-| File | Responsibility |
-| --- | --- |
-| `src/lib/paper/path-operations.ts` (modify) | Add `uniteMany` — hole-preserving union over a list of outline paths. No `svg-path-outline` dependency. |
-| `src/lib/paper/index.ts` (modify) | Re-export `uniteMany`. |
-| `src/lib/paper/__tests__/path-operations.test.ts` (modify) | Tests for `uniteMany`, including hole preservation. |
-| `src/lib/cut-pattern/expand-stroke.ts` (create) | `expandFacetStroke` — the swappable expander; wraps `svg-path-outline`, returns `PathSegment[]`. |
-| `src/lib/cut-pattern/__tests__/expand-stroke.test.ts` (create) | Tests for `expandFacetStroke`. |
-| `src/lib/cut-pattern/build-band-union-path.ts` (create) | `buildBandUnionPath` — maps facets through the expander, unites. |
-| `src/lib/cut-pattern/__tests__/build-band-union-path.test.ts` (create) | Tests for `buildBandUnionPath` (stubbed + real expander). |
-| `src/lib/cut-pattern/prepare-merge.ts` (modify) | Add `computeTiledUnionPaths`; dispatch from `computeMergedBandPaths`. |
-| `src/lib/cut-pattern/__tests__/prepare-merge.test.ts` (create) | Test the tiled dispatch branch. |
-| `src/components/cut-pattern/BandCutPatternComponent.svelte` (modify) | Render the tiled union path as a filled silhouette (evenodd) with a 1px stroke. |
+| File                                                                   | Responsibility                                                                                          |
+| ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `src/lib/paper/path-operations.ts` (modify)                            | Add `uniteMany` — hole-preserving union over a list of outline paths. No `svg-path-outline` dependency. |
+| `src/lib/paper/index.ts` (modify)                                      | Re-export `uniteMany`.                                                                                  |
+| `src/lib/paper/__tests__/path-operations.test.ts` (modify)             | Tests for `uniteMany`, including hole preservation.                                                     |
+| `src/lib/cut-pattern/expand-stroke.ts` (create)                        | `expandFacetStroke` — the swappable expander; wraps `svg-path-outline`, returns `PathSegment[]`.        |
+| `src/lib/cut-pattern/__tests__/expand-stroke.test.ts` (create)         | Tests for `expandFacetStroke`.                                                                          |
+| `src/lib/cut-pattern/build-band-union-path.ts` (create)                | `buildBandUnionPath` — maps facets through the expander, unites.                                        |
+| `src/lib/cut-pattern/__tests__/build-band-union-path.test.ts` (create) | Tests for `buildBandUnionPath` (stubbed + real expander).                                               |
+| `src/lib/cut-pattern/prepare-merge.ts` (modify)                        | Add `computeTiledUnionPaths`; dispatch from `computeMergedBandPaths`.                                   |
+| `src/lib/cut-pattern/__tests__/prepare-merge.test.ts` (create)         | Test the tiled dispatch branch.                                                                         |
+| `src/components/cut-pattern/BandCutPatternComponent.svelte` (modify)   | Render the tiled union path as a filled silhouette (evenodd) with a 1px stroke.                         |
 
 **Test command (single file):** `npm run test:unit -- <path>`
 **Type check:** `npm run check`
@@ -35,48 +35,49 @@
 ### Task 1: `uniteMany` — hole-preserving union
 
 **Files:**
+
 - Modify: `src/lib/paper/path-operations.ts`
 - Modify: `src/lib/paper/index.ts`
 - Test: `src/lib/paper/__tests__/path-operations.test.ts`
 
-**Why a new function instead of reusing `unitePaths`:** the existing `apply()` calls `result.reorient(false, true)`, forcing every subpath to positive area. That is correct for the single-contour label merge but would *fill in* the interior holes we must preserve. `uniteMany` unions without reorienting, so outer and hole contours keep their opposite winding and both survive.
+**Why a new function instead of reusing `unitePaths`:** the existing `apply()` calls `result.reorient(false, true)`, forcing every subpath to positive area. That is correct for the single-contour label merge but would _fill in_ the interior holes we must preserve. `uniteMany` unions without reorienting, so outer and hole contours keep their opposite winding and both survive.
 
 - [ ] **Step 1: Write the failing tests**
 
 Append to `src/lib/paper/__tests__/path-operations.test.ts`. Add `uniteMany` to the import on line 2, and add this block inside the top-level `describe` (the file already defines `rect`, `area`, and a `beforeAll` that calls `getPaperScope()`):
 
 ```ts
-	describe('uniteMany', () => {
-		test('empty input returns empty array', () => {
-			expect(uniteMany([])).toEqual([]);
-		});
-
-		test('single outline is returned as a single contour', () => {
-			const united = uniteMany([rect(0, 0, 10, 10)]);
-			expect(united.filter((s) => s[0] === 'M').length).toBe(1);
-			expect(area(united)).toBeCloseTo(100, 1);
-		});
-
-		test('many overlapping outlines union to one contour', () => {
-			const united = uniteMany([rect(0, 0, 10, 10), rect(5, 0, 10, 10), rect(10, 0, 10, 10)]);
-			expect(united.filter((s) => s[0] === 'M').length).toBe(1);
-			// 0..20 wide, 10 tall = 200.
-			expect(area(united)).toBeCloseTo(200, 1);
-		});
-
-		test('a frame of outlines preserves the interior hole', () => {
-			// Four bars forming a 30x30 frame with a 10x10 empty center (x/y 10..20).
-			const top = rect(0, 0, 30, 10);
-			const bottom = rect(0, 20, 30, 10);
-			const left = rect(0, 0, 10, 30);
-			const right = rect(20, 0, 10, 30);
-			const united = uniteMany([top, bottom, left, right]);
-			// Outer boundary + one hole = two M..Z runs.
-			expect(united.filter((s) => s[0] === 'M').length).toBe(2);
-			// Signed area = outer 900 - hole 100 = 800. If the hole were filled it would be 900.
-			expect(area(united)).toBeCloseTo(800, 1);
-		});
+describe('uniteMany', () => {
+	test('empty input returns empty array', () => {
+		expect(uniteMany([])).toEqual([]);
 	});
+
+	test('single outline is returned as a single contour', () => {
+		const united = uniteMany([rect(0, 0, 10, 10)]);
+		expect(united.filter((s) => s[0] === 'M').length).toBe(1);
+		expect(area(united)).toBeCloseTo(100, 1);
+	});
+
+	test('many overlapping outlines union to one contour', () => {
+		const united = uniteMany([rect(0, 0, 10, 10), rect(5, 0, 10, 10), rect(10, 0, 10, 10)]);
+		expect(united.filter((s) => s[0] === 'M').length).toBe(1);
+		// 0..20 wide, 10 tall = 200.
+		expect(area(united)).toBeCloseTo(200, 1);
+	});
+
+	test('a frame of outlines preserves the interior hole', () => {
+		// Four bars forming a 30x30 frame with a 10x10 empty center (x/y 10..20).
+		const top = rect(0, 0, 30, 10);
+		const bottom = rect(0, 20, 30, 10);
+		const left = rect(0, 0, 10, 30);
+		const right = rect(20, 0, 10, 30);
+		const united = uniteMany([top, bottom, left, right]);
+		// Outer boundary + one hole = two M..Z runs.
+		expect(united.filter((s) => s[0] === 'M').length).toBe(2);
+		// Signed area = outer 900 - hole 100 = 800. If the hole were filled it would be 900.
+		expect(area(united)).toBeCloseTo(800, 1);
+	});
+});
 ```
 
 - [ ] **Step 2: Run tests to verify they fail**
@@ -132,7 +133,13 @@ export const uniteMany = (outlines: PathSegment[][]): PathSegment[] => {
 In `src/lib/paper/index.ts`, extend the path-operations re-export line:
 
 ```ts
-export { unitePaths, subtractPaths, intersectPaths, excludePaths, uniteMany } from './path-operations';
+export {
+	unitePaths,
+	subtractPaths,
+	intersectPaths,
+	excludePaths,
+	uniteMany
+} from './path-operations';
 ```
 
 - [ ] **Step 5: Run tests to verify they pass**
@@ -152,6 +159,7 @@ git commit -m "feat(paper): add hole-preserving uniteMany union"
 ### Task 2: `expandFacetStroke` — the swappable expander
 
 **Files:**
+
 - Create: `src/lib/cut-pattern/expand-stroke.ts`
 - Test: `src/lib/cut-pattern/__tests__/expand-stroke.test.ts`
 
@@ -277,6 +285,7 @@ git commit -m "feat(cut-pattern): add expandFacetStroke stroke-to-outline expand
 ### Task 3: `buildBandUnionPath` — orchestrator
 
 **Files:**
+
 - Create: `src/lib/cut-pattern/build-band-union-path.ts`
 - Test: `src/lib/cut-pattern/__tests__/build-band-union-path.test.ts`
 
@@ -342,8 +351,20 @@ describe('buildBandUnionPath', () => {
 		const band = {
 			id: 'band-real',
 			facets: [
-				{ path: [['M', 0, 0], ['L', 10, 0]] as PathSegment[], strokeWidth: 4 },
-				{ path: [['M', 0, 0], ['L', 0, 10]] as PathSegment[], strokeWidth: 4 }
+				{
+					path: [
+						['M', 0, 0],
+						['L', 10, 0]
+					] as PathSegment[],
+					strokeWidth: 4
+				},
+				{
+					path: [
+						['M', 0, 0],
+						['L', 0, 10]
+					] as PathSegment[],
+					strokeWidth: 4
+				}
 			]
 		} as unknown as BandCutPattern;
 
@@ -408,6 +429,7 @@ git commit -m "feat(cut-pattern): add buildBandUnionPath orchestrator"
 ### Task 4: Dispatch tiled unions from the merge pipeline
 
 **Files:**
+
 - Modify: `src/lib/cut-pattern/prepare-merge.ts`
 - Test: `src/lib/cut-pattern/__tests__/prepare-merge.test.ts`
 
@@ -454,13 +476,7 @@ describe('computeTiledUnionPaths', () => {
 	});
 
 	test('dispatcher routes non-outlined pattern types to tiled union', () => {
-		const result = computeMergedBandPaths(
-			[tubeWithBand('t0b0')],
-			undefined,
-			'grid',
-			new Map(),
-			0
-		);
+		const result = computeMergedBandPaths([tubeWithBand('t0b0')], undefined, 'grid', new Map(), 0);
 		expect(result.has('t0b0')).toBe(true);
 	});
 });
@@ -487,9 +503,7 @@ Add this exported function above `computeMergedBandPaths`:
  * patterns. Same output shape and key (`band.id`) as the outlined merge, so it
  * feeds the same `mergedBandPaths` store and render branch.
  */
-export const computeTiledUnionPaths = (
-	tubes: TubeCutPattern[]
-): Map<string, PathSegment[]> => {
+export const computeTiledUnionPaths = (tubes: TubeCutPattern[]): Map<string, PathSegment[]> => {
 	const result = new Map<string, PathSegment[]>();
 	for (const tube of tubes) {
 		for (const band of tube.bands) {
@@ -505,13 +519,13 @@ export const computeTiledUnionPaths = (
 Then replace the existing early-return in `computeMergedBandPaths`:
 
 ```ts
-	if (patternType !== 'outlined') return result;
+if (patternType !== 'outlined') return result;
 ```
 
 with:
 
 ```ts
-	if (patternType !== 'outlined') return computeTiledUnionPaths(tubes);
+if (patternType !== 'outlined') return computeTiledUnionPaths(tubes);
 ```
 
 - [ ] **Step 4: Run test to verify it passes**
@@ -531,9 +545,10 @@ git commit -m "feat(cut-pattern): dispatch tiled band unions from merge pipeline
 ### Task 5: Render the tiled union as a filled silhouette
 
 **Files:**
+
 - Modify: `src/components/cut-pattern/BandCutPatternComponent.svelte`
 
-The `renderAsSinglePath` branch currently strokes the merged path with the *thick* `facets[0].strokeWidth` — correct for an outlined centerline, wrong for a union outline (already the outer boundary). For tiled patterns, render a filled silhouette with `fill-rule="evenodd"` (so holes show) plus a 1px black stroke. Branch on `patternTypeConfig.type` (`'outlined'` vs a tiled type); `patternConfigStore` is already imported in this component.
+The `renderAsSinglePath` branch currently strokes the merged path with the _thick_ `facets[0].strokeWidth` — correct for an outlined centerline, wrong for a union outline (already the outer boundary). For tiled patterns, render a filled silhouette with `fill-rule="evenodd"` (so holes show) plus a 1px black stroke. Branch on `patternTypeConfig.type` (`'outlined'` vs a tiled type); `patternConfigStore` is already imported in this component.
 
 This is a Svelte render change with no unit-test harness in this repo — verified by type check and manual inspection.
 

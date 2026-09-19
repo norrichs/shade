@@ -77,7 +77,10 @@ describe('runPatternGeneration', () => {
 
 	it('generates nothing when showBands is off', () => {
 		const base = input();
-		const out = runPatternGeneration({ ...base, genConfig: { ...base.genConfig, showBands: false } });
+		const out = runPatternGeneration({
+			...base,
+			genConfig: { ...base.genConfig, showBands: false }
+		});
 		expect(generateProjectionPattern).not.toHaveBeenCalled();
 		expect(out.voronoiPattern).toBeUndefined();
 	});

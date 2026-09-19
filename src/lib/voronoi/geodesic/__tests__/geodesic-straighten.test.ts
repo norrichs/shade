@@ -70,7 +70,11 @@ describe('straightenToGeodesic', () => {
 			const y = i === 0 || i === n - 1 ? 0 : i % 2 === 0 ? 0.25 : -0.25;
 			return new Vector3(x, y, 0);
 		});
-		const out = straightenToGeodesic(input, projector, { stepFactor: 0.5, tolerance: 1e-9, cap: 400 });
+		const out = straightenToGeodesic(input, projector, {
+			stepFactor: 0.5,
+			tolerance: 1e-9,
+			cap: 400
+		});
 		expect(out.length).toBe(n);
 		expect(out[0].equals(input[0])).toBe(true);
 		expect(out[n - 1].equals(input[n - 1])).toBe(true);
@@ -92,10 +96,17 @@ describe('straightenToGeodesic', () => {
 			const base = a.clone().lerp(b, t).normalize(); // arc-ish
 			if (i === 0 || i === n - 1) return base;
 			// push off the arc toward +y, then snap to sphere.
-			return base.clone().add(new Vector3(0, i % 2 === 0 ? 0.3 : -0.3, 0)).normalize();
+			return base
+				.clone()
+				.add(new Vector3(0, i % 2 === 0 ? 0.3 : -0.3, 0))
+				.normalize();
 		});
 		const before = polylineLength(input);
-		const out = straightenToGeodesic(input, projector, { stepFactor: 0.5, tolerance: 1e-9, cap: 150 });
+		const out = straightenToGeodesic(input, projector, {
+			stepFactor: 0.5,
+			tolerance: 1e-9,
+			cap: 150
+		});
 		expect(out[0].equals(input[0])).toBe(true);
 		expect(out[n - 1].equals(input[n - 1])).toBe(true);
 		expect(polylineLength(out)).toBeLessThan(before); // curve-shortening
@@ -106,7 +117,11 @@ describe('straightenToGeodesic', () => {
 		const tris = gridMesh(4);
 		const projector = new SurfaceProjector(tris, buildMeshGraph(tris));
 		const input = [new Vector3(0, 0, 0), new Vector3(0.5, 0.1, 0), new Vector3(0.9, 0, 0)];
-		const out = straightenToGeodesic(input, projector, { stepFactor: 0.5, tolerance: 1e-9, cap: 50 });
+		const out = straightenToGeodesic(input, projector, {
+			stepFactor: 0.5,
+			tolerance: 1e-9,
+			cap: 50
+		});
 		expect(out.map((p) => p.toArray())).toEqual(input.map((p) => p.toArray()));
 		expect(out[0]).not.toBe(input[0]);
 	});

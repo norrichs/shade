@@ -54,8 +54,20 @@ describe('buildBandUnionPath', () => {
 		const band = {
 			id: 'band-real',
 			facets: [
-				{ path: [['M', 0, 0], ['L', 10, 0]] as PathSegment[], strokeWidth: 4 },
-				{ path: [['M', 0, 0], ['L', 0, 10]] as PathSegment[], strokeWidth: 4 }
+				{
+					path: [
+						['M', 0, 0],
+						['L', 10, 0]
+					] as PathSegment[],
+					strokeWidth: 4
+				},
+				{
+					path: [
+						['M', 0, 0],
+						['L', 0, 10]
+					] as PathSegment[],
+					strokeWidth: 4
+				}
 			]
 		} as unknown as BandCutPattern;
 

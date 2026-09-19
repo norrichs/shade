@@ -33,7 +33,11 @@ const splitEdges = (path: PathSegment[]): PathSegment[][] => {
 			sy = cy;
 			started = true;
 		} else if (cmd === 'Z') {
-			if (started) edges.push([['M', cx, cy], ['L', sx, sy]]);
+			if (started)
+				edges.push([
+					['M', cx, cy],
+					['L', sx, sy]
+				]);
 			cx = sx;
 			cy = sy;
 		} else if (started && seg.length >= 3) {

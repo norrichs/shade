@@ -86,7 +86,9 @@ describe('tagAnchorOf', () => {
 	});
 
 	it('falls back to the lowest path point (max y) when no anchor is set', () => {
-		const band = makeBand('0', { tagAnchorPoint: undefined as unknown as { x: number; y: number } });
+		const band = makeBand('0', {
+			tagAnchorPoint: undefined as unknown as { x: number; y: number }
+		});
 		expect(tagAnchorOf(band)).toEqual({ x: 3, y: 40 });
 	});
 

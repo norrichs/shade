@@ -41,7 +41,10 @@ describe('chooseHit (pure)', () => {
 describe('selectSurfaceHit (raycast wrapper)', () => {
 	function sphereSurface(radius: number): Object3D {
 		const surface = new Object3D();
-		const mesh = new Mesh(new SphereGeometry(radius, 32, 32), new MeshBasicMaterial({ side: DoubleSide }));
+		const mesh = new Mesh(
+			new SphereGeometry(radius, 32, 32),
+			new MeshBasicMaterial({ side: DoubleSide })
+		);
 		surface.add(mesh);
 		surface.updateMatrixWorld(true);
 		return surface;
@@ -52,7 +55,13 @@ describe('selectSurfaceHit (raycast wrapper)', () => {
 		const source = new Vector3(0, 0, 500);
 		const through = new Vector3(0, 0, 0);
 		const anchor = new Vector3(0, 0, 100);
-		const hit = selectSurfaceHit({ surface, source, through, anchor, cellNormal: new Vector3(0, 0, 1) });
+		const hit = selectSurfaceHit({
+			surface,
+			source,
+			through,
+			anchor,
+			cellNormal: new Vector3(0, 0, 1)
+		});
 		expect(hit).not.toBeNull();
 		expect(hit!.z).toBeCloseTo(100, 0);
 	});

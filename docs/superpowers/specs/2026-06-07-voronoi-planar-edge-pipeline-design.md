@@ -7,7 +7,7 @@
 ## Problem
 
 The current Voronoi pipeline (`src/lib/voronoi/generate-voronoi.ts`, `makeVoronoi`)
-computes the geometry that runs *along* each Voronoi cell edge — the outer edge,
+computes the geometry that runs _along_ each Voronoi cell edge — the outer edge,
 the two inset ("inner") edges, and the per-edge subdivisions — directly in
 **3D direction-space** (great-circle `slerp`s and raycasts). Concretely, per edge:
 
@@ -84,25 +84,23 @@ function with a shared return shape:
 
 ```ts
 type EdgeProfiles = {
-  edgePoints3d: Vector3[]; // projected outer-edge samples
-  curvePointsA: Vector3[]; // inset toward cell A, projected
-  curvePointsB: Vector3[]; // inset toward cell B, projected
-  normals: Vector3[];      // surface normal at each edge point
+	edgePoints3d: Vector3[]; // projected outer-edge samples
+	curvePointsA: Vector3[]; // inset toward cell A, projected
+	curvePointsB: Vector3[]; // inset toward cell B, projected
+	normals: Vector3[]; // surface normal at each edge point
 };
 ```
 
 Two implementations, identical signature:
 
 - `computeEdgeProfiles3D(...)` — today's code, moved verbatim (slerp edge sampling
-  + slerp-to-seed insets + raycast for point and normal).
+  - slerp-to-seed insets + raycast for point and normal).
 - `computeEdgeProfiles2D(...)` — the new strategy (below).
 
 Inside `makeVoronoi`'s loop, one branch selects the strategy:
 
 ```ts
-const profiles = config.planarEdges
-  ? computeEdgeProfiles2D(args)
-  : computeEdgeProfiles3D(args);
+const profiles = config.planarEdges ? computeEdgeProfiles2D(args) : computeEdgeProfiles3D(args);
 const { edgePoints3d, curvePointsA, curvePointsB, normals } = profiles;
 ```
 
@@ -153,7 +151,7 @@ measured:
   `dist(v0, v1)`.
 
 This keeps divisions consistent with where the rest of the 2D work happens.
-Because length is measured differently, the *distribution* of division counts
+Because length is measured differently, the _distribution_ of division counts
 across edges can differ slightly between pipelines — acceptable under the
 topological+close bar, and noted here as an intentional consequence.
 

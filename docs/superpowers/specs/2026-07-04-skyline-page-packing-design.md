@@ -20,7 +20,7 @@ Two goals are in tension:
 - **Maximise density.** Fit as many patterns per page as possible to minimise
   paper/material.
 
-The balance is achieved by allowing *limited, bounded* reshuffling.
+The balance is achieved by allowing _limited, bounded_ reshuffling.
 
 ## Solution overview
 
@@ -128,7 +128,7 @@ global unbounded skyline and optional rotation rather than clamped shelves.
 
 ### Overflow contract (unchanged)
 
-If the front item cannot fit a *fresh empty page* in any allowed orientation
+If the front item cannot fit a _fresh empty page_ in any allowed orientation
 (i.e. it is larger than the content box even rotated), return
 `{ origins: [], pages: [], rotations: [], overflow: { itemIndex, requiredScale } }`.
 `requiredScale` is computed the same way as flex-wrap:

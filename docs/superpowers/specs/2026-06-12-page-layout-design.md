@@ -13,7 +13,7 @@ The existing `linear` and `line-wrap` layouts are preserved unchanged; the three
 ## 2. Background / current state
 
 - Layout origins are produced by the pure function `computeWrappedOrigins(items, opts)` in `src/lib/cut-pattern/compute-wrapped-origins.ts`. It handles both `linear` (no wrap) and `line-wrap` (wrap at `wrapWidth`). It returns `Vector3[]` origins in pattern coordinates. Tested in `src/lib/cut-pattern/__tests__/compute-wrapped-origins.test.ts`.
-- `CutPatternRenderer.svelte` builds `WrapInput[]` from each band's *effective* bounds (geometry bounds expanded to enclose external labels, via `effectiveBandBounds`), calls `computeWrappedOrigins`, and renders bands through `BandComponent`. It supports two ordering paths: a `sortIndex`-driven flat path and a tube-nested path.
+- `CutPatternRenderer.svelte` builds `WrapInput[]` from each band's _effective_ bounds (geometry bounds expanded to enclose external labels, via `effectiveBandBounds`), calls `computeWrappedOrigins`, and renders bands through `BandComponent`. It supports two ordering paths: a `sortIndex`-driven flat path and a tube-nested path.
 - `CutPatternControl.svelte` holds the "line wrap" checkbox (`patternViewConfig.lineWrap`), plus `wrapWidth` and `gap` number inputs.
 - `PatternViewConfig` (in `src/lib/types.ts`) holds layout view-state: `lineWrap`, `wrapWidth`, `gap`, `bandSortMode`, `patternSource`, `range`, `zoom`, `centerOffset`.
 - Two overlapping legacy config fields exist on `PatternConfig` and are **left untouched** by this feature:
@@ -39,7 +39,7 @@ The existing `linear` and `line-wrap` layouts are preserved unchanged; the three
 
 ```ts
 // PatternViewConfig (src/lib/types.ts)
-patternLayoutMode: 'linear' | 'line-wrap' | 'page';   // replaces `lineWrap: boolean`
+patternLayoutMode: 'linear' | 'line-wrap' | 'page'; // replaces `lineWrap: boolean`
 // `lineWrap` field removed. Migration: existing configs with lineWrap=true → 'line-wrap', else 'linear'.
 ```
 
@@ -47,12 +47,12 @@ New persisted block on `PatternConfig`:
 
 ```ts
 export type PageLayoutConfig = {
-  pageSize: { width: number; height: number };  // millimetres (internal canonical unit)
-  pageScale: number;        // pattern-units per millimetre
-  margin: number;           // millimetres
-  gap: number;              // pattern units (spacing between adjacent patterns)
-  displayUnit: 'mm' | 'inch'; // editor input display only; does not change stored values
-  algorithm: 'flex-wrap';   // selects the layout algorithm from the registry
+	pageSize: { width: number; height: number }; // millimetres (internal canonical unit)
+	pageScale: number; // pattern-units per millimetre
+	margin: number; // millimetres
+	gap: number; // pattern units (spacing between adjacent patterns)
+	displayUnit: 'mm' | 'inch'; // editor input display only; does not change stored values
+	algorithm: 'flex-wrap'; // selects the layout algorithm from the registry
 };
 
 // PatternConfig gains:
@@ -60,6 +60,7 @@ pageLayout: PageLayoutConfig;
 ```
 
 **Scale convention.** Flattening is isometric, so pattern-units and 3D-model-units share one metric scale. `pageScale` (pattern-units/mm) bridges both:
+
 - Page dimensions in pattern coords: `pageSize.{width,height} × pageScale`.
 - Margin in pattern coords: `margin × pageScale`.
 - Real-world delta from a model/pattern delta: `delta / pageScale` mm.
@@ -89,24 +90,27 @@ A pure, swappable function family lives under `src/lib/cut-pattern/page-layout/`
 
 ```ts
 // types.ts
-export type LayoutItem = {       // == existing WrapInput shape
-  width: number; height: number;
-  left: number; top: number;
-  alignedYOffset: number;
+export type LayoutItem = {
+	// == existing WrapInput shape
+	width: number;
+	height: number;
+	left: number;
+	top: number;
+	alignedYOffset: number;
 };
 export type PageGeom = {
-  contentWidth: number;   // (pageSize.width  × pageScale) − 2×(margin × pageScale)
-  contentHeight: number;  // (pageSize.height × pageScale) − 2×(margin × pageScale)
-  pageWidth: number;      //  pageSize.width  × pageScale (full, for page rects)
-  pageHeight: number;     //  pageSize.height × pageScale
-  marginPx: number;       //  margin × pageScale
-  pageGap: number;        //  vertical gap between stacked pages (pattern units)
-  gap: number;            //  spacing between items (pattern units)
+	contentWidth: number; // (pageSize.width  × pageScale) − 2×(margin × pageScale)
+	contentHeight: number; // (pageSize.height × pageScale) − 2×(margin × pageScale)
+	pageWidth: number; //  pageSize.width  × pageScale (full, for page rects)
+	pageHeight: number; //  pageSize.height × pageScale
+	marginPx: number; //  margin × pageScale
+	pageGap: number; //  vertical gap between stacked pages (pattern units)
+	gap: number; //  spacing between items (pattern units)
 };
 export type PageLayoutResult = {
-  origins: Vector3[];                              // per item, page-offset already applied
-  pages: { x: number; y: number; width: number; height: number }[];  // page rects, pattern coords
-  overflow?: { itemIndex: number; requiredScale: number };
+	origins: Vector3[]; // per item, page-offset already applied
+	pages: { x: number; y: number; width: number; height: number }[]; // page rects, pattern coords
+	overflow?: { itemIndex: number; requiredScale: number };
 };
 export type PageLayoutFn = (items: LayoutItem[], geom: PageGeom) => PageLayoutResult;
 ```

@@ -32,50 +32,48 @@
 				class:active={$selectModeActive}
 				onclick={() => selectModeActive.update((v) => !v)}
 			>
-				{$selectModeActive
-					? '● select mode ON — camera locked'
-					: '○ select mode OFF — camera free'}
+				{$selectModeActive ? '● select mode ON — camera locked' : '○ select mode OFF — camera free'}
 			</button>
 
 			{#if $selectedBandLogInfo.length === 0}
 				<p class="empty">Click bands in the 3D view to inspect their end connections.</p>
 			{:else}
 				<ul>
-				{#each $selectedBandLogInfo as item (item.source + '-' + item.address.tube + '-' + item.address.band)}
-					<li>
-						<div class="row">
-							<span class="addr">{formatBandAddress(item.address)}</span>
-							<span class="source">{item.source}</span>
-							<button
-								class="remove"
-								title="remove"
-								onclick={() => recordBandSelection(item.source, { ...item.address, facet: 0 })}
-								>×</button
-							>
-						</div>
-						<div class="partners">
-							<span class="end-label">start →</span>
-							{#if item.info.startPartners.length}
-								{item.info.startPartners.map(formatBandAddress).join(', ')}
-							{:else}
-								<span class="none">none (boundary)</span>
+					{#each $selectedBandLogInfo as item (item.source + '-' + item.address.tube + '-' + item.address.band)}
+						<li>
+							<div class="row">
+								<span class="addr">{formatBandAddress(item.address)}</span>
+								<span class="source">{item.source}</span>
+								<button
+									class="remove"
+									title="remove"
+									onclick={() => recordBandSelection(item.source, { ...item.address, facet: 0 })}
+									>×</button
+								>
+							</div>
+							<div class="partners">
+								<span class="end-label">start →</span>
+								{#if item.info.startPartners.length}
+									{item.info.startPartners.map(formatBandAddress).join(', ')}
+								{:else}
+									<span class="none">none (boundary)</span>
+								{/if}
+							</div>
+							<div class="partners">
+								<span class="end-label">end →</span>
+								{#if item.info.endPartners.length}
+									{item.info.endPartners.map(formatBandAddress).join(', ')}
+								{:else}
+									<span class="none">none (boundary)</span>
+								{/if}
+							</div>
+							{#if !item.info.found}
+								<div class="warn">band not found in {item.source} tubes</div>
 							{/if}
-						</div>
-						<div class="partners">
-							<span class="end-label">end →</span>
-							{#if item.info.endPartners.length}
-								{item.info.endPartners.map(formatBandAddress).join(', ')}
-							{:else}
-								<span class="none">none (boundary)</span>
-							{/if}
-						</div>
-						{#if !item.info.found}
-							<div class="warn">band not found in {item.source} tubes</div>
-						{/if}
-					</li>
-				{/each}
-			</ul>
-		{/if}
+						</li>
+					{/each}
+				</ul>
+			{/if}
 		</div>
 	{/if}
 </div>
