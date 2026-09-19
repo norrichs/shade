@@ -42,12 +42,12 @@
 	let prepareFailed = 0;
 
 	const pool = createBandMergePool();
-	// The pool assigns each `run()` a generation, in call order, starting at 1.
-	// NavHeader is this pool's only caller, so counting our own calls predicts
-	// the generation we are waiting on. `pool.cancel()` can lose a race with a
-	// run's final response, so a superseded run can still resolve with
-	// `cancelled: false` and paths computed against geometry that has since
-	// changed — comparing generations is what keeps those from landing.
+	// `pool.cancel()` can lose a race with a run's final response, so a
+	// superseded run can still resolve with `cancelled: false` and paths
+	// computed against geometry that has since changed. Each run therefore takes
+	// a local token; `wantedGeneration` names the one run whose result we still
+	// want (0 = none), and anything else is dropped unpublished. Purely local —
+	// it does not mirror the pool's own generation counter.
 	let poolGeneration = 0;
 	let wantedGeneration = 0;
 
@@ -169,7 +169,11 @@
 		});
 		// `cancelled` alone is not enough: cancel() can lose a race with the run's
 		// final response, leaving a superseded run looking like a clean success.
-		if (result.cancelled || result.generation !== wantedGeneration) return false;
+		// The comparison is deliberately against our own local token rather than
+		// `result.generation`: equivalent today, but it cannot silently start
+		// dropping legitimate results if this component ever grows a second
+		// `pool.run` call site and the two counters drift apart.
+		if (result.cancelled || wantedGeneration !== myGeneration) return false;
 		prepareFailed = result.errors.size;
 		if (result.errors.size > 0) {
 			console.warn('[prepare] bands failed to merge', [...result.errors.entries()]);
@@ -179,9 +183,11 @@
 	};
 
 	// The work runs off the main thread now, so there is no frozen frame to paint
-	// around — no rAF wait is needed before starting it.
-	const handlePrepare = async () => {
-		if (prepareState === 'running') return;
+	// around — no rAF wait is needed before starting it. Returns whether a merge
+	// was actually published, so the auto-prep in "Download SVG" can decline to
+	// export an unprepared file.
+	const handlePrepare = async (): Promise<boolean> => {
+		if (prepareState === 'running') return false;
 		prepareState = 'running';
 		const start = performance.now();
 		let published = false;
@@ -190,12 +196,13 @@
 		} catch (error) {
 			prepareState = 'idle';
 			console.error('[prepare] failed', error);
-			return;
+			return false;
 		}
 		// Cancelled, invalidated or superseded mid-run: leave the state alone.
-		if (!published || prepareState !== 'running') return;
+		if (!published || prepareState !== 'running') return false;
 		prepareMs = Math.round(performance.now() - start);
 		prepareState = 'done';
+		return true;
 	};
 
 	const handleCancelPrepare = () => {
@@ -324,12 +331,15 @@
 				</span>
 			{/if}
 			<Button
+				disabled={prepareState === 'running'}
 				onclick={async () => {
 					if (
 						$patternConfigStore.patternTypeConfig.type === 'outlined' &&
 						$mergedBandPaths.size === 0
 					) {
-						await handlePrepare();
+						// Exporting the un-updated DOM would hand the user an unprepared
+						// cut file that looks like a prepared one.
+						if (!(await handlePrepare())) return;
 						await tick();
 					}
 					downloadSvg('pattern-svg', `globule-pattern ${$superGlobuleStore.name}.svg`);
