@@ -1,4 +1,7 @@
 import type { Vector2, Vector3, Triangle as ThreeTriangle, Object3D, Box3 } from 'three';
+// Type-only: `hole-drop-config.ts` imports BezierConfig from here, so a value
+// import would close a runtime cycle. Type imports are erased and cannot.
+import type { PostProcessConfig } from '$lib/cut-pattern/hole-drop-config';
 import type {
 	BaseProjectionConfig,
 	Polyhedron,
@@ -284,7 +287,8 @@ export type PatternConfig = {
 		| PixelScale
 		| PageSize
 		| PageLayoutConfig
-		| SplitConfig;
+		| SplitConfig
+		| PostProcessConfig;
 	showPattern: PatternShowConfig;
 	axis: Axis;
 	origin: PointConfig2;
@@ -298,6 +302,11 @@ export type PatternConfig = {
 	// saved config predating this field decodes to — no migration is needed
 	// in validators.ts. Making this required would require one.
 	splits?: SplitConfig;
+	// Optional for the same reason `splits?` is: absent means "drop nothing",
+	// which is what every saved config predating this field decodes to. The
+	// backfill in validators.ts is a convenience for the editor panel, not a
+	// correctness fix.
+	postProcess?: PostProcessConfig;
 	// patternedConfig: CutPatternConfig;
 };
 

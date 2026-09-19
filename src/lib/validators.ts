@@ -96,6 +96,30 @@ export const migrateGlobulePatternConfig = <T extends Partial<GlobulePatternConf
 		if (pl.algorithm === undefined) pl.algorithm = 'flex-wrap';
 		if (pl.keepConnected === undefined) pl.keepConnected = 0;
 	}
+
+	// Hole-drop post-processing. Absent decodes to "drop nothing", so this
+	// backfill is for the editor panel's convenience rather than correctness —
+	// but a malformed block would reach the cut file, so it is repaired here.
+	const ppHost = config.patternConfig as { postProcess?: Record<string, unknown> } | undefined;
+	if (ppHost) {
+		const pp = ppHost.postProcess;
+		if (!pp || typeof pp !== 'object') {
+			ppHost.postProcess = { dropHoles: { mode: 'none' }, runSeed: 0 };
+		} else {
+			if (typeof pp.runSeed !== 'number' || !Number.isFinite(pp.runSeed)) pp.runSeed = 0;
+			const drop = pp.dropHoles as { mode?: string; chance?: number } | undefined;
+			const mode = drop?.mode;
+			if (
+				!drop ||
+				(mode !== 'none' && mode !== 'all' && mode !== 'random' && mode !== 'variable')
+			) {
+				pp.dropHoles = { mode: 'none' };
+			} else if (mode === 'random') {
+				const chance = typeof drop.chance === 'number' ? drop.chance : 0;
+				drop.chance = chance < 0 ? 0 : chance > 1 ? 1 : chance;
+			}
+		}
+	}
 	return config;
 };
 

@@ -70,11 +70,14 @@ export const dropHoles = (
 	if (mode.mode === 'all') return withoutRanges(path, index.holes);
 
 	const random = mulberry32(seedFor(index.seed, config.runSeed));
-	const lut = mode.mode === 'variable' ? sampleDropCurve(mode.curve) : undefined;
+	// Resolved once, outside the loop: `variable` reads a sampled table at each
+	// hole's position along the band, `random` uses one flat chance.
+	const lut = mode.mode === 'variable' ? sampleDropCurve(mode.curve) : null;
+	const flatChance = mode.mode === 'random' ? mode.chance : 0;
 	const dropped: { start: number; end: number }[] = [];
 
 	for (const hole of index.holes) {
-		const chance = lut ? lookup(lut, hole.bandFraction) : mode.chance;
+		const chance = lut ? lookup(lut, hole.bandFraction) : flatChance;
 		// Roll for EVERY hole, whatever the chance, so the sequence a hole sees
 		// does not shift when the curve or chance changes.
 		if (random() < chance) dropped.push({ start: hole.start, end: hole.end });

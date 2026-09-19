@@ -595,6 +595,7 @@ export const defaultPatternConfig = (): PatternConfig => ({
 		keepConnected: 0
 	},
 	splits: { tubeSplits: [] },
+	postProcess: { dropHoles: { mode: 'none' }, runSeed: 0 },
 	page: { height: 300, width: 300, unit: 'mm' },
 	origin: { type: 'PointConfig2', x: 0, y: 0 },
 	direction: { type: 'PointConfig2', x: 0, y: 1 },
