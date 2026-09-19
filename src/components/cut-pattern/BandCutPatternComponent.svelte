@@ -2,6 +2,7 @@
 	import { getMidPoint, svgPathStringFromSegments } from '$lib/patterns/utils';
 	import type { TransformConfig } from '$lib/projection-geometry/types';
 	import { patternConfigStore, mergedBandPaths } from '$lib/stores';
+	import { resolveBandRenderMode } from '$lib/cut-pattern/band-render-mode';
 	import type { BandCutPattern, CutPattern, Quadrilateral } from '$lib/types';
 	import QuadPattern from '../pattern-svg/QuadPattern.svelte';
 	import BoundsPattern from './BoundsPattern.svelte';
@@ -81,7 +82,25 @@
 	{@const mergedPath = hasMerged
 		? svgPathStringFromSegments($mergedBandPaths.get(band.id)!)
 		: band.svgPath}
-	{#if hasMerged && $patternConfigStore.patternTypeConfig.type !== 'outlined'}
+	{@const renderMode = resolveBandRenderMode({
+		hasMerged,
+		patternType: $patternConfigStore.patternTypeConfig.type
+	})}
+	{#if renderMode === 'merged-outlined'}
+		<!-- The merged outline+label contour. PatternLabel stops drawing its own
+		     tag outline once the band is in mergedBandPaths, so this path is the
+		     only thing carrying it — drawing per-facet paths here instead loses
+		     the label from the cut file. Black to match the prepared tiled view;
+		     the working view's band colour is a screen affordance. -->
+		<path
+			d={mergedPath}
+			fill="none"
+			stroke="black"
+			stroke-width={band.facets[0]?.strokeWidth ?? 1}
+			stroke-linecap="round"
+			stroke-linejoin="round"
+		/>
+	{:else if renderMode === 'merged-tiled'}
 		<!-- Tiled outline-union: filled silhouette with holes + 1px cut outline.
 		     Only once a union has been prepared (mergedBandPaths populated via
 		     "Prepare Download"); otherwise fall through to the default thick-stroke
