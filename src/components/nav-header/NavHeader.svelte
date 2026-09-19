@@ -7,7 +7,9 @@
 		labelTextDimensions,
 		superGlobulePatternStore,
 		patternConfigStore,
-		viewControlStore
+		viewControlStore,
+		mergedBandPathsRaw,
+		postProcessBandPaths
 	} from '$lib/stores';
 	import { isManualMode, hasPendingChanges } from '$lib/stores/uiStores';
 	import { triggerManualRegeneration, isGenerating } from '$lib/stores/superGlobuleStores';
@@ -18,7 +20,10 @@
 	import WorkingIndicator from './WorkingIndicator.svelte';
 	import ViewMenu from './ViewMenu.svelte';
 	import BandSelectionPanel from '../projection/BandSelectionPanel.svelte';
-	import { computeMergedBandPaths } from '$lib/cut-pattern/prepare-merge';
+	import { toBandMergePayloads } from '$lib/cut-pattern/band-merge-payload';
+	import { mergeBand, type MergeCtx } from '$lib/cut-pattern/merge-band';
+	import { createBandMergePool } from '$lib/workers/band-merge-pool';
+	import type { PathSegment } from '$lib/types';
 	import { collateTubes } from '$lib/cut-pattern/collate-tubes';
 	import { get } from 'svelte/store';
 	import { buildBandSortIndex } from '$lib/cut-pattern/band-sort-index';
@@ -28,10 +33,23 @@
 
 	$: regenerateDisabled = !$isManualMode || $isGenerating || !$hasPendingChanges;
 
-	// "Prepare Download" can be heavy (tiled union expansion), so surface a
-	// running/done indicator. `prepareMs` records the last run's duration.
+	// "Prepare Download" runs the per-band merge across a pool of workers, so the
+	// page stays interactive. `prepareMs` records the last run's duration.
 	let prepareState: 'idle' | 'running' | 'done' = 'idle';
 	let prepareMs = 0;
+	let prepareDone = 0;
+	let prepareTotal = 0;
+	let prepareFailed = 0;
+
+	const pool = createBandMergePool();
+	// The pool assigns each `run()` a generation, in call order, starting at 1.
+	// NavHeader is this pool's only caller, so counting our own calls predicts
+	// the generation we are waiting on. `pool.cancel()` can lose a race with a
+	// run's final response, so a superseded run can still resolve with
+	// `cancelled: false` and paths computed against geometry that has since
+	// changed — comparing generations is what keeps those from landing.
+	let poolGeneration = 0;
+	let wantedGeneration = 0;
 
 	// Invalidate prepared merge state whenever underlying geometry or label
 	// config changes. User must re-click "Prepare Download" (or just click
@@ -44,11 +62,17 @@
 		void $patternConfigStore.patternTypeConfig.type;
 		void $patternConfigStore.patternTypeConfig.labels?.selfTag;
 		mergedBandPaths.set(new Map());
+		mergedBandPathsRaw.set(new Map());
 		void $patternConfigStore.patternViewConfig.bandSortMode;
 		void $patternConfigStore.patternConfig.pageLayout.keepConnected;
 		csvState = 'idle';
 		csvText = '';
-		// A geometry/config change makes any prepared union stale.
+		// A geometry/config change makes any prepared union stale — including one
+		// still being computed. Cancelling is best-effort (it can lose a race with
+		// the run's last response), so also drop the generation we are waiting on:
+		// whatever that run resolves with must never be published.
+		pool.cancel();
+		wantedGeneration = 0;
 		prepareState = 'idle';
 	}
 
@@ -80,7 +104,8 @@
 		? `t${$selectedSurfaceProjection.tube}b${$selectedSurfaceProjection.band}`
 		: '';
 
-	const runPrepare = () => {
+	/** Collate, extract payloads and build the per-run merge context. */
+	const prepareInputs = (): { payloads: ReturnType<typeof toBandMergePayloads>; ctx: MergeCtx } => {
 		const patternState = get(superGlobulePatternStore) as any;
 		const config = get(patternConfigStore);
 		const view = get(viewControlStore);
@@ -95,27 +120,88 @@
 			showProjectionGeometry: view.showProjectionGeometry,
 			patternSource: config.patternViewConfig.patternSource ?? 'projection'
 		});
-		const labels = config.patternTypeConfig.labels;
-		const patternType = config.patternTypeConfig.type;
-		const keepConnected = config.patternConfig.pageLayout.keepConnected ?? 0;
-		const merged = computeMergedBandPaths(tubes, labels, patternType, labelDims, keepConnected);
-		mergedBandPaths.set(merged);
+		return {
+			payloads: toBandMergePayloads(tubes, labelDims),
+			ctx: {
+				patternType: config.patternTypeConfig.type,
+				selfTag: config.patternTypeConfig.labels?.selfTag,
+				keepConnected: config.patternConfig.pageLayout.keepConnected ?? 0
+			}
+		};
 	};
 
-	// Wrap runPrepare with a visible running/done indicator. The computation is
-	// synchronous and blocks the main thread, so yield a frame first to let the
-	// "Preparing…" state paint before the work freezes the UI.
+	const publish = (paths: Map<string, PathSegment[]>) => {
+		mergedBandPathsRaw.set(paths);
+		mergedBandPaths.set(postProcessBandPaths(paths));
+	};
+
+	/**
+	 * Merge every band and publish the result. Small jobs run inline: spawning
+	 * workers would cost more than the work. Returns false when the run was
+	 * cancelled or superseded, so nothing was published.
+	 */
+	const runPrepare = async (): Promise<boolean> => {
+		const { payloads, ctx } = prepareInputs();
+		prepareDone = 0;
+		prepareTotal = payloads.length;
+		prepareFailed = 0;
+
+		if (payloads.length <= 2) {
+			const paths = new Map<string, PathSegment[]>();
+			for (const payload of payloads) {
+				const path = mergeBand(payload, ctx);
+				if (path.length > 0) paths.set(payload.id, path);
+			}
+			prepareDone = payloads.length;
+			publish(paths);
+			return true;
+		}
+
+		poolGeneration += 1;
+		const myGeneration = poolGeneration;
+		wantedGeneration = myGeneration;
+		const result = await pool.run(payloads, ctx, (done, total) => {
+			// A superseded run's progress must not drive the readout for the run
+			// that replaced it.
+			if (wantedGeneration !== myGeneration) return;
+			prepareDone = done;
+			prepareTotal = total;
+		});
+		// `cancelled` alone is not enough: cancel() can lose a race with the run's
+		// final response, leaving a superseded run looking like a clean success.
+		if (result.cancelled || result.generation !== wantedGeneration) return false;
+		prepareFailed = result.errors.size;
+		if (result.errors.size > 0) {
+			console.warn('[prepare] bands failed to merge', [...result.errors.entries()]);
+		}
+		publish(result.paths);
+		return true;
+	};
+
+	// The work runs off the main thread now, so there is no frozen frame to paint
+	// around — no rAF wait is needed before starting it.
 	const handlePrepare = async () => {
 		if (prepareState === 'running') return;
 		prepareState = 'running';
-		await tick();
-		await new Promise((resolve) =>
-			requestAnimationFrame(() => requestAnimationFrame(() => resolve(undefined)))
-		);
 		const start = performance.now();
-		runPrepare();
+		let published = false;
+		try {
+			published = await runPrepare();
+		} catch (error) {
+			prepareState = 'idle';
+			console.error('[prepare] failed', error);
+			return;
+		}
+		// Cancelled, invalidated or superseded mid-run: leave the state alone.
+		if (!published || prepareState !== 'running') return;
 		prepareMs = Math.round(performance.now() - start);
 		prepareState = 'done';
+	};
+
+	const handleCancelPrepare = () => {
+		pool.cancel();
+		wantedGeneration = 0;
+		prepareState = 'idle';
 	};
 
 	type CsvState = 'idle' | 'ready';
@@ -228,17 +314,23 @@
 				{prepareState === 'running' ? 'Preparing…' : 'Prepare Download'}
 			</Button>
 			{#if prepareState === 'running'}
-				<span class="prepare-status running">…preparing</span>
+				<span class="prepare-status running">
+					{prepareTotal > 0 ? `preparing ${prepareDone} / ${prepareTotal} bands` : '…preparing'}
+				</span>
+				<Button onclick={handleCancelPrepare}>Cancel</Button>
 			{:else if prepareState === 'done'}
-				<span class="prepare-status done">✓ ready ({prepareMs} ms)</span>
+				<span class="prepare-status done">
+					✓ ready ({prepareMs} ms{prepareFailed > 0 ? `, ${prepareFailed} failed` : ''})
+				</span>
 			{/if}
 			<Button
-				onclick={() => {
+				onclick={async () => {
 					if (
 						$patternConfigStore.patternTypeConfig.type === 'outlined' &&
 						$mergedBandPaths.size === 0
 					) {
-						runPrepare();
+						await handlePrepare();
+						await tick();
 					}
 					downloadSvg('pattern-svg', `globule-pattern ${$superGlobuleStore.name}.svg`);
 				}}>Download SVG</Button
