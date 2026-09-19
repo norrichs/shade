@@ -59,9 +59,13 @@ const parentSpans = (tubes: TubeCutPattern[]): Map<string, [number, number]> => 
 	for (const tube of tubes) {
 		const byParent = new Map<number | string, BandCutPattern[]>();
 		for (const band of tube.bands) {
-			// Not every band carries an address (two of the three band-construction
-			// branches in generate-projection.ts push bands without one), so an
-			// address-less band is its own parent: a group of one, spanning [0, 1].
+			// A real BandCutPattern always has an address: it is required on the
+			// type (types.ts:464) and set at every construction site, split pieces
+			// included (generate-tiled-pattern.ts:366 and :571,
+			// generate-outlined-pattern.ts:680-683). This branch exists only for
+			// test fixtures cast with `as unknown as TubeCutPattern`, which omit
+			// it; keying such a band by id makes it a group of one, yielding the
+			// [0, 1] span the general fallback below would give it anyway.
 			const key = band.address ? band.address.band : `no-address:${band.id}`;
 			const group = byParent.get(key);
 			if (group) group.push(band);
