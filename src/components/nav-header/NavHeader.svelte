@@ -9,7 +9,7 @@
 		patternConfigStore,
 		viewControlStore,
 		mergedBandPathsRaw,
-		postProcessBandPaths
+		bandHoleIndexes
 	} from '$lib/stores';
 	import { isManualMode, hasPendingChanges } from '$lib/stores/uiStores';
 	import { triggerManualRegeneration, isGenerating } from '$lib/stores/superGlobuleStores';
@@ -23,6 +23,7 @@
 	import { toBandMergePayloads } from '$lib/cut-pattern/band-merge-payload';
 	import { mergeBand, type MergeCtx } from '$lib/cut-pattern/merge-band';
 	import { createBandMergePool, isTotalPoolFailure } from '$lib/workers/band-merge-pool';
+	import { buildHoleIndex, type BandHoleIndex } from '$lib/cut-pattern/hole-index';
 	import type { PathSegment } from '$lib/types';
 	import { collateTubes } from '$lib/cut-pattern/collate-tubes';
 	import { get } from 'svelte/store';
@@ -58,26 +59,41 @@
 	// Invalidate prepared merge state whenever underlying geometry or label
 	// config changes. User must re-click "Prepare Download" (or just click
 	// Download SVG, which auto-preps) to refresh.
+	//
+	// Gated on an explicit key rather than on the store subscription itself:
+	// `$patternConfigStore` re-fires for ANY field, including the post-process
+	// block, whose whole purpose is to change WITHOUT re-merging. Clearing on
+	// every emission would make each nudge of a drop chance pay for the union
+	// again. `postProcess` is deliberately absent from the key.
+	let lastInvalidationKey: string | undefined = undefined;
+	let lastPatternRef: unknown = undefined;
 	$: {
-		// Reference each dep so Svelte tracks it. Only clear the merged paths —
+		const cfg = $patternConfigStore;
+		const invalidationKey = JSON.stringify([
+			cfg.patternTypeConfig.type,
+			cfg.patternTypeConfig.labels?.selfTag,
+			cfg.patternViewConfig.bandSortMode,
+			cfg.patternConfig.pageLayout.keepConnected,
+			cfg.patternConfig.splits
+		]);
 		// `labelTextDimensions` is owned by PatternLabel and updates reactively
-		// when the rendered text bbox changes.
-		void $superGlobulePatternStore;
-		void $patternConfigStore.patternTypeConfig.type;
-		void $patternConfigStore.patternTypeConfig.labels?.selfTag;
-		mergedBandPaths.set(new Map());
-		mergedBandPathsRaw.set(new Map());
-		void $patternConfigStore.patternViewConfig.bandSortMode;
-		void $patternConfigStore.patternConfig.pageLayout.keepConnected;
-		csvState = 'idle';
-		csvText = '';
-		// A geometry/config change makes any prepared union stale — including one
-		// still being computed. Cancelling is best-effort (it can lose a race with
-		// the run's last response), so also drop the generation we are waiting on:
-		// whatever that run resolves with must never be published.
-		pool.cancel();
-		wantedGeneration = 0;
-		prepareState = 'idle';
+		// when the rendered text bbox changes, so it is not part of the key.
+		const patternRef = $superGlobulePatternStore;
+		if (invalidationKey !== lastInvalidationKey || patternRef !== lastPatternRef) {
+			lastInvalidationKey = invalidationKey;
+			lastPatternRef = patternRef;
+			mergedBandPathsRaw.set(new Map());
+			bandHoleIndexes.set(new Map());
+			csvState = 'idle';
+			csvText = '';
+			// A geometry/config change makes any prepared union stale — including one
+			// still being computed. Cancelling is best-effort (it can lose a race with
+			// the run's last response), so also drop the generation we are waiting on:
+			// whatever that run resolves with must never be published.
+			pool.cancel();
+			wantedGeneration = 0;
+			prepareState = 'idle';
+		}
 	}
 
 	let showModal = false;
@@ -134,9 +150,11 @@
 		};
 	};
 
-	const publish = (paths: Map<string, PathSegment[]>) => {
+	// Written together, always: a band holding a path with no index would be
+	// silently un-droppable. `mergedBandPaths` derives from both.
+	const publish = (paths: Map<string, PathSegment[]>, holes: Map<string, BandHoleIndex>) => {
 		mergedBandPathsRaw.set(paths);
-		mergedBandPaths.set(postProcessBandPaths(paths));
+		bandHoleIndexes.set(holes);
 	};
 
 	/**
@@ -152,12 +170,21 @@
 
 		if (payloads.length <= 2) {
 			const paths = new Map<string, PathSegment[]>();
+			const holes = new Map<string, BandHoleIndex>();
 			for (const payload of payloads) {
 				const path = mergeBand(payload, ctx);
-				if (path.length > 0) paths.set(payload.id, path);
+				if (path.length === 0) continue;
+				paths.set(payload.id, path);
+				// Stage 1b, which this branch never reaches a worker to get.
+				holes.set(
+					payload.id,
+					ctx.patternType === 'outlined'
+						? { seed: payload.seed, holes: [] }
+						: buildHoleIndex(path, payload)
+				);
 			}
 			prepareDone = payloads.length;
-			publish(paths);
+			publish(paths, holes);
 			return true;
 		}
 
@@ -195,7 +222,7 @@
 		if (result.errors.size > 0) {
 			console.warn('[prepare] bands failed to merge', [...result.errors.entries()]);
 		}
-		publish(result.paths);
+		publish(result.paths, result.holes);
 		return true;
 	};
 
