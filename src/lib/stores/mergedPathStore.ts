@@ -15,6 +15,27 @@ export type LabelTextDims = { width: number; height: number };
 export const mergedBandPaths: Writable<Map<string, PathSegment[]>> = writable(new Map());
 
 /**
+ * Stage 1 output: the merged band paths as the worker pool produced them,
+ * before any post-processing.
+ *
+ * Stage 1 (stroke expansion plus boolean union) costs seconds; the per-band
+ * post-processing in `docs/specs/pattern-post-processing.md` costs
+ * milliseconds. Keeping the raw result means a change to post-process config
+ * re-runs only stage 2, instead of paying for the union again.
+ */
+export const mergedBandPathsRaw: Writable<Map<string, PathSegment[]>> = writable(new Map());
+
+/**
+ * Stage 2: derive the render-facing paths from the raw merge.
+ *
+ * Identity until hole dropping lands. Callers must route through it rather than
+ * writing `mergedBandPaths` directly, so that feature becomes a change to this
+ * one function.
+ */
+export const postProcessBandPaths = (raw: Map<string, PathSegment[]>): Map<string, PathSegment[]> =>
+	raw;
+
+/**
  * True once "Prepare Download" has produced a merge. The prepared view is a
  * preview of the file that will be cut, so incidental screen furniture — the
  * assembler highlight, the split seam layer — stands down while it is on. The
