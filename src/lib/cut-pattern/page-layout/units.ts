@@ -15,7 +15,10 @@ export type DerivedDimensions = {
 export const derivePageDimensions = (bounds: Box3, pageScale: number): DerivedDimensions => {
 	const size = new Vector3();
 	bounds.getSize(size);
-	const mm = { x: size.x / pageScale, y: size.y / pageScale, z: size.z / pageScale };
+	// Mirrors deriveDistance: a zero pageScale (possible in older saved configs)
+	// would otherwise produce Infinity and break every readout in the panel.
+	const scale = pageScale || 1;
+	const mm = { x: size.x / scale, y: size.y / scale, z: size.z / scale };
 	return { mm, inch: { x: mmToInch(mm.x), y: mmToInch(mm.y), z: mmToInch(mm.z) } };
 };
 
