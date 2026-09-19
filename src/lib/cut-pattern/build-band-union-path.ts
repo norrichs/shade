@@ -1,4 +1,4 @@
-import type { BandCutPattern, PathSegment } from '$lib/types';
+import type { PathSegment } from '$lib/types';
 import { expandFacetStroke, type StrokeInput } from './expand-stroke';
 import { uniteMany } from '$lib/paper';
 
@@ -62,8 +62,13 @@ const splitEdges = (path: PathSegment[]): PathSegment[][] => {
  * `expander` defaults to `expandFacetStroke` and is injectable for tests and
  * future engine swaps.
  */
+/** Just the part of a band that stroke expansion reads. `BandCutPattern` satisfies it. */
+export type BandUnionInput = {
+	facets: { path: PathSegment[]; strokeWidth?: number }[];
+};
+
 export const buildBandUnionPath = (
-	band: BandCutPattern,
+	band: BandUnionInput,
 	expander: (stroke: StrokeInput) => PathSegment[] = expandFacetStroke
 ): PathSegment[] => {
 	const outlines = band.facets

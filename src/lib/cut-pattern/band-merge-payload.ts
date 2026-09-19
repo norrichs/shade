@@ -57,9 +57,12 @@ const quadsOf = (band: BandCutPattern): number => band.quadCount ?? band.facets.
 const parentSpans = (tubes: TubeCutPattern[]): Map<string, [number, number]> => {
 	const spans = new Map<string, [number, number]>();
 	for (const tube of tubes) {
-		const byParent = new Map<number, BandCutPattern[]>();
+		const byParent = new Map<number | string, BandCutPattern[]>();
 		for (const band of tube.bands) {
-			const key = band.address.band;
+			// Not every band carries an address (two of the three band-construction
+			// branches in generate-projection.ts push bands without one), so an
+			// address-less band is its own parent: a group of one, spanning [0, 1].
+			const key = band.address ? band.address.band : `no-address:${band.id}`;
 			const group = byParent.get(key);
 			if (group) group.push(band);
 			else byParent.set(key, [band]);
