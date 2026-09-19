@@ -4,6 +4,18 @@ import { toBandMergePayloads } from './band-merge-payload';
 import { mergeBand, type MergeCtx } from './merge-band';
 
 /**
+ * TEST-ONLY: `computeMergedBandPaths` and `computeTiledUnionPaths` below have
+ * had no production callers since "Prepare Download" was rewired onto
+ * `createBandMergePool` (see `NavHeader.svelte`'s `runPrepare`/`publish`).
+ * They survive because the four pre-existing test suites that call them are
+ * this branch's real regression gate for merge fidelity (the pool runs the
+ * same pure `mergeBand` per band; these functions are the synchronous
+ * reference implementation those suites check it against). Do not delete
+ * them as dead code, and do not mistake them for the live prepare-download
+ * path.
+ */
+
+/**
  * Merge every band of `tubes` on this thread, in tube-then-band order, using
  * the same pure `mergeBand` the worker pool runs. Bands that produce no path
  * are omitted, matching the `continue` branches this loop used to take.

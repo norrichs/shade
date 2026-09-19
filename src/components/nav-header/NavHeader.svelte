@@ -22,14 +22,14 @@
 	import BandSelectionPanel from '../projection/BandSelectionPanel.svelte';
 	import { toBandMergePayloads } from '$lib/cut-pattern/band-merge-payload';
 	import { mergeBand, type MergeCtx } from '$lib/cut-pattern/merge-band';
-	import { createBandMergePool } from '$lib/workers/band-merge-pool';
+	import { createBandMergePool, isTotalPoolFailure } from '$lib/workers/band-merge-pool';
 	import type { PathSegment } from '$lib/types';
 	import { collateTubes } from '$lib/cut-pattern/collate-tubes';
 	import { get } from 'svelte/store';
 	import { buildBandSortIndex } from '$lib/cut-pattern/band-sort-index';
 	import { buildPatternCsv } from '$lib/cut-pattern/build-pattern-csv';
 	import { downloadTextFile } from '$lib/util';
-	import { tick } from 'svelte';
+	import { tick, onDestroy } from 'svelte';
 
 	$: regenerateDisabled = !$isManualMode || $isGenerating || !$hasPendingChanges;
 
@@ -50,6 +50,10 @@
 	// it does not mirror the pool's own generation counter.
 	let poolGeneration = 0;
 	let wantedGeneration = 0;
+
+	// Navigating away from /designer2 mid-run must not leave pool workers
+	// churning in the background: the component that owns them is gone.
+	onDestroy(() => pool.cancel());
 
 	// Invalidate prepared merge state whenever underlying geometry or label
 	// config changes. User must re-click "Prepare Download" (or just click
@@ -174,6 +178,19 @@
 		// dropping legitimate results if this component ever grows a second
 		// `pool.run` call site and the two counters drift apart.
 		if (result.cancelled || wantedGeneration !== myGeneration) return false;
+		// A wholesale pool failure (broken worker bundle, CSP block, missing
+		// chunk, ...) resolves with every band in `errors` and nothing in
+		// `paths`. That must not look like success: publishing an empty map here
+		// would pass the `handlePrepare`/auto-prep guard in "Download SVG" and let
+		// an un-updated, unprepared file export as if it were ready. A *partial*
+		// failure (some bands ok, some not) is not this case and must still
+		// publish the bands that succeeded.
+		if (isTotalPoolFailure(result, payloads.length)) {
+			console.error('[prepare] pool failed entirely; nothing published', [
+				...result.errors.entries()
+			]);
+			return false;
+		}
 		prepareFailed = result.errors.size;
 		if (result.errors.size > 0) {
 			console.warn('[prepare] bands failed to merge', [...result.errors.entries()]);
@@ -198,8 +215,23 @@
 			console.error('[prepare] failed', error);
 			return false;
 		}
-		// Cancelled, invalidated or superseded mid-run: leave the state alone.
-		if (!published || prepareState !== 'running') return false;
+		if (!published) {
+			// If something external already moved `prepareState` on (the
+			// invalidation reactive block on a config/geometry change, or
+			// `handleCancelPrepare`), leave it alone — it is already 'idle' and
+			// nothing here should stomp on a run that superseded this one.
+			// Otherwise this is a run that finished on its own without ever being
+			// cancelled or invalidated (e.g. a total pool failure from
+			// `isTotalPoolFailure`): nothing else will ever clear the "Preparing…"
+			// spinner, so this call must.
+			if (prepareState === 'running') prepareState = 'idle';
+			return false;
+		}
+		// Invalidated or superseded mid-run despite `published` being true: leave
+		// the state alone (this should not happen in practice, since a
+		// superseded run's `wantedGeneration` check in `runPrepare` already
+		// returns false, but the guard is cheap insurance).
+		if (prepareState !== 'running') return false;
 		prepareMs = Math.round(performance.now() - start);
 		prepareState = 'done';
 		return true;

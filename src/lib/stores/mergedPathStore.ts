@@ -8,7 +8,8 @@ export type LabelTextDims = { width: number; height: number };
  * means the band's merge has been prepared and should be rendered in place of
  * the standalone band path + label outline. Empty map = "not prepared".
  *
- * Populated by `computeMergedBandPaths` (via the "Prepare Download" button).
+ * Populated by `publish()` in `NavHeader.svelte` (via `postProcessBandPaths`,
+ * driven by the "Prepare Download" button).
  * Cleared by an invalidation $effect in NavHeader when relevant config or
  * geometry changes.
  */
@@ -47,8 +48,9 @@ export const isPrepared = derived(mergedBandPaths, (paths) => paths.size > 0);
 /**
  * Per-band measured label-text bbox in label-local coordinate units. Written
  * by PatternLabel after its getBBox() measurement settles. Read by
- * `computeMergedBandPaths` to size the label outline accurately, and by
- * CutPatternRenderer to reserve layout space for external labels. Cleared
+ * `prepareInputs()` in `NavHeader.svelte` (via `toBandMergePayloads`) to size
+ * the label outline accurately, and by CutPatternRenderer to reserve layout
+ * space for external labels. Cleared
  * alongside `mergedBandPaths` so a fresh measurement cycle drives the next
  * prep.
  */

@@ -1,7 +1,8 @@
 import { describe, it, expect } from '@jest/globals';
-import { createBandMergePool, type PoolWorker } from '../band-merge-pool';
+import { createBandMergePool, isTotalPoolFailure, type PoolWorker } from '../band-merge-pool';
 import type { MergeMessage, MergeResponse } from '../band-merge-worker-core';
 import type { BandMergePayload } from '$lib/cut-pattern/band-merge-payload';
+import type { PathSegment } from '$lib/types';
 
 const payload = (id: string): BandMergePayload => ({
 	id,
@@ -568,5 +569,114 @@ describe('band merge pool', () => {
 
 		expect(result.paths.size).toBe(3);
 		expect(result.cancelled).toBe(false);
+	});
+
+	it('records a redispatched band as an error instead of letting a throwing postMessage escape (Fix 2)', async () => {
+		// The second worker throws on every postMessage, including the redispatch
+		// `completeBand` -> `dispatch` sends it once the first band finishes. A
+		// throw escaping onmessage there would leave the run settled-never (the
+		// hung-spinner bug this file has already produced once), rather than
+		// resolving with the band recorded as an error.
+		let secondWorkerCalls = 0;
+		const createdWorkers: { terminated: boolean }[] = [];
+		const createWorker = (): PoolWorker => {
+			const index = createdWorkers.length;
+			const record = { terminated: false };
+			createdWorkers.push(record);
+			const worker: PoolWorker = {
+				onmessage: null,
+				onerror: null,
+				postMessage: (message) => {
+					if (index === 1) {
+						secondWorkerCalls += 1;
+						throw new Error('DataCloneError');
+					}
+					queueMicrotask(() => {
+						if (!record.terminated) worker.onmessage?.({ data: ok(message) });
+					});
+				},
+				terminate: () => {
+					record.terminated = true;
+				}
+			};
+			return worker;
+		};
+		const pool = createBandMergePool({ createWorker, poolSize: 2 });
+
+		const result = await pool.run([payload('a'), payload('b'), payload('c')], ctx);
+
+		// Only one throw: once a worker's postMessage throws it is marked dead
+		// and gets no more work, so the queue's remaining bands drain through the
+		// surviving worker instead of being handed back to the broken one.
+		expect(secondWorkerCalls).toBe(1);
+		expect(result.errors.size).toBe(1);
+		expect(result.paths.size).toBe(2);
+		expect(result.cancelled).toBe(false);
+		for (const worker of createdWorkers) expect(worker.terminated).toBe(true);
+	});
+
+	describe('isTotalPoolFailure (Fix 1)', () => {
+		it('is true when every band errored and nothing was published', () => {
+			const result = {
+				paths: new Map(),
+				errors: new Map([
+					['a', 'boom'],
+					['b', 'boom']
+				]),
+				cancelled: false,
+				generation: 1
+			};
+
+			expect(isTotalPoolFailure(result, 2)).toBe(true);
+		});
+
+		it('is false for a partial failure — some bands published, some errored', () => {
+			const result = {
+				paths: new Map([['a', [['M', 0, 0]] as unknown as PathSegment[]]]),
+				errors: new Map([['b', 'boom']]),
+				cancelled: false,
+				generation: 1
+			};
+
+			expect(isTotalPoolFailure(result, 2)).toBe(false);
+		});
+
+		it('is false for a clean run with no errors at all', () => {
+			const result = {
+				paths: new Map([['a', [['M', 0, 0]] as unknown as PathSegment[]]]),
+				errors: new Map(),
+				cancelled: false,
+				generation: 1
+			};
+
+			expect(isTotalPoolFailure(result, 1)).toBe(false);
+		});
+
+		it('is false for an empty payload run (nothing to fail)', () => {
+			const result = { paths: new Map(), errors: new Map(), cancelled: false, generation: 1 };
+
+			expect(isTotalPoolFailure(result, 0)).toBe(false);
+		});
+
+		it('agrees with an actual pool run where the default factory fails to load', async () => {
+			const pool = createBandMergePool({
+				loadDefaultCreateWorker: () => Promise.reject(new Error('import failed'))
+			});
+
+			const result = await pool.run([payload('a'), payload('b')], ctx);
+
+			expect(isTotalPoolFailure(result, 2)).toBe(true);
+		});
+
+		it('agrees with an actual pool run that only partially fails', async () => {
+			const { createWorker } = makeFakeWorkers((m) =>
+				m.bandId === 'b' ? { type: 'merge-error', bandId: 'b', error: 'boom' } : ok(m)
+			);
+			const pool = createBandMergePool({ createWorker, poolSize: 2 });
+
+			const result = await pool.run([payload('a'), payload('b'), payload('c')], ctx);
+
+			expect(isTotalPoolFailure(result, 3)).toBe(false);
+		});
 	});
 });

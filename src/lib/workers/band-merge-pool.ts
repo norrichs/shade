@@ -74,6 +74,17 @@ const errorMessage = (error: unknown): string =>
 	error instanceof Error ? error.message : String(error);
 
 /**
+ * True when a run failed wholesale: every band ended in `errors` and nothing
+ * was published to `paths`. A caller should treat this as a failed run rather
+ * than publishing an empty map — see the NavHeader `runPrepare` guard that
+ * uses this. A run with *some* successful bands (however few) is a partial
+ * success and must still publish those bands, so this deliberately does not
+ * fire on a mix of `paths` and `errors`.
+ */
+export const isTotalPoolFailure = (result: PoolRunResult, bandCount: number): boolean =>
+	bandCount > 0 && result.paths.size === 0 && result.errors.size === bandCount;
+
+/**
  * Merge bands across a pool of workers created for this run and terminated when
  * it ends.
  *
@@ -213,7 +224,19 @@ export const createBandMergePool = (options: BandMergePoolOptions = {}) => {
 			const payload = payloads[next];
 			next += 1;
 			inFlight.set(worker, payload.id);
-			worker.postMessage({ type: 'merge', bandId: payload.id, payload, ctx });
+			try {
+				worker.postMessage({ type: 'merge', bandId: payload.id, payload, ctx });
+			} catch (error) {
+				// A throw here (e.g. DataCloneError) happens inside `onmessage` on the
+				// redispatch path (`completeBand` -> `dispatch`), so it must not escape
+				// to the event loop: that would leave the run settled-never, the same
+				// hung-spinner shape a dead worker already causes. Record the band as
+				// failed and re-enter the completion path instead, exactly as a real
+				// worker-level error would.
+				errors.set(payload.id, errorMessage(error));
+				deadWorkers.add(worker);
+				completeBand(worker, payload.id);
+			}
 		};
 
 		const completeBand = (worker: PoolWorker, bandId: string) => {
