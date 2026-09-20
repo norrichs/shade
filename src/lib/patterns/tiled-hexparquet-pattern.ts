@@ -151,11 +151,22 @@ export const getHexparquetAcrossBandPairs = (facetIndex: number, columns: number
 	return nodeIndices(segs, 0, isLeftApex).map((target) => ({ target, source }));
 };
 
-/** Path indices to remove from one facet, applied after every snap. */
+/**
+ * Path indices to remove from one facet, applied after every snap.
+ *
+ * `keepPartnerSeam` suppresses the band-to-band drop only: the band keeps its
+ * own seam segments even when a partner abuts, so it is self-contained and the
+ * seam is drawn by both bands. The two within-band drops — duplicate column
+ * boundaries and duplicate unit bottoms — are unaffected, since those lines
+ * would be doubled inside a single band.
+ */
 export const getHexparquetDropIndices = (
 	facetIndex: number,
 	columns: number,
-	{ hasLeftPartner }: { hasLeftPartner: boolean }
+	{
+		hasLeftPartner,
+		keepPartnerSeam = false
+	}: { hasLeftPartner: boolean; keepPartnerSeam?: boolean }
 ): number[] => {
 	const segs = subunitOf(facetIndex);
 	const out: number[] = [];
@@ -163,7 +174,7 @@ export const getHexparquetDropIndices = (
 		segs.forEach(({ tags = [] }, s) => {
 			const drop =
 				(c > 0 && tags.includes('leftEdge')) ||
-				(c === 0 && hasLeftPartner && tags.includes('partnerDrop')) ||
+				(c === 0 && hasLeftPartner && !keepPartnerSeam && tags.includes('partnerDrop')) ||
 				// Blue's bottom line coincides with the previous unit's red top; only the
 				// band's first unit (facet 0) keeps it as the band's end.
 				(facetIndex > 0 && tags.includes('unitBottom'));
@@ -274,12 +285,13 @@ export const adjustHexparquetAfterTiling = (
 	return snapped.map((band) => {
 		if (band.error) return band;
 		const hasLeftPartner = band.leftPartnerBand !== undefined;
+		const keepPartnerSeam = tiledPatternConfig.config.keepPartnerSeam ?? false;
 		return {
 			...band,
 			facets: band.facets.map((facet, f) => {
 				const path = structuredClone(facet.path);
 				removeInPlace({
-					indices: getHexparquetDropIndices(f, columns, { hasLeftPartner }),
+					indices: getHexparquetDropIndices(f, columns, { hasLeftPartner, keepPartnerSeam }),
 					target: path
 				});
 				return { ...facet, path };
