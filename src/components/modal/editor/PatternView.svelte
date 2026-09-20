@@ -444,6 +444,21 @@
 							/>
 						</LabeledControl>
 					{/if}
+					{#if patternTypeConfig.type === 'tiledHexparquetPattern-0'}
+						<!-- On: a band keeps its own seam segments even where another band
+						     abuts, so every band is self-contained and the seam is drawn
+						     twice. Off (the default) cedes that line to the partner. -->
+						<LabeledControl label="Keep Partner Seam">
+							<input
+								type="checkbox"
+								checked={!!inner.keepPartnerSeam}
+								onchange={(event) =>
+									setInner({
+										keepPartnerSeam: (event.currentTarget as HTMLInputElement).checked
+									})}
+							/>
+						</LabeledControl>
+					{/if}
 					<LabeledControl label="Loop Ends">
 						<input
 							type="number"

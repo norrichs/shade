@@ -786,6 +786,14 @@ export type TiledPatternConfig = {
 		 * `adjustGridPatternAfterMapping`.
 		 */
 		dropEdgeSegments?: boolean;
+		/**
+		 * Hexparquet only. By default a band that has a left partner drops its
+		 * `partnerDrop` segments, because the partner's edge already draws that
+		 * line and the seam would otherwise be cut twice. When true the band keeps
+		 * them, so every band is self-contained. Absent or false is the historical
+		 * behaviour, so no saved config changes meaning.
+		 */
+		keepPartnerSeam?: boolean;
 		aspectRatio?: number;
 		skipEdges?: SkipEdges;
 		distributePanels?: boolean;

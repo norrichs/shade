@@ -7,7 +7,10 @@ import {
 	generateHexparquetSubunits
 } from '../tiled-hexparquet-pattern';
 
-const config = (columnCount = 1): TiledPatternConfig => ({
+const config = (
+	columnCount = 1,
+	overrides: Partial<TiledPatternConfig['config']> = {}
+): TiledPatternConfig => ({
 	type: 'tiledHexparquetPattern-0',
 	tiling: 'quadrilateral',
 	config: {
@@ -20,7 +23,8 @@ const config = (columnCount = 1): TiledPatternConfig => ({
 		endsMatched: false,
 		endsTrimmed: false,
 		endLooped: 0,
-		scaleConfig: { unit: 'px', unitPerSvgUnit: 1, quantity: 1 }
+		scaleConfig: { unit: 'px', unitPerSvgUnit: 1, quantity: 1 },
+		...overrides
 	}
 });
 
@@ -101,5 +105,61 @@ describe('adjustHexparquetAfterTiling', () => {
 	it('leaves refused bands untouched', () => {
 		const refused = { ...cutBand(0, []), error: 'nope' } as BandCutPattern;
 		expect(adjustHexparquetAfterTiling([refused], config())[0]).toEqual(refused);
+	});
+
+	describe('keepPartnerSeam', () => {
+		it('keeps the partner segment on a band that has a left partner', () => {
+			const band0 = cutBand(0, quads(3, 0, 1));
+			const band1 = cutBand(1, quads(3, 0, 1), 0);
+			const [, kept] = adjustHexparquetAfterTiling(
+				[band0, band1],
+				config(1, { keepPartnerSeam: true })
+			);
+
+			// 16 with the drop (see the test above); the seam segment is two path
+			// entries, so keeping it restores the partnerless length.
+			expect(kept.facets[1].path).toHaveLength(18);
+		});
+
+		it('still snaps the retained seam onto the partner band\u2019s right apex', () => {
+			// Partner band 0 is twice as wide, so its right apex lands 1/3 left of
+			// band 1's left edge — distinguishable from band 1's own extrapolation.
+			const band0 = cutBand(0, quads(3, 0, 2));
+			const band1 = cutBand(1, quads(3, 10, 1), 0);
+			const [, kept] = adjustHexparquetAfterTiling(
+				[band0, band1],
+				config(1, { keepPartnerSeam: true })
+			);
+			const green = kept.facets[1].path;
+
+			// Every left-apex node in the facet sits at the snapped position, the
+			// retained seam segment included: the flag changes what is dropped, not
+			// what is snapped.
+			const apexes = green.filter(
+				(seg) => typeof seg[1] === 'number' && Math.abs((seg[1] as number) - (10 - 1 / 3)) < 1e-6
+			);
+			expect(apexes.length).toBeGreaterThanOrEqual(2);
+		});
+
+		it('changes nothing for a band with no left partner', () => {
+			const band = cutBand(0, quads(6, 0, 1));
+			const [dropped] = adjustHexparquetAfterTiling([band], config());
+			const [kept] = adjustHexparquetAfterTiling([band], config(1, { keepPartnerSeam: true }));
+
+			expect(kept.facets.map((f) => f.path)).toEqual(dropped.facets.map((f) => f.path));
+		});
+
+		it('leaves the other two drops in place', () => {
+			const band0 = cutBand(0, quads(3, 0, 1));
+			const band1 = cutBand(1, quads(6, 0, 1), 0);
+			const [, kept] = adjustHexparquetAfterTiling(
+				[band0, band1],
+				config(1, { keepPartnerSeam: true })
+			);
+
+			// Blue's bottom line is still dropped on every blue facet but the first.
+			expect(kept.facets[0].path).toHaveLength(20);
+			expect(kept.facets[3].path).toHaveLength(18);
+		});
 	});
 });
