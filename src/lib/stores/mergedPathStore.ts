@@ -64,12 +64,13 @@ export const postProcessConfig = derived<typeof patternConfigStore, PostProcessC
 export const applyPostProcess = (
 	raw: Map<string, PathSegment[]>,
 	indexes: Map<string, BandContourIndex>,
-	config: PostProcessConfig
+	config: PostProcessConfig,
+	pageScale = 1
 ): Map<string, TaggedPath[]> => {
 	const out = new Map<string, TaggedPath[]>();
 	for (const [bandId, path] of raw) {
 		const index = indexes.get(bandId) ?? { seed: 0, contours: [] };
-		out.set(bandId, postProcessBandPath(path, index, config));
+		out.set(bandId, postProcessBandPath(path, index, config, pageScale));
 	}
 	return out;
 };
@@ -92,9 +93,22 @@ export const dropLabelText = derived(postProcessConfig, (config) => config.dropL
  * nudged drop chance must never pay for the union again. `runSeed` takes part
  * because rerolling has to change the result.
  */
+let lastPageScale = NaN;
+/** `pageLayout.pageScale`, emitting only when it changes. */
+export const pageScaleValue = derived<typeof patternConfigStore, number>(
+	patternConfigStore,
+	($config, set) => {
+		const next = $config.patternConfig.pageLayout?.pageScale ?? 1;
+		if (next === lastPageScale) return;
+		lastPageScale = next;
+		set(next);
+	},
+	1
+);
+
 export const mergedBandPaths = derived(
-	[mergedBandPathsRaw, bandContourIndexes, postProcessConfig],
-	([$raw, $indexes, $config]) => applyPostProcess($raw, $indexes, $config)
+	[mergedBandPathsRaw, bandContourIndexes, postProcessConfig, pageScaleValue],
+	([$raw, $indexes, $config, $pageScale]) => applyPostProcess($raw, $indexes, $config, $pageScale)
 );
 
 /**

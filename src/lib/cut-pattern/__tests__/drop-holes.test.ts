@@ -246,4 +246,22 @@ describe('postProcessBandPath tagged output', () => {
 		const pieces = postProcessBandPath(outer, { seed: 1, contours: [] }, cfg({ mode: 'none' }));
 		expect(pieces).toEqual([{ geometry: 'pattern-outline', segments: outer }]);
 	});
+
+	it('inserts gaps in stage 2 when connect surround is on', () => {
+		const path: PathSegment[] = [['M', 0, 0], ['L', 10, 0], ['L', 10, 10], ['L', 0, 10], ['Z']];
+		const index: BandContourIndex = {
+			seed: 1,
+			contours: [{ start: 0, end: 5, kind: 'outline', depth: 0, area: 100 }],
+			ends: {
+				start: { point: { x: 5, y: 0 }, outward: { x: 0, y: -1 } },
+				end: { point: { x: 5, y: 10 }, outward: { x: 0, y: 1 } }
+			}
+		};
+		const config = { ...cfg({ mode: 'none' }), connectSurround: { enabled: true, gapMm: 1 } };
+		const pieces = postProcessBandPath(path, index, config, 2); // 1 mm × 2 units/mm = 2 units
+		expect(pieces.filter((p) => p.geometry === 'outline-gap')).toHaveLength(2);
+		expect(
+			postProcessBandPath(path, index, { ...config, dropOutline: true }, 2).some((p) => p.geometry === 'outline-gap')
+		).toBe(false);
+	});
 });
