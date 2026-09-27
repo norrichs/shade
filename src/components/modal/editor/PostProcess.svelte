@@ -1,11 +1,16 @@
 <script lang="ts">
-	import { patternConfigStore } from '$lib/stores';
+	import { patternConfigStore, lightburnTemplateStore } from '$lib/stores';
 	import {
 		DEFAULT_POST_PROCESS,
+		DEFAULT_CONNECT_GAP_MM,
 		defaultDropCurve,
 		type HoleDropConfig,
-		type HoleDropMode
+		type HoleDropMode,
+		type PageLabelConfig
 	} from '$lib/cut-pattern/hole-drop-config';
+	import { GEOMETRY_TYPES, GEOMETRY_TYPE_LABELS, type GeometryType } from '$lib/cut-pattern/post-process-types';
+	import { LIGHTBURN_LAYERS, layerOptionLabel, resolveLayer, type LayerId } from '$lib/lightburn/layers';
+	import { readTemplateUpload, missingTemplateLayers } from '$lib/lightburn/template-status';
 	import type { BezierConfig } from '$lib/types';
 	import NumberInput from '../../controls/super-control/NumberInput.svelte';
 	import Container from './Container.svelte';
@@ -40,9 +45,37 @@
 		};
 	};
 
-	const setFlag = (flag: 'dropOutline' | 'dropLabelText', value: boolean) => {
+	const setFlag = (flag: 'dropOutline' | 'dropLabelText' | 'disconnectSurround', value: boolean) => {
 		$patternConfigStore.patternConfig.postProcess = { ...postProcess, [flag]: value };
 	};
+
+	const patch = (next: Partial<typeof postProcess>) => {
+		$patternConfigStore.patternConfig.postProcess = { ...postProcess, ...next };
+	};
+	let connect = $derived(postProcess.connectSurround ?? { enabled: false, gapMm: DEFAULT_CONNECT_GAP_MM });
+	let pageLabel = $derived<PageLabelConfig>(
+		postProcess.pageLabel ?? { pageNumber: false, configName: false, text: '' }
+	);
+	const setPageLabel = (next: Partial<PageLabelConfig>) => patch({ pageLabel: { ...pageLabel, ...next } });
+	const setLayer = (type: GeometryType, id: LayerId) =>
+		patch({ layerMap: { ...(postProcess.layerMap ?? {}), [type]: id } });
+
+	// Transient upload feedback; losing it on panel remount is harmless.
+	let templateError = $state('');
+	const onTemplate = async (e: Event & { currentTarget: HTMLInputElement }) => {
+		// `currentTarget` is only valid while the event is dispatching; the
+		// browser nulls it once the handler yields, which the `await` below does.
+		const target = e.currentTarget;
+		const file = target.files?.[0];
+		if (!file) return;
+		const result = readTemplateUpload(file.name, await file.text());
+		if (result.ok) {
+			$lightburnTemplateStore = result.template;
+			templateError = '';
+		} else templateError = result.error;
+		target.value = '';
+	};
+	let missing = $derived(missingTemplateLayers(postProcess.layerMap, $lightburnTemplateStore?.xml));
 
 	const setMode = (mode: HoleDropMode) => {
 		if (mode === dropHoles.mode) return;
@@ -127,10 +160,101 @@
 				</LabeledControl>
 			{/if}
 		{/if}
+
+		<h4>Surround</h4>
+		<LabeledControl label="Disconnect surround">
+			<input
+				type="checkbox"
+				checked={postProcess.disconnectSurround ?? false}
+				onchange={(e) => setFlag('disconnectSurround', e.currentTarget.checked)}
+			/>
+		</LabeledControl>
+		{#if !postProcess.dropOutline}
+			<LabeledControl label="Connect surround">
+				<input
+					type="checkbox"
+					checked={connect.enabled}
+					onchange={(e) => patch({ connectSurround: { ...connect, enabled: e.currentTarget.checked } })}
+				/>
+			</LabeledControl>
+			{#if connect.enabled}
+				<LabeledControl label="Gap (mm)">
+					<NumberInput
+						value={connect.gapMm}
+						min={0.1}
+						max={20}
+						step={0.1}
+						onChange={(gapMm: number) => patch({ connectSurround: { ...connect, gapMm } })}
+					/>
+				</LabeledControl>
+			{/if}
+		{/if}
+
+		<h4>Page labels</h4>
+		<LabeledControl label="Page number">
+			<input type="checkbox" checked={pageLabel.pageNumber} onchange={(e) => setPageLabel({ pageNumber: e.currentTarget.checked })} />
+		</LabeledControl>
+		<LabeledControl label="Config name">
+			<input type="checkbox" checked={pageLabel.configName} onchange={(e) => setPageLabel({ configName: e.currentTarget.checked })} />
+		</LabeledControl>
+		<LabeledControl label="Text">
+			<input type="text" value={pageLabel.text} onchange={(e) => setPageLabel({ text: e.currentTarget.value.trim() })} />
+		</LabeledControl>
+
+		<h4>Layers</h4>
+		{#each GEOMETRY_TYPES as type (type)}
+			{@const current = resolveLayer(type, postProcess.layerMap)}
+			<LabeledControl label={GEOMETRY_TYPE_LABELS[type]}>
+				<span class="swatch" style="background: {current.hex}"></span>
+				<select value={current.id} onchange={(e) => setLayer(type, e.currentTarget.value as LayerId)}>
+					{#each LIGHTBURN_LAYERS as layer (layer.id)}
+						<option value={layer.id}>{layerOptionLabel(layer)}</option>
+					{/each}
+				</select>
+			</LabeledControl>
+		{/each}
+
+		<h4>LightBurn</h4>
+		<LabeledControl label="Download as LightBurn">
+			<input
+				type="checkbox"
+				checked={postProcess.downloadFormat === 'lbrn2'}
+				onchange={(e) => patch({ downloadFormat: e.currentTarget.checked ? 'lbrn2' : 'svg' })}
+			/>
+		</LabeledControl>
+		<LabeledControl label="Template (.lbrn2)">
+			<input type="file" accept=".lbrn2" onchange={onTemplate} />
+		</LabeledControl>
+		{#if templateError}<p class="error">{templateError}</p>{/if}
+		{#if $lightburnTemplateStore}
+			<p class="hint">
+				{$lightburnTemplateStore.fileName} · loaded {new Date($lightburnTemplateStore.loadedAt).toLocaleString()}
+			</p>
+		{:else}
+			<p class="hint">No template: cut settings will use LightBurn defaults.</p>
+		{/if}
+		{#if missing.length}
+			<p class="hint">Not in template: {missing.join(', ')}</p>
+		{/if}
 	</Container>
 </Editor>
 
 <style>
+	.swatch {
+		display: inline-block;
+		width: 0.8em;
+		height: 0.8em;
+		margin-right: 0.3em;
+		border: 1px solid #888;
+	}
+	.error {
+		color: #b00;
+		font-size: 0.8em;
+		margin: 0;
+	}
+	h4 {
+		margin: 0.6em 0 0.2em;
+	}
 	.hint {
 		font-size: 0.8em;
 		opacity: 0.7;
