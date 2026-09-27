@@ -6,6 +6,7 @@
 	import { resolveTabLabel } from '$lib/cut-pattern/resolve-tab-label';
 	import {
 		assemblerHighlight,
+		dropLabelText,
 		isPrepared,
 		patternBandSpaces,
 		patternConfigStore,
@@ -227,7 +228,7 @@
 			onToggle={toggleSplit}
 		/>
 	{/if}
-	{#if onTabEnabled && hasTabs}
+	{#if onTabEnabled && hasTabs && !($isPrepared && $dropLabelText)}
 		{#each band.tabs ?? [] as tab, tabIndex (tabIndex)}
 			<OnTabLabel
 				outer={tab.outer}

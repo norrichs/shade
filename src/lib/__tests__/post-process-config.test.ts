@@ -55,4 +55,24 @@ describe('postProcess config', () => {
 
 		expect(postProcess).toEqual({ dropHoles: { mode: 'none' }, runSeed: 0 });
 	});
+
+	it('keeps valid drop flags and removes malformed ones', () => {
+		const config = {
+			patternConfig: {
+				pageLayout: { keepConnected: 0 },
+				postProcess: {
+					dropHoles: { mode: 'none' },
+					runSeed: 0,
+					dropOutline: true,
+					dropLabelText: 'yes'
+				}
+			}
+		} as unknown as GlobulePatternConfig;
+
+		expect(migrateGlobulePatternConfig(config).patternConfig?.postProcess).toEqual({
+			dropHoles: { mode: 'none' },
+			runSeed: 0,
+			dropOutline: true
+		});
+	});
 });

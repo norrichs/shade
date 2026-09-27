@@ -69,6 +69,17 @@ describe('post-processed merged paths', () => {
 		expect(out.get('b')).toHaveLength(5);
 	});
 
+	it('drops the outline and keeps the hole', () => {
+		const raw = new Map([['b', donut()]]);
+		const out = applyPostProcess(raw, oneHole(), {
+			dropHoles: { mode: 'none' },
+			runSeed: 0,
+			dropOutline: true
+		});
+
+		expect(out.get('b')).toEqual(donut().slice(5));
+	});
+
 	it('leaves a band with no index untouched', () => {
 		const raw = new Map([['b', donut()]]);
 		const out = applyPostProcess(raw, new Map(), { dropHoles: { mode: 'all' }, runSeed: 0 });

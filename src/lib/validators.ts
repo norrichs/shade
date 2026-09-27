@@ -107,6 +107,10 @@ export const migrateGlobulePatternConfig = <T extends Partial<GlobulePatternConf
 			ppHost.postProcess = { dropHoles: { mode: 'none' }, runSeed: 0 };
 		} else {
 			if (typeof pp.runSeed !== 'number' || !Number.isFinite(pp.runSeed)) pp.runSeed = 0;
+			// Optional flags: absent means false, so only a malformed value is removed.
+			for (const flag of ['dropOutline', 'dropLabelText'] as const) {
+				if (flag in pp && typeof pp[flag] !== 'boolean') delete pp[flag];
+			}
 			const drop = pp.dropHoles as { mode?: string; chance?: number } | undefined;
 			const mode = drop?.mode;
 			if (

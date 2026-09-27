@@ -33,7 +33,15 @@
 	// Every write goes to the config store, never to component state: Floater
 	// fully remounts its panel content on close, so panel-local state is wiped.
 	const write = (nextDropHoles: HoleDropConfig, runSeed = postProcess.runSeed) => {
-		$patternConfigStore.patternConfig.postProcess = { dropHoles: nextDropHoles, runSeed };
+		$patternConfigStore.patternConfig.postProcess = {
+			...postProcess,
+			dropHoles: nextDropHoles,
+			runSeed
+		};
+	};
+
+	const setFlag = (flag: 'dropOutline' | 'dropLabelText', value: boolean) => {
+		$patternConfigStore.patternConfig.postProcess = { ...postProcess, [flag]: value };
 	};
 
 	const setMode = (mode: HoleDropMode) => {
@@ -60,9 +68,28 @@
 
 <Editor>
 	<Container direction="column">
+		<LabeledControl label="Drop label text">
+			<input
+				type="checkbox"
+				checked={postProcess.dropLabelText ?? false}
+				onchange={(e) => setFlag('dropLabelText', e.currentTarget.checked)}
+			/>
+		</LabeledControl>
+
 		{#if isOutlined}
-			<p>Hole dropping applies to tiled patterns only.</p>
+			<p>Outline and hole dropping apply to tiled patterns only.</p>
 		{:else}
+			<LabeledControl label="Drop outline">
+				<input
+					type="checkbox"
+					checked={postProcess.dropOutline ?? false}
+					onchange={(e) => setFlag('dropOutline', e.currentTarget.checked)}
+				/>
+			</LabeledControl>
+			{#if postProcess.dropOutline}
+				<p class="hint">Keeps only the holes; the label tag goes with the outline.</p>
+			{/if}
+
 			<LabeledControl label="Drop internal holes">
 				<select
 					value={dropHoles.mode}

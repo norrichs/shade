@@ -1,5 +1,5 @@
 import { describe, it, expect } from '@jest/globals';
-import { dropHoles, mulberry32, seedFor } from '../drop-holes';
+import { dropHoles, mulberry32, postProcessBandPath, seedFor } from '../drop-holes';
 import { defaultDropCurve, type PostProcessConfig } from '../hole-drop-config';
 import type { BandHoleIndex } from '../hole-index';
 import type { BezierConfig, PathSegment, PointConfig2 } from '$lib/types';
@@ -145,5 +145,58 @@ describe('dropHoles', () => {
 
 		expect(keptHoles / n).toBeGreaterThan(0.4);
 		expect(keptHoles / n).toBeLessThan(0.6);
+	});
+});
+
+describe('postProcessBandPath', () => {
+	it('matches dropHoles when the outline is kept', () => {
+		const config = cfg({ mode: 'random', chance: 0.5 }, 3);
+		expect(postProcessBandPath(pathWith(6), indexFor(6), config)).toEqual(
+			dropHoles(pathWith(6), indexFor(6), config)
+		);
+	});
+
+	it('keeps only the holes when dropping the outline', () => {
+		const result = postProcessBandPath(pathWith(3), indexFor(3), {
+			...cfg({ mode: 'none' }),
+			dropOutline: true
+		});
+
+		expect(result).toEqual(pathWith(3).slice(5));
+	});
+
+	it('keeps only the holes that survive hole dropping', () => {
+		const n = 12;
+		const config = cfg({ mode: 'random', chance: 0.5 }, 7);
+		const holesDropped = dropHoles(pathWith(n), indexFor(n), config);
+		const outlineDropped = postProcessBandPath(pathWith(n), indexFor(n), {
+			...config,
+			dropOutline: true
+		});
+
+		// Same surviving holes; only the outer contour differs.
+		expect(outlineDropped).toEqual(holesDropped.slice(5));
+	});
+
+	it('leaves nothing when both outline and every hole are dropped', () => {
+		const result = postProcessBandPath(pathWith(3), indexFor(3), {
+			...cfg({ mode: 'all' }),
+			dropOutline: true
+		});
+
+		expect(result).toEqual([]);
+	});
+
+	it('leaves nothing for a band with no holes', () => {
+		const result = postProcessBandPath(
+			pathWith(0),
+			{ seed: 1, holes: [] },
+			{
+				...cfg({ mode: 'none' }),
+				dropOutline: true
+			}
+		);
+
+		expect(result).toEqual([]);
 	});
 });
