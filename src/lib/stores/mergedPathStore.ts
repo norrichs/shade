@@ -4,7 +4,7 @@ import type { BandContourIndex } from '$lib/cut-pattern/contour-index';
 import { postProcessBandPath } from '$lib/cut-pattern/drop-holes';
 import { DEFAULT_POST_PROCESS, type PostProcessConfig } from '$lib/cut-pattern/hole-drop-config';
 import { patternConfigStore } from './globulePatternStores';
-import { GEOMETRY_TYPES, type GeometryType } from '$lib/cut-pattern/post-process-types';
+import { GEOMETRY_TYPES, type GeometryType, type TaggedPath } from '$lib/cut-pattern/post-process-types';
 import { layerStroke } from '$lib/lightburn/layers';
 
 export type LabelTextDims = { width: number; height: number };
@@ -52,17 +52,24 @@ export const postProcessConfig = derived<typeof patternConfigStore, PostProcessC
 	DEFAULT_POST_PROCESS
 );
 
-/** Stage 2 over every band. A band with no index is passed through unchanged. */
+/**
+ * Stage 2 over every band, tagging each surviving contour as its own piece.
+ *
+ * A band with no index is passed through `postProcessBandPath` too, which
+ * treats an empty-contours index as one whole outline piece — see its doc
+ * comment. There is no early-return-by-reference for the none/no-dropOutline
+ * case any more, because the output type (`TaggedPath[]`) differs from the
+ * input (`PathSegment[]`); stage 2 is still milliseconds.
+ */
 export const applyPostProcess = (
 	raw: Map<string, PathSegment[]>,
 	indexes: Map<string, BandContourIndex>,
 	config: PostProcessConfig
-): Map<string, PathSegment[]> => {
-	if (config.dropHoles.mode === 'none' && !config.dropOutline) return raw;
-	const out = new Map<string, PathSegment[]>();
+): Map<string, TaggedPath[]> => {
+	const out = new Map<string, TaggedPath[]>();
 	for (const [bandId, path] of raw) {
-		const index = indexes.get(bandId);
-		out.set(bandId, index ? postProcessBandPath(path, index, config) : path);
+		const index = indexes.get(bandId) ?? { seed: 0, contours: [] };
+		out.set(bandId, postProcessBandPath(path, index, config));
 	}
 	return out;
 };

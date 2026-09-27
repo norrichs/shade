@@ -1,6 +1,7 @@
 import type { PathSegment } from '$lib/types';
 import { holesOf, type BandContourIndex } from './contour-index';
 import { lookup, sampleDropCurve, type PostProcessConfig } from './hole-drop-config';
+import type { TaggedPath } from './post-process-types';
 
 /**
  * Mulberry32: a small, fast, well-distributed 32-bit PRNG.
@@ -54,16 +55,6 @@ const withoutRanges = (path: PathSegment[], ranges: { start: number; end: number
 
 type Range = { start: number; end: number };
 
-/** Concatenate only the segments inside `ranges`, in path order. */
-const onlyRanges = (path: PathSegment[], ranges: Range[]) => {
-	const ordered = [...ranges].sort((a, b) => a.start - b.start);
-	const out: PathSegment[] = [];
-	for (const range of ordered) {
-		for (let i = range.start; i < range.end; i += 1) out.push(path[i]);
-	}
-	return out;
-};
-
 /**
  * Which holes the drop config removes.
  *
@@ -109,23 +100,36 @@ export const dropHoles = (
 	return dropped.length === 0 ? path : withoutRanges(path, dropped);
 };
 
+export const concatPieces = (pieces: TaggedPath[]): PathSegment[] =>
+	pieces.flatMap((p) => p.segments);
+
 /**
- * Stage 2 for one band: drop holes, then — with `dropOutline` — drop every
- * contour that is not a hole, keeping only the holes that survived.
+ * Stage 2 for one band: one tagged piece per surviving contour, in contour
+ * order. Dropped holes are omitted; `dropOutline` omits every outline contour
+ * (outer shell with its label tag, and islands inside holes).
  *
- * The index lists every odd-depth contour, so "not a hole" is the outer shell
- * (which carries the unioned label tag) plus any island nested inside a hole.
- * A band with no holes loses its whole path.
+ * An unindexed non-empty path (no contours found) is treated as one whole
+ * outline piece, so a band that never got a contour index still renders.
  */
 export const postProcessBandPath = (
 	path: PathSegment[],
 	index: BandContourIndex,
 	config: PostProcessConfig
-): PathSegment[] => {
-	if (!config.dropOutline) return dropHoles(path, index, config);
+): TaggedPath[] => {
+	if (index.contours.length === 0) {
+		if (path.length === 0 || config.dropOutline) return [];
+		return [{ geometry: 'pattern-outline', segments: path }];
+	}
 	const dropped = new Set(droppedHoles(index, config).map((r) => r.start));
-	return onlyRanges(
-		path,
-		holesOf(index).filter((hole) => !dropped.has(hole.start))
-	);
+	const pieces: TaggedPath[] = [];
+	index.contours.forEach((c, i) => {
+		if (c.kind === 'hole' && dropped.has(c.start)) return;
+		if (c.kind === 'outline' && config.dropOutline) return;
+		pieces.push({
+			geometry: c.kind === 'hole' ? 'pattern-hole' : 'pattern-outline',
+			segments: path.slice(c.start, c.end),
+			contour: i
+		});
+	});
+	return pieces;
 };

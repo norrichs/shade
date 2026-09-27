@@ -31,7 +31,17 @@ const segmentTotals = (page: Page): Promise<{ raw: number; rendered: number; ban
 			store.subscribe((paths) => {
 				bands = paths.size;
 				total = 0;
-				for (const path of paths.values()) total += path.length;
+				// mergedBandPathsRaw values are still flat arrays of segments -- each
+				// item is an array and counts 1; mergedBandPaths values are pieces --
+				// each counts its segments.
+				for (const value of paths.values()) {
+					const pieces = value as unknown[];
+					total += pieces.reduce<number>(
+						(n, piece) =>
+							n + (Array.isArray(piece) ? 1 : ((piece as { segments: unknown[] }).segments.length)),
+						0
+					);
+				}
 			})();
 			return { total, bands };
 		};

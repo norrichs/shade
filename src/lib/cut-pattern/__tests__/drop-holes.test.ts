@@ -1,5 +1,5 @@
 import { describe, it, expect } from '@jest/globals';
-import { dropHoles, mulberry32, postProcessBandPath, seedFor } from '../drop-holes';
+import { concatPieces, dropHoles, mulberry32, postProcessBandPath, seedFor } from '../drop-holes';
 import { defaultDropCurve, type PostProcessConfig } from '../hole-drop-config';
 import type { BandContourIndex } from '../contour-index';
 import type { BezierConfig, PathSegment, PointConfig2 } from '$lib/types';
@@ -156,7 +156,7 @@ describe('dropHoles', () => {
 describe('postProcessBandPath', () => {
 	it('matches dropHoles when the outline is kept', () => {
 		const config = cfg({ mode: 'random', chance: 0.5 }, 3);
-		expect(postProcessBandPath(pathWith(6), indexFor(6), config)).toEqual(
+		expect(concatPieces(postProcessBandPath(pathWith(6), indexFor(6), config))).toEqual(
 			dropHoles(pathWith(6), indexFor(6), config)
 		);
 	});
@@ -167,7 +167,7 @@ describe('postProcessBandPath', () => {
 			dropOutline: true
 		});
 
-		expect(result).toEqual(pathWith(3).slice(5));
+		expect(concatPieces(result)).toEqual(pathWith(3).slice(5));
 	});
 
 	it('keeps only the holes that survive hole dropping', () => {
@@ -180,7 +180,7 @@ describe('postProcessBandPath', () => {
 		});
 
 		// Same surviving holes; only the outer contour differs.
-		expect(outlineDropped).toEqual(holesDropped.slice(5));
+		expect(concatPieces(outlineDropped)).toEqual(holesDropped.slice(5));
 	});
 
 	it('leaves nothing when both outline and every hole are dropped', () => {
@@ -203,5 +203,47 @@ describe('postProcessBandPath', () => {
 		);
 
 		expect(result).toEqual([]);
+	});
+});
+
+describe('postProcessBandPath tagged output', () => {
+	const outer: PathSegment[] = [['M', 0, 0], ['L', 20, 0], ['L', 20, 20], ['L', 0, 20], ['Z']];
+	const hole = (x: number): PathSegment[] => [['M', x, 5], ['L', x + 2, 5], ['L', x + 2, 7], ['Z']];
+	const path = [...outer, ...hole(2), ...hole(8)];
+	const index: BandContourIndex = {
+		seed: 3,
+		contours: [
+			{ start: 0, end: 5, kind: 'outline', depth: 0, area: 400 },
+			{ start: 5, end: 9, kind: 'hole', depth: 1, area: 2, bandFraction: 0.2 },
+			{ start: 9, end: 13, kind: 'hole', depth: 1, area: 2, bandFraction: 0.8 }
+		]
+	};
+
+	it('emits one tagged piece per contour, in contour order', () => {
+		const pieces = postProcessBandPath(path, index, cfg({ mode: 'none' }));
+		expect(pieces.map((p) => p.geometry)).toEqual(['pattern-outline', 'pattern-hole', 'pattern-hole']);
+		expect(pieces.map((p) => p.contour)).toEqual([0, 1, 2]);
+		expect(concatPieces(pieces)).toEqual(path);
+	});
+
+	it('omits dropped holes', () => {
+		const pieces = postProcessBandPath(path, index, cfg({ mode: 'all' }));
+		expect(pieces.map((p) => p.geometry)).toEqual(['pattern-outline']);
+	});
+
+	it('omits outline pieces with dropOutline', () => {
+		const pieces = postProcessBandPath(path, index, { ...cfg({ mode: 'none' }), dropOutline: true });
+		expect(pieces.every((p) => p.geometry === 'pattern-hole')).toBe(true);
+		expect(pieces).toHaveLength(2);
+	});
+
+	it('matches the flat dropHoles output when re-concatenated', () => {
+		const config = cfg({ mode: 'random', chance: 0.5 });
+		expect(concatPieces(postProcessBandPath(path, index, config))).toEqual(dropHoles(path, index, config));
+	});
+
+	it('treats an unindexed non-empty path as one outline piece', () => {
+		const pieces = postProcessBandPath(outer, { seed: 1, contours: [] }, cfg({ mode: 'none' }));
+		expect(pieces).toEqual([{ geometry: 'pattern-outline', segments: outer }]);
 	});
 });

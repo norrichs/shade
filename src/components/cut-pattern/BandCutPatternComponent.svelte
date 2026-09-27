@@ -1,8 +1,9 @@
 <script lang="ts">
 	import { getMidPoint, svgPathStringFromSegments } from '$lib/patterns/utils';
 	import type { TransformConfig } from '$lib/projection-geometry/types';
-	import { patternConfigStore, mergedBandPaths } from '$lib/stores';
+	import { patternConfigStore, mergedBandPaths, layerStrokes } from '$lib/stores';
 	import { resolveBandRenderMode } from '$lib/cut-pattern/band-render-mode';
+	import { concatPieces } from '$lib/cut-pattern/drop-holes';
 	import type { BandCutPattern, CutPattern, Quadrilateral } from '$lib/types';
 	import QuadPattern from '../pattern-svg/QuadPattern.svelte';
 	import BoundsPattern from './BoundsPattern.svelte';
@@ -78,40 +79,45 @@
 {/if}
 <BoundsPattern {showBounds} bounds={band.bounds} />
 {#if renderAsSinglePath}
-	{@const hasMerged = $mergedBandPaths.has(band.id)}
-	{@const mergedPath = hasMerged
-		? svgPathStringFromSegments($mergedBandPaths.get(band.id)!)
-		: band.svgPath}
+	{@const pieces = $mergedBandPaths.get(band.id)}
+	{@const hasMerged = !!pieces}
 	{@const renderMode = resolveBandRenderMode({
 		hasMerged,
 		patternType: $patternConfigStore.patternTypeConfig.type
 	})}
-	{#if renderMode === 'merged-outlined'}
-		<!-- The merged outline+label contour. PatternLabel stops drawing its own
-		     tag outline once the band is in mergedBandPaths, so this path is the
-		     only thing carrying it — drawing per-facet paths here instead loses
-		     the label from the cut file. Black to match the prepared tiled view;
-		     the working view's band colour is a screen affordance. -->
+	{#if renderMode === 'merged-outlined' && pieces}
+		<!-- One path per tagged piece; stroke from the layer map, so the preview
+		     shows the colors the cut file carries. -->
+		{#each pieces as piece, p (p)}
+			<path
+				d={svgPathStringFromSegments(piece.segments)}
+				data-geometry={piece.geometry}
+				fill="none"
+				stroke={$layerStrokes[piece.geometry]}
+				stroke-width={band.facets[0]?.strokeWidth ?? 1}
+				stroke-linecap="round"
+				stroke-linejoin="round"
+			/>
+		{/each}
+	{:else if renderMode === 'merged-tiled' && pieces}
+		<!-- Preview-only silhouette: holes now render as separate paths, so the
+		     evenodd fill needs its own concatenated path. Never exported. -->
 		<path
-			d={mergedPath}
-			fill="none"
-			stroke="black"
-			stroke-width={band.facets[0]?.strokeWidth ?? 1}
-			stroke-linecap="round"
-			stroke-linejoin="round"
-		/>
-	{:else if renderMode === 'merged-tiled'}
-		<!-- Tiled outline-union: filled silhouette with holes + 1px cut outline.
-		     Only once a union has been prepared (mergedBandPaths populated via
-		     "Prepare Download"); otherwise fall through to the default thick-stroke
-		     view so the pre-Prepare working view is unchanged. -->
-		<path
-			d={mergedPath}
+			class="screen-only"
+			d={svgPathStringFromSegments(concatPieces(pieces))}
 			fill="rgba(200,200,200,0.1)"
 			fill-rule="evenodd"
-			stroke="black"
-			stroke-width={1}
+			stroke="none"
 		/>
+		{#each pieces as piece, p (p)}
+			<path
+				d={svgPathStringFromSegments(piece.segments)}
+				data-geometry={piece.geometry}
+				fill="none"
+				stroke={$layerStrokes[piece.geometry]}
+				stroke-width={1}
+			/>
+		{/each}
 	{:else}
 		<!-- One path PER FACET, each at its own dynamic stroke width. Drawing the
 		     whole band as a single path forces a single width for every facet
