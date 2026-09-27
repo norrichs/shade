@@ -1,6 +1,11 @@
 import type { BezierConfig, PointConfig2 } from '$lib/types';
+import type { LayerMap } from '$lib/lightburn/layers';
 
 export type HoleDropMode = 'none' | 'all' | 'random' | 'variable';
+
+export type PageLabelConfig = { pageNumber: boolean; configName: boolean; text: string };
+export type ConnectSurroundConfig = { enabled: boolean; gapMm: number };
+export const DEFAULT_CONNECT_GAP_MM = 1.5;
 
 /**
  * How internal holes are dropped from a merged tiled band.
@@ -29,6 +34,14 @@ export type PostProcessConfig = {
 	dropOutline?: boolean;
 	/** Stop drawing label text on prepared bands. Absent means false. */
 	dropLabelText?: boolean;
+	/** Straight cuts from band ends to the page edge or a neighbour. Absent = false. */
+	disconnectSurround?: boolean;
+	/** One gap per band end in the outline, re-emitted as `outline-gap`. */
+	connectSurround?: ConnectSurroundConfig;
+	pageLabel?: PageLabelConfig;
+	/** Geometry type → LightBurn layer. Absent entries use DEFAULT_LAYER_MAP. */
+	layerMap?: LayerMap;
+	downloadFormat?: 'svg' | 'lbrn2';
 };
 
 export const DEFAULT_POST_PROCESS: PostProcessConfig = {

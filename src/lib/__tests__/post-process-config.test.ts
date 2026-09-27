@@ -75,4 +75,48 @@ describe('postProcess config', () => {
 			dropOutline: true
 		});
 	});
+
+	const migratePP = (postProcess: Record<string, unknown>) =>
+		migrateGlobulePatternConfig({
+			patternConfig: { pageLayout: { keepConnected: 0 }, postProcess }
+		} as unknown as GlobulePatternConfig).patternConfig?.postProcess as Record<string, unknown>;
+
+	it('keeps valid post-processing 2 fields', () => {
+		const pp = migratePP({
+			dropHoles: { mode: 'none' },
+			runSeed: 0,
+			disconnectSurround: true,
+			connectSurround: { enabled: true, gapMm: 2 },
+			pageLabel: { pageNumber: true, configName: false, text: ' shade ' },
+			layerMap: { 'outline-gap': 'C05' },
+			downloadFormat: 'lbrn2'
+		});
+		expect(pp.disconnectSurround).toBe(true);
+		expect(pp.connectSurround).toEqual({ enabled: true, gapMm: 2 });
+		expect(pp.pageLabel).toEqual({ pageNumber: true, configName: false, text: 'shade' });
+		expect(pp.layerMap).toEqual({ 'outline-gap': 'C05' });
+		expect(pp.downloadFormat).toBe('lbrn2');
+	});
+
+	it('repairs malformed post-processing 2 fields', () => {
+		const pp = migratePP({
+			dropHoles: { mode: 'none' },
+			runSeed: 0,
+			disconnectSurround: 'yes',
+			connectSurround: { enabled: 1, gapMm: 999 },
+			pageLabel: { pageNumber: 'x', text: 5 },
+			layerMap: { 'outline-gap': 'C99', bogus: 'C01', 'pattern-hole': 'T2' },
+			downloadFormat: 'pdf'
+		});
+		expect('disconnectSurround' in pp).toBe(false);
+		expect(pp.connectSurround).toEqual({ enabled: false, gapMm: 20 });
+		expect(pp.pageLabel).toEqual({ pageNumber: false, configName: false, text: '' });
+		expect(pp.layerMap).toEqual({ 'pattern-hole': 'T2' });
+		expect('downloadFormat' in pp).toBe(false);
+	});
+
+	it('clamps a tiny or non-finite gap', () => {
+		expect(migratePP({ dropHoles: { mode: 'none' }, runSeed: 0, connectSurround: { enabled: true, gapMm: 0 } }).connectSurround).toEqual({ enabled: true, gapMm: 0.1 });
+		expect(migratePP({ dropHoles: { mode: 'none' }, runSeed: 0, connectSurround: { enabled: true, gapMm: NaN } }).connectSurround).toEqual({ enabled: true, gapMm: 1.5 });
+	});
 });

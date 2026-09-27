@@ -4,6 +4,8 @@ import type { BandHoleIndex } from '$lib/cut-pattern/hole-index';
 import { postProcessBandPath } from '$lib/cut-pattern/drop-holes';
 import { DEFAULT_POST_PROCESS, type PostProcessConfig } from '$lib/cut-pattern/hole-drop-config';
 import { patternConfigStore } from './globulePatternStores';
+import { GEOMETRY_TYPES, type GeometryType } from '$lib/cut-pattern/post-process-types';
+import { layerStroke } from '$lib/lightburn/layers';
 
 export type LabelTextDims = { width: number; height: number };
 
@@ -96,6 +98,17 @@ export const mergedBandPaths = derived(
  * and are stripped at export instead (`SCREEN_ONLY_SELECTOR` in `util.ts`).
  */
 export const isPrepared = derived(mergedBandPaths, (paths) => paths.size > 0);
+
+/**
+ * Stroke hex per geometry type, from the post-process layer map. Every exported
+ * producer reads its stroke from here, so preview and export always agree.
+ */
+export const layerStrokes = derived(postProcessConfig, (config) =>
+	Object.fromEntries(GEOMETRY_TYPES.map((t) => [t, layerStroke(t, config.layerMap)])) as Record<
+		GeometryType,
+		string
+	>
+);
 
 /**
  * Per-band measured label-text bbox in label-local coordinate units. Written

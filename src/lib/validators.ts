@@ -6,6 +6,9 @@ import type {
 	ProceduralFillConfig,
 	TiledPatternConfig
 } from './types';
+import { GEOMETRY_TYPES } from '$lib/cut-pattern/post-process-types';
+import { isLayerId } from '$lib/lightburn/layers';
+import { DEFAULT_CONNECT_GAP_MM } from '$lib/cut-pattern/hole-drop-config';
 
 export type Validity = {
 	isValid: boolean;
@@ -108,9 +111,44 @@ export const migrateGlobulePatternConfig = <T extends Partial<GlobulePatternConf
 		} else {
 			if (typeof pp.runSeed !== 'number' || !Number.isFinite(pp.runSeed)) pp.runSeed = 0;
 			// Optional flags: absent means false, so only a malformed value is removed.
-			for (const flag of ['dropOutline', 'dropLabelText'] as const) {
+			for (const flag of ['dropOutline', 'dropLabelText', 'disconnectSurround'] as const) {
 				if (flag in pp && typeof pp[flag] !== 'boolean') delete pp[flag];
 			}
+			if ('connectSurround' in pp) {
+				const cs = pp.connectSurround as { enabled?: unknown; gapMm?: unknown } | null;
+				if (!cs || typeof cs !== 'object') delete pp.connectSurround;
+				else {
+					const gap =
+						typeof cs.gapMm === 'number' && Number.isFinite(cs.gapMm)
+							? cs.gapMm
+							: DEFAULT_CONNECT_GAP_MM;
+					pp.connectSurround = {
+						enabled: cs.enabled === true,
+						gapMm: Math.min(20, Math.max(0.1, gap))
+					};
+				}
+			}
+			if ('pageLabel' in pp) {
+				const pl = pp.pageLabel as Record<string, unknown> | null;
+				if (!pl || typeof pl !== 'object') delete pp.pageLabel;
+				else
+					pp.pageLabel = {
+						pageNumber: pl.pageNumber === true,
+						configName: pl.configName === true,
+						text: typeof pl.text === 'string' ? pl.text.trim() : ''
+					};
+			}
+			if ('layerMap' in pp) {
+				const lm = pp.layerMap as Record<string, unknown> | null;
+				if (!lm || typeof lm !== 'object') delete pp.layerMap;
+				else
+					for (const key of Object.keys(lm)) {
+						if (!(GEOMETRY_TYPES as readonly string[]).includes(key) || !isLayerId(lm[key]))
+							delete lm[key];
+					}
+			}
+			if ('downloadFormat' in pp && pp.downloadFormat !== 'svg' && pp.downloadFormat !== 'lbrn2')
+				delete pp.downloadFormat;
 			const drop = pp.dropHoles as { mode?: string; chance?: number } | undefined;
 			const mode = drop?.mode;
 			if (
