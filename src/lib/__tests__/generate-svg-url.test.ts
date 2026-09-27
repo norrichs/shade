@@ -1,4 +1,5 @@
-import { generateSvgUrl } from '../util';
+import { buildExportSvg } from '../util';
+import type { ExportFrame } from '$lib/download/export-frame';
 
 /**
  * The exported SVG drives a cutter/plotter: anything serialised into it is a
@@ -8,11 +9,21 @@ import { generateSvgUrl } from '../util';
  * it belongs in the cut file.
  *
  * jsdom is not available in this project's Jest environment (see
- * `download-text-file.test.ts`), so the DOM the exporter walks is stubbed: a
- * minimal element tree with the handful of operations `generateSvgUrl` uses,
- * and a serializer that renders it back to markup. The assertions are over that
+ * `download-text-file.test.ts`), so the DOM `buildExportSvg` walks is stubbed:
+ * a minimal element tree with the handful of operations it uses (class- and
+ * tag-based `querySelectorAll`, `closest`, attribute get/set, cloning, and a
+ * `toString` that renders it back to markup). The assertions are over that
  * exported STRING, which is the artefact that reaches the cutter.
  */
+
+const FAKE_FRAME: ExportFrame = {
+	width: '100mm',
+	height: '100mm',
+	viewBox: '0 0 100 100',
+	contentTransform: 'scale(1) translate(0 0)',
+	widthMm: 100,
+	heightMm: 100
+};
 
 class FakeElement {
 	tag: string;
@@ -27,6 +38,14 @@ class FakeElement {
 		this.attrs = attrs;
 	}
 
+	get tagName(): string {
+		return this.tag;
+	}
+
+	get childNodes(): FakeElement[] {
+		return this.children;
+	}
+
 	append(...children: FakeElement[]): FakeElement {
 		for (const child of children) {
 			child.parent = this;
@@ -35,16 +54,48 @@ class FakeElement {
 		return this;
 	}
 
+	appendChild(child: FakeElement): FakeElement {
+		return this.append(child);
+	}
+
+	getAttribute(name: string): string | null {
+		return this.attrs[name] ?? null;
+	}
+
+	setAttribute(name: string, value: string): void {
+		this.attrs[name] = value;
+	}
+
 	descendants(): FakeElement[] {
 		return this.children.flatMap((child) => [child, ...child.descendants()]);
 	}
 
-	querySelectorAll(selector: string): FakeElement[] {
-		const wanted = selector
+	/** Supports the three selector shapes this codebase actually uses:
+	 * `.class, .class2`, a bare comma list of tag names, and `[attr]`. */
+	private matches(selector: string): boolean {
+		return selector
 			.split(',')
-			.map((s) => s.trim().replace(/^\./, ''))
-			.filter(Boolean);
-		return this.descendants().filter((el) => el.classes.some((c) => wanted.includes(c)));
+			.map((s) => s.trim())
+			.some((part) => {
+				if (part.startsWith('.')) return this.classes.includes(part.slice(1));
+				if (part.startsWith('[') && part.endsWith(']')) {
+					return Object.hasOwn(this.attrs, part.slice(1, -1));
+				}
+				return this.tag === part;
+			});
+	}
+
+	querySelectorAll(selector: string): FakeElement[] {
+		return this.descendants().filter((el) => el.matches(selector));
+	}
+
+	closest(selector: string): FakeElement | null {
+		let node: FakeElement | undefined = this;
+		while (node) {
+			if (node.matches(selector)) return node;
+			node = node.parent;
+		}
+		return null;
 	}
 
 	remove(): void {
@@ -85,7 +136,7 @@ const buildPatternSvg = ({ interactive }: { interactive: boolean }): FakeElement
 		);
 	}
 	const band = new FakeElement('g', ['band']).append(
-		new FakeElement('path', ['band-outline'], { d: 'M0 0 L10 0' }),
+		new FakeElement('path', ['band-outline'], { d: 'M0 0 L10 0', 'data-geometry': 'pattern-outline' }),
 		new FakeElement('g', ['svg-pattern-quad']).append(new FakeElement('path', [], { d: 'M0 0' })),
 		// The assembler cross-view highlight: a filled rect over the whole band.
 		new FakeElement('rect', ['screen-only'], { fill: 'rgb(255,0,0)', width: '10' }),
@@ -98,32 +149,26 @@ const buildPatternSvg = ({ interactive }: { interactive: boolean }): FakeElement
 	return new FakeElement('svg', [], { id: 'pattern-svg' }).append(band);
 };
 
-let serialized = '';
-
 const install = (root: FakeElement) => {
-	serialized = '';
 	const globals = global as unknown as Record<string, unknown>;
 	globals.document = {
-		getElementById: (id: string) => (root.attrs.id === id ? root : null)
+		getElementById: (id: string) => (root.attrs.id === id ? root : null),
+		createElementNS: (_ns: string, tag: string) => new FakeElement(tag)
 	};
-	globals.XMLSerializer = class {
-		serializeToString(node: FakeElement) {
-			serialized = node.toString();
-			return serialized;
-		}
-	};
-	globals.Blob = class {
-		constructor(public parts: string[]) {}
-	};
-	globals.URL = { createObjectURL: () => 'blob:mock', revokeObjectURL: () => {} };
 };
 
-describe('generateSvgUrl', () => {
-	test('leaves split seams out of the exported SVG when a split is placed', () => {
-		const root = buildPatternSvg({ interactive: false });
-		install(root);
+/** Runs `buildExportSvg`, asserting success, and returns the serialised markup. */
+const buildAndSerialize = (): string => {
+	const result = buildExportSvg(FAKE_FRAME);
+	if ('error' in result) throw new Error(`buildExportSvg failed: ${result.error}`);
+	return (result.svg as unknown as FakeElement).toString();
+};
 
-		generateSvgUrl('pattern-svg');
+describe('buildExportSvg', () => {
+	test('leaves split seams out of the exported SVG when a split is placed', () => {
+		install(buildPatternSvg({ interactive: false }));
+
+		const serialized = buildAndSerialize();
 
 		expect(serialized).not.toContain('split-target');
 		expect(serialized).not.toContain('hairline');
@@ -132,10 +177,9 @@ describe('generateSvgUrl', () => {
 	});
 
 	test('leaves the click targets out of the exported SVG while split mode is on', () => {
-		const root = buildPatternSvg({ interactive: true });
-		install(root);
+		install(buildPatternSvg({ interactive: true }));
 
-		generateSvgUrl('pattern-svg');
+		const serialized = buildAndSerialize();
 
 		expect(serialized).not.toContain('split-target');
 		expect(serialized).not.toContain('hairline');
@@ -145,10 +189,9 @@ describe('generateSvgUrl', () => {
 	});
 
 	test('strips the pattern quads, as it always has', () => {
-		const root = buildPatternSvg({ interactive: false });
-		install(root);
+		install(buildPatternSvg({ interactive: false }));
 
-		generateSvgUrl('pattern-svg');
+		const serialized = buildAndSerialize();
 
 		expect(serialized).not.toContain('svg-pattern-quad');
 	});
@@ -157,10 +200,9 @@ describe('generateSvgUrl', () => {
 		// A filled rect over a whole band is the worst thing to hand a cutter, and
 		// the highlight follows the selection — so the export used to depend on
 		// which band happened to be clicked last.
-		const root = buildPatternSvg({ interactive: false });
-		install(root);
+		install(buildPatternSvg({ interactive: false }));
 
-		generateSvgUrl('pattern-svg');
+		const serialized = buildAndSerialize();
 
 		expect(serialized).not.toContain('screen-only');
 		expect(serialized).not.toContain('bounds');
@@ -175,15 +217,17 @@ describe('generateSvgUrl', () => {
 		// grouping IS the identity of a physical piece: a band's outline and the
 		// text naming it have to travel together.
 		const band = new FakeElement('g', ['band'], { id: 'band-b1' }).append(
-			new FakeElement('path', ['band-outline'], { d: 'M0 0 L10 0' }),
+			new FakeElement('path', ['band-outline'], {
+				d: 'M0 0 L10 0',
+				'data-geometry': 'pattern-outline'
+			}),
 			new FakeElement('g', [], { id: 'band-label-band-self-b1' }).append(
-				new FakeElement('path', [], { d: 'M0 0 L1 1' })
+				new FakeElement('path', [], { d: 'M0 0 L1 1', 'data-geometry': 'label-text' })
 			)
 		);
-		const root = new FakeElement('svg', [], { id: 'pattern-svg' }).append(band);
-		install(root);
+		install(new FakeElement('svg', [], { id: 'pattern-svg' }).append(band));
 
-		generateSvgUrl('pattern-svg');
+		const serialized = buildAndSerialize();
 
 		expect(serialized).toMatch(
 			/<g class="band" id="band-b1">.*id="band-label-band-self-b1".*<\/g>/s
@@ -198,15 +242,17 @@ describe('generateSvgUrl', () => {
 		// `visibility`, which the serializer happily carries into the cut file —
 		// real glyph paths the cutter would trace. It must carry `screen-only`.
 		const band = new FakeElement('g', ['band'], { id: 'band-b1' }).append(
-			new FakeElement('path', ['band-outline'], { d: 'M0 0 L10 0' }),
+			new FakeElement('path', ['band-outline'], {
+				d: 'M0 0 L10 0',
+				'data-geometry': 'pattern-outline'
+			}),
 			new FakeElement('g', ['screen-only'], { style: 'visibility: hidden;' }).append(
 				new FakeElement('path', ['measured-glyph'], { d: 'M5 5 L6 6' })
 			)
 		);
-		const root = new FakeElement('svg', [], { id: 'pattern-svg' }).append(band);
-		install(root);
+		install(new FakeElement('svg', [], { id: 'pattern-svg' }).append(band));
 
-		generateSvgUrl('pattern-svg');
+		const serialized = buildAndSerialize();
 
 		expect(serialized).not.toContain('measured-glyph');
 		expect(serialized).not.toContain('visibility: hidden');
@@ -217,7 +263,7 @@ describe('generateSvgUrl', () => {
 		const root = buildPatternSvg({ interactive: true });
 		install(root);
 
-		generateSvgUrl('pattern-svg');
+		buildExportSvg(FAKE_FRAME);
 
 		// Export is a read: the on-screen split targets are Svelte-owned nodes and
 		// ripping them out of the live tree would leave the placing UI dead until
@@ -225,5 +271,35 @@ describe('generateSvgUrl', () => {
 		const live = root.toString();
 		expect(live).toContain('split-target');
 		expect(live).toContain('svg-pattern-quad');
+	});
+
+	test('refuses export when a drawable has no geometry tag', () => {
+		const band = new FakeElement('g', ['band']).append(
+			// No `data-geometry` — this is the guard's whole reason for existing.
+			new FakeElement('path', ['band-outline'], { d: 'M0 0 L10 0' })
+		);
+		install(new FakeElement('svg', [], { id: 'pattern-svg' }).append(band));
+
+		const result = buildExportSvg(FAKE_FRAME);
+
+		expect(result).toHaveProperty('error');
+	});
+
+	test('wraps content in a group carrying the frame content transform', () => {
+		install(buildPatternSvg({ interactive: false }));
+
+		const serialized = buildAndSerialize();
+
+		expect(serialized).toContain(`transform="${FAKE_FRAME.contentTransform}"`);
+	});
+
+	test('sizes the root in millimetres from the frame', () => {
+		install(buildPatternSvg({ interactive: false }));
+
+		const serialized = buildAndSerialize();
+
+		expect(serialized).toContain(`width="${FAKE_FRAME.width}"`);
+		expect(serialized).toContain(`height="${FAKE_FRAME.height}"`);
+		expect(serialized).toContain(`viewBox="${FAKE_FRAME.viewBox}"`);
 	});
 });

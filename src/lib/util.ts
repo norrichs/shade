@@ -11,7 +11,15 @@ import type {
 	GlobuleAddress_Tube,
 	GlobuleAddress_Globule
 } from './projection-geometry/types';
-import { SCREEN_ONLY_SELECTOR } from './cut-pattern/export-guard';
+import {
+	SCREEN_ONLY_SELECTOR,
+	collectExportNodes,
+	findUntagged,
+	untaggedMessage
+} from './cut-pattern/export-guard';
+import type { ExportFrame } from '$lib/download/export-frame';
+
+export { SCREEN_ONLY_SELECTOR };
 
 export const rad = (deg: number): number => (Math.PI / 180) * deg;
 export const deg = (rad: number): number => (180 / Math.PI) * rad;
@@ -81,36 +89,58 @@ export const getCubicBezierIntersection = (
 
 // `SCREEN_ONLY_SELECTOR` is defined in `export-guard.ts` (so `collectExportNodes`
 // can enforce the same screen-only exclusion without a util↔export-guard import
-// cycle); imported here for this file's own use. See that file for the
-// selector's full rationale.
+// cycle); re-exported here for this file's own use and for existing callers.
+// See that file for the selector's full rationale.
 
-export const generateSvgUrl = (id: string) => {
-	const svg = document.getElementById(id);
-	if (!svg) return;
+const SVG_NS = 'http://www.w3.org/2000/svg';
 
-	// Stripped from a CLONE, not from the live tree. The nodes removed here are
-	// Svelte-owned (`{#each}` blocks over reactive geometry); deleting them from
-	// the document behind Svelte's back leaves the split-placing UI dead until
-	// the next full re-render, and an export is a read, not an edit.
-	const exported = svg.cloneNode(true) as Element;
-	exported.querySelectorAll(SCREEN_ONLY_SELECTOR).forEach((node) => node.remove());
-
-	const serializer = new XMLSerializer();
-	const svg_blob = new Blob([serializer.serializeToString(exported)], { type: 'image/svg+xml' });
-	const url = URL.createObjectURL(svg_blob);
-	return url;
+/**
+ * A standalone export document whose user unit is the millimetre: a fresh
+ * root sized by `frame`, holding a clone of the pattern content scaled from
+ * pattern units to mm. The on-screen zoom/pan viewBox is not carried over.
+ * Refuses when any drawable lacks a geometry tag.
+ */
+export const buildExportSvg = (frame: ExportFrame): { svg: Element } | { error: string } => {
+	const live = document.getElementById('pattern-svg');
+	if (!live) return { error: 'Nothing to export: the pattern view is not rendered.' };
+	const content = document.createElementNS(SVG_NS, 'g');
+	content.setAttribute('transform', frame.contentTransform);
+	for (const child of Array.from(live.childNodes)) content.appendChild(child.cloneNode(true));
+	content.querySelectorAll(SCREEN_ONLY_SELECTOR).forEach((node) => node.remove());
+	const bad = findUntagged(collectExportNodes(content));
+	if (bad.length) return { error: untaggedMessage(bad) };
+	const svg = document.createElementNS(SVG_NS, 'svg');
+	svg.setAttribute('xmlns', SVG_NS);
+	svg.setAttribute('width', frame.width);
+	svg.setAttribute('height', frame.height);
+	svg.setAttribute('viewBox', frame.viewBox);
+	svg.appendChild(content);
+	return { svg };
 };
 
-export const downloadSvg = (id: string, filename?: string) => {
-	const url = generateSvgUrl('pattern-svg');
-	if (url) {
-		const a = document.createElement('a');
-		a.href = url;
-		a.download = filename || 'globule-pattern.svg';
-		document.body.appendChild(a);
-		a.click();
-		document.body.removeChild(a);
-	}
+export const generateSvgUrl = (frame: ExportFrame): string | { error: string } => {
+	const built = buildExportSvg(frame);
+	if ('error' in built) return built;
+	const blob = new Blob([new XMLSerializer().serializeToString(built.svg)], {
+		type: 'image/svg+xml'
+	});
+	return URL.createObjectURL(blob);
+};
+
+export const downloadSvg = (
+	filename: string,
+	frame: ExportFrame
+): { ok: true } | { ok: false; error: string } => {
+	const url = generateSvgUrl(frame);
+	if (typeof url !== 'string') return { ok: false, error: url.error };
+	const a = document.createElement('a');
+	a.href = url;
+	a.download = filename;
+	document.body.appendChild(a);
+	a.click();
+	document.body.removeChild(a);
+	setTimeout(() => URL.revokeObjectURL(url), 0);
+	return { ok: true };
 };
 
 export const downloadTextFile = (
