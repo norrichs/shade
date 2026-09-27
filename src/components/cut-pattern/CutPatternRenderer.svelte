@@ -9,7 +9,13 @@
 		labelTextDimensions,
 		pageLayoutInfoStore,
 		splitBudgetStore,
-		splitBudgetWanted
+		splitBudgetWanted,
+		mergedBandPathsRaw,
+		bandContourIndexes,
+		mergedBandPaths,
+		postProcessConfig,
+		exportPagesStore,
+		superGlobuleStore
 	} from '$lib/stores';
 	import { computeSplitBudget, EMPTY_SPLIT_BUDGET } from '$lib/cut-pattern/split-budget';
 	import { createOverflowNotifier } from '$lib/cut-pattern/page-overflow-notice';
@@ -21,6 +27,7 @@
 		type EffectiveBoundsContext
 	} from '$lib/cut-pattern/band-layout';
 	import { Vector3 } from 'three';
+	import { get } from 'svelte/store';
 	import {
 		computeWrappedOrigins,
 		GAP_BETWEEN_BANDS,
@@ -52,6 +59,12 @@
 	import { buildPageGeom, PAGE_LAYOUT_ALGORITHMS } from '$lib/cut-pattern/page-layout/registry';
 	import type { LayoutItem, PageLayoutResult } from '$lib/cut-pattern/page-layout/types';
 	import { toastStore } from '$lib/stores/toastStore';
+	import { placeBand } from '$lib/cut-pattern/page-post-process/place-bands';
+	import { pagePostProcess } from '$lib/cut-pattern/page-post-process';
+	import PageAnnotations from './PageAnnotations.svelte';
+	import { svgTextDictionary } from './SvgText/svg-text-store';
+	import { processSvg } from './SvgText/svg-text';
+	import Fonts from './SvgText/fonts';
 
 	let {
 		tubes = [],
@@ -344,6 +357,79 @@
 	});
 
 	let usePageLayout = $derived(layoutMode === 'page' && !!pageResult && !pageResult.overflow);
+
+	// Stage 3 needs the same font dictionary SvgText lazily builds; build it here
+	// if no label has rendered yet.
+	if (!get(svgTextDictionary)) {
+		svgTextDictionary.set(processSvg(Fonts.reliefSingleLine.keyString, Fonts.reliefSingleLine.svgString));
+	}
+	let glyphDict = $derived($svgTextDictionary);
+
+	// Stage 3: disconnects and page labels. Only prepared bands in a page layout
+	// have final placement. Memoised by $derived on its inputs; view-only changes
+	// (zoom, pan) do not touch any of them.
+	let stage3 = $derived.by(() => {
+		if (!usePageLayout || !pageResult || !pageLayoutCfg || $mergedBandPaths.size === 0) return null;
+		const config = $postProcessConfig;
+		const wantsLabel = !!config.pageLabel && (config.pageLabel.pageNumber || config.pageLabel.configName || !!config.pageLabel.text);
+		if (!config.disconnectSurround && !wantsLabel) return null;
+		const pages = pageResult.pages;
+		const bands = pageBands.flatMap(({ band }, i) => {
+			const raw = $mergedBandPathsRaw.get(band.id);
+			const index = $bandContourIndexes.get(band.id);
+			const pieces = $mergedBandPaths.get(band.id);
+			if (!raw || !index || !pieces) return [];
+			return [
+				placeBand({
+					bandId: band.id,
+					placement: {
+						origin: pageResult.origins[i],
+						rotation: pageResult.rotations[i] ?? 0,
+						pivot: pivots.get(band) ?? { x: 0, y: 0 }
+					},
+					raw,
+					index,
+					pieces,
+					pages
+				})
+			];
+		});
+		const geom = buildPageGeom(pageLayoutCfg);
+		return pagePostProcess({
+			bands,
+			pages,
+			pageScale: pageLayoutCfg.pageScale,
+			marginPx: geom.marginPx,
+			gap,
+			config,
+			configName: $superGlobuleStore.name,
+			dict: glyphDict as never
+		});
+	});
+
+	// Publish page rects for the exporters. Value-key guarded, as the page info above.
+	let lastExportPagesKey = '';
+	$effect(() => {
+		const value =
+			usePageLayout && pageResult && pageLayoutCfg
+				? { pages: pageResult.pages, pageScale: pageLayoutCfg.pageScale }
+				: null;
+		const key = JSON.stringify(value);
+		if (key === lastExportPagesKey) return;
+		lastExportPagesKey = key;
+		exportPagesStore.set(value);
+	});
+
+	// One toast per distinct set of pages whose label found no room.
+	let lastUnplacedKey = '';
+	$effect(() => {
+		const unplaced = stage3?.pageLabels.filter((l) => l.unplaced).map((l) => l.page + 1) ?? [];
+		const key = unplaced.join(',');
+		if (key === lastUnplacedKey) return;
+		lastUnplacedKey = key;
+		if (unplaced.length)
+			toastStore.add({ type: 'warning', message: `No room for the page label on page ${key}.` });
+	});
 </script>
 
 {#if showPattern}
@@ -385,6 +471,9 @@
 				</BandComponent>
 			{/each}
 		</g>
+		{#if stage3}
+			<PageAnnotations result={stage3} />
+		{/if}
 	{:else if indexedBands && flatOrigins}
 		<g id="cut-pattern">
 			{#each indexedBands as { band, tube }, i (concatAddress(band.address))}
