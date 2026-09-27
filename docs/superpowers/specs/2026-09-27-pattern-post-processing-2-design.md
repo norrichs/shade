@@ -271,10 +271,13 @@ type PagePostProcessResult = {
 
 ### SVG
 
-`downloadSvg` (util.ts) gains: set explicit physical size on the exported root
-— `width="${W}mm" height="${H}mm"` with a `viewBox` covering the pages'
-union bounds, where `W = unionWidth / pageScale`. Removes the zoom-dependent
-viewBox from the export. Runs the tag guard. Also: honour its `id` argument,
+**Real-world units.** The exported SVG's user unit is the millimetre. The root
+gets `width="${W}mm" height="${H}mm" viewBox="0 0 ${W} ${H}"`, where `W`/`H`
+are the pages' union bounds divided by `pageScale`, and all content is wrapped
+in `<g transform="scale(${1 / pageScale}) translate(${-minX} ${-minY})">`. One
+user unit = 1 mm in any importer, whether or not it honours viewBox-to-size
+mapping. Removes the zoom-dependent viewBox from the export. A 300 mm page
+exports as exactly `300mm` (tested). `.lbrn2` is mm by format, same test. Runs the tag guard. Also: honour its `id` argument,
 revoke the object URL.
 
 ### LightBurn `.lbrn2`
