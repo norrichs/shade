@@ -25,11 +25,7 @@
 	import { collectDomShapes } from '$lib/lightburn/collect-dom-shapes';
 	import { writeLbrn2 } from '$lib/lightburn/lbrn2-writer';
 	import { layerByIndex } from '$lib/lightburn/layers';
-	import {
-		collectExportNodes,
-		findUntagged,
-		untaggedMessage
-	} from '$lib/cut-pattern/export-guard';
+	import { collectExportNodes, findUntagged, untaggedMessage } from '$lib/cut-pattern/export-guard';
 	import { interactionMode } from '../three-renderer/interaction-mode';
 	import Button from '../design-system/Button.svelte';
 	import WorkingIndicator from './WorkingIndicator.svelte';
@@ -280,52 +276,76 @@
 	};
 
 	const handleDownload = async () => {
-		// Export only ever ships prepared geometry — for BOTH pattern types.
-		if (get(mergedBandPaths).size === 0) {
-			if (!(await handlePrepare())) return;
-			await tick();
-		}
-		const pages = get(exportPagesStore);
-		if (!pages) {
+		// Page layout is checked first: it does not depend on the merge, and a
+		// user outside page layout should hear so now, not after a multi-second
+		// prepare that could never lead to an export.
+		if (!get(exportPagesStore)) {
 			toastStore.add({
 				type: 'error',
 				message: 'Switch the pattern view to page layout to export real-world sizes.'
 			});
 			return;
 		}
-		const pp = get(postProcessConfig);
-		const stamp = fileStamp(get(superGlobuleStore).name);
-
-		if (pp.downloadFormat === 'lbrn2') {
-			const root = document.getElementById('pattern-svg') as SVGSVGElement | null;
-			if (!root) return;
-			const probe = root.cloneNode(true) as Element;
-			probe.querySelectorAll(SCREEN_ONLY_SELECTOR).forEach((n) => n.remove());
-			const bad = findUntagged(collectExportNodes(probe));
-			if (bad.length) {
-				toastStore.add({ type: 'error', message: untaggedMessage(bad) });
+		try {
+			// Export only ever ships prepared geometry — for BOTH pattern types.
+			if (get(mergedBandPaths).size === 0) {
+				if (!(await handlePrepare())) return;
+				await tick();
+			}
+			// Re-read: prepare can move the layout (and the renderer clears the
+			// store when it has no pages or unmounts).
+			const pages = get(exportPagesStore);
+			if (!pages) {
+				toastStore.add({
+					type: 'error',
+					message: 'Switch the pattern view to page layout to export real-world sizes.'
+				});
 				return;
 			}
-			const project = buildLbProject({
-				shapes: collectDomShapes(root),
-				pages: pages.pages,
-				pageScale: pages.pageScale,
-				layerMap: pp.layerMap
-			});
-			const { xml, missingLayers } = writeLbrn2(project, get(lightburnTemplateStore)?.xml);
-			if (missingLayers.length) {
-				const ids = missingLayers.map((i) => layerByIndex(i)?.id ?? String(i)).join(', ');
-				toastStore.add({
-					type: 'warning',
-					message: `No template settings for ${ids}; LightBurn defaults apply.`
-				});
-			}
-			downloadTextFile(xml, `${stamp}.lbrn2`, 'application/xml');
-			return;
-		}
+			const pp = get(postProcessConfig);
+			const stamp = fileStamp(get(superGlobuleStore).name);
 
-		const result = downloadSvg(`${stamp}.svg`, exportFrame(pages.pages, pages.pageScale));
-		if (!result.ok) toastStore.add({ type: 'error', message: result.error });
+			if (pp.downloadFormat === 'lbrn2') {
+				const root = document.getElementById('pattern-svg') as SVGSVGElement | null;
+				if (!root) {
+					toastStore.add({
+						type: 'error',
+						message: 'Nothing to export: the pattern view is not rendered.'
+					});
+					return;
+				}
+				const probe = root.cloneNode(true) as Element;
+				probe.querySelectorAll(SCREEN_ONLY_SELECTOR).forEach((n) => n.remove());
+				const bad = findUntagged(collectExportNodes(probe));
+				if (bad.length) {
+					toastStore.add({ type: 'error', message: untaggedMessage(bad) });
+					return;
+				}
+				const project = buildLbProject({
+					shapes: collectDomShapes(root),
+					pages: pages.pages,
+					pageScale: pages.pageScale,
+					layerMap: pp.layerMap
+				});
+				const { xml, missingLayers } = writeLbrn2(project, get(lightburnTemplateStore)?.xml);
+				if (missingLayers.length) {
+					const ids = missingLayers.map((i) => layerByIndex(i)?.id ?? String(i)).join(', ');
+					toastStore.add({
+						type: 'warning',
+						message: `No template settings for ${ids}; LightBurn defaults apply.`
+					});
+				}
+				downloadTextFile(xml, `${stamp}.lbrn2`, 'application/xml');
+				return;
+			}
+
+			const result = downloadSvg(`${stamp}.svg`, exportFrame(pages.pages, pages.pageScale));
+			if (!result.ok) toastStore.add({ type: 'error', message: result.error });
+		} catch (error) {
+			console.error('[download] failed', error);
+			const message = error instanceof Error ? error.message : String(error);
+			toastStore.add({ type: 'error', message: `Download failed: ${message}` });
+		}
 	};
 
 	type CsvState = 'idle' | 'ready';
