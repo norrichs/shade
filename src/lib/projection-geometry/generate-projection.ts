@@ -164,8 +164,8 @@ export const generateGlobuleMesh = (config: GlobuleConfig) => {
 
 	// Add band geometries as meshes
 	if (geometries.bands) {
-		geometries.bands.forEach((bandGeometry) => {
-			const bandMesh = new Mesh(bandGeometry, materials.default);
+		geometries.bands.forEach(({ geometry }) => {
+			const bandMesh = new Mesh(geometry, materials.default);
 			globuleMesh.add(bandMesh);
 		});
 	}
