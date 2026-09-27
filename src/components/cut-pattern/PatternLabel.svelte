@@ -266,7 +266,7 @@
 	style="visibility: {visible ? 'visible' : 'hidden'};"
 >
 	{#if !bandId || !$mergedBandPaths.has(bandId)}
-		<path d={path} fill-rule="evenodd" fill="none" stroke={color} />
+		<path d={path} fill-rule="evenodd" fill="none" stroke={color} data-geometry="pattern-outline" />
 	{/if}
 	<!-- Post-process can drop the text from prepared bands; the hidden
 	     measurement copy above stays, so the tag outline keeps its size. -->
@@ -276,7 +276,6 @@
 				lines={addressStrings}
 				anchor={{ x: 0, y: 0 }}
 				size={height}
-				color="black"
 				bind:element={labelTextElement}
 			/>
 		</g>

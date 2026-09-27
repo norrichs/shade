@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { PageRect } from '$lib/cut-pattern/page-layout/types';
+	import { layerStrokes } from '$lib/stores';
 
 	let { pages = [] }: { pages?: PageRect[] } = $props();
 </script>
@@ -12,7 +13,8 @@
 			width={page.width}
 			height={page.height}
 			fill="#ffffff"
-			stroke="#bbbbbb"
+			data-geometry="page-outline"
+			stroke={$layerStrokes['page-outline']}
 			stroke-width="1"
 		/>
 	</g>

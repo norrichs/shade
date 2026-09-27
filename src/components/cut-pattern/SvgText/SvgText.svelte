@@ -4,6 +4,8 @@
 	import type { Point } from '$lib/types';
 	import { svgTextDictionary } from './svg-text-store';
 	import { onMount } from 'svelte';
+	import type { GeometryType } from '$lib/cut-pattern/post-process-types';
+	import { layerStrokes } from '$lib/stores';
 
 	let {
 		id = undefined,
@@ -11,7 +13,7 @@
 		string,
 		angle = 0,
 		size = 20,
-		color = 'black',
+		geometry = 'label-text',
 		anchor = { x: 0, y: 0 },
 		offset = { x: 'center', y: 0 },
 		strokeWidth = 1
@@ -21,7 +23,7 @@
 		string: string;
 		angle?: number;
 		size?: number;
-		color?: string;
+		geometry?: GeometryType;
 		anchor?: Point;
 		offset?: { x: number | 'center'; y: number | 'center' };
 		strokeWidth?: number;
@@ -42,12 +44,17 @@
 	transform={`translate(${anchor.x} ${anchor.y}) rotate(${angle}) scale(${size})`}
 	fill="none"
 	stroke-width={strokeWidth / size}
-	stroke={color}
+	stroke={$layerStrokes[geometry]}
 	{id}
 >
 	<g transform={`translate(${xOffset}, ${yOffset})`} data-test-id="svg-text">
 		{#each characterPaths.chars as { char, offset, charId }, i}
-			<path data-char-id={charId} d={char} transform={`translate(${offset}, 0)`} />
+			<path
+				data-char-id={charId}
+				data-geometry={geometry}
+				d={char}
+				transform={`translate(${offset}, 0)`}
+			/>
 		{/each}
 	</g>
 </g>

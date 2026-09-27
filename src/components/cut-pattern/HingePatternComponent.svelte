@@ -143,7 +143,6 @@
 		}}
 		offset={{ x: 'center', y: 'center' }}
 		size={3}
-		color="black"
 	/>
 	{#each hingePattern.pattern.holes as hole}
 		<circle

@@ -7,7 +7,6 @@
 	export let base: [Point, Point];
 	export let text: string;
 	export let padding: number;
-	export let color: string = 'black';
 
 	const DEFAULT_FONT_SIZE = 8;
 	const MIN_FONT_SIZE = 1;
@@ -142,7 +141,6 @@
 			<SvgText
 				string={text}
 				size={fontSize}
-				{color}
 				anchor={{ x: 0, y: 0 }}
 				offset={{ x: 'center', y: 'center' }}
 			/>

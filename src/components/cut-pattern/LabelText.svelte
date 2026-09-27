@@ -1,19 +1,20 @@
 <script lang="ts">
 	import type { Point } from '$lib/types';
 	import SvgText from './SvgText/SvgText.svelte';
+	import type { GeometryType } from '$lib/cut-pattern/post-process-types';
 
 	let {
 		lines = [],
 		size = 5,
 		anchor,
-		color = 'black',
+		geometry = undefined,
 		element = $bindable(undefined),
 		transform = undefined
 	}: {
 		lines?: string[];
 		size?: number;
 		anchor: Point;
-		color?: string;
+		geometry?: GeometryType;
 		element?: SVGGElement | undefined;
 		transform?: string | undefined;
 	} = $props();
@@ -21,6 +22,11 @@
 
 <g bind:this={element} {transform}>
 	{#each lines as lineString, i}
-		<SvgText string={lineString} anchor={{ ...anchor, y: anchor.y + 7 * (i + 1) }} {size} {color} />
+		<SvgText
+			string={lineString}
+			anchor={{ ...anchor, y: anchor.y + 7 * (i + 1) }}
+			{size}
+			{geometry}
+		/>
 	{/each}
 </g>

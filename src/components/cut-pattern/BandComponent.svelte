@@ -235,7 +235,6 @@
 				base={tab.base}
 				text={resolveTabLabel(tab, band, tube, tubes)}
 				padding={labels?.onTab?.padding ?? 1}
-				color={labels?.onTab?.color ?? 'black'}
 			/>
 		{/each}
 	{/if}
