@@ -9,12 +9,27 @@
 		patternConfigStore,
 		viewControlStore,
 		mergedBandPathsRaw,
-		bandContourIndexes
+		bandContourIndexes,
+		exportPagesStore,
+		lightburnTemplateStore,
+		postProcessConfig
 	} from '$lib/stores';
 	import { isManualMode, hasPendingChanges } from '$lib/stores/uiStores';
 	import { triggerManualRegeneration, isGenerating } from '$lib/stores/superGlobuleStores';
 	import { selectedSurfaceProjection, rotateToSelection } from '$lib/stores/selectionStores';
-	import { downloadSvg } from '$lib/util';
+	import { downloadSvg, downloadTextFile, SCREEN_ONLY_SELECTOR } from '$lib/util';
+	import { toastStore } from '$lib/stores/toastStore';
+	import { exportFrame } from '$lib/download/export-frame';
+	import { fileStamp } from '$lib/download/file-stamp';
+	import { buildLbProject } from '$lib/lightburn/build-lb-project';
+	import { collectDomShapes } from '$lib/lightburn/collect-dom-shapes';
+	import { writeLbrn2 } from '$lib/lightburn/lbrn2-writer';
+	import { layerByIndex } from '$lib/lightburn/layers';
+	import {
+		collectExportNodes,
+		findUntagged,
+		untaggedMessage
+	} from '$lib/cut-pattern/export-guard';
 	import { interactionMode } from '../three-renderer/interaction-mode';
 	import Button from '../design-system/Button.svelte';
 	import WorkingIndicator from './WorkingIndicator.svelte';
@@ -29,7 +44,6 @@
 	import { get } from 'svelte/store';
 	import { buildBandSortIndex } from '$lib/cut-pattern/band-sort-index';
 	import { buildPatternCsv } from '$lib/cut-pattern/build-pattern-csv';
-	import { downloadTextFile } from '$lib/util';
 	import { tick, onDestroy } from 'svelte';
 
 	$: regenerateDisabled = !$isManualMode || $isGenerating || !$hasPendingChanges;
@@ -265,6 +279,55 @@
 		prepareState = 'idle';
 	};
 
+	const handleDownload = async () => {
+		// Export only ever ships prepared geometry — for BOTH pattern types.
+		if (get(mergedBandPaths).size === 0) {
+			if (!(await handlePrepare())) return;
+			await tick();
+		}
+		const pages = get(exportPagesStore);
+		if (!pages) {
+			toastStore.add({
+				type: 'error',
+				message: 'Switch the pattern view to page layout to export real-world sizes.'
+			});
+			return;
+		}
+		const pp = get(postProcessConfig);
+		const stamp = fileStamp(get(superGlobuleStore).name);
+
+		if (pp.downloadFormat === 'lbrn2') {
+			const root = document.getElementById('pattern-svg') as SVGSVGElement | null;
+			if (!root) return;
+			const probe = root.cloneNode(true) as Element;
+			probe.querySelectorAll(SCREEN_ONLY_SELECTOR).forEach((n) => n.remove());
+			const bad = findUntagged(collectExportNodes(probe));
+			if (bad.length) {
+				toastStore.add({ type: 'error', message: untaggedMessage(bad) });
+				return;
+			}
+			const project = buildLbProject({
+				shapes: collectDomShapes(root),
+				pages: pages.pages,
+				pageScale: pages.pageScale,
+				layerMap: pp.layerMap
+			});
+			const { xml, missingLayers } = writeLbrn2(project, get(lightburnTemplateStore)?.xml);
+			if (missingLayers.length) {
+				const ids = missingLayers.map((i) => layerByIndex(i)?.id ?? String(i)).join(', ');
+				toastStore.add({
+					type: 'warning',
+					message: `No template settings for ${ids}; LightBurn defaults apply.`
+				});
+			}
+			downloadTextFile(xml, `${stamp}.lbrn2`, 'application/xml');
+			return;
+		}
+
+		const result = downloadSvg(`${stamp}.svg`, exportFrame(pages.pages, pages.pageScale));
+		if (!result.ok) toastStore.add({ type: 'error', message: result.error });
+	};
+
 	type CsvState = 'idle' | 'ready';
 	let csvState: CsvState = 'idle';
 	let csvText = '';
@@ -294,7 +357,11 @@
 			csvText = buildPatternCsv(index, tubes);
 			csvState = 'ready';
 		} else {
-			downloadTextFile(csvText, `pattern-map ${get(superGlobuleStore).name}.csv`, 'text/csv');
+			downloadTextFile(
+				csvText,
+				`${fileStamp(get(superGlobuleStore).name)} pattern-map.csv`,
+				'text/csv'
+			);
 		}
 	};
 
@@ -384,21 +451,9 @@
 					✓ ready ({prepareMs} ms{prepareFailed > 0 ? `, ${prepareFailed} failed` : ''})
 				</span>
 			{/if}
-			<Button
-				disabled={prepareState === 'running'}
-				onclick={async () => {
-					if (
-						$patternConfigStore.patternTypeConfig.type === 'outlined' &&
-						$mergedBandPaths.size === 0
-					) {
-						// Exporting the un-updated DOM would hand the user an unprepared
-						// cut file that looks like a prepared one.
-						if (!(await handlePrepare())) return;
-						await tick();
-					}
-					downloadSvg('pattern-svg', `globule-pattern ${$superGlobuleStore.name}.svg`);
-				}}>Download SVG</Button
-			>
+			<Button disabled={prepareState === 'running'} onclick={handleDownload}>
+				{$postProcessConfig.downloadFormat === 'lbrn2' ? 'Download LightBurn' : 'Download SVG'}
+			</Button>
 			<Button onclick={handleCsvClick}>
 				{csvState === 'idle' ? 'Make CSV' : 'Download CSV'}
 			</Button>
