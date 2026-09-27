@@ -39,6 +39,7 @@
 		CutPattern,
 		PatternSource,
 		Point,
+		PageLayoutConfig,
 		PointConfig2,
 		TubeCutPattern
 	} from '$lib/types';
@@ -61,6 +62,7 @@
 	import { toastStore } from '$lib/stores/toastStore';
 	import { placeBand } from '$lib/cut-pattern/page-post-process/place-bands';
 	import { pagePostProcess } from '$lib/cut-pattern/page-post-process';
+	import type { GlyphDict } from '$lib/cut-pattern/page-post-process/page-label';
 	import PageAnnotations from './PageAnnotations.svelte';
 	import { svgTextDictionary } from './SvgText/svg-text-store';
 	import { processSvg } from './SvgText/svg-text';
@@ -208,7 +210,15 @@
 
 	let range = $derived($patternConfigStore.patternViewConfig.range);
 	let layoutMode = $derived($patternConfigStore.patternViewConfig.patternLayoutMode ?? 'linear');
-	let pageLayoutCfg = $derived($patternConfigStore.patternConfig.pageLayout);
+	// Page Layout controls (and the overflow toast's "Fit page") mutate
+	// `pageLayout` IN PLACE, so the store re-emits the same object reference and
+	// a plain `$derived` of it would never invalidate the layout. Key on its JSON
+	// instead: a fresh copy only when a value really changed, so unrelated config
+	// emissions (zoom, pan) still do not re-run the layout.
+	let pageLayoutJson = $derived(
+		JSON.stringify($patternConfigStore.patternConfig.pageLayout ?? null)
+	);
+	let pageLayoutCfg = $derived(JSON.parse(pageLayoutJson) as PageLayoutConfig | null);
 	let wrapWidth = $derived($patternConfigStore.patternViewConfig.wrapWidth ?? 800);
 	let gap = $derived($patternConfigStore.patternViewConfig.gap ?? GAP_BETWEEN_BANDS);
 
@@ -361,9 +371,13 @@
 	// Stage 3 needs the same font dictionary SvgText lazily builds; build it here
 	// if no label has rendered yet.
 	if (!get(svgTextDictionary)) {
-		svgTextDictionary.set(processSvg(Fonts.reliefSingleLine.keyString, Fonts.reliefSingleLine.svgString));
+		svgTextDictionary.set(
+			processSvg(Fonts.reliefSingleLine.keyString, Fonts.reliefSingleLine.svgString)
+		);
 	}
-	let glyphDict = $derived($svgTextDictionary);
+	// The processed font dictionary is a superset of what stage 3 reads.
+	let glyphDict: GlyphDict | undefined = $derived($svgTextDictionary);
+	let configName = $derived($superGlobuleStore.name);
 
 	// Stage 3: disconnects and page labels. Only prepared bands in a page layout
 	// have final placement. Memoised by $derived on its inputs; view-only changes
@@ -371,7 +385,9 @@
 	let stage3 = $derived.by(() => {
 		if (!usePageLayout || !pageResult || !pageLayoutCfg || $mergedBandPaths.size === 0) return null;
 		const config = $postProcessConfig;
-		const wantsLabel = !!config.pageLabel && (config.pageLabel.pageNumber || config.pageLabel.configName || !!config.pageLabel.text);
+		const wantsLabel =
+			!!config.pageLabel &&
+			(config.pageLabel.pageNumber || config.pageLabel.configName || !!config.pageLabel.text);
 		if (!config.disconnectSurround && !wantsLabel) return null;
 		const pages = pageResult.pages;
 		const bands = pageBands.flatMap(({ band }, i) => {
@@ -402,22 +418,33 @@
 			marginPx: geom.marginPx,
 			gap,
 			config,
-			configName: $superGlobuleStore.name,
-			dict: glyphDict as never
+			configName,
+			dict: glyphDict
 		});
 	});
 
-	// Publish page rects for the exporters. Value-key guarded, as the page info above.
+	// Publish page rects for the exporters. Value-key guarded, as the page info
+	// above. A layout with no pages (flex-wrap over zero items, e.g. an empty
+	// range slice) publishes null: there is nothing to frame an export with.
 	let lastExportPagesKey = '';
 	$effect(() => {
 		const value =
-			usePageLayout && pageResult && pageLayoutCfg
+			usePageLayout && pageResult && pageLayoutCfg && pageResult.pages.length > 0
 				? { pages: pageResult.pages, pageScale: pageLayoutCfg.pageScale }
 				: null;
 		const key = JSON.stringify(value);
 		if (key === lastExportPagesKey) return;
 		lastExportPagesKey = key;
 		exportPagesStore.set(value);
+	});
+
+	// Page rects only mean anything while the renderer that laid them out is
+	// mounted — cleared on unmount, as the split budget is.
+	$effect(() => {
+		return () => {
+			lastExportPagesKey = '';
+			exportPagesStore.set(null);
+		};
 	});
 
 	// One toast per distinct set of pages whose label found no room.

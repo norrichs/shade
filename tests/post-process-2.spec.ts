@@ -41,8 +41,7 @@ const settleBandCount = async (page: Page): Promise<number> => {
 /**
  * Switch pattern layout to page mode and widen the page so the default
  * Voronoi model actually fits on it. Done via the store, with new object
- * references throughout (a known pre-existing reactivity quirk ignores
- * in-place mutation of `pageLayout`).
+ * references throughout (in-place mutation is covered separately, below).
  */
 const setPageLayout = (page: Page) =>
 	page.evaluate(async (specifier: string) => {
@@ -79,6 +78,22 @@ const setPostProcess = (page: Page, patch: Record<string, unknown>) =>
 		},
 		['/src/lib/stores/index.ts', patch] as const
 	);
+
+type ExportPages = {
+	pages: { x: number; y: number; width: number; height: number }[];
+	pageScale: number;
+} | null;
+
+/** The live `exportPagesStore` value — what both exporters frame the file with. */
+const readExportPages = (page: Page): Promise<ExportPages> =>
+	page.evaluate(async (specifier: string) => {
+		const stores = (await import(/* @vite-ignore */ specifier)) as {
+			exportPagesStore: { subscribe: (run: (v: unknown) => void) => () => void };
+		};
+		let value: unknown = null;
+		stores.exportPagesStore.subscribe((v) => (value = v))();
+		return value as ExportPages;
+	}, '/src/lib/stores/index.ts');
 
 const prepare = async (page: Page) => {
 	await page.getByRole('button', { name: 'Prepare Download' }).click();
@@ -166,6 +181,56 @@ test.describe('post-processing 2', () => {
 		const xml = await readFile((await download.path())!, 'utf8');
 		expect(xml).toContain('<LightBurnProject');
 		expect((xml.match(/<Shape Type="Group"/g) ?? []).length).toBe(pages);
+
+		// Every vertex lands inside the pages' union, in mm — the live-DOM CTM
+		// maths end to end (a wrong transform throws vertices off the page).
+		const exportPages = await readExportPages(page);
+		expect(exportPages).not.toBeNull();
+		const { pages: rects, pageScale } = exportPages!;
+		const minX = Math.min(...rects.map((r) => r.x));
+		const minY = Math.min(...rects.map((r) => r.y));
+		const maxX = Math.max(...rects.map((r) => r.x + r.width));
+		const maxY = Math.max(...rects.map((r) => r.y + r.height));
+		const W = (maxX - minX) / pageScale;
+		const H = (maxY - minY) / pageScale;
+		const num = String.raw`-?\d+(?:\.\d+)?(?:e[-+]?\d+)?`;
+		const vertices = [...xml.matchAll(new RegExp(`V(${num}) (${num})`, 'g'))].map((m) => [
+			Number(m[1]),
+			Number(m[2])
+		]);
+		expect(vertices.length).toBeGreaterThan(0);
+		const eps = 1e-3;
+		const outside = vertices.filter(
+			([x, y]) => !(x >= -eps && x <= W + eps && y >= -eps && y <= H + eps)
+		);
+		expect(outside, `vertices outside [0, ${W}] x [0, ${H}] mm`).toEqual([]);
+	});
+
+	test('an in-place pageScale edit re-lays the pages and the export frame', async ({ page }) => {
+		// Page Layout controls mutate `pageLayout` in place; the renderer must
+		// still see the change (it used to keep the stale layout while stage 2
+		// picked up the new scale — wrong-size cut files).
+		await expect.poll(async () => (await readExportPages(page))?.pageScale).toBe(1);
+		const before = (await readExportPages(page))!;
+		const firstWidth = before.pages[0].width;
+
+		await page.evaluate(async (specifier: string) => {
+			const stores = (await import(/* @vite-ignore */ specifier)) as {
+				patternConfigStore: { update: (fn: (c: any) => any) => void };
+			};
+			stores.patternConfigStore.update((c: any) => {
+				c.patternConfig.pageLayout.pageScale = 2;
+				return c;
+			});
+		}, '/src/lib/stores/index.ts');
+
+		await expect.poll(async () => (await readExportPages(page))?.pageScale).toBe(2);
+		const after = (await readExportPages(page))!;
+		expect(after.pages[0].width).toBeCloseTo(firstWidth * 2, 3);
+		await expect(page.locator('g.page-geometry rect').first()).toHaveAttribute(
+			'width',
+			String(after.pages[0].width)
+		);
 	});
 
 	test('download auto-prepares an unprepared tiled pattern', async ({ page }) => {
