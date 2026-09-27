@@ -14,8 +14,8 @@
 		bandContourIndexes,
 		mergedBandPaths,
 		postProcessConfig,
-		exportPagesStore,
-		superGlobuleStore
+		loadedConfigName,
+		exportPagesStore
 	} from '$lib/stores';
 	import { computeSplitBudget, EMPTY_SPLIT_BUDGET } from '$lib/cut-pattern/split-budget';
 	import { createOverflowNotifier } from '$lib/cut-pattern/page-overflow-notice';
@@ -377,7 +377,7 @@
 	}
 	// The processed font dictionary is a superset of what stage 3 reads.
 	let glyphDict: GlyphDict | undefined = $derived($svgTextDictionary);
-	let configName = $derived($superGlobuleStore.name);
+	let configName = $derived($loadedConfigName);
 
 	// Stage 3: disconnects and page labels. Only prepared bands in a page layout
 	// have final placement. Memoised by $derived on its inputs; view-only changes

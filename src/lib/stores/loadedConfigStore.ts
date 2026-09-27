@@ -1,4 +1,4 @@
-import { writable } from 'svelte/store';
+import { derived, writable } from 'svelte/store';
 
 /**
  * The saved config the user currently has loaded, if any. `snapshot` is the
@@ -18,3 +18,10 @@ export type LoadedConfig = {
 };
 
 export const loadedConfigStore = writable<LoadedConfig | null>(null);
+
+/**
+ * The name the user saved the current config under — what downloads and page
+ * labels call "config name". Undefined when no saved config is loaded; the
+ * super-globule's own `name` is a generated default, not a config name.
+ */
+export const loadedConfigName = derived(loadedConfigStore, (config) => config?.name);

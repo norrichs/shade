@@ -12,7 +12,8 @@
 		bandContourIndexes,
 		exportPagesStore,
 		lightburnTemplateStore,
-		postProcessConfig
+		postProcessConfig,
+		loadedConfigName
 	} from '$lib/stores';
 	import { isManualMode, hasPendingChanges } from '$lib/stores/uiStores';
 	import { triggerManualRegeneration, isGenerating } from '$lib/stores/superGlobuleStores';
@@ -303,7 +304,7 @@
 				return;
 			}
 			const pp = get(postProcessConfig);
-			const stamp = fileStamp(get(superGlobuleStore).name);
+			const stamp = fileStamp(get(loadedConfigName));
 
 			if (pp.downloadFormat === 'lbrn2') {
 				const root = document.getElementById('pattern-svg') as SVGSVGElement | null;
@@ -379,7 +380,7 @@
 		} else {
 			downloadTextFile(
 				csvText,
-				`${fileStamp(get(superGlobuleStore).name)} pattern-map.csv`,
+				`${fileStamp(get(loadedConfigName))} pattern-map.csv`,
 				'text/csv'
 			);
 		}
