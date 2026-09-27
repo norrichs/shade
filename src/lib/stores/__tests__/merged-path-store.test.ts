@@ -112,6 +112,34 @@ describe('post-processed merged paths', () => {
 		expect(get(mergedBandPathsRaw).get('b')).toHaveLength(10);
 	});
 
+	it('does not re-derive for post-process fields stage 2 never reads', () => {
+		mergedBandPathsRaw.set(new Map([['b', donut()]]));
+		bandContourIndexes.set(oneHole());
+		const emissions: unknown[] = [];
+		const unsubscribe = mergedBandPaths.subscribe((v) => emissions.push(v));
+		expect(emissions).toHaveLength(1);
+
+		patternConfigStore.update((c) => {
+			c.patternConfig.postProcess = {
+				dropHoles: { mode: 'none' },
+				runSeed: 0,
+				pageLabel: { text: 'x', pageNumber: true, configName: false },
+				downloadFormat: 'lbrn2',
+				disconnectSurround: true,
+				dropLabelText: true
+			};
+			return c;
+		});
+		expect(emissions).toHaveLength(1);
+
+		patternConfigStore.update((c) => {
+			c.patternConfig.postProcess = { dropHoles: { mode: 'all' }, runSeed: 0 };
+			return c;
+		});
+		expect(emissions).toHaveLength(2);
+		unsubscribe();
+	});
+
 	it('re-derives on a reroll, leaving the raw store and the indexes alone', () => {
 		// 40 holes so two seeds almost certainly disagree on at least one.
 		const path: PathSegment[] = [];

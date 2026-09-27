@@ -4,7 +4,11 @@ import type { BandContourIndex } from '$lib/cut-pattern/contour-index';
 import { postProcessBandPath } from '$lib/cut-pattern/drop-holes';
 import { DEFAULT_POST_PROCESS, type PostProcessConfig } from '$lib/cut-pattern/hole-drop-config';
 import { patternConfigStore } from './globulePatternStores';
-import { GEOMETRY_TYPES, type GeometryType, type TaggedPath } from '$lib/cut-pattern/post-process-types';
+import {
+	GEOMETRY_TYPES,
+	type GeometryType,
+	type TaggedPath
+} from '$lib/cut-pattern/post-process-types';
 import { layerStroke } from '$lib/lightburn/layers';
 
 export type LabelTextDims = { width: number; height: number };
@@ -81,18 +85,6 @@ export const applyPostProcess = (
  */
 export const dropLabelText = derived(postProcessConfig, (config) => config.dropLabelText === true);
 
-/**
- * Per-band merged outline+label path, keyed by band.id, as it should RENDER.
- * Presence of an entry means the band's merge has been prepared and should be
- * drawn in place of the standalone band path + label outline. Empty map = "not
- * prepared".
- *
- * Derived, not written: stage 1 (seconds, in the pool) lands in
- * `mergedBandPathsRaw`, and stage 2 (milliseconds, here) re-runs on its own
- * whenever the hole-drop config changes. That is the point of the split — a
- * nudged drop chance must never pay for the union again. `runSeed` takes part
- * because rerolling has to change the result.
- */
 let lastPageScale = NaN;
 /** `pageLayout.pageScale`, emitting only when it changes. */
 export const pageScaleValue = derived<typeof patternConfigStore, number>(
@@ -106,8 +98,44 @@ export const pageScaleValue = derived<typeof patternConfigStore, number>(
 	1
 );
 
+/**
+ * The slice of the post-process config that stage 2 reads. Page labels, the
+ * layer map, the download format and the stage-3 toggles do not change a band's
+ * path, so they must not rebuild every band's `<path>` either. JSON-guarded like
+ * `postProcessConfig`.
+ */
+let lastStage2Json = '';
+const stage2Config = derived<typeof postProcessConfig, PostProcessConfig>(
+	postProcessConfig,
+	($config, set) => {
+		const next: PostProcessConfig = {
+			dropHoles: $config.dropHoles,
+			runSeed: $config.runSeed,
+			dropOutline: $config.dropOutline,
+			connectSurround: $config.connectSurround
+		};
+		const json = JSON.stringify(next);
+		if (json === lastStage2Json) return;
+		lastStage2Json = json;
+		set(next);
+	},
+	DEFAULT_POST_PROCESS
+);
+
+/**
+ * Per-band merged outline+label path, keyed by band.id, as it should RENDER.
+ * Presence of an entry means the band's merge has been prepared and should be
+ * drawn in place of the standalone band path + label outline. Empty map = "not
+ * prepared".
+ *
+ * Derived, not written: stage 1 (seconds, in the pool) lands in
+ * `mergedBandPathsRaw`, and stage 2 (milliseconds, here) re-runs on its own
+ * whenever the hole-drop config changes. That is the point of the split — a
+ * nudged drop chance must never pay for the union again. `runSeed` takes part
+ * because rerolling has to change the result.
+ */
 export const mergedBandPaths = derived(
-	[mergedBandPathsRaw, bandContourIndexes, postProcessConfig, pageScaleValue],
+	[mergedBandPathsRaw, bandContourIndexes, stage2Config, pageScaleValue],
 	([$raw, $indexes, $config, $pageScale]) => applyPostProcess($raw, $indexes, $config, $pageScale)
 );
 
@@ -124,11 +152,13 @@ export const isPrepared = derived(mergedBandPaths, (paths) => paths.size > 0);
  * Stroke hex per geometry type, from the post-process layer map. Every exported
  * producer reads its stroke from here, so preview and export always agree.
  */
-export const layerStrokes = derived(postProcessConfig, (config) =>
-	Object.fromEntries(GEOMETRY_TYPES.map((t) => [t, layerStroke(t, config.layerMap)])) as Record<
-		GeometryType,
-		string
-	>
+export const layerStrokes = derived(
+	postProcessConfig,
+	(config) =>
+		Object.fromEntries(GEOMETRY_TYPES.map((t) => [t, layerStroke(t, config.layerMap)])) as Record<
+			GeometryType,
+			string
+		>
 );
 
 /**
