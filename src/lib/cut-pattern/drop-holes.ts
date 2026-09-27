@@ -2,6 +2,7 @@ import type { PathSegment } from '$lib/types';
 import { holesOf, type BandContourIndex } from './contour-index';
 import { lookup, sampleDropCurve, type PostProcessConfig } from './hole-drop-config';
 import type { TaggedPath } from './post-process-types';
+import { applyConnectSurround } from './outline-gap';
 
 /**
  * Mulberry32: a small, fast, well-distributed 32-bit PRNG.
@@ -114,7 +115,8 @@ export const concatPieces = (pieces: TaggedPath[]): PathSegment[] =>
 export const postProcessBandPath = (
 	path: PathSegment[],
 	index: BandContourIndex,
-	config: PostProcessConfig
+	config: PostProcessConfig,
+	pageScale = 1
 ): TaggedPath[] => {
 	if (index.contours.length === 0) {
 		if (path.length === 0 || config.dropOutline) return [];
@@ -131,5 +133,9 @@ export const postProcessBandPath = (
 			contour: i
 		});
 	});
+	const cs = config.connectSurround;
+	if (cs?.enabled && !config.dropOutline && index.ends) {
+		return applyConnectSurround(pieces, index.ends, cs.gapMm * pageScale);
+	}
 	return pieces;
 };
