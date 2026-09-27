@@ -1,4 +1,5 @@
 import { svgPathStringFromSegments } from '$lib/patterns/utils';
+import { CHAR_GAP } from '$lib/svg-text-metrics';
 import {
 	isCubicBezierPathSegment,
 	isLinePathSegment,
@@ -48,14 +49,13 @@ export const processSvg = (rawText: string, rawSvg: string): SVGFontDictionary =
 
 	return dict;
 };
-const GAP = 0.3;
 export const getChars = (str: string, dictionary: SVGFontDictionary | undefined) => {
 	if (!dictionary) throw Error('no svg text dictionary defined');
 	let runningOffset = 0;
 	const chars = str.split('').map((char) => {
 		// const char = c === ' ' ? '-' : c;
 		const { svgPath, width } = dictionary[char];
-		runningOffset += width + GAP;
+		runningOffset += width + CHAR_GAP;
 		return { charId: char, char: svgPath, offset: runningOffset - width / 2 };
 	});
 
