@@ -85,6 +85,27 @@ const prepare = async (page: Page) => {
 	await expect(page.locator('.prepare-status.done')).toBeVisible({ timeout: 120_000 });
 };
 
+/**
+ * Total segment count of the raw (pre-post-process) merge, read from the live
+ * store module — the "no re-merge" proof, same idea as `segmentTotals` in
+ * `hole-drop.spec.ts`, but only the raw half is needed here: a post-process
+ * patch must re-render off the same raw merge, never re-run it.
+ */
+const rawSegmentTotal = (page: Page): Promise<number> =>
+	page.evaluate(async (specifier: string) => {
+		const stores = (await import(/* @vite-ignore */ specifier)) as {
+			mergedBandPathsRaw: { subscribe: (run: (p: Map<string, unknown[]>) => void) => () => void };
+		};
+		let total = -1;
+		stores.mergedBandPathsRaw.subscribe((paths) => {
+			total = 0;
+			for (const value of paths.values()) {
+				total += (value as unknown[]).length;
+			}
+		})();
+		return total;
+	}, '/src/lib/stores/index.ts');
+
 test.describe('post-processing 2', () => {
 	test.setTimeout(240_000);
 
@@ -97,6 +118,12 @@ test.describe('post-processing 2', () => {
 
 	test('tags, colors, gaps, disconnects and page labels render', async ({ page }) => {
 		await prepare(page);
+		// Captured before the patch so "no re-merge" is proved, not just
+		// asserted from final state (a fast re-merge would also leave
+		// `.prepare-status.done` visible). Both must come back unchanged.
+		const doneBefore = await page.locator('.prepare-status.done').innerText();
+		const rawBefore = await rawSegmentTotal(page);
+
 		await setPostProcess(page, {
 			disconnectSurround: true,
 			connectSurround: { enabled: true, gapMm: 1.5 },
@@ -108,7 +135,10 @@ test.describe('post-processing 2', () => {
 		expect(
 			await page.locator('path[data-geometry="outline-gap"]').first().getAttribute('stroke')
 		).toBe('#0000FF');
+
 		await expect(page.locator('.prepare-status.done')).toBeVisible(); // no re-merge
+		expect(await page.locator('.prepare-status.done').innerText()).toBe(doneBefore);
+		expect(await rawSegmentTotal(page)).toBe(rawBefore);
 	});
 
 	test('SVG download is millimetre-true and stamped', async ({ page }) => {
@@ -127,6 +157,7 @@ test.describe('post-processing 2', () => {
 		await prepare(page);
 		await setPostProcess(page, { downloadFormat: 'lbrn2' });
 		const pages = await page.locator('g.page-geometry').count();
+		expect(pages).toBeGreaterThan(0); // otherwise the group-count check below passes vacuously (0 === 0)
 		const [download] = await Promise.all([
 			page.waitForEvent('download'),
 			page.getByRole('button', { name: 'Download LightBurn' }).click()
