@@ -3,6 +3,7 @@
 	import type { HingePattern, PanelPattern } from '$lib/types';
 	import { Vector3 } from 'three';
 	import SvgText from './SvgText/SvgText.svelte';
+	import { layerStrokes } from '$lib/stores';
 
 	let {
 		hingePattern,
@@ -66,10 +67,20 @@
 
 {#if patternStyle === 'cut'}
 	<g stroke="black" stroke-width="0.2" fill="none">
-		<path d={outlinePath} />
-		<path d={getHingeMarks(hingePattern.pattern.hinge)} />
+		<path
+			d={outlinePath}
+			data-geometry="pattern-outline"
+			stroke={$layerStrokes['pattern-outline']}
+		/>
+		<path
+			d={getHingeMarks(hingePattern.pattern.hinge)}
+			data-geometry="label-text"
+			stroke={$layerStrokes['label-text']}
+		/>
 		<path
 			d={getRegistrationMarks(hingePattern.pattern.registrationPoint, hingePattern.pattern.hinge)}
+			data-geometry="label-text"
+			stroke={$layerStrokes['label-text']}
 		/>
 		<SvgText
 			size={3}
@@ -96,17 +107,32 @@
 			}}
 		/>
 		{#each hingePattern.pattern.holes as hole}
-			<circle cx={hole.location.x} cy={hole.location.y} r={hole.holeDiameter / 2} />
+			<circle
+				cx={hole.location.x}
+				cy={hole.location.y}
+				r={hole.holeDiameter / 2}
+				data-geometry="pattern-hole"
+				stroke={$layerStrokes['pattern-hole']}
+			/>
 			<path
+				data-geometry="label-text"
+				stroke={$layerStrokes['label-text']}
 				d={`M ${hole.location.x} ${hole.location.y - hole.nutDiameter / 2} v ${hole.nutDiameter} m ${-hole.nutDiameter / 2} ${-hole.nutDiameter / 2} h ${hole.nutDiameter}`}
 			/>
 		{/each}
 	</g>
 {:else}
-	<path d={outlinePath} stroke="none" stroke-width="0.2" fill={colors[hingePattern.edge]} />
+	<path
+		d={outlinePath}
+		data-geometry="pattern-outline"
+		stroke={$layerStrokes['pattern-outline']}
+		stroke-width="0.2"
+		fill={colors[hingePattern.edge]}
+	/>
 	{#if showTriangles}
 		{#if hingePattern.pattern.partnerBackFaceTriangle}
 			<path
+				class="screen-only"
 				d={`M ${hingePattern.pattern.partnerBackFaceTriangle.a.x} ${hingePattern.pattern.partnerBackFaceTriangle.a.y} L ${hingePattern.pattern.partnerBackFaceTriangle.b.x} ${hingePattern.pattern.partnerBackFaceTriangle.b.y} L ${hingePattern.pattern.partnerBackFaceTriangle.c.x} ${hingePattern.pattern.partnerBackFaceTriangle.c.y} Z`}
 				stroke="red"
 				fill="none"
@@ -115,6 +141,7 @@
 		{/if}
 		{#if hingePattern.pattern.backfFaceTriangle}
 			<path
+				class="screen-only"
 				d={`M ${hingePattern.pattern.backfFaceTriangle.a.x} ${hingePattern.pattern.backfFaceTriangle.a.y} L ${hingePattern.pattern.backfFaceTriangle.b.x} ${hingePattern.pattern.backfFaceTriangle.b.y} L ${hingePattern.pattern.backfFaceTriangle.c.x} ${hingePattern.pattern.backfFaceTriangle.c.y} Z`}
 				stroke="blue"
 				fill="none"
@@ -125,6 +152,7 @@
 
 	{#if hingePattern.pattern.hinge}
 		<path
+			class="screen-only"
 			d={`M ${hingePattern.pattern.hinge[0].x} ${hingePattern.pattern.hinge[0].y} L ${hingePattern.pattern.hinge[1].x} ${hingePattern.pattern.hinge[1].y}`}
 			stroke="rgba(0, 69, 200, .3)"
 			stroke-width="2"
@@ -150,13 +178,15 @@
 			cy={hole.location.y}
 			r={hole.holeDiameter / 2}
 			fill="none"
-			stroke="black"
+			data-geometry="pattern-hole"
+			stroke={$layerStrokes['pattern-hole']}
 			stroke-width="0.2"
 		/>
 		<path
 			d={getHexPath(hole.location.x, hole.location.y, hole.nutDiameter / 2)}
 			fill="none"
-			stroke="black"
+			data-geometry="label-text"
+			stroke={$layerStrokes['label-text']}
 			stroke-width="0.2"
 		/>
 	{/each}

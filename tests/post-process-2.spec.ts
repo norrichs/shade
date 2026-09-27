@@ -241,3 +241,49 @@ test.describe('post-processing 2', () => {
 		expect(download.suggestedFilename()).toMatch(/\.svg$/);
 	});
 });
+
+/**
+ * Panel patterns (`tiledPanelPattern-0` on the projection source) render
+ * outside CutPatternRenderer, through `ProjectionPanelPatterns`. Their cut
+ * geometry must be tagged, and their screen furniture (scale bar, selection
+ * fill, design aids) screen-only, or the export guard refuses the file.
+ */
+test.describe('post-processing 2 — panel patterns', () => {
+	test.setTimeout(240_000);
+
+	test('panel geometry is tagged and passes the export guard', async ({ page }) => {
+		await page.goto('/designer2');
+		await page.evaluate(async (specifier: string) => {
+			const stores = (await import(/* @vite-ignore */ specifier)) as any;
+			const config = (await import(/* @vite-ignore */ '/src/lib/shades-config.ts')) as any;
+			stores.patternConfigStore.update((c: any) => ({
+				...c,
+				patternTypeConfig: structuredClone(config.tiledPatternConfigs['tiledPanelPattern-0']),
+				patternViewConfig: { ...c.patternViewConfig, patternSource: 'projection' }
+			}));
+			stores.viewControlStore.update((v: any) => ({
+				...v,
+				showProjectionGeometry: { ...v.showProjectionGeometry, any: true, projection: true }
+			}));
+		}, '/src/lib/stores/index.ts');
+		await expect(page.locator('g[id^="panel-"]').first()).toBeAttached({ timeout: 60_000 });
+
+		expect(
+			await page.locator('g[id^="panel-"] path.crease[data-geometry="pattern-outline"]').count()
+		).toBeGreaterThan(0);
+		expect(
+			await page.locator('g[id^="panel-"] circle[data-geometry="pattern-hole"]').count()
+		).toBeGreaterThan(0);
+
+		const untagged = await page.evaluate(async () => {
+			const guard = (await import(
+				/* @vite-ignore */ '/src/lib/cut-pattern/export-guard.ts'
+			)) as any;
+			const root = document.getElementById('pattern-svg')!;
+			const probe = root.cloneNode(true) as Element;
+			probe.querySelectorAll(guard.SCREEN_ONLY_SELECTOR).forEach((n: Element) => n.remove());
+			return guard.findUntagged(guard.collectExportNodes(probe)).map((n: any) => n.describe);
+		});
+		expect(untagged).toEqual([]);
+	});
+});

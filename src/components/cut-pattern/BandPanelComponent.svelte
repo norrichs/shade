@@ -40,6 +40,7 @@
 >
 	{#if band.bounds && showBounds}
 		<rect
+			class="screen-only"
 			x={band.bounds.left}
 			y={band.bounds.top}
 			width={band.bounds.width}

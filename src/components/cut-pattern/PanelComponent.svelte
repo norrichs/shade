@@ -10,7 +10,8 @@
 		superGlobulePatternStore,
 		selectedProjection,
 		selectedProjectionGeometry,
-		isSuperGlobuleProjectionPanelPattern
+		isSuperGlobuleProjectionPanelPattern,
+		layerStrokes
 	} from '$lib/stores';
 	import { addressIsInArray, formatAngle } from '$lib/util';
 	import SvgText from './SvgText/SvgText.svelte';
@@ -244,7 +245,9 @@
 	</style>
 
 	{#if patternStyle === 'view'}
+		<!-- Selection fill and click target only; the creases below are the outline. -->
 		<path
+			class="screen-only"
 			d={svgPathFromTriangle(panel.triangle)}
 			fill={panelFill}
 			stroke="none"
@@ -257,6 +260,8 @@
 			<path
 				d={edgeSegment(panel.triangle, edge)}
 				class="crease"
+				data-geometry="pattern-outline"
+				stroke={$layerStrokes['pattern-outline']}
 				stroke-dasharray={panel.meta.edges[edge].crease === 'mountain' ? mountainDash : valleyDash}
 			/>
 		{/each}
@@ -315,8 +320,16 @@
 		{#each edges as edge}
 			{#each panel.meta.edges[edge].holes || [] as hole}
 				{#if patternStyle === 'cut'}
-					<circle cx={hole.location.x} cy={hole.location.y} r={hole.holeDiameter / 2} fill="none" />
+					<circle
+						cx={hole.location.x}
+						cy={hole.location.y}
+						r={hole.holeDiameter / 2}
+						fill="none"
+						data-geometry="pattern-hole"
+						stroke={$layerStrokes['pattern-hole']}
+					/>
 					<path
+						class="screen-only"
 						d={`M ${hole.location.x} ${hole.location.y - hole.holeDiameter / 2} v ${
 							hole.holeDiameter
 						} M ${hole.location.x - hole.holeDiameter / 2} ${hole.location.y} h ${
@@ -326,9 +339,23 @@
 						fill="none"
 					/>
 				{:else}
-					<circle cx={hole.location.x} cy={hole.location.y} r={hole.holeDiameter / 2} fill="none" />
-					<circle cx={hole.location.x} cy={hole.location.y} r={hole.headDiameter / 2} fill="none" />
+					<circle
+						cx={hole.location.x}
+						cy={hole.location.y}
+						r={hole.holeDiameter / 2}
+						fill="none"
+						data-geometry="pattern-hole"
+						stroke={$layerStrokes['pattern-hole']}
+					/>
+					<circle
+						class="screen-only"
+						cx={hole.location.x}
+						cy={hole.location.y}
+						r={hole.headDiameter / 2}
+						fill="none"
+					/>
 					<path
+						class="screen-only"
 						d={`M ${hole.location.x} ${hole.location.y - hole.headDiameter / 2} v ${
 							hole.headDiameter
 						} M ${hole.location.x - hole.headDiameter / 2} ${hole.location.y} h ${
@@ -341,51 +368,54 @@
 			{/each}
 		{/each}
 		{#if patternStyle === 'view'}
-			{#if showErrors}
-				{#each edges as edge}
+			<!-- View-style design aids: never cut. -->
+			<g class="screen-only">
+				{#if showErrors}
+					{#each edges as edge}
+						<path
+							d={edgeSegment(panel.triangle, edge)}
+							stroke-width={6}
+							stroke-opacity={0.2}
+							stroke={edgeMatches[edge] ? 'green' : 'red'}
+							stroke-linecap="round"
+						/>
+					{/each}
+				{/if}
+				{#if panel.meta.insetTriangle}
 					<path
-						d={edgeSegment(panel.triangle, edge)}
-						stroke-width={6}
-						stroke-opacity={0.2}
-						stroke={edgeMatches[edge] ? 'green' : 'red'}
-						stroke-linecap="round"
+						d={svgPathFromTriangle(panel.meta.insetTriangle)}
+						stroke-width={0.5}
+						stroke-opacity={1}
+						stroke="black"
 					/>
-				{/each}
-			{/if}
-			{#if panel.meta.insetTriangle}
-				<path
-					d={svgPathFromTriangle(panel.meta.insetTriangle)}
-					stroke-width={0.5}
-					stroke-opacity={1}
-					stroke="black"
-				/>
-			{/if}
-			{#if panel.meta.backFaceTriangle}
-				<path
-					d={svgPathFromTriangle(panel.meta.backFaceTriangle)}
-					stroke-width={0.5}
-					stroke-opacity={1}
-					stroke="red"
-				/>
-			{/if}
-			{#if verbose}
-				{#each trianglePoints as p}
-					<circle
-						cx={panel.triangle[p].x}
-						cy={panel.triangle[p].y}
-						r="3"
-						fill="white"
-						fill-opacity={1}
+				{/if}
+				{#if panel.meta.backFaceTriangle}
+					<path
+						d={svgPathFromTriangle(panel.meta.backFaceTriangle)}
+						stroke-width={0.5}
+						stroke-opacity={1}
+						stroke="red"
 					/>
-					<text
-						transform="translate(-1,2)"
-						x={panel.triangle[p].x}
-						y={panel.triangle[p].y}
-						fill="none"
-						stroke-width="0.2">{p}</text
-					>
-				{/each}
-			{/if}
+				{/if}
+				{#if verbose}
+					{#each trianglePoints as p}
+						<circle
+							cx={panel.triangle[p].x}
+							cy={panel.triangle[p].y}
+							r="3"
+							fill="white"
+							fill-opacity={1}
+						/>
+						<text
+							transform="translate(-1,2)"
+							x={panel.triangle[p].x}
+							y={panel.triangle[p].y}
+							fill="none"
+							stroke-width="0.2">{p}</text
+						>
+					{/each}
+				{/if}
+			</g>
 		{/if}
 	</g>
 </g>

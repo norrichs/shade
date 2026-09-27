@@ -4,6 +4,7 @@
 	import type { TriangleEdge } from '$lib/projection-geometry/types';
 	import { Vector3, type Triangle } from 'three';
 	import { getEdgeVector } from './distrubute-panels';
+	import { layerStrokes } from '$lib/stores';
 
 	let {
 		edge,
@@ -32,4 +33,9 @@
 	let markPath = $derived(getMarkPath(edge, triangle, style));
 </script>
 
-<path d={markPath} stroke="black" stroke-width={0.25} />
+<path
+	d={markPath}
+	data-geometry="label-text"
+	stroke={$layerStrokes['label-text']}
+	stroke-width={0.25}
+/>

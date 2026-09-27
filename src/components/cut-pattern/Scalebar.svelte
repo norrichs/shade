@@ -12,7 +12,8 @@
 	let scaleBarPath = $derived(getScaleBarPath(scale));
 </script>
 
-<g fill="none" stroke="black" stroke-width="1">
+<!-- The export is millimetre-true, so a scale bar is screen furniture. -->
+<g class="screen-only" fill="none" stroke="black" stroke-width="1">
 	<text
 		transform={`rotate(-90) translate(${(-1 / scale.unitPerSvgUnit) * scale.quantity}, -10)`}
 		x={0}
