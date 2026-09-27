@@ -9,7 +9,8 @@ Integration may be plannable based on plan documents rather than finished code.
 That would especially be true if the new architecture takes the existing functions and wraps it in a worker orchestration layer without alteration.
 
 Documents:
-(ask for them if not here yet)
+/Users/ben.norrichs/dev/personal/projects/shades/docs/superpowers/specs/2026-09-19-prepare-download-worker-pool-design.md
+/Users/ben.norrichs/dev/personal/projects/shades/docs/superpowers/plans/2026-09-19-prepare-download-worker-pool.md
 
 ## Features
 
@@ -122,4 +123,4 @@ alone, fast enough to run inline without involving the pool at all.
   panel content fully remounts on close and on switching panels, so panel-local state is
   wiped.
 
-(NOTE: from )
+(NOTE from ben: The variable-drop bezier may or may not use `bezier-js`. Well be using the PathEditor component used elsewhere to configure curves, so whatever implementation details come with that are what matters)
