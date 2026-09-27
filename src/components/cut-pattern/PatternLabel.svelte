@@ -11,12 +11,11 @@
 		FALLBACK_TEXT_WIDTH,
 		FALLBACK_TEXT_HEIGHT
 	} from '$lib/cut-pattern/label-outline-path';
-	import { dropLabelText, mergedBandPaths, setLabelTextDimension } from '$lib/stores';
+	import { dropLabelText, layerStrokes, mergedBandPaths, setLabelTextDimension } from '$lib/stores';
 
 	let {
 		id = undefined,
 		bandId = undefined,
-		color = 'black',
 		value,
 		addressStrings = undefined,
 		radius = 10,
@@ -30,7 +29,6 @@
 	}: {
 		id?: string | undefined;
 		bandId?: string | undefined;
-		color?: string;
 		value: number;
 		addressStrings?: string[] | undefined;
 		radius?: number;
@@ -266,7 +264,13 @@
 	style="visibility: {visible ? 'visible' : 'hidden'};"
 >
 	{#if !bandId || !$mergedBandPaths.has(bandId)}
-		<path d={path} fill-rule="evenodd" fill="none" stroke={color} data-geometry="pattern-outline" />
+		<path
+			d={path}
+			fill-rule="evenodd"
+			fill="none"
+			stroke={$layerStrokes['pattern-outline']}
+			data-geometry="pattern-outline"
+		/>
 	{/if}
 	<!-- Post-process can drop the text from prepared bands; the hidden
 	     measurement copy above stays, so the tag outline keeps its size. -->

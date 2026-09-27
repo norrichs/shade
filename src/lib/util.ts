@@ -11,6 +11,7 @@ import type {
 	GlobuleAddress_Tube,
 	GlobuleAddress_Globule
 } from './projection-geometry/types';
+import { SCREEN_ONLY_SELECTOR } from './cut-pattern/export-guard';
 
 export const rad = (deg: number): number => (Math.PI / 180) * deg;
 export const deg = (rad: number): number => (180 / Math.PI) * rad;
@@ -78,27 +79,10 @@ export const getCubicBezierIntersection = (
 	// })
 };
 
-/**
- * Markup that exists for the screen only and must never reach the exported SVG.
- *
- * The export drives a cutter/plotter, so every serialised stroke is something
- * somebody has to cut:
- * - `.svg-pattern-quad` — the per-quad debug overlay (`QuadPattern.svelte`).
- * - `.split-target` — the split seam layer (`SplitTargets.svelte`): a grey
- *   dashed hairline on every legal boundary while split mode is on, a red one
- *   on every existing split, plus a transparent `.hit` line with
- *   `role="button"`/`tabindex`. Existing splits draw at all times, so without
- *   this the defect is worst exactly when the feature is in use.
- * - `.screen-only` — the band overlay rectangles: the bounds debug rect
- *   (`BoundsPattern.svelte` and `BandComponent.svelte`) and the assembler
- *   cross-view highlight. A filled rect over a whole band is the worst thing
- *   to hand a cutter, and the highlight follows the selection, so the export
- *   silently depended on which band was clicked last.
- *
- * Mark any new screen furniture with `screen-only` rather than adding another
- * selector here.
- */
-const SCREEN_ONLY_SELECTOR = '.svg-pattern-quad, .split-target, .screen-only';
+// `SCREEN_ONLY_SELECTOR` is defined in `export-guard.ts` (so `collectExportNodes`
+// can enforce the same screen-only exclusion without a util↔export-guard import
+// cycle); imported here for this file's own use. See that file for the
+// selector's full rationale.
 
 export const generateSvgUrl = (id: string) => {
 	const svg = document.getElementById(id);
