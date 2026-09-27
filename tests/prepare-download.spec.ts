@@ -73,6 +73,31 @@ const settleBandCount = async (page: Page): Promise<number> => {
 	return previous;
 };
 
+/**
+ * Widen the page and switch to page layout mode. Downloads require page
+ * layout since post-processing 2 (real-world units need a page rect), so
+ * this test — which downloads — needs it too. New object references
+ * throughout: in-place mutation of `pageLayout` is silently ignored.
+ */
+const setPageLayout = (page: Page) =>
+	page.evaluate(async (specifier: string) => {
+		const stores = (await import(/* @vite-ignore */ specifier)) as {
+			patternConfigStore: { update: (fn: (c: any) => any) => void };
+		};
+		stores.patternConfigStore.update((c: any) => ({
+			...c,
+			patternViewConfig: { ...c.patternViewConfig, patternLayoutMode: 'page' },
+			patternConfig: {
+				...c.patternConfig,
+				pageLayout: {
+					...c.patternConfig.pageLayout,
+					pageSize: { width: 4000, height: 4000 },
+					pageScale: 1
+				}
+			}
+		}));
+	}, '/src/lib/stores/index.ts');
+
 const openDesigner = async (page: Page): Promise<string[]> => {
 	const errors: string[] = [];
 	page.on('pageerror', (error) => errors.push(error.message));
@@ -156,6 +181,8 @@ test.describe('Prepare Download', () => {
 		// export — right behaviour, but it would make this test flaky.
 		await settleBandCount(page);
 		expect(await mergedBandCount(page)).toBe(0);
+
+		await setPageLayout(page);
 
 		// The handler awaits the prepare before exporting, so the download only
 		// fires once the merge has landed.
