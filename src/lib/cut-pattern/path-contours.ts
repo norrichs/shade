@@ -170,3 +170,70 @@ export const bboxContains = (outer: BBox, inner: BBox): boolean =>
 	inner.minY >= outer.minY &&
 	inner.maxX <= outer.maxX &&
 	inner.maxY <= outer.maxY;
+
+/**
+ * Every `M`-run of a path as a polyline, open or closed. Unlike
+ * `splitContours`, it keeps open runs (split outline pieces, disconnect lines)
+ * and does no measuring. `Z` appends the run's first point. Arcs are treated as
+ * straight to their endpoint — merged paths contain none.
+ */
+export const flattenPath = (path: PathSegment[]): Pt[][] => {
+	const runs: Pt[][] = [];
+	let run: Pt[] = [];
+	let cur: Pt = { x: 0, y: 0 };
+	const flush = () => {
+		if (run.length > 0) runs.push(run);
+		run = [];
+	};
+	for (const seg of path) {
+		switch (seg[0]) {
+			case 'M':
+				flush();
+				cur = { x: seg[1], y: seg[2] };
+				run.push(cur);
+				break;
+			case 'L':
+				cur = { x: seg[1], y: seg[2] };
+				run.push(cur);
+				break;
+			case 'C': {
+				const p0 = cur;
+				const c1 = { x: seg[1], y: seg[2] };
+				const c2 = { x: seg[3], y: seg[4] };
+				const p1 = { x: seg[5], y: seg[6] };
+				for (let i = 1; i < CURVE_SAMPLES; i += 1) run.push(cubicAt(p0, c1, c2, p1, i / CURVE_SAMPLES));
+				run.push(p1);
+				cur = p1;
+				break;
+			}
+			case 'Q': {
+				const p0 = cur;
+				const c = { x: seg[1], y: seg[2] };
+				const p1 = { x: seg[3], y: seg[4] };
+				for (let i = 1; i < CURVE_SAMPLES; i += 1) {
+					const t = i / CURVE_SAMPLES;
+					const u = 1 - t;
+					run.push({
+						x: u * u * p0.x + 2 * u * t * c.x + t * t * p1.x,
+						y: u * u * p0.y + 2 * u * t * c.y + t * t * p1.y
+					});
+				}
+				run.push(p1);
+				cur = p1;
+				break;
+			}
+			case 'A':
+				cur = { x: seg[6], y: seg[7] };
+				run.push(cur);
+				break;
+			case 'Z':
+				if (run.length > 0) {
+					run.push(run[0]);
+					cur = run[0];
+				}
+				break;
+		}
+	}
+	flush();
+	return runs;
+};

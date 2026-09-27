@@ -3,12 +3,12 @@ import { get } from 'svelte/store';
 import {
 	mergedBandPaths,
 	mergedBandPathsRaw,
-	bandHoleIndexes,
+	bandContourIndexes,
 	applyPostProcess,
 	isPrepared
 } from '../mergedPathStore';
 import { patternConfigStore } from '../globulePatternStores';
-import type { BandHoleIndex } from '$lib/cut-pattern/hole-index';
+import type { BandContourIndex } from '$lib/cut-pattern/contour-index';
 import type { PathSegment } from '$lib/types';
 
 describe('merged path stores', () => {
@@ -41,13 +41,24 @@ const donut = (): PathSegment[] => [
 	['Z']
 ];
 
-const oneHole = (seed = 1): Map<string, BandHoleIndex> =>
-	new Map([['b', { seed, holes: [{ start: 5, end: 10, bandFraction: 0.5, area: 4 }] }]]);
+const oneHole = (seed = 1): Map<string, BandContourIndex> =>
+	new Map([
+		[
+			'b',
+			{
+				seed,
+				contours: [
+					{ start: 0, end: 5, kind: 'outline', depth: 0, area: 100 },
+					{ start: 5, end: 10, kind: 'hole', depth: 1, bandFraction: 0.5, area: 4 }
+				]
+			}
+		]
+	]);
 
 describe('post-processed merged paths', () => {
 	afterEach(() => {
 		mergedBandPathsRaw.set(new Map());
-		bandHoleIndexes.set(new Map());
+		bandContourIndexes.set(new Map());
 		patternConfigStore.update((c) => {
 			c.patternConfig.postProcess = { dropHoles: { mode: 'none' }, runSeed: 0 };
 			return c;
@@ -89,7 +100,7 @@ describe('post-processed merged paths', () => {
 
 	it('re-derives the render-facing store when the config changes, without touching raw', () => {
 		mergedBandPathsRaw.set(new Map([['b', donut()]]));
-		bandHoleIndexes.set(oneHole());
+		bandContourIndexes.set(oneHole());
 		expect(get(mergedBandPaths).get('b')).toHaveLength(10);
 
 		patternConfigStore.update((c) => {
@@ -107,22 +118,27 @@ describe('post-processed merged paths', () => {
 		for (let i = 0; i <= 40; i += 1) {
 			path.push(['M', i, 0], ['L', i + 1, 0], ['L', i + 1, 1], ['L', i, 1], ['Z']);
 		}
-		const indexes = new Map<string, BandHoleIndex>([
+		const indexes = new Map<string, BandContourIndex>([
 			[
 				'b',
 				{
 					seed: 5,
-					holes: Array.from({ length: 40 }, (_, i) => ({
-						start: (i + 1) * 5,
-						end: (i + 2) * 5,
-						bandFraction: i / 39,
-						area: 1
-					}))
+					contours: [
+						{ start: 0, end: 5, kind: 'outline', depth: 0, area: 1 },
+						...Array.from({ length: 40 }, (_, i) => ({
+							start: (i + 1) * 5,
+							end: (i + 2) * 5,
+							kind: 'hole' as const,
+							depth: 1,
+							bandFraction: i / 39,
+							area: 1
+						}))
+					]
 				}
 			]
 		]);
 		mergedBandPathsRaw.set(new Map([['b', path]]));
-		bandHoleIndexes.set(indexes);
+		bandContourIndexes.set(indexes);
 		patternConfigStore.update((c) => {
 			c.patternConfig.postProcess = { dropHoles: { mode: 'random', chance: 0.5 }, runSeed: 0 };
 			return c;
@@ -136,6 +152,6 @@ describe('post-processed merged paths', () => {
 
 		expect(get(mergedBandPaths).get('b')).not.toEqual(before);
 		expect(get(mergedBandPathsRaw).get('b')).toBe(path);
-		expect(get(bandHoleIndexes).get('b')!.seed).toBe(5);
+		expect(get(bandContourIndexes).get('b')!.seed).toBe(5);
 	});
 });

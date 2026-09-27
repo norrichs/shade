@@ -9,7 +9,7 @@
 		patternConfigStore,
 		viewControlStore,
 		mergedBandPathsRaw,
-		bandHoleIndexes
+		bandContourIndexes
 	} from '$lib/stores';
 	import { isManualMode, hasPendingChanges } from '$lib/stores/uiStores';
 	import { triggerManualRegeneration, isGenerating } from '$lib/stores/superGlobuleStores';
@@ -23,7 +23,7 @@
 	import { toBandMergePayloads } from '$lib/cut-pattern/band-merge-payload';
 	import { mergeBand, type MergeCtx } from '$lib/cut-pattern/merge-band';
 	import { createBandMergePool, isTotalPoolFailure } from '$lib/workers/band-merge-pool';
-	import { buildHoleIndex, type BandHoleIndex } from '$lib/cut-pattern/hole-index';
+	import { buildContourIndex, type BandContourIndex } from '$lib/cut-pattern/contour-index';
 	import type { PathSegment } from '$lib/types';
 	import { collateTubes } from '$lib/cut-pattern/collate-tubes';
 	import { get } from 'svelte/store';
@@ -83,7 +83,7 @@
 			lastInvalidationKey = invalidationKey;
 			lastPatternRef = patternRef;
 			mergedBandPathsRaw.set(new Map());
-			bandHoleIndexes.set(new Map());
+			bandContourIndexes.set(new Map());
 			csvState = 'idle';
 			csvText = '';
 			// A geometry/config change makes any prepared union stale — including one
@@ -152,9 +152,9 @@
 
 	// Written together, always: a band holding a path with no index would be
 	// silently un-droppable. `mergedBandPaths` derives from both.
-	const publish = (paths: Map<string, PathSegment[]>, holes: Map<string, BandHoleIndex>) => {
+	const publish = (paths: Map<string, PathSegment[]>, contours: Map<string, BandContourIndex>) => {
 		mergedBandPathsRaw.set(paths);
-		bandHoleIndexes.set(holes);
+		bandContourIndexes.set(contours);
 	};
 
 	/**
@@ -170,21 +170,16 @@
 
 		if (payloads.length <= 2) {
 			const paths = new Map<string, PathSegment[]>();
-			const holes = new Map<string, BandHoleIndex>();
+			const contours = new Map<string, BandContourIndex>();
 			for (const payload of payloads) {
 				const path = mergeBand(payload, ctx);
 				if (path.length === 0) continue;
 				paths.set(payload.id, path);
 				// Stage 1b, which this branch never reaches a worker to get.
-				holes.set(
-					payload.id,
-					ctx.patternType === 'outlined'
-						? { seed: payload.seed, holes: [] }
-						: buildHoleIndex(path, payload)
-				);
+				contours.set(payload.id, buildContourIndex(path, payload, ctx.patternType));
 			}
 			prepareDone = payloads.length;
-			publish(paths, holes);
+			publish(paths, contours);
 			return true;
 		}
 
@@ -222,7 +217,7 @@
 		if (result.errors.size > 0) {
 			console.warn('[prepare] bands failed to merge', [...result.errors.entries()]);
 		}
-		publish(result.paths, result.holes);
+		publish(result.paths, result.contours);
 		return true;
 	};
 

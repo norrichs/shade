@@ -1,6 +1,6 @@
 import { derived, writable, get, type Writable } from 'svelte/store';
 import type { PathSegment } from '$lib/types';
-import type { BandHoleIndex } from '$lib/cut-pattern/hole-index';
+import type { BandContourIndex } from '$lib/cut-pattern/contour-index';
 import { postProcessBandPath } from '$lib/cut-pattern/drop-holes';
 import { DEFAULT_POST_PROCESS, type PostProcessConfig } from '$lib/cut-pattern/hole-drop-config';
 import { patternConfigStore } from './globulePatternStores';
@@ -18,18 +18,18 @@ export type LabelTextDims = { width: number; height: number };
  * re-runs only stage 2, instead of paying for the union again.
  *
  * Written by `publish()` in `NavHeader.svelte`, together with
- * `bandHoleIndexes`. Cleared by NavHeader's invalidation block when the
+ * `bandContourIndexes`. Cleared by NavHeader's invalidation block when the
  * geometry or label config changes.
  */
 export const mergedBandPathsRaw: Writable<Map<string, PathSegment[]>> = writable(new Map());
 
 /**
- * Stage 1b output: where each band's internal holes are, keyed by band.id.
+ * Stage 1b output: every contour of each band, keyed by band.id.
  *
  * Written by the same prepare run that writes `mergedBandPathsRaw`, and cleared
  * with it — a band must never hold a path without its index.
  */
-export const bandHoleIndexes: Writable<Map<string, BandHoleIndex>> = writable(new Map());
+export const bandContourIndexes: Writable<Map<string, BandContourIndex>> = writable(new Map());
 
 /**
  * The post-process block of the pattern config.
@@ -55,7 +55,7 @@ export const postProcessConfig = derived<typeof patternConfigStore, PostProcessC
 /** Stage 2 over every band. A band with no index is passed through unchanged. */
 export const applyPostProcess = (
 	raw: Map<string, PathSegment[]>,
-	indexes: Map<string, BandHoleIndex>,
+	indexes: Map<string, BandContourIndex>,
 	config: PostProcessConfig
 ): Map<string, PathSegment[]> => {
 	if (config.dropHoles.mode === 'none' && !config.dropOutline) return raw;
@@ -86,7 +86,7 @@ export const dropLabelText = derived(postProcessConfig, (config) => config.dropL
  * because rerolling has to change the result.
  */
 export const mergedBandPaths = derived(
-	[mergedBandPathsRaw, bandHoleIndexes, postProcessConfig],
+	[mergedBandPathsRaw, bandContourIndexes, postProcessConfig],
 	([$raw, $indexes, $config]) => applyPostProcess($raw, $indexes, $config)
 );
 

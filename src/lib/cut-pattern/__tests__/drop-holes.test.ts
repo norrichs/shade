@@ -1,7 +1,7 @@
 import { describe, it, expect } from '@jest/globals';
 import { dropHoles, mulberry32, postProcessBandPath, seedFor } from '../drop-holes';
 import { defaultDropCurve, type PostProcessConfig } from '../hole-drop-config';
-import type { BandHoleIndex } from '../hole-index';
+import type { BandContourIndex } from '../contour-index';
 import type { BezierConfig, PathSegment, PointConfig2 } from '$lib/types';
 
 const pt = (x: number, y: number): PointConfig2 => ({ type: 'PointConfig2', x, y });
@@ -15,14 +15,19 @@ const pathWith = (n: number): PathSegment[] => {
 	return out;
 };
 
-const indexFor = (n: number, seed = 1): BandHoleIndex => ({
+const indexFor = (n: number, seed = 1): BandContourIndex => ({
 	seed,
-	holes: Array.from({ length: n }, (_, i) => ({
-		start: (i + 1) * 5,
-		end: (i + 2) * 5,
-		bandFraction: n === 1 ? 0.5 : i / (n - 1),
-		area: 1
-	}))
+	contours: [
+		{ start: 0, end: 5, kind: 'outline', depth: 0, area: 1 },
+		...Array.from({ length: n }, (_, i) => ({
+			start: (i + 1) * 5,
+			end: (i + 2) * 5,
+			kind: 'hole' as const,
+			depth: 1,
+			bandFraction: n === 1 ? 0.5 : i / (n - 1),
+			area: 1
+		}))
+	]
 });
 
 const cfg = (dropHoles: PostProcessConfig['dropHoles'], runSeed = 0): PostProcessConfig => ({
@@ -74,7 +79,7 @@ describe('dropHoles', () => {
 
 	it('is a no-op when the index has no holes', () => {
 		const path = pathWith(0);
-		expect(dropHoles(path, { seed: 1, holes: [] }, cfg({ mode: 'all' }))).toBe(path);
+		expect(dropHoles(path, { seed: 1, contours: [] }, cfg({ mode: 'all' }))).toBe(path);
 	});
 
 	it('drops nothing at chance 0 and everything at chance 1', () => {
@@ -190,7 +195,7 @@ describe('postProcessBandPath', () => {
 	it('leaves nothing for a band with no holes', () => {
 		const result = postProcessBandPath(
 			pathWith(0),
-			{ seed: 1, holes: [] },
+			{ seed: 1, contours: [] },
 			{
 				...cfg({ mode: 'none' }),
 				dropOutline: true

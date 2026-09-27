@@ -1,7 +1,7 @@
 import type { MergeMessage, MergeResponse } from './band-merge-worker-core';
 import type { BandMergePayload } from '$lib/cut-pattern/band-merge-payload';
 import type { MergeCtx } from '$lib/cut-pattern/merge-band';
-import type { BandHoleIndex } from '$lib/cut-pattern/hole-index';
+import type { BandContourIndex } from '$lib/cut-pattern/contour-index';
 import type { PathSegment } from '$lib/types';
 
 /** The slice of the `Worker` API the pool uses, so tests can inject a fake. */
@@ -19,7 +19,7 @@ export type PoolRunResult = {
 	 * caller cannot publish one without the other and leave a band holding a
 	 * path that nothing knows how to post-process.
 	 */
-	holes: Map<string, BandHoleIndex>;
+	contours: Map<string, BandContourIndex>;
 	/** Bands that failed, by id. A failed band does not fail the run. */
 	errors: Map<string, string>;
 	cancelled: boolean;
@@ -118,13 +118,13 @@ export const createBandMergePool = (options: BandMergePoolOptions = {}) => {
 	): Promise<PoolRunResult> => {
 		const myGeneration = ++generation;
 		const paths = new Map<string, PathSegment[]>();
-		const holes = new Map<string, BandHoleIndex>();
+		const contours = new Map<string, BandContourIndex>();
 		const errors = new Map<string, string>();
 
 		if (payloads.length === 0) {
 			// Nothing to cancel, and nothing to disarm: nobody else's cancelCurrent
 			// slot is touched here.
-			return { paths, holes, errors, cancelled: false, generation: myGeneration };
+			return { paths, contours, errors, cancelled: false, generation: myGeneration };
 		}
 
 		let settled = false;
@@ -170,7 +170,7 @@ export const createBandMergePool = (options: BandMergePoolOptions = {}) => {
 			settled = true;
 			if (cancelCurrent?.generation === myGeneration) cancelCurrent = null;
 			teardown();
-			resolveRun({ paths, holes, errors, cancelled, generation: myGeneration });
+			resolveRun({ paths, contours, errors, cancelled, generation: myGeneration });
 		};
 
 		const safeProgress = (done: number, total: number) => {
@@ -303,7 +303,7 @@ export const createBandMergePool = (options: BandMergePoolOptions = {}) => {
 					if (response.type === 'merge-result') {
 						if (response.path.length > 0) {
 							paths.set(response.bandId, response.path);
-							holes.set(response.bandId, response.holes);
+							contours.set(response.bandId, response.contours);
 						}
 					} else {
 						errors.set(response.bandId, response.error);

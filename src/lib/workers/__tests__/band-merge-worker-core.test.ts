@@ -1,5 +1,6 @@
 import { describe, it, expect, jest } from '@jest/globals';
 import { createBandMergeCore, type MergeResponse } from '../band-merge-worker-core';
+import { holesOf } from '$lib/cut-pattern/contour-index';
 import { computeMergedBandPaths } from '$lib/cut-pattern/prepare-merge';
 import { toBandMergePayloads } from '$lib/cut-pattern/band-merge-payload';
 import {
@@ -108,8 +109,8 @@ describe('band merge worker core', () => {
 	});
 });
 
-describe('stage 1b: hole index', () => {
-	it('returns a hole index alongside the merged path', () => {
+describe('stage 1b: contour index', () => {
+	it('returns a contour index alongside the merged path', () => {
 		const geometry = buildDefaultGeometry();
 		const tubes = generateProjectionTubes(geometry, tiledConfig, undefined, 1);
 		const payloads = toBandMergePayloads(tubes, new Map());
@@ -135,9 +136,10 @@ describe('stage 1b: hole index', () => {
 		for (const result of results) {
 			if (result.type !== 'merge-result') continue;
 			const payload = payloads.find((p) => p.id === result.bandId)!;
-			expect(result.holes.seed).toBe(payload.seed);
-			totalHoles += result.holes.holes.length;
-			for (const hole of result.holes.holes) {
+			expect(result.contours.seed).toBe(payload.seed);
+			const holes = holesOf(result.contours);
+			totalHoles += holes.length;
+			for (const hole of holes) {
 				expect(result.path[hole.start][0]).toBe('M');
 				expect(hole.bandFraction).toBeGreaterThanOrEqual(payload.pieceStartFraction - 1e-9);
 				expect(hole.bandFraction).toBeLessThanOrEqual(payload.pieceEndFraction + 1e-9);
@@ -147,7 +149,7 @@ describe('stage 1b: hole index', () => {
 		expect(totalHoles).toBeGreaterThan(0);
 	});
 
-	it('returns an empty index for an outlined band', () => {
+	it('marks every contour of an outlined band as outline, with no holes', () => {
 		const core = createBandMergeCore();
 		const posted: MergeResponse[] = [];
 		core.handle(
@@ -175,6 +177,9 @@ describe('stage 1b: hole index', () => {
 		const [result] = posted;
 		expect(result.type).toBe('merge-result');
 		if (result.type !== 'merge-result') return;
-		expect(result.holes).toEqual({ seed: 42, holes: [] });
+		expect(result.contours.seed).toBe(42);
+		expect(holesOf(result.contours)).toHaveLength(0);
+		expect(result.contours.contours.every((c) => c.kind === 'outline')).toBe(true);
+		expect(result.contours.contours.length).toBeGreaterThan(0);
 	});
 });

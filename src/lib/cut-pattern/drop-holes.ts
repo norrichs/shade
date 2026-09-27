@@ -1,5 +1,5 @@
 import type { PathSegment } from '$lib/types';
-import type { BandHoleIndex } from './hole-index';
+import { holesOf, type BandContourIndex } from './contour-index';
 import { lookup, sampleDropCurve, type PostProcessConfig } from './hole-drop-config';
 
 /**
@@ -71,10 +71,11 @@ const onlyRanges = (path: PathSegment[], ranges: Range[]) => {
  * deterministic from the path — so the result is identical run to run whatever
  * the pool did.
  */
-const droppedHoles = (index: BandHoleIndex, config: PostProcessConfig): Range[] => {
+const droppedHoles = (index: BandContourIndex, config: PostProcessConfig): Range[] => {
 	const mode = config.dropHoles;
 	if (mode.mode === 'none') return [];
-	if (mode.mode === 'all') return index.holes;
+	const holes = holesOf(index);
+	if (mode.mode === 'all') return holes;
 
 	const random = mulberry32(seedFor(index.seed, config.runSeed));
 	// Resolved once, outside the loop: `variable` reads a sampled table at each
@@ -83,7 +84,7 @@ const droppedHoles = (index: BandHoleIndex, config: PostProcessConfig): Range[] 
 	const flatChance = mode.mode === 'random' ? mode.chance : 0;
 	const dropped: Range[] = [];
 
-	for (const hole of index.holes) {
+	for (const hole of holes) {
 		const chance = lut ? lookup(lut, hole.bandFraction) : flatChance;
 		// Roll for EVERY hole, whatever the chance, so the sequence a hole sees
 		// does not shift when the curve or chance changes.
@@ -99,11 +100,11 @@ const droppedHoles = (index: BandHoleIndex, config: PostProcessConfig): Range[] 
  */
 export const dropHoles = (
 	path: PathSegment[],
-	index: BandHoleIndex,
+	index: BandContourIndex,
 	config: PostProcessConfig
 ): PathSegment[] => {
 	if (config.dropHoles.mode === 'none') return path;
-	if (index.holes.length === 0) return path;
+	if (holesOf(index).length === 0) return path;
 	const dropped = droppedHoles(index, config);
 	return dropped.length === 0 ? path : withoutRanges(path, dropped);
 };
@@ -118,13 +119,13 @@ export const dropHoles = (
  */
 export const postProcessBandPath = (
 	path: PathSegment[],
-	index: BandHoleIndex,
+	index: BandContourIndex,
 	config: PostProcessConfig
 ): PathSegment[] => {
 	if (!config.dropOutline) return dropHoles(path, index, config);
 	const dropped = new Set(droppedHoles(index, config).map((r) => r.start));
 	return onlyRanges(
 		path,
-		index.holes.filter((hole) => !dropped.has(hole.start))
+		holesOf(index).filter((hole) => !dropped.has(hole.start))
 	);
 };
