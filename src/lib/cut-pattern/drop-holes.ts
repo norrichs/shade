@@ -52,29 +52,36 @@ const withoutRanges = (path: PathSegment[], ranges: { start: number; end: number
 	return out;
 };
 
+type Range = { start: number; end: number };
+
+/** Concatenate only the segments inside `ranges`, in path order. */
+const onlyRanges = (path: PathSegment[], ranges: Range[]) => {
+	const ordered = [...ranges].sort((a, b) => a.start - b.start);
+	const out: PathSegment[] = [];
+	for (const range of ordered) {
+		for (let i = range.start; i < range.end; i += 1) out.push(path[i]);
+	}
+	return out;
+};
+
 /**
- * Stage 2: drop internal holes from one merged band path.
+ * Which holes the drop config removes.
  *
- * Pure. Rolls the PRNG once per hole in index order — which is contour order,
+ * Rolls the PRNG once per hole in index order — which is contour order,
  * deterministic from the path — so the result is identical run to run whatever
  * the pool did.
  */
-export const dropHoles = (
-	path: PathSegment[],
-	index: BandHoleIndex,
-	config: PostProcessConfig
-): PathSegment[] => {
+const droppedHoles = (index: BandHoleIndex, config: PostProcessConfig): Range[] => {
 	const mode = config.dropHoles;
-	if (mode.mode === 'none') return path;
-	if (index.holes.length === 0) return path;
-	if (mode.mode === 'all') return withoutRanges(path, index.holes);
+	if (mode.mode === 'none') return [];
+	if (mode.mode === 'all') return index.holes;
 
 	const random = mulberry32(seedFor(index.seed, config.runSeed));
 	// Resolved once, outside the loop: `variable` reads a sampled table at each
 	// hole's position along the band, `random` uses one flat chance.
 	const lut = mode.mode === 'variable' ? sampleDropCurve(mode.curve) : null;
 	const flatChance = mode.mode === 'random' ? mode.chance : 0;
-	const dropped: { start: number; end: number }[] = [];
+	const dropped: Range[] = [];
 
 	for (const hole of index.holes) {
 		const chance = lut ? lookup(lut, hole.bandFraction) : flatChance;
@@ -82,5 +89,42 @@ export const dropHoles = (
 		// does not shift when the curve or chance changes.
 		if (random() < chance) dropped.push({ start: hole.start, end: hole.end });
 	}
+	return dropped;
+};
+
+/**
+ * Stage 2: drop internal holes from one merged band path.
+ *
+ * Pure. See `droppedHoles` for why the result is deterministic.
+ */
+export const dropHoles = (
+	path: PathSegment[],
+	index: BandHoleIndex,
+	config: PostProcessConfig
+): PathSegment[] => {
+	if (config.dropHoles.mode === 'none') return path;
+	if (index.holes.length === 0) return path;
+	const dropped = droppedHoles(index, config);
 	return dropped.length === 0 ? path : withoutRanges(path, dropped);
+};
+
+/**
+ * Stage 2 for one band: drop holes, then — with `dropOutline` — drop every
+ * contour that is not a hole, keeping only the holes that survived.
+ *
+ * The index lists every odd-depth contour, so "not a hole" is the outer shell
+ * (which carries the unioned label tag) plus any island nested inside a hole.
+ * A band with no holes loses its whole path.
+ */
+export const postProcessBandPath = (
+	path: PathSegment[],
+	index: BandHoleIndex,
+	config: PostProcessConfig
+): PathSegment[] => {
+	if (!config.dropOutline) return dropHoles(path, index, config);
+	const dropped = new Set(droppedHoles(index, config).map((r) => r.start));
+	return onlyRanges(
+		path,
+		index.holes.filter((hole) => !dropped.has(hole.start))
+	);
 };

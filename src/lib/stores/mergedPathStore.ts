@@ -1,7 +1,7 @@
 import { derived, writable, get, type Writable } from 'svelte/store';
 import type { PathSegment } from '$lib/types';
 import type { BandHoleIndex } from '$lib/cut-pattern/hole-index';
-import { dropHoles } from '$lib/cut-pattern/drop-holes';
+import { postProcessBandPath } from '$lib/cut-pattern/drop-holes';
 import { DEFAULT_POST_PROCESS, type PostProcessConfig } from '$lib/cut-pattern/hole-drop-config';
 import { patternConfigStore } from './globulePatternStores';
 
@@ -56,14 +56,20 @@ export const applyPostProcess = (
 	indexes: Map<string, BandHoleIndex>,
 	config: PostProcessConfig
 ): Map<string, PathSegment[]> => {
-	if (config.dropHoles.mode === 'none') return raw;
+	if (config.dropHoles.mode === 'none' && !config.dropOutline) return raw;
 	const out = new Map<string, PathSegment[]>();
 	for (const [bandId, path] of raw) {
 		const index = indexes.get(bandId);
-		out.set(bandId, index ? dropHoles(path, index, config) : path);
+		out.set(bandId, index ? postProcessBandPath(path, index, config) : path);
 	}
 	return out;
 };
+
+/**
+ * Whether prepared bands stop drawing their label text. Read by PatternLabel;
+ * the label's tag outline is unaffected, since that lives in the merged path.
+ */
+export const dropLabelText = derived(postProcessConfig, (config) => config.dropLabelText === true);
 
 /**
  * Per-band merged outline+label path, keyed by band.id, as it should RENDER.

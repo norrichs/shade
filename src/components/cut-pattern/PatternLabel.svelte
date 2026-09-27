@@ -11,7 +11,7 @@
 		FALLBACK_TEXT_WIDTH,
 		FALLBACK_TEXT_HEIGHT
 	} from '$lib/cut-pattern/label-outline-path';
-	import { mergedBandPaths, setLabelTextDimension } from '$lib/stores';
+	import { dropLabelText, mergedBandPaths, setLabelTextDimension } from '$lib/stores';
 
 	let {
 		id = undefined,
@@ -268,13 +268,17 @@
 	{#if !bandId || !$mergedBandPaths.has(bandId)}
 		<path d={path} fill-rule="evenodd" fill="none" stroke={color} />
 	{/if}
-	<g transform={`translate(${textTranslate.x} ${textTranslate.y})`}>
-		<LabelText
-			lines={addressStrings}
-			anchor={{ x: 0, y: 0 }}
-			size={height}
-			color="black"
-			bind:element={labelTextElement}
-		/>
-	</g>
+	<!-- Post-process can drop the text from prepared bands; the hidden
+	     measurement copy above stays, so the tag outline keeps its size. -->
+	{#if !($dropLabelText && bandId && $mergedBandPaths.has(bandId))}
+		<g transform={`translate(${textTranslate.x} ${textTranslate.y})`}>
+			<LabelText
+				lines={addressStrings}
+				anchor={{ x: 0, y: 0 }}
+				size={height}
+				color="black"
+				bind:element={labelTextElement}
+			/>
+		</g>
+	{/if}
 </g>

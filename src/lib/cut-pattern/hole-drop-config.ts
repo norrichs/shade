@@ -19,7 +19,17 @@ export type HoleDropConfig =
  * identically; the Reroll button bumps it. It is read at stage 2 only — see
  * `seedFor` in `drop-holes.ts` for why it cannot live in the band payload.
  */
-export type PostProcessConfig = { dropHoles: HoleDropConfig; runSeed: number };
+export type PostProcessConfig = {
+	dropHoles: HoleDropConfig;
+	runSeed: number;
+	/**
+	 * Drop each band's outer contour and keep only its (surviving) holes, so the
+	 * holes cut free as loose pieces. Tiled only. Absent means false.
+	 */
+	dropOutline?: boolean;
+	/** Stop drawing label text on prepared bands. Absent means false. */
+	dropLabelText?: boolean;
+};
 
 export const DEFAULT_POST_PROCESS: PostProcessConfig = {
 	dropHoles: { mode: 'none' },
