@@ -9,6 +9,7 @@ import type {
 import { GEOMETRY_TYPES } from '$lib/cut-pattern/post-process-types';
 import { isLayerId } from '$lib/lightburn/layers';
 import { DEFAULT_CONNECT_GAP_MM } from '$lib/cut-pattern/hole-drop-config';
+import { migrateLabelsToMm } from '$lib/cut-pattern/label-units';
 
 export type Validity = {
 	isValid: boolean;
@@ -98,6 +99,16 @@ export const migrateGlobulePatternConfig = <T extends Partial<GlobulePatternConf
 		if (pl.allowRotation === undefined) pl.allowRotation = false;
 		if (pl.algorithm === undefined) pl.algorithm = 'flex-wrap';
 		if (pl.keepConnected === undefined) pl.keepConnected = 0;
+	}
+
+	// Labels moved from pattern units to mm. Convert at this config's own page
+	// scale (backfilled above) so a saved config renders as it did.
+	if (patternTypeConfig?.labels && typeof patternTypeConfig.labels === 'object') {
+		const pageScale = (pc?.pageLayout as { pageScale?: number } | undefined)?.pageScale;
+		patternTypeConfig.labels = migrateLabelsToMm(
+			patternTypeConfig.labels as PatternLabelsConfig,
+			pageScale
+		);
 	}
 
 	// Hole-drop post-processing. Absent decodes to "drop nothing", so this

@@ -24,7 +24,7 @@
 	{#each lines as lineString, i}
 		<SvgText
 			string={lineString}
-			anchor={{ ...anchor, y: anchor.y + 7 * (i + 1) }}
+			anchor={{ ...anchor, y: anchor.y + (size / 2) * (i + 1) }}
 			{size}
 			{geometry}
 		/>

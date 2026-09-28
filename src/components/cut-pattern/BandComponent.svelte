@@ -16,6 +16,7 @@
 		isPrepared,
 		patternBandSpaces,
 		patternConfigStore,
+		resolvedPatternLabels,
 		sameGlobuleBand,
 		selectedGlobuleTube,
 		selectedProjection,
@@ -79,7 +80,8 @@
 	} = $props();
 
 	let patternTypeConfig = $derived($patternConfigStore.patternTypeConfig);
-	let labels = $derived(patternTypeConfig.labels);
+	// Pattern units, resolved from the stored mm through the page scale.
+	let labels = $derived($resolvedPatternLabels);
 	let onTabEnabled = $derived(labels?.onTab?.enabled ?? false);
 	let selfTagEnabled = $derived(labels?.selfTag?.enabled ?? false);
 	let externalTagEnabled = $derived(labels?.selfTag?.externalTag ?? false);
@@ -255,7 +257,7 @@
 			id={`band-self-${band.id}`}
 			bandId={band.id}
 			value={index}
-			radius={(labels?.selfTag?.height ?? 16) / 4}
+			radius={(labels?.selfTag?.height ?? 14) / 4}
 			height={labels?.selfTag?.height ?? 14}
 			angle={band.tagAngle ?? labels?.selfTag?.angle ?? 0}
 			autoAngle={band.tagAnchorAutoAngle}

@@ -33,7 +33,9 @@ describe('migrateGlobulePatternConfig', () => {
 			const result = migrateGlobulePatternConfig(legacy);
 			const labels = (result.patternTypeConfig as TiledPatternConfig).labels;
 
+			// No page layout in the stub, so the mm conversion runs at 1:1.
 			expect(labels).toEqual({
+				units: 'mm',
 				onTab: { enabled: false, padding: 1 },
 				selfTag: {
 					enabled: true,
@@ -46,8 +48,37 @@ describe('migrateGlobulePatternConfig', () => {
 			});
 		});
 
-		it('passes through new shape unchanged', () => {
+		it('converts pattern-unit labels to mm at the config page scale', () => {
+			const config = {
+				...wrap(
+					makeTiledConfig({
+						onTab: { enabled: true, padding: 2 },
+						selfTag: {
+							enabled: true,
+							height: 14,
+							angle: 1,
+							padding: 10,
+							stemLength: 20,
+							stemWidth: 4
+						}
+					})
+				),
+				patternConfig: { pageLayout: { pageScale: 2 } }
+			} as unknown as Partial<GlobulePatternConfig>;
+
+			const result = migrateGlobulePatternConfig(config);
+			const labels = (result.patternTypeConfig as TiledPatternConfig).labels;
+
+			expect(labels).toEqual({
+				units: 'mm',
+				onTab: { enabled: true, padding: 1 },
+				selfTag: { enabled: true, height: 7, angle: 1, padding: 5, stemLength: 10, stemWidth: 2 }
+			});
+		});
+
+		it('passes mm labels through unchanged', () => {
 			const newShape = {
+				units: 'mm',
 				onTab: { enabled: true, padding: 0.2, color: '#ff0000' },
 				selfTag: { enabled: false, height: 20, angle: 1.2, padding: 8 }
 			};
@@ -76,7 +107,9 @@ describe('migrateGlobulePatternConfig', () => {
 			const result = migrateGlobulePatternConfig(legacy);
 			const labels = (result.patternTypeConfig as OutlinedPatternConfig).labels;
 
+			// No page layout in the stub, so the mm conversion runs at 1:1.
 			expect(labels).toEqual({
+				units: 'mm',
 				onTab: { enabled: false, padding: 1 },
 				selfTag: {
 					enabled: true,

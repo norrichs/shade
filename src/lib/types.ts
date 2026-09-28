@@ -749,10 +749,17 @@ export type DynamicStrokeBasis = 'quadWidth' | 'quadHeight' | 'ranked';
 export type SkipEdges = 'all' | 'not-both' | 'not-first' | 'not-last' | 'none';
 
 export type PatternLabelsConfig = {
+	/**
+	 * Lengths below are in mm, resolved to pattern units through
+	 * `pageLayout.pageScale` (see `label-units.ts`). Absent only on configs saved
+	 * before the switch, when they were pattern units; the load migration
+	 * converts those and sets this.
+	 */
+	units?: 'mm';
 	onTab?: { enabled: boolean; padding: number; color?: string };
-	// `height` is the px font height for the rendered LabelText glyphs.
-	// `padding` (default 10) is the px margin between the SvgText bbox and the outline rect.
-	// `stemLength` (default 20) and `stemWidth` (default 4) control the callout stem dims.
+	// `height` is the font height (mm) for the rendered LabelText glyphs.
+	// `padding` is the margin (mm) between the SvgText bbox and the outline rect.
+	// `stemLength` and `stemWidth` (mm) control the callout stem dims.
 	selfTag?: {
 		enabled: boolean;
 		externalTag?: boolean;

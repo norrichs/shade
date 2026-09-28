@@ -10,6 +10,8 @@ import {
 	type TaggedPath
 } from '$lib/cut-pattern/post-process-types';
 import { layerStroke } from '$lib/lightburn/layers';
+import { resolveLabelsToPatternUnits } from '$lib/cut-pattern/label-units';
+import type { PatternLabelsConfig } from '$lib/types';
 
 export type LabelTextDims = { width: number; height: number };
 
@@ -96,6 +98,28 @@ export const pageScaleValue = derived<typeof patternConfigStore, number>(
 		set(next);
 	},
 	1
+);
+
+let lastLabelsJson: string | undefined;
+/**
+ * The pattern labels in pattern units: stored mm lengths times `pageScale`.
+ * Everything that draws, measures or merges a label reads this, never the raw
+ * config, so render, layout footprint and the prepared outline agree on one
+ * size. JSON-guarded so unrelated config edits do not re-render every label.
+ */
+export const resolvedPatternLabels = derived<
+	[typeof patternConfigStore, typeof pageScaleValue],
+	PatternLabelsConfig | undefined
+>(
+	[patternConfigStore, pageScaleValue],
+	([$config, $pageScale], set) => {
+		const next = resolveLabelsToPatternUnits($config.patternTypeConfig.labels, $pageScale);
+		const json = JSON.stringify(next ?? null);
+		if (json === lastLabelsJson) return;
+		lastLabelsJson = json;
+		set(next);
+	},
+	undefined
 );
 
 /**

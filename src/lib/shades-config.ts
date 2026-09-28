@@ -1,3 +1,4 @@
+import { LABEL_MM_DEFAULTS } from '$lib/cut-pattern/label-units';
 import type {
 	CutoutConfig,
 	PatternConfig,
@@ -494,15 +495,16 @@ export const defaultTiledPatternConfig = (): TiledPatternConfig => {
 	return {
 		...tiledPatternConfigs[pattern],
 		labels: {
-			onTab: { enabled: false, padding: 1 },
+			units: 'mm',
+			onTab: { enabled: false, padding: LABEL_MM_DEFAULTS.onTabPadding },
 			selfTag: {
 				enabled: false,
 				externalTag: true,
-				height: 14,
+				height: LABEL_MM_DEFAULTS.height,
 				angle: 0,
-				padding: 10,
-				stemLength: 20,
-				stemWidth: 4
+				padding: LABEL_MM_DEFAULTS.padding,
+				stemLength: LABEL_MM_DEFAULTS.stemLength,
+				stemWidth: LABEL_MM_DEFAULTS.stemWidth
 			}
 		}
 	};
@@ -526,15 +528,16 @@ export const defaultOutlinedPatternConfig = (): OutlinedPatternConfig => ({
 		bandEdge: 'after'
 	},
 	labels: {
-		onTab: { enabled: false, padding: 1 },
+		units: 'mm',
+		onTab: { enabled: false, padding: LABEL_MM_DEFAULTS.onTabPadding },
 		selfTag: {
 			enabled: true,
 			externalTag: true,
-			height: 14,
+			height: LABEL_MM_DEFAULTS.height,
 			angle: 0,
-			padding: 10,
-			stemLength: 20,
-			stemWidth: 4
+			padding: LABEL_MM_DEFAULTS.padding,
+			stemLength: LABEL_MM_DEFAULTS.stemLength,
+			stemWidth: LABEL_MM_DEFAULTS.stemWidth
 		}
 	}
 });

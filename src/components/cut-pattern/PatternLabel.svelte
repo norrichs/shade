@@ -89,7 +89,10 @@
 
 	$effect(() => {
 		// Re-measure whenever inputs that affect rendered text geometry change.
+		// `height` is the font size: it changes with the page scale now that
+		// label sizes are mm, and a stale bbox would size the outline wrong.
 		void addressStrings;
+		void height;
 		void measurementText;
 		void labelTextElement;
 		void measureText();

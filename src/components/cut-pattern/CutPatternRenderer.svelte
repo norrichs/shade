@@ -15,7 +15,8 @@
 		mergedBandPaths,
 		postProcessConfig,
 		loadedConfigName,
-		exportPagesStore
+		exportPagesStore,
+		resolvedPatternLabels
 	} from '$lib/stores';
 	import { computeSplitBudget, EMPTY_SPLIT_BUDGET } from '$lib/cut-pattern/split-budget';
 	import { createOverflowNotifier } from '$lib/cut-pattern/page-overflow-notice';
@@ -83,7 +84,7 @@
 	let codeMap = $derived(sortIndex ? buildBandCodeMap(sortIndex) : undefined);
 	const groupCodeFor = (address: GlobuleAddress_Band) => groupCodeForBand(codeMap, address);
 
-	let patternLabels = $derived($patternConfigStore.patternTypeConfig?.labels);
+	let patternLabels = $derived($resolvedPatternLabels);
 	let externalTagEnabled = $derived(patternLabels?.selfTag?.externalTag ?? false);
 	let measuredLabelDims = $derived($labelTextDimensions);
 

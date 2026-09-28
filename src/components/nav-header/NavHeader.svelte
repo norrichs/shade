@@ -13,7 +13,8 @@
 		exportPagesStore,
 		lightburnTemplateStore,
 		postProcessConfig,
-		loadedConfigName
+		loadedConfigName,
+		resolvedPatternLabels
 	} from '$lib/stores';
 	import { isManualMode, hasPendingChanges } from '$lib/stores/uiStores';
 	import { triggerManualRegeneration, isGenerating } from '$lib/stores/superGlobuleStores';
@@ -82,7 +83,9 @@
 		const cfg = $patternConfigStore;
 		const invalidationKey = JSON.stringify([
 			cfg.patternTypeConfig.type,
-			cfg.patternTypeConfig.labels?.selfTag,
+			// Resolved, so a page-scale change (which resizes labels in pattern
+			// units) also invalidates the merged label outline.
+			$resolvedPatternLabels?.selfTag,
 			cfg.patternViewConfig.bandSortMode,
 			cfg.patternConfig.pageLayout.keepConnected,
 			cfg.patternConfig.splits
@@ -155,7 +158,7 @@
 			payloads: toBandMergePayloads(tubes, labelDims),
 			ctx: {
 				patternType: config.patternTypeConfig.type,
-				selfTag: config.patternTypeConfig.labels?.selfTag,
+				selfTag: get(resolvedPatternLabels)?.selfTag,
 				keepConnected: config.patternConfig.pageLayout.keepConnected ?? 0
 			}
 		};
@@ -378,11 +381,7 @@
 			csvText = buildPatternCsv(index, tubes);
 			csvState = 'ready';
 		} else {
-			downloadTextFile(
-				csvText,
-				`${fileStamp(get(loadedConfigName))} pattern-map.csv`,
-				'text/csv'
-			);
+			downloadTextFile(csvText, `${fileStamp(get(loadedConfigName))} pattern-map.csv`, 'text/csv');
 		}
 	};
 
