@@ -269,6 +269,8 @@
 			fill-rule="evenodd"
 			fill="none"
 			stroke={$layerStrokes['pattern-outline']}
+			stroke-width="1"
+			vector-effect="non-scaling-stroke"
 			data-geometry="pattern-outline"
 		/>
 	{/if}

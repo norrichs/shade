@@ -40,10 +40,12 @@
 	let yOffset = $derived(offset.y === 'center' ? -0.5 : offset.y);
 </script>
 
+<!-- Glyph strokes are non-scaling: `strokeWidth` screen pixels whatever the
+     font size, page scale or zoom. `vector-effect` does not inherit, so it sits
+     on each path. -->
 <g
 	transform={`translate(${anchor.x} ${anchor.y}) rotate(${angle}) scale(${size})`}
 	fill="none"
-	stroke-width={strokeWidth / size}
 	stroke={$layerStrokes[geometry]}
 	{id}
 >
@@ -54,6 +56,8 @@
 				data-geometry={geometry}
 				d={char}
 				transform={`translate(${offset}, 0)`}
+				stroke-width={strokeWidth}
+				vector-effect="non-scaling-stroke"
 			/>
 		{/each}
 	</g>

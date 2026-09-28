@@ -8,6 +8,7 @@ import type {
 import type { LabelTextDims } from '$lib/stores/mergedPathStore';
 import { buildLabelOutlinePath } from './label-outline-path';
 import { transformLabelOutlineToBandSpace } from './transform-label-outline';
+import { flattenPath } from './path-contours';
 
 /**
  * Average glyph advance and line height as a fraction of font size, used to
@@ -70,8 +71,8 @@ const boundsOfPathSegments = (path: PathSegment[]): BoundingBox => {
 
 export type LabelFootprintInput = {
 	anchor: Point;
-	/** `band.tagAnchorAutoAngle` (radians). */
-	autoAngle: number;
+	/** `band.tagAnchorAutoAngle` (radians); undefined for the legacy absolute angle. */
+	autoAngle: number | undefined;
 	/** `band.tagAngle ?? config angle` (radians) — offset added to autoAngle. */
 	angle: number;
 	textWidth: number;
@@ -112,14 +113,61 @@ export const computeLabelFootprintBox = (input: LabelFootprintInput): BoundingBo
 		stemWidth
 	});
 
-	const effectiveAngle = angle + autoAngle;
-	const renderAnchor: Point = {
-		x: anchor.x - (stemWidth / 2) * Math.cos(effectiveAngle),
-		y: anchor.y - (stemWidth / 2) * Math.sin(effectiveAngle)
-	};
+	// No auto-angle (a tiled band whose anchor found no quad): PatternLabel
+	// takes `angle` as absolute and puts the stem tip centre on the anchor.
+	const effectiveAngle = angle + (autoAngle ?? 0);
+	const renderAnchor: Point =
+		autoAngle === undefined
+			? anchor
+			: {
+					x: anchor.x - (stemWidth / 2) * Math.cos(effectiveAngle),
+					y: anchor.y - (stemWidth / 2) * Math.sin(effectiveAngle)
+				};
 
 	const bandSpacePath = transformLabelOutlineToBandSpace(localPath, renderAnchor, effectiveAngle);
 	return boundsOfPathSegments(bandSpacePath);
+};
+
+const patternExtentCache = new WeakMap<BandCutPattern, BoundingBox | undefined>();
+
+/**
+ * Axis-aligned extent of what the band actually draws and cuts: every facet
+ * path, curves sampled, grown by half its stroke width.
+ *
+ * `band.bounds` is the flat band, but pattern segments are adjusted past its
+ * edges and stroked at widths that can be large, so packing by it lets
+ * neighbours overlap. The prepared union expands each facet edge with round
+ * caps at `facet.strokeWidth` (`build-band-union-path.ts`), which is exactly a
+ * disk of radius strokeWidth/2 swept along the path, so this box is also the
+ * prepared outline's box. Falls back to `band.bounds` when no facet has a path.
+ *
+ * Cached per band object: bands are rebuilt, never mutated, on regeneration.
+ */
+export const patternExtentBounds = (band: BandCutPattern): BoundingBox | undefined => {
+	if (patternExtentCache.has(band)) return patternExtentCache.get(band);
+	let minX = Infinity;
+	let minY = Infinity;
+	let maxX = -Infinity;
+	let maxY = -Infinity;
+	for (const facet of band.facets ?? []) {
+		if (!facet.path?.length) continue;
+		const r = (facet.strokeWidth ?? 1) / 2;
+		for (const run of flattenPath(facet.path)) {
+			for (const p of run) {
+				if (!Number.isFinite(p.x) || !Number.isFinite(p.y)) continue;
+				if (p.x - r < minX) minX = p.x - r;
+				if (p.x + r > maxX) maxX = p.x + r;
+				if (p.y - r < minY) minY = p.y - r;
+				if (p.y + r > maxY) maxY = p.y + r;
+			}
+		}
+	}
+	const box =
+		minX <= maxX && minY <= maxY
+			? { left: minX, top: minY, width: maxX - minX, height: maxY - minY }
+			: band.bounds;
+	patternExtentCache.set(band, box);
+	return box;
 };
 
 export type EffectiveBandBoundsInput = {
@@ -132,26 +180,19 @@ export type EffectiveBandBoundsInput = {
 };
 
 /**
- * The band's bounds expanded to enclose its external self-tag label.
+ * The box layout packs: the band's drawn pattern extent (`patternExtentBounds`)
+ * expanded to enclose its self-tag label.
  *
- * Returns `band.bounds` unchanged when the label isn't eligible (self-tag
- * disabled, no anchor, no auto-angle, or no bounds to start from). Eligibility
- * mirrors `prepare-merge.ts`: an anchored self-tag with a defined auto-angle
- * (i.e. outlined bands). Text dims come from the measured store when present,
- * otherwise from `estimateTextDims`.
+ * The label counts whenever the self-tag is enabled and the band has an anchor,
+ * as `BandComponent` renders it. Text dims come from the measured store when
+ * present, otherwise from `estimateTextDims`.
  */
 export const effectiveBandBounds = (input: EffectiveBandBoundsInput): BoundingBox | undefined => {
 	const { band, labels, selfTagLines, measuredDims } = input;
 	const selfTag = labels?.selfTag;
+	const extent = patternExtentBounds(band);
 
-	if (
-		!band.bounds ||
-		!selfTag?.enabled ||
-		band.tagAnchorAutoAngle === undefined ||
-		!band.tagAnchorPoint
-	) {
-		return band.bounds;
-	}
+	if (!extent || !selfTag?.enabled || !band.tagAnchorPoint) return extent;
 
 	const height = selfTag.height ?? 14;
 	const dims = measuredDims.get(band.id) ?? estimateTextDims(selfTagLines, height);
@@ -159,7 +200,7 @@ export const effectiveBandBounds = (input: EffectiveBandBoundsInput): BoundingBo
 	const footprint = computeLabelFootprintBox({
 		anchor: band.tagAnchorPoint,
 		autoAngle: band.tagAnchorAutoAngle,
-		angle: (band.tagAngle ?? selfTag.angle ?? 0) + 0,
+		angle: band.tagAngle ?? selfTag.angle ?? 0,
 		textWidth: dims.width,
 		textHeight: dims.height,
 		radius: height / 4,
@@ -168,5 +209,5 @@ export const effectiveBandBounds = (input: EffectiveBandBoundsInput): BoundingBo
 		stemWidth: selfTag.stemWidth ?? 4
 	});
 
-	return unionBox(band.bounds, footprint);
+	return unionBox(extent, footprint);
 };

@@ -3,7 +3,8 @@ import {
 	unionBox,
 	estimateTextDims,
 	computeLabelFootprintBox,
-	effectiveBandBounds
+	effectiveBandBounds,
+	patternExtentBounds
 } from '../label-footprint';
 
 const labelsConfig = (overrides: Partial<NonNullable<PatternLabelsConfig['selfTag']>> = {}) =>
@@ -148,14 +149,83 @@ describe('effectiveBandBounds', () => {
 		expect(box).toEqual(band.bounds);
 	});
 
-	test('returns the band bounds unchanged when there is no auto-angle (non-outlined)', () => {
-		const band = makeBand({ tagAnchorAutoAngle: undefined });
+	test('still encloses the label when there is no auto-angle (tiled, absolute angle)', () => {
+		// Anchor on the band's bottom edge; angle 0 hangs the label below it.
+		const band = makeBand({ tagAnchorAutoAngle: undefined, tagAnchorPoint: { x: 50, y: 200 } });
 		const box = effectiveBandBounds({
 			band,
 			labels: labelsConfig(),
 			selfTagLines: lines,
 			measuredDims: new Map()
 		});
-		expect(box).toEqual(band.bounds);
+		expect(box!.top + box!.height).toBeGreaterThan(200);
+	});
+
+	test('packs the stroked pattern extent, not the flat band bounds', () => {
+		const band = makeBand({
+			facets: [
+				{
+					path: [
+						['M', -20, 0],
+						['L', 130, 0]
+					],
+					strokeWidth: 10
+				}
+			] as never
+		});
+		const box = effectiveBandBounds({
+			band,
+			labels: labelsConfig({ enabled: false }),
+			selfTagLines: lines,
+			measuredDims: new Map()
+		});
+		expect(box).toEqual({ left: -25, top: -5, width: 160, height: 10 });
+	});
+});
+
+describe('patternExtentBounds', () => {
+	test('grows every facet path by half its own stroke width', () => {
+		const band = makeBand({
+			facets: [
+				{
+					path: [
+						['M', 0, 0],
+						['L', 10, 0]
+					],
+					strokeWidth: 2
+				},
+				{
+					path: [
+						['M', 0, 50],
+						['L', 0, 60]
+					],
+					strokeWidth: 8
+				}
+			] as never
+		});
+		expect(patternExtentBounds(band)).toEqual({ left: -4, top: -1, width: 15, height: 65 });
+	});
+
+	test('samples curves instead of boxing their control points', () => {
+		const band = makeBand({
+			facets: [
+				{
+					path: [
+						['M', 0, 0],
+						['C', 0, 100, 10, 100, 10, 0]
+					],
+					strokeWidth: 0
+				}
+			] as never
+		});
+		const box = patternExtentBounds(band)!;
+		// The curve peaks at y = 75; its control points sit at 100.
+		expect(box.height).toBeLessThan(80);
+		expect(box.height).toBeGreaterThan(70);
+	});
+
+	test('falls back to band.bounds when no facet has a path', () => {
+		const band = makeBand();
+		expect(patternExtentBounds(band)).toBe(band.bounds);
 	});
 });

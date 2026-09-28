@@ -10,3 +10,6 @@
  */
 export const HIGHLIGHT_PRIMARY = '#ff3b30';
 export const HIGHLIGHT_SECONDARY = '#ffb3ae';
+
+/** The clicked band's layout box in the pattern view: pale blue, drawn at 20% opacity. */
+export const LAYOUT_BOUNDS_FILL = '#8ec5ff';

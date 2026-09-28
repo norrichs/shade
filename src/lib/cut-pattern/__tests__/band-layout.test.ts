@@ -35,12 +35,17 @@ const ctx = (labels: PatternLabelsConfig | undefined) => ({
 });
 
 describe('buildEffectiveBoundsIndex', () => {
-	it('falls back to the raw band bounds when labels are off', () => {
+	it('is the stroked pattern extent when labels are off', () => {
 		const a = makeBand('0');
-		const b = makeBand('1');
-		const index = buildEffectiveBoundsIndex([a, b], ctx(noLabels));
+		const index = buildEffectiveBoundsIndex([a], ctx(noLabels));
+		// Facet path spans 0..10 × 0..40; the default stroke width 1 adds 0.5 a side.
+		expect(index.get(a)).toEqual({ left: -0.5, top: -0.5, width: 11, height: 41 });
+	});
+
+	it('falls back to the raw band bounds when no facet has a path', () => {
+		const a = makeBand('0', { facets: [] });
+		const index = buildEffectiveBoundsIndex([a], ctx(noLabels));
 		expect(index.get(a)).toBe(a.bounds);
-		expect(index.get(b)).toBe(b.bounds);
 	});
 
 	it('expands the bounds to enclose an external self tag when eligible', () => {
@@ -67,6 +72,7 @@ describe('buildEffectiveBoundsIndex', () => {
 describe('buildPivotIndex', () => {
 	it('is the center of the effective bounds', () => {
 		const band = makeBand('0', {
+			facets: [],
 			bounds: { left: 10, top: 20, width: 30, height: 40, center: new Vector3() }
 		});
 		const bounds = buildEffectiveBoundsIndex([band], ctx(noLabels));
@@ -74,7 +80,7 @@ describe('buildPivotIndex', () => {
 	});
 
 	it('defaults to the origin for a band without bounds', () => {
-		const band = makeBand('0', { bounds: undefined });
+		const band = makeBand('0', { facets: [], bounds: undefined });
 		const bounds = buildEffectiveBoundsIndex([band], ctx(noLabels));
 		expect(buildPivotIndex([band], bounds).get(band)).toEqual({ x: 0, y: 0 });
 	});

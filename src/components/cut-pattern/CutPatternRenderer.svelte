@@ -476,6 +476,7 @@
 					tagAngle={band.tagAngle}
 					groupCode={groupCodeFor(band.address)}
 					showBounds={false}
+					layoutBounds={effBoundsFor(band)}
 					{selectionTarget}
 				>
 					{#if band.projectionType === 'patterned'}
@@ -514,6 +515,7 @@
 					tagAngle={band.tagAngle}
 					groupCode={groupCodeFor(band.address)}
 					showBounds={false}
+					layoutBounds={effBoundsFor(band)}
 					{selectionTarget}
 				>
 					{#if band.projectionType === 'patterned'}
@@ -550,6 +552,7 @@
 						tagAngle={band.tagAngle}
 						groupCode={groupCodeFor(band.address)}
 						showBounds={false}
+						layoutBounds={effBoundsFor(band)}
 						{selectionTarget}
 					>
 						{#if band.projectionType === 'patterned'}

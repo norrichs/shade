@@ -116,6 +116,7 @@
 				fill="none"
 				stroke={$layerStrokes[piece.geometry]}
 				stroke-width={1}
+				vector-effect="non-scaling-stroke"
 			/>
 		{/each}
 	{:else}

@@ -16,6 +16,7 @@
 			data-geometry="page-outline"
 			stroke={$layerStrokes['page-outline']}
 			stroke-width="1"
+			vector-effect="non-scaling-stroke"
 		/>
 	</g>
 {/each}

@@ -1,5 +1,11 @@
 <script lang="ts">
-	import type { BandCutPattern, PatternSource, Point, TubeCutPattern } from '$lib/types';
+	import type {
+		BandCutPattern,
+		BoundingBox,
+		PatternSource,
+		Point,
+		TubeCutPattern
+	} from '$lib/types';
 	import type { Snippet } from 'svelte';
 	import PatternLabel from './PatternLabel.svelte';
 	import OnTabLabel from './OnTabLabel.svelte';
@@ -18,7 +24,7 @@
 		selectedVoronoiSurface,
 		setAssemblerHighlightForBand
 	} from '$lib/stores';
-	import { HIGHLIGHT_PRIMARY, HIGHLIGHT_SECONDARY } from '$lib/highlight-colors';
+	import { HIGHLIGHT_SECONDARY, LAYOUT_BOUNDS_FILL } from '$lib/highlight-colors';
 	import type { Vector3 } from 'three';
 	import type { GlobuleAddress_Band } from '$lib/projection-geometry/types';
 	import { concatAddress } from '$lib/util';
@@ -47,6 +53,7 @@
 		tube,
 		tubes,
 		showBounds = false,
+		layoutBounds = undefined,
 		tagAnchorPoint,
 		tagAngle,
 		groupCode = undefined,
@@ -62,6 +69,8 @@
 		/** Every tube of the pattern, indexed by tube number: tab labels resolve end partners in them. */
 		tubes: TubeCutPattern[];
 		showBounds?: boolean;
+		/** The box layout packs this band by (pattern extent plus label), band-local. */
+		layoutBounds?: BoundingBox;
 		tagAnchorPoint: Point;
 		tagAngle: number | undefined;
 		groupCode?: string;
@@ -114,16 +123,19 @@
 	let isHovered = $state(false);
 	let color = $derived(isHovered ? colors.hovered : isFocused ? colors.focused : colors.default);
 
-	// Assembler cross-view highlight: fill this band's bounds when it (or its
-	// ring) is the band clicked in the data grid.
-	let highlightFill = $derived.by(() => {
+	// Assembler cross-view highlight: when this band (or its ring) is the band
+	// clicked, fill the box layout packs it by, so overlap can be reasoned about.
+	// The clicked band's box shows in the prepared view too — that is where
+	// layout matters — and is screen-only, so it never reaches the cut file.
+	let highlight = $derived.by((): 'primary' | 'secondary' | null => {
 		// Only a highlight of this pattern's source names bands in its space.
 		const h = assemblerHighlightInPattern($assemblerHighlight, selectionTarget);
 		if (!h) return null;
-		if (sameGlobuleBand(band.address, h.band)) return HIGHLIGHT_PRIMARY;
-		if (h.ring.some((b) => sameGlobuleBand(band.address, b))) return HIGHLIGHT_SECONDARY;
+		if (sameGlobuleBand(band.address, h.band)) return 'primary';
+		if (h.ring.some((b) => sameGlobuleBand(band.address, b))) return 'secondary';
 		return null;
 	});
+	let highlightBounds = $derived(layoutBounds ?? band.bounds);
 
 	const handleMouseOver = (address: GlobuleAddress_Band) => {
 		isHovered = true;
@@ -201,16 +213,16 @@
 			stroke="red"
 			stroke-width={0.1}
 		/>{/if}
-	{#if highlightFill && !$isPrepared && band.bounds}<rect
+	{#if highlightBounds && (highlight === 'primary' || (highlight === 'secondary' && !$isPrepared))}<rect
 			class="screen-only"
-			x={band.bounds.left}
-			y={band.bounds.top}
-			width={band.bounds.width}
-			height={band.bounds.height}
-			fill={highlightFill}
-			fill-opacity={0.45}
-			stroke={highlightFill}
-			stroke-width={1}
+			x={highlightBounds.left}
+			y={highlightBounds.top}
+			width={highlightBounds.width}
+			height={highlightBounds.height}
+			fill={highlight === 'primary' ? LAYOUT_BOUNDS_FILL : HIGHLIGHT_SECONDARY}
+			fill-opacity={highlight === 'primary' ? 0.2 : 0.45}
+			stroke="none"
+			pointer-events="none"
 		/>{/if}
 	{@render children?.()}
 	<!-- Existing splits draw at all times except in the prepared view, which is a
