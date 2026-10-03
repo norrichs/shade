@@ -57,15 +57,6 @@
 		$patternConfigStore.patternViewConfig.patternLayoutMode = next;
 	};
 
-	// Ensure a surfaceProjectionConfig exists so the divisions/fill-all controls
-	// have something to bind to when the surfaceProjection source is selected.
-	$effect(() => {
-		const pc = $superConfigStore.projectionConfigs[0];
-		if (pc && !pc.surfaceProjectionConfig) {
-			pc.surfaceProjectionConfig = { divisions: 0 };
-		}
-	});
-
 	let presetId = $derived.by(() => {
 		const p = PAGE_PRESETS.find(
 			(p) =>
@@ -277,42 +268,8 @@
 		</select>
 	</label>
 
-	{#if $patternConfigStore.patternViewConfig.patternSource === 'surfaceProjection' && $superConfigStore.projectionConfigs[0]?.surfaceProjectionConfig}
-		<label>
-			divisions
-			<input
-				type="number"
-				min="0"
-				max="5"
-				step="1"
-				bind:value={$superConfigStore.projectionConfigs[0].surfaceProjectionConfig.divisions}
-			/>
-		</label>
-		<label class="indicator-toggle">
-			<input
-				type="checkbox"
-				checked={$superConfigStore.projectionConfigs[0].surfaceProjectionConfig.fillAll ?? false}
-				onchange={(e) => {
-					const checked = (e.currentTarget as HTMLInputElement).checked;
-					$superConfigStore = {
-						...$superConfigStore,
-						projectionConfigs: $superConfigStore.projectionConfigs.map((pc, i) =>
-							i === 0
-								? {
-										...pc,
-										surfaceProjectionConfig: {
-											...pc.surfaceProjectionConfig!,
-											fillAll: checked
-										}
-									}
-								: pc
-						)
-					};
-				}}
-			/>
-			fill all
-		</label>
-	{:else if $patternConfigStore.patternViewConfig.patternSource === 'voronoiSurface' && $superConfigStore.voronoiConfig}
+	<!-- Surface projection divisions and fill all live in the Polyhedra editor. -->
+	{#if $patternConfigStore.patternViewConfig.patternSource === 'voronoiSurface' && $superConfigStore.voronoiConfig}
 		<label class="indicator-toggle">
 			<input
 				type="checkbox"

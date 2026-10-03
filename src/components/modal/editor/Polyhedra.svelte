@@ -9,6 +9,43 @@
 	import { polyhedronConfigs } from './polyhedra-configs';
 	import TransformControls from './TransformControls.svelte';
 	import { identityTransform, isInheritedTransform } from './transform-config';
+	import { resolveEdgeSampling } from '$lib/projection-geometry/edge-sampling';
+	import type {
+		BaseProjectionConfig,
+		EdgeSamplingConfig,
+		SurfaceProjectionConfig
+	} from '$lib/projection-geometry/types';
+
+	const sampling = $derived(
+		resolveEdgeSampling($superConfigStore.projectionConfigs[0]?.edgeSampling)
+	);
+	const surfaceProjection = $derived(
+		$superConfigStore.projectionConfigs[0]?.surfaceProjectionConfig ?? { divisions: 0 }
+	);
+
+	// Replace the first projection config so the store emits and generation reruns.
+	const updateProjection = (patch: (pc: BaseProjectionConfig) => Partial<BaseProjectionConfig>) => {
+		$superConfigStore = {
+			...$superConfigStore,
+			projectionConfigs: $superConfigStore.projectionConfigs.map((pc, i) =>
+				i === 0 ? { ...pc, ...patch(pc) } : pc
+			)
+		};
+	};
+
+	const setSampling = (fields: EdgeSamplingConfig) =>
+		updateProjection((pc) => ({ edgeSampling: { ...pc.edgeSampling, ...fields } }));
+
+	const setSurfaceProjection = (fields: Partial<SurfaceProjectionConfig>) =>
+		updateProjection((pc) => ({
+			surfaceProjectionConfig: { divisions: 0, ...pc.surfaceProjectionConfig, ...fields }
+		}));
+
+	// Keep min <= max by moving the other end, as the Voronoi panel does.
+	const setMinDivisions = (min: number) =>
+		setSampling({ edgeDivisions: [min, Math.max(min, sampling.edgeDivisions[1])] });
+	const setMaxDivisions = (max: number) =>
+		setSampling({ edgeDivisions: [Math.min(max, sampling.edgeDivisions[0]), max] });
 
 	const handleChangePolyhedron = (event: Event) => {
 		const selectedName = (event.target as HTMLSelectElement).value;
@@ -68,9 +105,125 @@
 			{/if}
 		</Container>
 	</section>
+	<section>
+		<header>Edges</header>
+		<Container direction="column">
+			<LabeledControl label="Curve:">
+				<select
+					class="option"
+					value={sampling.curveSource}
+					onchange={(e) =>
+						setSampling({
+							curveSource: e.currentTarget.value as EdgeSamplingConfig['curveSource']
+						})}
+				>
+					<option value="edgeCurve">Edge curve</option>
+					<option value="offset">Offset</option>
+				</select>
+			</LabeledControl>
+			<LabeledControl label="Curve offset:" show={sampling.curveSource === 'offset'}>
+				<span class="slider">
+					<input
+						type="range"
+						min="0.05"
+						max="0.95"
+						step="0.05"
+						value={sampling.curveOffset}
+						oninput={(e) => setSampling({ curveOffset: Number(e.currentTarget.value) })}
+					/>
+					<span>{sampling.curveOffset.toFixed(2)}</span>
+				</span>
+			</LabeledControl>
+			<LabeledControl label="Divisions:">
+				<select
+					class="option"
+					value={sampling.divisionsSource}
+					onchange={(e) =>
+						setSampling({
+							divisionsSource: e.currentTarget.value as EdgeSamplingConfig['divisionsSource']
+						})}
+				>
+					<option value="edgeCurve">Edge curve</option>
+					<option value="adaptive">Adaptive</option>
+				</select>
+			</LabeledControl>
+			<LabeledControl label="Min:" show={sampling.divisionsSource === 'adaptive'}>
+				<span class="slider">
+					<input
+						type="range"
+						min="1"
+						max="20"
+						value={sampling.edgeDivisions[0]}
+						oninput={(e) => setMinDivisions(Number(e.currentTarget.value))}
+					/>
+					<span>{sampling.edgeDivisions[0]}</span>
+				</span>
+			</LabeledControl>
+			<LabeledControl label="Max:" show={sampling.divisionsSource === 'adaptive'}>
+				<span class="slider">
+					<input
+						type="range"
+						min="1"
+						max="20"
+						value={sampling.edgeDivisions[1]}
+						oninput={(e) => setMaxDivisions(Number(e.currentTarget.value))}
+					/>
+					<span>{sampling.edgeDivisions[1]}</span>
+				</span>
+			</LabeledControl>
+			<LabeledControl label="Multiplier:">
+				<input
+					type="number"
+					min="1"
+					step="1"
+					value={sampling.edgeDivisionsMultiplier}
+					onchange={(e) => setSampling({ edgeDivisionsMultiplier: Number(e.currentTarget.value) })}
+				/>
+			</LabeledControl>
+		</Container>
+	</section>
+	<section>
+		<header>Surface</header>
+		<Container direction="column">
+			<LabeledControl label="Surface divisions:">
+				<span class="slider">
+					<input
+						type="range"
+						min="0"
+						max="5"
+						step="1"
+						value={surfaceProjection.divisions}
+						oninput={(e) => setSurfaceProjection({ divisions: Number(e.currentTarget.value) })}
+					/>
+					<span>{surfaceProjection.divisions}</span>
+				</span>
+			</LabeledControl>
+			<LabeledControl label="Fill all:">
+				<input
+					type="checkbox"
+					checked={surfaceProjection.fillAll ?? false}
+					onchange={(e) => setSurfaceProjection({ fillAll: e.currentTarget.checked })}
+				/>
+			</LabeledControl>
+		</Container>
+	</section>
 </Editor>
 
 <style>
+	.slider {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+	}
+	.slider span {
+		min-width: 2.5em;
+		text-align: right;
+	}
+	select.option {
+		font-size: 1rem;
+		font-weight: normal;
+		width: auto;
+	}
 	select {
 		border: none;
 		background-color: transparent;

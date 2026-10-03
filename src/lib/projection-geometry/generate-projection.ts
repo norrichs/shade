@@ -70,6 +70,14 @@ import { generateGlobuleTube, generateGlobuleData } from '$lib/generate-shape';
 import { collateGlobuleTubeGeometry } from './collate-geometry';
 import { auditSides, auditSurfaceProjectionSides } from './audit';
 import { buildFillBand, outerBorderPolyline, reindexBandAddresses } from './fill-bands';
+import {
+	drapedEdgeLength,
+	edgeKey,
+	offsetCurvePoints,
+	resolveEdgeSampling,
+	type ResolvedEdgeSampling
+} from './edge-sampling';
+import { computeAdaptiveEdgeDivisions } from '$lib/voronoi/edge-divisions';
 
 export const preparePolygonConfig = (
 	polygonConfig: PolygonConfig<undefined, number, number, number>,
@@ -258,13 +266,86 @@ export const generateSurface = (cfg: SurfaceConfig) => {
 	return surface;
 };
 
+/** Rays are cast from here onto the surface. */
+export const getProjectionCenter = (surfaceConfig: SurfaceConfig): Vector3 =>
+	surfaceConfig.type === 'GlobuleConfig'
+		? new Vector3(0, 0, 0)
+		: (getVector3(surfaceConfig.center) as Vector3);
+
+const transformedEdgeVertices = (
+	{ vertex0, vertex1 }: EdgeConfig<Point3, Point3, EdgeCurveConfig, CrossSectionConfig>,
+	transformMatrix: Matrix4
+) => (getVector3([vertex0, vertex1]) as Vector3[]).map((v) => v.applyMatrix4(transformMatrix));
+
+/**
+ * Adaptive division count for every polyhedron edge, keyed by `edgeKey`. Each edge
+ * is measured once by the length it drapes onto the surface, so the two polygons
+ * sharing it get the same count — tube pairing requires equal section counts.
+ */
+const computeDrapedEdgeDivisions = (
+	projectorConfig: ProjectorConfig<Point3, Point3, EdgeCurveConfig, CrossSectionConfig>,
+	transformMatrix: Matrix4,
+	sampling: ResolvedEdgeSampling,
+	surface: Object3D,
+	center: Vector3
+): Map<string, number> => {
+	const edges = new Map<string, Vector3[]>();
+	for (const polygon of projectorConfig.polyhedron.polygons) {
+		for (const edgeConfig of polygon.edges) {
+			const [v0, v1] = transformedEdgeVertices(edgeConfig, transformMatrix);
+			const key = edgeKey(v0, v1);
+			if (!edges.has(key)) edges.set(key, [v0, v1]);
+		}
+	}
+	const keys = [...edges.keys()];
+	const lengths = keys.map((key) => {
+		const [v0, v1] = edges.get(key)!;
+		return drapedEdgeLength({ v0, v1, surface, center });
+	});
+	const counts = computeAdaptiveEdgeDivisions(
+		lengths,
+		sampling.edgeDivisions,
+		sampling.edgeDivisionsMultiplier
+	);
+	return new Map(keys.map((key, i) => [key, counts[i]]));
+};
+
 export const generatePolyhedron = (
-	projectorConfig: ProjectorConfig<Point3, Point3, EdgeCurveConfig, CrossSectionConfig>
+	projectorConfig: ProjectorConfig<Point3, Point3, EdgeCurveConfig, CrossSectionConfig>,
+	options: { sampling?: ResolvedEdgeSampling; surface?: Object3D; center?: Vector3 } = {}
 ) => {
 	const projectorTransform = projectorConfig.polyhedron.transform;
 	if (projectorTransform === 'inherit') {
 		throw new Error("generatePolyhedron - transform should not be 'inherit'");
 	}
+	const sampling = options.sampling ?? resolveEdgeSampling();
+	const transformMatrix = getMatrix4(projectorTransform);
+
+	let adaptiveDivisions: Map<string, number> | null = null;
+	if (sampling.divisionsSource === 'adaptive') {
+		if (!options.surface || !options.center) {
+			throw new Error('generatePolyhedron - adaptive edge divisions need the surface and center');
+		}
+		adaptiveDivisions = computeDrapedEdgeDivisions(
+			projectorConfig,
+			transformMatrix,
+			sampling,
+			options.surface,
+			options.center
+		);
+	}
+
+	const divisionsFor = (
+		edgeConfig: EdgeConfig<Point3, Point3, EdgeCurveConfig, CrossSectionConfig>
+	): number | undefined => {
+		if (adaptiveDivisions) {
+			const [v0, v1] = transformedEdgeVertices(edgeConfig, transformMatrix);
+			return adaptiveDivisions.get(edgeKey(v0, v1));
+		}
+		const k = sampling.edgeDivisionsMultiplier;
+		return k > 1 ? edgeConfig.widthCurve.sampleMethod.divisions * k : undefined;
+	};
+
 	const polyhedron: Polyhedron = {
 		polygons: projectorConfig.polyhedron.polygons.map((polygon) => {
 			return {
@@ -273,7 +354,9 @@ export const generatePolyhedron = (
 					const { edgePoints, curvePoints } = generateEdge({
 						edgeConfig,
 						center,
-						transformConfig: projectorTransform
+						transformConfig: projectorTransform,
+						divisions: divisionsFor(edgeConfig),
+						curveOffset: sampling.curveSource === 'offset' ? sampling.curveOffset : undefined
 					});
 					return { edgePoints, curvePoints, config: edgeConfig };
 				})
@@ -301,15 +384,21 @@ export const getPolygonCenter = (
 const generateEdge = ({
 	edgeConfig: { vertex0, vertex1, widthCurve, isDirectionMatched },
 	center: originalCenter,
-	transformConfig
+	transformConfig,
+	divisions: divisionsOverride,
+	curveOffset
 }: {
 	edgeConfig: EdgeConfig<Point3, Point3, EdgeCurveConfig, CrossSectionConfig>;
 	center: Vector3;
 	transformConfig: TransformConfig;
+	/** Replaces the edge curve's own count; its bezier is then divided evenly. */
+	divisions?: number;
+	/** When set, curve points sit this fraction toward the center instead of on the bezier. */
+	curveOffset?: number;
 }) => {
 	const transformMatrix = getMatrix4(transformConfig);
 
-	const { divisions } = widthCurve.sampleMethod;
+	const divisions = divisionsOverride ?? widthCurve.sampleMethod.divisions;
 	const [v0, v1] = getVector3([vertex0, vertex1]) as Vector3[];
 	v0.applyMatrix4(transformMatrix);
 	v1.applyMatrix4(transformMatrix);
@@ -321,7 +410,17 @@ const generateEdge = ({
 		edgePoints.push(v0.clone().lerp(v1, i / divisions));
 	}
 
-	const definitionPoints = getPoints(widthCurve.curves, widthCurve.sampleMethod);
+	if (curveOffset !== undefined) {
+		return { edgePoints, curvePoints: offsetCurvePoints(edgePoints, center, curveOffset) };
+	}
+
+	// An overridden count can't use manual split positions, which assume the
+	// curve's own count, so the bezier is divided evenly instead.
+	const sampleMethod: ProjectionCurveSampleMethod =
+		divisionsOverride === undefined
+			? widthCurve.sampleMethod
+			: { method: 'divideCurvePath', divisions };
+	const definitionPoints = getPoints(widthCurve.curves, sampleMethod);
 	const curvePoints = mapPointsToTriangle(
 		{ a: v0, b: v1, c: center },
 		definitionPoints,
@@ -451,14 +550,7 @@ export const generateProjection = ({
 }: GenerateProjectionProps) => {
 	const startTime = performance.now();
 
-	// Get center based on surface config type
-	let center: Vector3;
-	if (projectionConfig.surfaceConfig.type === 'GlobuleConfig') {
-		// For GlobuleConfig, use origin as center
-		center = new Vector3(0, 0, 0);
-	} else {
-		center = getVector3(projectionConfig.surfaceConfig.center) as Vector3;
-	}
+	const center = getProjectionCenter(projectionConfig.surfaceConfig);
 
 	// Create raycasters once and reuse them for all points (optimization)
 	const edgeRaycaster = new Raycaster(undefined, undefined, undefined, 2000);
@@ -1662,8 +1754,13 @@ export const makeProjection = (projectionConfig: BaseProjectionConfig, address: 
 	const { projectorConfig, surfaceConfig } = preparedProjectionConfig;
 
 	const surface = generateSurface(surfaceConfig);
+	const center = getProjectionCenter(surfaceConfig);
 
-	const polyhedron = generatePolyhedron(projectorConfig);
+	const polyhedron = generatePolyhedron(projectorConfig, {
+		sampling: resolveEdgeSampling(preparedProjectionConfig.edgeSampling),
+		surface,
+		center
+	});
 	const projection = generateProjection({
 		surface,
 		projector: polyhedron,
@@ -1679,11 +1776,7 @@ export const makeProjection = (projectionConfig: BaseProjectionConfig, address: 
 		address,
 		surface
 	);
-	const auditCenter =
-		preparedProjectionConfig.surfaceConfig.type === 'GlobuleConfig'
-			? new Vector3(0, 0, 0)
-			: (getVector3(preparedProjectionConfig.surfaceConfig.center) as Vector3);
-	auditSurfaceProjectionSides(surfaceProjectionTubes, auditCenter);
+	auditSurfaceProjectionSides(surfaceProjectionTubes, center);
 
 	return { projection, polyhedron, tubes, surfaceProjectionTubes, surface };
 };

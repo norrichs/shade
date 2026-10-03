@@ -186,6 +186,24 @@ export type SurfaceProjectionConfig = {
 	fillAll?: boolean;
 };
 
+/**
+ * How polyhedron edges are sampled before projection. Every field is optional:
+ * a missing block or field means the edge curve decides, which is how configs
+ * saved before these options render.
+ */
+export type EdgeSamplingConfig = {
+	/** Curve shape: the edge curve's bezier, or a constant offset toward the polygon center. */
+	curveSource?: 'edgeCurve' | 'offset';
+	/** Fraction of the way from each edge point to the polygon center (0–1, exclusive). */
+	curveOffset?: number;
+	/** Division count per edge: the edge curve's own count, or adaptive by draped length. */
+	divisionsSource?: 'edgeCurve' | 'adaptive';
+	/** Adaptive [min, max]: the shortest draped edge gets min, the longest max. */
+	edgeDivisions?: [number, number];
+	/** Integer >= 1 multiplying every edge's division count, in either mode. */
+	edgeDivisionsMultiplier?: number;
+};
+
 export type ProjectionConfig<
 	S extends undefined | Point3,
 	T extends VertexIndex | Point3,
@@ -197,6 +215,7 @@ export type ProjectionConfig<
 	projectorConfig: ProjectorConfig<S, T, U, V>;
 	bandConfig: ProjectionBandConfig;
 	surfaceProjectionConfig?: SurfaceProjectionConfig;
+	edgeSampling?: EdgeSamplingConfig;
 };
 
 export type BaseProjectionConfig = ProjectionConfig<undefined, number, number, number>;
