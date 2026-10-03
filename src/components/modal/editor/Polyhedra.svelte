@@ -119,9 +119,10 @@
 				>
 					<option value="edgeCurve">Edge curve</option>
 					<option value="offset">Offset</option>
+					<option value="curvedOffset">Curved offset</option>
 				</select>
 			</LabeledControl>
-			<LabeledControl label="Curve offset:" show={sampling.curveSource === 'offset'}>
+			<LabeledControl label="Curve offset:" show={sampling.curveSource !== 'edgeCurve'}>
 				<span class="slider">
 					<input
 						type="range"

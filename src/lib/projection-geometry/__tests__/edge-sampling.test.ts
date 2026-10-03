@@ -2,6 +2,7 @@ import { Vector3 } from 'three';
 import { generateSurface } from '../generate-projection';
 import {
 	DEFAULT_EDGE_SAMPLING,
+	curvedOffsetCurvePoints,
 	drapedEdgeLength,
 	edgeKey,
 	offsetCurvePoints,
@@ -113,5 +114,58 @@ describe('drapedEdgeLength', () => {
 			center: new Vector3(5000, 0, 0)
 		});
 		expect(length).toBeCloseTo(5, 6);
+	});
+});
+
+describe('curvedOffsetCurvePoints', () => {
+	// A square in the z = 5 plane, edges sampled at 4 sections each, walked in order.
+	const corners = [
+		new Vector3(-10, -10, 5),
+		new Vector3(10, -10, 5),
+		new Vector3(10, 10, 5),
+		new Vector3(-10, 10, 5)
+	];
+	const sections = 4;
+	const edgePoints = corners.map((c, i) => {
+		const next = corners[(i + 1) % corners.length];
+		return Array.from({ length: sections + 1 }, (_, j) => c.clone().lerp(next, j / sections));
+	});
+	const center = new Vector3(0, 0, 5);
+	const f = 0.3;
+	const curves = curvedOffsetCurvePoints(edgePoints, center, f);
+
+	it('returns one inner point per edge point for every edge', () => {
+		curves.forEach((curve, i) => expect(curve).toHaveLength(edgePoints[i].length));
+	});
+
+	it('passes through the straight inset midpoint of each edge', () => {
+		curves.forEach((curve, i) => {
+			const straightMid = edgePoints[i][sections / 2].clone().lerp(center, f);
+			expect(curve![sections / 2].distanceTo(straightMid)).toBeLessThan(1e-9);
+		});
+	});
+
+	it('is continuous around the polygon: each edge ends where the next begins', () => {
+		curves.forEach((curve, i) => {
+			const next = curves[(i + 1) % curves.length]!;
+			expect(curve![curve!.length - 1].distanceTo(next[0])).toBeLessThan(1e-9);
+		});
+	});
+
+	it('rounds each corner inside the straight inset corner, in the polygon plane', () => {
+		curves.forEach((curve, i) => {
+			const straightCorner = corners[i].clone().lerp(center, f);
+			expect(curve![0].distanceTo(center)).toBeLessThan(straightCorner.distanceTo(center));
+			curve!.forEach((p) => expect(p.z).toBeCloseTo(5, 9));
+		});
+	});
+
+	it('returns null for an edge too short to curve, so the caller keeps the straight inset', () => {
+		const result = curvedOffsetCurvePoints(
+			edgePoints.map((pts, i) => (i === 0 ? [pts[0]] : pts)),
+			center,
+			f
+		);
+		expect(result[0]).toBeNull();
 	});
 });

@@ -192,8 +192,11 @@ export type SurfaceProjectionConfig = {
  * saved before these options render.
  */
 export type EdgeSamplingConfig = {
-	/** Curve shape: the edge curve's bezier, or a constant offset toward the polygon center. */
-	curveSource?: 'edgeCurve' | 'offset';
+	/**
+	 * Curve shape: the edge curve's bezier, a constant offset toward the polygon center,
+	 * or that offset with each polygon corner rounded (the Voronoi curved inset).
+	 */
+	curveSource?: 'edgeCurve' | 'offset' | 'curvedOffset';
 	/** Fraction of the way from each edge point to the polygon center (0–1, exclusive). */
 	curveOffset?: number;
 	/** Division count per edge: the edge curve's own count, or adaptive by draped length. */

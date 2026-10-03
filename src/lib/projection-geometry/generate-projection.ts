@@ -71,6 +71,7 @@ import { collateGlobuleTubeGeometry } from './collate-geometry';
 import { auditSides, auditSurfaceProjectionSides } from './audit';
 import { buildFillBand, outerBorderPolyline, reindexBandAddresses } from './fill-bands';
 import {
+	curvedOffsetCurvePoints,
 	drapedEdgeLength,
 	edgeKey,
 	offsetCurvePoints,
@@ -346,21 +347,34 @@ export const generatePolyhedron = (
 		return k > 1 ? edgeConfig.widthCurve.sampleMethod.divisions * k : undefined;
 	};
 
+	const isOffset = sampling.curveSource === 'offset' || sampling.curveSource === 'curvedOffset';
+
 	const polyhedron: Polyhedron = {
 		polygons: projectorConfig.polyhedron.polygons.map((polygon) => {
-			return {
-				edges: polygon.edges.map((edgeConfig) => {
-					const center = getPolygonCenter(polygon);
-					const { edgePoints, curvePoints } = generateEdge({
-						edgeConfig,
-						center,
-						transformConfig: projectorTransform,
-						divisions: divisionsFor(edgeConfig),
-						curveOffset: sampling.curveSource === 'offset' ? sampling.curveOffset : undefined
-					});
-					return { edgePoints, curvePoints, config: edgeConfig };
-				})
-			};
+			const center = getPolygonCenter(polygon);
+			const edges = polygon.edges.map((edgeConfig) => {
+				const { edgePoints, curvePoints } = generateEdge({
+					edgeConfig,
+					center,
+					transformConfig: projectorTransform,
+					divisions: divisionsFor(edgeConfig),
+					curveOffset: isOffset ? sampling.curveOffset : undefined
+				});
+				return { edgePoints, curvePoints, config: edgeConfig };
+			});
+			if (sampling.curveSource === 'curvedOffset') {
+				// Corners round across neighbouring edges, so the curve is built for the
+				// whole polygon; an edge that can't curve keeps its straight offset.
+				const curved = curvedOffsetCurvePoints(
+					edges.map((e) => e.edgePoints),
+					center.clone().applyMatrix4(transformMatrix),
+					sampling.curveOffset
+				);
+				edges.forEach((edge, i) => {
+					edge.curvePoints = curved[i] ?? edge.curvePoints;
+				});
+			}
+			return { edges };
 		})
 	};
 	return polyhedron;

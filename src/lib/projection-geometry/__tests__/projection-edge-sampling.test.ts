@@ -87,4 +87,43 @@ describe('makeProjection edge sampling', () => {
 			expect(edge.curvePoints[i].distanceTo(expected)).toBeLessThan(1e-6);
 		});
 	});
+
+	it('builds a continuous rounded inner curve around each polygon in curved offset mode', () => {
+		const { polyhedron, tubes } = makeProjection(
+			capsuleProjection({
+				curveSource: 'curvedOffset',
+				curveOffset: 0.3,
+				divisionsSource: 'adaptive',
+				edgeDivisions: [2, 8]
+			}),
+			{ globule: 0 }
+		);
+		let evenEdges = 0;
+		for (const polygon of polyhedron.polygons) {
+			const vertices = polygon.edges.map((e) => e.edgePoints[0]);
+			const center = vertices
+				.reduce((sum, v) => sum.add(v), vertices[0].clone().multiplyScalar(0))
+				.divideScalar(vertices.length);
+			polygon.edges.forEach((edge, i) => {
+				expect(edge.curvePoints).toHaveLength(edge.edgePoints.length);
+				// Rounded corner: inside the straight inset corner.
+				const straightCorner = edge.edgePoints[0].clone().lerp(center, 0.3);
+				expect(edge.curvePoints[0].distanceTo(center)).toBeLessThan(
+					straightCorner.distanceTo(center) - 1e-6
+				);
+				// Passes through the straight inset midpoint when it is a sample.
+				const n = edge.edgePoints.length - 1;
+				if (n % 2 === 0) {
+					evenEdges++;
+					const straightMid = edge.edgePoints[n / 2].clone().lerp(center, 0.3);
+					expect(edge.curvePoints[n / 2].distanceTo(straightMid)).toBeLessThan(1e-6);
+				}
+				const next = polygon.edges[(i + 1) % polygon.edges.length];
+				const end = edge.curvePoints[edge.curvePoints.length - 1];
+				expect(end.distanceTo(next.curvePoints[0])).toBeLessThan(1e-6);
+			});
+		}
+		expect(evenEdges).toBeGreaterThan(0);
+		expect(tubes.length).toBeGreaterThan(0);
+	});
 });
