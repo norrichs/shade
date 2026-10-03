@@ -1,7 +1,6 @@
 <script lang="ts">
 	import {
 		shouldUsePersisted,
-		uiStore,
 		superGlobuleStore,
 		mergedBandPaths,
 		labelTextDimensions,
@@ -16,7 +15,13 @@
 		loadedConfigName,
 		resolvedPatternLabels
 	} from '$lib/stores';
-	import { isManualMode, hasPendingChanges } from '$lib/stores/uiStores';
+	import {
+		isManualMode,
+		hasPendingChanges,
+		designerPanels,
+		nextPanelLayout,
+		panelLayoutLabel
+	} from '$lib/stores/uiStores';
 	import { triggerManualRegeneration, isGenerating } from '$lib/stores/superGlobuleStores';
 	import { selectedSurfaceProjection, rotateToSelection } from '$lib/stores/selectionStores';
 	import { downloadSvg, downloadTextFile, SCREEN_ONLY_SELECTOR } from '$lib/util';
@@ -479,9 +484,10 @@
 			</Button>
 			<Button
 				onclick={() =>
-					($uiStore.designer.viewMode =
-						$uiStore.designer.viewMode === 'pattern' ? 'three' : 'pattern')}
-				>{`Main: ${$uiStore.designer.viewMode}`}</Button
+					($designerPanels = {
+						...$designerPanels,
+						layout: nextPanelLayout($designerPanels.layout)
+					})}>{panelLayoutLabel($designerPanels.layout)}</Button
 			>
 			<label for="use-persisted-checkbox">persist settings?</label>
 			<input type="checkbox" bind:checked={$shouldUsePersisted} />

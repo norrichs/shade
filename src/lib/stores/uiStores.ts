@@ -1,19 +1,45 @@
 import { AUTO_PERSIST_KEY, persistable } from '$lib/persistable';
 
-export type ViewModeSetting = 'three' | 'pattern';
-
 export type ComputationMode = 'continuous' | '3d-only' | '2d-only';
 
-export type UISetting = {
-	designer: { viewMode: ViewModeSetting };
+/** Which designer panes are visible, left to right. */
+export type PanelLayout = 'model-pattern' | 'pattern-model' | 'model' | 'pattern';
+
+export const PANEL_LAYOUTS: { value: PanelLayout; label: string }[] = [
+	{ value: 'model-pattern', label: 'Model | Pattern' },
+	{ value: 'pattern-model', label: 'Pattern | Model' },
+	{ value: 'model', label: 'Model' },
+	{ value: 'pattern', label: 'Pattern' }
+];
+
+/** Every visible pane keeps at least this fraction of the viewport width. */
+export const MIN_PANEL_FRACTION = 0.1;
+
+export type DesignerPanels = {
+	layout: PanelLayout;
+	/** Fraction of the width given to the left pane when both are shown. */
+	split: number;
 };
 
-export const uiStore = persistable<UISetting>(
-	{ designer: { viewMode: 'three' } },
-	'UISettings',
+export const DEFAULT_DESIGNER_PANELS: DesignerPanels = { layout: 'model-pattern', split: 2 / 3 };
+
+export const designerPanels = persistable<DesignerPanels>(
+	DEFAULT_DESIGNER_PANELS,
+	'DesignerPanels',
 	AUTO_PERSIST_KEY,
 	true
 );
+
+export const clampSplit = (split: number) =>
+	Math.min(1 - MIN_PANEL_FRACTION, Math.max(MIN_PANEL_FRACTION, split));
+
+export const nextPanelLayout = (layout: PanelLayout): PanelLayout => {
+	const i = PANEL_LAYOUTS.findIndex((l) => l.value === layout);
+	return PANEL_LAYOUTS[(i + 1) % PANEL_LAYOUTS.length].value;
+};
+
+export const panelLayoutLabel = (layout: PanelLayout) =>
+	PANEL_LAYOUTS.find((l) => l.value === layout)?.label ?? layout;
 
 export const computationMode = persistable<ComputationMode>(
 	'continuous',

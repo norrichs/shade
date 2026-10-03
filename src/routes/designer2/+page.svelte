@@ -1,144 +1,160 @@
 <script lang="ts">
+	// @ts-expect-error -- the package's "exports" map hides its bundled .d.ts
+	import { asDraggable } from 'svelte-drag-and-drop-actions';
 	import ThreeRenderer from '../../components/three-renderer/ThreeRenderer.svelte';
 	import PatternViewer from '../../components/cut-pattern/PatternViewer.svelte';
-	import TilingControl from '../../components/controls/TilingControl.svelte';
-	import ShowControl from '../../components/controls/ShowControl.svelte';
-	import StrutControl from '../../components/controls/StrutControl.svelte';
-	import LevelControl from '../../components/controls/LevelControl.svelte';
-	import SelectBar from '../../components/select-bar/SelectBar.svelte';
 	import Scene from '../../components/three-renderer/Scene.svelte';
-
-	import SuperPathEdit from '../../components/path-edit/SuperPathEdit.svelte';
-	import SuperControl from '../../components/controls/super-control/SuperControl.svelte';
-	import { uiStore, type ViewModeSetting, computationMode } from '$lib/stores/uiStores';
-	import ProjectionControl from '../../components/projection/ProjectionControl.svelte';
+	import {
+		computationMode,
+		designerPanels,
+		clampSplit,
+		MIN_PANEL_FRACTION,
+		type PanelLayout
+	} from '$lib/stores/uiStores';
 	import HoverSidebar from '../../components/modal/HoverSidebar.svelte';
 	import { projectionConfigs } from '../../components/modal/sidebar-definitions';
 	import Toast from '../../components/Toast.svelte';
 
-	let viewMode: ViewModeSetting = $uiStore.designer.viewMode;
+	let main: HTMLElement | undefined = $state();
+	let dragging = $state(false);
+	/** Pointer height within the divider, so the grip sits under the cursor. */
+	let handleY = $state(0);
 
-	let showControl: { name: string; value?: unknown } = { name: 'None' };
-	type ShowControlCurveValue =
-		| 'ShapeConfig'
-		| 'DepthCurveConfig'
-		| 'SilhouetteConfig'
-		| 'SpineCurveConfig';
-	const isShowControlCurveValue = (value: unknown): value is ShowControlCurveValue => {
-		return ['ShapeConfig', 'DepthCurveConfig', 'SilhouetteConfig', 'SpineCurveConfig'].includes(
-			value as string
-		);
+	const showPatternPane = $derived($computationMode !== '3d-only');
+	// With the pattern pane unmounted, any layout that wants it collapses to the model alone.
+	const layout: PanelLayout = $derived(showPatternPane ? $designerPanels.layout : 'model');
+	const split = $derived(clampSplit($designerPanels.split));
+	const isSplit = $derived(layout === 'model-pattern' || layout === 'pattern-model');
+
+	// Panes stay mounted and are hidden with CSS so switching layouts keeps the camera
+	// and pattern state; `order` swaps sides without a remount.
+	const modelWidth = $derived(
+		layout === 'model-pattern' ? split : layout === 'pattern-model' ? 1 - split : 1
+	);
+	const patternWidth = $derived(isSplit ? 1 - modelWidth : 1);
+
+	const setSplit = (x: number) => {
+		if (!main) return;
+		$designerPanels = { ...$designerPanels, split: clampSplit(x / main.clientWidth) };
 	};
-
-	$: viewMode = $uiStore.designer.viewMode;
 </script>
 
-<main>
+<main bind:this={main}>
 	<Toast />
-	<section class={`container ${viewMode === 'three' ? 'primary' : 'secondary'}`}>
+	<section
+		class="container"
+		class:hidden={layout === 'pattern'}
+		style:order={layout === 'pattern-model' ? 2 : 0}
+		style:width={`calc(${modelWidth} * 100vw)`}
+	>
 		<ThreeRenderer>
 			<Scene />
 		</ThreeRenderer>
 	</section>
-	{#if $computationMode !== '3d-only'}
-		<section class={`container ${viewMode === 'pattern' ? 'primary' : 'secondary'}`}>
+	{#if showPatternPane}
+		<section
+			class="container"
+			class:hidden={layout === 'model'}
+			style:order={1}
+			style:width={`calc(${patternWidth} * 100vw)`}
+		>
 			<PatternViewer />
 		</section>
 	{/if}
-	<section class="container controls">
-		<header>
-			<SelectBar
-				bind:value={showControl}
-				options={[
-					{ name: 'Silhouette', value: 'SilhouetteConfig' },
-					{ name: 'Depth', value: 'DepthCurveConfig' },
-					{ name: 'Spine', value: 'SpineCurveConfig' },
-					{ name: 'Shape', value: 'ShapeConfig' },
-					{ name: 'Projection' },
-					{ name: 'Levels' },
-					{ name: 'Struts' },
-					{ name: 'Cut' },
-					{ name: 'Pattern' },
-					{ name: 'Super' }
-				]}
-			/>
-		</header>
-		<div class="group">
-			<!-- Keyed on the config value, not the display label: the curve entries were
-			     once matched by name, and renaming "DepthCurve" to "Depth" silently
-			     stranded the Depth panel. -->
-			{#if isShowControlCurveValue(showControl?.value)}
-				<SuperPathEdit curveStoreType={showControl.value} />
-			{:else if showControl?.name === 'Projection'}
-				<ProjectionControl />
-			{:else if showControl?.name === 'Struts'}
-				<StrutControl />
-			{:else if showControl?.name === 'Levels'}
-				<LevelControl />
-				<!-- {:else if showControl?.name === 'Cut'}
-				<CutControl /> -->
-			{:else if showControl?.name === 'Pattern'}
-				<TilingControl />
-			{:else if showControl?.name === 'Super'}
-				<SuperControl />
-			{/if}
+	{#if isSplit}
+		<div
+			class="divider"
+			class:dragging
+			style:left={`calc(${split} * 100%)`}
+			role="separator"
+			aria-orientation="vertical"
+			aria-valuemin={MIN_PANEL_FRACTION * 100}
+			aria-valuemax={(1 - MIN_PANEL_FRACTION) * 100}
+			aria-valuenow={Math.round(split * 100)}
+			onpointermove={(ev) => {
+				if (!dragging) handleY = ev.clientY - ev.currentTarget.getBoundingClientRect().top;
+			}}
+			use:asDraggable={{
+				relativeTo: 'parent',
+				Dummy: 'none',
+				onDragStart: () => {
+					dragging = true;
+					return { x: split * (main?.clientWidth ?? 0), y: handleY };
+				},
+				onDragMove: (x: number, y: number) => {
+					setSplit(x);
+					handleY = y;
+				},
+				onDragEnd: (x: number, y: number) => {
+					setSplit(x);
+					handleY = y;
+					dragging = false;
+				}
+			}}
+		>
+			<div class="handle" style:top={`${handleY}px`}></div>
 		</div>
-	</section>
+	{/if}
 	<HoverSidebar sidebarDefinition={projectionConfigs} />
 </main>
 
 <style>
 	main {
 		--designer-height: calc(100vh - var(--nav-header-height));
-		--half-designer-height: calc(var(--designer-height) / 2);
-		--secondary-width: 600px;
+		--divider-hit-width: 20px;
+		position: relative;
 		height: var(--designer-height);
 		width: 100vw;
-
-		display: grid;
-		grid-template-rows: repeat(2, var(--half-designer-height));
-		grid-template-columns: auto var(--secondary-width);
+		display: flex;
+		flex-direction: row;
 	}
 	section.container {
-		/* height: 100%; */
-		/* width: 100%; */
+		box-sizing: border-box;
+		height: var(--designer-height);
+		flex: none;
 		border: 1px solid gray;
 	}
-	section.container.primary {
-		height: 100%;
-		/* width: 100%; */
-		width: calc(100vw - var(--secondary-width));
-		grid-column: 1 / 2;
-		grid-row: 1 / 3;
-	}
-	section.container.controls {
-		height: var(--half-designer-height);
-		max-height: var(--half-designer-height);
-		grid-column: 2 / 3;
-		grid-row: 1 / 2;
-		display: flex;
-		flex-direction: column;
-		align-items: flex-start;
-	}
-	section.container.controls header {
-		display: flex;
-		flex-direction: row;
-		justify-content: center;
-		align-items: center;
-		gap: 1rem;
-		width: 100%;
+	section.container.hidden {
+		display: none;
 	}
 
-	.container.controls .group {
-		width: 100%;
-		display: flex;
-		flex-direction: row;
-		justify-content: flex-start;
+	.divider {
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		width: var(--divider-hit-width);
+		transform: translateX(-50%);
+		z-index: 10;
+		cursor: col-resize;
 	}
-
-	section.container.secondary {
-		height: var(--half-designer-height);
-		grid-column: 2/ 3;
-		grid-row: 2 / 3;
+	.handle {
+		position: absolute;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		width: 9px;
+		height: 48px;
+		border-radius: 4.5px;
+		background: #555;
+		box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.6);
+		opacity: 0;
+		transition: opacity 120ms;
+	}
+	.divider::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		left: 50%;
+		width: 2px;
+		transform: translateX(-50%);
+		background: #555;
+		opacity: 0;
+		transition: opacity 120ms;
+	}
+	.divider:hover .handle,
+	.divider.dragging .handle,
+	.divider:hover::before,
+	.divider.dragging::before {
+		opacity: 1;
 	}
 </style>
