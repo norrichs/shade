@@ -157,9 +157,11 @@ export const createWorkerCore = (overrides: Partial<WorkerCoreDeps> = {}) => {
 	let generateQueue: Promise<void> | null = null;
 	const track = (job: Promise<void>) => {
 		generateQueue = job;
-		void job.then(() => {
+		const clear = () => {
 			if (generateQueue === job) generateQueue = null;
-		});
+		};
+		// Clear on rejection too (e.g. post throws) so the queue can't wedge.
+		void job.then(clear, clear);
 	};
 	const handleGenerate = (message: GenerateMessage, post: (response: WorkerResponse) => void) => {
 		if (!generateQueue) {
@@ -173,6 +175,7 @@ export const createWorkerCore = (overrides: Partial<WorkerCoreDeps> = {}) => {
 		}
 		track(
 			generateQueue
+				.catch(() => {})
 				.then(() => deps.ensureAssets(message.payload))
 				.catch(() => {})
 				.then(() => runGenerate(message, post))

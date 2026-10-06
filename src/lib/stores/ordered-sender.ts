@@ -9,9 +9,12 @@ export function createOrderedSender<C>(ensure: (config: C) => Promise<void> | un
 
 	const track = (job: Promise<void>) => {
 		queue = job;
-		void job.then(() => {
+		const clear = () => {
 			if (queue === job) queue = null;
-		});
+		};
+		// Clear on rejection too (a throwing send must not wedge the queue). The
+		// returned promise is handled here, so nothing escapes as unhandled.
+		void job.then(clear, clear);
 	};
 
 	return (config: C, send: () => void): void => {
@@ -24,6 +27,11 @@ export function createOrderedSender<C>(ensure: (config: C) => Promise<void> | un
 			track(ready.then(send));
 			return;
 		}
-		track(queue.then(() => ensure(config)).then(send));
+		track(
+			queue
+				.catch(() => {})
+				.then(() => ensure(config))
+				.then(send)
+		);
 	};
 }

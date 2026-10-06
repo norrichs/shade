@@ -380,7 +380,7 @@ export function generateSuperGlobuleAsync(
 		// imported mesh must be in this thread's registry too.
 		// Sends are ordered so a request that needs no loading can't overtake an
 		// earlier one still waiting on assets (the worker would see them swapped).
-		sendOrdered(config, send);
+		sendOrdered(plainMessage.payload as SuperGlobuleConfig, send);
 	});
 }
 

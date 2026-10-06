@@ -138,6 +138,22 @@ describe('worker core — asset loading', () => {
 		expect(core.heldGeometryRequestId()).toBe(2);
 	});
 
+	it('keeps serving requests after a post throws', async () => {
+		const { core, posted } = makeAsyncCore((config) =>
+			config.id === 'c1' ? Promise.resolve() : undefined
+		);
+		const failing = () => {
+			throw new Error('post failed');
+		};
+		const okPost = (r: WorkerResponse) => posted.push(r);
+		core.handle(generateMsg(1), failing);
+		core.handle(generateMsg(2), okPost); // queued behind the failing job
+		await new Promise((r) => setTimeout(r, 0));
+		expect(posted.map((p) => p.requestId)).toEqual([2]);
+		core.handle(generateMsg(3), okPost); // queue drained: runs synchronously
+		expect(posted.map((p) => p.requestId)).toEqual([2, 3]);
+	});
+
 	it('still generates when asset loading rejects', async () => {
 		const { core, posted, post } = makeAsyncCore(() => Promise.reject(new Error('idb down')));
 		core.handle(generateMsg(1), post);
