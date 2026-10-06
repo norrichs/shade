@@ -68,6 +68,8 @@ import {
 } from '$lib/cut-pattern/generate-pattern';
 import { generateGlobuleTube, generateGlobuleData } from '$lib/generate-shape';
 import { collateGlobuleTubeGeometry } from './collate-geometry';
+import { getAssetGeometry, MissingMeshAssetError } from '$lib/mesh-import/asset-geometry';
+import { normalizeMatrix } from '$lib/mesh-import/normalize';
 import { auditSides, auditSurfaceProjectionSides } from './audit';
 import { buildFillBand, outerBorderPolyline, reindexBandAddresses } from './fill-bands';
 import {
@@ -256,6 +258,16 @@ export const generateSurface = (cfg: SurfaceConfig) => {
 				surface.add(globuleData.endCaps.bottomCap.mesh);
 			}
 		}
+	} else if (cfg.type === 'ImportedMeshConfig') {
+		// materials.default is DoubleSide like the other surfaces: rays are cast
+		// from INSIDE the mesh, so a FrontSide material would never register a hit.
+		const mesh = new Mesh(getAssetGeometry(cfg.assetId, cfg.fileName), materials.default);
+		mesh.applyMatrix4(normalizeMatrix(cfg.normalize));
+		// The geometry (and its boundsTree) is cached and shared, so
+		// optimizeSurfaceForRaycasting skips it after the first build and would
+		// never assign the accelerated raycast to this new Mesh.
+		mesh.raycast = acceleratedRaycast;
+		surface.add(mesh);
 	}
 	const transformMatrix = getMatrix4(cfg.transform);
 	surface.applyMatrix4(transformMatrix);
@@ -265,6 +277,19 @@ export const generateSurface = (cfg: SurfaceConfig) => {
 	optimizeSurfaceForRaycasting(surface);
 
 	return surface;
+};
+
+/**
+ * generateSurface for main-thread rebuilds: an imported model that isn't on
+ * this device yields no surface instead of failing the whole result.
+ */
+export const generateSurfaceIfAvailable = (cfg: SurfaceConfig): Object3D | undefined => {
+	try {
+		return generateSurface(cfg);
+	} catch (error) {
+		if (error instanceof MissingMeshAssetError) return undefined;
+		throw error;
+	}
 };
 
 /** Rays are cast from here onto the surface. */
