@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from '@jest/globals';
-import { IDBFactory } from 'fake-indexeddb';
+import { IDBFactory, IDBObjectStore } from 'fake-indexeddb';
 import { webcrypto } from 'node:crypto';
 import { get } from 'svelte/store';
 import type { SuperGlobuleConfig } from '$lib/types';
@@ -71,6 +71,26 @@ describe('asset store', () => {
 		expect(Array.from(loaded!.index)).toEqual([0, 1, 2]);
 		expect(getLoadedAsset(asset.id)).toBe(loaded);
 		expect(get(assetStatus)[asset.id]).toBe('loaded');
+	});
+
+	it('putAsset rejects when the write transaction aborts after the request succeeds', async () => {
+		const asset = await withId(triangle());
+		const realPut = IDBObjectStore.prototype.put;
+		IDBObjectStore.prototype.put = function (
+			this: IDBObjectStore,
+			...args: Parameters<IDBObjectStore['put']>
+		) {
+			const request = realPut.apply(this, args);
+			request.addEventListener('success', () => this.transaction.abort());
+			return request;
+		};
+		try {
+			await expect(putAsset(asset)).rejects.toThrow(/aborted/);
+		} finally {
+			IDBObjectStore.prototype.put = realPut;
+		}
+		resetAssetStoreForTests();
+		expect(await resolveAsset(asset.id)).toBeUndefined();
 	});
 
 	it('marks unknown ids missing without throwing', async () => {

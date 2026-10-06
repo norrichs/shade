@@ -68,9 +68,20 @@ const withStore = async <T>(
 	if (!pending) return undefined;
 	const db = await pending;
 	return new Promise<T>((resolve, reject) => {
-		const request = op(db.transaction(STORE, mode).objectStore(STORE));
-		request.onsuccess = () => resolve(request.result);
-		request.onerror = () => reject(request.error);
+		const tx = db.transaction(STORE, mode);
+		const request = op(tx.objectStore(STORE));
+		if (mode === 'readonly') {
+			request.onsuccess = () => resolve(request.result);
+			request.onerror = () => reject(request.error);
+			return;
+		}
+		// Writes are only durable once the transaction commits (it can still abort
+		// after the request succeeds, e.g. QuotaExceededError).
+		tx.oncomplete = () => resolve(request.result);
+		tx.onerror = () =>
+			reject(tx.error ?? request.error ?? new Error('IndexedDB transaction aborted'));
+		tx.onabort = () =>
+			reject(tx.error ?? request.error ?? new Error('IndexedDB transaction aborted'));
 	});
 };
 
