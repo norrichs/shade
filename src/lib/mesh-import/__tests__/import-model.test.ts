@@ -74,6 +74,14 @@ describe('simplify / revert', () => {
 		expect(reverted.assetId).toBe(cfg.assetId);
 		expect(reverted.simplify).toBeUndefined();
 	});
+
+	it('a target at or above the triangle count clears simplification', async () => {
+		const cfg = await importModelFile(stlFile('ball.stl', sphereStl(1)));
+		const simplified = await applySimplify(cfg, 200);
+		const next = await applySimplify(simplified, 1_000_000);
+		expect(next.assetId).toBe(cfg.assetId);
+		expect(next.simplify).toBeUndefined();
+	});
 });
 
 describe('replaceImportedModel', () => {

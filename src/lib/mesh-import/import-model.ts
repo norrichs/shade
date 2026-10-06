@@ -98,6 +98,7 @@ export async function applySimplify(
 	const sourceAssetId = cfg.simplify?.sourceAssetId ?? cfg.assetId;
 	const source = await requireAsset(sourceAssetId, cfg.fileName);
 	const derived = await simplifyAsset(source, targetTriangles);
+	if (derived.id === source.id) return withoutSimplify({ ...cfg, assetId: source.id });
 	await putAsset(derived);
 	return { ...cfg, assetId: derived.id, simplify: { sourceAssetId, targetTriangles } };
 }
