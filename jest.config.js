@@ -20,7 +20,7 @@ export default {
 		]
 	},
 	transformIgnorePatterns: [
-		'node_modules/(?!(svelte|three|d3-.*|delaunator|robust-predicates|internmap|esm-env|uuid)/)'
+		'node_modules/(?!(svelte|three|d3-.*|delaunator|robust-predicates|internmap|esm-env|uuid|fake-indexeddb|meshoptimizer)/)'
 	],
 	collectCoverageFrom: ['src/**/*.ts', '!src/**/*.d.ts'],
 	moduleNameMapper: {
