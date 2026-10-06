@@ -36,6 +36,9 @@ export async function simplifyAsset(
 	targetTriangles: number
 ): Promise<MeshAsset> {
 	const mesh = await simplifyMesh(source, targetTriangles);
+	// No reduction happened: a "derived" copy would share the source's id and
+	// overwrite it in the store, so hand back the source itself.
+	if (mesh.index.length === source.index.length) return source;
 	return {
 		...mesh,
 		id: await hashMesh(mesh),

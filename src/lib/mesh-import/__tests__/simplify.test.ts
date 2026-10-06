@@ -53,4 +53,19 @@ describe('simplifyAsset', () => {
 		expect(derived.diagnostics.triangles).toBe(derived.index.length / 3);
 		expect(derived.fileName).toBe('ball.glb');
 	});
+
+	it('returns the source unchanged when no reduction is needed', async () => {
+		const clean = dense();
+		const source: MeshAsset = {
+			...clean,
+			id: await hashMesh(clean),
+			fileName: 'ball.glb',
+			sourceFormat: 'glb',
+			createdAt: '2026-10-05T00:00:00.000Z'
+		};
+		const result = await simplifyAsset(source, 1_000_000);
+		expect(result).toBe(source);
+		expect(result.id).toBe(source.id);
+		expect(result.derivedFrom).toBeUndefined();
+	});
 });
