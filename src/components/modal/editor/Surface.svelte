@@ -4,7 +4,10 @@
 	import LabeledControl from './LabeledControl.svelte';
 	import Container from './Container.svelte';
 	import Editor from './Editor.svelte';
-	import type { SurfaceConfig } from '$lib/projection-geometry/types';
+	import type { ImportedSurfaceConfig, SurfaceConfig } from '$lib/projection-geometry/types';
+	import { importModelFile } from '$lib/mesh-import/import-model';
+	import { toastStore } from '$lib/stores/toastStore';
+	import ImportedMeshControls from './ImportedMeshControls.svelte';
 	import PointInput from '../../controls/super-control/PointInput.svelte';
 	import NumberInput from '../../controls/super-control/NumberInput.svelte';
 	import {
@@ -14,8 +17,43 @@
 	import TransformControls from './TransformControls.svelte';
 	import { identityTransform, isInheritedTransform } from './transform-config';
 
+	let fileInput: HTMLInputElement | undefined = $state();
+	let importing = $state(false);
+
+	const handleFilePicked = async (event: Event) => {
+		const input = event.currentTarget as HTMLInputElement;
+		const file = input.files?.[0];
+		input.value = ''; // allow picking the same file again later
+		if (!file) return;
+		importing = true;
+		try {
+			const surface = await importModelFile(file);
+			const config = get(superConfigStore);
+			config.projectionConfigs[0].surfaceConfig = surface;
+			superConfigStore.set(config);
+			toastStore.add({ type: 'success', message: `Imported ${file.name}`, duration: 3000 });
+		} catch (error) {
+			toastStore.add({
+				type: 'error',
+				message: error instanceof Error ? error.message : 'Import failed',
+				dismissible: true
+			});
+		} finally {
+			importing = false;
+		}
+	};
+
 	const handleChangeSurfaceType = (event: Event) => {
 		const selectedType = (event.target as HTMLSelectElement).value;
+		if (selectedType === 'import') {
+			// Keep showing the current type until a file actually loads; a cancelled
+			// picker then leaves everything as it was.
+			(event.target as HTMLSelectElement).value = surfaceTypeValue;
+			fileInput?.click();
+			return;
+		}
+		// The current imported model's own option: nothing to change.
+		if (selectedType === 'importedmesh') return;
 		const config = get(superConfigStore);
 		let newSurfaceConfig: SurfaceConfig;
 		// Every surface type gets its own concrete transform. Sphere and Capsule
@@ -72,16 +110,33 @@
 		</header>
 		<Container direction="column">
 			<LabeledControl label="Surface Type">
-				<select value={surfaceTypeValue} onchange={handleChangeSurfaceType}>
+				<select value={surfaceTypeValue} onchange={handleChangeSurfaceType} disabled={importing}>
 					<option value="sphere">Sphere</option>
 					<option value="capsule">Capsule</option>
 					<option value="globule">Globule</option>
+					{#if surfaceConfig.type === 'ImportedMeshConfig'}
+						<option value="importedmesh">Imported: {surfaceConfig.fileName}</option>
+					{/if}
+					<option value="import">Import model…</option>
 				</select>
+				<input
+					bind:this={fileInput}
+					data-testid="model-file-input"
+					type="file"
+					accept=".glb,.gltf,.stl,.obj"
+					hidden
+					onchange={handleFilePicked}
+				/>
+				{#if importing}<span>Importing…</span>{/if}
 			</LabeledControl>
 			{#if $superConfigStore.projectionConfigs[0].surfaceConfig.transform !== 'inherit'}
 				<TransformControls
 					bind:transform={$superConfigStore.projectionConfigs[0].surfaceConfig.transform}
 				/>
+			{/if}
+
+			{#if surfaceConfig.type === 'ImportedMeshConfig'}
+				<ImportedMeshControls surface={surfaceConfig as ImportedSurfaceConfig} />
 			{/if}
 
 			{#if surfaceConfig.type === 'SphereConfig' && 'radius' in surfaceConfig}
