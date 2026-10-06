@@ -47,6 +47,7 @@
 	import { formatAddress } from '$lib/recombination';
 	import { PROJECTION_GEOMETRY_OVERRIDE } from '$lib/projection-geometry/constants';
 	import ProjectionGeometryComponent from '../projection/ProjectionGeometryComponent.svelte';
+	import SurfaceCenterMarker from './SurfaceCenterMarker.svelte';
 	import GlobuleGeometryComponent from './GlobuleGeometryComponent.svelte';
 	import Highlight from '../projection/Highlight.svelte';
 	import type { GlobuleAddress_Facet } from '$lib/projection-geometry/types';
@@ -324,5 +325,6 @@
 {/each}
 
 <ProjectionGeometryComponent onClick={handleProjectionClick} />
+<SurfaceCenterMarker />
 <GlobuleGeometryComponent {getInteractionMaterial} {handleClick} />
 <Highlight />
