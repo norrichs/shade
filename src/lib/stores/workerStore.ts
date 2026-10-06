@@ -11,6 +11,7 @@ import type { PatternGenerationResult } from '$lib/cut-pattern/run-pattern-gener
 import { rehydratePatternResult } from '$lib/workers/rehydrate-pattern';
 import { Vector3, Triangle, type Object3D } from 'three';
 import { ensureAssetsLoaded } from '$lib/mesh-import/asset-store';
+import { createOrderedSender } from './ordered-sender';
 import {
 	generateSurfaceIfAvailable,
 	prepareProjectionConfig
@@ -338,6 +339,8 @@ function getWorker(): Worker {
 	return worker;
 }
 
+const sendOrdered = createOrderedSender<SuperGlobuleConfig>(ensureAssetsLoaded);
+
 /**
  * Generates a SuperGlobule using the web worker
  * Returns a promise that resolves with the result
@@ -375,9 +378,9 @@ export function generateSuperGlobuleAsync(
 		};
 		// The post-result surface rebuild below runs on this thread, so the
 		// imported mesh must be in this thread's registry too.
-		const assetsReady = ensureAssetsLoaded(config);
-		if (assetsReady) void assetsReady.then(send);
-		else send();
+		// Sends are ordered so a request that needs no loading can't overtake an
+		// earlier one still waiting on assets (the worker would see them swapped).
+		sendOrdered(config, send);
 	});
 }
 
