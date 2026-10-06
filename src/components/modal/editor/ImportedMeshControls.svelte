@@ -28,8 +28,11 @@
 	let replaceInput: HTMLInputElement | undefined = $state();
 	// Writable deriveds: pending edits are kept until the fitted value itself changes
 	// (not merely when a new surface object arrives).
-	let upAxis: UpAxis = $derived(surface.normalize.upAxis);
-	let targetSize = $derived(surface.normalize.targetSize);
+	// They hang off primitive deriveds, which only notify when the value changes.
+	const fitAxis = $derived(surface.normalize.upAxis);
+	const fitSize = $derived(surface.normalize.targetSize);
+	let upAxis: UpAxis = $derived(fitAxis);
+	let targetSize = $derived(fitSize);
 	let targetTriangles = $state(0);
 
 	let missing = $derived($assetStatus[surface.assetId] === 'missing');
