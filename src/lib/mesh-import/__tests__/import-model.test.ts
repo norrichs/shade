@@ -131,6 +131,15 @@ describe('replaceImportedModel', () => {
 });
 
 describe('refit', () => {
+	it('on a simplified config fits from the source asset', async () => {
+		const original = await importModelFile(stlFile('ball.stl', sphereStl(1)));
+		const simplified = await applySimplify(original, 200);
+		expect(simplified.assetId).not.toBe(original.assetId);
+		const next = await refit(simplified, '+z', 400);
+		const exact = await refit(original, '+z', 400);
+		expect(next.normalize).toEqual(exact.normalize);
+	});
+
 	it('recomputes offset and scale for a new up axis and size', async () => {
 		const cfg = await importModelFile(stlFile('ball.stl', sphereStl(1)));
 		const next = await refit(cfg, '+y', 400);

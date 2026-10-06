@@ -113,7 +113,8 @@ export async function refit(
 	upAxis: UpAxis,
 	targetSize: number
 ): Promise<ImportedSurfaceConfig> {
-	const asset = await requireAsset(cfg.assetId, cfg.fileName);
+	// Fit from the original, so Revert after a simplified refit keeps an exact fit.
+	const asset = await requireAsset(cfg.simplify?.sourceAssetId ?? cfg.assetId, cfg.fileName);
 	return {
 		...cfg,
 		normalize: { upAxis, targetSize, ...computeFit(asset.positions, upAxis, targetSize) }

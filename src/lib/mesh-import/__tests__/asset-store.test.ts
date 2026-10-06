@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from '@jest/globals';
+import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 import { IDBFactory, IDBObjectStore } from 'fake-indexeddb';
 import { webcrypto } from 'node:crypto';
 import { get } from 'svelte/store';
@@ -57,6 +57,18 @@ describe('hashMesh', () => {
 	});
 });
 
+describe('hashMesh without crypto.subtle', () => {
+	it('throws a clear secure-context error', async () => {
+		const original = globalThis.crypto;
+		(globalThis as { crypto: unknown }).crypto = undefined;
+		try {
+			await expect(hashMesh(triangle())).rejects.toThrow(/secure context/);
+		} finally {
+			(globalThis as { crypto: unknown }).crypto = original;
+		}
+	});
+});
+
 describe('asset store', () => {
 	it('round-trips an asset through IndexedDB', async () => {
 		const asset = await withId(triangle());
@@ -91,6 +103,21 @@ describe('asset store', () => {
 		}
 		resetAssetStoreForTests();
 		expect(await resolveAsset(asset.id)).toBeUndefined();
+	});
+
+	it('warns when the IndexedDB read fails, and still reports missing', async () => {
+		const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+		const spy = jest.spyOn(IDBObjectStore.prototype, 'get').mockImplementation(() => {
+			throw new Error('boom');
+		});
+		try {
+			expect(await resolveAsset('nope')).toBeUndefined();
+			expect(warn).toHaveBeenCalledWith('[asset-store] IndexedDB read failed', expect.any(Error));
+			expect(get(assetStatus).nope).toBe('missing');
+		} finally {
+			spy.mockRestore();
+			warn.mockRestore();
+		}
 	});
 
 	it('marks unknown ids missing without throwing', async () => {

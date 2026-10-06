@@ -36,7 +36,9 @@ export async function hashMesh({ positions, index }: IndexedMesh): Promise<strin
 		new Uint8Array(index.buffer, index.byteOffset, index.byteLength),
 		header.byteLength + positions.byteLength
 	);
-	const digest = await globalThis.crypto.subtle.digest('SHA-256', bytes);
+	const subtle = globalThis.crypto?.subtle;
+	if (!subtle) throw new Error('Model import needs a secure context (https or localhost)');
+	const digest = await subtle.digest('SHA-256', bytes);
 	return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0')).join('');
 }
 
@@ -102,7 +104,10 @@ export async function resolveAsset(id: string): Promise<MeshAsset | undefined> {
 	const hit = registry.get(id);
 	if (hit) return hit;
 	const stored = await withStore<MeshAsset | undefined>('readonly', (store) => store.get(id)).catch(
-		() => undefined
+		(error) => {
+			console.warn('[asset-store] IndexedDB read failed', error);
+			return undefined;
+		}
 	);
 	if (stored) {
 		registerAsset(stored);
