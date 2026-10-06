@@ -2,6 +2,7 @@
 	import { untrack } from 'svelte';
 	import { get } from 'svelte/store';
 	import { superConfigStore } from '$lib/stores';
+	import { importedMeshBusy } from './imported-mesh-busy';
 	import { toastStore } from '$lib/stores/toastStore';
 	import { assetStatus, resolveAsset } from '$lib/mesh-import/asset-store';
 	import {
@@ -10,6 +11,7 @@
 		replaceImportedModel,
 		revertSimplify
 	} from '$lib/mesh-import/import-model';
+	import type { Point3 } from '$lib/types';
 	import type { MeshAsset } from '$lib/mesh-import/types';
 	import type { ImportedSurfaceConfig, UpAxis } from '$lib/projection-geometry/types';
 	import LabeledControl from './LabeledControl.svelte';
@@ -22,42 +24,63 @@
 	const UP_AXES: UpAxis[] = ['+y', '+z', '-y', '-z', '+x', '-x'];
 
 	let asset: MeshAsset | undefined = $state();
-	let busy = $state(false);
+	let busy = $derived($importedMeshBusy);
 	let replaceInput: HTMLInputElement | undefined = $state();
-	let upAxis: UpAxis = $state(untrack(() => surface.normalize.upAxis));
-	let targetSize = $state(untrack(() => surface.normalize.targetSize));
+	// Writable deriveds: pending edits are kept until the fitted value itself changes
+	// (not merely when a new surface object arrives).
+	let upAxis: UpAxis = $derived(surface.normalize.upAxis);
+	let targetSize = $derived(surface.normalize.targetSize);
 	let targetTriangles = $state(0);
 
 	let missing = $derived($assetStatus[surface.assetId] === 'missing');
 
+	// Primitive, so the effect below fires on an asset change, not on every new surface object.
+	let assetId = $derived(surface.assetId);
+
 	// Load diagnostics whenever the asset changes (import, simplify, revert, re-pick).
 	$effect(() => {
-		const id = surface.assetId;
+		const id = assetId;
 		void resolveAsset(id).then((loaded) => {
-			if (surface.assetId !== id) return;
+			if (untrack(() => assetId) !== id) return;
 			asset = loaded;
 			if (loaded) targetTriangles = loaded.diagnostics.triangles;
 		});
 	});
 
-	$effect(() => {
-		upAxis = surface.normalize.upAxis;
-		targetSize = surface.normalize.targetSize;
-	});
+	/** The store's surface, if it is (still) an imported model. */
+	const currentImported = (): ImportedSurfaceConfig | undefined => {
+		const current = get(superConfigStore).projectionConfigs[0].surfaceConfig;
+		return current.type === 'ImportedMeshConfig' ? (current as ImportedSurfaceConfig) : undefined;
+	};
 
-	/**
-	 * Write `next` back, keeping the transform currently in the store
-	 * (TransformControls binds straight to it, so `surface.transform` may be stale).
-	 */
-	const commit = (next: ImportedSurfaceConfig) => {
+	const setCurrent = (next: ImportedSurfaceConfig) => {
 		const config = get(superConfigStore);
-		const current = config.projectionConfigs[0].surfaceConfig;
-		config.projectionConfigs[0].surfaceConfig = { ...next, transform: current.transform };
+		config.projectionConfigs[0].surfaceConfig = next;
 		superConfigStore.set(config);
 	};
 
+	/**
+	 * Merge only the fields an operation owns (asset, fileName, fit, simplify) onto the
+	 * store's current surface, so edits made meanwhile (transform, ray center) survive.
+	 * Aborts if the surface is no longer the imported model the operation started from.
+	 */
+	const commitOwned = (startAssetId: string, next: ImportedSurfaceConfig): boolean => {
+		const current = currentImported();
+		if (!current || current.assetId !== startAssetId) return false;
+		const merged: ImportedSurfaceConfig = {
+			...current,
+			assetId: next.assetId,
+			fileName: next.fileName,
+			normalize: next.normalize
+		};
+		if (next.simplify) merged.simplify = next.simplify;
+		else delete merged.simplify;
+		setCurrent(merged);
+		return true;
+	};
+
 	const run = async (label: string, op: () => Promise<void>) => {
-		busy = true;
+		importedMeshBusy.set(true);
 		try {
 			await op();
 		} catch (error) {
@@ -67,7 +90,7 @@
 				dismissible: true
 			});
 		} finally {
-			busy = false;
+			importedMeshBusy.set(false);
 		}
 	};
 
@@ -76,10 +99,12 @@
 		const file = input.files?.[0];
 		input.value = '';
 		if (!file) return;
+		const startId = surface.assetId;
+		const wasMissing = missing;
 		await run('Replace model', async () => {
 			const { config, sameFile } = await replaceImportedModel(surface, file);
-			commit(config);
-			if (!sameFile && missing) {
+			if (!commitOwned(startId, config)) return;
+			if (!sameFile && wasMissing) {
 				toastStore.add({
 					type: 'warning',
 					message: `${file.name} is a different file than originally used — refit applied`,
@@ -87,6 +112,35 @@
 				});
 			}
 		});
+	};
+
+	const handleRefit = () => {
+		const startId = surface.assetId;
+		return run('Re-fit', async () => {
+			commitOwned(startId, await refit(surface, upAxis, targetSize));
+		});
+	};
+
+	const handleSimplify = () => {
+		const startId = surface.assetId;
+		return run('Simplify', async () => {
+			commitOwned(startId, await applySimplify(surface, targetTriangles));
+		});
+	};
+
+	const handleRevert = () => {
+		const current = currentImported();
+		if (current) commitOwned(current.assetId, revertSimplify(current));
+	};
+
+	const handleResetCenter = () => {
+		const current = currentImported();
+		if (current) setCurrent({ ...current, center: { x: 0, y: 0, z: 0 } });
+	};
+
+	const handleCenterChange = (center: Point3) => {
+		const current = currentImported();
+		if (current) setCurrent({ ...current, center });
 	};
 </script>
 
@@ -144,19 +198,12 @@
 				max={100000}
 			/>
 		</LabeledControl>
-		<button
-			disabled={busy || missing}
-			onclick={() => run('Re-fit', async () => commit(await refit(surface, upAxis, targetSize)))}
-		>
-			Re-fit
-		</button>
+		<button disabled={busy || missing} onclick={handleRefit}> Re-fit </button>
 
 		<LabeledControl label="Ray center">
-			<PointInput bind:value={() => surface.center, (center) => commit({ ...surface, center })} />
+			<PointInput bind:value={() => surface.center, handleCenterChange} />
 		</LabeledControl>
-		<button disabled={busy} onclick={() => commit({ ...surface, center: { x: 0, y: 0, z: 0 } })}>
-			Reset to model center
-		</button>
+		<button disabled={busy} onclick={handleResetCenter}> Reset to model center </button>
 
 		<LabeledControl label="Simplify to">
 			<NumberInput
@@ -168,17 +215,11 @@
 			/>
 		</LabeledControl>
 		<Container direction="row">
-			<button
-				disabled={busy || missing}
-				onclick={() =>
-					run('Simplify', async () => commit(await applySimplify(surface, targetTriangles)))}
-			>
+			<button disabled={busy || missing} onclick={handleSimplify}>
 				{busy ? 'Working…' : 'Apply'}
 			</button>
 			{#if surface.simplify}
-				<button disabled={busy} onclick={() => commit(revertSimplify(surface))}>
-					Revert to original
-				</button>
+				<button disabled={busy} onclick={handleRevert}> Revert to original </button>
 			{/if}
 		</Container>
 	</Container>

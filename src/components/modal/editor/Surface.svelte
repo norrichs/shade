@@ -8,6 +8,7 @@
 	import { importModelFile } from '$lib/mesh-import/import-model';
 	import { toastStore } from '$lib/stores/toastStore';
 	import ImportedMeshControls from './ImportedMeshControls.svelte';
+	import { importedMeshBusy } from './imported-mesh-busy';
 	import PointInput from '../../controls/super-control/PointInput.svelte';
 	import NumberInput from '../../controls/super-control/NumberInput.svelte';
 	import {
@@ -26,6 +27,7 @@
 		input.value = ''; // allow picking the same file again later
 		if (!file) return;
 		importing = true;
+		importedMeshBusy.set(true);
 		try {
 			const surface = await importModelFile(file);
 			const config = get(superConfigStore);
@@ -40,6 +42,7 @@
 			});
 		} finally {
 			importing = false;
+			importedMeshBusy.set(false);
 		}
 	};
 
@@ -110,7 +113,11 @@
 		</header>
 		<Container direction="column">
 			<LabeledControl label="Surface Type">
-				<select value={surfaceTypeValue} onchange={handleChangeSurfaceType} disabled={importing}>
+				<select
+					value={surfaceTypeValue}
+					onchange={handleChangeSurfaceType}
+					disabled={$importedMeshBusy}
+				>
 					<option value="sphere">Sphere</option>
 					<option value="capsule">Capsule</option>
 					<option value="globule">Globule</option>
