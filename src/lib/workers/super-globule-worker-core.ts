@@ -3,6 +3,7 @@ import {
 	runPatternGeneration as defaultRunPatternGeneration,
 	type PatternGenerationResult
 } from '$lib/cut-pattern/run-pattern-generation';
+import { ensureAssetsLoaded } from '$lib/mesh-import/asset-store';
 import type { PatternGenerationConfig } from '$lib/stores/globulePatternStores';
 import type { PipelineGates, SuperGlobule, SuperGlobuleConfig } from '$lib/types';
 
@@ -57,6 +58,11 @@ export type WorkerCoreDeps = {
 	runPatternGeneration: typeof defaultRunPatternGeneration;
 	/** Strip Object3D and other non-transferable parts before posting. */
 	stripNonSerializable: (superGlobule: SuperGlobule) => SuperGlobule;
+	/**
+	 * Load imported-mesh assets the config references into this thread's
+	 * registry. Returns undefined when nothing needs loading (sync fast path).
+	 */
+	ensureAssets: (config: SuperGlobuleConfig) => Promise<void> | undefined;
 	now: () => number;
 	log: (message: string) => void;
 };
@@ -115,6 +121,7 @@ export const createWorkerCore = (overrides: Partial<WorkerCoreDeps> = {}) => {
 		generateSuperGlobule: defaultGenerateSuperGlobule,
 		runPatternGeneration: defaultRunPatternGeneration,
 		stripNonSerializable,
+		ensureAssets: ensureAssetsLoaded,
 		now: () => performance.now(),
 		log: (m) => console.log(m),
 		...overrides
@@ -122,23 +129,59 @@ export const createWorkerCore = (overrides: Partial<WorkerCoreDeps> = {}) => {
 
 	let held: { requestId: number; superGlobule: SuperGlobule } | null = null;
 
+	const runGenerate = (message: GenerateMessage, post: (response: WorkerResponse) => void) => {
+		const { payload, gates, requestId } = message;
+		try {
+			deps.log('[Worker] Starting generateSuperGlobule');
+			const start = deps.now();
+			const superGlobule = deps.generateSuperGlobule(payload, gates);
+			deps.log(`[Worker] generateSuperGlobule completed in ${deps.now() - start}ms`);
+			held = { requestId, superGlobule };
+			post({ type: 'result', payload: deps.stripNonSerializable(superGlobule), requestId });
+		} catch (error) {
+			post({
+				type: 'error',
+				error: error instanceof Error ? error.message : 'Unknown error',
+				requestId
+			});
+		}
+	};
+
+	/**
+	 * Generate requests run strictly in arrival order. Once any request has to
+	 * wait for assets, later ones queue behind it — otherwise a later request
+	 * could post first and then be overwritten by the earlier, stale result.
+	 * A failed asset load still generates: the missing asset surfaces as a
+	 * per-pipeline error.
+	 */
+	let generateQueue: Promise<void> | null = null;
+	const track = (job: Promise<void>) => {
+		generateQueue = job;
+		void job.then(() => {
+			if (generateQueue === job) generateQueue = null;
+		});
+	};
+	const handleGenerate = (message: GenerateMessage, post: (response: WorkerResponse) => void) => {
+		if (!generateQueue) {
+			const ready = deps.ensureAssets(message.payload);
+			if (!ready) {
+				runGenerate(message, post);
+				return;
+			}
+			track(ready.catch(() => {}).then(() => runGenerate(message, post)));
+			return;
+		}
+		track(
+			generateQueue
+				.then(() => deps.ensureAssets(message.payload))
+				.catch(() => {})
+				.then(() => runGenerate(message, post))
+		);
+	};
+
 	const handle = (message: WorkerMessage, post: (response: WorkerResponse) => void) => {
 		if (message.type === 'generate') {
-			const { payload, gates, requestId } = message;
-			try {
-				deps.log('[Worker] Starting generateSuperGlobule');
-				const start = deps.now();
-				const superGlobule = deps.generateSuperGlobule(payload, gates);
-				deps.log(`[Worker] generateSuperGlobule completed in ${deps.now() - start}ms`);
-				held = { requestId, superGlobule };
-				post({ type: 'result', payload: deps.stripNonSerializable(superGlobule), requestId });
-			} catch (error) {
-				post({
-					type: 'error',
-					error: error instanceof Error ? error.message : 'Unknown error',
-					requestId
-				});
-			}
+			handleGenerate(message, post);
 			return;
 		}
 

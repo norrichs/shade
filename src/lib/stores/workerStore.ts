@@ -9,9 +9,10 @@ import type {
 import type { PatternGenerationConfig } from './globulePatternStores';
 import type { PatternGenerationResult } from '$lib/cut-pattern/run-pattern-generation';
 import { rehydratePatternResult } from '$lib/workers/rehydrate-pattern';
-import { Vector3, Triangle } from 'three';
+import { Vector3, Triangle, type Object3D } from 'three';
+import { ensureAssetsLoaded } from '$lib/mesh-import/asset-store';
 import {
-	generateSurface,
+	generateSurfaceIfAvailable,
 	prepareProjectionConfig
 } from '$lib/projection-geometry/generate-projection';
 
@@ -291,7 +292,9 @@ function getWorker(): Worker {
 				resolver.config.projectionConfigs.forEach((projConfig, i) => {
 					if (rehydrated.projections[i]) {
 						const prepared = prepareProjectionConfig(JSON.parse(JSON.stringify(projConfig)));
-						rehydrated.projections[i].surface = generateSurface(prepared.surfaceConfig);
+						rehydrated.projections[i].surface = generateSurfaceIfAvailable(
+							prepared.surfaceConfig
+						) as Object3D;
 					}
 				});
 
@@ -304,7 +307,9 @@ function getWorker(): Worker {
 						plainSurfaceConfig.transform === 'inherit'
 							? { ...plainSurfaceConfig, transform: voronoiConfig.meta.transform }
 							: plainSurfaceConfig;
-					rehydrated.voronoiResult.surface = generateSurface(resolvedSurfaceConfig);
+					rehydrated.voronoiResult.surface = generateSurfaceIfAvailable(
+						resolvedSurfaceConfig
+					) as Object3D;
 				}
 
 				resolver.resolve(rehydrated);
@@ -355,17 +360,24 @@ export function generateSuperGlobuleAsync(
 			requestId
 		};
 
-		try {
-			const w = getWorker();
-			// Deep clone to strip any Svelte 5 $state proxy objects
-			// which cannot be transferred via postMessage
-			w.postMessage(JSON.parse(JSON.stringify(message)));
-		} catch (error) {
-			pendingResolvers.delete(requestId);
-			isWorking.set(false);
-			workerError.set(error instanceof Error ? error.message : 'Failed to start worker');
-			reject(error);
-		}
+		// Deep clone now (strips Svelte 5 $state proxies, which can't be posted)
+		// so later config edits can't leak into this request while assets load.
+		const plainMessage = JSON.parse(JSON.stringify(message));
+		const send = () => {
+			try {
+				getWorker().postMessage(plainMessage);
+			} catch (error) {
+				pendingResolvers.delete(requestId);
+				isWorking.set(pendingResolvers.size > 0);
+				workerError.set(error instanceof Error ? error.message : 'Failed to start worker');
+				reject(error);
+			}
+		};
+		// The post-result surface rebuild below runs on this thread, so the
+		// imported mesh must be in this thread's registry too.
+		const assetsReady = ensureAssetsLoaded(config);
+		if (assetsReady) void assetsReady.then(send);
+		else send();
 	});
 }
 
