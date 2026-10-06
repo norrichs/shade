@@ -25,9 +25,44 @@ export type CapsuleConfig = {
 	heightSegments: number;
 };
 
-export type SurfaceGeometryConfig = SphereConfig | CapsuleConfig | GlobuleConfig;
+/** Source-file axis that should become the app's up axis (+Z). */
+export type UpAxis = '+x' | '-x' | '+y' | '-y' | '+z' | '-z';
+
+/**
+ * Auto-fit applied to an imported mesh before the user transform:
+ * rotate source-up to +Z, shift the bbox center to the origin, scale uniformly so
+ * the largest bbox dimension equals `targetSize`. `offset` and `scale` are
+ * computed (see mesh-import/normalize.ts) and stored so the fit is reproducible.
+ */
+export type ImportedMeshNormalize = {
+	upAxis: UpAxis;
+	targetSize: number;
+	offset: Point3;
+	scale: number;
+};
+
+/**
+ * A surface loaded from a user's 3D file. The mesh itself is not in the config —
+ * `assetId` (content hash) resolves it through mesh-import/asset-store.ts.
+ */
+export type ImportedMeshConfig = {
+	type: 'ImportedMeshConfig';
+	assetId: string;
+	fileName: string;
+	normalize: ImportedMeshNormalize;
+	/** Ray-cast center, in fitted space. Defaults to the origin (the fitted bbox center). */
+	center: Point3;
+	/** Present when `assetId` is a simplified derivative of `sourceAssetId`. */
+	simplify?: { sourceAssetId: string; targetTriangles: number };
+};
+
+export type SurfaceGeometryConfig = SphereConfig | CapsuleConfig | GlobuleConfig | ImportedMeshConfig;
 
 export type SurfaceConfig = SurfaceGeometryConfig & {
+	transform: TransformConfig | 'inherit';
+};
+
+export type ImportedSurfaceConfig = ImportedMeshConfig & {
 	transform: TransformConfig | 'inherit';
 };
 
