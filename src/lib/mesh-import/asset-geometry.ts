@@ -26,8 +26,10 @@ export function getAssetGeometry(assetId: string, fileName: string): BufferGeome
 	if (!asset) throw new MissingMeshAssetError(assetId, fileName);
 
 	const geometry = new BufferGeometry();
-	geometry.setAttribute('position', new BufferAttribute(asset.positions, 3));
-	geometry.setIndex(new BufferAttribute(asset.index, 1));
+	// Own copies: the BVH build reorders the index in place, which must never
+	// touch the registry asset (its id is the hash of its bytes).
+	geometry.setAttribute('position', new BufferAttribute(asset.positions.slice(), 3));
+	geometry.setIndex(new BufferAttribute(asset.index.slice(), 1));
 	geometry.computeVertexNormals();
 	geometry.computeBoundingBox();
 	geometry.computeBoundingSphere();

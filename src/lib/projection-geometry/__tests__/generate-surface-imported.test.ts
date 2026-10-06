@@ -4,7 +4,14 @@ import { acceleratedRaycast } from 'three-mesh-bvh';
 import { generateSurface, generateSurfaceIfAvailable } from '../generate-projection';
 import type { ImportedSurfaceConfig, SurfaceConfig } from '../types';
 import { cleanMesh } from '$lib/mesh-import/clean-mesh';
-import { registerAsset, resetAssetStoreForTests } from '$lib/mesh-import/asset-store';
+import {
+	getLoadedAsset,
+	hashMesh,
+	registerAsset,
+	resetAssetStoreForTests
+} from '$lib/mesh-import/asset-store';
+import { IcosahedronGeometry } from 'three';
+import { webcrypto } from 'node:crypto';
 import {
 	MissingMeshAssetError,
 	resetAssetGeometryCacheForTests
@@ -90,5 +97,27 @@ describe('generateSurfaceIfAvailable', () => {
 
 	it('returns the surface when available', () => {
 		expect(generateSurfaceIfAvailable(cubeConfig())).toBeDefined();
+	});
+});
+
+describe('generateSurface — registry asset integrity', () => {
+	it('building the BVH does not reorder the registered asset (id stays its content hash)', async () => {
+		if (!globalThis.crypto?.subtle) {
+			(globalThis as { crypto: unknown }).crypto = webcrypto;
+		}
+		const clean = cleanMesh(new Mesh(new IcosahedronGeometry(1, 3)));
+		const id = await hashMesh(clean);
+		registerAsset({
+			...clean,
+			id,
+			fileName: 'ball.glb',
+			sourceFormat: 'glb',
+			createdAt: '2026-10-05T00:00:00.000Z'
+		});
+		const surface = generateSurface(cubeConfig({ assetId: id }));
+		const geometry = meshOf(surface).geometry;
+
+		expect(await hashMesh(getLoadedAsset(id)!)).toBe(id);
+		expect(geometry.getIndex()!.array).not.toBe(getLoadedAsset(id)!.index);
 	});
 });
