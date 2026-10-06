@@ -50,7 +50,10 @@ export type ImportedMeshConfig = {
 	assetId: string;
 	fileName: string;
 	normalize: ImportedMeshNormalize;
-	/** Ray-cast center, in fitted space. Defaults to the origin (the fitted bbox center). */
+	/**
+	 * Ray-cast center, in world space (used untransformed, like Sphere's center).
+	 * Defaults to the origin = the fitted model center before the user transform.
+	 */
 	center: Point3;
 	/** Present when `assetId` is a simplified derivative of `sourceAssetId`. */
 	simplify?: { sourceAssetId: string; targetTriangles: number };

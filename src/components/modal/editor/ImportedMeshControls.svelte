@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
+	import { Vector3 } from 'three';
 	import { get } from 'svelte/store';
 	import { superConfigStore } from '$lib/stores';
 	import { importedMeshBusy } from './imported-mesh-busy';
@@ -11,6 +12,7 @@
 		replaceImportedModel,
 		revertSimplify
 	} from '$lib/mesh-import/import-model';
+	import { getMatrix4 } from '$lib/projection-geometry/generate-projection';
 	import type { Point3 } from '$lib/types';
 	import type { MeshAsset } from '$lib/mesh-import/types';
 	import type { ImportedSurfaceConfig, UpAxis } from '$lib/projection-geometry/types';
@@ -138,7 +140,12 @@
 
 	const handleResetCenter = () => {
 		const current = currentImported();
-		if (current) setCurrent({ ...current, center: { x: 0, y: 0, z: 0 } });
+		if (!current) return;
+		// The fitted model center is the origin; the pipelines apply the user
+		// transform to the mesh, so the ray center (world space) follows it.
+		const origin = new Vector3();
+		if (current.transform !== 'inherit') origin.applyMatrix4(getMatrix4(current.transform));
+		setCurrent({ ...current, center: { x: origin.x, y: origin.y, z: origin.z } });
 	};
 
 	const handleCenterChange = (center: Point3) => {
