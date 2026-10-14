@@ -256,14 +256,20 @@ const generateRawLevelsConstantAspect = ({
 			break;
 		}
 
-		divisions = divisions.map((band, i) =>
-			adjustDivisions(band, aspectRatios[divisionBasis === undefined ? i : divisionBasis])
-		);
-		divisions = divisions.map((band, i, bands) => {
-			return band.map((divisionValue, j) => {
-				return (divisionValue + bands[(bands.length + i - 1) % bands.length][j]) / 2;
+		const adjusted = divisions
+			.map((band, i) =>
+				adjustDivisions(band, aspectRatios[divisionBasis === undefined ? i : divisionBasis])
+			)
+			.map((band, i, bands) => {
+				return band.map((divisionValue, j) => {
+					return (divisionValue + bands[(bands.length + i - 1) % bands.length][j]) / 2;
+				});
 			});
-		});
+		// Keep the last good divisions rather than sampling the curves at NaN.
+		if (adjusted.some((band) => band.some((d) => !Number.isFinite(d)))) {
+			break;
+		}
+		divisions = adjusted;
 	}
 
 	const levels: Level[] = [];
@@ -275,19 +281,32 @@ const generateRawLevelsConstantAspect = ({
 	return levels;
 };
 
-const getDivergence = (values: number[]) => {
-	const avg = values.reduce((sum, val) => sum + val, 0) / values.length;
-	return values.map((val) => Math.abs(avg - val) / avg).reduce((sum, val) => sum + val, 0);
+/** Aspect ratio of each quad along a band; null for a quad that touches a pole. */
+type AspectRatio = number | null;
+
+const averageAspectRatio = (aspectRatios: AspectRatio[]): number => {
+	const values = aspectRatios.filter((ar): ar is number => ar !== null);
+	return values.reduce((sum, val) => sum + val, 0) / values.length;
 };
 
-const adjustDivisions = (divisions: number[], aspectRatios: number[]) => {
-	const avgAspectRatio = aspectRatios.reduce((sum, val) => sum + val, 0) / aspectRatios.length;
+const getDivergence = (aspectRatios: AspectRatio[]) => {
+	const avg = averageAspectRatio(aspectRatios);
+	return aspectRatios
+		.filter((ar): ar is number => ar !== null)
+		.map((val) => Math.abs(avg - val) / avg)
+		.reduce((sum, val) => sum + val, 0);
+};
+
+const adjustDivisions = (divisions: number[], aspectRatios: AspectRatio[]) => {
+	const avgAspectRatio = averageAspectRatio(aspectRatios);
 	const newDivisionsUnscaled = divisions.map((div, i) => {
 		if (i === 0) {
 			return 0;
 		}
 		const height = div - divisions[i - 1];
-		return (avgAspectRatio * height) / aspectRatios[i - 1];
+		const aspectRatio = aspectRatios[i - 1];
+		// A pole quad keeps its share of the curve: see getAspectRatioOfQuad.
+		return aspectRatio === null ? height : (avgAspectRatio * height) / aspectRatio;
 	});
 	const totalNewDivisionsUnscaled = newDivisionsUnscaled.reduce((sum, val) => sum + val, 0);
 	const newDivisions: number[] = [];
@@ -370,7 +389,7 @@ const generateRawLevels = ({
 	return rawLevels;
 };
 
-const getAspectRatiosFromMeridians = (meridians: Vector3[][]): number[][] => {
+const getAspectRatiosFromMeridians = (meridians: Vector3[][]): AspectRatio[][] => {
 	const bandCount = meridians.length;
 	const pointCount = meridians[0].length;
 	let bands: { v0: Vector3; v1: Vector3; v2: Vector3; v3: Vector3 }[][] = new Array(bandCount);
@@ -400,7 +419,14 @@ const getAspectRatioOfQuad = ({
 	v1: Vector3;
 	v2: Vector3;
 	v3: Vector3;
-}) => {
+}): AspectRatio => {
+	// A quad with a collapsed side (silhouette x = 0) is a triangle whose apex is the
+	// pole. Shrinking it gives a similar triangle with the same aspect ratio, so
+	// balancing it only drives its height to zero and the divisions to NaN.
+	const poleTolerance = 1e-9;
+	if (v0.distanceTo(v3) < poleTolerance || v1.distanceTo(v2) < poleTolerance) {
+		return null;
+	}
 	const mid0 = new Vector3((v0.x + v1.x) / 2, (v0.y + v1.y) / 2, (v0.z + v1.z) / 2);
 	const mid1 = new Vector3((v1.x + v2.x) / 2, (v1.y + v2.y) / 2, (v1.z + v2.z) / 2);
 	const mid2 = new Vector3((v2.x + v3.x) / 2, (v2.y + v3.y) / 2, (v2.z + v3.z) / 2);
