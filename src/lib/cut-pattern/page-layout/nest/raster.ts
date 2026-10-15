@@ -82,7 +82,8 @@ export const mergeSpans = (spans: Span[]): Span[] => {
 	return out;
 };
 
-const areaOf = (rows: Span[][]) =>
+/** Total set-cell count of a raster's rows. */
+export const areaOf = (rows: Span[][]) =>
 	rows.reduce((n, row) => n + row.reduce((m, [a, b]) => m + b - a, 0), 0);
 
 /** Conservative scan conversion: a cell is set if any polygon touches it. */

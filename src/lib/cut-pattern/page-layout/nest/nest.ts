@@ -1,7 +1,14 @@
 import { Vector3 } from 'three';
 import type { PageGeom, PageLayoutResult, PageRect } from '../types';
 import type { NestShape, Pt, Raster } from './types';
-import { coarsenRaster, dilateRaster, nestAngles, rasterizeConvex, rotateAbout } from './raster';
+import {
+	areaOf,
+	coarsenRaster,
+	dilateRaster,
+	nestAngles,
+	rasterizeConvex,
+	rotateAbout
+} from './raster';
 import { Grid } from './grid';
 
 export type NestGeom = PageGeom & { rotationStep: number; cellMm: number };
@@ -14,7 +21,13 @@ const EPS = 1e-6;
 export const nestCellSize = (g: NestGeom): number =>
 	Math.max(g.cellMm * g.pageScale, Math.sqrt((g.contentWidth * g.contentHeight) / NEST_MAX_CELLS));
 
-type Prepared = { fine: Raster[]; coarse: Raster[]; bbox: { w: number; h: number }[] };
+type Prepared = {
+	fine: Raster[];
+	coarse: Raster[];
+	bbox: { w: number; h: number }[];
+	/** Fewest dilated cells over all angles: a page with fewer free cells cannot fit it. */
+	need: number;
+};
 type Pos = { gx: number; gy: number };
 type Hit = Pos & { a: number };
 
@@ -60,9 +73,10 @@ const searchCoarse = (grid: Grid, coarseGrid: Grid, fine: Raster, coarse: Raster
 };
 
 /**
- * Fine scan limited to placements that reach the right/bottom partial coarse block
- * (the only fits coarse cannot represent because those blocks count as busy),
- * rows then columns, then compacted. Interior fits are left to the coarse search.
+ * Cheap fine scan limited to placements that reach the right/bottom partial coarse
+ * block (which coarse treats as busy), rows then columns, then compacted. It does NOT
+ * cover every fit coarse misses: fits at fine offsets that are not 4-aligned, next to
+ * partly occupied blocks, are found only by the exhaustive `searchFine`.
  */
 const searchEdge = (grid: Grid, fine: Raster): Pos | null => {
 	const Wu = Math.floor(grid.W / NEST_COARSE) * NEST_COARSE;
@@ -116,7 +130,7 @@ export const nestPageLayout = (shapes: NestShape[], geom: NestGeom): PageLayoutR
 	const angles = nestAngles(geom.rotationStep);
 
 	const prepared: Prepared[] = shapes.map((s) => {
-		const out: Prepared = { fine: [], coarse: [], bbox: [] };
+		const out: Prepared = { fine: [], coarse: [], bbox: [], need: 0 };
 		for (const theta of angles) {
 			const polys = s.polygons.map((p) => rotateAbout(p, theta, s.pivot));
 			const fine = dilateRaster(rasterizeConvex(polys, cell), k);
@@ -124,6 +138,7 @@ export const nestPageLayout = (shapes: NestShape[], geom: NestGeom): PageLayoutR
 			out.coarse.push(coarsenRaster(fine, NEST_COARSE));
 			out.bbox.push(bboxOf(polys.flat()));
 		}
+		out.need = Math.min(...out.fine.map((r) => areaOf(r.rows)));
 		return out;
 	});
 	const hasGeom = (i: number) => prepared[i].fine[0].w > 0;
@@ -170,12 +185,9 @@ export const nestPageLayout = (shapes: NestShape[], geom: NestGeom): PageLayoutR
 	};
 	newPage();
 
-	const cellCount = (r: Raster) =>
-		r.rows.reduce((n, row) => n + row.reduce((m, [a, b]) => m + b - a, 0), 0);
-
-	// Coarse blocks past W/H count as busy, so a piece reaching the right/bottom
-	// partial block only fits at fine resolution, so each page also gets an edge-band
-	// fine scan; a fresh page that still finds nothing gets the exhaustive fine scan.
+	// Coarse, then the cheap edge-band fine scan. Earlier pages stop there for speed and
+	// may miss fits at non-4-aligned interior offsets; the last open page and a fresh
+	// page also get the exhaustive fine scan, so nothing that fits the newest page spills.
 	const search = (prep: Prepared, pg: PageState, exhaustive = false) =>
 		bestOver(prep, (a) => searchCoarse(pg.grid, pg.coarse, prep.fine[a], prep.coarse[a])) ??
 		bestOver(prep, (a) => searchEdge(pg.grid, prep.fine[a])) ??
@@ -191,12 +203,11 @@ export const nestPageLayout = (shapes: NestShape[], geom: NestGeom): PageLayoutR
 		// First fit across all open pages, in page order, so later (smaller) pieces
 		// backfill gaps left on earlier pages. A page whose free cells cannot hold the
 		// piece's dilated raster at any angle is skipped without searching.
-		const need = Math.min(...prep.fine.map(cellCount));
 		let p = -1;
 		let hit: Hit | null = null;
 		for (let q = 0; q < state.length && !hit; q++) {
-			if (W * H - state[q].grid.filled < need) continue;
-			hit = search(prep, state[q]);
+			if (W * H - state[q].grid.filled < prep.need) continue;
+			hit = search(prep, state[q], q === state.length - 1);
 			if (hit) p = q;
 		}
 		if (!hit) {

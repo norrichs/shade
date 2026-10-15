@@ -244,6 +244,42 @@ describe('nestPageLayout', () => {
 		assertValid(shapes, r, g);
 	});
 
+	// gap 4 → k = 3, grid 306 (grid col c = real x c − 3), coarse-usable 304. Frame A
+	// (bbox 300×300) = two pillars x∈[0,100] and [152,300] plus a bottom bar y∈[250,300];
+	// dilated, it leaves a free slot of cols [106,152) × rows [0,247). rect(40,30)
+	// dilates to 46×36, which fits only at gx = 106: 106 ≡ 2 (mod 4), so coarse cannot
+	// reach it, and gx + 46 = 152 ≤ 304, gy + 36 ≤ 247 ≤ 304, so it is outside the edge band.
+	it('finds a fine-offset interior fit on the last open page', () => {
+		const frame: NestShape = {
+			polygons: [
+				[
+					{ x: 0, y: 0 },
+					{ x: 100, y: 0 },
+					{ x: 100, y: 300 },
+					{ x: 0, y: 300 }
+				],
+				[
+					{ x: 152, y: 0 },
+					{ x: 300, y: 0 },
+					{ x: 300, y: 300 },
+					{ x: 152, y: 300 }
+				],
+				[
+					{ x: 0, y: 250 },
+					{ x: 300, y: 250 },
+					{ x: 300, y: 300 },
+					{ x: 0, y: 300 }
+				]
+			],
+			pivot: { x: 150, y: 150 }
+		};
+		const shapes = [frame, rect(40, 30)];
+		const g = geom({ rotationStep: 0 });
+		const r = nestPageLayout(shapes, g);
+		expect(r.pages).toHaveLength(1);
+		assertValid(shapes, r, g);
+	});
+
 	it('30 chevrons at 15° finish in under 2 s', () => {
 		const t0 = Date.now();
 		nestPageLayout(
