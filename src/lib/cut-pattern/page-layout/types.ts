@@ -27,6 +27,7 @@ export type PageLayoutResult = {
 	origins: Vector3[];
 	rotations: number[]; // per-item rotation in degrees (0 or 90), parallel to origins
 	pages: PageRect[];
+	utilisation?: number[]; // nest only: per-page fraction of content cells covered, in [0,1]
 	overflow?: { itemIndex: number; requiredScale: number };
 };
 
