@@ -419,14 +419,14 @@ export const ops: Record<string, Op> = {
 	screenshot: {
 		describe:
 			'PNG of the 3D model and/or pattern. annotate draws band addresses on the pattern. Returns file paths.',
-		args: '{view?: model|pattern|both, annotate?: false, width?: 1600, bands?: ["g0t3b7"]}',
+		args: '{view?: model|pattern|both, annotate?: false, width?: 1600, bands?: ["g0t3b7"], crop?: true}',
 		run: async (args) => {
 			const view = (args.view as string) ?? 'both';
 			const images: AgentImage[] = [];
 			const notes: Record<string, unknown> = {};
 			if (view === 'model' || view === 'both') {
 				try {
-					images.push({ name: 'model', dataUrl: captureModel() });
+					images.push({ name: 'model', dataUrl: await captureModel(args.crop !== false) });
 				} catch (error) {
 					notes.model = (error as Error).message;
 				}

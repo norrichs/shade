@@ -24,10 +24,58 @@ export const registerModelCapture = (capture: ModelCapture) => {
 	};
 };
 
-export const captureModel = (): string => {
+export const captureModel = async (crop = true): Promise<string> => {
 	if (!modelCapture) throw new Error('The 3D view is not mounted.');
-	return modelCapture();
+	const dataUrl = modelCapture();
+	return crop ? cropToContent(dataUrl) : dataUrl;
 };
+
+/**
+ * Crop a transparent-background render to its opaque pixels plus a margin. The
+ * camera sits at a fixed distance, so a small model is otherwise a speck.
+ */
+const cropToContent = (dataUrl: string): Promise<string> =>
+	new Promise((resolve, reject) => {
+		const img = new Image();
+		img.onload = () => {
+			const src = document.createElement('canvas');
+			src.width = img.width;
+			src.height = img.height;
+			const ctx = src.getContext('2d');
+			if (!ctx) return reject(new Error('No 2D canvas context'));
+			ctx.drawImage(img, 0, 0);
+			const { data } = ctx.getImageData(0, 0, img.width, img.height);
+			let [x0, y0, x1, y1] = [img.width, img.height, -1, -1];
+			for (let y = 0; y < img.height; y++) {
+				for (let x = 0; x < img.width; x++) {
+					if (data[(y * img.width + x) * 4 + 3] === 0) continue;
+					if (x < x0) x0 = x;
+					if (x > x1) x1 = x;
+					if (y < y0) y0 = y;
+					if (y > y1) y1 = y;
+				}
+			}
+			if (x1 < 0) return resolve(dataUrl);
+			const margin = Math.round(Math.max(x1 - x0, y1 - y0) * 0.08);
+			const sx = Math.max(0, x0 - margin);
+			const sy = Math.max(0, y0 - margin);
+			const sw = Math.min(img.width, x1 + margin + 1) - sx;
+			const sh = Math.min(img.height, y1 + margin + 1) - sy;
+			// Upscale small crops so detail survives; cap the long side.
+			const scale = Math.min(4, 1200 / Math.max(sw, sh));
+			const out = document.createElement('canvas');
+			out.width = Math.round(sw * Math.max(scale, 1));
+			out.height = Math.round(sh * Math.max(scale, 1));
+			const octx = out.getContext('2d');
+			if (!octx) return reject(new Error('No 2D canvas context'));
+			octx.fillStyle = '#ffffff';
+			octx.fillRect(0, 0, out.width, out.height);
+			octx.drawImage(src, sx, sy, sw, sh, 0, 0, out.width, out.height);
+			resolve(out.toDataURL('image/png'));
+		};
+		img.onerror = () => reject(new Error('The model render failed to decode'));
+		img.src = dataUrl;
+	});
 
 type Rect = { x: number; y: number; width: number; height: number };
 
