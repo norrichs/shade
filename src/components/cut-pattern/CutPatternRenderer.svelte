@@ -58,7 +58,13 @@
 		type ResolvedBand
 	} from '$lib/cut-pattern/resolve-index-bands';
 	import PageGeometry from './PageGeometry.svelte';
-	import { buildPageGeom, PAGE_LAYOUT_ALGORITHMS } from '$lib/cut-pattern/page-layout/registry';
+	import {
+		buildNestGeom,
+		buildPageGeom,
+		PAGE_LAYOUT_ALGORITHMS
+	} from '$lib/cut-pattern/page-layout/registry';
+	import { buildNestShape } from '$lib/cut-pattern/page-layout/nest/nest-shape';
+	import { nestClient } from '$lib/cut-pattern/page-layout/nest/nest-client';
 	import { skylinePageLayout } from '$lib/cut-pattern/page-layout/skyline';
 	import type { LayoutItem, PageLayoutResult } from '$lib/cut-pattern/page-layout/types';
 	import { toastStore } from '$lib/stores/toastStore';
@@ -254,30 +260,76 @@
 	let pivots = $derived(buildPivotIndex(bandList, boundsIndex));
 	let tagAnchors = $derived(buildTagAnchorIndex(bandList));
 
+	let isNest = $derived(layoutMode === 'page' && pageLayoutCfg?.algorithm === 'nest');
+
+	// Shapes for the nest worker, one per page band, built from the same
+	// bounds/pivot indexes the renderer already keys by band identity.
+	let nestShapes = $derived.by(() => {
+		if (!isNest) return undefined;
+		const ctx = boundsContext();
+		return pageBands.map(({ band }) =>
+			buildNestShape(band, ctx, pivots.get(band) ?? { x: 0, y: 0 })
+		);
+	});
+	let nestGeom = $derived(
+		isNest && pageLayoutCfg ? { ...buildNestGeom(pageLayoutCfg), gap } : undefined
+	);
+
+	// $state.raw: the result holds Vector3s; a deep proxy loops
+	// (effect_update_depth_exceeded).
+	let nestResult = $state.raw<
+		{ shapes: unknown; geom: unknown; result: PageLayoutResult } | undefined
+	>();
+	let nestPending = $state(false);
+
+	// Request a nest for the current inputs. Reads only `nestShapes`/`nestGeom`
+	// (never `nestPending`/`nestResult`), so its own writes do not re-trigger it.
+	$effect(() => {
+		const shapes = nestShapes;
+		const g = nestGeom;
+		if (!shapes || !g) {
+			// Leaving nest mode: nothing is in flight for the current inputs.
+			nestPending = false;
+			return;
+		}
+		nestPending = true;
+		nestClient.request(shapes, g).then((result) => {
+			if (!result) return; // superseded or failed; a newer request owns `pending`
+			nestResult = { shapes, geom: g, result };
+			nestPending = false;
+		});
+	});
+
 	let pageResult = $derived.by((): PageLayoutResult | undefined => {
 		if (layoutMode !== 'page' || !pageLayoutCfg) return undefined;
 		const items = toLayoutItems(pageBands);
 		// Use the single shared gap so all three layout modes stay consistent.
 		const geom = { ...buildPageGeom(pageLayoutCfg), gap };
-		// TEMP: 'nest' routes to skyline with rotation until the worker lands (Task 6).
 		if (pageLayoutCfg.algorithm === 'nest') {
+			// Latest worker result for the CURRENT inputs; until it lands, skyline
+			// with rotation so the page never blanks.
+			if (nestResult && nestResult.shapes === nestShapes && nestResult.geom === nestGeom) {
+				return nestResult.result;
+			}
 			return skylinePageLayout(items, { ...geom, allowRotation: true });
 		}
-		const algo = PAGE_LAYOUT_ALGORITHMS[pageLayoutCfg.algorithm];
-		return algo(items, geom);
+		return PAGE_LAYOUT_ALGORITHMS[pageLayoutCfg.algorithm](items, geom);
 	});
 
-	// Publish the page count to the Page Layout editor. Guard on a value key so we
-	// only write when it actually changes — an unconditional store write here
-	// re-enters the reactive flush and trips effect_update_depth_exceeded.
+	// Publish the page count (and nest status) to the Page Layout editor. Guard on
+	// a value key so we only write when it actually changes — an unconditional
+	// store write here re-enters the reactive flush and trips
+	// effect_update_depth_exceeded.
 	let lastPageInfoKey = '';
 	$effect(() => {
 		const pageCount = pageResult?.pages.length ?? 0;
 		const overflow = !!pageResult?.overflow;
-		const key = `${pageCount}:${overflow}`;
+		const utilisation = pageResult?.utilisation;
+		const pending = nestPending;
+		const key = `${pageCount}:${overflow}:${pending}:${utilisation?.map((u) => u.toFixed(3)).join(',') ?? ''}`;
 		if (key === lastPageInfoKey) return;
 		lastPageInfoKey = key;
-		pageLayoutInfoStore.set({ pageCount, overflow });
+		pageLayoutInfoStore.set({ pageCount, overflow, utilisation, nestPending: pending });
 	});
 
 	// The per-piece length budget and overflow preconditions the Splits panel
@@ -317,8 +369,13 @@
 			{
 				contentWidth: geom.contentWidth,
 				contentHeight: geom.contentHeight,
-				// Only skyline minimises over orientations; flex-wrap ignores the flag.
-				allowRotation: pageLayoutCfg.algorithm === 'skyline' && !!pageLayoutCfg.allowRotation
+				// Skyline (when enabled) and nest (when its step reaches 90°) can turn a
+				// piece onto its side; flex-wrap never rotates.
+				allowRotation:
+					(pageLayoutCfg.algorithm === 'skyline' && !!pageLayoutCfg.allowRotation) ||
+					(pageLayoutCfg.algorithm === 'nest' &&
+						pageLayoutCfg.rotationStep > 0 &&
+						90 % pageLayoutCfg.rotationStep === 0)
 			}
 		);
 	});

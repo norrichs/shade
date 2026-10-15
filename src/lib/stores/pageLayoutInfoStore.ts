@@ -7,10 +7,21 @@ import { writable } from 'svelte/store';
  *
  * `pageCount` is 0 when not in page mode or when the pattern overflows (the
  * renderer drops pages and falls back to line-wrap in that case).
+ *
+ * `utilisation` is the per-page material-used fraction (0..1) when the layout
+ * algorithm reports it (nest only). `nestPending` is true while a nest worker
+ * request for the current inputs is in flight.
  */
-export const pageLayoutInfoStore = writable<{ pageCount: number; overflow: boolean }>({
+export const pageLayoutInfoStore = writable<{
+	pageCount: number;
+	overflow: boolean;
+	utilisation?: number[];
+	nestPending?: boolean;
+}>({
 	pageCount: 0,
-	overflow: false
+	overflow: false,
+	utilisation: undefined,
+	nestPending: false
 });
 
 /**
