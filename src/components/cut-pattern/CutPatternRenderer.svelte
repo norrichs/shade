@@ -316,8 +316,8 @@
 		});
 	});
 
-	let pageResult = $derived.by((): PageLayoutResult | undefined => {
-		if (layoutMode !== 'page' || !pageLayoutCfg) return undefined;
+	let pageLayout = $derived.by((): { result?: PageLayoutResult; fallback: boolean } => {
+		if (layoutMode !== 'page' || !pageLayoutCfg) return { fallback: false };
 		const items = toLayoutItems(pageBands);
 		// Use the single shared gap so all three layout modes stay consistent.
 		const geom = { ...buildPageGeom(pageLayoutCfg), gap };
@@ -325,15 +325,25 @@
 			// Latest worker result for the CURRENT inputs; until it lands, skyline
 			// with rotation so the page never blanks.
 			if (nestResult && nestResult.shapes === nestShapes && nestResult.geom === nestGeom) {
-				return nestResult.result;
+				return { result: nestResult.result, fallback: false };
 			}
-			return skylinePageLayout(items, {
+			const result = skylinePageLayout(items, {
 				...geom,
 				allowRotation: nestAllowsQuarterTurn(buildNestGeom(pageLayoutCfg).rotationStep)
 			});
+			return { result, fallback: true };
 		}
-		return PAGE_LAYOUT_ALGORITHMS[pageLayoutCfg.algorithm](items, geom);
+		return {
+			result: PAGE_LAYOUT_ALGORITHMS[pageLayoutCfg.algorithm](items, geom),
+			fallback: false
+		};
 	});
+	// The skyline stand-in only tries 0°/90°, so it can "overflow" on a band the nest
+	// fits diagonally, and its requiredScale is not the nest's. Never surface that
+	// overflow (no toast, no "Fit page" scale, no overflow in the editor): drop the
+	// stand-in and show the bands line-wrapped until the nest answers.
+	let fallbackOverflowed = $derived(pageLayout.fallback && !!pageLayout.result?.overflow);
+	let pageResult = $derived(fallbackOverflowed ? undefined : pageLayout.result);
 
 	// Publish the page count (and nest status) to the Page Layout editor. Guard on
 	// a value key so we only write when it actually changes — an unconditional
@@ -429,9 +439,11 @@
 
 	// Line-wrap is on in line-wrap mode, and also as the page-mode overflow fallback:
 	// when a pattern is too large to fit a page we drop pages but still wrap, so
-	// patterns stay visible without running off in one infinite row.
+	// patterns stay visible without running off in one infinite row. A suppressed
+	// nest-fallback overflow wraps the same way, just without the toast.
 	let lineWrap = $derived(
-		layoutMode === 'line-wrap' || (layoutMode === 'page' && !!pageResult?.overflow)
+		layoutMode === 'line-wrap' ||
+			(layoutMode === 'page' && (!!pageResult?.overflow || fallbackOverflowed))
 	);
 
 	let origins = $derived(getCumulativeOrigins(filteredTubes, gap, 'center', lineWrap, wrapWidth));

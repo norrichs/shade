@@ -179,14 +179,7 @@ export type EffectiveBandBoundsInput = {
 	measuredDims: Map<string, LabelTextDims>;
 };
 
-/**
- * The box layout packs: the band's drawn pattern extent (`patternExtentBounds`)
- * expanded to enclose its self-tag label.
- *
- * The label counts whenever the self-tag is enabled and the band has an anchor,
- * as `BandComponent` renders it. Text dims come from the measured store when
- * present, otherwise from `estimateTextDims`.
- */
+/** The self-tag label's footprint box; undefined when the self-tag is disabled or unanchored. */
 export const selfTagFootprintBox = (input: EffectiveBandBoundsInput): BoundingBox | undefined => {
 	const { band, labels, selfTagLines, measuredDims } = input;
 	const selfTag = labels?.selfTag;
@@ -208,6 +201,14 @@ export const selfTagFootprintBox = (input: EffectiveBandBoundsInput): BoundingBo
 	});
 };
 
+/**
+ * The box layout packs: the band's drawn pattern extent (`patternExtentBounds`)
+ * expanded to enclose its self-tag label.
+ *
+ * The label counts whenever the self-tag is enabled and the band has an anchor,
+ * as `BandComponent` renders it. Text dims come from the measured store when
+ * present, otherwise from `estimateTextDims`.
+ */
 export const effectiveBandBounds = (input: EffectiveBandBoundsInput): BoundingBox | undefined => {
 	const extent = patternExtentBounds(input.band);
 	if (!extent) return extent;
