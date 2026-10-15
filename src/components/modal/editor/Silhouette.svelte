@@ -2,7 +2,12 @@
 	import { get } from 'svelte/store';
 	import { selectedBand, superConfigStore } from '$lib/stores';
 	import { getCurvePoints } from '$lib/generate-level';
-	import type { BezierConfig, CurveSampleMethod, SuperGlobuleConfig } from '$lib/types';
+	import type {
+		BezierConfig,
+		CurveSampleMethod,
+		NarrowRegionConfig,
+		SuperGlobuleConfig
+	} from '$lib/types';
 	import { isCurveSampleMethodMethod } from '$lib/types';
 	import NumberInput from '../../controls/super-control/NumberInput.svelte';
 	import Container from './Container.svelte';
@@ -100,6 +105,29 @@
 			} as CurveSampleMethod
 		}));
 
+	const DEFAULT_NARROW_REGION: NarrowRegionConfig = { width: 0, aspectRatio: 1 };
+
+	/** The narrow-region limit, when preserveAspectRatio is on and it is set (width > 0). */
+	let narrowRegion = $derived.by(() => {
+		const sampleMethod = levelConfig?.silhouetteSampleMethod;
+		if (sampleMethod?.method !== 'preserveAspectRatio') return undefined;
+		return sampleMethod.narrowRegion;
+	});
+	let narrowWidth = $derived(narrowRegion && narrowRegion.width > 0 ? narrowRegion.width : 0);
+
+	const setNarrowRegion = (patch: Partial<NarrowRegionConfig>) =>
+		updateLevelConfig((level) => {
+			const sampleMethod = level.silhouetteSampleMethod;
+			if (sampleMethod.method !== 'preserveAspectRatio') return level;
+			return {
+				...level,
+				silhouetteSampleMethod: {
+					...sampleMethod,
+					narrowRegion: { ...DEFAULT_NARROW_REGION, ...sampleMethod.narrowRegion, ...patch }
+				}
+			};
+		});
+
 	const setOffset = (axis: 'x' | 'y' | 'z', value: number) => updateFirstOffset({ [axis]: value });
 
 	// Stored in radians, edited in degrees. The legacy panel wrote only rotZ and
@@ -176,6 +204,20 @@
 						overlay={silhouetteOverlay}
 					>
 						<line x1="0" y1="-100" x2="0" y2="100" stroke="black" stroke-width="0.25" />
+						<!-- Silhouette x below this is a narrow span: see NarrowRegionConfig -->
+						{#if narrowWidth}
+							{#each [narrowWidth, -narrowWidth] as x (x)}
+								<line
+									x1={x}
+									y1="-1000"
+									x2={x}
+									y2="1000"
+									stroke="rgba(0,120,0,0.6)"
+									stroke-width="0.5"
+									stroke-dasharray="4 4"
+								/>
+							{/each}
+						{/if}
 					</PathEditor>
 				{:else if $silhouetteTab === 'depth' && depthCurveConfig}
 					<PathEditor
@@ -236,6 +278,28 @@
 							hasButtons
 						/>
 					</LabeledControl>
+					{#if levelConfig.silhouetteSampleMethod.method === 'preserveAspectRatio'}
+						<!-- Width 0 turns the limit off. -->
+						<LabeledControl label="Narrow below">
+							<NumberInput
+								value={narrowRegion?.width ?? DEFAULT_NARROW_REGION.width}
+								onChange={(width) => setNarrowRegion({ width })}
+								min={0}
+								max={1000}
+								hasButtons
+							/>
+						</LabeledControl>
+						<LabeledControl label="Narrow aspect">
+							<NumberInput
+								value={narrowRegion?.aspectRatio ?? DEFAULT_NARROW_REGION.aspectRatio}
+								onChange={(aspectRatio) => setNarrowRegion({ aspectRatio })}
+								step={0.1}
+								min={0.1}
+								max={10}
+								hasButtons
+							/>
+						</LabeledControl>
+					{/if}
 
 					{#if levelConfig.levelOffsets[0]}
 						<header class="group">Level offset</header>

@@ -1137,8 +1137,21 @@ export type CurveSampleMethod =
 	| { method: 'divideCurvePath'; divisions: number }
 	| { method: 'divideCurve'; divisions: number }
 	| { method: 'divideSide'; divisions: number }
-	| { method: 'preserveAspectRatio'; divisions: number }
+	| { method: 'preserveAspectRatio'; divisions: number; narrowRegion?: NarrowRegionConfig }
 	| { method: 'spineCurve'; divisions: number };
+
+/**
+ * Caps how many levels preserveAspectRatio spends where the silhouette is narrow.
+ * Spans of the silhouette with x below `width` hold their quads at `aspectRatio`
+ * instead of the globule-wide average; the rest of `divisions` is then shared out
+ * by the usual aspect-ratio search over the wider spans.
+ */
+export type NarrowRegionConfig = {
+	/** Silhouette x (editor units) below which a span counts as narrow. 0 disables. */
+	width: number;
+	/** Quad height / width held inside narrow spans. Larger = fewer, taller quads. */
+	aspectRatio: number;
+};
 
 export type CurveSampleMethodMethod = CurveSampleMethod['method'];
 
