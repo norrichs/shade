@@ -22,7 +22,12 @@ describe('buildNestGeom', () => {
 		[null, 15],
 		[400, 180],
 		[Number.NaN, 15],
-		[45, 45]
+		[45, 45],
+		[0, 0],
+		[0.001, 1],
+		[0.5, 1],
+		[1, 1],
+		[Infinity, 15]
 	])('clamps rotationStep %p to %p', (input, expected) => {
 		const cfg = {
 			...defaultPatternConfig().pageLayout,

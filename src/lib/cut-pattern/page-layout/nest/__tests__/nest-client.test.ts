@@ -125,3 +125,121 @@ describe('errors and lifecycle', () => {
 		}
 	});
 });
+
+describe('worker error events', () => {
+	it.each(['onerror', 'onmessageerror'] as const)(
+		'%s resolves pending null, terminates, and the next request recreates the worker',
+		async (handler) => {
+			const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
+			try {
+				const m1 = manualWorker();
+				const m2 = manualWorker();
+				const factory = jest
+					.fn<Promise<NestWorkerLike>, []>()
+					.mockResolvedValueOnce(m1.w)
+					.mockResolvedValueOnce(m2.w);
+				const c = createNestClient(factory);
+				const p = c.request([sq], geom);
+				await flush();
+				expect(m1.w[handler]).toEqual(expect.any(Function));
+				m1.w[handler]?.({ message: 'boom' });
+				expect(await p).toBeNull();
+				expect(spy).toHaveBeenCalled();
+				expect(m1.terminate).toHaveBeenCalled();
+				const q = c.request([sq, sq], geom);
+				await flush();
+				expect(factory).toHaveBeenCalledTimes(2);
+				m2.reply(0);
+				expect((await q)?.origins).toHaveLength(2);
+			} finally {
+				spy.mockRestore();
+			}
+		}
+	);
+});
+
+describe('superseding an in-flight request', () => {
+	it('terminates the busy worker and runs the newer request on a fresh one', async () => {
+		const m1 = manualWorker();
+		const m2 = manualWorker();
+		const factory = jest
+			.fn<Promise<NestWorkerLike>, []>()
+			.mockResolvedValueOnce(m1.w)
+			.mockResolvedValueOnce(m2.w);
+		const c = createNestClient(factory);
+		const a = c.request([sq], geom);
+		await flush();
+		expect(m1.posted).toHaveLength(1);
+		const b = c.request([sq, sq], geom);
+		expect(await a).toBeNull();
+		await flush();
+		expect(m1.terminate).toHaveBeenCalled();
+		expect(factory).toHaveBeenCalledTimes(2);
+		expect(m1.posted).toHaveLength(1);
+		expect(m2.posted).toHaveLength(1);
+		// A late reply from the terminated worker resolves nothing.
+		m1.reply(0);
+		m2.reply(0);
+		expect((await b)?.origins).toHaveLength(2);
+	});
+	it('an error from a terminated worker does not fail the newer request', async () => {
+		const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
+		try {
+			const m1 = manualWorker();
+			const m2 = manualWorker();
+			const factory = jest
+				.fn<Promise<NestWorkerLike>, []>()
+				.mockResolvedValueOnce(m1.w)
+				.mockResolvedValueOnce(m2.w);
+			const c = createNestClient(factory);
+			void c.request([sq], geom);
+			await flush();
+			const b = c.request([sq, sq], geom);
+			await flush();
+			m1.w.onerror?.({ message: 'late' });
+			m2.reply(0);
+			expect((await b)?.origins).toHaveLength(2);
+			expect(m2.terminate).not.toHaveBeenCalled();
+		} finally {
+			spy.mockRestore();
+		}
+	});
+	it('keeps the worker when the previous request already settled', async () => {
+		const m = manualWorker();
+		const factory = jest.fn(async () => m.w);
+		const c = createNestClient(factory);
+		const a = c.request([sq], geom);
+		await flush();
+		m.reply(0);
+		await a;
+		void c.request([sq], geom);
+		await flush();
+		expect(factory).toHaveBeenCalledTimes(1);
+		expect(m.terminate).not.toHaveBeenCalled();
+	});
+	it('a stale createWorker rejection does not clear the newer worker', async () => {
+		const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
+		try {
+			let rejectFirst!: (e: unknown) => void;
+			const m2 = manualWorker();
+			const factory = jest
+				.fn<Promise<NestWorkerLike>, []>()
+				.mockReturnValueOnce(new Promise((_, rej) => (rejectFirst = rej)))
+				.mockResolvedValue(m2.w);
+			const c = createNestClient(factory);
+			const a = c.request([sq], geom);
+			const b = c.request([sq, sq], geom);
+			expect(await a).toBeNull();
+			await flush();
+			rejectFirst(new Error('late boom'));
+			await flush();
+			m2.reply(0);
+			expect((await b)?.origins).toHaveLength(2);
+			void c.request([sq], geom);
+			await flush();
+			expect(factory).toHaveBeenCalledTimes(2);
+		} finally {
+			spy.mockRestore();
+		}
+	});
+});

@@ -33,10 +33,14 @@ export const buildPageGeom = (cfg: PageLayoutConfig): PageGeom => {
 
 /**
  * The editor's number input can hand over a negative, cleared (null) or huge
- * value; clamp to [0, 180] and fall back to the 15° default when not finite.
+ * value: ≤ 0 means no rotation, positive steps clamp to [1, 180] (a sub-degree
+ * step would multiply the angle count without bound), non-finite falls back to 15°.
  */
-const clampRotationStep = (x: unknown): number =>
-	typeof x === 'number' && Number.isFinite(x) ? Math.min(180, Math.max(0, x)) : 15;
+const clampRotationStep = (x: unknown): number => {
+	if (typeof x !== 'number' || !Number.isFinite(x)) return 15;
+	if (x <= 0) return 0;
+	return Math.min(180, Math.max(1, x));
+};
 
 export const buildNestGeom = (cfg: PageLayoutConfig): NestGeom => ({
 	...buildPageGeom(cfg),
