@@ -61,6 +61,7 @@
 	import {
 		buildNestGeom,
 		buildPageGeom,
+		nestAllowsQuarterTurn,
 		PAGE_LAYOUT_ALGORITHMS
 	} from '$lib/cut-pattern/page-layout/registry';
 	import { buildNestShape } from '$lib/cut-pattern/page-layout/nest/nest-shape';
@@ -281,22 +282,37 @@
 		{ shapes: unknown; geom: unknown; result: PageLayoutResult } | undefined
 	>();
 	let nestPending = $state(false);
+	let nestFailed = $state(false);
+	// Plain counter (not $state): identifies the latest request. The client
+	// resolves a superseded request with null synchronously inside the newer
+	// request(), i.e. after `reqSeq` has moved on, so only the latest reply —
+	// success or failure — ever touches `nestPending`/`nestFailed`.
+	let reqSeq = 0;
 
 	// Request a nest for the current inputs. Reads only `nestShapes`/`nestGeom`
-	// (never `nestPending`/`nestResult`), so its own writes do not re-trigger it.
+	// (never `nestPending`/`nestFailed`/`nestResult`), so its own writes do not
+	// re-trigger it.
 	$effect(() => {
 		const shapes = nestShapes;
 		const g = nestGeom;
 		if (!shapes || !g) {
-			// Leaving nest mode: nothing is in flight for the current inputs.
+			// Leaving nest mode: ignore any in-flight reply.
+			reqSeq++;
 			nestPending = false;
+			nestFailed = false;
 			return;
 		}
+		const id = ++reqSeq;
 		nestPending = true;
 		nestClient.request(shapes, g).then((result) => {
-			if (!result) return; // superseded or failed; a newer request owns `pending`
-			nestResult = { shapes, geom: g, result };
+			if (id !== reqSeq) return; // superseded; the newer request owns the status
 			nestPending = false;
+			if (result) {
+				nestResult = { shapes, geom: g, result };
+				nestFailed = false;
+			} else {
+				nestFailed = true; // worker failed; pageResult keeps the skyline fallback
+			}
 		});
 	});
 
@@ -311,7 +327,10 @@
 			if (nestResult && nestResult.shapes === nestShapes && nestResult.geom === nestGeom) {
 				return nestResult.result;
 			}
-			return skylinePageLayout(items, { ...geom, allowRotation: true });
+			return skylinePageLayout(items, {
+				...geom,
+				allowRotation: nestAllowsQuarterTurn(buildNestGeom(pageLayoutCfg).rotationStep)
+			});
 		}
 		return PAGE_LAYOUT_ALGORITHMS[pageLayoutCfg.algorithm](items, geom);
 	});
@@ -326,10 +345,17 @@
 		const overflow = !!pageResult?.overflow;
 		const utilisation = pageResult?.utilisation;
 		const pending = nestPending;
-		const key = `${pageCount}:${overflow}:${pending}:${utilisation?.map((u) => u.toFixed(3)).join(',') ?? ''}`;
+		const failed = nestFailed;
+		const key = `${pageCount}:${overflow}:${pending}:${failed}:${utilisation?.map((u) => u.toFixed(3)).join(',') ?? ''}`;
 		if (key === lastPageInfoKey) return;
 		lastPageInfoKey = key;
-		pageLayoutInfoStore.set({ pageCount, overflow, utilisation, nestPending: pending });
+		pageLayoutInfoStore.set({
+			pageCount,
+			overflow,
+			utilisation,
+			nestPending: pending,
+			nestFailed: failed
+		});
 	});
 
 	// The per-piece length budget and overflow preconditions the Splits panel
@@ -374,8 +400,7 @@
 				allowRotation:
 					(pageLayoutCfg.algorithm === 'skyline' && !!pageLayoutCfg.allowRotation) ||
 					(pageLayoutCfg.algorithm === 'nest' &&
-						pageLayoutCfg.rotationStep > 0 &&
-						90 % pageLayoutCfg.rotationStep === 0)
+						nestAllowsQuarterTurn(buildNestGeom(pageLayoutCfg).rotationStep))
 			}
 		);
 	});

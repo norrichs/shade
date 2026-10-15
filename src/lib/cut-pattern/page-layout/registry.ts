@@ -31,8 +31,19 @@ export const buildPageGeom = (cfg: PageLayoutConfig): PageGeom => {
 	};
 };
 
+/**
+ * The editor's number input can hand over a negative, cleared (null) or huge
+ * value; clamp to [0, 180] and fall back to the 15° default when not finite.
+ */
+const clampRotationStep = (x: unknown): number =>
+	typeof x === 'number' && Number.isFinite(x) ? Math.min(180, Math.max(0, x)) : 15;
+
 export const buildNestGeom = (cfg: PageLayoutConfig): NestGeom => ({
 	...buildPageGeom(cfg),
-	rotationStep: cfg.rotationStep ?? 15,
+	rotationStep: clampRotationStep(cfg.rotationStep),
 	cellMm: NEST_CELL_MM
 });
+
+/** Whether a nest with this (clamped) rotation step can turn a piece onto its side. */
+export const nestAllowsQuarterTurn = (rotationStep: number): boolean =>
+	rotationStep > 0 && 90 % rotationStep === 0;

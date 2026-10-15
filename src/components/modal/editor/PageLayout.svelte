@@ -357,6 +357,8 @@
 			<div class="nest-status">
 				{#if $pageLayoutInfoStore.nestPending}
 					Nesting…
+				{:else if $pageLayoutInfoStore.nestFailed}
+					Nest failed — showing skyline layout (see console)
 				{:else if $pageLayoutInfoStore.utilisation?.length}
 					Material used: {$pageLayoutInfoStore.utilisation
 						.map((u) => `${Math.round(u * 100)}%`)

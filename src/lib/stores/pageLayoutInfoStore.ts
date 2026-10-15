@@ -10,18 +10,21 @@ import { writable } from 'svelte/store';
  *
  * `utilisation` is the per-page material-used fraction (0..1) when the layout
  * algorithm reports it (nest only). `nestPending` is true while a nest worker
- * request for the current inputs is in flight.
+ * request for the current inputs is in flight; `nestFailed` is true when the
+ * latest nest request failed (the renderer then shows the skyline fallback).
  */
 export const pageLayoutInfoStore = writable<{
 	pageCount: number;
 	overflow: boolean;
 	utilisation?: number[];
 	nestPending?: boolean;
+	nestFailed?: boolean;
 }>({
 	pageCount: 0,
 	overflow: false,
 	utilisation: undefined,
-	nestPending: false
+	nestPending: false,
+	nestFailed: false
 });
 
 /**
