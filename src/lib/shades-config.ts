@@ -596,7 +596,8 @@ export const defaultPatternConfig = (): PatternConfig => ({
 		algorithm: 'flex-wrap',
 		reorderWindow: 8,
 		allowRotation: false,
-		keepConnected: 0
+		keepConnected: 0,
+		rotationStep: 15
 	},
 	splits: { tubeSplits: [] },
 	postProcess: { dropHoles: { mode: 'none' }, runSeed: 0 },

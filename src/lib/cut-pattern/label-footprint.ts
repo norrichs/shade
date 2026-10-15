@@ -179,25 +179,16 @@ export type EffectiveBandBoundsInput = {
 	measuredDims: Map<string, LabelTextDims>;
 };
 
-/**
- * The box layout packs: the band's drawn pattern extent (`patternExtentBounds`)
- * expanded to enclose its self-tag label.
- *
- * The label counts whenever the self-tag is enabled and the band has an anchor,
- * as `BandComponent` renders it. Text dims come from the measured store when
- * present, otherwise from `estimateTextDims`.
- */
-export const effectiveBandBounds = (input: EffectiveBandBoundsInput): BoundingBox | undefined => {
+/** The self-tag label's footprint box; undefined when the self-tag is disabled or unanchored. */
+export const selfTagFootprintBox = (input: EffectiveBandBoundsInput): BoundingBox | undefined => {
 	const { band, labels, selfTagLines, measuredDims } = input;
 	const selfTag = labels?.selfTag;
-	const extent = patternExtentBounds(band);
-
-	if (!extent || !selfTag?.enabled || !band.tagAnchorPoint) return extent;
+	if (!selfTag?.enabled || !band.tagAnchorPoint) return undefined;
 
 	const height = selfTag.height ?? 14;
 	const dims = measuredDims.get(band.id) ?? estimateTextDims(selfTagLines, height);
 
-	const footprint = computeLabelFootprintBox({
+	return computeLabelFootprintBox({
 		anchor: band.tagAnchorPoint,
 		autoAngle: band.tagAnchorAutoAngle,
 		angle: band.tagAngle ?? selfTag.angle ?? 0,
@@ -208,6 +199,19 @@ export const effectiveBandBounds = (input: EffectiveBandBoundsInput): BoundingBo
 		stemLength: selfTag.stemLength ?? 20,
 		stemWidth: selfTag.stemWidth ?? 4
 	});
+};
 
-	return unionBox(extent, footprint);
+/**
+ * The box layout packs: the band's drawn pattern extent (`patternExtentBounds`)
+ * expanded to enclose its self-tag label.
+ *
+ * The label counts whenever the self-tag is enabled and the band has an anchor,
+ * as `BandComponent` renders it. Text dims come from the measured store when
+ * present, otherwise from `estimateTextDims`.
+ */
+export const effectiveBandBounds = (input: EffectiveBandBoundsInput): BoundingBox | undefined => {
+	const extent = patternExtentBounds(input.band);
+	if (!extent) return extent;
+	const footprint = selfTagFootprintBox(input);
+	return footprint ? unionBox(extent, footprint) : extent;
 };

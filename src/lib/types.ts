@@ -242,10 +242,11 @@ export type PageLayoutConfig = {
 	margin: number; // millimetres
 	gap: number; // pattern units, spacing between patterns
 	displayUnit: 'mm' | 'inch'; // editor display only
-	algorithm: 'flex-wrap' | 'skyline';
+	algorithm: 'flex-wrap' | 'skyline' | 'nest';
 	reorderWindow: number; // skyline only: lookahead window (>= 1); 1 = strict order
 	allowRotation: boolean; // skyline only: permit 90° rotation
 	keepConnected: number; // px-wide uncut bridge left in each prepared cut path (0 = off)
+	rotationStep: number; // nest only: rotation step in degrees (0 = none)
 };
 
 /**
