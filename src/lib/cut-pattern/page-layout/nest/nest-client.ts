@@ -47,7 +47,13 @@ export const createNestClient = (createWorker: () => Promise<NestWorkerLike>) =>
 			}
 			return new Promise((resolve) => {
 				waiting.set(requestId, resolve);
-				getWorker().then((w) => w.postMessage({ requestId, shapes, geom }));
+				getWorker()
+					.then((w) => w.postMessage({ requestId, shapes, geom }))
+					.catch((err) => {
+						console.error('nest layout worker failed to start:', err);
+						worker = undefined;
+						if (waiting.delete(requestId)) resolve(null);
+					});
 			});
 		},
 		dispose() {
