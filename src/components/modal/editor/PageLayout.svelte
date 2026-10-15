@@ -320,6 +320,7 @@
 			<select bind:value={$patternConfigStore.patternConfig.pageLayout.algorithm}>
 				<option value="flex-wrap">Flex-wrap</option>
 				<option value="skyline">Skyline</option>
+				<option value="nest">Nest (shape-aware)</option>
 			</select>
 		</label>
 
@@ -340,6 +341,30 @@
 				/>
 				allow rotation
 			</label>
+		{/if}
+
+		{#if $patternConfigStore.patternConfig.pageLayout.algorithm === 'nest'}
+			<label>
+				Rotation step (°)
+				<input
+					type="number"
+					min="0"
+					max="180"
+					step="5"
+					bind:value={$patternConfigStore.patternConfig.pageLayout.rotationStep}
+				/>
+			</label>
+			<div class="nest-status">
+				{#if $pageLayoutInfoStore.nestPending}
+					Nesting…
+				{:else if $pageLayoutInfoStore.nestFailed}
+					Nest failed — showing skyline layout (see console)
+				{:else if $pageLayoutInfoStore.utilisation?.length}
+					Material used: {$pageLayoutInfoStore.utilisation
+						.map((u) => `${Math.round(u * 100)}%`)
+						.join(' · ')}
+				{/if}
+			</div>
 		{/if}
 
 		<label>
@@ -593,6 +618,9 @@
 	.preview {
 		align-self: center;
 		border: 1px solid #eee;
+	}
+	.nest-status {
+		font-size: 12px;
 	}
 	.derived {
 		border-top: 1px solid #eee;

@@ -91,7 +91,8 @@ export const migrateGlobulePatternConfig = <T extends Partial<GlobulePatternConf
 			algorithm: 'flex-wrap',
 			reorderWindow: 8,
 			allowRotation: false,
-			keepConnected: 0
+			keepConnected: 0,
+			rotationStep: 15
 		};
 	} else if (pc && pc.pageLayout) {
 		const pl = pc.pageLayout;
@@ -99,6 +100,7 @@ export const migrateGlobulePatternConfig = <T extends Partial<GlobulePatternConf
 		if (pl.allowRotation === undefined) pl.allowRotation = false;
 		if (pl.algorithm === undefined) pl.algorithm = 'flex-wrap';
 		if (pl.keepConnected === undefined) pl.keepConnected = 0;
+		if (pl.rotationStep === undefined) pl.rotationStep = 15;
 	}
 
 	// Labels moved from pattern units to mm. Convert at this config's own page

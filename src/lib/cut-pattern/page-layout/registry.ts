@@ -1,9 +1,13 @@
 import type { PageLayoutConfig } from '$lib/types';
 import { flexWrapPageLayout, PAGE_STACK_GAP } from './flex-wrap';
 import { skylinePageLayout } from './skyline';
+import { NEST_CELL_MM, type NestGeom } from './nest/nest';
 import type { PageGeom, PageLayoutFn } from './types';
 
-export const PAGE_LAYOUT_ALGORITHMS: Record<PageLayoutConfig['algorithm'], PageLayoutFn> = {
+export const PAGE_LAYOUT_ALGORITHMS: Record<
+	Exclude<PageLayoutConfig['algorithm'], 'nest'>,
+	PageLayoutFn
+> = {
 	'flex-wrap': flexWrapPageLayout,
 	skyline: skylinePageLayout
 };
@@ -26,3 +30,24 @@ export const buildPageGeom = (cfg: PageLayoutConfig): PageGeom => {
 		allowRotation: cfg.allowRotation
 	};
 };
+
+/**
+ * The editor's number input can hand over a negative, cleared (null) or huge
+ * value: ≤ 0 means no rotation, positive steps clamp to [1, 180] (a sub-degree
+ * step would multiply the angle count without bound), non-finite falls back to 15°.
+ */
+const clampRotationStep = (x: unknown): number => {
+	if (typeof x !== 'number' || !Number.isFinite(x)) return 15;
+	if (x <= 0) return 0;
+	return Math.min(180, Math.max(1, x));
+};
+
+export const buildNestGeom = (cfg: PageLayoutConfig): NestGeom => ({
+	...buildPageGeom(cfg),
+	rotationStep: clampRotationStep(cfg.rotationStep),
+	cellMm: NEST_CELL_MM
+});
+
+/** Whether a nest with this (clamped) rotation step can turn a piece onto its side. */
+export const nestAllowsQuarterTurn = (rotationStep: number): boolean =>
+	rotationStep > 0 && 90 % rotationStep === 0;
