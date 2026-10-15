@@ -59,6 +59,7 @@
 	} from '$lib/cut-pattern/resolve-index-bands';
 	import PageGeometry from './PageGeometry.svelte';
 	import { buildPageGeom, PAGE_LAYOUT_ALGORITHMS } from '$lib/cut-pattern/page-layout/registry';
+	import { skylinePageLayout } from '$lib/cut-pattern/page-layout/skyline';
 	import type { LayoutItem, PageLayoutResult } from '$lib/cut-pattern/page-layout/types';
 	import { toastStore } from '$lib/stores/toastStore';
 	import { placeBand } from '$lib/cut-pattern/page-post-process/place-bands';
@@ -258,6 +259,10 @@
 		const items = toLayoutItems(pageBands);
 		// Use the single shared gap so all three layout modes stay consistent.
 		const geom = { ...buildPageGeom(pageLayoutCfg), gap };
+		// TEMP: 'nest' routes to skyline with rotation until the worker lands (Task 6).
+		if (pageLayoutCfg.algorithm === 'nest') {
+			return skylinePageLayout(items, { ...geom, allowRotation: true });
+		}
 		const algo = PAGE_LAYOUT_ALGORITHMS[pageLayoutCfg.algorithm];
 		return algo(items, geom);
 	});

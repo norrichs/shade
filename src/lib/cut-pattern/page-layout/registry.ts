@@ -1,9 +1,13 @@
 import type { PageLayoutConfig } from '$lib/types';
 import { flexWrapPageLayout, PAGE_STACK_GAP } from './flex-wrap';
 import { skylinePageLayout } from './skyline';
+import { NEST_CELL_MM, type NestGeom } from './nest/nest';
 import type { PageGeom, PageLayoutFn } from './types';
 
-export const PAGE_LAYOUT_ALGORITHMS: Record<PageLayoutConfig['algorithm'], PageLayoutFn> = {
+export const PAGE_LAYOUT_ALGORITHMS: Record<
+	Exclude<PageLayoutConfig['algorithm'], 'nest'>,
+	PageLayoutFn
+> = {
 	'flex-wrap': flexWrapPageLayout,
 	skyline: skylinePageLayout
 };
@@ -26,3 +30,9 @@ export const buildPageGeom = (cfg: PageLayoutConfig): PageGeom => {
 		allowRotation: cfg.allowRotation
 	};
 };
+
+export const buildNestGeom = (cfg: PageLayoutConfig): NestGeom => ({
+	...buildPageGeom(cfg),
+	rotationStep: cfg.rotationStep ?? 15,
+	cellMm: NEST_CELL_MM
+});

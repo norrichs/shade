@@ -38,6 +38,7 @@ describe('migrateGlobulePatternConfig — page layout', () => {
 		} as Partial<GlobulePatternConfig>);
 		expect(out.patternConfig?.pageLayout?.reorderWindow).toBe(8);
 		expect(out.patternConfig?.pageLayout?.allowRotation).toBe(false);
+		expect(out.patternConfig?.pageLayout?.rotationStep).toBe(15);
 	});
 
 	it('backfills reorderWindow, allowRotation, algorithm and keepConnected on an existing pageLayout that lacks them', () => {
@@ -56,5 +57,6 @@ describe('migrateGlobulePatternConfig — page layout', () => {
 		expect(out.patternConfig?.pageLayout?.allowRotation).toBe(false);
 		expect(out.patternConfig?.pageLayout?.algorithm).toBe('flex-wrap');
 		expect(out.patternConfig?.pageLayout?.keepConnected).toBe(0);
+		expect(out.patternConfig?.pageLayout?.rotationStep).toBe(15);
 	});
 });
