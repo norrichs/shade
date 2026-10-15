@@ -141,7 +141,7 @@ export const nestPageLayout = (shapes: NestShape[], geom: NestGeom): PageLayoutR
 		out.need = Math.min(...out.fine.map((r) => areaOf(r.rows)));
 		return out;
 	});
-	const hasGeom = (i: number) => prepared[i].fine[0].w > 0;
+	const hasGeom = (i: number) => prepared[i].fine[0].h > 0;
 
 	// Overflow pre-check: the worst factor among shapes that fit at no angle.
 	let worst = -1;
@@ -211,10 +211,15 @@ export const nestPageLayout = (shapes: NestShape[], geom: NestGeom): PageLayoutR
 			if (hit) p = q;
 		}
 		if (!hit) {
-			// Never spill from an empty page: fall back onto it instead.
-			if (state[state.length - 1].used > 0) newPage();
+			// Never spill from an empty page: fall back onto it instead. An empty last
+			// page already got the exhaustive search above (or was skipped because it
+			// cannot hold the piece), so only a freshly opened page is searched again.
+			if (state[state.length - 1].used > 0) {
+				newPage();
+				hit = search(prep, state[state.length - 1], true);
+			}
 			p = state.length - 1;
-			hit = search(prep, state[p], true) ?? fallbackHit(prep, contentWidth, contentHeight);
+			hit ??= fallbackHit(prep, contentWidth, contentHeight);
 		}
 		const pg = state[p];
 		const r = prep.fine[hit.a];

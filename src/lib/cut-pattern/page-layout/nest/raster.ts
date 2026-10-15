@@ -131,9 +131,12 @@ export const rasterizeConvex = (polys: Pt[][], cell: number): Raster => {
 	return { w, h, rows: merged, ox, oy, area: areaOf(merged) };
 };
 
-/** Disk dilation by k cells; offsets shift by −k so the frame stays put. Keeps `area`. */
+/**
+ * Disk dilation by k cells; offsets shift by −k so the frame stays put. Keeps `area`.
+ * An empty raster (h = 0) is returned unchanged, so "no geometry" stays detectable.
+ */
 export const dilateRaster = (r: Raster, k: number): Raster => {
-	if (k <= 0) return r;
+	if (k <= 0 || r.h === 0) return r;
 	const h = r.h + 2 * k;
 	const rows: Span[][] = Array.from({ length: h }, () => []);
 	const half = Array.from({ length: 2 * k + 1 }, (_, i) =>

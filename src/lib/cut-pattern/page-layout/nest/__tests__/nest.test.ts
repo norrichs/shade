@@ -153,6 +153,7 @@ describe('nestPageLayout', () => {
 			{ ...g, allowRotation: true }
 		);
 		expect(perPage(nest)).toBeGreaterThanOrEqual(Math.ceil(1.5 * perPage(sky)));
+		expect(perPage(nest)).toBeGreaterThanOrEqual(7); // spec target; measured 11
 	});
 
 	it('overflow: an item larger than the page at every angle', () => {
@@ -161,6 +162,20 @@ describe('nestPageLayout', () => {
 		expect(r.overflow?.itemIndex).toBe(1);
 		const f = (r.overflow?.requiredScale ?? 0) / g.pageScale;
 		expect(f).toBeCloseTo(2, 5); // 600/300 at 0°, min over 0/90
+
+		// At the required scale the page grows with it (all page-space dims × f) and
+		// the same pieces fit without overflow.
+		const scaled = geom({
+			rotationStep: 90,
+			pageScale: r.overflow!.requiredScale,
+			pageWidth: g.pageWidth * f,
+			pageHeight: g.pageHeight * f,
+			contentWidth: g.contentWidth * f,
+			contentHeight: g.contentHeight * f
+		});
+		const r2 = nestPageLayout([rect(50, 50), rect(600, 400)], scaled);
+		expect(r2.overflow).toBeUndefined();
+		expect(r2.origins).toHaveLength(2);
 	});
 
 	it('is deterministic', () => {
@@ -183,6 +198,14 @@ describe('nestPageLayout', () => {
 	it('handles shapes with no polygons', () => {
 		const r = nestPageLayout([{ polygons: [], pivot: { x: 0, y: 0 } }, rect(10, 10)], geom());
 		expect(r.origins).toHaveLength(2);
+	});
+
+	it('parks a geometry-less shape at the content origin without searching', () => {
+		const g = geom({ pageWidth: 320, pageHeight: 320, marginPx: 10 });
+		const r = nestPageLayout([{ polygons: [], pivot: { x: 5, y: 5 } }, rect(10, 10)], g);
+		expect(r.origins[0].x).toBe(10);
+		expect(r.origins[0].y).toBe(10);
+		expect(r.rotations[0]).toBe(0);
 	});
 
 	// gap 4 → k = 3; W = H = 306. rect(300,40) dilates to 306×46: it fits the fine grid
@@ -279,6 +302,15 @@ describe('nestPageLayout', () => {
 		expect(r.pages).toHaveLength(1);
 		assertValid(shapes, r, g);
 	});
+
+	it('150 mixed chevrons and rects at 15° finish in under 4 s', () => {
+		const shapes = Array.from({ length: 150 }, (_, i) =>
+			i % 3 === 0 ? rect(40, 15) : i % 3 === 1 ? chevron() : rect(60, 30)
+		);
+		const t0 = Date.now();
+		nestPageLayout(shapes, geom());
+		expect(Date.now() - t0).toBeLessThan(4000);
+	}, 30_000);
 
 	it('30 chevrons at 15° finish in under 2 s', () => {
 		const t0 = Date.now();

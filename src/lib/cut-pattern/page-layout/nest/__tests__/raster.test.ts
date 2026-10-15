@@ -95,6 +95,13 @@ describe('dilateRaster', () => {
 		// extreme row widened by floor(sqrt(k²−k²)) = 0
 		expect(d.rows[0]).toEqual([[2, 12]]);
 	});
+	it('leaves an empty raster empty', () => {
+		const empty = rasterizeConvex([], 1);
+		const d = dilateRaster(empty, 3);
+		expect(d).toEqual(empty);
+		expect(d.w).toBe(0);
+		expect(d.h).toBe(0);
+	});
 });
 
 describe('coarsenRaster', () => {
