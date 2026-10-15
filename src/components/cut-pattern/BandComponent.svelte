@@ -190,6 +190,7 @@
 <g
 	transform={bandTransform(origin, rotation, pivot)}
 	id={`band-${band.id}`}
+	data-band={concatAddress(band.address, 'gtb')}
 	role="button"
 	tabindex="0"
 	onmouseover={() => handleMouseOver(band.address)}

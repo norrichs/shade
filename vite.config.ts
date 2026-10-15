@@ -1,11 +1,12 @@
 import { sveltekit } from '@sveltejs/kit/vite';
+import { agentBridgePlugin } from './src/lib/agent-bridge/vite-plugin';
 import type { UserConfig } from 'vite';
 import { fileURLToPath } from 'node:url';
 
 const fromRoot = (dir: string) => fileURLToPath(new URL(dir, import.meta.url));
 
 const config: UserConfig = {
-	plugins: [sveltekit()],
+	plugins: [sveltekit(), agentBridgePlugin()],
 	server: {
 		port: 9775,
 		watch: {

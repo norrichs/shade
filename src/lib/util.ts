@@ -107,6 +107,8 @@ export const buildExportSvg = (frame: ExportFrame): { svg: Element } | { error: 
 	content.setAttribute('transform', frame.contentTransform);
 	for (const child of Array.from(live.childNodes)) content.appendChild(child.cloneNode(true));
 	content.querySelectorAll(SCREEN_ONLY_SELECTOR).forEach((node) => node.remove());
+	// Agent-bridge band addresses are a screen aid; keep the cut file as it was.
+	content.querySelectorAll('[data-band]').forEach((node) => node.removeAttribute('data-band'));
 	const bad = findUntagged(collectExportNodes(content));
 	if (bad.length) return { error: untaggedMessage(bad) };
 	const svg = document.createElementNS(SVG_NS, 'svg');

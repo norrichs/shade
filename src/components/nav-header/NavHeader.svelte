@@ -37,6 +37,7 @@
 	import Button from '../design-system/Button.svelte';
 	import WorkingIndicator from './WorkingIndicator.svelte';
 	import ViewMenu from './ViewMenu.svelte';
+	import AgentBridgeIndicator from './AgentBridgeIndicator.svelte';
 	import BandSelectionPanel from '../projection/BandSelectionPanel.svelte';
 	import { toBandMergePayloads } from '$lib/cut-pattern/band-merge-payload';
 	import { mergeBand, type MergeCtx } from '$lib/cut-pattern/merge-band';
@@ -433,6 +434,7 @@
 		{/if} -->
 
 		<div class="button-group">
+			<AgentBridgeIndicator />
 			<select class="band-select" value={selectedBandLabel} onchange={handleBandSelect}>
 				<option value="">-- band --</option>
 				{#each bandOptions as opt}

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Canvas } from '@threlte/core';
 	import PointPick from './PointPick.svelte';
+	import AgentCapture from './AgentCapture.svelte';
 	import type { Snippet } from 'svelte';
 
 	let { children }: { children: Snippet } = $props();
@@ -9,6 +10,7 @@
 <div class="container">
 	<PointPick />
 	<Canvas>
+		<AgentCapture />
 		{@render children()}
 	</Canvas>
 </div>

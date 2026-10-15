@@ -14,6 +14,10 @@
 	import HoverSidebar from '../../components/modal/HoverSidebar.svelte';
 	import { projectionConfigs } from '../../components/modal/sidebar-definitions';
 	import Toast from '../../components/Toast.svelte';
+	import { installAgentBridge } from '$lib/agent-bridge/client';
+
+	// Dev-only: lets Claude Code drive this page when the navbar dot is green.
+	$effect(() => installAgentBridge());
 
 	let main: HTMLElement | undefined = $state();
 	let dragging = $state(false);

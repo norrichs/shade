@@ -13,7 +13,8 @@ vite.config.ts.timestamp-*
 .vercel
 
 .vscode/
-.claude/
+.claude/*
+!.claude/skills/
 
 # Dolt database files (added by bd init)
 .dolt/
