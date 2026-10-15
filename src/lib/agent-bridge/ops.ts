@@ -29,6 +29,19 @@ import type { BandCutPattern, SuperGlobule } from '$lib/types';
 import { getAtPath, setAtPath, summarize } from './paths';
 import { captureModel, capturePattern } from './capture';
 import type { AgentImage } from './protocol';
+import { openSidebarPanel } from '$lib/stores/sidebarStore';
+import { projectionConfigs } from '../../components/modal/sidebar-definitions';
+
+/** designer2's sidebar panels, matched by key, title or short title. */
+const findPanel = (query: string) => {
+	const q = query.trim().toLowerCase();
+	for (const [key, floater] of projectionConfigs) {
+		const titles = [key, floater.shortTitle, floater.title].flat();
+		if (titles.some((t) => t.toLowerCase() === q)) return key;
+	}
+	const names = [...projectionConfigs].map(([k, f]) => `${k} (${f.shortTitle})`).join(', ');
+	throw new Error(`No sidebar panel "${query}". Panels: ${names}`);
+};
 
 export type OpOutput = { result: unknown; images?: AgentImage[] };
 type Args = Record<string, unknown>;
@@ -436,6 +449,35 @@ export const ops: Record<string, Op> = {
 			}
 			if (images.length === 0) throw new Error(`Nothing captured: ${JSON.stringify(notes)}`);
 			return { result: notes, images };
+		}
+	},
+
+	panels: {
+		describe: 'List the sidebar editor panels and which one is open.',
+		run: () => ({
+			result: {
+				open: get(openSidebarPanel),
+				panels: [...projectionConfigs].map(([key, f]) => ({ key, shortTitle: f.shortTitle }))
+			}
+		})
+	},
+
+	openPanel: {
+		describe: 'Open a sidebar editor panel for Ben (by key, title or short title like "GCS").',
+		args: '{panel: "GCS" | "Globule Cross Section" | ...}',
+		run: async (args) => {
+			const key = findPanel(asString(args.panel, 'panel'));
+			openSidebarPanel.set(key);
+			await sleep(50);
+			return { result: { open: key } };
+		}
+	},
+
+	closePanel: {
+		describe: 'Close the open sidebar panel.',
+		run: () => {
+			openSidebarPanel.set(null);
+			return { result: { open: null } };
 		}
 	},
 

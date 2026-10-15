@@ -35,20 +35,21 @@ error counts are telemetry, not pass/fail gates.
 
 ## Ops at a glance
 
-| Op                           | Args                                                          | Use                                                     |
-| ---------------------------- | ------------------------------------------------------------- | ------------------------------------------------------- |
-| `status`                     |                                                               | modes, pattern source, pipeline gates, undo depth       |
-| `summary`                    |                                                               | 3D tube/band/facet counts, pattern bands, errors, pages |
-| `getConfig`                  | `store`, `path?`, `depth?`, `maxItems?`                       | read `super` / `pattern` / `view` / `ui`                |
-| `patchConfig`                | `store`, `path`+`value` or `patches`, `wait?`, `timeoutMs?`   | change and regenerate                                   |
-| `undo`                       |                                                               | revert the last mutating op (stack of 30)               |
-| `regenerate` / `waitForIdle` | `timeoutMs?`                                                  | force or await generation                               |
-| `bands`                      | `tube?`, `errorsOnly?`, `offset?`, `limit?`                   | list pattern bands with flattened bounds                |
-| `band`                       | `address`, `facets?`                                          | partners, tabs, labels for one band                     |
-| `screenshot`                 | `view: model\|pattern\|both`, `annotate?`, `width?`, `bands?` | PNGs written to `$TMPDIR/shades-agent/`                 |
-| `setCamera`                  | `x`, `y`, `z`                                                 | view the model from a direction, then screenshot        |
-| `listConfigs` / `loadConfig` | `id`                                                          | saved designs in the DB (load is undoable)              |
-| `saveConfig`                 | `name`                                                        | save as a NEW config; only when Ben asks                |
+| Op                                    | Args                                                          | Use                                                     |
+| ------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------- |
+| `status`                              |                                                               | modes, pattern source, pipeline gates, undo depth       |
+| `summary`                             |                                                               | 3D tube/band/facet counts, pattern bands, errors, pages |
+| `getConfig`                           | `store`, `path?`, `depth?`, `maxItems?`                       | read `super` / `pattern` / `view` / `ui`                |
+| `patchConfig`                         | `store`, `path`+`value` or `patches`, `wait?`, `timeoutMs?`   | change and regenerate                                   |
+| `undo`                                |                                                               | revert the last mutating op (stack of 30)               |
+| `regenerate` / `waitForIdle`          | `timeoutMs?`                                                  | force or await generation                               |
+| `bands`                               | `tube?`, `errorsOnly?`, `offset?`, `limit?`                   | list pattern bands with flattened bounds                |
+| `band`                                | `address`, `facets?`                                          | partners, tabs, labels for one band                     |
+| `screenshot`                          | `view: model\|pattern\|both`, `annotate?`, `width?`, `bands?` | PNGs written to `$TMPDIR/shades-agent/`                 |
+| `setCamera`                           | `x`, `y`, `z`                                                 | view the model from a direction, then screenshot        |
+| `panels` / `openPanel` / `closePanel` | `panel` (key, title or short title, e.g. `"GCS"`)             | open a sidebar editor for Ben to work in                |
+| `listConfigs` / `loadConfig`          | `id`                                                          | saved designs in the DB (load is undoable)              |
+| `saveConfig`                          | `name`                                                        | save as a NEW config; only when Ben asks                |
 
 Paths are dotted with array indexes: `subGlobuleConfigs.0.globuleConfig.levelConfig`.
 `getConfig` collapses anything deeper than `depth` (default 3) to a key list
