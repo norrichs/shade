@@ -185,6 +185,48 @@ describe('nestPageLayout', () => {
 		expect(r.origins).toHaveLength(2);
 	});
 
+	// gap 4 → k = 3; W = H = 306. rect(300,40) dilates to 306×46: it fits the fine grid
+	// exactly but never passes coarse (306 → 76 usable coarse blocks = 304 cells).
+	it('a single content-width rect produces one page with utilisation[0] > 0', () => {
+		const shapes = [rect(300, 40)];
+		const g = geom({ rotationStep: 0 });
+		const r = nestPageLayout(shapes, g);
+		expect(r.pages).toHaveLength(1);
+		expect(r.utilisation![0]).toBeGreaterThan(0);
+		assertValid(shapes, r, g);
+	});
+
+	// Each dilates to 46×306 (full height); side by side they need 92 ≤ 306 columns.
+	it('two rect(40,300) on a 300×300 page share one page', () => {
+		const shapes = [rect(40, 300), rect(40, 300)];
+		const g = geom({ rotationStep: 0 });
+		const r = nestPageLayout(shapes, g);
+		expect(r.pages).toHaveLength(1);
+		assertValid(shapes, r, g);
+	});
+
+	// Square at [0.5, 300.5] with pivot (0,0): bbox 300 passes the overflow check,
+	// but it covers 301 cells → dilated 307 > W = 306, so it cannot fit an empty grid.
+	it('falls back to (0,0) without throwing when a raster cannot fit an empty grid', () => {
+		const sq: NestShape = {
+			polygons: [
+				[
+					{ x: 0.5, y: 0.5 },
+					{ x: 300.5, y: 0.5 },
+					{ x: 300.5, y: 300.5 },
+					{ x: 0.5, y: 300.5 }
+				]
+			],
+			pivot: { x: 0, y: 0 }
+		};
+		const r = nestPageLayout([sq], geom({ rotationStep: 0 }));
+		expect(r.overflow).toBeUndefined();
+		expect(r.pages).toHaveLength(1);
+		expect(r.origins[0].x).toBeCloseTo(0, 9);
+		expect(r.origins[0].y).toBeCloseTo(0, 9);
+		expect(r.utilisation![0]).toBeLessThanOrEqual(1);
+	});
+
 	it('30 chevrons at 15° finish in under 2 s', () => {
 		const t0 = Date.now();
 		nestPageLayout(

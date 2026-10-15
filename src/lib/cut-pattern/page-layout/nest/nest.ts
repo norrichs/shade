@@ -82,7 +82,7 @@ const bestOver = (prep: Prepared, find: (a: number) => Pos | null): Hit | null =
 	return best;
 };
 
-/** Smallest scale-up factor needed to fit the content box, over all angles. */
+/** Per-angle scale-up factor needed for the undilated bbox to fit the content box. */
 const fitFactor = (prep: Prepared, cw: number, ch: number) =>
 	prep.bbox.map((b) => Math.max(b.w / cw, b.h / ch));
 
@@ -165,15 +165,18 @@ export const nestPageLayout = (shapes: NestShape[], geom: NestGeom): PageLayoutR
 			continue;
 		}
 		const prep = prepared[i];
-		const coarseFind = (a: number) => searchCoarse(grid, coarseGrid, prep.fine[a], prep.coarse[a]);
-		let hit = bestOver(prep, coarseFind);
-		if (!hit) {
+		// Coarse blocks past W/H count as busy, so a piece reaching the right/bottom
+		// partial block only fits at fine resolution: always fine-scan the current
+		// page before spilling, and never spill from an empty page.
+		const search = () =>
+			bestOver(prep, (a) => searchCoarse(grid, coarseGrid, prep.fine[a], prep.coarse[a])) ??
+			bestOver(prep, (a) => searchFine(grid, prep.fine[a]));
+		let hit = search();
+		if (!hit && used[used.length - 1] > 0) {
 			newPage();
-			hit =
-				bestOver(prep, coarseFind) ??
-				bestOver(prep, (a) => searchFine(grid, prep.fine[a])) ??
-				fallbackHit(prep, contentWidth, contentHeight);
+			hit = search();
 		}
+		hit ??= fallbackHit(prep, contentWidth, contentHeight);
 		const r = prep.fine[hit.a];
 		const X0 = marginPx - k * cell;
 		const Y0 = pageY() + marginPx - k * cell;
@@ -188,10 +191,13 @@ export const nestPageLayout = (shapes: NestShape[], geom: NestGeom): PageLayoutR
 		coarseGrid = grid.coarsen(NEST_COARSE);
 	}
 
-	return { origins, rotations, pages, utilisation: used.map((u) => u / (CW * CH)) };
+	return { origins, rotations, pages, utilisation: used.map((u) => Math.min(1, u / (CW * CH))) };
 };
 
-/** Unreachable after the overflow pre-check except by rounding: (0,0) at the best-fitting angle. Never throws. */
+/**
+ * Only reached when a piece passes the bbox overflow pre-check but its dilated raster
+ * cannot fit an empty grid (rounding): (0,0) at the best-fitting angle, clipped. Never throws.
+ */
 const fallbackHit = (prep: Prepared, cw: number, ch: number): Hit => {
 	const fs = fitFactor(prep, cw, ch);
 	return { gx: 0, gy: 0, a: fs.indexOf(Math.min(...fs)) };
