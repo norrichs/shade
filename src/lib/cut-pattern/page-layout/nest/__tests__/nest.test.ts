@@ -227,6 +227,23 @@ describe('nestPageLayout', () => {
 		expect(r.utilisation![0]).toBeLessThanOrEqual(1);
 	});
 
+	// gap 4 → k = 3, grid 306×306. rect(290,200) dilates to 296×206: two cannot share
+	// a page (412 > 306 rows), so B spills. rect(100,60) dilates to 106×66 and fits the
+	// 100-row strip below A (rows 206..305), so first-fit puts it back on page 0.
+	it('later smaller pieces revisit earlier pages (first-fit across pages)', () => {
+		const shapes = [rect(290, 200), rect(290, 200), rect(100, 60)];
+		const g = geom({ rotationStep: 0 });
+		const r = nestPageLayout(shapes, g);
+		expect(r.pages).toHaveLength(2);
+		const small = placed(shapes[2], r, 2).flat();
+		const p0 = r.pages[0];
+		for (const p of small) {
+			expect(p.y).toBeGreaterThanOrEqual(p0.y);
+			expect(p.y).toBeLessThanOrEqual(p0.y + p0.height);
+		}
+		assertValid(shapes, r, g);
+	});
+
 	it('30 chevrons at 15° finish in under 2 s', () => {
 		const t0 = Date.now();
 		nestPageLayout(

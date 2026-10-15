@@ -4,6 +4,8 @@ import type { Raster } from './types';
 export class Grid {
 	occ: Uint8Array;
 	pre: Int32Array;
+	/** Occupied cell count, kept current by rebuildRow. */
+	filled = 0;
 	constructor(
 		readonly W: number,
 		readonly H: number
@@ -41,12 +43,14 @@ export class Grid {
 
 	rebuildRow(y: number) {
 		const S = this.W + 1;
+		const before = this.pre[y * S + this.W];
 		let acc = 0;
 		this.pre[y * S] = 0;
 		for (let x = 0; x < this.W; x++) {
 			acc += this.occ[y * this.W + x];
 			this.pre[y * S + x + 1] = acc;
 		}
+		this.filled += acc - before;
 	}
 
 	/**

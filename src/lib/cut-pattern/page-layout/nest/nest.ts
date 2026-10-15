@@ -59,6 +59,21 @@ const searchCoarse = (grid: Grid, coarseGrid: Grid, fine: Raster, coarse: Raster
 	return null;
 };
 
+/**
+ * Fine scan limited to placements that reach the right/bottom partial coarse block
+ * (the only fits coarse cannot represent because those blocks count as busy),
+ * rows then columns, then compacted. Interior fits are left to the coarse search.
+ */
+const searchEdge = (grid: Grid, fine: Raster): Pos | null => {
+	const Wu = Math.floor(grid.W / NEST_COARSE) * NEST_COARSE;
+	const Hu = Math.floor(grid.H / NEST_COARSE) * NEST_COARSE;
+	const edgeX = Math.max(0, Wu - fine.w + 1);
+	for (let gy = 0; gy + fine.h <= grid.H; gy++)
+		for (let gx = gy + fine.h > Hu ? 0 : edgeX; gx + fine.w <= grid.W; gx++)
+			if (grid.fits(fine, gx, gy)) return compact(grid, fine, { gx, gy });
+	return null;
+};
+
 /** Exhaustive fine scan, rows then columns. */
 const searchFine = (grid: Grid, fine: Raster): Pos | null => {
 	for (let gy = 0; gy + fine.h <= grid.H; gy++)
@@ -141,10 +156,8 @@ export const nestPageLayout = (shapes: NestShape[], geom: NestGeom): PageLayoutR
 	const origins: Vector3[] = new Array(shapes.length);
 	const rotations: number[] = new Array(shapes.length).fill(0);
 	const pages: PageRect[] = [];
-	const used: number[] = [];
-	let grid = new Grid(W, H);
-	let coarseGrid = grid.coarsen(NEST_COARSE);
-	const pageY = () => (pages.length - 1) * (pageHeight + pageGap);
+	type PageState = { grid: Grid; coarse: Grid; used: number };
+	const state: PageState[] = [];
 	const newPage = () => {
 		pages.push({
 			x: 0,
@@ -152,46 +165,67 @@ export const nestPageLayout = (shapes: NestShape[], geom: NestGeom): PageLayoutR
 			width: pageWidth,
 			height: pageHeight
 		});
-		used.push(0);
-		grid = new Grid(W, H);
-		coarseGrid = grid.coarsen(NEST_COARSE);
+		const grid = new Grid(W, H);
+		state.push({ grid, coarse: grid.coarsen(NEST_COARSE), used: 0 });
 	};
 	newPage();
+
+	const cellCount = (r: Raster) =>
+		r.rows.reduce((n, row) => n + row.reduce((m, [a, b]) => m + b - a, 0), 0);
+
+	// Coarse blocks past W/H count as busy, so a piece reaching the right/bottom
+	// partial block only fits at fine resolution, so each page also gets an edge-band
+	// fine scan; a fresh page that still finds nothing gets the exhaustive fine scan.
+	const search = (prep: Prepared, pg: PageState, exhaustive = false) =>
+		bestOver(prep, (a) => searchCoarse(pg.grid, pg.coarse, prep.fine[a], prep.coarse[a])) ??
+		bestOver(prep, (a) => searchEdge(pg.grid, prep.fine[a])) ??
+		(exhaustive ? bestOver(prep, (a) => searchFine(pg.grid, prep.fine[a])) : null);
 
 	for (const i of order) {
 		const s = shapes[i];
 		if (!hasGeom(i)) {
-			origins[i] = new Vector3(marginPx, pageY() + marginPx, 0);
+			origins[i] = new Vector3(marginPx, pages[pages.length - 1].y + marginPx, 0);
 			continue;
 		}
 		const prep = prepared[i];
-		// Coarse blocks past W/H count as busy, so a piece reaching the right/bottom
-		// partial block only fits at fine resolution: always fine-scan the current
-		// page before spilling, and never spill from an empty page.
-		const search = () =>
-			bestOver(prep, (a) => searchCoarse(grid, coarseGrid, prep.fine[a], prep.coarse[a])) ??
-			bestOver(prep, (a) => searchFine(grid, prep.fine[a]));
-		let hit = search();
-		if (!hit && used[used.length - 1] > 0) {
-			newPage();
-			hit = search();
+		// First fit across all open pages, in page order, so later (smaller) pieces
+		// backfill gaps left on earlier pages. A page whose free cells cannot hold the
+		// piece's dilated raster at any angle is skipped without searching.
+		const need = Math.min(...prep.fine.map(cellCount));
+		let p = -1;
+		let hit: Hit | null = null;
+		for (let q = 0; q < state.length && !hit; q++) {
+			if (W * H - state[q].grid.filled < need) continue;
+			hit = search(prep, state[q]);
+			if (hit) p = q;
 		}
-		hit ??= fallbackHit(prep, contentWidth, contentHeight);
+		if (!hit) {
+			// Never spill from an empty page: fall back onto it instead.
+			if (state[state.length - 1].used > 0) newPage();
+			p = state.length - 1;
+			hit = search(prep, state[p], true) ?? fallbackHit(prep, contentWidth, contentHeight);
+		}
+		const pg = state[p];
 		const r = prep.fine[hit.a];
 		const X0 = marginPx - k * cell;
-		const Y0 = pageY() + marginPx - k * cell;
+		const Y0 = pages[p].y + marginPx - k * cell;
 		origins[i] = new Vector3(
 			X0 + (hit.gx - r.ox) * cell - s.pivot.x,
 			Y0 + (hit.gy - r.oy) * cell - s.pivot.y,
 			0
 		);
 		rotations[i] = angles[hit.a];
-		used[used.length - 1] += r.area;
-		grid.place(r, hit.gx, hit.gy);
-		coarseGrid = grid.coarsen(NEST_COARSE);
+		pg.used += r.area;
+		pg.grid.place(r, hit.gx, hit.gy);
+		pg.coarse = pg.grid.coarsen(NEST_COARSE);
 	}
 
-	return { origins, rotations, pages, utilisation: used.map((u) => Math.min(1, u / (CW * CH))) };
+	return {
+		origins,
+		rotations,
+		pages,
+		utilisation: state.map((pg) => Math.min(1, pg.used / (CW * CH)))
+	};
 };
 
 /**
