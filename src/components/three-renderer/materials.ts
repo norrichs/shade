@@ -152,6 +152,8 @@ export const materials = {
 	axisX: new MeshStandardMaterial({ color: 'red', transparent: false, side: DoubleSide }),
 	axisY: new MeshStandardMaterial({ color: 'lime', transparent: false, side: DoubleSide }),
 	axisZ: new MeshStandardMaterial({ color: 'blue', transparent: false, side: DoubleSide }),
+	// Tube-opening widths: dark red, apart from the bright red X extent.
+	tubeOpening: new MeshStandardMaterial({ color: 'darkred', transparent: false, side: DoubleSide }),
 	// Magenta marks a measurement point still waiting for its partner; once
 	// paired, both ends turn black.
 	measurePending: new MeshStandardMaterial({

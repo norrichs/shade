@@ -5,7 +5,7 @@
 		showMeasureIndicators,
 		superConfigStore
 	} from '$lib/stores';
-	import { model3dBoundsStore } from '$lib/stores/superGlobuleStores';
+	import { model3dBoundsStore, model3dOpeningsStore } from '$lib/stores/superGlobuleStores';
 	import { PAGE_PRESETS } from '$lib/cut-pattern/page-layout/page-presets';
 	import {
 		derivePageDimensions,
@@ -244,6 +244,15 @@
 	});
 
 	const fmt = (n: number) => n.toFixed(2);
+
+	// Same conversion as the X/Y/Z rows: an opening's width is an axis extent.
+	const toPageUnits = (raw: number) => {
+		const mm = raw / (cfg.pageScale || 1);
+		return { mm, inch: mmToInch(mm) };
+	};
+	const openingLabel = (tube: number, end: 'start' | 'end', tubeCount: number) =>
+		`${tubeCount > 1 ? `t${tube} ` : ''}${end} opening`;
+	let openingTubeCount = $derived(new Set($model3dOpeningsStore.map((o) => o.tube)).size);
 </script>
 
 <div class="page-editor">
@@ -504,6 +513,18 @@
 				<div>—</div>
 			{/if}
 
+			{#each $model3dOpeningsStore as opening (opening.id)}
+				{@const d = toPageUnits(opening.width)}
+				<div class="sized opening">
+					<span
+						>{openingLabel(opening.tube, opening.end, openingTubeCount)}: {fmt(d.mm)} mm / {fmt(
+							d.inch
+						)} in</span
+					>
+					{@render targetInput(opening.width)}
+				</div>
+			{/each}
+
 			{#each completedMeasurements as m (m.id)}
 				{@const d = deriveDistance(m.a, m.b, cfg.pageScale)}
 				<div class="measurement">
@@ -638,6 +659,10 @@
 	}
 	.axis-z {
 		color: blue;
+	}
+	/* Matches the dark-red tube-opening indicators in the 3D view. */
+	.opening {
+		color: darkred;
 	}
 	.indicator-toggle {
 		justify-content: flex-start;

@@ -18,6 +18,7 @@ import type {
 	TubeSplitRejection
 } from '$lib/types';
 import { collectRenderedPoints } from '$lib/collect-rendered-points';
+import { computeTubeOpenings, type TubeOpening } from '$lib/tube-openings';
 import type { GlobuleAddress_Facet, Tube } from '$lib/projection-geometry/types';
 import { derived, writable, get } from 'svelte/store';
 import { loadPersistedOrDefault } from './stores';
@@ -194,7 +195,10 @@ export function extractMeshData(
 		bandGeometry,
 		projectionAddresses,
 		bounds,
-		extremes
+		extremes,
+		// Taken from the globule tubes whatever the pattern source: a projection or
+		// voronoi model draped on a globule surface keeps that surface's openings.
+		openings: computeTubeOpenings(superGlobule.globuleTubes)
 	};
 }
 
@@ -478,6 +482,12 @@ export const model3dBoundsStore = derived(superGlobuleMeshStore, ($mesh) => $mes
 export const model3dExtremesStore = derived(
 	superGlobuleMeshStore,
 	($mesh): AxisExtremes | null => $mesh?.extremes ?? null
+);
+
+// The tube openings, preset measurements alongside the axis extents above.
+export const model3dOpeningsStore = derived(
+	superGlobuleMeshStore,
+	($mesh): TubeOpening[] => $mesh?.openings ?? []
 );
 
 export const superGlobuleGeometryStore = derived(superGlobuleStore, ($superGlobuleStore) => {

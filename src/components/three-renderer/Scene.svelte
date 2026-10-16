@@ -6,6 +6,7 @@
 		selectedBand,
 		superConfigStore,
 		model3dExtremesStore,
+		model3dOpeningsStore,
 		showMeasureIndicators,
 		type BandSelection
 	} from '$lib/stores';
@@ -306,6 +307,16 @@
 		<T.Group position={[point.x, point.y, point.z]}>
 			<T.Mesh geometry={indicatorGeometry} material={materials[material]} />
 		</T.Group>
+	{/each}
+{/if}
+
+{#if $showMeasureIndicators}
+	{#each $model3dOpeningsStore as opening (opening.id)}
+		{#each [opening.a, opening.b] as point, i (i)}
+			<T.Group position={[point.x, point.y, point.z]}>
+				<T.Mesh geometry={indicatorGeometry} material={materials.tubeOpening} />
+			</T.Group>
+		{/each}
 	{/each}
 {/if}
 

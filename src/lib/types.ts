@@ -21,6 +21,7 @@ import type { PanelHoleConfig } from './cut-pattern/generate-pattern';
 import type { DistributionConfig } from '../components/cut-pattern/distrubute-panels';
 import type { ProjectionRange } from './projection-geometry/filters';
 import type { EndCapConfig, EndCapGeometry } from './geometry/end-caps';
+import type { TubeOpening } from './tube-openings';
 
 export type PatternSource =
 	| 'globule'
@@ -1282,6 +1283,8 @@ export type SuperGlobuleMesh = {
 	bounds: Box3;
 	/** Null when the model has no geometry points. */
 	extremes: AxisExtremes | null;
+	/** The open ends of the globule tubes, each measured across X. */
+	openings: TubeOpening[];
 };
 
 export type SuperGlobuleGeometry =
