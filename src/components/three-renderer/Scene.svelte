@@ -314,7 +314,10 @@
 	{#each $model3dOpeningsStore as opening (opening.id)}
 		{#each [opening.a, opening.b] as point, i (i)}
 			<T.Group position={[point.x, point.y, point.z]}>
-				<T.Mesh geometry={indicatorGeometry} material={materials.tubeOpening} />
+				<T.Mesh
+					geometry={indicatorGeometry}
+					material={opening.end === 'start' ? materials.tubeOpeningStart : materials.tubeOpeningEnd}
+				/>
 			</T.Group>
 		{/each}
 	{/each}

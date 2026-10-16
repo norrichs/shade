@@ -152,8 +152,18 @@ export const materials = {
 	axisX: new MeshStandardMaterial({ color: 'red', transparent: false, side: DoubleSide }),
 	axisY: new MeshStandardMaterial({ color: 'lime', transparent: false, side: DoubleSide }),
 	axisZ: new MeshStandardMaterial({ color: 'blue', transparent: false, side: DoubleSide }),
-	// Tube-opening widths: dark red, apart from the bright red X extent.
-	tubeOpening: new MeshStandardMaterial({ color: 'darkred', transparent: false, side: DoubleSide }),
+	// Tube-opening widths, one colour per end so the two rims read apart. The
+	// lavender is a saturated one: CSS 'lavender' is near-white on the beige scene.
+	tubeOpeningStart: new MeshStandardMaterial({
+		color: 'magenta',
+		transparent: false,
+		side: DoubleSide
+	}),
+	tubeOpeningEnd: new MeshStandardMaterial({
+		color: '#b57edc',
+		transparent: false,
+		side: DoubleSide
+	}),
 	// Magenta marks a measurement point still waiting for its partner; once
 	// paired, both ends turn black.
 	measurePending: new MeshStandardMaterial({

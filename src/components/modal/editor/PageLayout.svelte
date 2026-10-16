@@ -515,7 +515,7 @@
 
 			{#each $model3dOpeningsStore as opening (opening.id)}
 				{@const d = toPageUnits(opening.width)}
-				<div class="sized opening">
+				<div class="sized opening-{opening.end}">
 					<span
 						>{openingLabel(opening.tube, opening.end, openingTubeCount)}: {fmt(d.mm)} mm / {fmt(
 							d.inch
@@ -660,9 +660,12 @@
 	.axis-z {
 		color: blue;
 	}
-	/* Matches the dark-red tube-opening indicators in the 3D view. */
-	.opening {
-		color: darkred;
+	/* Match the tube-opening indicators in the 3D view: start magenta, end lavender. */
+	.opening-start {
+		color: magenta;
+	}
+	.opening-end {
+		color: #b57edc;
 	}
 	.indicator-toggle {
 		justify-content: flex-start;
