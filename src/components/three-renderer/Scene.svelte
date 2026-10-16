@@ -225,14 +225,14 @@
 		globuleConfigId: generateTempId('cfg'),
 		points: [
 			new Vector3(0, 0, 0),
-			new Vector3(0, 0, 100),
-			new Vector3(0, 10, 100),
+			new Vector3(0, 0, 25),
+			new Vector3(0, 10, 25),
 			new Vector3(0, 0, 0),
-			new Vector3(0, 0, 100),
-			new Vector3(10, 10, 100),
+			new Vector3(0, 0, 25),
+			new Vector3(10, 10, 25),
 			new Vector3(0, 0, 0),
-			new Vector3(10, 10, 100),
-			new Vector3(10, 0, 100)
+			new Vector3(10, 10, 25),
+			new Vector3(10, 0, 25)
 		]
 	};
 
