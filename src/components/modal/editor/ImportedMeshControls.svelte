@@ -1,8 +1,6 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import { Vector3 } from 'three';
-	import { get } from 'svelte/store';
-	import { superConfigStore } from '#lib/stores/index.js';
 	import { importedMeshBusy } from './imported-mesh-busy';
 	import { toastStore } from '#lib/stores/toastStore.js';
 	import { assetStatus, resolveAsset } from '#lib/mesh-import/asset-store.js';
@@ -21,7 +19,19 @@
 	import NumberInput from '../../controls/super-control/NumberInput.svelte';
 	import PointInput from '../../controls/super-control/PointInput.svelte';
 
-	let { surface }: { surface: ImportedSurfaceConfig } = $props();
+	let {
+		surface,
+		read,
+		write,
+		showRayCenter = true
+	}: {
+		surface: ImportedSurfaceConfig;
+		/** The imported model these controls edit, if it is (still) present in the store. */
+		read: () => ImportedSurfaceConfig | undefined;
+		write: (next: ImportedSurfaceConfig) => void;
+		/** The ray center only means something for projection/Voronoi surfaces. */
+		showRayCenter?: boolean;
+	} = $props();
 
 	const UP_AXES: UpAxis[] = ['+y', '+z', '-y', '-z', '+x', '-x'];
 
@@ -52,25 +62,13 @@
 		});
 	});
 
-	/** The store's surface, if it is (still) an imported model. */
-	const currentImported = (): ImportedSurfaceConfig | undefined => {
-		const current = get(superConfigStore).projectionConfigs[0].surfaceConfig;
-		return current.type === 'ImportedMeshConfig' ? (current as ImportedSurfaceConfig) : undefined;
-	};
-
-	const setCurrent = (next: ImportedSurfaceConfig) => {
-		const config = get(superConfigStore);
-		config.projectionConfigs[0].surfaceConfig = next;
-		superConfigStore.set(config);
-	};
-
 	/**
 	 * Merge only the fields an operation owns (asset, fileName, fit, simplify) onto the
-	 * store's current surface, so edits made meanwhile (transform, ray center) survive.
-	 * Aborts if the surface is no longer the imported model the operation started from.
+	 * store's current model, so edits made meanwhile (transform, ray center) survive.
+	 * Aborts if the model is no longer the one the operation started from.
 	 */
 	const commitOwned = (startAssetId: string, next: ImportedSurfaceConfig): boolean => {
-		const current = currentImported();
+		const current = read();
 		if (!current || current.assetId !== startAssetId) return false;
 		const merged: ImportedSurfaceConfig = {
 			...current,
@@ -80,7 +78,7 @@
 		};
 		if (next.simplify) merged.simplify = next.simplify;
 		else delete merged.simplify;
-		setCurrent(merged);
+		write(merged);
 		return true;
 	};
 
@@ -134,23 +132,23 @@
 	};
 
 	const handleRevert = () => {
-		const current = currentImported();
+		const current = read();
 		if (current) commitOwned(current.assetId, revertSimplify(current));
 	};
 
 	const handleResetCenter = () => {
-		const current = currentImported();
+		const current = read();
 		if (!current) return;
 		// The fitted model center is the origin; the pipelines apply the user
 		// transform to the mesh, so the ray center (world space) follows it.
 		const origin = new Vector3();
 		if (current.transform !== 'inherit') origin.applyMatrix4(getMatrix4(current.transform));
-		setCurrent({ ...current, center: { x: origin.x, y: origin.y, z: origin.z } });
+		write({ ...current, center: { x: origin.x, y: origin.y, z: origin.z } });
 	};
 
 	const handleCenterChange = (center: Point3) => {
-		const current = currentImported();
-		if (current) setCurrent({ ...current, center });
+		const current = read();
+		if (current) write({ ...current, center });
 	};
 </script>
 
@@ -210,10 +208,12 @@
 		</LabeledControl>
 		<button disabled={busy || missing} onclick={handleRefit}> Re-fit </button>
 
-		<LabeledControl label="Ray center">
-			<PointInput bind:value={() => surface.center, handleCenterChange} />
-		</LabeledControl>
-		<button disabled={busy} onclick={handleResetCenter}> Reset to model center </button>
+		{#if showRayCenter}
+			<LabeledControl label="Ray center">
+				<PointInput bind:value={() => surface.center, handleCenterChange} />
+			</LabeledControl>
+			<button disabled={busy} onclick={handleResetCenter}> Reset to model center </button>
+		{/if}
 
 		<LabeledControl label="Simplify to">
 			<NumberInput

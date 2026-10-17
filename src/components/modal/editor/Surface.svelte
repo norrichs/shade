@@ -91,6 +91,18 @@
 	);
 	let surfaceTypeValue = $derived(surfaceConfig.type.replace('Config', '').toLowerCase());
 
+	/** The store's surface, if it is (still) an imported model. */
+	const readImportedSurface = (): ImportedSurfaceConfig | undefined => {
+		const current = get(superConfigStore).projectionConfigs[0].surfaceConfig;
+		return current.type === 'ImportedMeshConfig' ? (current as ImportedSurfaceConfig) : undefined;
+	};
+
+	const writeImportedSurface = (next: ImportedSurfaceConfig) => {
+		const config = get(superConfigStore);
+		config.projectionConfigs[0].surfaceConfig = next;
+		superConfigStore.set(config);
+	};
+
 	// Configs saved before every surface type carried its own transform still hold
 	// 'inherit'. Materialise once so the controls below have something to bind to;
 	// the seed is the same identity 'inherit' resolved to, so nothing moves. The
@@ -147,7 +159,11 @@
 			{/if}
 
 			{#if surfaceConfig.type === 'ImportedMeshConfig'}
-				<ImportedMeshControls surface={surfaceConfig as ImportedSurfaceConfig} />
+				<ImportedMeshControls
+					surface={surfaceConfig as ImportedSurfaceConfig}
+					read={readImportedSurface}
+					write={writeImportedSurface}
+				/>
 			{/if}
 
 			{#if surfaceConfig.type === 'SphereConfig' && 'radius' in surfaceConfig}

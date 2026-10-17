@@ -26,6 +26,7 @@
 	import { generateLevelPrototype, validateGlobuleShapeConfigs } from '#lib/generate-shape.js';
 	import { selectedGcsIndex } from './gcs-editor-store';
 	import { addGcs, deleteGcs, moveGcs, setGcsLevel, setPrimary } from './gcs-editor';
+	import FromModel from './FromModel.svelte';
 
 	// Derived from the store so an externally loaded config shows up here; the old
 	// version read into a plain `let` and never updated.
@@ -432,6 +433,7 @@
 				{/if}
 			</Container>
 		</Container>
+		<FromModel />
 	</section>
 </Editor>
 
