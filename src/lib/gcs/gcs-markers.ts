@@ -26,17 +26,21 @@ export function gcsMarkers(globule: GlobuleConfig, validation: GcsValidation): G
 	const sample = (t: number) =>
 		method === 'divideCurve' ? silhouette.getPoint(t) : silhouette.getPointAt(t);
 
-	return shapeConfigs.map((shape, i) => {
+	return shapeConfigs.flatMap((shape, i) => {
 		const level = validation.levels[i];
+		// An invalid list can leave a level missing or NaN; there is nowhere to draw it.
+		if (!Number.isFinite(level)) return [];
 		const t = level / divisions;
 		const p = sample(t);
-		return {
-			label: gcsLabel(i),
-			level,
-			t,
-			isPrimary: !!shape.isPrimary,
-			invalid: invalidIndices.has(i),
-			point: { x: p.x, y: p.y }
-		};
+		return [
+			{
+				label: gcsLabel(i),
+				level,
+				t,
+				isPrimary: !!shape.isPrimary,
+				invalid: invalidIndices.has(i),
+				point: { x: p.x, y: p.y }
+			}
+		];
 	});
 }

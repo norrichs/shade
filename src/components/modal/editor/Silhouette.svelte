@@ -166,17 +166,23 @@
 		}
 	};
 
-	/** Cross-section positions on the curve, in the editor's display space. */
-	const markerPoints = (canv: PathEditorOverlayContext['canv']) => {
+	/** Cross-section positions in silhouette space; recomputed on config change, not on redraw. */
+	let markers = $derived.by(() => {
 		if (!globuleConfig) return [];
-		const flipAxis = canv.viewBoxData.top + canv.viewBoxData.height / 2;
 		try {
-			return gcsMarkers(globuleConfig, validateGlobuleShapeConfigs(globuleConfig)).map(
-				(marker) => ({ ...marker, point: { x: marker.point.x, y: 2 * flipAxis - marker.point.y } })
-			);
+			return gcsMarkers(globuleConfig, validateGlobuleShapeConfigs(globuleConfig));
 		} catch {
 			return [];
 		}
+	});
+
+	/** Markers in the editor's display space (the y-flip needs the canvas). */
+	const markerPoints = (canv: PathEditorOverlayContext['canv']) => {
+		const flipAxis = canv.viewBoxData.top + canv.viewBoxData.height / 2;
+		return markers.map((marker) => ({
+			...marker,
+			point: { x: marker.point.x, y: 2 * flipAxis - marker.point.y }
+		}));
 	};
 </script>
 

@@ -57,4 +57,10 @@ describe('gcsMarkers', () => {
 		const m = gcsMarkers(build(3), validation([0, 5, 10], [{ index: 1, message: 'bad' }]));
 		expect(m.map((x) => x.invalid)).toEqual([false, true, false]);
 	});
+
+	it('omits markers whose level is not finite', () => {
+		const m = gcsMarkers(build(3), validation([0, NaN, 10]));
+		expect(m.map((x) => x.label)).toEqual(['A', 'C']);
+		expect(m.every((x) => Number.isFinite(x.point.x) && Number.isFinite(x.point.y))).toBe(true);
+	});
 });
