@@ -274,7 +274,7 @@
 			<div class="gcs-error">{error.message}</div>
 		{/each}
 		<div class="gcs-strip">
-			{#each shapeConfigs as shape, i (shape.id ?? i)}
+			{#each shapeConfigs as shape, i (i)}
 				<button
 					type="button"
 					class="gcs-chip"
@@ -285,7 +285,14 @@
 					{gcsLabel(i)}{shape.isPrimary ? ' ★' : ''}
 				</button>
 			{/each}
-			<button type="button" title="Duplicate after selected" onclick={onAdd}>+</button>
+			<button
+				type="button"
+				title={shapeConfigs.length >= divisions + 1
+					? `At most ${divisions + 1} cross sections (one per silhouette level)`
+					: 'Duplicate after selected'}
+				disabled={shapeConfigs.length >= divisions + 1}
+				onclick={onAdd}>+</button
+			>
 			<button
 				type="button"
 				title="Delete selected"

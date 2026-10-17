@@ -55,4 +55,15 @@ describe('gcs-editor', () => {
 		expect(setGcsLevel(list, 1, undefined)[1].level).toBeUndefined();
 		expect(list[1].level).toBe(3);
 	});
+
+	it('addGcs on id-less entries yields a defined id; add then move keeps defined ids unique', () => {
+		const { id: _a, ...a } = mk(0);
+		const list = [{ ...a, isPrimary: true } as ShapeConfig];
+		const added = addGcs(list, 0);
+		expect(added[1].id).toBeDefined();
+		const moved = moveGcs(added, 1, -1);
+		const ids = moved.map((s) => s.id).filter((v) => v !== undefined);
+		expect(new Set(ids).size).toBe(ids.length);
+		expect(ids.length).toBe(1);
+	});
 });
