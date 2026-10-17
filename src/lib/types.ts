@@ -1021,6 +1021,11 @@ export type SilhouetteConfig = {
 	type: 'SilhouetteConfig';
 	id?: number;
 	curves: BezierConfig[];
+	/**
+	 * The last anchor is held on the first, and that pair edits as an ordinary
+	 * joint (dragged together, smooth/angled toggle). Absent means open.
+	 */
+	loopEnds?: boolean;
 };
 
 /**

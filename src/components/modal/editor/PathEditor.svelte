@@ -74,7 +74,8 @@
 		pointInputMode = 'inline',
 		editorId = undefined,
 		overlay = undefined,
-		overlayAbove = undefined
+		overlayAbove = undefined,
+		closed = false
 	}: {
 		curveDef: BezierConfig[];
 		config: PathEditorConfig;
@@ -107,6 +108,13 @@
 		editorId?: string;
 		overlay?: Snippet<[PathEditorOverlayContext]>;
 		overlayAbove?: Snippet<[PathEditorOverlayContext]>;
+		/**
+		 * The run is a loop: the last end anchor is held on the first start anchor
+		 * and that pair behaves as an ordinary joint — dragged together, coupled
+		 * handles, double-click toggles. The caller closes the curves when it turns
+		 * this on (`closeLoop`); the editor keeps them closed from there.
+		 */
+		closed?: boolean;
 	} = $props();
 
 	let canv = $derived(getCanvas(config));
@@ -178,7 +186,8 @@
 			curveIndex,
 			pointIndex,
 			newPoint,
-			oldPoint: { ...current }
+			oldPoint: { ...current },
+			closed
 		});
 		return true;
 	};
@@ -203,7 +212,7 @@
 
 	const handleDoubleClick = (curveIndex: number, pointIndex: number) => {
 		if (!enablePointTypeToggle) return;
-		const toggled = togglePointType(curveDef, curveIndex, pointIndex);
+		const toggled = togglePointType(curveDef, curveIndex, pointIndex, closed);
 		if (toggled === curveDef) return;
 		handleUpdateCurveDef(toggled);
 	};
@@ -288,9 +297,12 @@
 		{/if}
 		{#if showCurveTools}
 			<CurveToolbar
-				onAdd={() => handleUpdateCurveDef(addCurve(curveDef, step))}
+				onAdd={() =>
+					handleUpdateCurveDef(
+						closed ? splitCurves(curveDef, curveDef.length - 1) : addCurve(curveDef, step)
+					)}
 				onSplit={() => handleUpdateCurveDef(splitCurves(curveDef))}
-				onRemove={() => handleUpdateCurveDef(removeCurve(curveDef, minCurves))}
+				onRemove={() => handleUpdateCurveDef(removeCurve(curveDef, minCurves, closed))}
 				canRemove={curveDef.length > minCurves}
 			/>
 		{/if}
