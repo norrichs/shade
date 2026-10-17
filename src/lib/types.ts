@@ -1160,9 +1160,17 @@ export type CurveSampleMethodMethod = CurveSampleMethod['method'];
 export const isCurveSampleMethodMethod = (m: string): m is CurveSampleMethodMethod =>
 	['divideCurvePath', 'divideCurve', 'divideSide', 'preserveAspectRatio', 'spineCurve'].includes(m);
 
+export type GcsBlend = { mode: 'linear' };
+
 export type ShapeConfig = {
 	type: 'ShapeConfig';
 	id?: number;
+	/** Marks the primary GCS of a globule (the one legacy single-GCS readers use). */
+	isPrimary?: boolean;
+	/** Silhouette level (integer 0..divisions) this GCS sits at; null/undefined = auto-spread. */
+	level?: number;
+	/** How this GCS blends toward the next one in the list. */
+	blend?: GcsBlend;
 	// divisions: number;
 	sampleMethod: CurveSampleMethod;
 	symmetry: 'asymmetric' | 'radial' | 'lateral' | 'radial-lateral';
@@ -1432,6 +1440,7 @@ export type GlobuleRotate = { angle: number; anchor: Point3; axis: Point3 };
 export type GlobuleConfig = {
 	[key: string]:
 		| ShapeConfig
+		| ShapeConfig[]
 		| LevelConfig
 		| SilhouetteConfig
 		| DepthCurveConfig
@@ -1449,7 +1458,7 @@ export type GlobuleConfig = {
 	id: Id;
 	name?: string;
 	isModified?: boolean;
-	shapeConfig: ShapeConfig;
+	shapeConfigs: ShapeConfig[];
 	levelConfig: LevelConfig;
 	silhouetteConfig: SilhouetteConfig;
 	depthCurveConfig: DepthCurveConfig;

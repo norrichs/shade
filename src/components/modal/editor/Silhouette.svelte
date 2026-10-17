@@ -2,6 +2,8 @@
 	import { get } from 'svelte/store';
 	import { selectedBand, superConfigStore } from '$lib/stores';
 	import { getCurvePoints } from '$lib/generate-level';
+	import { validateGlobuleShapeConfigs } from '$lib/generate-shape';
+	import { gcsMarkers } from '$lib/gcs/gcs-markers';
 	import type {
 		BezierConfig,
 		CurveSampleMethod,
@@ -163,6 +165,25 @@
 			return [];
 		}
 	};
+
+	/** Cross-section positions in silhouette space; recomputed on config change, not on redraw. */
+	let markers = $derived.by(() => {
+		if (!globuleConfig) return [];
+		try {
+			return gcsMarkers(globuleConfig, validateGlobuleShapeConfigs(globuleConfig));
+		} catch {
+			return [];
+		}
+	});
+
+	/** Markers in the editor's display space (the y-flip needs the canvas). */
+	const markerPoints = (canv: PathEditorOverlayContext['canv']) => {
+		const flipAxis = canv.viewBoxData.top + canv.viewBoxData.height / 2;
+		return markers.map((marker) => ({
+			...marker,
+			point: { x: marker.point.x, y: 2 * flipAxis - marker.point.y }
+		}));
+	};
 </script>
 
 <Editor>
@@ -188,6 +209,24 @@
 						/>
 						{#each sampledPoints(canv) as point}
 							<circle cx={point.x} cy={point.y} r={2 * canv.scale} fill="rgba(0,0,0,0.5)" />
+						{/each}
+						{#each markerPoints(canv) as marker (marker.label)}
+							{@const color = marker.invalid ? '#c00' : '#06c'}
+							<circle
+								cx={marker.point.x}
+								cy={marker.point.y}
+								r={(marker.isPrimary ? 6 : 4.5) * canv.scale}
+								fill={marker.isPrimary ? color : 'rgba(255,255,255,0.7)'}
+								stroke={color}
+								stroke-width={(marker.isPrimary ? 2 : 1.5) * canv.scale}
+							/>
+							<text
+								x={marker.point.x + 8 * canv.scale}
+								y={marker.point.y - 8 * canv.scale}
+								font-size={12 * canv.scale}
+								font-weight={marker.isPrimary ? 'bold' : 'normal'}
+								fill={color}>{marker.label}</text
+							>
 						{/each}
 					{/snippet}
 					<PathEditor
