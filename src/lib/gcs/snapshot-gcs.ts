@@ -5,7 +5,7 @@ import { normalizeMatrix } from '#lib/mesh-import/normalize.js';
 import { generateSilhouette } from '#lib/generate-shape.js';
 import { silhouetteLevelSamples } from '#lib/generate-level.js';
 import { sliceMeshAtZ } from './slice-mesh';
-import { largestLoop, resampleByArcLength, startIndexedLoop } from './outline';
+import { largestLoop, resampleByArcLength, signedArea, startIndexedLoop } from './outline';
 import { shapeConfigFromPoints } from './shape-from-points';
 
 /**
@@ -13,6 +13,9 @@ import { shapeConfigFromPoints } from './shape-from-points';
  * xMin, so a silhouette tapering to a pole doesn't blow every other slice up.
  */
 export const X_MIN_THRESHOLD = 0.05;
+
+/** Second-largest outline area at or above this fraction of the largest → warn of switching. */
+const SIMILAR_AREA_RATIO = 0.8;
 
 export type SnapshotInput = {
 	globule: GlobuleConfig;
@@ -123,18 +126,30 @@ export function snapshotGcsFromModel({
 	const sliced: (Vector2[] | undefined)[] = samples.map((sample, i) => {
 		if (sample.x <= 0) return undefined;
 		const { loops, openChains } = sliceMeshAtZ(positions, mesh.index, planeZ(sample.y));
-		if (openChains > 0 || loops.length === 0) {
+		if (loops.length === 0) {
 			if (eligible[i]) {
 				errors.push(
 					openChains > 0
-						? `Level ${i}: the slice does not close (is the model watertight?).`
+						? `Level ${i}: the slice does not close (is the model watertight, without non-manifold edges?).`
 						: `Level ${i}: the slice plane misses the model.`
 				);
 			}
 			return undefined;
 		}
+		// Stray open parts (decals, open bases) don't block a level that has a closed outline.
+		if (openChains > 0) {
+			warnings.push(
+				`Level ${i}: ignored ${openChains} open edge chain${openChains === 1 ? '' : 's'}.`
+			);
+		}
 		if (loops.length > 1) {
 			warnings.push(`Level ${i}: kept the largest of ${loops.length} outlines.`);
+			const [first, second] = loops.map((loop) => Math.abs(signedArea(loop))).sort((a, b) => b - a);
+			if (second >= SIMILAR_AREA_RATIO * first) {
+				warnings.push(
+					`Level ${i}: the two largest outlines are similar in size; the kept one may switch between levels.`
+				);
+			}
 		}
 		return resampleByArcLength(startIndexedLoop(largestLoop(loops)), bandCount).map((p) =>
 			p.multiplyScalar(scale)

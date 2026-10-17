@@ -1,4 +1,4 @@
-import { BoxGeometry, BufferGeometry, ConeGeometry, CylinderGeometry } from 'three';
+import { BoxGeometry, BufferGeometry, ConeGeometry, CylinderGeometry, PlaneGeometry } from 'three';
 import { mergeGeometries, mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
 export type TestMesh = { positions: Float32Array; index: Uint32Array };
@@ -25,11 +25,18 @@ export const boxMesh = (w = 2, d = 4, h = 6): TestMesh =>
 export const coneMesh = (radius = 5, height = 20, segments = 48): TestMesh =>
 	toMesh(new ConeGeometry(radius, height, segments, 4));
 
-/** Two r=3 cylinders at x = ±10: every horizontal slice is two loops. */
-export const twoCylindersMesh = (): TestMesh => {
-	const a = new CylinderGeometry(3, 3, 20, 32, 4).translate(-10, 0, 0);
-	const b = new CylinderGeometry(4, 4, 20, 32, 4).translate(10, 0, 0);
+/** Cylinders of radius `ra` at x = -10 and `rb` at x = 10: every horizontal slice is two loops. */
+export const twoCylindersMesh = (ra = 3, rb = 4): TestMesh => {
+	const a = new CylinderGeometry(ra, ra, 20, 32, 4).translate(-10, 0, 0);
+	const b = new CylinderGeometry(rb, rb, 20, 32, 4).translate(10, 0, 0);
 	return toMesh(mergeGeometries([a.toNonIndexed(), b.toNonIndexed()]));
+};
+
+/** A closed r=5 cylinder plus a separate open vertical strip at x = 20 (a stray open part). */
+export const cylinderWithOpenStripMesh = (): TestMesh => {
+	const body = new CylinderGeometry(5, 5, 20, 32, 4);
+	const strip = new PlaneGeometry(4, 20, 1, 4).translate(20, 0, 0);
+	return toMesh(mergeGeometries([body.toNonIndexed(), strip.toNonIndexed()]));
 };
 
 /** An open-ended tube with one side quad removed: slices are open chains. */

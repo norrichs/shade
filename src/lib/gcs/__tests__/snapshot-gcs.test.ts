@@ -13,6 +13,7 @@ import type { ImportedMeshNormalize } from '../../projection-geometry/types';
 import {
 	coneMesh,
 	cylinderMesh,
+	cylinderWithOpenStripMesh,
 	openTubeMesh,
 	twoCylindersMesh,
 	type TestMesh
@@ -160,6 +161,20 @@ describe('snapshotGcsFromModel', () => {
 		expect(result.ok).toBe(true);
 		if (!result.ok) return;
 		expect(result.warnings.some((w) => /kept the largest of 2 outlines/.test(w))).toBe(true);
+	});
+
+	it('keeps a closed outline when a stray open part also crosses the level', () => {
+		const result = run(openEnded(), cylinderWithOpenStripMesh());
+		expect(result.ok).toBe(true);
+		if (!result.ok) return;
+		expect(result.warnings.some((w) => /ignored 1 open edge chain/.test(w))).toBe(true);
+	});
+
+	it('warns when the two largest outlines are similar in size', () => {
+		const result = run(openEnded(), twoCylindersMesh(3, 3.1));
+		expect(result.ok).toBe(true);
+		if (!result.ok) return;
+		expect(result.warnings.some((w) => /similar in size/.test(w))).toBe(true);
 	});
 
 	it('fails on an open mesh, naming the level', () => {

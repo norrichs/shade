@@ -36,19 +36,31 @@ describe('outline', () => {
 		expect(start.y).toBeCloseTo(0, 12);
 	});
 
-	it('takes the outermost +X crossing', () => {
-		// Surrounds the origin; its boundary crosses +X at x = 1, 3 and 5.
-		const notched = [v(-5, -5), v(5, -5), v(5, 1), v(3, 1), v(3, -1), v(1, -1), v(1, 5), v(-5, 5)];
-		const start = startIndexedLoop(notched)[0];
+	it('takes the outermost crossing of the +X ray from the centroid', () => {
+		// A square with a slot cut down from the top: area centroid (-8/21, -4/21);
+		// the ray from it toward +X crosses x = 1, 3 and 5.
+		const slotted = [v(-5, -5), v(5, -5), v(5, 5), v(3, 5), v(3, -3), v(1, -3), v(1, 5), v(-5, 5)];
+		const start = startIndexedLoop(slotted)[0];
 		expect(start.x).toBeCloseTo(5, 12);
-		expect(start.y).toBeCloseTo(0, 12);
+		expect(start.y).toBeCloseTo(-4 / 21, 12);
+	});
+
+	it('keeps the start direction steady as an off-axis loop drifts across +X', () => {
+		// The reviewer's probe: r = 1.5 circles whose centres straddle the +X ray from the origin.
+		[1.4, 1.5, 1.6].forEach((cy, i) => {
+			const centre = v(0, cy);
+			const loop = circle(1.5, 40, 0.37 * i).map((p) => p.add(centre));
+			const direction = startIndexedLoop(loop)[0].clone().sub(centre).normalize();
+			expect(direction.x).toBeCloseTo(1, 9);
+			expect(direction.y).toBeCloseTo(0, 9);
+		});
 	});
 
 	it('starts a loop away from the axis at the same point regardless of vertex order', () => {
 		const offAxis = circle(2, 20, 0.3).map((p) => p.add(v(10, 10)));
 		const a = startIndexedLoop(offAxis)[0];
 		const b = startIndexedLoop(rotateStart(offAxis, 7))[0];
-		expect(a.equals(b)).toBe(true);
+		expect(a.distanceTo(b)).toBeLessThan(1e-9);
 	});
 
 	it('returns a counter-clockwise loop', () => {
