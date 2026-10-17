@@ -3,6 +3,7 @@
 	import { asDraggable } from 'svelte-drag-and-drop-actions';
 	import { getPointClass, type PathEditorCanvas, type PathEditorConfig } from './path-editor';
 	import type { PointConfig2 } from '#lib/types.js';
+	import { transparentDragImage } from '#lib/drag-image.js';
 </script>
 
 <script lang="ts">
@@ -41,6 +42,7 @@
 	ondblclick={handleDoubleClick}
 	use:asDraggable={{
 		onDragStart: { x: point.x / canv.scale, y: point.y / canv.scale },
+		Dummy: transparentDragImage(),
 		onDragMove: handleDrag,
 		minX: canv.minX / canv.scale,
 		minY: canv.minY / canv.scale,
