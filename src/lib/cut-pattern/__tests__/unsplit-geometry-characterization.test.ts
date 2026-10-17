@@ -44,7 +44,9 @@ import type {
  * geometry change (far above 1e-4 px) still moves the hash.
  *
  * Recorded at fbee4c0 (after the hexparquet split fix), and checked identical
- * at c2c0abb, before it. A deliberate unsplit change updates the value here
+ * at c2c0abb, before it. `rest` hashes re-recorded when svgPath strings started
+ * being rounded too (three 0.182 -> 0.186 moved their last bits by <1e-12 px);
+ * the new values were recorded identically under both three versions. A deliberate unsplit change updates the value here
  * and records the change under "Deliberate unsplit output changes" in the
  * spec amendments. Re-record with `GUARD_RECORD=<file>`, which writes the
  * actual values as JSON instead of only asserting.
@@ -57,8 +59,15 @@ const gates: PipelineGates = {
 };
 
 const PRECISION = 1e4;
-const round = (_key: string, value: unknown) =>
-	typeof value === 'number' ? Math.round(value * PRECISION) / PRECISION : value;
+const roundNumber = (n: number) => Math.round(n * PRECISION) / PRECISION;
+// `svgPath` serializes coordinates into a string, which the number branch never
+// sees; round those too, or last-bit noise (e.g. a three.js upgrade) flakes the guard.
+const round = (key: string, value: unknown) =>
+	typeof value === 'number'
+		? roundNumber(value)
+		: key === 'svgPath' && typeof value === 'string'
+			? value.replace(/-?\d+(?:\.\d+)?(?:e-?\d+)?/g, (n) => String(roundNumber(Number(n))))
+			: value;
 const sha = (value: unknown) =>
 	createHash('sha256')
 		.update(JSON.stringify(value, round) ?? 'undefined')
@@ -201,12 +210,12 @@ const EXPECTED: Record<string, unknown> = {
 	'tiled tiledHexPattern-1': {
 		paths: '864d11aa9441b16f',
 		meta: '492a0cbff818b41d',
-		rest: 'f39fece9802a1f44'
+		rest: 'af45023d2c752996'
 	},
 	'tiled tiledGridPattern-0': {
 		paths: 'b28fb957d808e003',
 		meta: '492a0cbff818b41d',
-		rest: '2d9bfeb53eed767c'
+		rest: '3429053699d61d68'
 	},
 	'tiled tiledPanelPattern-0': {
 		error: "Cannot read properties of undefined (reading 'tubes')"
@@ -214,12 +223,12 @@ const EXPECTED: Record<string, unknown> = {
 	'tiled tiledShieldTesselationPattern': {
 		paths: 'a637bc0253604303',
 		meta: '790b7260abc57ac4',
-		rest: '91dbde406d271d7b'
+		rest: 'f62c12b17cbcebec'
 	},
 	'tiled tiledAsanohaPattern-1': {
 		paths: '56898577b87c9e85',
 		meta: '492a0cbff818b41d',
-		rest: 'f8b753da79d486eb'
+		rest: '185b9a01550c6983'
 	},
 	'tiled tiledHexparquetPattern-0': {
 		paths: '282371e2288834a2',
@@ -229,22 +238,22 @@ const EXPECTED: Record<string, unknown> = {
 	'tiled tiledBoxPattern-0': {
 		paths: '18db8164d916dee7',
 		meta: '492a0cbff818b41d',
-		rest: '385c45de31f40dcd'
+		rest: 'ed0dcb5403171801'
 	},
 	'tiled tiledBowtiePattern-0': {
 		paths: '532254deb8d27d56',
 		meta: '492a0cbff818b41d',
-		rest: 'ad9cc2c2c8da2404'
+		rest: '39bc10ca3ee5ccbe'
 	},
 	'tiled tiledCarnationPattern-0': {
 		paths: 'cd4c857717b83533',
 		meta: '492a0cbff818b41d',
-		rest: '1de0e387cf1d0833'
+		rest: '2f236f5d96dbde17'
 	},
 	'tiled tiledCarnationPattern-1': {
 		paths: 'e5584664f65b59cd',
 		meta: '492a0cbff818b41d',
-		rest: 'b6ab40d9f4700a5e'
+		rest: 'efae29f104b37a02'
 	},
 	'tiled bandedBranchedPattern-0': {
 		error: 'segments.push is not a function'
@@ -252,101 +261,101 @@ const EXPECTED: Record<string, unknown> = {
 	'tiled Shield skipEdges none, endsMatched true': {
 		paths: '820a5e788d6a4929',
 		meta: '790b7260abc57ac4',
-		rest: 'f02204244653e0fa'
+		rest: '591be31081803102'
 	},
 	'tiled Shield skipEdges none, endsMatched false': {
 		paths: '68b76d73674e44ba',
 		meta: '492a0cbff818b41d',
-		rest: '87166eae8bb3ea32'
+		rest: 'db957c5f68e54ca7'
 	},
 	'tiled Shield skipEdges not-first, endsMatched true': {
 		paths: '605fa90333390e59',
 		meta: '790b7260abc57ac4',
-		rest: '5568f3016adacab6'
+		rest: '1f2fd2502a4b6a5d'
 	},
 	'tiled Shield skipEdges not-first, endsMatched false': {
 		paths: 'b948ac6e8c40a977',
 		meta: '492a0cbff818b41d',
-		rest: '68e294b9b9195e48'
+		rest: 'fbba5e66035d027c'
 	},
 	'tiled Shield skipEdges not-last, endsMatched true': {
 		paths: 'a637bc0253604303',
 		meta: '790b7260abc57ac4',
-		rest: '91dbde406d271d7b'
+		rest: 'f62c12b17cbcebec'
 	},
 	'tiled Shield skipEdges not-last, endsMatched false': {
 		paths: '68a1d13541d8108b',
 		meta: '492a0cbff818b41d',
-		rest: '5ab3ba5c45f8c064'
+		rest: '2e6aec75f2f7b290'
 	},
 	'tiled Shield skipEdges not-both, endsMatched true': {
 		paths: '25e9a7efd113b7ca',
 		meta: '790b7260abc57ac4',
-		rest: 'bce76dbb299b5d11'
+		rest: '00868ae953bcd0d4'
 	},
 	'tiled Shield skipEdges not-both, endsMatched false': {
 		paths: '7f1cb819f9209be9',
 		meta: '492a0cbff818b41d',
-		rest: 'f9c7b24172cca877'
+		rest: '6dec9a63d33b2cfc'
 	},
 	'tiled Shield skipEdges all, endsMatched true': {
 		paths: '3ccc3220ab89088e',
 		meta: '790b7260abc57ac4',
-		rest: '3c0d87f40b0db4e2'
+		rest: '66b6329b270213e9'
 	},
 	'tiled Shield skipEdges all, endsMatched false': {
 		paths: '19425f0388ad1998',
 		meta: '492a0cbff818b41d',
-		rest: '9b5434e044821d4b'
+		rest: '57441f3339383aaa'
 	},
 	'tiled Shield 1×2': {
 		paths: 'ed558296059f44aa',
 		meta: 'ee589b555997ad7d',
-		rest: '44b7230a34d153ca'
+		rest: '7ac17ff49bd20894'
 	},
 	'tiled Shield 2×1': {
 		paths: 'f029588d4d7f70cf',
 		meta: '320979e09a601135',
-		rest: 'ce3d7f9f002cc699'
+		rest: 'ed135b3cd48a34e9'
 	},
 	'tiled Hex 2×1': {
 		paths: '6af0b90ee2d8938e',
 		meta: '492a0cbff818b41d',
-		rest: '2d8b7573182645a4'
+		rest: '5f530e14964ca4ec'
 	},
 	'tiled tiledHexPattern-1 1×2': {
 		paths: '7f2465688173bdcf',
 		meta: '492a0cbff818b41d',
-		rest: '6bd0804aafc0da01'
+		rest: 'e780b53dc4cc7234'
 	},
 	'tiled tiledBoxPattern-0 1×2': {
 		paths: 'c4d4e6a101ca434e',
 		meta: '492a0cbff818b41d',
-		rest: 'd074faf80dd3c0a2'
+		rest: 'e85012b274fe101b'
 	},
 	'tiled tiledCarnationPattern-0 1×2': {
 		paths: '3c9e317a5b4162ff',
 		meta: '492a0cbff818b41d',
-		rest: '902d3a154236073f'
+		rest: '4c6c7207d50fc3d2'
 	},
 	'tiled tiledCarnationPattern-1 1×2': {
 		paths: '19ac78abb3a642a4',
 		meta: '492a0cbff818b41d',
-		rest: 'b9b8ea4f9a86d99d'
+		rest: 'acf34c85b89248bc'
 	},
 	'outlined after': {
 		tabs: 'aa476785a943ea68',
-		rest: '311a64dbd18d7f2c',
+		rest: 'f502abcf9f6ca229',
 		labels: 'a9b67b2586a46371'
 	},
 	'outlined before': {
 		tabs: 'd09a89f6e87c0beb',
-		rest: '1c9be18819ccff15',
+		rest: 'e2411342bb0e7aa2',
 		labels: '4ee69bb9c146c80d'
 	},
 	'outlined beforeAndAfter': {
 		tabs: 'fd4a15e196bf4713',
-		rest: 'c57c9c507880c4a1',
+		rest: '9374777683ace75b',
 		labels: 'a4f88ca146ed83c3'
 	}
 };
