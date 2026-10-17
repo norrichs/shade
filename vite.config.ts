@@ -1,5 +1,5 @@
 import { sveltekit } from '@sveltejs/kit/vite';
-import { agentBridgePlugin } from './src/lib/agent-bridge/vite-plugin';
+import { agentBridgePlugin } from './src/lib/agent-bridge/vite-plugin.ts';
 import type { UserConfig } from 'vite';
 import { fileURLToPath } from 'node:url';
 

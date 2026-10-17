@@ -9,7 +9,7 @@ import {
 	AGENT_RESULT_EVENT,
 	type AgentCommand,
 	type AgentResult
-} from './protocol';
+} from './protocol.ts';
 
 const DEFAULT_TIMEOUT_MS = 120_000;
 export const AGENT_IMAGE_DIR = join(tmpdir(), 'shades-agent');
