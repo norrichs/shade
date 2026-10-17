@@ -21,7 +21,6 @@
 	export let showCrease = true;
 	export let patternStyle: 'view' | 'cut';
 	export let labelSize: number;
-	export let labelStyle: 'svgLabels' | 'textLabels' = 'textLabels';
 	export let edgeLabelAnchor: 'start' | 'end' | 'center' = 'center';
 	export let verbose = false;
 	export let showErrors = false;
@@ -77,9 +76,11 @@
 	};
 
 	const isMatched = (edge: TriangleEdge) => {
-		const { thisEdgeStr, reflectedEdgeStr } = getPairAddresses(edge);
-		if (!isSuperGlobuleProjectionPanelPattern($superGlobulePatternStore.projectionPattern))
+		// getPairAddresses is false exactly when this is not a projection panel pattern.
+		const pair = getPairAddresses(edge);
+		if (!pair || !isSuperGlobuleProjectionPanelPattern($superGlobulePatternStore.projectionPattern))
 			return '';
+		const { thisEdgeStr, reflectedEdgeStr } = pair;
 		const { tubes } = $superGlobulePatternStore.projectionPattern.projectionPanelPattern;
 		const partnerAddress = panel.meta.edges[corrected(edge)].partner;
 		const partner =
@@ -119,8 +120,9 @@
 			tubes[partnerAddress.tube].bands[partnerAddress.band].panels[partnerAddress.facet];
 		const reflectedAddress = partner.meta.edges[corrected(partnerAddress.edge)].partner;
 		if (!isMatched(edge)) {
-			const { thisEdgeStr, reflectedEdgeStr } = getPairAddresses(edge);
-			return `${thisEdgeStr} <- ${reflectedEdgeStr}`;
+			const pair = getPairAddresses(edge);
+			if (!pair) return '';
+			return `${pair.thisEdgeStr} <- ${pair.reflectedEdgeStr}`;
 		}
 		return `-> ${printProjectionAddress(reflectedAddress, { hideGlobule: true })}`;
 	};
@@ -251,7 +253,15 @@
 			d={svgPathFromTriangle(panel.triangle)}
 			fill={panelFill}
 			stroke="none"
+			role="button"
+			tabindex="-1"
 			on:click={handleClick}
+			on:keydown={(e) => {
+				if (e.key === 'Enter' || e.key === ' ') {
+					e.preventDefault();
+					handleClick();
+				}
+			}}
 		/>
 	{/if}
 

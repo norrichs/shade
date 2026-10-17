@@ -127,11 +127,6 @@
 	$effect(() => {
 		updateLabels(shouldUseSVGLabels);
 	});
-	let labelStyle = $derived(
-		shouldUseSVGLabels
-			? ('svgLabels' as 'svgLabels' | 'textLabels')
-			: ('textLabels' as 'svgLabels' | 'textLabels')
-	);
 	let show = $derived(
 		isSuperGlobuleProjectionPanelPattern($superGlobulePatternStore.projectionPattern)
 	);
@@ -156,7 +151,7 @@
 				>
 					{#each band.panels as panel, p (concatAddress(panel.address))}
 						<g>
-							<PanelComponent {panel} {patternStyle} {labelSize} {labelStyle} {verbose} />
+							<PanelComponent {panel} {patternStyle} {labelSize} {verbose} />
 							{#if showHingePatterns}
 								{#each panel.meta.hingePatterns || [] as hingePattern, h}
 									<g

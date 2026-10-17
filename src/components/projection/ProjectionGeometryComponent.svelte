@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { T } from '@threlte/core';
+	import type { IntersectionEvent } from '@threlte/extras';
 	import { getBandMaterial, getMaterial, materials } from '../three-renderer/materials';
 	import { BufferGeometry, Mesh, Object3D, Vector3 } from 'three';
 	import {
@@ -292,7 +293,7 @@
 							colorByBand
 						}
 					)}
-					onclick={(ev) =>
+					onclick={(ev: IntersectionEvent<MouseEvent>) =>
 						handleFacetSelect(
 							ev,
 							'surfaceProjection',
@@ -355,7 +356,7 @@
 						colorByBand
 					}
 				)}
-				onclick={(ev) =>
+				onclick={(ev: IntersectionEvent<MouseEvent>) =>
 					handleFacetSelect(ev, 'projection', facet.address, (a) => selectedProjection.set(a))}
 			/>
 		{/each}
@@ -400,7 +401,7 @@
 			<T.Mesh
 				geometry={facet.geometry}
 				material={highlightedFacetMaterial('voronoi', facet.address, $selectedVoronoiGeometry)}
-				onclick={(ev) =>
+				onclick={(ev: IntersectionEvent<MouseEvent>) =>
 					handleFacetSelect(ev, 'voronoi', facet.address, (a) => selectedVoronoi.set(a))}
 			/>
 		{/each}
@@ -415,7 +416,7 @@
 						zebraStriped: true
 					}
 				)}
-				onclick={(ev) =>
+				onclick={(ev: IntersectionEvent<MouseEvent>) =>
 					handleFacetSelect(
 						ev,
 						'voronoiSurface',
@@ -454,7 +455,7 @@
 					facet.address,
 					$selectedGlobuleTubeGeometry
 				)}
-				onclick={(ev) =>
+				onclick={(ev: IntersectionEvent<MouseEvent>) =>
 					handleFacetSelect(ev, 'globuleTube', facet.address, (a) => selectedGlobuleTube.set(a))}
 			/>
 		{/each}

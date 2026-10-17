@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { T } from '@threlte/core';
-	import type { BufferGeometry, MeshPhysicalMaterial } from 'three';
+	import type { IntersectionEvent } from '@threlte/extras';
+	import type { BufferGeometry, MeshStandardMaterial } from 'three';
 
 	let {
 		geometry,
@@ -10,8 +11,8 @@
 	}: {
 		geometry: BufferGeometry[] | undefined;
 		groupSizeMap?: number | number[] | undefined;
-		materials: MeshPhysicalMaterial | MeshPhysicalMaterial[];
-		onClick: ((ev: any) => void) | undefined;
+		materials: MeshStandardMaterial | MeshStandardMaterial[];
+		onClick: ((ev: IntersectionEvent<MouseEvent>) => void) | undefined;
 	} = $props();
 
 	const getEffectiveGroupSizeMap = (map: undefined | number | number[]) => {
@@ -26,7 +27,7 @@
 
 	const getRowMaterials = (
 		lengths: number[],
-		mats: MeshPhysicalMaterial[],
+		mats: MeshStandardMaterial[],
 		shapes?: BufferGeometry[]
 	) => {
 		if (!shapes) {
@@ -63,7 +64,7 @@
 	<T.Mesh
 		geometry={g}
 		material={groupMaterials[i]}
-		onclick={(ev) => {
+		onclick={(ev: IntersectionEvent<MouseEvent>) => {
 			if (onClick) {
 				onClick(ev);
 			}

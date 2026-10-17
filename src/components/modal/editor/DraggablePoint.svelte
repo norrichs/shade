@@ -1,4 +1,4 @@
-<script lang="ts" context="module">
+<script lang="ts" module>
 	// @ts-ignore
 	import { asDraggable } from 'svelte-drag-and-drop-actions';
 	import { getPointClass, type PathEditorCanvas, type PathEditorConfig } from './path-editor';
@@ -47,7 +47,7 @@
 		maxX: canv.maxX / canv.scale,
 		maxY: canv.maxY / canv.scale
 	}}
-/>
+></div>
 
 <style>
 	:root {

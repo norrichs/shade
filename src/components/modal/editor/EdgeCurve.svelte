@@ -233,12 +233,6 @@
 	.cross-section-container > div {
 		padding: 10px;
 	}
-	.labeled-control {
-		display: flex;
-		flex-direction: row;
-		align-items: center;
-		justify-content: space-between;
-	}
 	.polygon-path {
 		fill: rgba(108, 65, 177, 0.221);
 		stroke: rgba(108, 65, 177, 0.6);

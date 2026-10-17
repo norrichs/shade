@@ -61,6 +61,14 @@
 		}
 		superConfigStore.set(get(superConfigStore));
 	};
+
+	// Sphere and capsule surfaces carry a numeric radius; a globule surface has
+	// none (its index signature would otherwise widen the type), so it is
+	// undefined there and the slider max falls back to 200.
+	let surfaceRadius = $derived.by(() => {
+		const radius = $superConfigStore.projectionConfigs[0].surfaceConfig.radius;
+		return typeof radius === 'number' ? radius : undefined;
+	});
 </script>
 
 <Editor>
@@ -158,7 +166,7 @@
 							type="range"
 							min={0}
 							step={1}
-							max={$superConfigStore.projectionConfigs[0].surfaceConfig.radius || 100 * 2}
+							max={surfaceRadius || 100 * 2}
 							bind:value={crossSection.scaling.width}
 						/>
 					</LabeledControl>
@@ -167,7 +175,7 @@
 							type="range"
 							min={0}
 							step={1}
-							max={$superConfigStore.projectionConfigs[0].surfaceConfig.radius || 100 * 2}
+							max={surfaceRadius || 100 * 2}
 							bind:value={crossSection.scaling.height}
 						/>
 					</LabeledControl>

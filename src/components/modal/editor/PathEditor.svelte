@@ -1,10 +1,10 @@
-<script lang="ts" context="module">
+<script lang="ts" module>
 	// @ts-ignore
 	import { asDraggable } from 'svelte-drag-and-drop-actions';
 </script>
 
 <script lang="ts">
-	import type { Snippet } from 'svelte';
+	import { untrack, type Snippet } from 'svelte';
 	import type { BezierConfig, PointConfig2 } from '$lib/types';
 	import Button from '../../design-system/Button.svelte';
 	import CurveDefPath from './CurveDefPath.svelte';
@@ -209,7 +209,11 @@
 	};
 
 	// Unkeyed editors keep their toggle local and never write to the shared store.
-	let localUi = $state({ ...defaultPathEditorUiState(), pointInputMode });
+	// The prop only seeds the local toggle; later prop changes don't reset it.
+	let localUi = $state({
+		...defaultPathEditorUiState(),
+		pointInputMode: untrack(() => pointInputMode)
+	});
 	let ui = $derived(
 		editorId
 			? ($pathEditorUiStore[editorId] ?? { ...defaultPathEditorUiState(), pointInputMode })

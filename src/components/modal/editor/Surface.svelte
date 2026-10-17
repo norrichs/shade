@@ -85,6 +85,7 @@
 			{/if}
 
 			{#if surfaceConfig.type === 'SphereConfig' && 'radius' in surfaceConfig}
+				{@const sphereConfig = surfaceConfig}
 				<LabeledControl label="Sphere Radius">
 					<NumberInput
 						value={surfaceConfig.radius}
@@ -97,7 +98,17 @@
 					/>
 				</LabeledControl>
 				<LabeledControl label="Sphere Center">
-					<PointInput bind:value={$superConfigStore.projectionConfigs[0].surfaceConfig.center} />
+					<!-- sphereConfig is the store's own surfaceConfig object, narrowed; mutate it
+					     and re-set the store, as the direct store binding did. -->
+					<PointInput
+						bind:value={
+							() => sphereConfig.center,
+							(center) => {
+								sphereConfig.center = center;
+								superConfigStore.set(get(superConfigStore));
+							}
+						}
+					/>
 				</LabeledControl>
 			{/if}
 

@@ -75,7 +75,7 @@
 			aria-valuemin={MIN_PANEL_FRACTION * 100}
 			aria-valuemax={(1 - MIN_PANEL_FRACTION) * 100}
 			aria-valuenow={Math.round(split * 100)}
-			onpointermove={(ev) => {
+			onpointermove={(ev: PointerEvent & { currentTarget: EventTarget & HTMLDivElement }) => {
 				if (!dragging) handleY = ev.clientY - ev.currentTarget.getBoundingClientRect().top;
 			}}
 			use:asDraggable={{

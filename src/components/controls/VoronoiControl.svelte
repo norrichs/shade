@@ -338,12 +338,6 @@
 		flex-direction: column;
 		gap: 4px;
 	}
-	.config-header {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		font-weight: bold;
-	}
 	label {
 		display: flex;
 		align-items: center;

@@ -3,7 +3,7 @@
 	import Fonts from './fonts';
 	import type { Point } from '$lib/types';
 	import { svgTextDictionary } from './svg-text-store';
-	import { onMount } from 'svelte';
+	import { onMount, untrack } from 'svelte';
 	import type { GeometryType } from '$lib/cut-pattern/post-process-types';
 	import { layerStrokes } from '$lib/stores';
 
@@ -29,9 +29,12 @@
 		strokeWidth?: number;
 	} = $props();
 
+	// The glyph dictionary is a one-time, app-wide init: whichever font the first
+	// mounted SvgText names seeds it, and later fontName changes don't rebuild it.
 	let dict = $svgTextDictionary;
 	if (!dict) {
-		$svgTextDictionary = processSvg(Fonts[fontName].keyString, Fonts[fontName].svgString);
+		const font = Fonts[untrack(() => fontName)];
+		$svgTextDictionary = processSvg(font.keyString, font.svgString);
 		dict = $svgTextDictionary;
 	}
 
