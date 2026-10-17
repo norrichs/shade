@@ -2,6 +2,12 @@ import type { PathSegment } from '#lib/types.js';
 import { pathSegmentsToPaper } from '../path-segment-to-paper';
 import { getPaperScope } from '../scope';
 
+/** Single-contour inputs produce a paper.Path (not a CompoundPath). */
+const asPath = (item: ReturnType<typeof pathSegmentsToPaper>): paper.Path => {
+	if (!(item instanceof getPaperScope().Path)) throw new Error('expected a paper.Path');
+	return item;
+};
+
 describe('pathSegmentsToPaper', () => {
 	beforeAll(() => {
 		getPaperScope();
@@ -9,7 +15,7 @@ describe('pathSegmentsToPaper', () => {
 
 	test('converts a closed unit square to a paper.Path with 4 segments', () => {
 		const square: PathSegment[] = [['M', 0, 0], ['L', 10, 0], ['L', 10, 10], ['L', 0, 10], ['Z']];
-		const item = pathSegmentsToPaper(square);
+		const item = asPath(pathSegmentsToPaper(square));
 		expect(item.closed).toBe(true);
 		expect(item.segments.length).toBe(4);
 		// Bounds: a 10x10 square at the origin.
@@ -30,7 +36,7 @@ describe('pathSegmentsToPaper', () => {
 			['Q', 5, 15, 0, 10],
 			['Z']
 		];
-		const item = pathSegmentsToPaper(curved);
+		const item = asPath(pathSegmentsToPaper(curved));
 		expect(item.closed).toBe(true);
 		// Bezier handles produced from the C/Q segments imply non-zero curvature.
 		expect(item.segments.some((s: { hasHandles: () => boolean }) => s.hasHandles())).toBe(true);

@@ -29,7 +29,7 @@ const depthCurve = (x: number, depthCurveBaseline: number): DepthCurveConfig => 
  */
 const midLevelRadiusSpread = (config: DepthCurveConfig): number => {
 	const globule = generateDefaultGlobuleConfig();
-	const prototype = generateLevelPrototype(globule.shapeConfig, globule.levelConfig);
+	const prototype = generateLevelPrototype(globule.shapeConfig);
 	const sections = generateSections(
 		globule.levelConfig,
 		globule.silhouetteConfig,

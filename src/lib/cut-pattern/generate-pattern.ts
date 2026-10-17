@@ -10,10 +10,8 @@ import type {
 	TrianglePoint,
 	FacetOrientation,
 	TubeCutPattern,
-	Band,
 	BandCutPattern,
-	UnitPatternGenerator,
-	SplitConfig
+	UnitPatternGenerator
 } from '#lib/types.js';
 import { isOutlinedPatternConfig } from '#lib/types.js';
 
@@ -89,6 +87,9 @@ export const generateProjectionPattern = (
 	} else if (shouldUsePanelPattern(patternTypeConfig)) {
 		const projectionPanelPattern = generateProjectionPanelPattern({
 			tubes: effectiveTubes,
+			// ProjectionRange ({tubes: number | [n, n]}) does not match the panel range shape
+			// ({tubes: {start, end}}); the mismatch predates this cast and is left as-is.
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			range: projectionRange as any,
 			tiledPatternConfig: patternTypeConfig
 		});

@@ -135,6 +135,16 @@ export type TagAnchor = {
 	angle?: number;
 };
 
+/**
+ * Band-level pass run after tiling, with the whole (sparse, tube-indexed) tiling
+ * for partner lookups. Must not mutate its inputs.
+ */
+export type AdjustAfterTiling = (
+	bands: BandCutPattern[],
+	tiledPatternConfig: TiledPatternConfig,
+	tubes: TubeCutPattern[]
+) => BandCutPattern[];
+
 export type UnitPatternGenerator = {
 	getPattern: (
 		rows: number,
@@ -152,7 +162,7 @@ export type UnitPatternGenerator = {
 		finishOuterEdge?: boolean,
 		bandContext?: { hasOuterPartner: boolean; bandIndex: number; leftPartnerBand?: number }
 	) => PathSegment[][];
-	adjustAfterTiling?: any;
+	adjustAfterTiling?: AdjustAfterTiling;
 	/** Number of unit patterns cycled along a band, one per quad. Defaults to 1. */
 	subunitCount?: number;
 	/** One unit pattern per subunit, in quad-index order. Required when subunitCount > 1. */
@@ -163,8 +173,8 @@ export type UnitPatternGenerator = {
 export type BandPatternGenerator = {
 	getPattern: (rows: number, columns: number, quadBand?: Quadrilateral[]) => DynamicPathCollection;
 	tagAnchor?: TagAnchor;
-	adjustAfterMapping?: any;
-	adjustAfterTiling?: any;
+	adjustAfterMapping?: UnitPatternGenerator['adjustAfterMapping'];
+	adjustAfterTiling?: AdjustAfterTiling;
 };
 
 export type CircleConfig = {

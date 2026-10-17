@@ -62,10 +62,10 @@ export const generateCarnation = ({
 	return patternSegments;
 };
 
-export const adjustCarnation = (
-	tiledBands: SideNeighbourCandidate<CutPattern>[],
+export const adjustCarnation = <B extends SideNeighbourCandidate<CutPattern>>(
+	tiledBands: B[],
 	variant: 0 | 1
-) => {
+): B[] => {
 	const patternPrototype = generateCarnation({ variant, size: 1, rows: 1, columns: 1 });
 	const addendaPrototype = [
 		['M', patternPrototype[3][5], patternPrototype[3][6]] as MovePathSegment,

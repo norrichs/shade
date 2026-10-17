@@ -125,8 +125,8 @@ function matchTubeEnds(tubes: Tube[]): void {
 		)
 	);
 
-	tubes.forEach((tube, t) =>
-		tube.bands.forEach((band, b) => {
+	tubes.forEach((tube) =>
+		tube.bands.forEach((band) => {
 			const firstFacet = band.facets[0];
 			const lastFacet = band.facets[band.facets.length - 1];
 

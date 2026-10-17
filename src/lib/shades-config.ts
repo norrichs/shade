@@ -27,7 +27,7 @@ import type {
 import { DEFAULT_DEPTH_CURVE_BASELINE } from './types';
 import type { EndCapConfig } from './geometry/end-caps';
 import { rad } from './util';
-import { GENERAL_CONFIG, generateTempId, GLOBULE_CONFIG, SUPER_GLOBULE_CONFIG } from './id-handler';
+import { generateTempId, GLOBULE_CONFIG, SUPER_GLOBULE_CONFIG } from './id-handler';
 import { degToRad, mmFromInches } from './patterns/utils';
 import { defaultProjectionConfig } from './projection-geometry/configs';
 import { radialUnitAngle } from './geometry/radial-shape';
@@ -57,21 +57,6 @@ const defaultSilhouetteConfig = (): SilhouetteConfig => ({
 		}
 	]
 });
-
-const defaultSilhouetteConfigV2: SilhouetteConfig = {
-	type: 'SilhouetteConfig',
-	curves: [
-		{
-			type: 'BezierConfig',
-			points: [
-				{ type: 'PointConfig2', x: 50, y: -20 },
-				{ type: 'PointConfig2', x: 150, y: -20 },
-				{ type: 'PointConfig2', x: 150, y: 50 },
-				{ type: 'PointConfig2', x: 50, y: 50 }
-			]
-		}
-	]
-};
 
 const defaultDepthCurveConfig = (): DepthCurveConfig => ({
 	type: 'DepthCurveConfig',

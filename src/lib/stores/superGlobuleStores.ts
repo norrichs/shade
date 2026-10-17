@@ -2,11 +2,9 @@ import { AUTO_PERSIST_KEY, bootstrapShouldUsePersisted, persistable } from '#lib
 import { generateDefaultSuperGlobuleConfig } from '#lib/shades-config.js';
 import type {
 	Id,
-	GlobulePatternConfig,
 	ProjectionPanelPattern,
 	SuperGlobule,
 	SuperGlobuleConfig,
-	TubeCutPattern,
 	ProjectionCutPattern,
 	SuperGlobuleMesh,
 	AxisExtremes,
@@ -15,12 +13,11 @@ import type {
 	TubeSplitRejection
 } from '#lib/types.js';
 import { collectRenderedPoints } from '#lib/collect-rendered-points.js';
-import type { GlobuleAddress_Facet, Tube } from '#lib/projection-geometry/types.js';
+import type { GlobuleAddress_Facet } from '#lib/projection-geometry/types.js';
 import { derived, writable, get } from 'svelte/store';
 import { loadPersistedOrDefault } from './stores';
 import { normalizeVoronoiConfig } from '#lib/voronoi/migrate-voronoi-config.js';
 import { generateSuperGlobule } from '#lib/generate-superglobule.js';
-import { validateAllPanels } from '#lib/cut-pattern/generate-pattern.js';
 import {
 	EMPTY_PATTERN_RESULT,
 	runPatternGeneration,
@@ -207,10 +204,10 @@ const superGlobuleInternal = writable<SuperGlobule | null>(null);
 export const frozenMeshStore = writable<SuperGlobuleMesh | null>(null);
 
 // Persisted pattern store for 2d-only mode (maintains patterns when 3D is cleared)
-export const persistedPatternStore = writable<{
-	projectionPattern: any;
-	globuleTubePattern: any;
-} | null>(null);
+export const persistedPatternStore = writable<Pick<
+	PatternGenerationResult,
+	'projectionPattern' | 'globuleTubePattern'
+> | null>(null);
 
 // Track whether we've done the initial generation
 let isInitialized = false;

@@ -1,6 +1,5 @@
 import type {
 	PathSegment,
-	CutPattern,
 	Quadrilateral,
 	PatternGenerator,
 	TiledPatternConfig,
@@ -53,7 +52,7 @@ export const patterns: { [key: string]: PatternGenerator } = {
 		getPattern: (rows: number, columns: number) =>
 			generateCarnation({ size: 1, rows, columns, variant: 0 }),
 		tagAnchor: { facetIndex: 0, segmentIndex: 0 },
-		adjustAfterTiling: (tiledBands: { facets: CutPattern[] }[]) => {
+		adjustAfterTiling: (tiledBands: BandCutPattern[]) => {
 			return adjustCarnation(tiledBands, 0);
 		}
 	},
@@ -61,7 +60,7 @@ export const patterns: { [key: string]: PatternGenerator } = {
 		getPattern: (rows: number, columns: number) =>
 			generateCarnation({ size: 1, rows, columns, variant: 1 }),
 		tagAnchor: { facetIndex: 0, segmentIndex: 0 },
-		adjustAfterTiling: (tiledBands: { facets: CutPattern[] }[]) => {
+		adjustAfterTiling: (tiledBands: BandCutPattern[]) => {
 			return adjustCarnation(tiledBands, 1);
 		}
 	},
@@ -149,11 +148,7 @@ export const patterns: { [key: string]: PatternGenerator } = {
 			return generatePanelPattern({ size: 1, variant: panelVariant });
 		},
 		tagAnchor: { facetIndex: 0, segmentIndex: 1 },
-		adjustAfterMapping: (
-			patternBand: PathSegment[][],
-			quadBand: Quadrilateral[],
-			tiledPatternConfig: TiledPatternConfig
-		) => adjustPanelPatternAfterTiling(patternBand, quadBand, tiledPatternConfig)
+		adjustAfterMapping: (patternBand: PathSegment[][]) => adjustPanelPatternAfterTiling(patternBand)
 	},
 	'bandedBranchedPattern-0': {
 		getPattern: (rows: number, columns: number, quadBand?: Quadrilateral[]) => {
@@ -163,7 +158,7 @@ export const patterns: { [key: string]: PatternGenerator } = {
 			return generateBranched(quadBand, { rows, columns, variant: 0 });
 		},
 		tagAnchor: { facetIndex: 0, segmentIndex: 5 },
-		adjustAfterTiling: (tiledBands: { facets: CutPattern[] }[]) => {
+		adjustAfterTiling: (tiledBands: BandCutPattern[]) => {
 			// variant was omitted before; generateCarnation defaults an undefined variant to 0
 			return adjustCarnation(tiledBands, 0);
 		}

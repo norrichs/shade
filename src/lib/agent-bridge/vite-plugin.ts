@@ -45,6 +45,7 @@ const materializeImages = (result: AgentResult) => {
 		writeFileSync(path, Buffer.from(dataUrl.slice(dataUrl.indexOf(',') + 1), 'base64'));
 		return path;
 	});
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	const { images: _images, ...rest } = result;
 	return { ...rest, imagePaths };
 };

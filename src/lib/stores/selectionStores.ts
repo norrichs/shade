@@ -254,12 +254,8 @@ const getPartnerFacets = (facets: Facet[], sg: SuperGlobule, mode: SelectionMode
 
 export const selectedProjectionGeometry = derived(
 	[selectedProjection, superGlobuleStore, superGlobulePatternStore, selectMode],
-	([
-		$selectedProjection,
-		$superGlobuleStore,
-		$superGlobulePatternStore,
-		$selectMode
-	]): SelectedProjectionGeometry => {
+	// superGlobulePatternStore is a dependency (recompute trigger) whose value is unused.
+	([$selectedProjection, $superGlobuleStore, , $selectMode]): SelectedProjectionGeometry => {
 		if (!$selectedProjection) return null;
 
 		const selectedFacets: Facet[] = getSelectedFacet(

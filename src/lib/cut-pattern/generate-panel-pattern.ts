@@ -16,7 +16,6 @@ import type {
 	TiledPatternConfig,
 	TrianglePoint,
 	TubePanelPattern,
-	FacetOrientation,
 	ScaleUnit,
 	PatternScale,
 	HingePattern
@@ -174,20 +173,17 @@ export const generateProjectionPanelPattern = ({
 		pattern,
 		tiledPatternConfig
 	);
-	const hingedPattern = generateHingedPattern(postProcessedPattern, tiledPatternConfig);
+	const hingedPattern = generateHingedPattern(postProcessedPattern);
 	return hingedPattern;
 };
 
-const generateHingedPattern = (
-	pattern: ProjectionPanelPattern,
-	tiledPatternConfig: TiledPatternConfig
-): ProjectionPanelPattern => {
+const generateHingedPattern = (pattern: ProjectionPanelPattern): ProjectionPanelPattern => {
 	const hingedPattern: ProjectionPanelPattern = {
 		...pattern,
-		tubes: pattern.tubes.map((tube, t) => {
+		tubes: pattern.tubes.map((tube) => {
 			return {
 				...tube,
-				bands: tube.bands.map((band, b) => {
+				bands: tube.bands.map((band) => {
 					const [{ base, second, outer }] = getBandTriangleEdges(band.orientation);
 
 					return {
@@ -196,11 +192,6 @@ const generateHingedPattern = (
 							const edges: TriangleEdge[] = [];
 							if (p % 2 === 0) edges.push(base, second, outer);
 							const hingePatterns = edges.map((edge) => {
-								const isPartnerDetatched =
-									edge === outer ||
-									(p === 0 && edge === base) ||
-									(p === band.panels.length - 1 && edge === second);
-
 								return getHingedEdgePatternV2(
 									panel as RequiredPanelPattern,
 									getPartnerPanel(panel, pattern.tubes, edge) as RequiredPanelPattern,
@@ -341,7 +332,7 @@ const getZeroedPanel = (
 	edge: TriangleEdge,
 	direction: 'positive' | 'negative'
 ): RequiredPanelPattern => {
-	const [p0, p1, p2] = getTrianglePointFromTriangleEdge(edge, 'triangle-order');
+	const [p0, p1] = getTrianglePointFromTriangleEdge(edge, 'triangle-order');
 
 	const offsetVector = anchor.clone();
 
@@ -527,7 +518,11 @@ const postProcessPanelPattern = (
 	pattern: ProjectionPanelPattern | { tubes: never[] },
 	tiledPatternConfig: TiledPatternConfig
 ): ProjectionPanelPattern => {
-	let { distributionConfig, panelHoleConfig: holeConfig, scaleConfig } = tiledPatternConfig.config;
+	const {
+		distributionConfig,
+		panelHoleConfig: holeConfig,
+		scaleConfig
+	} = tiledPatternConfig.config;
 
 	if (!holeConfig || !distributionConfig || !scaleConfig) {
 		throw new Error('missing config');
@@ -617,7 +612,7 @@ export const getPanelEdgeMeta = (
 
 	const facet = band.facets[f];
 
-	let edgeMeta = Object.fromEntries(
+	const edgeMeta = Object.fromEntries(
 		(['ab', 'bc', 'ac'] as TriangleEdge[]).map((edge) => {
 			if (!facet.meta || !facet.meta[edge]) {
 				throw Error(`facet edge missing meta at address ${JSON.stringify(facet.address)}`);
@@ -628,9 +623,7 @@ export const getPanelEdgeMeta = (
 				facet.triangle,
 				partnerFacet.triangle,
 				edge,
-				partner.edge,
-				{ ...address, edge },
-				partner
+				partner.edge
 			);
 
 			const panelEdgeMeta: PanelEdgeMeta = {
@@ -773,9 +766,7 @@ const getCutAngle = (
 	t0: Triangle,
 	t1: Triangle,
 	edge0: TriangleEdge,
-	edge1: TriangleEdge,
-	address0?: GlobuleAddress_FacetEdge,
-	address1?: GlobuleAddress_FacetEdge
+	edge1: TriangleEdge
 ): { cutAngle: number; crease: Crease } => {
 	const n0 = new Vector3();
 	const n1 = new Vector3();
@@ -917,45 +908,6 @@ const validateEdge = (edge: TriangleEdge, panel: PanelPattern, tubes: TubePanelP
 			`self partner address mismatch ${printProjectionAddress(
 				panelEdgeAddress
 			)} : ${printProjectionAddress(partnerSelfAddress)}`
-		);
-	}
-};
-
-const validateEdgeMeta = ({
-	edge,
-	panelAddress,
-	edgeMeta,
-	tubes,
-	cutAnglePrecision = 1 / 1000000
-}: {
-	edge: TriangleEdge;
-	panelAddress: GlobuleAddress_Facet;
-	edgeMeta: PanelEdgeMeta;
-	tubes: TubePanelPattern[];
-	cutAnglePrecision?: number;
-}) => {
-	const pA = edgeMeta.partner;
-	const partner = tubes[pA.tube].bands[pA.band].panels[pA.facet];
-	const partnerMeta = partner.meta.edges[corrected(edge)];
-
-	const isCreaseMatched = partnerMeta?.crease === edgeMeta?.crease;
-	const isCutAngleMatched =
-		Math.abs(partnerMeta?.cutAngle - edgeMeta?.cutAngle) < cutAnglePrecision;
-
-	if (!isCreaseMatched || !isCutAngleMatched) {
-		throw Error(
-			`partner cut does not match - cutAngle ${partnerMeta?.cutAngle}, ${
-				edgeMeta?.cutAngle
-			} diff ${Math.abs(partnerMeta?.cutAngle - edgeMeta?.cutAngle)} - ${partnerMeta?.crease}, ${
-				edgeMeta?.crease
-			}
-this edge ${printProjectionAddress({
-				...panelAddress,
-				edge
-			})} -> ${printProjectionAddress(edgeMeta.partner)}
-partner   ${printProjectionAddress(pA)} -> ${printProjectionAddress(
-				partner.meta.edges[edge].partner
-			)}`
 		);
 	}
 };

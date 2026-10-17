@@ -27,7 +27,7 @@ export function computeVoronoiSpherical(seeds: [number, number][]): VoronoiResul
 
 	if (!polygons || !polygons.features) return { edges, seeds, vertices };
 
-	const cells: [number, number][][] = polygons.features.map((feature: any) => {
+	const cells: [number, number][][] = polygons.features.map((feature) => {
 		if (!feature.geometry || !feature.geometry.coordinates || !feature.geometry.coordinates[0]) {
 			return [];
 		}
@@ -35,7 +35,7 @@ export function computeVoronoiSpherical(seeds: [number, number][]): VoronoiResul
 	});
 
 	const neighborSets: number[][] = polygons.features.map(
-		(feature: any) => feature.properties?.neighbours ?? []
+		(feature) => feature.properties?.neighbours ?? []
 	);
 
 	for (let cellIdx = 0; cellIdx < cells.length; cellIdx++) {

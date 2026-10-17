@@ -197,7 +197,6 @@ export const applyTubePatternPostProcessing = (
 			facets: band.facets.map((facet) => {
 				const segments = facet.path;
 				if (facet.addenda) {
-					const addendaSegments = facet.addenda.map((a) => a.path);
 					segments.push(...facet.addenda.map((a) => a.path).flat());
 				}
 				return { ...facet, svgPath: svgPathStringFromSegments([...segments]) };
@@ -559,7 +558,7 @@ export const computeBandAscending = (band: Band): boolean => {
 };
 
 export const alignBands = (bands: Band[]) => {
-	return bands.map((originalBand, bandIndex) => {
+	return bands.map((originalBand) => {
 		const points = getAllTrianglePoints(originalBand);
 		const bounds = getMinimalBoundingBoxAndRotationAngle(points);
 		// TODO - make bounds a part of the type Band

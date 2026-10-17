@@ -3,7 +3,6 @@ import { CurvePath, Vector2 } from 'three';
 
 import { generateLevelPrototype, radialSideCurvePaths } from '../generate-shape';
 import { generateDefaultRadialShapeConfig } from '../shades-config';
-import { defaultLevelConfigForTest } from './cross-section-sampling.fixtures';
 import type { CurveSampleMethod, ShapeConfig } from '../types';
 
 const shapeWith = (
@@ -13,7 +12,7 @@ const shapeWith = (
 ): ShapeConfig => generateDefaultRadialShapeConfig(symmetryNumber, sampleMethod, symmetry);
 
 const verticesOf = (shape: ShapeConfig): Vector2[] => {
-	const prototype = generateLevelPrototype(shape, defaultLevelConfigForTest());
+	const prototype = generateLevelPrototype(shape);
 	if (Array.isArray(prototype)) throw new Error('expected a single level prototype');
 	return prototype.vertices;
 };

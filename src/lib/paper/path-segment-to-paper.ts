@@ -9,10 +9,8 @@ import { getPaperScope } from './scope';
  *
  * Throws if the segment list does not begin with an 'M' (paper would silently
  * produce an empty path otherwise).
- *
- * Note: paper-core has no bundled types, so the return type is `any`.
  */
-export const pathSegmentsToPaper = (segments: PathSegment[]): any => {
+export const pathSegmentsToPaper = (segments: PathSegment[]): paper.Path | paper.CompoundPath => {
 	if (segments.length === 0 || segments[0][0] !== 'M') {
 		throw new Error("PathSegment[] must begin with 'M'");
 	}

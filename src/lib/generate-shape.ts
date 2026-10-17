@@ -11,13 +11,10 @@ import type {
 	BezierConfig,
 	DepthCurveConfig,
 	Facet,
-	FacetTab,
 	FullTab,
 	Level,
-	LevelConfig,
 	LevelPrototype,
 	MultiFacetFullTab,
-	MultiFacetTrapTab,
 	PointConfig2,
 	RenderConfig,
 	GlobuleConfig,
@@ -46,7 +43,6 @@ import { generateLevelSet2, generateSections } from './generate-level';
 import type { GlobuleAddress_Tube, Tube } from './projection-geometry/types';
 import {
 	generateProjectionBands,
-	generateTubeBands,
 	matchGlobuleTubeFacets,
 	pruneOuterPartnersOutsideSet
 } from './projection-geometry/generate-projection';
@@ -208,18 +204,11 @@ const normalizeConfigPoints = (
 	return normalizedShapeConfig;
 };
 
-export const generateLevelPrototype = (
-	config: ShapeConfig,
-	levelConfig: LevelConfig
-): LevelPrototype | LevelPrototype[] => {
-	return generateRadialShapeLevelPrototype(config, levelConfig, 0);
+export const generateLevelPrototype = (config: ShapeConfig): LevelPrototype | LevelPrototype[] => {
+	return generateRadialShapeLevelPrototype(config);
 };
 
-const generateRadialShapeLevelPrototype = (
-	config: ShapeConfig,
-	levelConfig: LevelConfig,
-	levelNumber: number
-): LevelPrototype => {
+const generateRadialShapeLevelPrototype = (config: ShapeConfig): LevelPrototype => {
 	const normalized = normalizeConfigPoints(config, { normalizationRatio: 1 / 200 });
 	const shape = generateRadialShape(normalized);
 	const points: Vector2[] = [];
@@ -822,8 +811,7 @@ export const getRenderable = (
 export const generateGlobuleData = (configStore: GlobuleConfig): GlobuleData => {
 	const config = structuredClone(configStore);
 	const rotatedShapePrototype: LevelPrototype | LevelPrototype[] = generateLevelPrototype(
-		config.shapeConfig,
-		config.levelConfig
+		config.shapeConfig
 	);
 	const levels = generateLevelSet2(
 		config.levelConfig,
@@ -861,8 +849,7 @@ export const generateGlobuleTube = (
 ): Tube => {
 	const config = structuredClone(configStore);
 	const rotatedShapePrototype: LevelPrototype | LevelPrototype[] = generateLevelPrototype(
-		config.shapeConfig,
-		config.levelConfig
+		config.shapeConfig
 	);
 	const sections = generateSections(
 		config.levelConfig,

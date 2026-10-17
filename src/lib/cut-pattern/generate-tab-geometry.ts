@@ -1,5 +1,5 @@
 import { Vector3 } from 'three';
-import type { PathSegment, OutlinedTabConfig } from '#lib/types.js';
+import type { PathSegment } from '#lib/types.js';
 
 export type TabGeometry = {
 	/** The two points shared with the facet edge */

@@ -1,10 +1,5 @@
 import { Vector3, Triangle } from 'three';
-import {
-	generateMultiFacetFullTab,
-	generateFullTab,
-	generateTrapTab,
-	isStrut
-} from '../generate-shape';
+import { generateMultiFacetFullTab, generateFullTab, generateTrapTab } from '../generate-shape';
 import { getFlatTriangle } from './generate-panel-pattern';
 import { getBandBasePoints } from './generate-pattern';
 import type {
@@ -276,7 +271,6 @@ export const applyStrokeWidth = (
 				})
 			}));
 		}
-	} else {
 	}
 	return patternBands;
 };

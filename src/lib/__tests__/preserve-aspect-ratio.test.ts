@@ -17,7 +17,7 @@ const sectionsFor = (
 		...globule.levelConfig,
 		silhouetteSampleMethod: { method: 'preserveAspectRatio' as const, divisions, narrowRegion }
 	};
-	const prototype = generateLevelPrototype(globule.shapeConfig, levelConfig);
+	const prototype = generateLevelPrototype(globule.shapeConfig);
 	return generateSections(
 		levelConfig,
 		globule.silhouetteConfig,

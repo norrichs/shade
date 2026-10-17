@@ -364,7 +364,7 @@ describe('band merge pool', () => {
 		// Each run() call creates its own worker(s) up front and synchronously,
 		// so with poolSize 1 the first worker created belongs to run 1 and the
 		// second to run 2.
-		const [w0, w1] = workers;
+		const [w0] = workers;
 
 		// Let run 1 finish entirely on its own, well before cancelling run 2.
 		w0.onmessage?.({ data: ok(w0.messages[0]) });

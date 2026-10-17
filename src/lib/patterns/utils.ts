@@ -451,7 +451,7 @@ export const transformPS = (
 		translateY?: number;
 	}
 ) => {
-	const { origin = { x: 0, y: 0 }, scale = 1, angle = 0, translateX = 0, translateY = 0 } = config;
+	const { origin = { x: 0, y: 0 }, scale = 1 } = config;
 	let transformed = path.map((seg) => [...seg] as PathSegment);
 	if (scale !== 1) {
 		transformed = scalePS(transformed, scale, origin);
@@ -517,7 +517,7 @@ export const generateLabelPath = (
 	const stemWidth = 20;
 	const stemLength = 50;
 
-	const { width, height } = getPathSize(labelTextPathSegments);
+	const { width } = getPathSize(labelTextPathSegments);
 	const padding = 20;
 	const labelOutlinePathSegments: PathSegment[] = [
 		['M', (width + padding * 2) / 2 + stemWidth / 2, 0],

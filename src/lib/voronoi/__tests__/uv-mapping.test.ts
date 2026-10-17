@@ -11,12 +11,12 @@ describe('toUV', () => {
 	});
 
 	it('maps +Z axis (north pole) to v=0', () => {
-		const [u, v] = toUV(new Vector3(0, 0, 1), center);
+		const [, v] = toUV(new Vector3(0, 0, 1), center);
 		expect(v).toBeCloseTo(0, 5);
 	});
 
 	it('maps -Z axis (south pole) to v=1', () => {
-		const [u, v] = toUV(new Vector3(0, 0, -1), center);
+		const [, v] = toUV(new Vector3(0, 0, -1), center);
 		expect(v).toBeCloseTo(1, 5);
 	});
 

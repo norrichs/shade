@@ -1,5 +1,4 @@
 import {
-	Vector3,
 	Triangle,
 	BufferGeometry,
 	Mesh,

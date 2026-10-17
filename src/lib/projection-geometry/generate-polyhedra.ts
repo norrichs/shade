@@ -9,7 +9,6 @@ import type {
 	PointIndex,
 	PolygonConfig,
 	PolyhedronConfig,
-	ProjectorConfig,
 	VertexIndex,
 	VerticesConfig
 } from './types';
@@ -130,8 +129,7 @@ export const getPolygonEdgesFromSequence = ({
 	row,
 	polygonIndex,
 	levels,
-	standardEdgeConfig,
-	radialSymmetry = 5
+	standardEdgeConfig
 }: {
 	row: PolygonMapRow;
 	levels: PolarVertex[][];
@@ -141,7 +139,7 @@ export const getPolygonEdgesFromSequence = ({
 	radialSymmetry?: number;
 }): EdgeConfig<undefined, number, number, number>[] => {
 	const { sequence } = row;
-	let edges: EdgeConfig<undefined, number, number, number>[] = [];
+	const edges: EdgeConfig<undefined, number, number, number>[] = [];
 	sequence.forEach(([levelIndex, pointIndex]) => {
 		const pointIndexOffset = polygonIndex * (levels[levelIndex].length / row.count); // 5 is the radial symmetry.  Some rows have 5 points, some 10
 
@@ -1059,7 +1057,7 @@ export function convertXYZtoVertices(
 	scaleFactor: number = 1,
 	adjustZToCenter: boolean = false
 ): VerticesConfig {
-	let vertices = xyz.split('\n').map((line, i) => {
+	let vertices = xyz.split('\n').map((line) => {
 		const coords = line.split(' ').map(Number);
 		return {
 			x: coords[0] * scaleFactor,
@@ -1524,7 +1522,7 @@ export const generatePolygonConfigs = ({
 		dodecagon: 0
 	};
 
-	polygonMap.forEach((row, rowIndex) => {
+	polygonMap.forEach((row) => {
 		for (let polygonIndex = 0; polygonIndex < row.count; polygonIndex++) {
 			tally[row.polygonType] += 1;
 

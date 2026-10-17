@@ -42,8 +42,7 @@ const makeAlgorithm = (
 				sideOrientation
 			}),
 		tagAnchor,
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		adjustAfterTiling: (bands: any, tiledPatternConfig: any, tubes: any) =>
+		adjustAfterTiling: (bands, tiledPatternConfig, tubes) =>
 			adjustTesselation(bands, tiledPatternConfig, tubes, spec)
 	})
 });

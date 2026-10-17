@@ -5,17 +5,14 @@ import {
 	type PathSegment,
 	type Band,
 	type Facet,
-	type TiledPatternConfig,
 	type Quadrilateral,
 	type QuadrilateralTransformMatrix,
-	type HexPattern,
 	type InsettablePolygon,
 	type InsettableSegment,
 	isMovePathSegment,
 	isLinePathSegment,
 	isQuadraticBezierPathSegment,
-	isCubicBezierPathSegment,
-	type PixelScale
+	isCubicBezierPathSegment
 } from '#lib/types.js';
 import { closestPoint, getLength } from './utils';
 import type { Vector3 } from 'three';
@@ -394,10 +391,6 @@ export const getOutline = (quads: Quadrilateral[]) => {
 	}
 	outline.push(['Z']);
 	return outline;
-};
-
-const pointFromVector3 = (p: Vector3) => {
-	return { x: p.x, y: p.y };
 };
 
 // returns indices for the segment and the point of that segment

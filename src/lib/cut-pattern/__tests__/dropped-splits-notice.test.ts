@@ -7,8 +7,8 @@ const nonMultiple = { tube: 1, quad: 2, reason: 'not a multiple of subunitCount 
 
 const toastDeps = () => {
 	let n = 0;
-	const add = jest.fn((_toast: Omit<Toast, 'id'>) => `t${++n}`);
-	const remove = jest.fn((_id: string) => {});
+	const add = jest.fn<(toast: Omit<Toast, 'id'>) => string>(() => `t${++n}`);
+	const remove = jest.fn<(id: string) => void>(() => {});
 	return { add, remove };
 };
 

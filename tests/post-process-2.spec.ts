@@ -1,5 +1,10 @@
 import { expect, test, type Page } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
+import type { GlobulePatternConfig } from '#lib/types.js';
+import type { PostProcessConfig } from '#lib/cut-pattern/hole-drop-config.js';
+import type * as Stores from '#lib/stores/index.js';
+import type * as ShadesConfig from '#lib/shades-config.js';
+import type * as ExportGuard from '#lib/cut-pattern/export-guard.js';
 
 /**
  * End-to-end cover for pattern post-processing 2: geometry tagging + layer
@@ -46,9 +51,11 @@ const settleBandCount = async (page: Page): Promise<number> => {
 const setPageLayout = (page: Page) =>
 	page.evaluate(async (specifier: string) => {
 		const stores = (await import(/* @vite-ignore */ specifier)) as {
-			patternConfigStore: { update: (fn: (c: any) => any) => void };
+			patternConfigStore: {
+				update: (fn: (c: GlobulePatternConfig) => GlobulePatternConfig) => void;
+			};
 		};
-		stores.patternConfigStore.update((c: any) => ({
+		stores.patternConfigStore.update((c) => ({
 			...c,
 			patternViewConfig: { ...c.patternViewConfig, patternLayoutMode: 'page' },
 			patternConfig: {
@@ -66,13 +73,15 @@ const setPostProcess = (page: Page, patch: Record<string, unknown>) =>
 	page.evaluate(
 		async ([specifier, p]) => {
 			const stores = (await import(/* @vite-ignore */ specifier as string)) as {
-				patternConfigStore: { update: (fn: (c: any) => any) => void };
+				patternConfigStore: {
+					update: (fn: (c: GlobulePatternConfig) => GlobulePatternConfig) => void;
+				};
 			};
-			stores.patternConfigStore.update((c: any) => ({
+			stores.patternConfigStore.update((c) => ({
 				...c,
 				patternConfig: {
 					...c.patternConfig,
-					postProcess: { ...c.patternConfig.postProcess, ...(p as object) }
+					postProcess: { ...c.patternConfig.postProcess, ...(p as object) } as PostProcessConfig
 				}
 			}));
 		},
@@ -216,9 +225,11 @@ test.describe('post-processing 2', () => {
 
 		await page.evaluate(async (specifier: string) => {
 			const stores = (await import(/* @vite-ignore */ specifier)) as {
-				patternConfigStore: { update: (fn: (c: any) => any) => void };
+				patternConfigStore: {
+					update: (fn: (c: GlobulePatternConfig) => GlobulePatternConfig) => void;
+				};
 			};
-			stores.patternConfigStore.update((c: any) => {
+			stores.patternConfigStore.update((c) => {
 				c.patternConfig.pageLayout.pageScale = 2;
 				return c;
 			});
@@ -255,14 +266,14 @@ test.describe('post-processing 2 — panel patterns', () => {
 		await page.goto('/designer2');
 		await page.evaluate(
 			async ([storesPath, configPath]) => {
-				const stores = (await import(/* @vite-ignore */ storesPath)) as any;
-				const config = (await import(/* @vite-ignore */ configPath)) as any;
-				stores.patternConfigStore.update((c: any) => ({
+				const stores = (await import(/* @vite-ignore */ storesPath)) as typeof Stores;
+				const config = (await import(/* @vite-ignore */ configPath)) as typeof ShadesConfig;
+				stores.patternConfigStore.update((c) => ({
 					...c,
 					patternTypeConfig: structuredClone(config.tiledPatternConfigs['tiledPanelPattern-0']),
 					patternViewConfig: { ...c.patternViewConfig, patternSource: 'projection' }
 				}));
-				stores.viewControlStore.update((v: any) => ({
+				stores.viewControlStore.update((v) => ({
 					...v,
 					showProjectionGeometry: { ...v.showProjectionGeometry, any: true, projection: true }
 				}));
@@ -279,11 +290,11 @@ test.describe('post-processing 2 — panel patterns', () => {
 		).toBeGreaterThan(0);
 
 		const untagged = await page.evaluate(async (guardPath: string) => {
-			const guard = (await import(/* @vite-ignore */ guardPath)) as any;
+			const guard = (await import(/* @vite-ignore */ guardPath)) as typeof ExportGuard;
 			const root = document.getElementById('pattern-svg')!;
 			const probe = root.cloneNode(true) as Element;
 			probe.querySelectorAll(guard.SCREEN_ONLY_SELECTOR).forEach((n: Element) => n.remove());
-			return guard.findUntagged(guard.collectExportNodes(probe)).map((n: any) => n.describe);
+			return guard.findUntagged(guard.collectExportNodes(probe)).map((n) => n.describe);
 		}, '/src/lib/cut-pattern/export-guard.ts');
 		expect(untagged).toEqual([]);
 	});

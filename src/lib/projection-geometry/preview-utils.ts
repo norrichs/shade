@@ -10,7 +10,6 @@
 import { Vector3 } from 'three';
 import type {
 	PolygonConfig,
-	EdgeConfig,
 	EdgeCurveConfig,
 	CrossSectionConfig,
 	TransformConfig,

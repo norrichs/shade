@@ -9,13 +9,7 @@ import type {
 	SuperGlobule,
 	GlobuleConfig
 } from '#lib/types.js';
-import {
-	average,
-	concatAddress,
-	getCubicBezierCurvePath,
-	getIntersectionOfLines,
-	getVector3
-} from '#lib/util.js';
+import { average, getCubicBezierCurvePath, getIntersectionOfLines, getVector3 } from '#lib/util.js';
 import {
 	CapsuleGeometry,
 	CurvePath,
@@ -186,8 +180,7 @@ export const generateCapsuleMesh = ({
 	radius,
 	height,
 	capSegments,
-	radialSegments,
-	heightSegments
+	radialSegments
 }: CapsuleConfig) => {
 	const capsuleGeometry = new CapsuleGeometry(radius, height, capSegments, radialSegments);
 	const capsuleMesh = new Mesh(capsuleGeometry, materials.default);
@@ -201,33 +194,25 @@ export const generateCapsuleMesh = ({
  * @param object - The Object3D to optimize (can contain nested meshes)
  */
 const optimizeSurfaceForRaycasting = (object: Object3D): void => {
-	let meshCount = 0;
-	let totalVertices = 0;
-
 	object.traverse((child) => {
 		if (child instanceof Mesh && child.geometry) {
+			const geometry = child.geometry;
 			// Check if BVH is already computed
-			if (!(child.geometry as any).boundsTree) {
+			if (!geometry.boundsTree) {
 				try {
 					// Compute BVH for this geometry
-					(child.geometry as any).computeBoundsTree = computeBoundsTree.bind(child.geometry);
-					(child.geometry as any).disposeBoundsTree = disposeBoundsTree.bind(child.geometry);
-					(child.geometry as any).computeBoundsTree();
+					geometry.computeBoundsTree = computeBoundsTree.bind(geometry);
+					geometry.disposeBoundsTree = disposeBoundsTree.bind(geometry);
+					geometry.computeBoundsTree();
 
 					// Replace raycast method with accelerated version
 					child.raycast = acceleratedRaycast;
-
-					meshCount++;
-					totalVertices += child.geometry.attributes.position?.count || 0;
 				} catch (error) {
 					console.warn('Failed to compute BVH for mesh:', error);
 				}
 			}
 		}
 	});
-
-	if (meshCount > 0) {
-	}
 };
 
 export const generateSurface = (cfg: SurfaceConfig) => {
@@ -500,8 +485,6 @@ export const mapPointsToTriangle = <V extends Vector2 | Vector3>(
 	return mappedPoints;
 };
 
-const MANUAL_EDGE_DIVISIONS = [0.18, 0.38, 0.65];
-
 const getManualPoints = (curvePath: CurvePath<Vector2>, divisionsArray: number[]): Vector2[] => {
 	if (divisionsArray.some((d) => d <= 0 || d >= 1)) {
 		throw new Error('getManualPoints, divisions must be between 0 and 1');
@@ -575,7 +558,6 @@ export const generateProjection = ({
 	// Object pool for temporary Vector3 calculations (optimization)
 	const xDirection = new Vector3();
 	const nearestPoint = new Vector3();
-	const tempVec = new Vector3();
 
 	const spDivisionsCount = projectionConfig.surfaceProjectionConfig?.divisions ?? 0;
 	const divRaycaster =
@@ -939,30 +921,6 @@ export const generateTubeBands = (
 	} catch (error) {
 		console.error('error matching tube ends or facets', error);
 	}
-
-	const bandAddressesByOrientation: {
-		axialLeft: string[];
-		axialRight: string[];
-		circumferential: string[];
-	} = tubes.reduce(
-		(acc, tube) => {
-			tube.bands.forEach((band) => {
-				switch (band.facets[0].orientation) {
-					case 'axial-left':
-						acc.axialLeft.push(concatAddress(band.address as GlobuleAddress));
-						break;
-					case 'axial-right':
-						acc.axialRight.push(concatAddress(band.address as GlobuleAddress));
-						break;
-					case 'circumferential':
-						acc.circumferential.push(concatAddress(band.address as GlobuleAddress));
-						break;
-				}
-			});
-			return acc;
-		},
-		{ axialLeft: [] as string[], axialRight: [] as string[], circumferential: [] as string[] }
-	);
 
 	return { tubes: tubes as Tube[] };
 };

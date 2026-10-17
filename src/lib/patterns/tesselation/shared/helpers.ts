@@ -36,7 +36,6 @@ export const replaceInPlace = ({
 	source: PathSegment[];
 }) => {
 	for (const { source: si, target: ti } of pairs) {
-		// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 		// @ts-expect-error: writing 3-tuple where caller may have wider PathSegment union
 		target[ti] = [target[ti][0], source[si][1], source[si][2]];
 	}

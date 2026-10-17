@@ -90,12 +90,8 @@ class FakeElement {
 	}
 
 	closest(selector: string): FakeElement | null {
-		let node: FakeElement | undefined = this;
-		while (node) {
-			if (node.matches(selector)) return node;
-			node = node.parent;
-		}
-		return null;
+		if (this.matches(selector)) return this;
+		return this.parent ? this.parent.closest(selector) : null;
 	}
 
 	remove(): void {

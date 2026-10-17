@@ -32,7 +32,6 @@ import {
 	generateInsetTab,
 	generatePartnerTab,
 	generatePartnerInsetTab,
-	correctTabOverlaps,
 	type TabGeometry
 } from './generate-tab-geometry';
 import { collectOutlinedBandTabs, type OutlinedTabEdge } from './collect-outlined-band-tabs';

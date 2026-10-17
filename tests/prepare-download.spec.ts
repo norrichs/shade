@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import type { GlobulePatternConfig } from '#lib/types.js';
 
 /**
  * End-to-end cover for "Prepare Download" on the band-merge worker pool.
@@ -82,9 +83,11 @@ const settleBandCount = async (page: Page): Promise<number> => {
 const setPageLayout = (page: Page) =>
 	page.evaluate(async (specifier: string) => {
 		const stores = (await import(/* @vite-ignore */ specifier)) as {
-			patternConfigStore: { update: (fn: (c: any) => any) => void };
+			patternConfigStore: {
+				update: (fn: (c: GlobulePatternConfig) => GlobulePatternConfig) => void;
+			};
 		};
-		stores.patternConfigStore.update((c: any) => ({
+		stores.patternConfigStore.update((c) => ({
 			...c,
 			patternViewConfig: { ...c.patternViewConfig, patternLayoutMode: 'page' },
 			patternConfig: {

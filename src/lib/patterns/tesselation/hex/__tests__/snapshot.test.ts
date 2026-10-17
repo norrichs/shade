@@ -1,7 +1,26 @@
 import { generateTesselationTile } from '../../shared/generator';
 import { adjustTesselation } from '../../shared/adjuster';
 import { defaultHexSpec } from '../default-spec';
-import type { TiledPatternConfig } from '#lib/types.js';
+import { Vector3 } from 'three';
+import type { BandCutPattern, PathSegment, Quadrilateral, TiledPatternConfig } from '#lib/types.js';
+
+const unitQuad = (): Quadrilateral => ({
+	a: new Vector3(0, 0, 0),
+	b: new Vector3(1, 0, 0),
+	c: new Vector3(0, 1, 0),
+	d: new Vector3(1, 1, 0)
+});
+
+/** Minimal BandCutPattern wrappers: one facet per band, addressed by index. */
+const wrapBands = (patternBand: PathSegment[][], quadBand: Quadrilateral[]): BandCutPattern[] =>
+	patternBand.map((path, i) => ({
+		id: `${i}`,
+		tagAnchorPoint: { x: 0, y: 0 },
+		projectionType: 'patterned',
+		address: { globule: 0, tube: 0, band: i },
+		facets: [{ path, quad: quadBand[i], label: `${i}` }],
+		meta: undefined
+	}));
 
 describe('hex generator snapshot', () => {
 	const sizes = [1, 100];
@@ -60,21 +79,10 @@ describe('hex adjuster snapshot', () => {
 				sideOrientation: 'outside'
 			})
 		];
-		const quadBand = [
-			{
-				a: { x: 0, y: 0, z: 0 } as any,
-				b: { x: 1, y: 0, z: 0 } as any,
-				c: { x: 0, y: 1, z: 0 } as any,
-				d: { x: 1, y: 1, z: 0 } as any
-			}
-		];
-		const wrappedBands = patternBand.map((path, i) => ({
-			address: { tube: 0, band: i },
-			facets: [{ path, quad: quadBand[i], label: `${i}` }],
-			meta: undefined
-		})) as any;
+		const quadBand = [unitQuad()];
+		const wrappedBands = wrapBands(patternBand, quadBand);
 		const result = adjustTesselation(wrappedBands, config, [], defaultHexSpec);
-		const paths = result.map((b: any) => b.facets.map((f: any) => f.path));
+		const paths = result.map((b) => b.facets.map((f) => f.path));
 		expect(paths).toMatchSnapshot();
 	});
 
@@ -82,12 +90,7 @@ describe('hex adjuster snapshot', () => {
 		const rows = 1;
 		const columns = 2;
 		const config = makeConfig({ rowCount: rows, columnCount: columns, endsTrimmed: false });
-		const quad = {
-			a: { x: 0, y: 0, z: 0 } as any,
-			b: { x: 1, y: 0, z: 0 } as any,
-			c: { x: 0, y: 1, z: 0 } as any,
-			d: { x: 1, y: 1, z: 0 } as any
-		};
+		const quad = unitQuad();
 		const patternBand = [
 			generateTesselationTile(defaultHexSpec, {
 				size: 1,
@@ -103,13 +106,9 @@ describe('hex adjuster snapshot', () => {
 			})
 		];
 		const quadBand = [quad, quad];
-		const wrappedBands = patternBand.map((path, i) => ({
-			address: { tube: 0, band: i },
-			facets: [{ path, quad: quadBand[i], label: `${i}` }],
-			meta: undefined
-		})) as any;
+		const wrappedBands = wrapBands(patternBand, quadBand);
 		const result = adjustTesselation(wrappedBands, config, [], defaultHexSpec);
-		const paths = result.map((b: any) => b.facets.map((f: any) => f.path));
+		const paths = result.map((b) => b.facets.map((f) => f.path));
 		expect(paths).toMatchSnapshot();
 	});
 });

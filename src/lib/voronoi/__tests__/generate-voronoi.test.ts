@@ -1,7 +1,6 @@
 import {
 	Mesh,
 	Object3D,
-	SphereGeometry,
 	PlaneGeometry,
 	MeshBasicMaterial,
 	DoubleSide,
@@ -20,9 +19,8 @@ jest.mock('#lib/projection-geometry/generate-projection.js', () => {
 		DoubleSide: DS,
 		Mesh,
 		Object3D,
-		Triangle,
-		Vector3
-	} = require('three');
+		Triangle
+	} = jest.requireActual<typeof import('three')>('three');
 
 	return {
 		generateSurface: jest.fn(() => {
@@ -39,8 +37,7 @@ jest.mock('#lib/projection-geometry/generate-projection.js', () => {
 			(
 				sections: { points: Vector3[] }[],
 				orientation: FacetOrientation,
-				tubeAddress: { globule: number; tube: number },
-				_tubeSymmetry?: string
+				tubeAddress: { globule: number; tube: number }
 			): Band[] => {
 				const bands: Band[] = [];
 				const pointsPerSection = sections[0].points.length;
@@ -94,7 +91,7 @@ jest.mock('#lib/projection-geometry/generate-projection.js', () => {
 		}),
 
 		getEdgeMatchedTriangles: jest.fn(
-			(t0: typeof Triangle.prototype, t1: typeof Triangle.prototype, _edgeToMatch?: string) => {
+			(t0: typeof Triangle.prototype, t1: typeof Triangle.prototype) => {
 				const PRECISION = 1 / 10_000;
 				const isSame = (v0: Vector3, v1: Vector3) =>
 					Math.abs(v0.x - v1.x) < PRECISION &&
@@ -149,7 +146,6 @@ import {
 	generateSurface,
 	generateProjectionBands
 } from '#lib/projection-geometry/generate-projection.js';
-import { OPENING } from '#lib/types.js';
 
 const testSurfaceConfig = {
 	type: 'SphereConfig' as const,
