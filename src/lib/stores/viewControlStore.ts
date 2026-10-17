@@ -1,4 +1,4 @@
-import { AUTO_PERSIST_KEY, bootstrapShouldUsePersisted, persistable } from '$lib/persistable';
+import { AUTO_PERSIST_KEY, bootstrapShouldUsePersisted, persistable } from '#lib/persistable.js';
 import { loadPersistedOrDefault } from './stores';
 
 export type ShowProjectionGeometries = {

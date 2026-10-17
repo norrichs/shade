@@ -1,8 +1,8 @@
-import type { Edge, Polygon } from '$lib/projection-geometry/types';
-import type { BezierConfig, PointConfig2 } from '$lib/types';
+import type { Edge, Polygon } from '#lib/projection-geometry/types.js';
+import type { BezierConfig, PointConfig2 } from '#lib/types.js';
 import { Vector2 } from 'three';
 import { getPathFromVectors } from '../../projection/path-edit';
-import { getMidPoint } from '$lib/patterns/utils';
+import { getMidPoint } from '#lib/patterns/utils.js';
 
 export type { PathEditorConfig, PathEditorCanvas } from './path-editor-shared';
 export { getCanvas } from './path-editor-shared';

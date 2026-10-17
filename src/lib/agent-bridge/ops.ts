@@ -10,26 +10,26 @@ import {
 	workerError,
 	model3dBoundsStore,
 	patternSourceStore
-} from '$lib/stores';
+} from '#lib/stores/index.js';
 import {
 	isGenerating,
 	triggerManualRegeneration,
 	PATTERN_DEBOUNCE_MS
-} from '$lib/stores/superGlobuleStores';
-import { computationMode, isManualMode, designerPanels } from '$lib/stores/uiStores';
-import { cameraDirection } from '$lib/stores/selectionStores';
-import { tilePatternSpecStore } from '$lib/stores/tilePatternSpecStore';
+} from '#lib/stores/superGlobuleStores.js';
+import { computationMode, isManualMode, designerPanels } from '#lib/stores/uiStores.js';
+import { cameraDirection } from '#lib/stores/selectionStores.js';
+import { tilePatternSpecStore } from '#lib/stores/tilePatternSpecStore.js';
 import {
 	buildSavedConfig,
 	parseSavedConfig,
 	collectReferencedTilePatternSpecs
-} from '$lib/saved-config';
-import { concatAddress } from '$lib/util';
-import type { BandCutPattern, SuperGlobule } from '$lib/types';
+} from '#lib/saved-config.js';
+import { concatAddress } from '#lib/util.js';
+import type { BandCutPattern, SuperGlobule } from '#lib/types.js';
 import { getAtPath, setAtPath, summarize } from './paths';
 import { captureModel, capturePattern } from './capture';
 import type { AgentImage } from './protocol';
-import { openSidebarPanel } from '$lib/stores/sidebarStore';
+import { openSidebarPanel } from '#lib/stores/sidebarStore.js';
 import { projectionConfigs } from '../../components/modal/sidebar-definitions';
 
 /** designer2's sidebar panels, matched by key, title or short title. */

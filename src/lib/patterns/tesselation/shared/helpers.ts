@@ -1,12 +1,12 @@
-import type { TransformConfig } from '$lib/projection-geometry/types';
+import type { TransformConfig } from '#lib/projection-geometry/types.js';
 import type {
 	BandCutPattern,
 	CutPattern,
 	PathSegment,
 	SkipEdges,
 	TubeCutPattern
-} from '$lib/types';
-import { resolveEndPartner, type BandEnd } from '$lib/cut-pattern/resolve-partner-band';
+} from '#lib/types.js';
+import { resolveEndPartner, type BandEnd } from '#lib/cut-pattern/resolve-partner-band.js';
 import type { IndexPair } from '../../spec-types';
 
 export const scaleSegment = (seg: PathSegment, w: number, h: number): PathSegment => {

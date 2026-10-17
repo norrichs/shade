@@ -1,4 +1,4 @@
-import type { GlobuleAddress_Band } from '$lib/projection-geometry/types';
+import type { GlobuleAddress_Band } from '#lib/projection-geometry/types.js';
 import { bandKey } from './band-key';
 
 /**

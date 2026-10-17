@@ -1,6 +1,6 @@
-import type { PathSegment } from '$lib/types';
-import type { PageRect } from '$lib/cut-pattern/page-layout/types';
-import type { GeometryType } from '$lib/cut-pattern/post-process-types';
+import type { PathSegment } from '#lib/types.js';
+import type { PageRect } from '#lib/cut-pattern/page-layout/types.js';
+import type { GeometryType } from '#lib/cut-pattern/post-process-types.js';
 import type { LbProject } from './types';
 import { resolveLayer, type LayerMap } from './layers';
 

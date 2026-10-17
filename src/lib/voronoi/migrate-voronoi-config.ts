@@ -1,5 +1,5 @@
-import { defaultVoronoiConfig } from '$lib/shades-config';
-import type { SuperGlobuleConfig } from '$lib/types';
+import { defaultVoronoiConfig } from '#lib/shades-config.js';
+import type { SuperGlobuleConfig } from '#lib/types.js';
 import type { VoronoiConfig } from './types';
 import { normalizeEdgeDivisions, normalizeEdgeDivisionsMultiplier } from './edge-divisions';
 

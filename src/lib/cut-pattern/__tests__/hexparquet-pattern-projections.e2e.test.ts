@@ -1,13 +1,13 @@
 import { describe, it, expect } from '@jest/globals';
-import { generateSuperGlobule } from '$lib/generate-superglobule';
+import { generateSuperGlobule } from '#lib/generate-superglobule.js';
 import { generateProjectionPattern } from '../generate-pattern';
 import {
 	generateDefaultSuperGlobuleConfig,
 	generateDefaultGlobulePatternConfig,
 	tiledPatternConfigs
-} from '$lib/shades-config';
-import type { SuperGlobuleProjectionCutPattern } from '$lib/stores/superGlobuleStores';
-import type { SuperGlobuleConfig } from '$lib/types';
+} from '#lib/shades-config.js';
+import type { SuperGlobuleProjectionCutPattern } from '#lib/stores/superGlobuleStores.js';
+import type { SuperGlobuleConfig } from '#lib/types.js';
 
 /**
  * Real projection geometry for these tests: the default super-globule config's

@@ -4,8 +4,8 @@
 		clearBandSelectionLog,
 		recordBandSelection,
 		selectModeActive
-	} from '$lib/stores';
-	import { formatBandAddress } from '$lib/cut-pattern/band-partner-info';
+	} from '#lib/stores/index.js';
+	import { formatBandAddress } from '#lib/cut-pattern/band-partner-info.js';
 
 	// Floating readout of bands clicked in the 3D view. For each band it shows the
 	// end-connection partners read straight from the 3D facet meta graph, so a

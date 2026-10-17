@@ -1,15 +1,15 @@
-import type { GeometrySource } from '$lib/stores';
+import type { GeometrySource } from '#lib/stores/index.js';
 import {
 	assemblerHighlight,
 	assemblerRingOf,
 	patternBandSpaces,
 	recordBandSelection
-} from '$lib/stores';
-import type { GlobuleAddress_Band, GlobuleAddress_Facet } from '$lib/projection-geometry/types';
-import { assemblerHighlightForRealClick } from '$lib/cut-pattern/pattern-band-space';
+} from '#lib/stores/index.js';
+import type { GlobuleAddress_Band, GlobuleAddress_Facet } from '#lib/projection-geometry/types.js';
+import { assemblerHighlightForRealClick } from '#lib/cut-pattern/pattern-band-space.js';
 import type { Vector3 } from 'three';
 import { get } from 'svelte/store';
-import { addMeasurementPoint } from '$lib/stores/measurementStore';
+import { addMeasurementPoint } from '#lib/stores/measurementStore.js';
 import { interactionMode, isMeasureInteractionMode } from './interaction-mode';
 import { isNearestIntersection, nearestVertexFromEvent } from './nearest-vertex';
 

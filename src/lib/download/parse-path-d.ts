@@ -1,4 +1,4 @@
-import type { PathSegment } from '$lib/types';
+import type { PathSegment } from '#lib/types.js';
 
 const ARITY: Record<string, number> = { M: 2, L: 2, H: 1, V: 1, C: 6, Q: 4, A: 7, Z: 0 };
 

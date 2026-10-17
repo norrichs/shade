@@ -1,4 +1,4 @@
-import type { PathSegment } from '$lib/types';
+import type { PathSegment } from '#lib/types.js';
 import type { BandEnds, Pt, TaggedPath } from './post-process-types';
 
 type Quad4 = [Pt, Pt, Pt, Pt];

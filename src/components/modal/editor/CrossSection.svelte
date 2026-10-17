@@ -1,12 +1,12 @@
 <script lang="ts">
-	import { getCrossSectionPath } from '$lib/projection-geometry/generate-projection';
+	import { getCrossSectionPath } from '#lib/projection-geometry/generate-projection.js';
 	import type {
 		CrossSectionConfig,
 		ProjectionCurveSampleMethod
-	} from '$lib/projection-geometry/types';
-	import { superConfigStore } from '$lib/stores';
+	} from '#lib/projection-geometry/types.js';
+	import { superConfigStore } from '#lib/stores/index.js';
 	import { get } from 'svelte/store';
-	import { generateCrossSectionPath } from '$lib/projection-geometry/preview-utils';
+	import { generateCrossSectionPath } from '#lib/projection-geometry/preview-utils.js';
 	import NumberInput from '../../controls/super-control/NumberInput.svelte';
 	import Button from '../../design-system/Button.svelte';
 	import LabeledControl from './LabeledControl.svelte';

@@ -7,7 +7,7 @@ import {
 	proposeTubeSplits,
 	quadBandExtent
 } from '../auto-split-bands';
-import type { BandCutPattern, CutPattern, Quadrilateral, TubeCutPattern } from '$lib/types';
+import type { BandCutPattern, CutPattern, Quadrilateral, TubeCutPattern } from '#lib/types.js';
 
 /**
  * A quad spanning `length` along the band, starting at `top`, optionally rotated

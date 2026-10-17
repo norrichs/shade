@@ -1,5 +1,5 @@
 import { Triangle, Vector3 } from 'three';
-import type { Band, Facet, FacetOrientation } from '$lib/types';
+import type { Band, Facet, FacetOrientation } from '#lib/types.js';
 import type { Section, GlobuleAddress_Band, GlobuleAddress_Tube } from './types';
 
 /** Edges shorter than this (Euclidean) are treated as collapsed/degenerate. */

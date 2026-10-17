@@ -24,8 +24,8 @@ import { describe, it, expect } from '@jest/globals';
 import { Triangle, Vector3 } from 'three';
 
 import { generateOutlinedProjectionPattern } from '../generate-outlined-pattern';
-import type { Tube } from '$lib/projection-geometry/types';
-import type { SuperGlobuleProjectionCutPattern } from '$lib/stores/superGlobuleStores';
+import type { Tube } from '#lib/projection-geometry/types.js';
+import type { SuperGlobuleProjectionCutPattern } from '#lib/stores/superGlobuleStores.js';
 import type {
 	Band,
 	BandCutPattern,
@@ -33,7 +33,7 @@ import type {
 	OutlinedPatternConfig,
 	OutlinedTabConfig,
 	SplitConfig
-} from '$lib/types';
+} from '#lib/types.js';
 
 /**
  * Outlined side neighbours and tab layout must be decided by PARENT band, not

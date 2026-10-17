@@ -1,4 +1,4 @@
-import { generateTempId } from '$lib/id-handler';
+import { generateTempId } from '#lib/id-handler.js';
 import {
 	defaultCrossSection,
 	defaultEdgeCurveConfig,

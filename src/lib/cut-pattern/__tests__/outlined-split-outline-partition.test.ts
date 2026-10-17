@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from '@jest/globals';
-import { defaultOutlinedPatternConfig } from '$lib/shades-config';
+import { defaultOutlinedPatternConfig } from '#lib/shades-config.js';
 import {
 	buildDefaultGeometry,
 	generateProjectionTubes,
@@ -15,7 +15,7 @@ import type {
 	PathSegment,
 	Quadrilateral,
 	TubeCutPattern
-} from '$lib/types';
+} from '#lib/types.js';
 
 /**
  * Outlined split pieces partition the parent's outline (final review; Task 4's

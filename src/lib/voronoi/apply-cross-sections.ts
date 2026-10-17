@@ -4,9 +4,9 @@ import type {
 	CrossSectionScaling,
 	ProjectionCurveSampleMethod,
 	ProjectionEdge
-} from '$lib/projection-geometry/types';
-import type { BezierConfig } from '$lib/types';
-import { getCubicBezierCurvePath } from '$lib/util';
+} from '#lib/projection-geometry/types.js';
+import type { BezierConfig } from '#lib/types.js';
+import { getCubicBezierCurvePath } from '#lib/util.js';
 
 type EdgeSection = ProjectionEdge['sections'][number];
 

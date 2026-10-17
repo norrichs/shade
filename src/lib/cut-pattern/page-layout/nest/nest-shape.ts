@@ -1,9 +1,9 @@
-import type { BandCutPattern, Point } from '$lib/types';
-import type { EffectiveBoundsContext } from '$lib/cut-pattern/band-layout';
-import { flattenPath } from '$lib/cut-pattern/path-contours';
-import { selfTagFootprintBox } from '$lib/cut-pattern/label-footprint';
-import { buildSelfTagLines } from '$lib/cut-pattern/build-self-tag-lines';
-import { concatAddress } from '$lib/util';
+import type { BandCutPattern, Point } from '#lib/types.js';
+import type { EffectiveBoundsContext } from '#lib/cut-pattern/band-layout.js';
+import { flattenPath } from '#lib/cut-pattern/path-contours.js';
+import { selfTagFootprintBox } from '#lib/cut-pattern/label-footprint.js';
+import { buildSelfTagLines } from '#lib/cut-pattern/build-self-tag-lines.js';
+import { concatAddress } from '#lib/util.js';
 import { convexHull, inflateConvex } from './raster';
 import type { NestShape, Pt } from './types';
 

@@ -1,5 +1,5 @@
-import type { BandCutPattern, TubeCutPattern } from '$lib/types';
-import { concatAddress } from '$lib/util';
+import type { BandCutPattern, TubeCutPattern } from '#lib/types.js';
+import { concatAddress } from '#lib/util.js';
 import {
 	adjacentParentBands,
 	endPartnerPieceAddress,

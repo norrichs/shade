@@ -5,16 +5,16 @@
 		patternSourceStore,
 		viewControlStore,
 		collatedTubesStore
-	} from '$lib/stores';
+	} from '#lib/stores/index.js';
 	import CutPatternControl from './CutPatternControl.svelte';
 	import CutPatternSvg from './CutPatternSvg.svelte';
 
 	import ProjectionPanelPatterns from './ProjectionPanelPatterns.svelte';
-	import { mmFromInches } from '$lib/patterns/utils';
+	import { mmFromInches } from '#lib/patterns/utils.js';
 	import CutPatternRenderer from './CutPatternRenderer.svelte';
-	import { buildBandSortIndex } from '$lib/cut-pattern/band-sort-index';
-	import { collectBandErrors } from '$lib/cut-pattern/collect-band-errors';
-	import type { BandSortIndex, TubeCutPattern } from '$lib/types';
+	import { buildBandSortIndex } from '#lib/cut-pattern/band-sort-index.js';
+	import { collectBandErrors } from '#lib/cut-pattern/collect-band-errors.js';
+	import type { BandSortIndex, TubeCutPattern } from '#lib/types.js';
 
 	let showBands = true;
 	let showQuadPattern = false;

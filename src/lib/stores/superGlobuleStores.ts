@@ -1,5 +1,5 @@
-import { AUTO_PERSIST_KEY, bootstrapShouldUsePersisted, persistable } from '$lib/persistable';
-import { generateDefaultSuperGlobuleConfig } from '$lib/shades-config';
+import { AUTO_PERSIST_KEY, bootstrapShouldUsePersisted, persistable } from '#lib/persistable.js';
+import { generateDefaultSuperGlobuleConfig } from '#lib/shades-config.js';
 import type {
 	Id,
 	GlobulePatternConfig,
@@ -13,25 +13,27 @@ import type {
 	PipelineGates,
 	PatternSource,
 	TubeSplitRejection
-} from '$lib/types';
-import { collectRenderedPoints } from '$lib/collect-rendered-points';
-import type { GlobuleAddress_Facet, Tube } from '$lib/projection-geometry/types';
+} from '#lib/types.js';
+import { collectRenderedPoints } from '#lib/collect-rendered-points.js';
+import type { GlobuleAddress_Facet, Tube } from '#lib/projection-geometry/types.js';
 import { derived, writable, get } from 'svelte/store';
 import { loadPersistedOrDefault } from './stores';
-import { normalizeVoronoiConfig } from '$lib/voronoi/migrate-voronoi-config';
-import { generateSuperGlobule } from '$lib/generate-superglobule';
-import { validateAllPanels } from '$lib/cut-pattern/generate-pattern';
+import { normalizeVoronoiConfig } from '#lib/voronoi/migrate-voronoi-config.js';
+import { generateSuperGlobule } from '#lib/generate-superglobule.js';
+import { validateAllPanels } from '#lib/cut-pattern/generate-pattern.js';
 import {
 	EMPTY_PATTERN_RESULT,
 	runPatternGeneration,
 	type PatternGenerationResult
-} from '$lib/cut-pattern/run-pattern-generation';
+} from '#lib/cut-pattern/run-pattern-generation.js';
 import {
 	patternConfigStore,
 	patternGenerationConfig,
 	type PatternGenerationConfig
 } from './globulePatternStores';
+
 import { computationMode, pausePatternUpdates, isManualMode, hasPendingChanges } from './uiStores';
+
 import {
 	generateSuperGlobuleAsync,
 	generatePatternAsync,
@@ -41,9 +43,9 @@ import {
 	StalePatternError,
 	workerError
 } from './workerStore';
-import { browser } from '$app/environment';
+import { browser } from '$app/env';
 import { toastStore } from './toastStore';
-import { createDroppedSplitsNotifier } from '$lib/cut-pattern/dropped-splits-notice';
+import { createDroppedSplitsNotifier } from '#lib/cut-pattern/dropped-splits-notice.js';
 import { viewControlStore, type ViewControls } from './viewControlStore';
 import { Box3, Vector3 } from 'three';
 

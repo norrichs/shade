@@ -8,14 +8,14 @@ import type {
 	TrianglePoint,
 	SuperGlobule,
 	GlobuleConfig
-} from '$lib/types';
+} from '#lib/types.js';
 import {
 	average,
 	concatAddress,
 	getCubicBezierCurvePath,
 	getIntersectionOfLines,
 	getVector3
-} from '$lib/util';
+} from '#lib/util.js';
 import {
 	CapsuleGeometry,
 	CurvePath,
@@ -60,13 +60,13 @@ import type {
 } from './types';
 import { isTubeClosed } from './tube-closure';
 import { materials } from '../../components/three-renderer/materials';
-import { getLength } from '$lib/patterns/utils';
+import { getLength } from '#lib/patterns/utils.js';
 import {
 	corrected,
 	getTrianglePointAsKVFromTriangleEdge,
 	getTrianglePointFromTriangleEdge
-} from '$lib/cut-pattern/generate-pattern';
-import { generateGlobuleTube, generateGlobuleData } from '$lib/generate-shape';
+} from '#lib/cut-pattern/generate-pattern.js';
+import { generateGlobuleTube, generateGlobuleData } from '#lib/generate-shape.js';
 import { collateGlobuleTubeGeometry } from './collate-geometry';
 import { auditSides, auditSurfaceProjectionSides } from './audit';
 import { buildFillBand, outerBorderPolyline, reindexBandAddresses } from './fill-bands';
@@ -78,7 +78,7 @@ import {
 	resolveEdgeSampling,
 	type ResolvedEdgeSampling
 } from './edge-sampling';
-import { computeAdaptiveEdgeDivisions } from '$lib/voronoi/edge-divisions';
+import { computeAdaptiveEdgeDivisions } from '#lib/voronoi/edge-divisions.js';
 
 export const preparePolygonConfig = (
 	polygonConfig: PolygonConfig<undefined, number, number, number>,

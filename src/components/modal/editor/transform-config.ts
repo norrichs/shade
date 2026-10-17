@@ -13,7 +13,7 @@
  * Materialising it gives those panels something editable while rendering
  * identically, since the seed is the same identity the resolution produced.
  */
-import type { TransformConfig } from '$lib/projection-geometry/types';
+import type { TransformConfig } from '#lib/projection-geometry/types.js';
 
 export const identityTransform = (): TransformConfig => ({
 	translate: { x: 0, y: 0, z: 0 },

@@ -1,6 +1,6 @@
 import { Vector3 } from 'three';
 import { computeTiledLabelAngle } from '../compute-tiled-label-angle';
-import type { Quadrilateral } from '$lib/types';
+import type { Quadrilateral } from '#lib/types.js';
 
 // Axis-aligned unit square, following the quad diagram (a=bottom-left,
 // b=bottom-right, c=top-right, d=top-left in a y-down / y-up agnostic sense):

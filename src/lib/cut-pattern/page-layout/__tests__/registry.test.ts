@@ -1,6 +1,6 @@
 import { buildNestGeom, buildPageGeom, nestAllowsQuarterTurn } from '../registry';
 import { NEST_CELL_MM } from '../nest/nest';
-import { defaultPatternConfig } from '$lib/shades-config';
+import { defaultPatternConfig } from '#lib/shades-config.js';
 
 describe('buildNestGeom', () => {
 	it('extends the page geom with rotationStep and cellMm', () => {

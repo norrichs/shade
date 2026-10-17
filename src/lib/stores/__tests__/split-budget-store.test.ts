@@ -1,6 +1,6 @@
 import { get } from 'svelte/store';
 
-import { EMPTY_SPLIT_BUDGET, type SplitBudget } from '$lib/cut-pattern/split-budget';
+import { EMPTY_SPLIT_BUDGET, type SplitBudget } from '#lib/cut-pattern/split-budget.js';
 import { splitBudgetStore, splitBudgetWanted } from '../splitBudgetStore';
 
 const budget: SplitBudget = {

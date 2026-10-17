@@ -1,5 +1,5 @@
-import type { BandSelection } from '$lib/stores';
-import type { Band, Id, Point3 } from '$lib/types';
+import type { BandSelection } from '#lib/stores/index.js';
+import type { Band, Id, Point3 } from '#lib/types.js';
 import { writable } from 'svelte/store';
 
 export type InteractionMode =

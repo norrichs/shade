@@ -1,4 +1,4 @@
-import type { GridVariant, PathSegment, Quadrilateral, TiledPatternConfig } from '$lib/types';
+import type { GridVariant, PathSegment, Quadrilateral, TiledPatternConfig } from '#lib/types.js';
 import { translatePS } from './utils';
 
 type Props = {

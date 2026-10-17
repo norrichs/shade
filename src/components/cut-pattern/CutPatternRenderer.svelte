@@ -2,7 +2,7 @@
 	import {
 		sliceProjectionCutPattern,
 		type ProjectionRange
-	} from '$lib/projection-geometry/filters';
+	} from '#lib/projection-geometry/filters.js';
 	import {
 		patternConfigStore,
 		viewControlStore,
@@ -17,23 +17,23 @@
 		loadedConfigName,
 		exportPagesStore,
 		resolvedPatternLabels
-	} from '$lib/stores';
-	import { computeSplitBudget, EMPTY_SPLIT_BUDGET } from '$lib/cut-pattern/split-budget';
-	import { createOverflowNotifier } from '$lib/cut-pattern/page-overflow-notice';
+	} from '#lib/stores/index.js';
+	import { computeSplitBudget, EMPTY_SPLIT_BUDGET } from '#lib/cut-pattern/split-budget.js';
+	import { createOverflowNotifier } from '#lib/cut-pattern/page-overflow-notice.js';
 	import {
 		buildEffectiveBoundsIndex,
 		buildPivotIndex,
 		buildTagAnchorIndex,
 		effectiveBoundsForBand,
 		type EffectiveBoundsContext
-	} from '$lib/cut-pattern/band-layout';
+	} from '#lib/cut-pattern/band-layout.js';
 	import { Vector3 } from 'three';
 	import { get } from 'svelte/store';
 	import {
 		computeWrappedOrigins,
 		GAP_BETWEEN_BANDS,
 		type WrapInput
-	} from '$lib/cut-pattern/compute-wrapped-origins';
+	} from '#lib/cut-pattern/compute-wrapped-origins.js';
 	import type {
 		BandCutPattern,
 		BandSortIndex,
@@ -43,35 +43,39 @@
 		PageLayoutConfig,
 		PointConfig2,
 		TubeCutPattern
-	} from '$lib/types';
+	} from '#lib/types.js';
 	import BandComponent from './BandComponent.svelte';
 	import BandCutPatternComponent from './BandCutPatternComponent.svelte';
 	import QuadPattern from '../pattern-svg/QuadPattern.svelte';
-	import type { GlobuleAddress_Band, TransformConfig, Tube } from '$lib/projection-geometry/types';
+	import type {
+		GlobuleAddress_Band,
+		TransformConfig,
+		Tube
+	} from '#lib/projection-geometry/types.js';
 	import { getTransform } from './distrubute-panels';
-	import { concatAddress } from '$lib/util';
-	import { resolveEndPartner } from '$lib/cut-pattern/resolve-partner-band';
-	import { buildBandCodeMap } from '$lib/cut-pattern/band-sort-index';
+	import { concatAddress } from '#lib/util.js';
+	import { resolveEndPartner } from '#lib/cut-pattern/resolve-partner-band.js';
+	import { buildBandCodeMap } from '#lib/cut-pattern/band-sort-index.js';
 	import {
 		resolveIndexBands,
 		groupCodeForBand,
 		type ResolvedBand
-	} from '$lib/cut-pattern/resolve-index-bands';
+	} from '#lib/cut-pattern/resolve-index-bands.js';
 	import PageGeometry from './PageGeometry.svelte';
 	import {
 		buildNestGeom,
 		buildPageGeom,
 		nestAllowsQuarterTurn,
 		PAGE_LAYOUT_ALGORITHMS
-	} from '$lib/cut-pattern/page-layout/registry';
-	import { buildNestShape } from '$lib/cut-pattern/page-layout/nest/nest-shape';
-	import { nestClient } from '$lib/cut-pattern/page-layout/nest/nest-client';
-	import { skylinePageLayout } from '$lib/cut-pattern/page-layout/skyline';
-	import type { LayoutItem, PageLayoutResult } from '$lib/cut-pattern/page-layout/types';
-	import { toastStore } from '$lib/stores/toastStore';
-	import { placeBand } from '$lib/cut-pattern/page-post-process/place-bands';
-	import { pagePostProcess } from '$lib/cut-pattern/page-post-process';
-	import type { GlyphDict } from '$lib/cut-pattern/page-post-process/page-label';
+	} from '#lib/cut-pattern/page-layout/registry.js';
+	import { buildNestShape } from '#lib/cut-pattern/page-layout/nest/nest-shape.js';
+	import { nestClient } from '#lib/cut-pattern/page-layout/nest/nest-client.js';
+	import { skylinePageLayout } from '#lib/cut-pattern/page-layout/skyline.js';
+	import type { LayoutItem, PageLayoutResult } from '#lib/cut-pattern/page-layout/types.js';
+	import { toastStore } from '#lib/stores/toastStore.js';
+	import { placeBand } from '#lib/cut-pattern/page-post-process/place-bands.js';
+	import { pagePostProcess } from '#lib/cut-pattern/page-post-process/index.js';
+	import type { GlyphDict } from '#lib/cut-pattern/page-post-process/page-label.js';
 	import PageAnnotations from './PageAnnotations.svelte';
 	import { svgTextDictionary } from './SvgText/svg-text-store';
 	import { processSvg } from './SvgText/svg-text';

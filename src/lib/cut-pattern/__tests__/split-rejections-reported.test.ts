@@ -1,16 +1,16 @@
 import { describe, it, expect } from '@jest/globals';
-import { generateSuperGlobule } from '$lib/generate-superglobule';
+import { generateSuperGlobule } from '#lib/generate-superglobule.js';
 import {
 	defaultOutlinedPatternConfig,
 	generateDefaultGlobulePatternConfig,
 	generateDefaultSuperGlobuleConfig,
 	tiledPatternConfigs
-} from '$lib/shades-config';
+} from '#lib/shades-config.js';
 import { collectSplitRejections, runPatternGeneration } from '../run-pattern-generation';
-import { rehydratePatternResult } from '$lib/workers/rehydrate-pattern';
-import type { PatternGenerationConfig } from '$lib/stores/globulePatternStores';
-import type { SuperGlobuleProjectionCutPattern } from '$lib/stores/superGlobuleStores';
-import type { PatternTypeConfig, PipelineGates, SuperGlobuleConfig } from '$lib/types';
+import { rehydratePatternResult } from '#lib/workers/rehydrate-pattern.js';
+import type { PatternGenerationConfig } from '#lib/stores/globulePatternStores.js';
+import type { SuperGlobuleProjectionCutPattern } from '#lib/stores/superGlobuleStores.js';
+import type { PatternTypeConfig, PipelineGates, SuperGlobuleConfig } from '#lib/types.js';
 
 /**
  * Task 7 (spec amendment "Dropped splits are reported, data is untouched"):

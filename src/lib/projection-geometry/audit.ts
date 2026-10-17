@@ -1,5 +1,5 @@
 import type { Tube } from './types';
-import type { Band } from '$lib/types';
+import type { Band } from '#lib/types.js';
 import {
 	Vector3,
 	Triangle,

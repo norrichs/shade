@@ -7,7 +7,7 @@ import {
 	Float32BufferAttribute,
 	DoubleSide
 } from 'three';
-import type { Level } from '$lib/types';
+import type { Level } from '#lib/types.js';
 
 export interface EndCapConfig {
 	enabled: boolean;

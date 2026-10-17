@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { patternConfigStore } from '$lib/stores';
+	import { patternConfigStore } from '#lib/stores/index.js';
 	import NumberInput from '../controls/super-control/NumberInput.svelte';
 	import { FiChevronUp, FiChevronDown, FiChevronRight, FiChevronLeft } from 'svelte-icons-pack/fi';
 	import { Icon } from 'svelte-icons-pack';

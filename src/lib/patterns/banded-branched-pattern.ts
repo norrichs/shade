@@ -5,7 +5,7 @@ import {
 	type DynamicPath,
 	type PathSegment,
 	isMovePathSegment
-} from '$lib/types';
+} from '#lib/types.js';
 import type { Point } from 'bezier-js';
 import {
 	getDirection,

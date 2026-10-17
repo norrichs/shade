@@ -2,9 +2,9 @@ import { describe, it, expect, beforeAll } from '@jest/globals';
 import {
 	generateDefaultSuperGlobuleConfig,
 	generateDefaultGlobulePatternConfig
-} from '$lib/shades-config';
+} from '#lib/shades-config.js';
 import { generateProjectionPattern } from '../generate-pattern';
-import { isGlobuleAddress_BandPiece } from '$lib/util';
+import { isGlobuleAddress_BandPiece } from '#lib/util.js';
 import {
 	buildDefaultGeometry,
 	pieceOf,
@@ -13,10 +13,10 @@ import {
 	type End,
 	type P
 } from './helpers/real-geometry';
-import { generateSuperGlobule } from '$lib/generate-superglobule';
-import type { SuperGlobuleProjectionCutPattern } from '$lib/stores/superGlobuleStores';
-import type { TransformConfig } from '$lib/projection-geometry/types';
-import type { TubeCutPattern } from '$lib/types';
+import { generateSuperGlobule } from '#lib/generate-superglobule.js';
+import type { SuperGlobuleProjectionCutPattern } from '#lib/stores/superGlobuleStores.js';
+import type { TransformConfig } from '#lib/projection-geometry/types.js';
+import type { TubeCutPattern } from '#lib/types.js';
 
 /**
  * Task 8: hidden bands. A hidden band (`visible: false`) is dropped before

@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { getCrossSectionPath } from '$lib/projection-geometry/generate-projection';
+	import { getCrossSectionPath } from '#lib/projection-geometry/generate-projection.js';
 
-	import { superConfigStore, superGlobuleStore } from '$lib/stores';
+	import { superConfigStore, superGlobuleStore } from '#lib/stores/index.js';
 	import { get } from 'svelte/store';
 	import LabeledControl from './LabeledControl.svelte';
 	import Container from './Container.svelte';
@@ -9,12 +9,12 @@
 	import { polyhedronConfigs } from './polyhedra-configs';
 	import TransformControls from './TransformControls.svelte';
 	import { identityTransform, isInheritedTransform } from './transform-config';
-	import { resolveEdgeSampling } from '$lib/projection-geometry/edge-sampling';
+	import { resolveEdgeSampling } from '#lib/projection-geometry/edge-sampling.js';
 	import type {
 		BaseProjectionConfig,
 		EdgeSamplingConfig,
 		SurfaceProjectionConfig
-	} from '$lib/projection-geometry/types';
+	} from '#lib/projection-geometry/types.js';
 
 	const sampling = $derived(
 		resolveEdgeSampling($superConfigStore.projectionConfigs[0]?.edgeSampling)

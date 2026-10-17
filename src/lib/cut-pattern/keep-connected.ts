@@ -1,4 +1,4 @@
-import type { PathSegment } from '$lib/types';
+import type { PathSegment } from '#lib/types.js';
 
 type Point = { x: number; y: number };
 

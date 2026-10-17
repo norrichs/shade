@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { splitBoundariesOfBand } from '$lib/cut-pattern/split-boundaries';
-	import type { BandCutPattern } from '$lib/types';
+	import { splitBoundariesOfBand } from '#lib/cut-pattern/split-boundaries.js';
+	import type { BandCutPattern } from '#lib/types.js';
 
 	let {
 		band,

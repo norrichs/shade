@@ -1,5 +1,5 @@
 import { computeVertices } from '../segment-vertices';
-import type { UnitDefinition } from '$lib/patterns/spec-types';
+import type { UnitDefinition } from '#lib/patterns/spec-types.js';
 
 const makeUnit = (overrides: Partial<UnitDefinition> = {}): UnitDefinition => ({
 	width: 42,

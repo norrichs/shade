@@ -1,5 +1,5 @@
 import { writable } from 'svelte/store';
-import { persistable } from '$lib/persistable';
+import { persistable } from '#lib/persistable.js';
 
 const AGENT_BRIDGE_KEY = 'agent-bridge';
 

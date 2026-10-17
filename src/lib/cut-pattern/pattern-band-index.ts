@@ -1,4 +1,4 @@
-import type { Band } from '$lib/types';
+import type { Band } from '#lib/types.js';
 
 /**
  * Two band index spaces meet in tiled pattern generation:

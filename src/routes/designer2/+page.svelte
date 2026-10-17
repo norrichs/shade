@@ -10,11 +10,11 @@
 		clampSplit,
 		MIN_PANEL_FRACTION,
 		type PanelLayout
-	} from '$lib/stores/uiStores';
+	} from '#lib/stores/uiStores.js';
 	import HoverSidebar from '../../components/modal/HoverSidebar.svelte';
 	import { projectionConfigs } from '../../components/modal/sidebar-definitions';
 	import Toast from '../../components/Toast.svelte';
-	import { installAgentBridge } from '$lib/agent-bridge/client';
+	import { installAgentBridge } from '#lib/agent-bridge/client.js';
 
 	// Dev-only: lets Claude Code drive this page when the navbar dot is green.
 	$effect(() => installAgentBridge());

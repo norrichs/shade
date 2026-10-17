@@ -1,9 +1,9 @@
 import { DoubleSide, MeshPhysicalMaterial, MeshStandardMaterial } from 'three';
 import type { ThreeColor } from './colors';
-import type { GlobuleAddress_Band, GlobuleAddress_Facet } from '$lib/projection-geometry/types';
-import { sameGlobuleBand, type AssemblerHighlight } from '$lib/assembler-highlight';
-import type { SelectedProjectionGeometry } from '$lib/stores/selectionStores';
-import { HIGHLIGHT_PRIMARY, HIGHLIGHT_SECONDARY } from '$lib/highlight-colors';
+import type { GlobuleAddress_Band, GlobuleAddress_Facet } from '#lib/projection-geometry/types.js';
+import { sameGlobuleBand, type AssemblerHighlight } from '#lib/assembler-highlight.js';
+import type { SelectedProjectionGeometry } from '#lib/stores/selectionStores.js';
+import { HIGHLIGHT_PRIMARY, HIGHLIGHT_SECONDARY } from '#lib/highlight-colors.js';
 
 const theme = {
 	colorSelected: 'rgb(0,150,255)',

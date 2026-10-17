@@ -4,23 +4,23 @@
 		patternConfigStore,
 		selectedProjectionGeometry,
 		isSuperGlobuleProjectionPanelPattern
-	} from '$lib/stores';
+	} from '#lib/stores/index.js';
 	import BandPanelComponent from './BandPanelComponent.svelte';
 	import PanelComponent from './PanelComponent.svelte';
-	import type { PanelPattern, ProjectionPanelPattern, TubePanelPattern } from '$lib/types';
+	import type { PanelPattern, ProjectionPanelPattern, TubePanelPattern } from '#lib/types.js';
 	import {
 		sliceProjectionPanelPattern,
 		type ProjectionRange
-	} from '$lib/projection-geometry/filters';
+	} from '#lib/projection-geometry/filters.js';
 	import Scalebar from './Scalebar.svelte';
 
 	import { svgTextDictionary } from './SvgText/svg-text-store';
 	import Fonts from './SvgText/fonts';
 	import { processSvg } from './SvgText/svg-text';
 	import HingePatternComponent from './HingePatternComponent.svelte';
-	import { translatePS } from '$lib/patterns/utils';
-	import type { TriangleEdge } from '$lib/projection-geometry/types';
-	import { concatAddress } from '$lib/util';
+	import { translatePS } from '#lib/patterns/utils.js';
+	import type { TriangleEdge } from '#lib/projection-geometry/types.js';
+	import { concatAddress } from '#lib/util.js';
 
 	let {
 		showSelectedOnly = false,

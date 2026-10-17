@@ -1,6 +1,9 @@
-import type { GlobuleAddress_Band, GlobuleAddress_BandPiece } from '$lib/projection-geometry/types';
-import type { BandCutPattern, TubeCutPattern } from '$lib/types';
-import { isGlobuleAddress_BandPiece, isSameAddress, isSameParentBand } from '$lib/util';
+import type {
+	GlobuleAddress_Band,
+	GlobuleAddress_BandPiece
+} from '#lib/projection-geometry/types.js';
+import type { BandCutPattern, TubeCutPattern } from '#lib/types.js';
+import { isGlobuleAddress_BandPiece, isSameAddress, isSameParentBand } from '#lib/util.js';
 
 /**
  * Band and band-piece resolution, one function per relationship.

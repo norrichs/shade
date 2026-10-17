@@ -1,7 +1,7 @@
 import { describe, it, expect } from '@jest/globals';
 import { Vector3 } from 'three';
 import { getEndPartnerTransform } from '../generate-pattern';
-import type { BandCutPattern } from '$lib/types';
+import type { BandCutPattern } from '#lib/types.js';
 
 // Regression test for the crash in getEndPartnerTransform (reached via
 // getEndPartnerTransforms) when a tube-end partner band was refused by

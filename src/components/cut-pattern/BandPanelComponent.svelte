@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import type { BandPanelPattern } from '$lib/types';
-	import { printProjectionAddress } from '$lib/projection-geometry/generate-projection';
+	import type { BandPanelPattern } from '#lib/types.js';
+	import { printProjectionAddress } from '#lib/projection-geometry/generate-projection.js';
 
 	let {
 		band,

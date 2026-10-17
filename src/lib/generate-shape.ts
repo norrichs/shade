@@ -40,7 +40,7 @@ import type {
 	TabFootprintInvert,
 	GlobuleData,
 	SpineCurveConfig
-} from '$lib/types';
+} from '#lib/types.js';
 import { generateEdgeConfig } from './cut-pattern/generate-cut-pattern';
 import { generateLevelSet2, generateSections } from './generate-level';
 import type { GlobuleAddress_Tube, Tube } from './projection-geometry/types';

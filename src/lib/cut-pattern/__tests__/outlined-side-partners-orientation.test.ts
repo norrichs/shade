@@ -1,14 +1,14 @@
 import { describe, it, expect, beforeAll } from '@jest/globals';
 import { Triangle, Vector3 } from 'three';
-import { generateSuperGlobule } from '$lib/generate-superglobule';
+import { generateSuperGlobule } from '#lib/generate-superglobule.js';
 import {
 	generateDefaultGlobulePatternConfig,
 	generateDefaultSuperGlobuleConfig
-} from '$lib/shades-config';
-import { getQuadrilaterals } from '$lib/patterns/quadrilateral';
-import { matchGlobuleTubeFacets } from '$lib/projection-geometry/generate-projection';
-import type { Section, Tube } from '$lib/projection-geometry/types';
-import type { Band, Facet, FacetOrientation, PipelineGates } from '$lib/types';
+} from '#lib/shades-config.js';
+import { getQuadrilaterals } from '#lib/patterns/quadrilateral.js';
+import { matchGlobuleTubeFacets } from '#lib/projection-geometry/generate-projection.js';
+import type { Section, Tube } from '#lib/projection-geometry/types.js';
+import type { Band, Facet, FacetOrientation, PipelineGates } from '#lib/types.js';
 import { getFlatStripV2 } from '../generate-cut-pattern';
 import { bandHasPartners, getOutlineEdges } from '../generate-outlined-pattern';
 import { chooseMiddleQuadEdge, middleQuadEdgeIndices } from '../select-middle-quad-edge';

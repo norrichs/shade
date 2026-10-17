@@ -1,16 +1,16 @@
 import {
 	getOtherTriangleElements,
 	type TrianglePointPair
-} from '$lib/cut-pattern/generate-pattern';
-import { getBandTrianglePoints } from '$lib/projection-geometry/generate-projection';
-import type { GlobuleAddress_Facet } from '$lib/projection-geometry/types';
+} from '#lib/cut-pattern/generate-pattern.js';
+import { getBandTrianglePoints } from '#lib/projection-geometry/generate-projection.js';
+import type { GlobuleAddress_Facet } from '#lib/projection-geometry/types.js';
 import type {
 	BandPanelPattern,
 	PanelPattern,
 	ProjectionPanelPattern,
 	TrianglePoint,
 	TubePanelPattern
-} from '$lib/types';
+} from '#lib/types.js';
 import { Triangle, Vector3 } from 'three';
 import { radToDeg } from 'three/src/math/MathUtils.js';
 

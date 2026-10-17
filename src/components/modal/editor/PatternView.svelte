@@ -1,14 +1,14 @@
 <script lang="ts">
 	import { get } from 'svelte/store';
-	import { patternConfigStore } from '$lib/stores';
-	import { tilePatternSpecStore } from '$lib/stores/tilePatternSpecStore';
+	import { patternConfigStore } from '#lib/stores/index.js';
+	import { tilePatternSpecStore } from '#lib/stores/tilePatternSpecStore.js';
 	import {
 		defaultCircleHolesFillConfig,
 		defaultOutlinedPatternConfig,
 		tiledPatternConfigs
-	} from '$lib/shades-config';
-	import { algorithms } from '$lib/patterns/pattern-registry';
-	import type { TiledPatternSpec } from '$lib/patterns/spec-types';
+	} from '#lib/shades-config.js';
+	import { algorithms } from '#lib/patterns/pattern-registry.js';
+	import type { TiledPatternSpec } from '#lib/patterns/spec-types.js';
 	import type {
 		GlobulePatternConfig,
 		GridVariant,
@@ -16,8 +16,8 @@
 		TabShape,
 		TiledPatternConfig,
 		TilingBasis
-	} from '$lib/types';
-	import { isOutlinedPatternConfig, isTiledPatternConfig } from '$lib/types';
+	} from '#lib/types.js';
+	import { isOutlinedPatternConfig, isTiledPatternConfig } from '#lib/types.js';
 	import PatternTileButton from '../../pattern/PatternTileButton.svelte';
 	import Container from './Container.svelte';
 	import Editor from './Editor.svelte';

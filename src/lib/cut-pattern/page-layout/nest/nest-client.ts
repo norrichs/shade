@@ -2,7 +2,7 @@ import { Vector3 } from 'three';
 import type { PageLayoutResult } from '../types';
 import type { NestGeom } from './nest';
 import type { NestShape } from './types';
-import type { NestRequest, NestResponse } from '$lib/workers/nest-layout-worker-core';
+import type { NestRequest, NestResponse } from '#lib/workers/nest-layout-worker-core.js';
 
 export type NestWorkerLike = {
 	postMessage(m: NestRequest): void;
@@ -91,5 +91,5 @@ export const createNestClient = (createWorker: () => Promise<NestWorkerLike>) =>
 };
 
 export const nestClient = createNestClient(() =>
-	import('$lib/workers/nest-layout-worker-factory').then((m) => m.createNestLayoutWorker())
+	import('#lib/workers/nest-layout-worker-factory.js').then((m) => m.createNestLayoutWorker())
 );

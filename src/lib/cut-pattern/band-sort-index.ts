@@ -5,8 +5,8 @@ import type {
 	BandRef,
 	IndexRange,
 	TubeCutPattern
-} from '$lib/types';
-import { isSameParentBand } from '$lib/util';
+} from '#lib/types.js';
+import { isSameParentBand } from '#lib/util.js';
 import { bandKey } from './band-key';
 import { pieceIndexOf, type BandEnd } from './resolve-partner-band';
 import {

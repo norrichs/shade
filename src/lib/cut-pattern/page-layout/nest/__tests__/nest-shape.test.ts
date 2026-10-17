@@ -1,6 +1,6 @@
 import { buildNestShape } from '../nest-shape';
-import type { BandCutPattern } from '$lib/types';
-import type { EffectiveBoundsContext } from '$lib/cut-pattern/band-layout';
+import type { BandCutPattern } from '#lib/types.js';
+import type { EffectiveBoundsContext } from '#lib/cut-pattern/band-layout.js';
 
 const quadFacet = (x: number, y: number, s: number, strokeWidth = 0) => ({
 	path: [['M', x, y], ['L', x + s, y], ['L', x + s, y + s], ['L', x, y + s], ['Z']],

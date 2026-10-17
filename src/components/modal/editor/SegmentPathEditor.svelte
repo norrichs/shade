@@ -1,7 +1,7 @@
 <script lang="ts">
-	import type { UnitDefinition } from '$lib/patterns/spec-types';
-	import type { PathSegment } from '$lib/types';
-	import { svgPathStringFromSegments } from '$lib/patterns/utils';
+	import type { UnitDefinition } from '#lib/patterns/spec-types.js';
+	import type { PathSegment } from '#lib/types.js';
+	import { svgPathStringFromSegments } from '#lib/patterns/utils.js';
 	import { getCanvas, type PathEditorConfig } from './path-editor-shared';
 	import { computeVertices, updateUnitForVertexMove, type Vertex } from './segment-vertices';
 	import DraggablePoint from './DraggablePoint.svelte';

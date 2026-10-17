@@ -2,7 +2,7 @@
 	// @ts-ignore
 	import { asDraggable } from 'svelte-drag-and-drop-actions';
 	import { getPointClass, type PathEditorCanvas, type PathEditorConfig } from './path-editor';
-	import type { PointConfig2 } from '$lib/types';
+	import type { PointConfig2 } from '#lib/types.js';
 </script>
 
 <script lang="ts">

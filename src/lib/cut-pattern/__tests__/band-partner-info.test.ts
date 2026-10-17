@@ -1,5 +1,5 @@
 import { getBandPartnerInfo, formatBandAddress } from '../band-partner-info';
-import type { GlobuleAddress_Band } from '$lib/projection-geometry/types';
+import type { GlobuleAddress_Band } from '#lib/projection-geometry/types.js';
 
 // Minimal tube/band/facet shapes mirroring the 3D voronoiSurface structure:
 // a band is a strip of facets; each end facet carries up to three edge partners

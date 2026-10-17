@@ -1,4 +1,4 @@
-import { AUTO_PERSIST_KEY, persistable } from '$lib/persistable';
+import { AUTO_PERSIST_KEY, persistable } from '#lib/persistable.js';
 
 export type ComputationMode = 'continuous' | '3d-only' | '2d-only';
 

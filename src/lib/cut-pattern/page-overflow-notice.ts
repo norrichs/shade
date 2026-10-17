@@ -1,4 +1,4 @@
-import type { Toast } from '$lib/stores/toastStore';
+import type { Toast } from '#lib/stores/toastStore.js';
 
 /** The page-layout overflow report, as the layout algorithms return it. */
 export type PageOverflow = { itemIndex: number; requiredScale: number };

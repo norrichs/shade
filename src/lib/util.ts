@@ -1,7 +1,7 @@
 import { CubicBezierCurve, CurvePath, Triangle, Vector2, Vector3 } from 'three';
 import { Bezier, type Line } from 'bezier-js';
-import type { BezierConfig, Point, Point3, SuperGlobule } from '$lib/types';
-import type { Intersector } from '$lib/types';
+import type { BezierConfig, Point, Point3, SuperGlobule } from '#lib/types.js';
+import type { Intersector } from '#lib/types.js';
 import type {
 	GlobuleAddress,
 	GlobuleAddress_Facet,
@@ -17,7 +17,7 @@ import {
 	findUntagged,
 	untaggedMessage
 } from './cut-pattern/export-guard';
-import type { ExportFrame } from '$lib/download/export-frame';
+import type { ExportFrame } from '#lib/download/export-frame.js';
 
 export { SCREEN_ONLY_SELECTOR };
 

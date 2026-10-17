@@ -1,4 +1,4 @@
-import type { PathSegment, Quadrilateral } from '$lib/types';
+import type { PathSegment, Quadrilateral } from '#lib/types.js';
 import type { IndexPair } from '../spec-types';
 import { replaceInPlace } from '../tesselation/shared/helpers';
 import { rotatePS, translatePS } from '../utils';

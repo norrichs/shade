@@ -1,5 +1,5 @@
 import { writable } from 'svelte/store';
-import type { GlobuleAddress_Facet } from '$lib/projection-geometry/types';
+import type { GlobuleAddress_Facet } from '#lib/projection-geometry/types.js';
 
 export type PartnerHighlightSource = 'projection' | 'surface' | 'globuleTube';
 

@@ -1,5 +1,5 @@
-import type { TubeSplitRejection } from '$lib/types';
-import type { Toast } from '$lib/stores/toastStore';
+import type { TubeSplitRejection } from '#lib/types.js';
+import type { Toast } from '#lib/stores/toastStore.js';
 
 const MAX_LISTED = 5;
 

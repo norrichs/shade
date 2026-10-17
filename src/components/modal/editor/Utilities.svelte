@@ -4,7 +4,7 @@
 		superConfigStore,
 		superGlobulePatternStore,
 		superGlobuleStore
-	} from '$lib/stores';
+	} from '#lib/stores/index.js';
 	import Button from '../../design-system/Button.svelte';
 	import Container from './Container.svelte';
 	import Editor from './Editor.svelte';

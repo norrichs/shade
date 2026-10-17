@@ -7,20 +7,20 @@
 		collateGeometry,
 		collateGlobuleTubeGeometry,
 		collateVoronoiGeometry
-	} from '$lib/projection-geometry/collate-geometry';
+	} from '#lib/projection-geometry/collate-geometry.js';
 	import {
 		viewControlStore,
 		type ShowProjectionGeometries,
 		type ShowGlobuleTubeGeometries,
 		superGlobuleStore
-	} from '$lib/stores';
+	} from '#lib/stores/index.js';
 	import type {
 		Polyhedron,
 		Projection,
 		GlobuleAddress_Band,
 		GlobuleAddress_Facet,
 		Tube
-	} from '$lib/projection-geometry/types';
+	} from '#lib/projection-geometry/types.js';
 	import ColorMapped from './ColorMapped.svelte';
 	import {
 		assemblerHighlight,
@@ -37,14 +37,14 @@
 		patternBandSpaces,
 		type AssemblerHighlight,
 		type GeometrySource
-	} from '$lib/stores';
+	} from '#lib/stores/index.js';
 	import { handleFacetSelect, highlightRealBand } from '../three-renderer/selection-helpers';
-	import { assemblerHighlightOnSource } from '$lib/cut-pattern/pattern-band-space';
+	import { assemblerHighlightOnSource } from '#lib/cut-pattern/pattern-band-space.js';
 	import { get } from 'svelte/store';
 	import { interactionMode, isMeasureInteractionMode } from '../three-renderer/interaction-mode';
 	import { nearestVertexFromEvent } from '../three-renderer/nearest-vertex';
-	import { addMeasurementPoint } from '$lib/stores/measurementStore';
-	import { bandKey } from '$lib/cut-pattern/band-key';
+	import { addMeasurementPoint } from '#lib/stores/measurementStore.js';
+	import { bandKey } from '#lib/cut-pattern/band-key.js';
 
 	// Non-interactive visual meshes (bands, sections, the surface) must NOT
 	// participate in pointer raycasting — otherwise an opaque grey band/surface in

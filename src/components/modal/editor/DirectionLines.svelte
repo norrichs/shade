@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { BezierConfig } from '$lib/types';
+	import type { BezierConfig } from '#lib/types.js';
 
 	let { curveDef, canvScale }: { curveDef: BezierConfig[]; canvScale: number } = $props();
 </script>

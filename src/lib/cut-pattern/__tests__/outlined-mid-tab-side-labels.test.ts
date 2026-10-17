@@ -1,16 +1,16 @@
 import { describe, it, expect, beforeAll } from '@jest/globals';
-import { generateSuperGlobule } from '$lib/generate-superglobule';
+import { generateSuperGlobule } from '#lib/generate-superglobule.js';
 import {
 	defaultOutlinedPatternConfig,
 	generateDefaultGlobulePatternConfig,
 	generateDefaultSuperGlobuleConfig
-} from '$lib/shades-config';
-import { getQuadrilaterals } from '$lib/patterns/quadrilateral';
-import { getEdge } from '$lib/projection-geometry/generate-projection';
+} from '#lib/shades-config.js';
+import { getQuadrilaterals } from '#lib/patterns/quadrilateral.js';
+import { getEdge } from '#lib/projection-geometry/generate-projection.js';
 import { runPatternGeneration } from '../run-pattern-generation';
 import { resolveTabLabel } from '../resolve-tab-label';
-import type { SuperGlobuleProjectionCutPattern } from '$lib/stores/superGlobuleStores';
-import type { PatternGenerationConfig } from '$lib/stores/globulePatternStores';
+import type { SuperGlobuleProjectionCutPattern } from '#lib/stores/superGlobuleStores.js';
+import type { PatternGenerationConfig } from '#lib/stores/globulePatternStores.js';
 import type {
 	BandCutPattern,
 	OutlinedPatternConfig,
@@ -19,7 +19,7 @@ import type {
 	Quadrilateral,
 	SplitConfig,
 	TubeCutPattern
-} from '$lib/types';
+} from '#lib/types.js';
 
 /**
  * A mid tab's label names the band across the edge the tab sits on: a before

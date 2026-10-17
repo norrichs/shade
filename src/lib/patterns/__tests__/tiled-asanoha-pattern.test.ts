@@ -1,5 +1,5 @@
 import { Vector3 } from 'three';
-import type { PathSegment, Quadrilateral, TiledPatternConfig } from '$lib/types';
+import type { PathSegment, Quadrilateral, TiledPatternConfig } from '#lib/types.js';
 import { transformPatternByQuad } from '../quadrilateral';
 import {
 	adjustAsanohaPatternAfterMapping,

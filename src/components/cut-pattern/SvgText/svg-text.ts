@@ -1,12 +1,12 @@
-import { svgPathStringFromSegments } from '$lib/patterns/utils';
-import { CHAR_GAP } from '$lib/svg-text-metrics';
+import { svgPathStringFromSegments } from '#lib/patterns/utils.js';
+import { CHAR_GAP } from '#lib/svg-text-metrics.js';
 import {
 	isCubicBezierPathSegment,
 	isLinePathSegment,
 	isMovePathSegment,
 	isQuadraticBezierPathSegment,
 	type PathSegment
-} from '$lib/types';
+} from '#lib/types.js';
 
 export type SVGFontDictionary = {
 	[key: string]: {

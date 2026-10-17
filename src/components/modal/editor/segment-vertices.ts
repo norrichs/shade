@@ -1,6 +1,6 @@
-import type { UnitDefinition } from '$lib/patterns/spec-types';
-import { isLinePathSegment, isMovePathSegment } from '$lib/types';
-import type { PathSegment } from '$lib/types';
+import type { UnitDefinition } from '#lib/patterns/spec-types.js';
+import { isLinePathSegment, isMovePathSegment } from '#lib/types.js';
+import type { PathSegment } from '#lib/types.js';
 
 export type VertexRef = {
 	group: 'start' | 'middle' | 'end';

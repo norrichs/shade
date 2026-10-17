@@ -22,7 +22,7 @@ import type {
 	TrianglePoint,
 	BandCutPattern,
 	DynamicStrokeConfig
-} from '$lib/types';
+} from '#lib/types.js';
 
 const alignTriangle = (triangle: Triangle, config: AlignTrianglesConfig): Triangle => {
 	// for odd facets (which should also be Greater Side), reverse the lead / follow vectors, and the angle?

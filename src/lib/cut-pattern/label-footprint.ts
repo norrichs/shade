@@ -4,8 +4,8 @@ import type {
 	PathSegment,
 	PatternLabelsConfig,
 	Point
-} from '$lib/types';
-import type { LabelTextDims } from '$lib/stores/mergedPathStore';
+} from '#lib/types.js';
+import type { LabelTextDims } from '#lib/stores/mergedPathStore.js';
 import { buildLabelOutlinePath } from './label-outline-path';
 import { transformLabelOutlineToBandSpace } from './transform-label-outline';
 import { flattenPath } from './path-contours';

@@ -1,8 +1,8 @@
 import { describe, it, expect } from '@jest/globals';
 import { createBandMergePool, isTotalPoolFailure, type PoolWorker } from '../band-merge-pool';
 import type { MergeMessage, MergeResponse } from '../band-merge-worker-core';
-import type { BandMergePayload } from '$lib/cut-pattern/band-merge-payload';
-import type { PathSegment } from '$lib/types';
+import type { BandMergePayload } from '#lib/cut-pattern/band-merge-payload.js';
+import type { PathSegment } from '#lib/types.js';
 
 const payload = (id: string): BandMergePayload => ({
 	id,

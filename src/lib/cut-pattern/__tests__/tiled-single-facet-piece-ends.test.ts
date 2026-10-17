@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll } from '@jest/globals';
-import { tiledPatternConfigs } from '$lib/shades-config';
-import { defaultShieldSpec } from '$lib/patterns/tesselation/shield';
-import { defaultHexSpec } from '$lib/patterns/tesselation/hex';
+import { tiledPatternConfigs } from '#lib/shades-config.js';
+import { defaultShieldSpec } from '#lib/patterns/tesselation/shield/index.js';
+import { defaultHexSpec } from '#lib/patterns/tesselation/hex/index.js';
 import {
 	askerEdge,
 	buildDefaultGeometry,
@@ -16,8 +16,8 @@ import {
 	type End,
 	type RealGeometry
 } from './helpers/real-geometry';
-import type { PatternGenerationConfig } from '$lib/stores/globulePatternStores';
-import type { TiledPatternConfig, TubeCutPattern } from '$lib/types';
+import type { PatternGenerationConfig } from '#lib/stores/globulePatternStores.js';
+import type { TiledPatternConfig, TubeCutPattern } from '#lib/types.js';
 
 /**
  * Task 11: a piece one quad long has ONE facet, so its start and its end live

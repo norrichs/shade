@@ -1,5 +1,5 @@
-import type { PathSegment } from '$lib/types';
-import { rotatePS, translatePS } from '$lib/patterns/utils';
+import type { PathSegment } from '#lib/types.js';
+import { rotatePS, translatePS } from '#lib/patterns/utils.js';
 
 /**
  * Lift a label outline from label-local coords (stem tip at origin) into the

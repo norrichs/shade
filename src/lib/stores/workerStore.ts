@@ -1,19 +1,19 @@
 import { writable, derived, type Readable } from 'svelte/store';
-import type { SuperGlobuleConfig, SuperGlobule, PipelineGates } from '$lib/types';
-import type { Tube } from '$lib/projection-geometry/types';
+import type { SuperGlobuleConfig, SuperGlobule, PipelineGates } from '#lib/types.js';
+import type { Tube } from '#lib/projection-geometry/types.js';
 import type {
 	WorkerMessage,
 	WorkerResponse,
 	PatternMessage
-} from '$lib/workers/super-globule-worker-core';
+} from '#lib/workers/super-globule-worker-core.js';
 import type { PatternGenerationConfig } from './globulePatternStores';
-import type { PatternGenerationResult } from '$lib/cut-pattern/run-pattern-generation';
-import { rehydratePatternResult } from '$lib/workers/rehydrate-pattern';
+import type { PatternGenerationResult } from '#lib/cut-pattern/run-pattern-generation.js';
+import { rehydratePatternResult } from '#lib/workers/rehydrate-pattern.js';
 import { Vector3, Triangle } from 'three';
 import {
 	generateSurface,
 	prepareProjectionConfig
-} from '$lib/projection-geometry/generate-projection';
+} from '#lib/projection-geometry/generate-projection.js';
 
 // Store to track if the worker is currently processing
 export const isWorking = writable<boolean>(false);
@@ -197,7 +197,7 @@ function rehydrateSuperGlobule(result: SuperGlobule): SuperGlobule {
 function getWorker(): Worker {
 	if (!worker) {
 		// Vite handles the worker bundling with this syntax
-		worker = new Worker(new URL('$lib/workers/super-globule.worker.ts', import.meta.url), {
+		worker = new Worker(new URL('../workers/super-globule.worker.ts', import.meta.url), {
 			type: 'module'
 		});
 

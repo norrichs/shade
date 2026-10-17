@@ -2,7 +2,7 @@ import { describe, it, expect } from '@jest/globals';
 import { concatPieces, dropHoles, mulberry32, postProcessBandPath, seedFor } from '../drop-holes';
 import { defaultDropCurve, type PostProcessConfig } from '../hole-drop-config';
 import type { BandContourIndex } from '../contour-index';
-import type { BezierConfig, PathSegment, PointConfig2 } from '$lib/types';
+import type { BezierConfig, PathSegment, PointConfig2 } from '#lib/types.js';
 
 const pt = (x: number, y: number): PointConfig2 => ({ type: 'PointConfig2', x, y });
 

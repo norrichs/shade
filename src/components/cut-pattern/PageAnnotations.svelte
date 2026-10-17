@@ -1,6 +1,6 @@
 <script lang="ts">
-	import type { PagePostProcessResult } from '$lib/cut-pattern/post-process-types';
-	import { layerStrokes } from '$lib/stores';
+	import type { PagePostProcessResult } from '#lib/cut-pattern/post-process-types.js';
+	import { layerStrokes } from '#lib/stores/index.js';
 	import SvgText from './SvgText/SvgText.svelte';
 
 	let { result }: { result: PagePostProcessResult } = $props();

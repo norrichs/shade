@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { round } from '$lib/util';
+	import { round } from '#lib/util.js';
 	import { Icon } from 'svelte-icons-pack';
 	import { FiChevronUp, FiChevronDown } from 'svelte-icons-pack/fi';
 

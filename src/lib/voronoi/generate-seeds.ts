@@ -1,5 +1,5 @@
 import { Vector3 } from 'three';
-import { mulberry32 } from '$lib/rng';
+import { mulberry32 } from '#lib/rng.js';
 import type {
 	SeedMethod,
 	CenterProjectionSeedMethod,

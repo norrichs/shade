@@ -3,9 +3,9 @@ import { mergeBand } from '../merge-band';
 import { computeMergedBandPaths } from '../prepare-merge';
 import { toBandMergePayloads } from '../band-merge-payload';
 import { buildDefaultGeometry, generateProjectionTubes } from './helpers/real-geometry';
-import { getPaperScope } from '$lib/paper/scope';
-import { tiledPatternConfigs } from '$lib/shades-config';
-import type { PathSegment, PatternLabelsConfig } from '$lib/types';
+import { getPaperScope } from '#lib/paper/scope.js';
+import { tiledPatternConfigs } from '#lib/shades-config.js';
+import type { PathSegment, PatternLabelsConfig } from '#lib/types.js';
 import type { MergeCtx } from '../merge-band';
 import type { BandMergePayload } from '../band-merge-payload';
 

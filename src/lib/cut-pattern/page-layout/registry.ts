@@ -1,4 +1,4 @@
-import type { PageLayoutConfig } from '$lib/types';
+import type { PageLayoutConfig } from '#lib/types.js';
 import { flexWrapPageLayout, PAGE_STACK_GAP } from './flex-wrap';
 import { skylinePageLayout } from './skyline';
 import { NEST_CELL_MM, type NestGeom } from './nest/nest';

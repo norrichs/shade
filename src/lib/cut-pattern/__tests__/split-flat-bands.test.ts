@@ -2,7 +2,7 @@ import { describe, it, expect } from '@jest/globals';
 import { Triangle, Vector3 } from 'three';
 
 import { classifySplitQuads, splitFlatBands } from '../split-flat-bands';
-import type { Band, Facet } from '$lib/types';
+import type { Band, Facet } from '#lib/types.js';
 
 // facetCount facets => facetCount/2 quads.
 const buildBand = (facetCount: number): Band => {

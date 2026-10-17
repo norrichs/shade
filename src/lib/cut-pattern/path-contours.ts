@@ -1,4 +1,4 @@
-import type { PathSegment } from '$lib/types';
+import type { PathSegment } from '#lib/types.js';
 
 export type Pt = { x: number; y: number };
 export type BBox = { minX: number; minY: number; maxX: number; maxY: number };

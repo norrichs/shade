@@ -1,4 +1,4 @@
-import type { PatternGenerator } from '$lib/types';
+import type { PatternGenerator } from '#lib/types.js';
 import { algorithms } from './pattern-registry';
 import { patterns } from './pattern-definitions';
 

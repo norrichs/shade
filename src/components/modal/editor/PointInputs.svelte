@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { BezierConfig } from '$lib/types';
+	import type { BezierConfig } from '#lib/types.js';
 	import PointInput from './PointInput.svelte';
 	import type { PointInputMode } from './path-editor-ui-store';
 	import type { PathEditorCanvas, PathEditorConfig } from './path-editor';

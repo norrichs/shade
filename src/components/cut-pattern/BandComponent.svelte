@@ -5,11 +5,11 @@
 		PatternSource,
 		Point,
 		TubeCutPattern
-	} from '$lib/types';
+	} from '#lib/types.js';
 	import type { Snippet } from 'svelte';
 	import PatternLabel from './PatternLabel.svelte';
 	import OnTabLabel from './OnTabLabel.svelte';
-	import { resolveTabLabel } from '$lib/cut-pattern/resolve-tab-label';
+	import { resolveTabLabel } from '#lib/cut-pattern/resolve-tab-label.js';
 	import {
 		assemblerHighlight,
 		dropLabelText,
@@ -24,24 +24,24 @@
 		selectedVoronoi,
 		selectedVoronoiSurface,
 		setAssemblerHighlightForBand
-	} from '$lib/stores';
-	import { HIGHLIGHT_SECONDARY, LAYOUT_BOUNDS_FILL } from '$lib/highlight-colors';
+	} from '#lib/stores/index.js';
+	import { HIGHLIGHT_SECONDARY, LAYOUT_BOUNDS_FILL } from '#lib/highlight-colors.js';
 	import type { Vector3 } from 'three';
-	import type { GlobuleAddress_Band } from '$lib/projection-geometry/types';
-	import { concatAddress } from '$lib/util';
-	import { buildSelfTagLines } from '$lib/cut-pattern/build-self-tag-lines';
-	import { bandTransform } from '$lib/cut-pattern/band-transform';
+	import type { GlobuleAddress_Band } from '#lib/projection-geometry/types.js';
+	import { concatAddress } from '#lib/util.js';
+	import { buildSelfTagLines } from '#lib/cut-pattern/build-self-tag-lines.js';
+	import { bandTransform } from '#lib/cut-pattern/band-transform.js';
 	import {
 		assemblerHighlightInPattern,
 		geometrySourceOfPattern,
 		patternBandSelectionToReal
-	} from '$lib/cut-pattern/pattern-band-space';
+	} from '#lib/cut-pattern/pattern-band-space.js';
 	import SplitTargets from './SplitTargets.svelte';
 	import {
 		applySplitToggle,
 		resolveSplitSubunitCount,
 		splitQuadsForTube
-	} from '$lib/cut-pattern/split-boundaries';
+	} from '#lib/cut-pattern/split-boundaries.js';
 	import { interactionMode } from '../three-renderer/interaction-mode';
 	import { get } from 'svelte/store';
 

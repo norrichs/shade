@@ -1,4 +1,4 @@
-import type { PatternLabelsConfig } from '$lib/types';
+import type { PatternLabelsConfig } from '#lib/types.js';
 import { LABEL_MM_DEFAULTS, migrateLabelsToMm, resolveLabelsToPatternUnits } from '../label-units';
 
 const pxLabels = (): PatternLabelsConfig => ({

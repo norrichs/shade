@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { getPathSize, svgPathStringFromSegments, translatePS } from '$lib/patterns/utils';
-	import type { PathSegment } from '$lib/types';
+	import { getPathSize, svgPathStringFromSegments, translatePS } from '#lib/patterns/utils.js';
+	import type { PathSegment } from '#lib/types.js';
 	import type { Point } from 'bezier-js';
 	import { tick } from 'svelte';
 	import { numberPathSegments } from './number-path-segments';
@@ -10,8 +10,13 @@
 		buildLabelOutlinePath,
 		FALLBACK_TEXT_WIDTH,
 		FALLBACK_TEXT_HEIGHT
-	} from '$lib/cut-pattern/label-outline-path';
-	import { dropLabelText, layerStrokes, mergedBandPaths, setLabelTextDimension } from '$lib/stores';
+	} from '#lib/cut-pattern/label-outline-path.js';
+	import {
+		dropLabelText,
+		layerStrokes,
+		mergedBandPaths,
+		setLabelTextDimension
+	} from '#lib/stores/index.js';
 
 	let {
 		id = undefined,

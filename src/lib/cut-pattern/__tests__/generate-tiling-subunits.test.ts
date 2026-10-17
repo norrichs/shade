@@ -1,7 +1,7 @@
 import { describe, it, expect } from '@jest/globals';
 import { Triangle, Vector3 } from 'three';
-import type { Band, PathSegment, Quadrilateral, TiledPatternConfig } from '$lib/types';
-import { patterns } from '$lib/patterns/pattern-definitions';
+import type { Band, PathSegment, Quadrilateral, TiledPatternConfig } from '#lib/types.js';
+import { patterns } from '#lib/patterns/pattern-definitions.js';
 import { generateTiling, getLeftPartnerBandIndex } from '../generate-tiled-pattern';
 
 // Rectangular quads stacked along +y: quad[i+1].a === quad[i].d (real band convention).

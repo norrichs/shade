@@ -1,9 +1,9 @@
 <script lang="ts">
-	import { printProjectionAddress } from '$lib/projection-geometry/generate-projection';
-	import type { HingePattern, PanelPattern } from '$lib/types';
+	import { printProjectionAddress } from '#lib/projection-geometry/generate-projection.js';
+	import type { HingePattern, PanelPattern } from '#lib/types.js';
 	import { Vector3 } from 'three';
 	import SvgText from './SvgText/SvgText.svelte';
-	import { layerStrokes } from '$lib/stores';
+	import { layerStrokes } from '#lib/stores/index.js';
 
 	let {
 		hingePattern,

@@ -9,7 +9,7 @@
  * Angle convention matches the rest of the cross-section code:
  * `(x, y) = (-r·sin θ, r·cos θ)` — θ from the +y axis, counter-clockwise.
  */
-import type { BezierConfig, PointConfig2, ShapeConfig } from '$lib/types';
+import type { BezierConfig, PointConfig2, ShapeConfig } from '#lib/types.js';
 
 const REFLECTED_SYMMETRIES: ShapeConfig['symmetry'][] = ['lateral', 'radial-lateral'];
 

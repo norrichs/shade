@@ -1,6 +1,6 @@
 import { describe, it, expect } from '@jest/globals';
 import { buildContourIndex, holesOf } from '../contour-index';
-import type { PathSegment } from '$lib/types';
+import type { PathSegment } from '#lib/types.js';
 
 const square = (x: number, y: number, w: number, h: number): PathSegment[] => [
 	['M', x, y],

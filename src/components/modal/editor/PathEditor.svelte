@@ -5,7 +5,7 @@
 
 <script lang="ts">
 	import { untrack, type Snippet } from 'svelte';
-	import type { BezierConfig, PointConfig2 } from '$lib/types';
+	import type { BezierConfig, PointConfig2 } from '#lib/types.js';
 	import Button from '../../design-system/Button.svelte';
 	import CurveDefPath from './CurveDefPath.svelte';
 	import {

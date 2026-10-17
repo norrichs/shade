@@ -4,10 +4,10 @@ import {
 	bootstrapShouldUsePersisted,
 	USE_PERSISTED_KEY,
 	AUTO_PERSIST_KEY
-} from '$lib/persistable';
-import { getPersistedConfig } from '$lib/storage';
+} from '#lib/persistable.js';
+import { getPersistedConfig } from '#lib/storage.js';
 import { generateDefaultGlobuleConfig, getLevels } from '../shades-config';
-import type { GlobuleConfig, SuperGlobuleConfig, GlobulePatternConfig } from '$lib/types';
+import type { GlobuleConfig, SuperGlobuleConfig, GlobulePatternConfig } from '#lib/types.js';
 import type { ViewControls } from './viewControlStore';
 
 export const shouldUsePersisted = persistable(false, USE_PERSISTED_KEY, USE_PERSISTED_KEY, true);

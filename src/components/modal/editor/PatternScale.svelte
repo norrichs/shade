@@ -1,10 +1,10 @@
 <script lang="ts">
 	import Container from './Container.svelte';
 	import Editor from './Editor.svelte';
-	import { patternConfigStore } from '$lib/stores';
+	import { patternConfigStore } from '#lib/stores/index.js';
 	import { get } from 'svelte/store';
 	import LabeledControl from './LabeledControl.svelte';
-	import { isTiledPatternConfig, type ScaleUnit } from '$lib/types';
+	import { isTiledPatternConfig, type ScaleUnit } from '#lib/types.js';
 	import NumberInput from '../../controls/super-control/NumberInput.svelte';
 
 	const handleChangeUnit = (event: Event) => {

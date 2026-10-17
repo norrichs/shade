@@ -1,4 +1,4 @@
-import { resolvePatternEntry } from '$lib/patterns/resolve-pattern';
+import { resolvePatternEntry } from '#lib/patterns/resolve-pattern.js';
 import {
 	isOutlinedPatternConfig,
 	type BandCutPattern,
@@ -8,7 +8,7 @@ import {
 	type Point,
 	type SplitConfig,
 	type TubeSplits
-} from '$lib/types';
+} from '#lib/types.js';
 
 /**
  * The click targets the split-placing interaction offers on one band.

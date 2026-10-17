@@ -1,4 +1,4 @@
-import type { TabEdgeOption } from '$lib/types';
+import type { TabEdgeOption } from '#lib/types.js';
 
 /**
  * Index of the seam closest to the tube center.

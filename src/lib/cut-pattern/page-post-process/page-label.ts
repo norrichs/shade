@@ -1,5 +1,5 @@
-import type { PathSegment } from '$lib/types';
-import { CHAR_GAP } from '$lib/svg-text-metrics';
+import type { PathSegment } from '#lib/types.js';
+import { CHAR_GAP } from '#lib/svg-text-metrics.js';
 import type { PageRect } from '../page-layout/types';
 import type { PageLabelConfig } from '../hole-drop-config';
 import type { Disconnect, PageLabelResult, PlacedBand, Pt } from '../post-process-types';

@@ -1,6 +1,6 @@
 import { resolvePair, pairsEqual, type ResolvedPair } from '../partner-pair-resolver';
-import type { BandCutPattern } from '$lib/types';
-import type { GlobuleAddress_Band } from '$lib/projection-geometry/types';
+import type { BandCutPattern } from '#lib/types.js';
+import type { GlobuleAddress_Band } from '#lib/projection-geometry/types.js';
 
 const makeQuad = (id: number) => ({
 	a: { x: id * 10, y: 0, z: 0 } as any,

@@ -1,7 +1,7 @@
 <script lang="ts">
-	import type { Point } from '$lib/types';
+	import type { Point } from '#lib/types.js';
 	import SvgText from './SvgText/SvgText.svelte';
-	import type { GeometryType } from '$lib/cut-pattern/post-process-types';
+	import type { GeometryType } from '#lib/cut-pattern/post-process-types.js';
 
 	let {
 		lines = [],

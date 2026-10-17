@@ -1,8 +1,8 @@
 <!-- src/components/modal/editor/tile-editor/BaseQuadSelector.svelte -->
 <script lang="ts">
-	import { superGlobulePatternStore } from '$lib/stores/superGlobuleStores';
-	import type { BandCutPattern } from '$lib/types';
-	import type { PartnerHighlightSource } from '$lib/stores/partnerHighlightStore';
+	import { superGlobulePatternStore } from '#lib/stores/superGlobuleStores.js';
+	import type { BandCutPattern } from '#lib/types.js';
+	import type { PartnerHighlightSource } from '#lib/stores/partnerHighlightStore.js';
 	import {
 		bandKeyOf,
 		bandOptionsForTube,

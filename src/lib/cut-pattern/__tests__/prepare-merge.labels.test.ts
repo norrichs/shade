@@ -1,7 +1,7 @@
-import type { PathSegment, PatternLabelsConfig, TubeCutPattern } from '$lib/types';
+import type { PathSegment, PatternLabelsConfig, TubeCutPattern } from '#lib/types.js';
 import { computeTiledUnionPaths } from '../prepare-merge';
-import { getPaperScope } from '$lib/paper/scope';
-import { pathSegmentsToPaper } from '$lib/paper';
+import { getPaperScope } from '#lib/paper/scope.js';
+import { pathSegmentsToPaper } from '#lib/paper/index.js';
 
 const contourCount = (segs: PathSegment[]): number => segs.filter((s) => s[0] === 'M').length;
 

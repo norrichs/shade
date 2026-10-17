@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { BandGeometry, GlobuleGeometry } from '$lib/types';
+	import type { BandGeometry, GlobuleGeometry } from '#lib/types.js';
 	import { T } from '@threlte/core';
 	import { BufferGeometry } from 'three';
 	import { materials, type Material } from '../../components/three-renderer/materials';

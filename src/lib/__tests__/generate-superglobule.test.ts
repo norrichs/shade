@@ -5,16 +5,16 @@ const makeProjection = jest.fn();
 const makeVoronoi = jest.fn();
 const generateGlobuleTube = jest.fn();
 
-jest.mock('$lib/projection-geometry/generate-projection', () => ({
+jest.mock('#lib/projection-geometry/generate-projection.js', () => ({
 	makeProjection: (...args: unknown[]) => makeProjection(...args)
 }));
-jest.mock('$lib/voronoi/generate-voronoi', () => ({
+jest.mock('#lib/voronoi/generate-voronoi.js', () => ({
 	makeVoronoi: (...args: unknown[]) => makeVoronoi(...args)
 }));
-jest.mock('$lib/generate-shape', () => ({
+jest.mock('#lib/generate-shape.js', () => ({
 	generateGlobuleTube: (...args: unknown[]) => generateGlobuleTube(...args)
 }));
-jest.mock('$lib/id-handler', () => ({
+jest.mock('#lib/id-handler.js', () => ({
 	generateTempId: () => 'temp-id'
 }));
 

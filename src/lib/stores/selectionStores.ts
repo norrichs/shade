@@ -7,7 +7,7 @@ import type {
 	GlobuleConfigCoordinates,
 	Facet,
 	SuperGlobule
-} from '$lib/types';
+} from '#lib/types.js';
 import { derived, get, writable } from 'svelte/store';
 import {
 	superConfigStore,
@@ -20,10 +20,10 @@ import type {
 	GlobuleAddress_FacetEdge,
 	GlobuleAddress_Tube,
 	Tube
-} from '$lib/projection-geometry/types';
+} from '#lib/projection-geometry/types.js';
 import { BufferGeometry } from 'three';
 import { partnerHighlightStore } from './partnerHighlightStore';
-import { getBandPartnerInfo, type BandPartnerInfo } from '$lib/cut-pattern/band-partner-info';
+import { getBandPartnerInfo, type BandPartnerInfo } from '#lib/cut-pattern/band-partner-info.js';
 import {
 	concatAddress_Band,
 	concatAddress_Tube,
@@ -32,23 +32,23 @@ import {
 	isGlobuleAddress_Band,
 	isGlobuleAddress_Facet,
 	isGlobuleAddress_Tube
-} from '$lib/util';
+} from '#lib/util.js';
 import {
 	sameGlobuleBand,
 	toggleAssemblerHighlight,
 	type AssemblerHighlight
-} from '$lib/assembler-highlight';
+} from '#lib/assembler-highlight.js';
 import {
 	geometrySourceOfPartnerHighlight,
 	patternBandSpaceLookup,
 	patternFacetToReal,
 	type PatternBandSpaceOf
-} from '$lib/cut-pattern/pattern-band-space';
+} from '#lib/cut-pattern/pattern-band-space.js';
 
 /**
  * Assembler-page highlight state. The `AssemblerHighlight` type and the
  * `sameGlobuleBand` equality helper live in the store-free leaf module
- * `$lib/assembler-highlight` so low-level renderer code can use them without
+ * `#lib/assembler-highlight.js` so low-level renderer code can use them without
  * an import cycle; re-exported here for existing consumers.
  */
 export { sameGlobuleBand, type AssemblerHighlight };

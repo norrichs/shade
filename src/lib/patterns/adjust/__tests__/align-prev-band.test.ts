@@ -1,5 +1,5 @@
 import { Vector3 } from 'three';
-import type { PathSegment, Quadrilateral } from '$lib/types';
+import type { PathSegment, Quadrilateral } from '#lib/types.js';
 import { alignPrevBandPath } from '../align-prev-band';
 
 const quad = (

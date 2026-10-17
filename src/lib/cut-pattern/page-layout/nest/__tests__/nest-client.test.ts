@@ -1,5 +1,5 @@
 import { createNestClient, type NestWorkerLike } from '../nest-client';
-import { runNestRequest, type NestRequest } from '$lib/workers/nest-layout-worker-core';
+import { runNestRequest, type NestRequest } from '#lib/workers/nest-layout-worker-core.js';
 
 // A fake worker that answers asynchronously, in order, via the real core.
 const fakeWorker = (): NestWorkerLike => {

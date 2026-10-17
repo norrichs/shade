@@ -1,5 +1,5 @@
 import { writable } from 'svelte/store';
-import type { PageRect } from '$lib/cut-pattern/page-layout/types';
+import type { PageRect } from '#lib/cut-pattern/page-layout/types.js';
 
 /**
  * The page rects of the current page layout, in pattern units, plus the scale.

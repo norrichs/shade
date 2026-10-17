@@ -8,7 +8,7 @@ import type {
 	PanelVariant,
 	BandCutPattern,
 	TiledPatternVariant
-} from '$lib/types';
+} from '#lib/types.js';
 import { adjustCarnation, generateCarnation } from './tiled-carnation-pattern';
 import { generateAuxetic } from './tiled-bowtie-pattern';
 import { generateBranched } from './banded-branched-pattern';

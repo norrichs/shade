@@ -1,5 +1,5 @@
-import type { PathSegment, PatternLabelsConfig, TubeCutPattern } from '$lib/types';
-import type { LabelTextDims } from '$lib/stores/mergedPathStore';
+import type { PathSegment, PatternLabelsConfig, TubeCutPattern } from '#lib/types.js';
+import type { LabelTextDims } from '#lib/stores/mergedPathStore.js';
 import { toBandMergePayloads } from './band-merge-payload';
 import { mergeBand, type MergeCtx } from './merge-band';
 

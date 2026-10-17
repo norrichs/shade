@@ -1,9 +1,9 @@
 <script lang="ts">
 	import Container from './Container.svelte';
 	import Editor from './Editor.svelte';
-	import { selectedProjectionGeometry } from '$lib/stores';
-	import type { GlobuleAddress_Facet } from '$lib/projection-geometry/types';
-	import { concatAddress } from '$lib/util';
+	import { selectedProjectionGeometry } from '#lib/stores/index.js';
+	import type { GlobuleAddress_Facet } from '#lib/projection-geometry/types.js';
+	import { concatAddress } from '#lib/util.js';
 
 	const getUniqueAddresses = (selected: (GlobuleAddress_Facet | undefined)[] | undefined) => {
 		if (!selected) return [];

@@ -1,4 +1,4 @@
-import type { PathSegment } from '$lib/types';
+import type { PathSegment } from '#lib/types.js';
 import { mergeOutlineWithLabel } from '../merge-outline-with-label';
 
 const rect = (x: number, y: number, w: number, h: number): PathSegment[] => [

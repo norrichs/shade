@@ -6,7 +6,7 @@ import {
 	generateProjectionTubes,
 	partsOf
 } from './helpers/real-geometry';
-import { tiledPatternConfigs } from '$lib/shades-config';
+import { tiledPatternConfigs } from '#lib/shades-config.js';
 
 const tiledConfig = tiledPatternConfigs['tiledHexPattern-1'];
 

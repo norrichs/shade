@@ -16,7 +16,7 @@ import {
 	isQuadraticBezierPathSegment,
 	isCubicBezierPathSegment,
 	type PixelScale
-} from '$lib/types';
+} from '#lib/types.js';
 import { closestPoint, getLength } from './utils';
 import type { Vector3 } from 'three';
 

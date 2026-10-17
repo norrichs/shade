@@ -12,10 +12,10 @@ import {
 	type Point3,
 	type Band,
 	type GlobuleData
-} from '$lib/types';
+} from '#lib/types.js';
 import { Vector2, Vector3, type Triangle as ThreeTriangle } from 'three';
 import { numberPathSegments } from '../../components/cut-pattern/number-path-segments';
-import type { TransformConfig } from '$lib/projection-geometry/types';
+import type { TransformConfig } from '#lib/projection-geometry/types.js';
 
 export const generateUnitTriangle = (sideLength: number): Triangle => {
 	const unit = {

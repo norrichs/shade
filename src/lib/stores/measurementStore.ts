@@ -51,7 +51,7 @@ export const clearMeasurements = (): void => store.set([]);
  * The natural place to wire "clear measurements when geometry regenerates"
  * would be a module-scope `superGlobuleStore.subscribe(...)` right here.
  * That was attempted and reverted: `superGlobuleStores.ts` transitively
- * imports `$lib/projection-geometry/meta-info.ts`, which imports the
+ * imports `#lib/projection-geometry/meta-info.ts`, which imports the
  * `./index` stores barrel, which re-exports `selectionStores.ts` — and once
  * `measurementStore` is also added to that same barrel (as this task does),
  * importing `superGlobuleStore` here closes a cycle:

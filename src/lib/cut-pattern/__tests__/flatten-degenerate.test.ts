@@ -1,6 +1,6 @@
 import { describe, it, expect } from '@jest/globals';
 import { Triangle, Vector3 } from 'three';
-import type { Band } from '$lib/types';
+import type { Band } from '#lib/types.js';
 import { getFlatStripV2 } from '../generate-cut-pattern';
 
 const allFinite = (t: Triangle): boolean =>

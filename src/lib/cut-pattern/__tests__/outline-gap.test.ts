@@ -2,7 +2,7 @@ import { describe, it, expect } from '@jest/globals';
 import { insertGaps, applyConnectSurround } from '../outline-gap';
 import { flattenPath } from '../path-contours';
 import type { TaggedPath } from '../post-process-types';
-import type { PathSegment } from '$lib/types';
+import type { PathSegment } from '#lib/types.js';
 
 const length = (segs: PathSegment[]) =>
 	flattenPath(segs).reduce(

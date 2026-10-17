@@ -4,7 +4,7 @@ import {
 	resolvePatternGenerationTargets,
 	type PatternGenerationAvailability
 } from '../pattern-generation-gates';
-import type { PipelineGates } from '$lib/types';
+import type { PipelineGates } from '#lib/types.js';
 
 const gates = (overrides: Partial<PipelineGates> = {}): PipelineGates => ({
 	globuleTube: false,

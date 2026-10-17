@@ -1,5 +1,5 @@
-import { generateTempId } from '$lib/id-handler';
-import type { Point3 } from '$lib/types';
+import { generateTempId } from '#lib/id-handler.js';
+import type { Point3 } from '#lib/types.js';
 import { defaultEdgeConfig } from './curve-definitions';
 
 import type {

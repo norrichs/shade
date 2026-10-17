@@ -1,6 +1,6 @@
-import { nestPageLayout, type NestGeom } from '$lib/cut-pattern/page-layout/nest/nest';
-import type { NestShape } from '$lib/cut-pattern/page-layout/nest/types';
-import type { PageRect } from '$lib/cut-pattern/page-layout/types';
+import { nestPageLayout, type NestGeom } from '#lib/cut-pattern/page-layout/nest/nest.js';
+import type { NestShape } from '#lib/cut-pattern/page-layout/nest/types.js';
+import type { PageRect } from '#lib/cut-pattern/page-layout/types.js';
 
 export type NestRequest = { requestId: number; shapes: NestShape[]; geom: NestGeom };
 export type NestWireResult = {

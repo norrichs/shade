@@ -1,4 +1,4 @@
-import type { PathSegment } from '$lib/types';
+import type { PathSegment } from '#lib/types.js';
 
 /** Millimetres, Y up (LightBurn's frame). Paths contain only M, L, C, Z. */
 export type LbPathShape = { kind: 'path'; cutIndex: number; segments: PathSegment[] };

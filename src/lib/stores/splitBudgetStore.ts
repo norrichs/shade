@@ -1,6 +1,6 @@
 import { writable, type Subscriber, type Unsubscriber } from 'svelte/store';
 
-import { EMPTY_SPLIT_BUDGET, type SplitBudget } from '$lib/cut-pattern/split-budget';
+import { EMPTY_SPLIT_BUDGET, type SplitBudget } from '#lib/cut-pattern/split-budget.js';
 
 /**
  * The per-piece length budget and overflow preconditions the Splits panel needs,

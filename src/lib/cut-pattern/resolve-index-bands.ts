@@ -1,5 +1,5 @@
-import type { BandCutPattern, BandRef, BandSortIndex, TubeCutPattern } from '$lib/types';
-import { isSameAddress } from '$lib/util';
+import type { BandCutPattern, BandRef, BandSortIndex, TubeCutPattern } from '#lib/types.js';
+import { isSameAddress } from '#lib/util.js';
 import { bandKey } from './band-key';
 
 /**

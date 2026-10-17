@@ -1,19 +1,19 @@
 <script lang="ts">
 	import { get } from 'svelte/store';
-	import { selectedBand, superConfigStore } from '$lib/stores';
-	import { getLength } from '$lib/patterns/utils';
+	import { selectedBand, superConfigStore } from '#lib/stores/index.js';
+	import { getLength } from '#lib/patterns/utils.js';
 	import type {
 		BezierConfig,
 		CurveSampleMethod,
 		PointConfig2,
 		ShapeConfig,
 		SuperGlobuleConfig
-	} from '$lib/types';
-	import { isCurveSampleMethodMethod } from '$lib/types';
+	} from '#lib/types.js';
+	import { isCurveSampleMethodMethod } from '#lib/types.js';
 	import {
 		generateDefaultAsymmetricShapeConfig,
 		generateDefaultRadialShapeConfig
-	} from '$lib/shades-config';
+	} from '#lib/shades-config.js';
 	import NumberInput from '../../controls/super-control/NumberInput.svelte';
 	import Container from './Container.svelte';
 	import Editor from './Editor.svelte';
@@ -21,7 +21,7 @@
 	import PathEditor, { type PathEditorOverlayContext } from './PathEditor.svelte';
 	import { neighborPointMatch, pointOnRay, radialEndLock } from './path-editor';
 	import { pathFromCurves, radializeCurves } from './curve-preview';
-	import { isReflectedSymmetry, radialUnitAngle } from '$lib/geometry/radial-shape';
+	import { isReflectedSymmetry, radialUnitAngle } from '#lib/geometry/radial-shape.js';
 
 	// Derived from the store so an externally loaded config shows up here; the old
 	// version read into a plain `let` and never updated.

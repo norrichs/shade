@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { getChars, processSvg } from './svg-text';
 	import Fonts from './fonts';
-	import type { Point } from '$lib/types';
+	import type { Point } from '#lib/types.js';
 	import { svgTextDictionary } from './svg-text-store';
 	import { onMount, untrack } from 'svelte';
-	import type { GeometryType } from '$lib/cut-pattern/post-process-types';
-	import { layerStrokes } from '$lib/stores';
+	import type { GeometryType } from '#lib/cut-pattern/post-process-types.js';
+	import { layerStrokes } from '#lib/stores/index.js';
 
 	let {
 		id = undefined,

@@ -1,5 +1,5 @@
-import { GEOMETRY_TYPES } from '$lib/cut-pattern/post-process-types';
-import type { LightburnTemplate } from '$lib/stores/exportStores';
+import { GEOMETRY_TYPES } from '#lib/cut-pattern/post-process-types.js';
+import type { LightburnTemplate } from '#lib/stores/exportStores.js';
 import { isToolLayer, resolveLayer, type LayerId, type LayerMap } from './layers';
 import { parseTemplate } from './template';
 

@@ -9,9 +9,9 @@
  * The reactive `assemblerHighlight` store and its setter live in
  * `stores/selectionStores.ts`, which re-exports these for convenience.
  */
-import type { GlobuleAddress_Band } from '$lib/projection-geometry/types';
-import { concatAddress_Band } from '$lib/util';
-import type { GeometrySource } from '$lib/stores/selectionStores';
+import type { GlobuleAddress_Band } from '#lib/projection-geometry/types.js';
+import { concatAddress_Band } from '#lib/util.js';
+import type { GeometrySource } from '#lib/stores/selectionStores.js';
 
 /**
  * Assembler-page highlight state. Set by clicking a member cell in the data

@@ -1,7 +1,7 @@
 import { writable, derived, get } from 'svelte/store';
-import type { TiledPatternSpec } from '$lib/patterns/spec-types';
-import { findAlgorithm } from '$lib/patterns/pattern-registry';
-import { patterns } from '$lib/patterns/pattern-definitions';
+import type { TiledPatternSpec } from '#lib/patterns/spec-types.js';
+import { findAlgorithm } from '#lib/patterns/pattern-registry.js';
+import { patterns } from '#lib/patterns/pattern-definitions.js';
 
 type StoredVariant = TiledPatternSpec & { rowId: number };
 

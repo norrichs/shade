@@ -1,24 +1,24 @@
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { createHash } from 'crypto';
 import { writeFileSync } from 'fs';
-import { generateSuperGlobule } from '$lib/generate-superglobule';
+import { generateSuperGlobule } from '#lib/generate-superglobule.js';
 import {
 	defaultOutlinedPatternConfig,
 	generateDefaultGlobulePatternConfig,
 	generateDefaultSuperGlobuleConfig,
 	tiledPatternConfigs
-} from '$lib/shades-config';
+} from '#lib/shades-config.js';
 import { runPatternGeneration } from '../run-pattern-generation';
 import { resolveTabLabel } from '../resolve-tab-label';
-import type { SuperGlobuleProjectionCutPattern } from '$lib/stores/superGlobuleStores';
-import type { PatternGenerationConfig } from '$lib/stores/globulePatternStores';
+import type { SuperGlobuleProjectionCutPattern } from '#lib/stores/superGlobuleStores.js';
+import type { PatternGenerationConfig } from '#lib/stores/globulePatternStores.js';
 import type {
 	PatternTypeConfig,
 	PipelineGates,
 	TabEdgeOption,
 	TiledPatternConfig,
 	TubeCutPattern
-} from '$lib/types';
+} from '#lib/types.js';
 
 /**
  * GUARD (final review): unsplit GEOMETRY must not change unnoticed.

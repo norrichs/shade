@@ -1,11 +1,11 @@
-import type { BandCutPattern, PathSegment, Quadrilateral } from '$lib/types';
-import type { GlobuleAddress_Facet } from '$lib/projection-geometry/types';
+import type { BandCutPattern, PathSegment, Quadrilateral } from '#lib/types.js';
+import type { GlobuleAddress_Facet } from '#lib/projection-geometry/types.js';
 import { resolvePair } from './partner-pair-resolver';
 import {
 	alongsideFacetIndex,
 	findAdjacentSideNeighbour,
 	findBandByExactAddressInBands
-} from '$lib/cut-pattern/resolve-partner-band';
+} from '#lib/cut-pattern/resolve-partner-band.js';
 import { bandAddressOf } from './base-quad-selection';
 
 export type PartnerRole = 'top' | 'bottom' | 'left' | 'right';

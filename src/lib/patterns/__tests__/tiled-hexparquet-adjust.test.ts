@@ -1,5 +1,5 @@
 import { Vector3 } from 'three';
-import type { BandCutPattern, PathSegment, Quadrilateral, TiledPatternConfig } from '$lib/types';
+import type { BandCutPattern, PathSegment, Quadrilateral, TiledPatternConfig } from '#lib/types.js';
 import { transformPatternByQuad } from '../quadrilateral';
 import {
 	adjustHexparquetAfterMapping,

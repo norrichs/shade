@@ -1,6 +1,6 @@
-import { defaultCircleHolesFillConfig, defaultOutlinedPatternConfig } from '$lib/shades-config';
-import { isCircleHolesFillConfig } from '$lib/types';
-import { validateProceduralFillConfig } from '$lib/validators';
+import { defaultCircleHolesFillConfig, defaultOutlinedPatternConfig } from '#lib/shades-config.js';
+import { isCircleHolesFillConfig } from '#lib/types.js';
+import { validateProceduralFillConfig } from '#lib/validators.js';
 
 describe('defaultCircleHolesFillConfig', () => {
 	it('is a valid circle-holes config', () => {

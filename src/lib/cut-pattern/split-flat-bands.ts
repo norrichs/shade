@@ -1,4 +1,4 @@
-import type { Band, SplitConfig, TubeSplitRejection } from '$lib/types';
+import type { Band, SplitConfig, TubeSplitRejection } from '#lib/types.js';
 
 export type SplitRejection = { quad: number; reason: string };
 export type SplitFlatBandsResult = { bands: Band[]; rejected: SplitRejection[] };

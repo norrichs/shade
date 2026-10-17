@@ -2,7 +2,7 @@ import { describe, it, expect } from '@jest/globals';
 import { Vector3 } from 'three';
 
 import { shouldHaveTab } from '../generate-outlined-pattern';
-import type { OutlinedTabConfig } from '$lib/types';
+import type { OutlinedTabConfig } from '#lib/types.js';
 
 const base: OutlinedTabConfig = { shape: 'rectangle', tabWidth: 5 };
 const noPartners = { after: false, before: false };

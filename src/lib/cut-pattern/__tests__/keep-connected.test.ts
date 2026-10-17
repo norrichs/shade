@@ -1,4 +1,4 @@
-import type { PathSegment } from '$lib/types';
+import type { PathSegment } from '#lib/types.js';
 import { insertKeepConnectedBreak } from '../keep-connected';
 
 // Closed square, top edge at y=0 (SVG y grows downward, so y=0 is the top).

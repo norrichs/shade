@@ -1,7 +1,7 @@
 import { describe, it, expect } from '@jest/globals';
 import { findBandRow } from '../band-row-lookup';
-import type { BandSortIndex } from '$lib/types';
-import type { GlobuleAddress_Band } from '$lib/projection-geometry/types';
+import type { BandSortIndex } from '#lib/types.js';
+import type { GlobuleAddress_Band } from '#lib/projection-geometry/types.js';
 
 const band = (tube: number, b: number): GlobuleAddress_Band => ({ globule: 0, tube, band: b });
 

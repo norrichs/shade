@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { agentBridgeActivity, agentBridgeEnabled } from '$lib/agent-bridge/enabled';
+	import { agentBridgeActivity, agentBridgeEnabled } from '#lib/agent-bridge/enabled.js';
 
 	// The bridge only exists on the dev server, so the switch is hidden elsewhere.
 	const available = import.meta.env.DEV;

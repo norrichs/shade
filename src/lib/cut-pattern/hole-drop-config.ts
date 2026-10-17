@@ -1,5 +1,5 @@
-import type { BezierConfig, PointConfig2 } from '$lib/types';
-import type { LayerMap } from '$lib/lightburn/layers';
+import type { BezierConfig, PointConfig2 } from '#lib/types.js';
+import type { LayerMap } from '#lib/lightburn/layers.js';
 
 export type HoleDropMode = 'none' | 'all' | 'random' | 'variable';
 

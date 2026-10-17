@@ -1,4 +1,4 @@
-import type { PathSegment } from '$lib/types';
+import type { PathSegment } from '#lib/types.js';
 import type { PageRect } from '../page-layout/types';
 import type { BandContourIndex } from '../contour-index';
 import type { Placement, PlacedBand, Pt, TaggedPath } from '../post-process-types';

@@ -3,7 +3,7 @@ import type {
 	UnitDefinition,
 	IndexPair,
 	AdjustmentRules
-} from '$lib/patterns/spec-types';
+} from '#lib/patterns/spec-types.js';
 import type { Vertex } from './segment-vertices';
 import { flatIndexes } from './vertex-addressing';
 

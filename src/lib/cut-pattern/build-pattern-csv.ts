@@ -1,4 +1,4 @@
-import type { BandSortIndex, TubeCutPattern, BandRef as GlobuleAddress_Band } from '$lib/types';
+import type { BandSortIndex, TubeCutPattern, BandRef as GlobuleAddress_Band } from '#lib/types.js';
 import { buildBandCodeMap } from './band-sort-index';
 import { bandKey } from './band-key';
 import {
@@ -9,8 +9,8 @@ import {
 	parentBandsOf,
 	type TubePieceIndex
 } from './band-piece-index';
-import type { GlobuleAddress_BandPiece } from '$lib/projection-geometry/types';
-import { concatAddress } from '$lib/util';
+import type { GlobuleAddress_BandPiece } from '#lib/projection-geometry/types.js';
+import { concatAddress } from '#lib/util.js';
 
 /**
  * Display form for an address. Globule omitted per spec `t{tube}/b{band}`; a

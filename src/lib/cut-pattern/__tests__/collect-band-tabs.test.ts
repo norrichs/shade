@@ -1,7 +1,10 @@
 import { Triangle, Vector3 } from 'three';
 import { collectBandTabs } from '../collect-band-tabs';
-import type { Facet, FullTab, TrapTab } from '$lib/types';
-import type { GlobuleAddress_Band, GlobuleAddress_FacetEdge } from '$lib/projection-geometry/types';
+import type { Facet, FullTab, TrapTab } from '#lib/types.js';
+import type {
+	GlobuleAddress_Band,
+	GlobuleAddress_FacetEdge
+} from '#lib/projection-geometry/types.js';
 
 // Helpers --------------------------------------------------------------------
 

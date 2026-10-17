@@ -1,13 +1,13 @@
 <script lang="ts">
-	import { formatBandMap } from '$lib/recombination';
-	import { superConfigStore } from '$lib/stores';
+	import { formatBandMap } from '#lib/recombination.js';
+	import { superConfigStore } from '#lib/stores/index.js';
 	import type {
 		BandEnd,
 		GeometryAddress,
 		Recombination,
 		RecombinatoryRecurrence
-	} from '$lib/types';
-	import { round } from '$lib/util';
+	} from '#lib/types.js';
+	import { round } from '#lib/util.js';
 	import {
 		interactionMode as mode,
 		interactions,

@@ -1,5 +1,5 @@
-import type { BandCutPattern, PathSegment, Point, TubeCutPattern } from '$lib/types';
-import type { LabelTextDims } from '$lib/stores/mergedPathStore';
+import type { BandCutPattern, PathSegment, Point, TubeCutPattern } from '#lib/types.js';
+import type { LabelTextDims } from '#lib/stores/mergedPathStore.js';
 
 /**
  * One band, reduced to exactly what merging and post-processing need, in a form

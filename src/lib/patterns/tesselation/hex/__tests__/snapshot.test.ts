@@ -1,7 +1,7 @@
 import { generateTesselationTile } from '../../shared/generator';
 import { adjustTesselation } from '../../shared/adjuster';
 import { defaultHexSpec } from '../default-spec';
-import type { TiledPatternConfig } from '$lib/types';
+import type { TiledPatternConfig } from '#lib/types.js';
 
 describe('hex generator snapshot', () => {
 	const sizes = [1, 100];

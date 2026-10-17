@@ -1,4 +1,4 @@
-import type { BandSortGroup, TubeCutPattern } from '$lib/types';
+import type { BandSortGroup, TubeCutPattern } from '#lib/types.js';
 import {
 	formatGroupCode,
 	buildBandSortIndex,

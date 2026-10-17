@@ -1,6 +1,6 @@
-import type { BandCutPattern, PathSegment, TubeCutPattern } from '$lib/types';
+import type { BandCutPattern, PathSegment, TubeCutPattern } from '#lib/types.js';
 import { computeMergedBandPaths, computeTiledUnionPaths } from '../prepare-merge';
-import { getPaperScope } from '$lib/paper/scope';
+import { getPaperScope } from '#lib/paper/scope.js';
 
 const rect = (x: number, y: number, w: number, h: number): PathSegment[] => [
 	['M', x, y],

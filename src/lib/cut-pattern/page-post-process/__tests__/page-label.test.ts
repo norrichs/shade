@@ -8,7 +8,7 @@ import {
 	type GlyphDict
 } from '../page-label';
 import type { PlacedBand } from '../../post-process-types';
-import type { PathSegment } from '$lib/types';
+import type { PathSegment } from '#lib/types.js';
 
 const glyphPath: PathSegment[] = [
 	['M', 0, 0],

@@ -2,8 +2,8 @@
 	import type {
 		EdgeCurveConfig,
 		ProjectionCurveSampleMethod
-	} from '$lib/projection-geometry/types';
-	import { superConfigStore } from '$lib/stores';
+	} from '#lib/projection-geometry/types.js';
+	import { superConfigStore } from '#lib/stores/index.js';
 	import { get } from 'svelte/store';
 	import NumberInput from '../../controls/super-control/NumberInput.svelte';
 	import Button from '../../design-system/Button.svelte';
@@ -19,8 +19,8 @@
 		neighborPointMatch
 	} from './path-editor';
 	import PathEditor from './PathEditor.svelte';
-	import { generatePolygonFromConfig } from '$lib/projection-geometry/preview-utils';
-	import { preparePolygonConfig } from '$lib/projection-geometry/generate-projection';
+	import { generatePolygonFromConfig } from '#lib/projection-geometry/preview-utils.js';
+	import { preparePolygonConfig } from '#lib/projection-geometry/generate-projection.js';
 
 	const handleChangeSampleMethod = (event: Event, config: EdgeCurveConfig) => {
 		const newMethod = (event.target as HTMLSelectElement)

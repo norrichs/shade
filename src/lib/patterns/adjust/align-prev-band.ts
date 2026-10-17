@@ -1,4 +1,4 @@
-import type { PathSegment, Quadrilateral } from '$lib/types';
+import type { PathSegment, Quadrilateral } from '#lib/types.js';
 import { getAngle, rotatePS, translatePS } from '../utils';
 
 /**

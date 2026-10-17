@@ -1,6 +1,6 @@
 import { describe, it, expect } from '@jest/globals';
 import { getBandMaterial, materials } from '../materials';
-import type { GlobuleAddress_Band } from '$lib/projection-geometry/types';
+import type { GlobuleAddress_Band } from '#lib/projection-geometry/types.js';
 
 const band = (b: number): GlobuleAddress_Band => ({ globule: 0, tube: 0, band: b });
 

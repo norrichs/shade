@@ -9,18 +9,18 @@ import type {
 	TubeCutPattern,
 	Facet,
 	TagAnchor
-} from '$lib/types';
+} from '#lib/types.js';
 import {
 	getQuadrilaterals,
 	getQuadrilateralTransformMatrix,
 	transformPatternByQuad,
 	transformPointByQuadrilateralTransform
-} from '$lib/patterns/quadrilateral';
-import type { TiledPatternConfig, UnitPatternGenerator } from '$lib/types';
+} from '#lib/patterns/quadrilateral.js';
+import type { TiledPatternConfig, UnitPatternGenerator } from '#lib/types.js';
 import { applyStrokeWidth, getFlatStripV2 } from './generate-cut-pattern';
-import { resolvePatternEntry } from '$lib/patterns/resolve-pattern';
+import { resolvePatternEntry } from '#lib/patterns/resolve-pattern.js';
 import { computeTiledLabelAngle } from './compute-tiled-label-angle';
-import { getQuadWidth, svgPathStringFromSegments } from '$lib/patterns/utils';
+import { getQuadWidth, svgPathStringFromSegments } from '#lib/patterns/utils.js';
 import { bandQuadCount, splitFlatBands, tubeQuadCountOf } from './split-flat-bands';
 import { buildPatternBandIndex, type PatternBandIndexOf } from './pattern-band-index';
 import type {
@@ -28,13 +28,13 @@ import type {
 	GlobuleAddress_BandPiece,
 	GlobuleAddress_FacetEdge,
 	GlobuleAddress_Tube
-} from '$lib/projection-geometry/types';
+} from '#lib/projection-geometry/types.js';
 import {
 	getAllTrianglePoints,
 	getMinimalBoundingBoxAndRotationAngle
 } from '../../components/cut-pattern/distrubute-panels';
 import { Triangle, Vector3 } from 'three';
-import { getBandTriangleEdges } from '$lib/projection-geometry/generate-projection';
+import { getBandTriangleEdges } from '#lib/projection-geometry/generate-projection.js';
 
 /**
  * A band is an "edge" band when at least one of its facets' outer (side) edges has

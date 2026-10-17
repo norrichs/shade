@@ -1,13 +1,13 @@
 import { describe, it, expect, jest } from '@jest/globals';
-import { generateSuperGlobule } from '$lib/generate-superglobule';
+import { generateSuperGlobule } from '#lib/generate-superglobule.js';
 import { generateProjectionPattern } from '../generate-pattern';
 import {
 	generateDefaultSuperGlobuleConfig,
 	generateDefaultGlobulePatternConfig,
 	tiledPatternConfigs
-} from '$lib/shades-config';
-import { patterns } from '$lib/patterns/pattern-definitions';
-import type { BandCutPattern, PathSegment } from '$lib/types';
+} from '#lib/shades-config.js';
+import { patterns } from '#lib/patterns/pattern-definitions.js';
+import type { BandCutPattern, PathSegment } from '#lib/types.js';
 
 describe('adjustAfterTiling gate', () => {
 	const superGlobule = generateSuperGlobule(generateDefaultSuperGlobuleConfig(), {

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { useThrelte } from '@threlte/core';
-	import { registerModelCapture } from '$lib/agent-bridge/capture';
+	import { registerModelCapture } from '#lib/agent-bridge/capture.js';
 
 	// Render and read back in one task: the canvas has no preserveDrawingBuffer,
 	// so its pixels are gone once the frame is presented.

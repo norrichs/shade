@@ -1,7 +1,6 @@
-import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { tursoClient } from '$lib/server/turso';
-import { shadesConfigs } from '$lib/server/schema/shadesConfig';
+import { tursoClient } from '#lib/server/turso.js';
+import { shadesConfigs } from '#lib/server/schema/shadesConfig.js';
 import { desc, eq } from 'drizzle-orm';
 
 export const GET: RequestHandler = async ({ url }) => {
@@ -25,7 +24,7 @@ export const GET: RequestHandler = async ({ url }) => {
 	const filtered = kind ? query.where(eq(shadesConfigs.kind, kind)) : query;
 	const configs = await filtered.orderBy(desc(shadesConfigs.updatedAt));
 
-	return json(configs);
+	return Response.json(configs);
 };
 
 export const POST: RequestHandler = async ({ request }) => {
@@ -33,7 +32,7 @@ export const POST: RequestHandler = async ({ request }) => {
 	const { name, configJson, kind } = body;
 
 	if (!name || !configJson) {
-		return json({ error: 'name and configJson are required' }, { status: 400 });
+		return Response.json({ error: 'name and configJson are required' }, { status: 400 });
 	}
 
 	const db = tursoClient();
@@ -43,7 +42,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		configJson: typeof configJson === 'string' ? configJson : JSON.stringify(configJson)
 	});
 
-	return json(
+	return Response.json(
 		{ id: Number(result.lastInsertRowid), name, kind: kind || 'project' },
 		{ status: 201 }
 	);

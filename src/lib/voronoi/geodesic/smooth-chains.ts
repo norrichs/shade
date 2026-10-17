@@ -8,7 +8,7 @@ import {
 	type Intersection
 } from 'three';
 import { MeshBVH, acceleratedRaycast } from 'three-mesh-bvh';
-import type { SurfaceTriangle } from '$lib/voronoi/types';
+import type { SurfaceTriangle } from '#lib/voronoi/types.js';
 import { weldKey, type MeshGraph } from './mesh-graph';
 
 /**

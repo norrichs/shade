@@ -6,7 +6,7 @@ import {
 	pieceIndexOf,
 	resolveEndPartner
 } from '../resolve-partner-band';
-import type { BandCutPattern, TubeCutPattern } from '$lib/types';
+import type { BandCutPattern, TubeCutPattern } from '#lib/types.js';
 
 type Address = BandCutPattern['address'];
 type Meta = BandCutPattern['meta'];

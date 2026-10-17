@@ -1,8 +1,8 @@
-import type { SuperGlobuleConfig, GlobulePatternConfig } from '$lib/types';
-import type { ViewControls } from '$lib/stores/viewControlStore';
-import type { TiledPatternSpec } from '$lib/patterns/spec-types';
-import { normalizeVoronoiConfig } from '$lib/voronoi/migrate-voronoi-config';
-import { migrateGlobulePatternConfig } from '$lib/validators';
+import type { SuperGlobuleConfig, GlobulePatternConfig } from '#lib/types.js';
+import type { ViewControls } from '#lib/stores/viewControlStore.js';
+import type { TiledPatternSpec } from '#lib/patterns/spec-types.js';
+import { normalizeVoronoiConfig } from '#lib/voronoi/migrate-voronoi-config.js';
+import { migrateGlobulePatternConfig } from '#lib/validators.js';
 
 /**
  * Versioned envelope persisted as a saved config's `configJson`.

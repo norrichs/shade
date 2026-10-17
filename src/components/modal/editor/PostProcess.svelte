@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { patternConfigStore, lightburnTemplateStore } from '$lib/stores';
+	import { patternConfigStore, lightburnTemplateStore } from '#lib/stores/index.js';
 	import {
 		DEFAULT_POST_PROCESS,
 		DEFAULT_CONNECT_GAP_MM,
@@ -7,20 +7,20 @@
 		type HoleDropConfig,
 		type HoleDropMode,
 		type PageLabelConfig
-	} from '$lib/cut-pattern/hole-drop-config';
+	} from '#lib/cut-pattern/hole-drop-config.js';
 	import {
 		GEOMETRY_TYPES,
 		GEOMETRY_TYPE_LABELS,
 		type GeometryType
-	} from '$lib/cut-pattern/post-process-types';
+	} from '#lib/cut-pattern/post-process-types.js';
 	import {
 		LIGHTBURN_LAYERS,
 		layerOptionLabel,
 		resolveLayer,
 		type LayerId
-	} from '$lib/lightburn/layers';
-	import { readTemplateUpload, missingTemplateLayers } from '$lib/lightburn/template-status';
-	import type { BezierConfig } from '$lib/types';
+	} from '#lib/lightburn/layers.js';
+	import { readTemplateUpload, missingTemplateLayers } from '#lib/lightburn/template-status.js';
+	import type { BezierConfig } from '#lib/types.js';
 	import NumberInput from '../../controls/super-control/NumberInput.svelte';
 	import Container from './Container.svelte';
 	import Editor from './Editor.svelte';

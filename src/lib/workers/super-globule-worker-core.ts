@@ -1,10 +1,10 @@
-import { generateSuperGlobule as defaultGenerateSuperGlobule } from '$lib/generate-superglobule';
+import { generateSuperGlobule as defaultGenerateSuperGlobule } from '#lib/generate-superglobule.js';
 import {
 	runPatternGeneration as defaultRunPatternGeneration,
 	type PatternGenerationResult
-} from '$lib/cut-pattern/run-pattern-generation';
-import type { PatternGenerationConfig } from '$lib/stores/globulePatternStores';
-import type { PipelineGates, SuperGlobule, SuperGlobuleConfig } from '$lib/types';
+} from '#lib/cut-pattern/run-pattern-generation.js';
+import type { PatternGenerationConfig } from '#lib/stores/globulePatternStores.js';
+import type { PipelineGates, SuperGlobule, SuperGlobuleConfig } from '#lib/types.js';
 
 /**
  * Message protocol between the main thread and the geometry worker.

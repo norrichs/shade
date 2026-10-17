@@ -1,4 +1,4 @@
-import { LABEL_MM_DEFAULTS } from '$lib/cut-pattern/label-units';
+import { LABEL_MM_DEFAULTS } from '#lib/cut-pattern/label-units.js';
 import type {
 	CutoutConfig,
 	PatternConfig,
@@ -23,7 +23,7 @@ import type {
 	RecombinatoryRecurrence,
 	TiledPattern,
 	PatternScale
-} from '$lib/types';
+} from '#lib/types.js';
 import { DEFAULT_DEPTH_CURVE_BASELINE } from './types';
 import type { EndCapConfig } from './geometry/end-caps';
 import { rad } from './util';

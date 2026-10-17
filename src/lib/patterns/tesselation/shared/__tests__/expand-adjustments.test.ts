@@ -1,5 +1,5 @@
 import { describe, it, expect } from '@jest/globals';
-import type { PathSegment } from '$lib/types';
+import type { PathSegment } from '#lib/types.js';
 import type { AdjustmentRules, IndexPair, TiledPatternSpec } from '../../../spec-types';
 import { translatePS } from '../../../utils';
 import { defaultShieldSpec } from '../../shield';

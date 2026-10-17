@@ -1,4 +1,4 @@
-import type { GeometryType } from '$lib/cut-pattern/post-process-types';
+import type { GeometryType } from '#lib/cut-pattern/post-process-types.js';
 
 export const LAYER_IDS = [
 	'C00',

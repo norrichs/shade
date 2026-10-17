@@ -1,4 +1,4 @@
-import type { IndexPair, UnitDefinition } from '$lib/patterns/spec-types';
+import type { IndexPair, UnitDefinition } from '#lib/patterns/spec-types.js';
 import type { Vertex, VertexRef } from './segment-vertices';
 
 export const flatIndex = (unit: UnitDefinition, ref: VertexRef): number => {

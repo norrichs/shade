@@ -1,4 +1,4 @@
-import type { Point, Quadrilateral } from '$lib/types';
+import type { Point, Quadrilateral } from '#lib/types.js';
 
 /**
  * Computes the auto-orientation angle for a tiled-pattern band label.

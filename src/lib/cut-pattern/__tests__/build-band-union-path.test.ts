@@ -1,7 +1,7 @@
-import type { BandCutPattern, PathSegment } from '$lib/types';
+import type { BandCutPattern, PathSegment } from '#lib/types.js';
 import { buildBandUnionPath } from '../build-band-union-path';
-import { getPaperScope } from '$lib/paper/scope';
-import { pathSegmentsToPaper } from '$lib/paper';
+import { getPaperScope } from '#lib/paper/scope.js';
+import { pathSegmentsToPaper } from '#lib/paper/index.js';
 
 const rect = (x: number, y: number, w: number, h: number): PathSegment[] => [
 	['M', x, y],

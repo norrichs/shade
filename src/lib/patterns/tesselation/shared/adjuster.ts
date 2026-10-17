@@ -4,8 +4,8 @@ import type {
 	PathSegment,
 	TiledPatternConfig,
 	TubeCutPattern
-} from '$lib/types';
-import { findPreviousBandFacets, type BandEnd } from '$lib/cut-pattern/resolve-partner-band';
+} from '#lib/types.js';
+import { findPreviousBandFacets, type BandEnd } from '#lib/cut-pattern/resolve-partner-band.js';
 import type { IndexPair, TiledPatternSpec } from '../../spec-types';
 import { alignPrevBandPath } from '../../adjust/align-prev-band';
 import {

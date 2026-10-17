@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { IndexPair } from '$lib/patterns/spec-types';
+	import type { IndexPair } from '#lib/patterns/spec-types.js';
 	import RuleList from './RuleList.svelte';
 	import type { RuleSetKey } from './partner-neighbors';
 

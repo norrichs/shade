@@ -1,4 +1,4 @@
-import type { BezierConfig, CurveSampleMethod } from '$lib/types';
+import type { BezierConfig, CurveSampleMethod } from '#lib/types.js';
 import type { CrossSectionConfig, EdgeCurveConfig } from './types';
 
 export const asymmetricEdgeCurve: BezierConfig[] = [

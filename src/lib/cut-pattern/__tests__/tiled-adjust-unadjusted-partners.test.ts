@@ -1,10 +1,10 @@
 import { describe, it, expect, afterAll, beforeAll } from '@jest/globals';
-import { generateDefaultGlobulePatternConfig, tiledPatternConfigs } from '$lib/shades-config';
+import { generateDefaultGlobulePatternConfig, tiledPatternConfigs } from '#lib/shades-config.js';
 import { generateProjectionPattern } from '../generate-pattern';
-import { patterns } from '$lib/patterns/pattern-definitions';
-import { defaultShieldSpec } from '$lib/patterns/tesselation/shield';
-import { evaluateSkipEdge } from '$lib/patterns/tesselation/shared/helpers';
-import { expandTesselationAdjustments } from '$lib/patterns/tesselation/shared/adjuster';
+import { patterns } from '#lib/patterns/pattern-definitions.js';
+import { defaultShieldSpec } from '#lib/patterns/tesselation/shield/index.js';
+import { evaluateSkipEdge } from '#lib/patterns/tesselation/shared/helpers.js';
+import { expandTesselationAdjustments } from '#lib/patterns/tesselation/shared/adjuster.js';
 import {
 	askerEdge,
 	buildDefaultGeometry,
@@ -19,9 +19,14 @@ import {
 	type End,
 	type RealGeometry
 } from './helpers/real-geometry';
-import type { PatternGenerationConfig } from '$lib/stores/globulePatternStores';
-import type { SuperGlobuleProjectionCutPattern } from '$lib/stores/superGlobuleStores';
-import type { BandCutPattern, PathSegment, TiledPatternConfig, TubeCutPattern } from '$lib/types';
+import type { PatternGenerationConfig } from '#lib/stores/globulePatternStores.js';
+import type { SuperGlobuleProjectionCutPattern } from '#lib/stores/superGlobuleStores.js';
+import type {
+	BandCutPattern,
+	PathSegment,
+	TiledPatternConfig,
+	TubeCutPattern
+} from '#lib/types.js';
 
 /**
  * Task 14: the adjust-after-tiling pass must read every partner from the same,

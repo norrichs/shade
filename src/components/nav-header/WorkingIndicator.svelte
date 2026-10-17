@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { isGenerating } from '$lib/stores';
+	import { isGenerating } from '#lib/stores/index.js';
 </script>
 
 {#if $isGenerating}

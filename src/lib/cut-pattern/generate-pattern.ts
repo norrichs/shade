@@ -3,7 +3,7 @@ import type {
 	TriangleEdge,
 	TriangleEdgePermissive,
 	Tube
-} from '$lib/projection-geometry/types';
+} from '#lib/projection-geometry/types.js';
 import type {
 	GlobulePatternConfig,
 	SuperGlobuleConfig,
@@ -14,18 +14,18 @@ import type {
 	BandCutPattern,
 	UnitPatternGenerator,
 	SplitConfig
-} from '$lib/types';
-import { isOutlinedPatternConfig } from '$lib/types';
+} from '#lib/types.js';
+import { isOutlinedPatternConfig } from '#lib/types.js';
 
 import { generateTubeCutPattern, applyTubePatternPostProcessing } from './generate-tiled-pattern';
 import { buildPatternBandIndex, patternedTubes } from './pattern-band-index';
 import { keepsFillBands } from './pattern-band-space';
-import { resolvePatternEntry } from '$lib/patterns/resolve-pattern';
+import { resolvePatternEntry } from '#lib/patterns/resolve-pattern.js';
 import { generateOutlinedProjectionPattern } from './generate-outlined-pattern';
 import { judgeTubeSplits } from './split-flat-bands';
 import { splitQuadsForTube } from './split-boundaries';
-import { getEdge } from '$lib/projection-geometry/generate-projection';
-import type { SuperGlobuleProjectionPattern } from '$lib/stores/superGlobuleStores';
+import { getEdge } from '#lib/projection-geometry/generate-projection.js';
+import type { SuperGlobuleProjectionPattern } from '#lib/stores/superGlobuleStores.js';
 import {
 	shouldUsePanelPattern,
 	generateProjectionPanelPattern,
@@ -35,7 +35,7 @@ import {
 	type PanelHoleConfig
 } from './generate-panel-pattern';
 import { resolveEndPartner, type BandEnd } from './resolve-partner-band';
-import { resolveRangeIndices, type ProjectionRange } from '$lib/projection-geometry/filters';
+import { resolveRangeIndices, type ProjectionRange } from '#lib/projection-geometry/filters.js';
 
 // Re-export panel functions for backwards compatibility
 export { validateAllPanels, getPanelEdgeMeta, applyHolesToEdgeMeta, type PanelHoleConfig };

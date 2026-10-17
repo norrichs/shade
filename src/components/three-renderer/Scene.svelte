@@ -6,9 +6,9 @@
 		selectedBand,
 		model3dExtremesStore,
 		showMeasureIndicators
-	} from '$lib/stores';
+	} from '#lib/stores/index.js';
 	import GlobuleMesh from '../globuleMesh/GlobuleMesh.svelte';
-	import type { AxisExtremes, GlobuleGeometry } from '$lib/types';
+	import type { AxisExtremes, GlobuleGeometry } from '#lib/types.js';
 	import DesignerCamera from './DesignerCamera.svelte';
 	import DesignerLighting from './DesignerLighting.svelte';
 	import {
@@ -16,16 +16,16 @@
 		isMeasureInteractionMode,
 		isPointSelectInteractionMode
 	} from './interaction-mode';
-	import { clearMeasurements, measurements } from '$lib/stores/measurementStore';
+	import { clearMeasurements, measurements } from '#lib/stores/measurementStore.js';
 	import { BufferGeometry, Vector3 } from 'three';
 	import { materials } from './materials';
-	import { generateTempId } from '$lib/id-handler';
-	import { formatAddress } from '$lib/recombination';
+	import { generateTempId } from '#lib/id-handler.js';
+	import { formatAddress } from '#lib/recombination.js';
 	import ProjectionGeometryComponent from '../projection/ProjectionGeometryComponent.svelte';
 	import Highlight from '../projection/Highlight.svelte';
-	import type { GlobuleAddress_Facet } from '$lib/projection-geometry/types';
-	import { selectedProjection } from '$lib/stores';
-	import { cameraDirection } from '$lib/stores/selectionStores';
+	import type { GlobuleAddress_Facet } from '#lib/projection-geometry/types.js';
+	import { selectedProjection } from '#lib/stores/index.js';
+	import { cameraDirection } from '#lib/stores/selectionStores.js';
 	import type { Material } from './materials';
 
 	// Raise the click-distance tolerance: OrbitControls shares the canvas, and a

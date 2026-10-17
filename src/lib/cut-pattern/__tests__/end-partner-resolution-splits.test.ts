@@ -1,14 +1,19 @@
 import { describe, it, expect } from '@jest/globals';
-import { generateSuperGlobule } from '$lib/generate-superglobule';
+import { generateSuperGlobule } from '#lib/generate-superglobule.js';
 import {
 	generateDefaultSuperGlobuleConfig,
 	generateDefaultGlobulePatternConfig
-} from '$lib/shades-config';
+} from '#lib/shades-config.js';
 import { generateTubeCutPattern } from '../generate-tiled-pattern';
 import { getEndPartnerTransforms } from '../generate-pattern';
-import { isGlobuleAddress_BandPiece, isSameAddress } from '$lib/util';
-import type { TransformConfig } from '$lib/projection-geometry/types';
-import type { BandCutPattern, PipelineGates, TiledPatternConfig, TubeCutPattern } from '$lib/types';
+import { isGlobuleAddress_BandPiece, isSameAddress } from '#lib/util.js';
+import type { TransformConfig } from '#lib/projection-geometry/types.js';
+import type {
+	BandCutPattern,
+	PipelineGates,
+	TiledPatternConfig,
+	TubeCutPattern
+} from '#lib/types.js';
 
 /**
  * shades-umy: end partners must resolve by WHICH END JOINS, not by the asking

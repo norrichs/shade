@@ -7,7 +7,7 @@ import {
 	removeRulesForPairing
 } from '../vertex-addressing';
 import { computeVertices } from '../segment-vertices';
-import type { UnitDefinition, IndexPair } from '$lib/patterns/spec-types';
+import type { UnitDefinition, IndexPair } from '#lib/patterns/spec-types.js';
 
 const makeUnit = (overrides: Partial<UnitDefinition> = {}): UnitDefinition => ({
 	width: 42,

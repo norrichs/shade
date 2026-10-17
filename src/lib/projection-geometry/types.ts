@@ -6,7 +6,7 @@ import type {
 	Point,
 	Point3,
 	GlobuleConfig
-} from '$lib/types';
+} from '#lib/types.js';
 import type { CurvePath, Vector2, Vector3 } from 'three';
 
 export type SphereConfig = {

@@ -1,11 +1,11 @@
-import type { PathSegment, CutPattern, MovePathSegment } from '$lib/types';
+import type { PathSegment, CutPattern, MovePathSegment } from '#lib/types.js';
 import { transformPatternByQuad } from './quadrilateral';
 import { translatePS, getAngle, rotatePoint } from './utils';
 import { Vector3 } from 'three';
 import {
 	findPreviousBandFacets,
 	type SideNeighbourCandidate
-} from '$lib/cut-pattern/resolve-partner-band';
+} from '#lib/cut-pattern/resolve-partner-band.js';
 
 export const generateCarnation = ({
 	size = 1,

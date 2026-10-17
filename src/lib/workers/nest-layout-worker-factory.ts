@@ -1,4 +1,4 @@
-import type { NestWorkerLike } from '$lib/cut-pattern/page-layout/nest/nest-client';
+import type { NestWorkerLike } from '#lib/cut-pattern/page-layout/nest/nest-client.js';
 
 /**
  * Builds a real nest-layout Worker via Vite's `new URL(..., import.meta.url)`

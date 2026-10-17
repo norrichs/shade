@@ -1,16 +1,16 @@
 <script lang="ts">
-	import { superConfigStore, superGlobuleStore } from '$lib/stores/superGlobuleStores';
-	import { defaultVoronoiConfig } from '$lib/shades-config';
+	import { superConfigStore, superGlobuleStore } from '#lib/stores/superGlobuleStores.js';
+	import { defaultVoronoiConfig } from '#lib/shades-config.js';
 	import type {
 		VoronoiConfig,
 		VoronoiMethod,
 		InsetMethod,
 		GeodesicEdgeStyle
-	} from '$lib/voronoi/types';
+	} from '#lib/voronoi/types.js';
 	import {
 		deriveEdgeDivisionsMax,
 		normalizeEdgeDivisionsMultiplier
-	} from '$lib/voronoi/edge-divisions';
+	} from '#lib/voronoi/edge-divisions.js';
 
 	let config: VoronoiConfig = $derived($superConfigStore.voronoiConfig ?? defaultVoronoiConfig);
 	let isGeodesic = $derived((config.voronoiMethod ?? 'spherical') === 'geodesic');

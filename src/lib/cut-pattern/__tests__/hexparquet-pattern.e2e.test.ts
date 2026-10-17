@@ -1,12 +1,12 @@
 import { describe, it, expect } from '@jest/globals';
-import { generateSuperGlobule } from '$lib/generate-superglobule';
+import { generateSuperGlobule } from '#lib/generate-superglobule.js';
 import { generateProjectionPattern } from '../generate-pattern';
 import {
 	generateDefaultSuperGlobuleConfig,
 	generateDefaultGlobulePatternConfig,
 	tiledPatternConfigs
-} from '$lib/shades-config';
-import type { SuperGlobuleProjectionCutPattern } from '$lib/stores/superGlobuleStores';
+} from '#lib/shades-config.js';
+import type { SuperGlobuleProjectionCutPattern } from '#lib/stores/superGlobuleStores.js';
 
 describe('hexparquet end to end (globule tubes)', () => {
 	it('patterns every band or refuses it with an error', () => {

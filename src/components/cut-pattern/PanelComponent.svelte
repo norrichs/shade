@@ -1,9 +1,12 @@
 <script lang="ts">
-	import { corrected, getTrianglePointFromTriangleEdge } from '$lib/cut-pattern/generate-pattern';
-	import { svgPathStringFromSegments } from '$lib/patterns/utils';
-	import { printProjectionAddress } from '$lib/projection-geometry/generate-projection';
-	import type { TriangleEdge } from '$lib/projection-geometry/types';
-	import type { PanelPattern, PathSegment, TrianglePoint } from '$lib/types';
+	import {
+		corrected,
+		getTrianglePointFromTriangleEdge
+	} from '#lib/cut-pattern/generate-pattern.js';
+	import { svgPathStringFromSegments } from '#lib/patterns/utils.js';
+	import { printProjectionAddress } from '#lib/projection-geometry/generate-projection.js';
+	import type { TriangleEdge } from '#lib/projection-geometry/types.js';
+	import type { PanelPattern, PathSegment, TrianglePoint } from '#lib/types.js';
 	import { Vector3, type Triangle } from 'three';
 
 	import {
@@ -12,8 +15,8 @@
 		selectedProjectionGeometry,
 		isSuperGlobuleProjectionPanelPattern,
 		layerStrokes
-	} from '$lib/stores';
-	import { addressIsInArray, formatAngle } from '$lib/util';
+	} from '#lib/stores/index.js';
+	import { addressIsInArray, formatAngle } from '#lib/util.js';
 	import SvgText from './SvgText/SvgText.svelte';
 	import RegistrationMark from './RegistrationMark.svelte';
 

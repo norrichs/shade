@@ -1,4 +1,4 @@
-import type { PatternLabelsConfig } from '$lib/types';
+import type { PatternLabelsConfig } from '#lib/types.js';
 
 /**
  * Label sizes are stored in real-world millimetres and resolved to pattern

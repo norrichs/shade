@@ -8,7 +8,7 @@ import {
 	DoubleSide,
 	Raycaster
 } from 'three';
-import { OPENING } from '$lib/types';
+import { OPENING } from '#lib/types.js';
 import { computeEdgeInsetsLocalProjection } from '../local-projection';
 import { computeEdgeInsetsCenterOut } from '../inset-center-out';
 import type { VoronoiEdge } from '../types';

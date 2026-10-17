@@ -1,7 +1,6 @@
-import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { tursoClient } from '$lib/server/turso';
-import { shadesConfigs } from '$lib/server/schema/shadesConfig';
+import { tursoClient } from '#lib/server/turso.js';
+import { shadesConfigs } from '#lib/server/schema/shadesConfig.js';
 import { eq, sql } from 'drizzle-orm';
 
 export const GET: RequestHandler = async ({ params }) => {
@@ -12,10 +11,10 @@ export const GET: RequestHandler = async ({ params }) => {
 		.where(eq(shadesConfigs.id, Number(params.id)));
 
 	if (results.length === 0) {
-		return json({ error: 'Config not found' }, { status: 404 });
+		return Response.json({ error: 'Config not found' }, { status: 404 });
 	}
 
-	return json(results[0]);
+	return Response.json(results[0]);
 };
 
 export const PUT: RequestHandler = async ({ params, request }) => {
@@ -23,7 +22,7 @@ export const PUT: RequestHandler = async ({ params, request }) => {
 	const { name, configJson } = body;
 
 	if (!configJson) {
-		return json({ error: 'configJson is required' }, { status: 400 });
+		return Response.json({ error: 'configJson is required' }, { status: 400 });
 	}
 
 	const db = tursoClient();
@@ -40,11 +39,11 @@ export const PUT: RequestHandler = async ({ params, request }) => {
 		.set(updates)
 		.where(eq(shadesConfigs.id, Number(params.id)));
 
-	return json({ id: Number(params.id), name });
+	return Response.json({ id: Number(params.id), name });
 };
 
 export const DELETE: RequestHandler = async ({ params }) => {
 	const db = tursoClient();
 	await db.delete(shadesConfigs).where(eq(shadesConfigs.id, Number(params.id)));
-	return json({ success: true });
+	return Response.json({ success: true });
 };

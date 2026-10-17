@@ -1,4 +1,4 @@
-import type { PathSegment } from '$lib/types';
+import type { PathSegment } from '#lib/types.js';
 import type { UnitDefinition } from '../../spec-types';
 
 /** One of the three index groups of a tesselation unit tile. */

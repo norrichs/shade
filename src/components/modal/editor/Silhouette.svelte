@@ -1,14 +1,14 @@
 <script lang="ts">
 	import { get } from 'svelte/store';
-	import { selectedBand, superConfigStore } from '$lib/stores';
-	import { getCurvePoints } from '$lib/generate-level';
+	import { selectedBand, superConfigStore } from '#lib/stores/index.js';
+	import { getCurvePoints } from '#lib/generate-level.js';
 	import type {
 		BezierConfig,
 		CurveSampleMethod,
 		NarrowRegionConfig,
 		SuperGlobuleConfig
-	} from '$lib/types';
-	import { isCurveSampleMethodMethod } from '$lib/types';
+	} from '#lib/types.js';
+	import { isCurveSampleMethodMethod } from '#lib/types.js';
 	import NumberInput from '../../controls/super-control/NumberInput.svelte';
 	import Container from './Container.svelte';
 	import Editor from './Editor.svelte';

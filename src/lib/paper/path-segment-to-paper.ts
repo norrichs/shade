@@ -1,5 +1,5 @@
-import type { PathSegment } from '$lib/types';
-import { svgPathStringFromSegments } from '$lib/patterns/utils';
+import type { PathSegment } from '#lib/types.js';
+import { svgPathStringFromSegments } from '#lib/patterns/utils.js';
 import { getPaperScope } from './scope';
 
 /**

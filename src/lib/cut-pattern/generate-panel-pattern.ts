@@ -4,7 +4,7 @@ import type {
 	GlobuleAddress_FacetEdge,
 	TriangleEdge,
 	Tube
-} from '$lib/projection-geometry/types';
+} from '#lib/projection-geometry/types.js';
 import type {
 	BandPanelPattern,
 	Crease,
@@ -20,14 +20,14 @@ import type {
 	ScaleUnit,
 	PatternScale,
 	HingePattern
-} from '$lib/types';
+} from '#lib/types.js';
 import { Line3, Plane, Triangle, Vector3 } from 'three';
 import {
 	getBandTriangleEdges,
 	isSameVector3,
 	printProjectionAddress
-} from '$lib/projection-geometry/generate-projection';
-import { getMidPoint, svgPathStringFromSegments } from '$lib/patterns/utils';
+} from '#lib/projection-geometry/generate-projection.js';
+import { getMidPoint, svgPathStringFromSegments } from '#lib/patterns/utils.js';
 import {
 	distributePanels,
 	findLineIntersection,

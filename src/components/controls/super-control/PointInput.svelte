@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
-	import type { Point3 } from '$lib/types';
+	import type { Point3 } from '#lib/types.js';
 	import { Vector3 } from 'three';
 	import NumberInput from './NumberInput.svelte';
 

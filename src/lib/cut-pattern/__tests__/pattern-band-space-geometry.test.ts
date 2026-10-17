@@ -1,13 +1,13 @@
 import { describe, it, expect } from '@jest/globals';
-import { generateSuperGlobule } from '$lib/generate-superglobule';
+import { generateSuperGlobule } from '#lib/generate-superglobule.js';
 import {
 	generateDefaultGlobulePatternConfig,
 	generateDefaultSuperGlobuleConfig
-} from '$lib/shades-config';
+} from '#lib/shades-config.js';
 import { generateProjectionPattern } from '../generate-pattern';
 import { runPatternGeneration, type PatternGenerationResult } from '../run-pattern-generation';
-import { rehydratePatternResult } from '$lib/workers/rehydrate-pattern';
-import type { PatternGenerationConfig } from '$lib/stores/globulePatternStores';
+import { rehydratePatternResult } from '#lib/workers/rehydrate-pattern.js';
+import type { PatternGenerationConfig } from '#lib/stores/globulePatternStores.js';
 import {
 	bandSpaceForTubes,
 	keepsFillBands,
@@ -17,9 +17,9 @@ import {
 	realBandToPattern
 } from '../pattern-band-space';
 import { partnerHighlightAddresses } from '../../../components/modal/editor/tile-editor/partner-neighbors';
-import type { SuperGlobuleProjectionCutPattern } from '$lib/stores/superGlobuleStores';
-import type { Tube } from '$lib/projection-geometry/types';
-import type { BandCutPattern, PipelineGates } from '$lib/types';
+import type { SuperGlobuleProjectionCutPattern } from '#lib/stores/superGlobuleStores.js';
+import type { Tube } from '#lib/projection-geometry/types.js';
+import type { BandCutPattern, PipelineGates } from '#lib/types.js';
 
 /**
  * Task 12, real geometry: every pattern quad, mapped onto the 3D tubes the

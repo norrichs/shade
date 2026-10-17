@@ -2,7 +2,7 @@ import type {
 	CrossSectionConfig,
 	ProjectionBandConfig,
 	TransformConfig
-} from '$lib/projection-geometry/types';
+} from '#lib/projection-geometry/types.js';
 
 export type VoronoiMethod = 'spherical' | 'uv' | 'geodesic';
 

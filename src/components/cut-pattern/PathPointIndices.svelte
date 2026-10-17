@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { getMidPoint } from '$lib/patterns/utils';
-	import type { BandCutPattern, PathSegment, Point } from '$lib/types';
+	import { getMidPoint } from '#lib/patterns/utils.js';
+	import type { BandCutPattern, PathSegment, Point } from '#lib/types.js';
 
 	let {
 		showPathPointIndices = false,

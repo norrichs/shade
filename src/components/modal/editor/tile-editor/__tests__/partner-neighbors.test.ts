@@ -1,6 +1,6 @@
 import { resolveBaseAndPartners, partnerHighlightAddresses } from '../partner-neighbors';
-import type { BandCutPattern } from '$lib/types';
-import type { GlobuleAddress_Facet } from '$lib/projection-geometry/types';
+import type { BandCutPattern } from '#lib/types.js';
+import type { GlobuleAddress_Facet } from '#lib/projection-geometry/types.js';
 
 const makeQuad = (id: number) => ({
 	a: { x: id * 10, y: 0, z: 0 } as any,

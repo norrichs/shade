@@ -2,7 +2,7 @@ import { Vector3 } from 'three';
 import type { MeshGraph } from './mesh-graph';
 import type { GeodesicField } from './geodesic-solver';
 import type { BoundaryChain } from './extract-boundaries';
-import { OPENING } from '$lib/types';
+import { OPENING } from '#lib/types.js';
 
 // Rim corner ids live in a distinct negative namespace so they never collide with
 // interior corner ids (>= 0) or the OPENING sentinel (-1).

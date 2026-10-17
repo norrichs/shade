@@ -4,12 +4,12 @@ import type {
 	CutPattern,
 	PatternLabelsConfig,
 	Point
-} from '$lib/types';
-import type { GlobuleAddress_Band } from '$lib/projection-geometry/types';
-import type { LabelTextDims } from '$lib/stores/mergedPathStore';
+} from '#lib/types.js';
+import type { GlobuleAddress_Band } from '#lib/projection-geometry/types.js';
+import type { LabelTextDims } from '#lib/stores/mergedPathStore.js';
 import { buildSelfTagLines } from './build-self-tag-lines';
 import { effectiveBandBounds } from './label-footprint';
-import { concatAddress } from '$lib/util';
+import { concatAddress } from '#lib/util.js';
 
 /**
  * Per-band layout helpers for CutPatternRenderer.

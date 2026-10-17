@@ -1,4 +1,4 @@
-import type { BandCutPattern } from '$lib/types';
+import type { BandCutPattern } from '#lib/types.js';
 import { formatBandAddress } from './band-partner-info';
 
 type MaybeProjectionCutPattern = {

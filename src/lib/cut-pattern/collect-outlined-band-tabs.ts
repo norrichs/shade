@@ -1,4 +1,4 @@
-import type { BandCutPattern, PathSegment, Point } from '$lib/types';
+import type { BandCutPattern, PathSegment, Point } from '#lib/types.js';
 import type { TabGeometry } from './generate-tab-geometry';
 
 export type BandTabRecord = NonNullable<BandCutPattern['tabs']>[number];

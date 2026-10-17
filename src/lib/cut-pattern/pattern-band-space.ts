@@ -19,12 +19,12 @@ import type {
 	GlobuleAddress_BandPiece,
 	GlobuleAddress_Facet,
 	Tube
-} from '$lib/projection-geometry/types';
-import type { PatternSource, PatternTypeConfig } from '$lib/types';
-import { isOutlinedPatternConfig } from '$lib/types';
-import { toggleAssemblerHighlight, type AssemblerHighlight } from '$lib/assembler-highlight';
-import type { GeometrySource } from '$lib/stores/selectionStores';
-import type { PartnerHighlightSource } from '$lib/stores/partnerHighlightStore';
+} from '#lib/projection-geometry/types.js';
+import type { PatternSource, PatternTypeConfig } from '#lib/types.js';
+import { isOutlinedPatternConfig } from '#lib/types.js';
+import { toggleAssemblerHighlight, type AssemblerHighlight } from '#lib/assembler-highlight.js';
+import type { GeometrySource } from '#lib/stores/selectionStores.js';
+import type { PartnerHighlightSource } from '#lib/stores/partnerHighlightStore.js';
 import { buildBandSpace, patternedTubes, type BandSpace } from './pattern-band-index';
 
 export type { BandSpace };

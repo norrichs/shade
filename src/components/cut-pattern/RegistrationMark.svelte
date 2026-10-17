@@ -1,10 +1,10 @@
 <script lang="ts">
-	import { getTrianglePointFromTriangleEdge } from '$lib/cut-pattern/generate-pattern';
-	import { getMidPoint } from '$lib/patterns/utils';
-	import type { TriangleEdge } from '$lib/projection-geometry/types';
+	import { getTrianglePointFromTriangleEdge } from '#lib/cut-pattern/generate-pattern.js';
+	import { getMidPoint } from '#lib/patterns/utils.js';
+	import type { TriangleEdge } from '#lib/projection-geometry/types.js';
 	import { Vector3, type Triangle } from 'three';
 	import { getEdgeVector } from './distrubute-panels';
-	import { layerStrokes } from '$lib/stores';
+	import { layerStrokes } from '#lib/stores/index.js';
 
 	let {
 		edge,

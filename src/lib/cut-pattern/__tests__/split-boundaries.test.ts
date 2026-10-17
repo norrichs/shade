@@ -18,7 +18,7 @@ import type {
 	GlobulePatternConfig,
 	Quadrilateral,
 	TubeSplits
-} from '$lib/types';
+} from '#lib/types.js';
 
 /**
  * A quad occupying rows [k, k+1) of a unit-wide ladder: its leading edge (a->b)

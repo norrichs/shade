@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { BandCutPattern } from '$lib/types';
+	import type { BandCutPattern } from '#lib/types.js';
 
 	let { bounds, showBounds = false }: { bounds: BandCutPattern['bounds']; showBounds?: boolean } =
 		$props();

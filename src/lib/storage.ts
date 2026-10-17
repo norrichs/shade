@@ -5,8 +5,8 @@
 // write a button component that allows saving a named config
 
 import { v4 as uuidv4 } from 'uuid';
-import { AUTO_PERSIST_KEY } from '$lib/persistable';
-import type { GlobuleConfig } from '$lib/types';
+import { AUTO_PERSIST_KEY } from '#lib/persistable.js';
+import type { GlobuleConfig } from '#lib/types.js';
 
 // Check if localStorage is available (not available in web workers)
 const hasLocalStorage = typeof localStorage !== 'undefined';

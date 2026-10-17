@@ -4,7 +4,13 @@
 // collect-band-tabs can use them without dragging in generate-shape.ts —
 // which transitively reaches into cut-pattern code that Jest's transform
 // pipeline doesn't handle (three/src submodules, etc.).
-import type { FacetTab, FullTab, MultiFacetFullTab, MultiFacetTrapTab, TrapTab } from '$lib/types';
+import type {
+	FacetTab,
+	FullTab,
+	MultiFacetFullTab,
+	MultiFacetTrapTab,
+	TrapTab
+} from '#lib/types.js';
 
 export const isFullTab = (tab: FacetTab | FacetTab[] | undefined): tab is FullTab =>
 	!Array.isArray(tab) && tab?.style === 'full';

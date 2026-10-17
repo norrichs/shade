@@ -1,8 +1,8 @@
 import { describe, it, expect } from '@jest/globals';
-import { defaultPatternConfig } from '$lib/shades-config';
-import { migrateGlobulePatternConfig } from '$lib/validators';
-import { DEFAULT_POST_PROCESS } from '$lib/cut-pattern/hole-drop-config';
-import type { GlobulePatternConfig } from '$lib/types';
+import { defaultPatternConfig } from '#lib/shades-config.js';
+import { migrateGlobulePatternConfig } from '#lib/validators.js';
+import { DEFAULT_POST_PROCESS } from '#lib/cut-pattern/hole-drop-config.js';
+import type { GlobulePatternConfig } from '#lib/types.js';
 
 describe('postProcess config', () => {
 	it('defaults to dropping nothing', () => {

@@ -5,10 +5,10 @@ import type {
 	ProceduralFillConfig,
 	TiledPatternConfig
 } from './types';
-import { GEOMETRY_TYPES } from '$lib/cut-pattern/post-process-types';
-import { isLayerId } from '$lib/lightburn/layers';
-import { DEFAULT_CONNECT_GAP_MM } from '$lib/cut-pattern/hole-drop-config';
-import { migrateLabelsToMm } from '$lib/cut-pattern/label-units';
+import { GEOMETRY_TYPES } from '#lib/cut-pattern/post-process-types.js';
+import { isLayerId } from '#lib/lightburn/layers.js';
+import { DEFAULT_CONNECT_GAP_MM } from '#lib/cut-pattern/hole-drop-config.js';
+import { migrateLabelsToMm } from '#lib/cut-pattern/label-units.js';
 
 export type Validity = {
 	isValid: boolean;

@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { svgQuad, svgTriangle } from '$lib/patterns/quadrilateral';
-	import { getMidPoint } from '$lib/patterns/utils';
-	import type { BandCutPattern, CutPattern, Point, Quadrilateral } from '$lib/types';
+	import { svgQuad, svgTriangle } from '#lib/patterns/quadrilateral.js';
+	import { getMidPoint } from '#lib/patterns/utils.js';
+	import type { BandCutPattern, CutPattern, Point, Quadrilateral } from '#lib/types.js';
 
 	let {
 		band,

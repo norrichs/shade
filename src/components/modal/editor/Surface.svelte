@@ -1,16 +1,16 @@
 <script lang="ts">
-	import { superConfigStore } from '$lib/stores';
+	import { superConfigStore } from '#lib/stores/index.js';
 	import { get } from 'svelte/store';
 	import LabeledControl from './LabeledControl.svelte';
 	import Container from './Container.svelte';
 	import Editor from './Editor.svelte';
-	import type { SurfaceConfig } from '$lib/projection-geometry/types';
+	import type { SurfaceConfig } from '#lib/projection-geometry/types.js';
 	import PointInput from '../../controls/super-control/PointInput.svelte';
 	import NumberInput from '../../controls/super-control/NumberInput.svelte';
 	import {
 		defaultCapsuleConfig,
 		defaultSphereConfig
-	} from '$lib/projection-geometry/surface-definitions';
+	} from '#lib/projection-geometry/surface-definitions.js';
 	import TransformControls from './TransformControls.svelte';
 	import { identityTransform, isInheritedTransform } from './transform-config';
 

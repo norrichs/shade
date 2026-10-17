@@ -1,7 +1,7 @@
 import { buildPatternCsv } from '../build-pattern-csv';
 import { buildBandCodeMap } from '../band-sort-index';
-import { sliceProjectionCutPattern } from '$lib/projection-geometry/filters';
-import type { BandSortIndex, TubeCutPattern, BandRef as GlobuleAddress_Band } from '$lib/types';
+import { sliceProjectionCutPattern } from '#lib/projection-geometry/filters.js';
+import type { BandSortIndex, TubeCutPattern, BandRef as GlobuleAddress_Band } from '#lib/types.js';
 
 const addr = (tube: number, band: number): GlobuleAddress_Band => ({ globule: 0, tube, band });
 

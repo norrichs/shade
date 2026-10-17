@@ -1,6 +1,6 @@
 import { describe, it, expect } from '@jest/globals';
 import { toPageSpace, placeBand, rotateDirection } from '../place-bands';
-import type { PathSegment } from '$lib/types';
+import type { PathSegment } from '#lib/types.js';
 
 describe('toPageSpace', () => {
 	it('matches bandTransform: translate(origin) rotate(rotation, pivot)', () => {

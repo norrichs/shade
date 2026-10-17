@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Point } from '$lib/types';
+	import type { Point } from '#lib/types.js';
 	import { tick } from 'svelte';
 	import SvgText from './SvgText/SvgText.svelte';
 

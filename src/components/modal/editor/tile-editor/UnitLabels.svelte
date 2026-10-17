@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { UnitDefinition } from '$lib/patterns/spec-types';
+	import type { UnitDefinition } from '#lib/patterns/spec-types.js';
 	import type { Vertex } from '../segment-vertices';
 	import { flatIndexes } from '../vertex-addressing';
 

@@ -1,7 +1,7 @@
 import { describe, it, expect } from '@jest/globals';
 
 import { getTransformedPartnerCutPattern } from '../helpers';
-import type { BandCutPattern, TubeCutPattern } from '$lib/types';
+import type { BandCutPattern, TubeCutPattern } from '#lib/types.js';
 
 // A cross-band (outer) partner address is stored as a plain {globule, tube,
 // band} triple. When the partner band is split, the partner facet to match is

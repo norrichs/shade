@@ -1,4 +1,4 @@
-import type { PatternSource, PipelineGates } from '$lib/types';
+import type { PatternSource, PipelineGates } from '#lib/types.js';
 
 export type PatternGenerationTargets = {
 	globuleTube: boolean;

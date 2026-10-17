@@ -1,5 +1,5 @@
 import { Vector3 } from 'three';
-import type { BandCutPattern, PatternLabelsConfig } from '$lib/types';
+import type { BandCutPattern, PatternLabelsConfig } from '#lib/types.js';
 import {
 	buildEffectiveBoundsIndex,
 	buildPivotIndex,

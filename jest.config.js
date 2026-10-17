@@ -24,7 +24,9 @@ export default {
 	],
 	collectCoverageFrom: ['src/**/*.ts', '!src/**/*.d.ts'],
 	moduleNameMapper: {
-		'^\\$lib/(.*)$': '<rootDir>/src/lib/$1',
+		// Kit 3 `#lib/...` subpath imports carry a `.js` extension that points at `.ts` sources.
+		'^#lib/(.*)\\.js$': '<rootDir>/src/lib/$1',
+		'^#lib/(.*)$': '<rootDir>/src/lib/$1',
 		'^\\$app/(.*)$': '<rootDir>/src/app/$1',
 		'^svelte/store$': '<rootDir>/node_modules/svelte/src/store/index-server.js',
 		'^svelte$': '<rootDir>/node_modules/svelte/src/index-server.js'

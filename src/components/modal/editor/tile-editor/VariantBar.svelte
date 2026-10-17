@@ -1,6 +1,6 @@
 <script lang="ts">
-	import type { TiledPatternSpec } from '$lib/patterns/spec-types';
-	import { algorithms } from '$lib/patterns/pattern-registry';
+	import type { TiledPatternSpec } from '#lib/patterns/spec-types.js';
+	import { algorithms } from '#lib/patterns/pattern-registry.js';
 
 	let {
 		draft,

@@ -4,30 +4,34 @@
 		pageLayoutInfoStore,
 		showMeasureIndicators,
 		superConfigStore
-	} from '$lib/stores';
-	import { model3dBoundsStore } from '$lib/stores/superGlobuleStores';
-	import { PAGE_PRESETS } from '$lib/cut-pattern/page-layout/page-presets';
+	} from '#lib/stores/index.js';
+	import { model3dBoundsStore } from '#lib/stores/superGlobuleStores.js';
+	import { PAGE_PRESETS } from '#lib/cut-pattern/page-layout/page-presets.js';
 	import {
 		derivePageDimensions,
 		deriveDistance,
 		inchToMm,
 		mmToInch
-	} from '$lib/cut-pattern/page-layout/units';
-	import { measurements, removeMeasurement, clearMeasurements } from '$lib/stores/measurementStore';
+	} from '#lib/cut-pattern/page-layout/units.js';
+	import {
+		measurements,
+		removeMeasurement,
+		clearMeasurements
+	} from '#lib/stores/measurementStore.js';
 	import { interactionMode, isMeasureInteractionMode } from '../../three-renderer/interaction-mode';
 	import { get } from 'svelte/store';
-	import { collatedTubesStore, splitBudgetStore } from '$lib/stores';
-	import { superGlobulePatternStore } from '$lib/stores/superGlobuleStores';
+	import { collatedTubesStore, splitBudgetStore } from '#lib/stores/index.js';
+	import { superGlobulePatternStore } from '#lib/stores/superGlobuleStores.js';
 	import {
 		applyAutoSplits,
 		clearAllSplits,
 		resolveSplitSubunitCount
-	} from '$lib/cut-pattern/split-boundaries';
-	import { proposeTubeSplits } from '$lib/cut-pattern/auto-split-bands';
-	import { describeAutoSplitResult } from '$lib/cut-pattern/auto-split-note';
-	import { derivePageScaleForTarget } from '$lib/cut-pattern/page-layout/derive-page-scale';
+	} from '#lib/cut-pattern/split-boundaries.js';
+	import { proposeTubeSplits } from '#lib/cut-pattern/auto-split-bands.js';
+	import { describeAutoSplitResult } from '#lib/cut-pattern/auto-split-note.js';
+	import { derivePageScaleForTarget } from '#lib/cut-pattern/page-layout/derive-page-scale.js';
 	import { Vector3 } from 'three';
-	import type { PatternLayoutMode, TubeSplits } from '$lib/types';
+	import type { PatternLayoutMode, TubeSplits } from '#lib/types.js';
 
 	// Shallow copy on purpose. Binding to `$patternConfigStore.…pageLayout.x` mutates
 	// that object in place, so a `$derived` returning the object itself resolves to the

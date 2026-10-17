@@ -1,12 +1,12 @@
 import type {
 	ShowGlobuleTubeGeometries,
 	ShowProjectionGeometries
-} from '$lib/stores/viewControlStore';
+} from '#lib/stores/viewControlStore.js';
 import type {
 	SuperGlobuleProjectionPattern,
 	SuperGlobuleProjectionCutPattern
-} from '$lib/stores/superGlobuleStores';
-import type { PatternSource, TubeCutPattern } from '$lib/types';
+} from '#lib/stores/superGlobuleStores.js';
+import type { PatternSource, TubeCutPattern } from '#lib/types.js';
 
 const isCutPattern = (
 	pattern: SuperGlobuleProjectionPattern | null | undefined

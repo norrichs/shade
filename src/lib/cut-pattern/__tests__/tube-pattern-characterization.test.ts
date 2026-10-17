@@ -1,7 +1,7 @@
 import { describe, it, expect } from '@jest/globals';
 
 import { generateTubeCutPattern } from '../generate-tiled-pattern';
-import { isGlobuleAddress_BandPiece } from '$lib/util';
+import { isGlobuleAddress_BandPiece } from '#lib/util.js';
 import { buildBand, pixelScale, tiledPatternConfig } from './fixtures/tube-fixture';
 
 describe('generateTubeCutPattern — characterization (no splits)', () => {

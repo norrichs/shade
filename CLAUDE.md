@@ -8,7 +8,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This project is used exclusively by the developer.
 
-**Stack:** SvelteKit + Three.js (via Threlte) + TypeScript + Turso (SQLite) + Drizzle ORM, deployed on Vercel.
+**Stack:** SvelteKit 3 + Three.js (via Threlte) + TypeScript 6 + Turso (SQLite) + Drizzle ORM, deployed on Vercel.
+
+Kit 3 conventions: import library code as `#lib/path/to/module.js` (package.json `imports`, `.js` extension even for `.ts` sources; Jest maps it in `jest.config.js`). There is no `svelte.config.js` — adapter and preprocess options live in the `sveltekit()` plugin call in `vite.config.ts`. Load workers with a relative `new URL('../workers/x.worker.ts', import.meta.url)`, never `#lib/...` (a `#` URL is a fragment).
 
 ## Development Commands
 

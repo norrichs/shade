@@ -1,8 +1,8 @@
 <!-- src/components/modal/editor/tile-editor/PartnersViewport.svelte -->
 <script lang="ts">
-	import type { PathSegment, Quadrilateral } from '$lib/types';
-	import type { IndexPair } from '$lib/patterns/spec-types';
-	import { svgPathStringFromSegments } from '$lib/patterns/utils';
+	import type { PathSegment, Quadrilateral } from '#lib/types.js';
+	import type { IndexPair } from '#lib/patterns/spec-types.js';
+	import { svgPathStringFromSegments } from '#lib/patterns/utils.js';
 	import type { Vertex } from '../segment-vertices';
 	import { computeVerticesFromFlatPath } from '../segment-vertices';
 	import type { PartnerBundle, PartnerRole, ResolvedPartner } from './partner-neighbors';

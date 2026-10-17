@@ -9,12 +9,12 @@ import type {
 	GlobuleAddress_Facet,
 	Section
 } from './types';
-import type { Band, Facet } from '$lib/types';
+import type { Band, Facet } from '#lib/types.js';
 import {
 	type ShowGlobuleTubeGeometries,
 	type ShowProjectionGeometries,
 	type ShowVoronoiGeometries
-} from '$lib/stores/viewControlStore';
+} from '#lib/stores/viewControlStore.js';
 
 export const collateGeometry = (
 	{

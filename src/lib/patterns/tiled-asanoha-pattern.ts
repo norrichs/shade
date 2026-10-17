@@ -1,4 +1,4 @@
-import type { PathSegment, Quadrilateral, TiledPatternConfig } from '$lib/types';
+import type { PathSegment, Quadrilateral, TiledPatternConfig } from '#lib/types.js';
 import { translatePS } from './utils';
 import { snapAdjacentFacets, type FacetSnapRule } from './adjust/snap-adjacent-facets';
 

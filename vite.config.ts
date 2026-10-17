@@ -1,3 +1,5 @@
+import adapter from '@sveltejs/adapter-vercel';
+import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { agentBridgePlugin } from './src/lib/agent-bridge/vite-plugin.ts';
 import type { UserConfig } from 'vite';
@@ -6,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 const fromRoot = (dir: string) => fileURLToPath(new URL(dir, import.meta.url));
 
 const config: UserConfig = {
-	plugins: [sveltekit(), agentBridgePlugin()],
+	plugins: [sveltekit({ preprocess: vitePreprocess(), adapter: adapter() }), agentBridgePlugin()],
 	server: {
 		port: 9775,
 		watch: {

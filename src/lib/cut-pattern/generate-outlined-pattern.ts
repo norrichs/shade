@@ -3,7 +3,7 @@ import type {
 	GlobuleAddress_Band,
 	GlobuleAddress_BandPiece,
 	Tube
-} from '$lib/projection-geometry/types';
+} from '#lib/projection-geometry/types.js';
 import type {
 	Band,
 	BandCutPattern,
@@ -15,17 +15,17 @@ import type {
 	Quadrilateral,
 	SplitConfig,
 	TubeCutPattern
-} from '$lib/types';
-import type { SuperGlobuleProjectionPattern } from '$lib/stores/superGlobuleStores';
-import type { SuperGlobuleConfig } from '$lib/types';
-import { resolveRangeIndices, type ProjectionRange } from '$lib/projection-geometry/filters';
+} from '#lib/types.js';
+import type { SuperGlobuleProjectionPattern } from '#lib/stores/superGlobuleStores.js';
+import type { SuperGlobuleConfig } from '#lib/types.js';
+import { resolveRangeIndices, type ProjectionRange } from '#lib/projection-geometry/filters.js';
 import { getFlatStripV2 } from './generate-cut-pattern';
 import { alignBands, computeBandAscending } from './generate-tiled-pattern';
 import { bandQuadCount, splitFlatBands, tubeQuadCountOf } from './split-flat-bands';
 import { splitQuadsForTube } from './split-boundaries';
-import { svgPathStringFromSegments } from '$lib/patterns/utils';
-import { getQuadrilaterals } from '$lib/patterns/quadrilateral';
-import { getEdge } from '$lib/projection-geometry/generate-projection';
+import { svgPathStringFromSegments } from '#lib/patterns/utils.js';
+import { getQuadrilaterals } from '#lib/patterns/quadrilateral.js';
+import { getEdge } from '#lib/projection-geometry/generate-projection.js';
 import {
 	generateRectangularTab,
 	generateRoundedTab,
@@ -40,8 +40,8 @@ import { computeOutlinedLabelAnchor } from './compute-label-anchor';
 import { chooseMiddleQuadEdge } from './select-middle-quad-edge';
 import { seamTabOwner } from './seam-tab-layout';
 import { findSideNeighbourInBands, pieceIndexOf } from './resolve-partner-band';
-import { dedupePolygon, type Polygon } from '$lib/patterns/procedural/polygon-2d';
-import { generateProceduralFill } from '$lib/patterns/procedural/procedural-fill';
+import { dedupePolygon, type Polygon } from '#lib/patterns/procedural/polygon-2d.js';
+import { generateProceduralFill } from '#lib/patterns/procedural/procedural-fill.js';
 
 /**
  * Compute bounding box from all coordinates in a path.

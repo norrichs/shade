@@ -3,7 +3,7 @@
 	import Floater from './Floater.svelte';
 	import type { FloaterContent, SidebarDefinition } from './sidebar-definitions';
 	import Button from '../design-system/Button.svelte';
-	import { openSidebarPanel } from '$lib/stores/sidebarStore';
+	import { openSidebarPanel } from '#lib/stores/sidebarStore.js';
 
 	let { sidebarDefinition }: { sidebarDefinition: SidebarDefinition } = $props();
 

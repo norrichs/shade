@@ -1,5 +1,5 @@
 import { buildExportSvg } from '../util';
-import type { ExportFrame } from '$lib/download/export-frame';
+import type { ExportFrame } from '#lib/download/export-frame.js';
 
 /**
  * The exported SVG drives a cutter/plotter: anything serialised into it is a

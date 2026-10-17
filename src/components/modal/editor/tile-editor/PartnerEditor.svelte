@@ -1,9 +1,9 @@
 <!-- src/components/modal/editor/tile-editor/PartnerEditor.svelte -->
 <script lang="ts">
-	import type { TiledPatternSpec, IndexPair } from '$lib/patterns/spec-types';
-	import { superGlobulePatternStore } from '$lib/stores/superGlobuleStores';
-	import { partnerHighlightStore } from '$lib/stores/partnerHighlightStore';
-	import type { BandCutPattern } from '$lib/types';
+	import type { TiledPatternSpec, IndexPair } from '#lib/patterns/spec-types.js';
+	import { superGlobulePatternStore } from '#lib/stores/superGlobuleStores.js';
+	import { partnerHighlightStore } from '#lib/stores/partnerHighlightStore.js';
+	import type { BandCutPattern } from '#lib/types.js';
 	import BaseQuadSelector from './BaseQuadSelector.svelte';
 	import { facetAddressOf, type BaseQuadAddress } from './base-quad-selection';
 	import PartnersViewport from './PartnersViewport.svelte';

@@ -2,8 +2,8 @@ import { describe, it, expect } from '@jest/globals';
 import { Vector3 } from 'three';
 import { buildMeshGraph, traceBoundaryLoops } from '../mesh-graph';
 import { buildRimChains } from '../rim-edges';
-import { OPENING } from '$lib/types';
-import type { SurfaceTriangle } from '$lib/voronoi/types';
+import { OPENING } from '#lib/types.js';
+import type { SurfaceTriangle } from '#lib/voronoi/types.js';
 import type { GeodesicField } from '../geodesic-solver';
 
 const tri = (a: number[], b: number[], c: number[]): SurfaceTriangle => [

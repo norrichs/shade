@@ -4,13 +4,13 @@ import type {
 	SuperGlobule,
 	SuperGlobuleConfig,
 	TubeSplitRejection
-} from '$lib/types';
-import type { Tube } from '$lib/projection-geometry/types';
-import type { PatternGenerationConfig } from '$lib/stores/globulePatternStores';
+} from '#lib/types.js';
+import type { Tube } from '#lib/projection-geometry/types.js';
+import type { PatternGenerationConfig } from '#lib/stores/globulePatternStores.js';
 import type {
 	SuperGlobuleProjectionCutPattern,
 	SuperGlobuleProjectionPattern
-} from '$lib/stores/superGlobuleStores';
+} from '#lib/stores/superGlobuleStores.js';
 import { generateProjectionPattern } from './generate-pattern';
 import { resolvePatternGenerationTargets } from './pattern-generation-gates';
 import { dedupeSplitRejections } from './split-flat-bands';

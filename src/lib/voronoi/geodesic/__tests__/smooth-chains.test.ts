@@ -1,7 +1,7 @@
 import { describe, it, expect } from '@jest/globals';
 import { Vector3 } from 'three';
 import { smoothSeries, smoothChainPoints, SurfaceProjector } from '../smooth-chains';
-import type { SurfaceTriangle } from '$lib/voronoi/types';
+import type { SurfaceTriangle } from '#lib/voronoi/types.js';
 import { buildMeshGraph } from '../mesh-graph';
 
 /** Sum of |second differences| — a proxy for jaggedness. */
