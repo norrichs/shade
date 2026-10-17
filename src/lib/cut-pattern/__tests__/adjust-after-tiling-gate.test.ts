@@ -11,7 +11,6 @@ import type { BandCutPattern, PathSegment } from '$lib/types';
 
 describe('adjustAfterTiling gate', () => {
 	const superGlobule = generateSuperGlobule(generateDefaultSuperGlobuleConfig(), {
-		globule: false,
 		globuleTube: true,
 		projection: false,
 		voronoi: false

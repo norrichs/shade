@@ -2,7 +2,6 @@ import { AUTO_PERSIST_KEY, bootstrapShouldUsePersisted, persistable } from '$lib
 import { generateDefaultSuperGlobuleConfig } from '$lib/shades-config';
 import type {
 	Id,
-	BandCutPattern,
 	GlobulePatternConfig,
 	ProjectionPanelPattern,
 	SuperGlobule,
@@ -11,8 +10,6 @@ import type {
 	ProjectionCutPattern,
 	SuperGlobuleMesh,
 	AxisExtremes,
-	BandGeometry,
-	SuperGlobuleGeometry,
 	PipelineGates,
 	PatternSource,
 	TubeSplitRejection
@@ -23,10 +20,6 @@ import { derived, writable, get } from 'svelte/store';
 import { loadPersistedOrDefault } from './stores';
 import { normalizeVoronoiConfig } from '$lib/voronoi/migrate-voronoi-config';
 import { generateSuperGlobule } from '$lib/generate-superglobule';
-import {
-	generateSuperGlobuleBandGeometry,
-	generateSuperGlobuleGeometry
-} from '$lib/generate-globulegeometry';
 import { validateAllPanels } from '$lib/cut-pattern/generate-pattern';
 import {
 	EMPTY_PATTERN_RESULT,
@@ -67,7 +60,6 @@ export const isGenerating = derived(
  */
 function pipelineGatesFromViewControls(vc: ViewControls): PipelineGates {
 	return {
-		globule: vc.showGlobuleGeometry.any,
 		globuleTube: vc.showGlobuleTubeGeometry.any,
 		projection: vc.showProjectionGeometry.any,
 		voronoi: vc.showVoronoiGeometry.any
@@ -83,7 +75,7 @@ const patternGates = derived<typeof viewControlStore, PipelineGates>(
 	viewControlStore,
 	($viewControlStore, set) => {
 		const gates = pipelineGatesFromViewControls($viewControlStore);
-		const key = `${gates.globule}|${gates.globuleTube}|${gates.projection}|${gates.voronoi}`;
+		const key = `${gates.globuleTube}|${gates.projection}|${gates.voronoi}`;
 		if (key !== lastPatternGateKey) {
 			lastPatternGateKey = key;
 			set(gates);
@@ -142,11 +134,6 @@ export function extractMeshData(
 	superGlobule: SuperGlobule,
 	patternSource: PatternSource = 'projection'
 ): SuperGlobuleMesh {
-	// Extract band geometry for 3D rendering
-	const geometryResult: SuperGlobuleGeometry = generateSuperGlobuleBandGeometry(superGlobule);
-	const bandGeometry: BandGeometry[] =
-		geometryResult.variant === 'Band' ? geometryResult.subGlobules.flat() : [];
-
 	// Extract projection addresses for selection mapping
 	const projectionAddresses: GlobuleAddress_Facet[] = [];
 	superGlobule.projections.forEach((proj, globuleIdx) => {
@@ -165,12 +152,9 @@ export function extractMeshData(
 	});
 
 	// Compute bounds from the geometry actually rendered for the active pattern
-	// source (projection/voronoi facet triangles), falling back to the globule
-	// band points when that source has no geometry. Track the actual extreme
-	// point on each axis so the measured extents can be visualised.
-	const renderedPoints = collectRenderedPoints(superGlobule, patternSource);
-	const points: Vector3[] =
-		renderedPoints.length > 0 ? renderedPoints : bandGeometry.flatMap((bg) => bg.points);
+	// source (projection/voronoi/globule-tube facet triangles). Track the actual
+	// extreme point on each axis so the measured extents can be visualised.
+	const points: Vector3[] = collectRenderedPoints(superGlobule, patternSource);
 
 	const bounds = new Box3();
 	let extremes: AxisExtremes | null = null;
@@ -191,7 +175,6 @@ export function extractMeshData(
 	return {
 		type: 'SuperGlobuleMesh',
 		superGlobuleConfigId: superGlobule.superGlobuleConfigId,
-		bandGeometry,
 		projectionAddresses,
 		bounds,
 		extremes
@@ -223,7 +206,6 @@ export const frozenMeshStore = writable<SuperGlobuleMesh | null>(null);
 
 // Persisted pattern store for 2d-only mode (maintains patterns when 3D is cleared)
 export const persistedPatternStore = writable<{
-	superGlobulePattern: any;
 	projectionPattern: any;
 	globuleTubePattern: any;
 } | null>(null);
@@ -318,7 +300,7 @@ if (browser) {
 	let prevGateKey: string | null = null;
 	viewControlStore.subscribe((vc) => {
 		const g = pipelineGatesFromViewControls(vc);
-		const key = `${g.globule}|${g.globuleTube}|${g.projection}|${g.voronoi}`;
+		const key = `${g.globuleTube}|${g.projection}|${g.voronoi}`;
 		if (prevGateKey === null) {
 			prevGateKey = key; // skip the initial subscription call
 			return;
@@ -425,7 +407,6 @@ if (browser) {
 const emptySuperGlobule = (superGlobuleConfigId: Id): SuperGlobule => ({
 	type: 'SuperGlobule',
 	superGlobuleConfigId,
-	subGlobules: [],
 	globuleTubes: [],
 	projections: [],
 	voronoiResult: undefined
@@ -479,18 +460,6 @@ export const model3dExtremesStore = derived(
 	superGlobuleMeshStore,
 	($mesh): AxisExtremes | null => $mesh?.extremes ?? null
 );
-
-export const superGlobuleGeometryStore = derived(superGlobuleStore, ($superGlobuleStore) => {
-	const superGlobuleGeometry = generateSuperGlobuleGeometry($superGlobuleStore);
-	console.log('SUPER GLOBULE GEOMETRY STORE', { $superGlobuleStore, superGlobuleGeometry });
-	return superGlobuleGeometry;
-});
-
-export const superGlobuleBandGeometryStore = derived(superGlobuleStore, ($superGlobuleStore) => {
-	const superGlobuleGeometry = generateSuperGlobuleBandGeometry($superGlobuleStore);
-	console.log('SUPER GLOBULE BAND GEOMETRY STORE', { $superGlobuleStore, superGlobuleGeometry });
-	return superGlobuleGeometry;
-});
 
 // ---------------------------------------------------------------------------
 // 2D pattern generation
@@ -615,13 +584,7 @@ if (browser) {
 	});
 }
 
-export type SuperGlobulePattern = SuperGlobuleBandPattern | SuperGlobuleProjectionPattern;
-
-export function isSuperGlobuleBandPattern(
-	pattern: SuperGlobulePattern
-): pattern is SuperGlobuleBandPattern {
-	return (pattern as SuperGlobuleBandPattern).type === 'SuperGlobulePattern';
-}
+export type SuperGlobulePattern = SuperGlobuleProjectionPattern;
 
 export function isSuperGlobuleProjectionPanelPattern(
 	pattern: SuperGlobulePattern | undefined
@@ -640,12 +603,6 @@ export function isSuperGlobuleProjectionCutPattern(
 		(pattern as SuperGlobuleProjectionCutPattern).type === 'SuperGlobuleProjectionCutPattern'
 	);
 }
-
-export type SuperGlobuleBandPattern = {
-	type: 'SuperGlobulePattern';
-	superGlobuleConfigId: Id;
-	bandPatterns: BandCutPattern[];
-};
 
 export type SuperGlobuleProjectionPattern =
 	| SuperGlobuleProjectionPanelPattern

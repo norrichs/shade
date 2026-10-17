@@ -1,6 +1,5 @@
 <script lang="ts">
-	import { svgTriangle } from '$lib/patterns/flower-of-life';
-	import { svgQuad } from '$lib/patterns/quadrilateral';
+	import { svgQuad, svgTriangle } from '$lib/patterns/quadrilateral';
 	import { getMidPoint } from '$lib/patterns/utils';
 	import type { BandCutPattern, CutPattern, Point, Quadrilateral } from '$lib/types';
 

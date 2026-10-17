@@ -10,8 +10,7 @@ jest.mock('../generate-tiled-pattern', () => ({
 	alignBands: jest.fn((bands: unknown) => bands),
 	computeBandAscending: jest.fn(() => true),
 	generateTubeCutPattern: jest.fn(),
-	applyTubePatternPostProcessing: jest.fn(),
-	generateTiledBandPattern: jest.fn()
+	applyTubePatternPostProcessing: jest.fn()
 }));
 jest.mock('../generate-panel-pattern', () => ({
 	shouldUsePanelPattern: jest.fn(),

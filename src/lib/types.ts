@@ -1224,7 +1224,6 @@ export const OPENING = -1;
 // Which generation pipelines to run. Wired to the viewControl `any` flags so a
 // pipeline only runs when its output is wanted (see superGlobuleStores).
 export type PipelineGates = {
-	globule: boolean;
 	globuleTube: boolean;
 	projection: boolean;
 	voronoi: boolean;
@@ -1241,7 +1240,6 @@ export type SuperGlobule = {
 	type: 'SuperGlobule';
 	superGlobuleConfigId: Id;
 	name?: string;
-	subGlobules: SubGlobule[];
 	globuleTubes: Tube[];
 	projections: {
 		projection: Projection;
@@ -1277,28 +1275,11 @@ export type AxisExtremes = {
 export type SuperGlobuleMesh = {
 	type: 'SuperGlobuleMesh';
 	superGlobuleConfigId: Id;
-	bandGeometry: BandGeometry[];
 	projectionAddresses: GlobuleAddress_Facet[];
 	bounds: Box3;
 	/** Null when the model has no geometry points. */
 	extremes: AxisExtremes | null;
 };
-
-export type SuperGlobuleGeometry =
-	| {
-			type: 'SuperGlobuleGeometry';
-			variant: 'Globule';
-			superGlobuleConfigId: Id;
-			name?: string;
-			subGlobules: GlobuleGeometry[];
-	  }
-	| {
-			type: 'SuperGlobuleGeometry';
-			variant: 'Band';
-			superGlobuleConfigId: Id;
-			name?: string;
-			subGlobules: BandGeometry[][];
-	  };
 
 // SUB
 export type SubGlobuleConfig = {
@@ -1309,37 +1290,7 @@ export type SubGlobuleConfig = {
 	transforms: ChainableTransform[];
 };
 
-export type SubGlobule = {
-	type: 'SubGlobule';
-	subGlobuleConfigId: Id;
-	name?: string;
-	data: Globule[];
-};
-
-export type SubGlobuleGeometry = {
-	type: 'SubGlobuleGeometry';
-	subGlobuleConfigId: Id;
-	name?: string;
-	recurrence: number;
-	globuleGeometry: GlobuleGeometry;
-};
-
 // GLOBULE
-export type Globule = {
-	type: 'Globule';
-	coord: GlobuleConfigCoordinates;
-	coordStack: GlobuleConfigCoordinates[];
-	address: GeometryAddress<undefined>;
-	subGlobuleConfigId: Id;
-	globuleConfigId: Id;
-	name?: string;
-	recurrence?: number;
-	visible: boolean;
-	recombination?: Recombination;
-	transformChain?: GlobuleTransform[];
-	data: GlobuleData;
-};
-
 export type GlobuleData = {
 	levels: Level[];
 	bands: Band[];

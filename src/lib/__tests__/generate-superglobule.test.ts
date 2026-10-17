@@ -4,9 +4,6 @@ import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 const makeProjection = jest.fn();
 const makeVoronoi = jest.fn();
 const generateGlobuleTube = jest.fn();
-const generateGlobuleData = jest.fn();
-const recombineSubGlobules = jest.fn();
-const generateTransformedGlobules = jest.fn();
 
 jest.mock('$lib/projection-geometry/generate-projection', () => ({
 	makeProjection: (...args: unknown[]) => makeProjection(...args)
@@ -15,21 +12,14 @@ jest.mock('$lib/voronoi/generate-voronoi', () => ({
 	makeVoronoi: (...args: unknown[]) => makeVoronoi(...args)
 }));
 jest.mock('$lib/generate-shape', () => ({
-	generateGlobuleTube: (...args: unknown[]) => generateGlobuleTube(...args),
-	generateGlobuleData: (...args: unknown[]) => generateGlobuleData(...args)
-}));
-jest.mock('$lib/recombination', () => ({
-	recombineSubGlobules: (...args: unknown[]) => recombineSubGlobules(...args)
-}));
-jest.mock('$lib/transform-globule', () => ({
-	generateTransformedGlobules: (...args: unknown[]) => generateTransformedGlobules(...args)
+	generateGlobuleTube: (...args: unknown[]) => generateGlobuleTube(...args)
 }));
 jest.mock('$lib/id-handler', () => ({
 	generateTempId: () => 'temp-id'
 }));
 
-import { generateSuperGlobule, type PipelineGates } from '../generate-superglobule';
-import type { SuperGlobuleConfig } from '../types';
+import { generateSuperGlobule } from '../generate-superglobule';
+import type { PipelineGates, SuperGlobuleConfig } from '../types';
 
 const VORONOI_RESULT = { tubes: [], surfaceProjectionTubes: [], surface: {} as never };
 const PROJECTION = {
@@ -50,7 +40,6 @@ const baseConfig = (): SuperGlobuleConfig => ({
 });
 
 const gates = (overrides: Partial<PipelineGates>): PipelineGates => ({
-	globule: false,
 	globuleTube: false,
 	projection: false,
 	voronoi: false,
@@ -59,7 +48,6 @@ const gates = (overrides: Partial<PipelineGates>): PipelineGates => ({
 
 beforeEach(() => {
 	jest.clearAllMocks();
-	recombineSubGlobules.mockReturnValue([]);
 	generateGlobuleTube.mockReturnValue({ bands: [], sections: [] });
 	makeProjection.mockReturnValue(PROJECTION);
 	makeVoronoi.mockReturnValue(VORONOI_RESULT);

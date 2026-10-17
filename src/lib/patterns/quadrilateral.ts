@@ -35,6 +35,8 @@ export const getQuadrilateralTransformMatrix = (
 export const svgQuad = (q: Quadrilateral) => {
 	return `M ${q.a.x} ${q.a.y} L ${q.b.x} ${q.b.y} L ${q.c.x} ${q.c.y} L ${q.d.x} ${q.d.y} Z`;
 };
+export const svgTriangle = (t: { a: Point; b: Point; c: Point }) =>
+	`M ${t.a.x} ${t.a.y} L ${t.b.x} ${t.b.y} L ${t.c.x} ${t.c.y} z`;
 export const svgLines = (points: Point[], isClosed = false) => {
 	const path = `${points.reduce((acc, point, i) => {
 		if (i > 0) {

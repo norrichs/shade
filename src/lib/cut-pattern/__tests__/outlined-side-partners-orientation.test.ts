@@ -24,7 +24,6 @@ import { chooseMiddleQuadEdge, middleQuadEdgeIndices } from '../select-middle-qu
  */
 
 const gates: PipelineGates = {
-	globule: false,
 	globuleTube: false,
 	projection: true,
 	voronoi: false

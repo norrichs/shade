@@ -40,7 +40,6 @@ import type { BandCutPattern, PipelineGates, TiledPatternConfig, TubeCutPattern 
  */
 
 const gates: PipelineGates = {
-	globule: false,
 	globuleTube: false,
 	projection: true,
 	voronoi: false

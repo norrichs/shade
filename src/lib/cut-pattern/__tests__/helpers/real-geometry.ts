@@ -25,7 +25,6 @@ import type {
  */
 
 export const projectionGates: PipelineGates = {
-	globule: false,
 	globuleTube: false,
 	projection: true,
 	voronoi: false

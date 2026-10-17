@@ -2,14 +2,14 @@ import { describe, it, expect, jest } from '@jest/globals';
 import { createWorkerCore, type WorkerResponse } from '../super-globule-worker-core';
 import type { PatternMessage } from '../super-globule-worker-core';
 
-const geometry = { projections: [], globuleTubes: [], subGlobules: [] } as never;
+const geometry = { projections: [], globuleTubes: [] } as never;
 const patternMsg = (over: Partial<PatternMessage> = {}): PatternMessage => ({
 	type: 'pattern',
 	requestId: 10,
 	geometryRequestId: 1,
 	superConfig: { id: 'c' } as never,
 	genConfig: {} as never,
-	gates: { globule: false, globuleTube: false, projection: false, voronoi: true },
+	gates: { globuleTube: false, projection: false, voronoi: true },
 	...over
 });
 

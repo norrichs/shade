@@ -1,27 +1,19 @@
-import { generateGlobuleData, generateGlobuleTube } from './generate-shape';
+import { generateGlobuleTube } from './generate-shape';
 import { generateTempId } from './id-handler';
 import { makeProjection } from './projection-geometry/generate-projection';
 import type { SurfaceConfig, Tube } from './projection-geometry/types';
 import { makeVoronoi } from './voronoi/generate-voronoi';
-import { recombineSubGlobules } from './recombination';
-import { generateTransformedGlobules } from './transform-globule';
 import type {
-	Band,
-	Facet,
-	Globule,
 	GlobuleConfig,
-	GlobuleData,
 	Id,
 	PipelineError,
 	PipelineGates,
-	SubGlobule,
 	SubGlobuleConfig,
 	SuperGlobule,
 	SuperGlobuleConfig
 } from './types';
 
 const ALL_PIPELINES: PipelineGates = {
-	globule: true,
 	globuleTube: true,
 	projection: true,
 	voronoi: true
@@ -59,18 +51,7 @@ export const generateSuperGlobule = (
 		}
 	}
 
-	// Old Globule Pipeline
-	const subGlobules = runPipeline<SubGlobule[]>(
-		'globule',
-		gates.globule,
-		() =>
-			recombineSubGlobules(
-				superConfig.subGlobuleConfigs.map((sgc, index) => generateSubGlobule(sgc, index)).flat()
-			),
-		[]
-	);
-
-	// New Globule Tube Pipeline
+	// Globule Tube Pipeline
 	const globuleTubes = runPipeline<Tube[]>(
 		'globuleTube',
 		gates.globuleTube,
@@ -118,45 +99,11 @@ export const generateSuperGlobule = (
 		superGlobuleConfigId: superConfig.id,
 		name: superConfig.name,
 		globuleTubes,
-		subGlobules,
 		projections,
 		voronoiResult,
 		pipelineErrors: pipelineErrors.length > 0 ? pipelineErrors : undefined
 	};
 	return superGlobule;
-};
-
-/**
- * @deprecated
- */
-const generateSubGlobule = (subGlobuleConfig: SubGlobuleConfig, sgIndex: number): SubGlobule => {
-	const { transforms, id, name } = subGlobuleConfig;
-
-	const prototypeGlobule: Globule = {
-		type: 'Globule',
-		coord: { s: sgIndex, t: 0, r: 0 },
-		coordStack: [],
-		address: { s: sgIndex, g: [], b: undefined },
-		subGlobuleConfigId: subGlobuleConfig.id,
-		globuleConfigId: subGlobuleConfig.globuleConfig.id,
-		name: subGlobuleConfig.globuleConfig.name,
-		data: generateGlobuleData(subGlobuleConfig.globuleConfig),
-		visible: true
-	};
-
-	let globules: Globule[];
-	if (transforms) {
-		globules = generateTransformedGlobules(prototypeGlobule, transforms);
-	} else {
-		globules = [prototypeGlobule];
-	}
-
-	return {
-		type: 'SubGlobule',
-		subGlobuleConfigId: id,
-		name,
-		data: globules as Globule[]
-	};
 };
 
 /**
@@ -254,20 +201,4 @@ export const divergeSubGlobuleConfig = (
 		};
 	}
 	return superGlobuleConfig;
-};
-
-export const cloneGlobuleData = (globuleData: GlobuleData): GlobuleData => {
-	return { bands: globuleData.bands.map((b) => cloneBand(b)) };
-};
-
-export const cloneBand = (band: Band): Band => {
-	return {
-		...band,
-		facets: band.facets.map((f) => cloneFacet(f))
-	};
-};
-
-// tab clone not yet implemented
-const cloneFacet = (facet: Facet) => {
-	return { triangle: facet.triangle.clone() };
 };

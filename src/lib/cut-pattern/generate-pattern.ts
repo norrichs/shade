@@ -5,12 +5,7 @@ import type {
 	Tube
 } from '$lib/projection-geometry/types';
 import type {
-	Globule,
 	GlobulePatternConfig,
-	BandCutPatternPattern,
-	SubGlobule,
-	SubGlobuleConfig,
-	SuperGlobule,
 	SuperGlobuleConfig,
 	TrianglePoint,
 	FacetOrientation,
@@ -20,14 +15,9 @@ import type {
 	UnitPatternGenerator,
 	SplitConfig
 } from '$lib/types';
-import { isTiledPatternConfig, isOutlinedPatternConfig } from '$lib/types';
+import { isOutlinedPatternConfig } from '$lib/types';
 
-import { applyStrokeWidth } from './generate-cut-pattern';
-import {
-	generateTiledBandPattern,
-	generateTubeCutPattern,
-	applyTubePatternPostProcessing
-} from './generate-tiled-pattern';
+import { generateTubeCutPattern, applyTubePatternPostProcessing } from './generate-tiled-pattern';
 import { buildPatternBandIndex, patternedTubes } from './pattern-band-index';
 import { keepsFillBands } from './pattern-band-space';
 import { resolvePatternEntry } from '$lib/patterns/resolve-pattern';
@@ -35,10 +25,7 @@ import { generateOutlinedProjectionPattern } from './generate-outlined-pattern';
 import { judgeTubeSplits } from './split-flat-bands';
 import { splitQuadsForTube } from './split-boundaries';
 import { getEdge } from '$lib/projection-geometry/generate-projection';
-import type {
-	SuperGlobuleBandPattern,
-	SuperGlobuleProjectionPattern
-} from '$lib/stores/superGlobuleStores';
+import type { SuperGlobuleProjectionPattern } from '$lib/stores/superGlobuleStores';
 import {
 	shouldUsePanelPattern,
 	generateProjectionPanelPattern,
@@ -52,69 +39,6 @@ import { resolveRangeIndices, type ProjectionRange } from '$lib/projection-geome
 
 // Re-export panel functions for backwards compatibility
 export { validateAllPanels, getPanelEdgeMeta, applyHolesToEdgeMeta, type PanelHoleConfig };
-
-type PatternGlobule = {
-	globules: Globule[];
-	config: SubGlobuleConfig;
-};
-
-export const generateSuperGlobulePattern = (
-	superGlobule: SuperGlobule,
-	superGlobuleConfig: SuperGlobuleConfig,
-	globulePatternConfig: GlobulePatternConfig
-): SuperGlobuleBandPattern => {
-	const patternGlobules: PatternGlobule[] = superGlobule.subGlobules.map(
-		(subGlobule: SubGlobule) => {
-			const config = superGlobuleConfig.subGlobuleConfigs.find(
-				(subGlobuleConfig) => subGlobuleConfig.id === subGlobule.subGlobuleConfigId
-			);
-			if (!config) {
-				throw new Error('missing config');
-			}
-			return { globules: subGlobule.data.filter((globule: Globule) => globule.visible), config };
-		}
-	);
-
-	const collectedBandPatterns: BandCutPatternPattern[] = patternGlobules
-		.map(({ globules }: { globules: Globule[] }) => {
-			const bandPatterns = globules.map(({ data: { bands }, address }, bandIndex) => {
-				let pattern: BandCutPatternPattern;
-				const {
-					patternTypeConfig,
-					patternConfig: { pixelScale }
-				} = globulePatternConfig;
-				if (!isTiledPatternConfig(patternTypeConfig)) {
-					throw new Error('generateSuperGlobulePattern requires a TiledPatternConfig');
-				}
-				pattern = generateTiledBandPattern({
-					address: { ...address, b: bandIndex },
-					bands: bands.filter((b) => b.visible),
-					tiledPatternConfig: patternTypeConfig,
-					pixelScale
-				});
-				pattern = {
-					...pattern,
-					bands: pattern.bands.map((band) => ({ ...band, projectionType: pattern.projectionType }))
-				};
-				pattern.bands = applyStrokeWidth(pattern.bands, patternTypeConfig.config);
-				return pattern;
-			});
-			return bandPatterns;
-		})
-		.flat();
-
-	const bandPatterns = collectedBandPatterns
-		.map((globulePattern: BandCutPatternPattern) => globulePattern.bands)
-		.flat();
-
-	const result = {
-		type: 'SuperGlobulePattern',
-		superGlobuleConfigId: superGlobuleConfig.id,
-		bandPatterns
-	};
-
-	return result;
-};
 
 // TODO: Refactor so that this accepts globules as tubes
 

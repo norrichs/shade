@@ -30,7 +30,6 @@ import type { PipelineGates, SuperGlobuleConfig } from '$lib/types';
  */
 
 const gates: PipelineGates = {
-	globule: false,
 	globuleTube: false,
 	projection: true,
 	voronoi: false

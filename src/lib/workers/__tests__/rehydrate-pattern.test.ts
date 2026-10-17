@@ -81,11 +81,6 @@ describe('rehydratePatternResult', () => {
 			]
 		};
 		const result = roundTrip({
-			superGlobulePattern: {
-				type: 'SuperGlobulePattern',
-				superGlobuleConfigId: 'c',
-				bandPatterns: [band]
-			},
 			projectionPattern: undefined,
 			globuleTubePattern: null,
 			surfaceProjectionPattern: undefined,
@@ -98,11 +93,10 @@ describe('rehydratePatternResult', () => {
 		}) as unknown as PatternGenerationResult;
 
 		const out = rehydratePatternResult(result) as unknown as {
-			superGlobulePattern: { bandPatterns: (typeof band)[] };
 			voronoiPattern: { projectionCutPattern: { tubes: { bands: (typeof band)[] }[] } };
 		};
-		expect(out.superGlobulePattern.bandPatterns[0].bounds.center).toBeInstanceOf(Vector3);
 		const vb = out.voronoiPattern.projectionCutPattern.tubes[0].bands[0];
+		expect(vb.bounds.center).toBeInstanceOf(Vector3);
 		expect(vb.facets[0].triangle).toBeInstanceOf(Triangle);
 		expect(vb.facets[0].path).toEqual([['M', 0, 0]]);
 	});

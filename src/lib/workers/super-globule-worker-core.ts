@@ -74,33 +74,6 @@ export function stripNonSerializable(superGlobule: SuperGlobule): SuperGlobule {
 			// and can be regenerated on main thread if needed
 			surface: null as unknown as typeof projection.surface
 		})),
-		// Strip end cap meshes from subGlobules
-		subGlobules: superGlobule.subGlobules.map((subGlobule) => ({
-			...subGlobule,
-			data: subGlobule.data.map((globule) => ({
-				...globule,
-				data: {
-					...globule.data,
-					// Strip end cap meshes - they contain non-serializable Three.js objects
-					endCaps: globule.data.endCaps
-						? {
-								topCap: globule.data.endCaps.topCap
-									? {
-											...globule.data.endCaps.topCap,
-											mesh: null as never
-										}
-									: null,
-								bottomCap: globule.data.endCaps.bottomCap
-									? {
-											...globule.data.endCaps.bottomCap,
-											mesh: null as never
-										}
-									: null
-							}
-						: undefined
-				}
-			}))
-		})),
 		voronoiResult: superGlobule.voronoiResult
 			? {
 					...superGlobule.voronoiResult,

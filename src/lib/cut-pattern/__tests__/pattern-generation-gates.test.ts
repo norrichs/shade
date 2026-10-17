@@ -7,7 +7,6 @@ import {
 import type { PipelineGates } from '$lib/types';
 
 const gates = (overrides: Partial<PipelineGates> = {}): PipelineGates => ({
-	globule: false,
 	globuleTube: false,
 	projection: false,
 	voronoi: false,
@@ -143,15 +142,5 @@ describe('resolvePatternGenerationTargets', () => {
 		);
 		expect(surface.voronoiSurface).toBe(true);
 		expect(surface.voronoi).toBe(false);
-	});
-
-	it('generates the legacy super-globule pattern only when the globule pipeline is on', () => {
-		expect(
-			resolvePatternGenerationTargets(gates({ globule: true }), 'projection', true, availability())
-				.superGlobule
-		).toBe(true);
-		expect(
-			resolvePatternGenerationTargets(gates(), 'projection', true, availability()).superGlobule
-		).toBe(false);
 	});
 });

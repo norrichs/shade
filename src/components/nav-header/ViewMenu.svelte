@@ -16,13 +16,6 @@
 			<span>{key}</span>
 		</div>
 	{/each}
-	<header>Show Globules:</header>
-	{#each Object.keys($viewControlStore.showGlobuleGeometry) as key}
-		<div class="entry">
-			<input type="checkbox" bind:checked={$viewControlStore.showGlobuleGeometry[key]} />
-			<span>{key}</span>
-		</div>
-	{/each}
 	<header>Show Globule Tubes:</header>
 	{#each Object.keys($viewControlStore.showGlobuleTubeGeometry) as key}
 		<div class="entry">

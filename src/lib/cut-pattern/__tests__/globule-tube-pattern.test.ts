@@ -15,7 +15,6 @@ import { concatAddress, concatAddress_Tube } from '$lib/util';
  */
 describe('bare globule -> globule tubes -> cut pattern', () => {
 	const superGlobule = generateSuperGlobule(generateDefaultSuperGlobuleConfig(), {
-		globule: false,
 		globuleTube: true,
 		projection: false,
 		voronoi: false
@@ -70,7 +69,6 @@ describe('bare globule -> globule tubes -> cut pattern', () => {
 			transforms: []
 		});
 		const multi = generateSuperGlobule(config, {
-			globule: false,
 			globuleTube: true,
 			projection: false,
 			voronoi: false

@@ -197,7 +197,6 @@ const summarizeModel = () => {
 	return {
 		loadedConfig: get(loadedConfigStore)?.name ?? null,
 		geometry3d: {
-			subGlobules: sg.subGlobules.length,
 			globuleTubes: countTubes(sg.globuleTubes),
 			projections: sg.projections.map((p) => ({
 				tubes: countTubes(p.tubes),

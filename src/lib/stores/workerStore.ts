@@ -157,34 +157,6 @@ function rehydrateSuperGlobule(result: SuperGlobule): SuperGlobule {
 		}))
 	}));
 
-	// Rehydrate subGlobules
-	const subGlobules = result.subGlobules.map((subGlobule) => ({
-		...subGlobule,
-		data: subGlobule.data.map((globule) => ({
-			...globule,
-			data: {
-				...globule.data,
-				levels:
-					globule.data.levels?.map((level) => ({
-						...level,
-						center: rehydrateVector3(
-							level.center as unknown as Parameters<typeof rehydrateVector3>[0]
-						),
-						vertices: level.vertices.map(rehydrateVector3 as unknown as (v: Vector3) => Vector3)
-					})) ?? [],
-				bands: globule.data.bands.map((band) => ({
-					...band,
-					facets: band.facets.map((facet) => ({
-						...facet,
-						triangle: rehydrateTriangle(
-							facet.triangle as unknown as Parameters<typeof rehydrateTriangle>[0]
-						)
-					}))
-				}))
-			}
-		}))
-	}));
-
 	const rehydrateTubes = (tubes: Tube[]) =>
 		tubes.map((tube) => ({
 			...tube,
@@ -215,7 +187,6 @@ function rehydrateSuperGlobule(result: SuperGlobule): SuperGlobule {
 		...result,
 		projections,
 		globuleTubes,
-		subGlobules,
 		voronoiResult
 	};
 }

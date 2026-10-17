@@ -18,7 +18,7 @@ import {
 	transformPatternByQuad,
 	transformPointByQuadrilateralTransform
 } from '$lib/patterns/quadrilateral';
-import type { BandCutPatternPattern, TiledPatternConfig, UnitPatternGenerator } from '$lib/types';
+import type { TiledPatternConfig, UnitPatternGenerator } from '$lib/types';
 import { applyStrokeWidth, getFlatStripV2 } from './generate-cut-pattern';
 import { resolvePatternEntry } from '$lib/patterns/resolve-pattern';
 import { computeTiledLabelAngle } from './compute-tiled-label-angle';
@@ -214,52 +214,6 @@ export const applyTubePatternPostProcessing = (
 	return { ...tubeCutPattern, bands: processedBands };
 };
 
-export const generateTiledBandPattern = ({
-	address,
-	bands,
-	tiledPatternConfig,
-	pixelScale
-}: {
-	address: GeometryAddress<BandAddressed>;
-	bands: Band[];
-	tiledPatternConfig: TiledPatternConfig;
-	pixelScale: PixelScale;
-}): BandCutPatternPattern => {
-	const pattern: BandCutPatternPattern = { projectionType: 'patterned', bands: [] };
-	const { adjustAfterTiling } = resolvePatternEntry(tiledPatternConfig.type);
-	// Creates a line pattern without inner and outer elements, appropriate for post processing in Affinity
-	// TODO - see if it's possible to convert the output of this to "expanded path" (e.g. convert stroke widths to paths instead of doing so in Affinity)
-
-	const visibleBands = bands.filter((b) => b.visible);
-	const quadBands = visibleBands.map((band) => {
-		const flatBand = getFlatStripV2(band, { bandStyle: 'helical-right', pixelScale });
-		return getQuadrilaterals(flatBand, pixelScale.value);
-	});
-
-	const tiling = generateTiling({ quadBands, tiledPatternConfig, address });
-
-	if (adjustAfterTiling) {
-		const adjusted = adjustAfterTiling(tiling, tiledPatternConfig);
-		pattern.bands = adjusted;
-	} else {
-		pattern.bands = tiling;
-	}
-
-	pattern.bands = pattern.bands.map((band) => ({
-		...band,
-		facets: band.facets.map((facet) => {
-			const segments = facet.path;
-			if (facet.addenda) {
-				const addendaSegments = facet.addenda.map((a) => a.path);
-				segments.push(...facet.addenda.map((a) => a.path).flat());
-			}
-			return { ...facet, svgPath: svgPathStringFromSegments([...segments]) };
-		})
-	}));
-
-	return pattern as BandCutPatternPattern;
-};
-
 /**
  * Resolve a `tagAnchor.quadEdge` spec to a 2D point on the quad. The named edge
  * runs from its first vertex to its second (e.g. 'ab' is a → b); `position` is
@@ -336,8 +290,8 @@ export const generateTiling = ({
 		// band has at least one facet whose outer (side) edge has no partner. (Band 0 is
 		// also an edge band, but its free side is x=0, which is already finished by the
 		// start/end verticals — the mirror only completes the w6 side.)
-		// `bands` is absent on the `generateTiledBandPattern` call path; treat a
-		// missing band as having a free side (no outer partner) rather than throwing.
+		// Treat a missing band as having a free side (no outer partner) rather
+		// than throwing.
 		const sourceBand = bands?.[bandIndex];
 		const hasFreeSide = sourceBand ? bandHasFreeSide(sourceBand) : true;
 		const finishOuterEdge = globalBandIndex === bandCount - 1 && hasFreeSide;

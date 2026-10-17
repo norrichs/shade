@@ -36,7 +36,6 @@ describe('hexparquet end to end (projections, real geometry)', () => {
 	it('does not throw when a patterned band tube-end-partners a refused band', () => {
 		const config = buildDivisibleProjectionConfig();
 		const superGlobule = generateSuperGlobule(config, {
-			globule: false,
 			globuleTube: false,
 			projection: true,
 			voronoi: false
@@ -94,7 +93,6 @@ describe('hexparquet end to end (projections, real geometry)', () => {
 	it('surface-projection open tube: band 0 has no leftPartnerBand, later bands do', () => {
 		const config = buildDivisibleProjectionConfig();
 		const superGlobule = generateSuperGlobule(config, {
-			globule: false,
 			globuleTube: false,
 			projection: true,
 			voronoi: false

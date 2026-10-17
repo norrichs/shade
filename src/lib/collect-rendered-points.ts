@@ -24,11 +24,9 @@ const pushTubePoints = (tubes: Tube[] | undefined, out: Vector3[]): void => {
  *  - `voronoiSurface`    → voronoiResult.surfaceProjectionTubes
  *
  * Returns an empty array when the chosen source has no geometry (e.g. `voronoi`
- * on a model with the voronoi pipeline gated off); callers fall back to the
- * legacy sub-globule band geometry in that case. These are the same points
+ * on a model with the voronoi pipeline gated off). These are the same points
  * `collate-geometry` feeds to the rendered meshes, so a bounding box over them
- * matches what is on screen — unlike the legacy sub-globule bands, which ignore
- * projection/voronoi geometry.
+ * matches what is on screen.
  */
 export const collectRenderedPoints = (
 	superGlobule: SuperGlobule,

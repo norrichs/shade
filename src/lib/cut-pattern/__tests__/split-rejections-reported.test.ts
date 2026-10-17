@@ -20,7 +20,6 @@ import type { PatternTypeConfig, PipelineGates, SuperGlobuleConfig } from '$lib/
  */
 
 const gates: PipelineGates = {
-	globule: false,
 	globuleTube: false,
 	projection: true,
 	voronoi: false
