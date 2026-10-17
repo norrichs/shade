@@ -15,6 +15,7 @@
 	import { projectionConfigs } from '../../components/modal/sidebar-definitions';
 	import Toast from '../../components/Toast.svelte';
 	import { installAgentBridge } from '#lib/agent-bridge/client.js';
+	import { transparentDragImage } from '#lib/drag-image.js';
 
 	// Dev-only: lets Claude Code drive this page when the navbar dot is green.
 	$effect(() => installAgentBridge());
@@ -80,7 +81,7 @@
 			}}
 			use:asDraggable={{
 				relativeTo: 'parent',
-				Dummy: 'none',
+				Dummy: transparentDragImage(),
 				onDragStart: () => {
 					dragging = true;
 					return { x: split * (main?.clientWidth ?? 0), y: handleY };
