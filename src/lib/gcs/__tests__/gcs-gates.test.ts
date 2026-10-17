@@ -85,4 +85,14 @@ describe('backfillBlocked', () => {
 		const r = backfillBlocked(empty(), null, { globule: true }, allOn);
 		expect(r.subGlobules).toEqual([]);
 	});
+	it('returns the same object when nothing is blocked', () => {
+		const r = empty();
+		expect(backfillBlocked(r, sg('prev'), {}, allOn)).toBe(r);
+	});
+	it('returns the same object when blocked pipeline is user-disabled', () => {
+		const r = empty();
+		expect(
+			backfillBlocked(r, sg('prev'), { globuleTube: true }, { ...allOn, globuleTube: false })
+		).toBe(r);
+	});
 });

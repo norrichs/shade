@@ -51,6 +51,14 @@ export function backfillBlocked(
 	userGates: PipelineGates
 ): SuperGlobule {
 	if (!previous) return result;
+	const needs =
+		(blocked.globule && userGates.globule) ||
+		(blocked.globuleTube && userGates.globuleTube) ||
+		(blocked.projection && userGates.projection) ||
+		(blocked.voronoi && userGates.voronoi);
+	// Keep the same reference when nothing is back-filled: workerStore tracks the
+	// worker request id by object identity, and a copy would lose it.
+	if (!needs) return result;
 	const out: SuperGlobule = { ...result };
 	if (blocked.globule && userGates.globule) out.subGlobules = previous.subGlobules;
 	if (blocked.globuleTube && userGates.globuleTube) out.globuleTubes = previous.globuleTubes;
