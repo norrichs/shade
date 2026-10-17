@@ -4,7 +4,9 @@ import {
 	collectReferencedTilePatternSpecs,
 	SAVED_CONFIG_VERSION
 } from '../saved-config';
-import type { GlobulePatternConfig, SuperGlobuleConfig } from '../types';
+import type { GlobuleConfig, GlobulePatternConfig, SuperGlobuleConfig } from '../types';
+import type { ImportedSurfaceConfig } from '../projection-geometry/types';
+import { generateDefaultGlobuleConfig } from '../shades-config';
 import type { ViewControls } from '../stores/viewControlStore';
 import type { TiledPatternSpec } from '../patterns/spec-types';
 
@@ -89,6 +91,36 @@ describe('buildSavedConfig / parseSavedConfig', () => {
 		const parsed = parseSavedConfig(JSON.stringify(superConfig));
 		expect(parsed.tilePatternSpecs).toEqual([]);
 		expect(parsed.globulePatternConfig).toBeUndefined();
+	});
+
+	describe('globule modelSource', () => {
+		const modelSource: ImportedSurfaceConfig = {
+			type: 'ImportedMeshConfig',
+			assetId: 'abc123',
+			fileName: 'vase.glb',
+			normalize: { upAxis: '+y', targetSize: 800, offset: { x: 1, y: 2, z: 3 }, scale: 4 },
+			center: { x: 0, y: 0, z: 0 },
+			simplify: { sourceAssetId: 'src', targetTriangles: 5000 },
+			transform: 'inherit'
+		};
+		const withGlobule = (globuleConfig: GlobuleConfig): SuperGlobuleConfig => ({
+			...superConfig,
+			subGlobuleConfigs: [{ globuleConfig } as SuperGlobuleConfig['subGlobuleConfigs'][number]]
+		});
+		const roundTrip = (cfg: SuperGlobuleConfig) =>
+			parseSavedConfig(
+				JSON.stringify(buildSavedConfig(cfg, patternConfig('hex'), viewControls, []))
+			).superGlobuleConfig.subGlobuleConfigs[0].globuleConfig;
+
+		it('round-trips a globule modelSource', () => {
+			const globule: GlobuleConfig = { ...generateDefaultGlobuleConfig(), modelSource };
+			expect(roundTrip(withGlobule(globule)).modelSource).toEqual(modelSource);
+		});
+
+		it('loads a globule without modelSource unchanged', () => {
+			const globule = generateDefaultGlobuleConfig();
+			expect(roundTrip(withGlobule(globule))).toEqual(JSON.parse(JSON.stringify(globule)));
+		});
 	});
 
 	describe('legacy shapeConfig migration', () => {

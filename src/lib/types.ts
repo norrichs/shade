@@ -14,7 +14,8 @@ import type {
 	GlobuleAddress_Tube,
 	TriangleEdge,
 	Tube,
-	TransformConfig
+	TransformConfig,
+	ImportedSurfaceConfig
 } from './projection-geometry/types';
 import type { VoronoiConfig } from './voronoi/types';
 import type { PanelHoleConfig } from './cut-pattern/generate-panel-pattern';
@@ -1284,6 +1285,7 @@ export type GlobuleConfig = {
 		| StrutConfig
 		| RenderConfig
 		| EndCapConfig
+		| ImportedSurfaceConfig
 		| string
 		| number
 		| boolean
@@ -1302,6 +1304,11 @@ export type GlobuleConfig = {
 	strutConfig: StrutConfig;
 	renderConfig: RenderConfig;
 	endCaps?: EndCapConfig;
+	/**
+	 * The imported model the GCS list was last snapshotted from (GCS editor →
+	 * From model). Provenance only: generation never reads it; `transform` is ignored.
+	 */
+	modelSource?: ImportedSurfaceConfig;
 };
 
 export type GlobulePatternConfig = {
