@@ -12,6 +12,9 @@
 		// Vite's native config loader (planned default) needs explicit .ts extensions
 		// on imports reachable from vite.config.ts. Safe: the kit tsconfig sets noEmit.
 		"allowImportingTsExtensions": true,
+		// TS 6 requires an explicit rootDir when an outDir is in play; ts-jest compiles
+		// each test file with one (TS5011 otherwise).
+		"rootDir": ".",
 		// SvelteKit's generated tsconfig pins "types" to ["node"], which leaves the
 		// Jest globals undeclared and makes `svelte-check` report every describe/it/
 		// expect in the suite as an error. @types/jest is already a devDependency.
