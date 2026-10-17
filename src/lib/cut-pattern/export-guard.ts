@@ -50,7 +50,7 @@ export const describeExportElement = (el: ExportElementLike): ExportNode | null 
 	};
 };
 
-export const EXPORTED_TAGS = [
+const EXPORTED_TAGS = [
 	'path',
 	'rect',
 	'line',

@@ -1,7 +1,7 @@
 import type { NestShape, Pt } from '../types';
 
 /** Strip of quads along a polyline, half-width hw. Pivot = bbox centre. */
-export const stripShape = (spine: Pt[], hw: number): NestShape => {
+const stripShape = (spine: Pt[], hw: number): NestShape => {
 	const polygons: Pt[][] = [];
 	for (let i = 0; i + 1 < spine.length; i++) {
 		const a = spine[i];

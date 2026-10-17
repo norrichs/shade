@@ -1,1 +1,0 @@
-export const PROJECTION_GEOMETRY_OVERRIDE = false;

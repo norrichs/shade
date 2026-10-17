@@ -4,7 +4,7 @@ import type { LayerMap } from '#lib/lightburn/layers.js';
 export type HoleDropMode = 'none' | 'all' | 'random' | 'variable';
 
 export type PageLabelConfig = { pageNumber: boolean; configName: boolean; text: string };
-export type ConnectSurroundConfig = { enabled: boolean; gapMm: number };
+type ConnectSurroundConfig = { enabled: boolean; gapMm: number };
 export const DEFAULT_CONNECT_GAP_MM = 1.5;
 
 /**

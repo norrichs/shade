@@ -429,10 +429,6 @@
 
 		<WorkingIndicator />
 
-		<!-- <div>
-			{formatAddress($selectedBand)}
-		</div> -->
-
 		<!-- {#if $selectedProjectionGeometry}
 			<div>
 				<span>

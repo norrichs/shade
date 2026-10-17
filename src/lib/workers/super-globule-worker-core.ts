@@ -65,7 +65,7 @@ export type WorkerCoreDeps = {
  * Strips non-serializable Object3D instances from the result
  * The surface can be regenerated on the main thread if needed
  */
-export function stripNonSerializable(superGlobule: SuperGlobule): SuperGlobule {
+function stripNonSerializable(superGlobule: SuperGlobule): SuperGlobule {
 	return {
 		...superGlobule,
 		projections: superGlobule.projections.map((projection) => ({

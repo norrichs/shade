@@ -21,14 +21,5 @@ export const identityTransform = (): TransformConfig => ({
 	rotate: { x: 0, y: 0, z: 0 }
 });
 
-/**
- * Return the transform unchanged, or a fresh identity when it is `'inherit'`.
- * Never returns the same object twice for `'inherit'`, so callers can assign the
- * result without aliasing one transform across several configs.
- */
-export const materializeTransform = (
-	transform: TransformConfig | 'inherit' | undefined
-): TransformConfig => (!transform || transform === 'inherit' ? identityTransform() : transform);
-
 export const isInheritedTransform = (transform: TransformConfig | 'inherit' | undefined): boolean =>
 	!transform || transform === 'inherit';

@@ -8,13 +8,11 @@ import type {
 	LevelIndex,
 	PointIndex,
 	PolygonConfig,
-	PolyhedronConfig,
 	VertexIndex,
 	VerticesConfig
 } from './types';
 
-export type PolygonType =
-	'pentagon' | 'hexagon' | 'triangle' | 'quadrilateral' | 'decagon' | 'dodecagon';
+type PolygonType = 'pentagon' | 'hexagon' | 'triangle' | 'quadrilateral' | 'decagon' | 'dodecagon';
 
 export type PolygonMapRow = {
 	polygonType: PolygonType;
@@ -40,10 +38,7 @@ export type PolarVertex = {
 // 	hexagon: { edgeCount: 6 }
 // };
 
-export const getPolarVertices = (
-	vertices: VerticesConfig,
-	precision: number = 0.00001
-): PolarVertex[] => {
+const getPolarVertices = (vertices: VerticesConfig, precision: number = 0.00001): PolarVertex[] => {
 	const polarVertices = vertices
 		.map((vertex, vertexIndex) => {
 			const polarVertex = {
@@ -70,7 +65,7 @@ export const getPolarVertices = (
 	return polarVertices;
 };
 
-export const applyDirectionMatching = (
+const applyDirectionMatching = (
 	polygons: PolygonConfig<undefined, VertexIndex, CurveIndex, CurveIndex>[]
 ): PolygonConfig<undefined, VertexIndex, CurveIndex, CurveIndex>[] => {
 	// Create a map to store edges by their vertex pairs
@@ -125,7 +120,7 @@ export const applyDirectionMatching = (
 	return polygons;
 };
 
-export const getPolygonEdgesFromSequence = ({
+const getPolygonEdgesFromSequence = ({
 	row,
 	polygonIndex,
 	levels,
@@ -155,15 +150,6 @@ export const getPolygonEdgesFromSequence = ({
 	return edges;
 };
 
-export const generateProjectorConfig = (
-	polyhedron: PolyhedronConfig<undefined, VertexIndex, CurveIndex, CurveIndex>
-) => {
-	return {
-		name: polyhedron.name,
-		id: generateTempId('cfg'),
-		polyhedron
-	};
-};
 // 	[key: string]: ProjectorConfig<undefined, VertexIndex, CurveIndex, CurveIndex>;
 // } = {
 // 	icosohedron: {
@@ -1079,7 +1065,7 @@ export function convertXYZtoVertices(
 	return vertices;
 }
 
-export function groupIntoLevels(
+function groupIntoLevels(
 	polarVertices: PolarVertex[],
 	zTolerance: number = 0.0000001
 ): PolarVertex[][] {

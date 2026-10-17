@@ -9,7 +9,7 @@ import { segmentsIntersect, segmentsOf, type Seg } from './segments';
 /** The processed stroke-font dictionary (`svgTextDictionary`), narrowed to what is read here. */
 export type GlyphDict = Record<string, { path: PathSegment[]; width: number }>;
 
-export const PAGE_LABEL_HEIGHT_MM = 4;
+const PAGE_LABEL_HEIGHT_MM = 4;
 
 type Box = { x: number; y: number; width: number; height: number };
 

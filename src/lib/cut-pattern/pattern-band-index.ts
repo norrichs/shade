@@ -16,7 +16,7 @@ import type { Band } from '#lib/types.js';
 export type PatternBandIndexOf = (tube: number, realBand: number) => number | undefined;
 
 /** Pattern → real band index: the inverse of `PatternBandIndexOf`. */
-export type RealBandIndexOf = (tube: number, patternBand: number) => number | undefined;
+type RealBandIndexOf = (tube: number, patternBand: number) => number | undefined;
 
 /** Both directions between the two spaces, built from one table per tube. */
 export type BandSpace = { toPattern: PatternBandIndexOf; toReal: RealBandIndexOf };

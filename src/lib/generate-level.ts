@@ -1,5 +1,5 @@
 import { Vector3, CurvePath, Vector2 } from 'three';
-import { generateDepthCurve, generateSilhouette, generateLevelPrototype } from './generate-shape';
+import { generateDepthCurve, generateSilhouette } from './generate-shape';
 import type {
 	LevelConfig,
 	SilhouetteConfig,
@@ -8,7 +8,6 @@ import type {
 	Level,
 	LevelOffset,
 	CurveSampleMethod,
-	GlobuleConfig,
 	NarrowRegionConfig
 } from './types';
 import { DEFAULT_DEPTH_CURVE_BASELINE } from './types';
@@ -735,21 +734,6 @@ const generateLevel = (
 		vertices
 	};
 	return level;
-};
-
-export const getLevelLines = (
-	// { points, normals }: { points: Vector2[]; normals: Vector2[] },
-	{ shapeConfig }: GlobuleConfig
-) => {
-	const levelPrototype = generateLevelPrototype(shapeConfig);
-
-	if (!Array.isArray(levelPrototype)) {
-		// let intersection0, intersection1;
-		// for (let i = 0; i < levelPrototype.vertices.length; i++) {
-		// 	const v0 = levelPrototype.vertices[i];
-		// 	const v1 = levelPrototype.vertices[(i + 1) % levelPrototype.vertices.length];
-		// }
-	}
 };
 
 export const getCurvePoints = (curveConfig: SilhouetteConfig, { divisions }: CurveSampleMethod) => {

@@ -156,10 +156,6 @@ export const materials = {
 	})
 };
 
-export const materialByColor = (color: ThreeColor) => {
-	return new MeshStandardMaterial({ ...defaultStandardMaterialConfig, color });
-};
-
 export type Material = keyof typeof materials;
 
 export type MaterialSelectionConfig = {

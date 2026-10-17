@@ -3,8 +3,8 @@ import type { PageRect } from '../page-layout/types';
 import { pointInPolygon } from '../path-contours';
 import { isFinitePt, raySegment, rectEdges, rotate, segmentsOf, type Seg } from './segments';
 
-export const DISCONNECT_CONE_DEG = 30;
-export const DISCONNECT_STEP_DEG = 2;
+const DISCONNECT_CONE_DEG = 30;
+const DISCONNECT_STEP_DEG = 2;
 const MIN_T = 1e-6;
 
 type Obstacle = { bandId: string; segs: Seg[]; polys: Pt[][] };

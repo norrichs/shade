@@ -27,7 +27,7 @@ const clonePoint = (point: PointConfig2): PointConfig2 => ({ ...point });
 const clonePoints = (points: BezierConfig['points']): BezierConfig['points'] =>
 	points.map(clonePoint) as BezierConfig['points'];
 
-export const cloneCurves = (curves: BezierConfig[]): BezierConfig[] =>
+const cloneCurves = (curves: BezierConfig[]): BezierConfig[] =>
 	curves.map((curve) => ({ ...curve, points: clonePoints(curve.points) }));
 
 /** Points closer than this at a joint are the same point, modulo float drift. */

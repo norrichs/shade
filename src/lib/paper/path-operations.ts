@@ -35,12 +35,6 @@ const apply = (a: PathSegment[], b: PathSegment[], op: Op): PathSegment[] => {
 
 export const unitePaths = (a: PathSegment[], b: PathSegment[]): PathSegment[] =>
 	apply(a, b, 'unite');
-export const subtractPaths = (a: PathSegment[], b: PathSegment[]): PathSegment[] =>
-	apply(a, b, 'subtract');
-export const intersectPaths = (a: PathSegment[], b: PathSegment[]): PathSegment[] =>
-	apply(a, b, 'intersect');
-export const excludePaths = (a: PathSegment[], b: PathSegment[]): PathSegment[] =>
-	apply(a, b, 'exclude');
 
 /**
  * Union a list of closed outline paths into a single path, PRESERVING interior

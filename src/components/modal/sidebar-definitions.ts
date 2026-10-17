@@ -27,7 +27,7 @@ export type FloaterContent = {
 
 export type SidebarDefinition = Map<FloaterContent['title'], FloaterContent>;
 
-export const utilities: SidebarDefinition = new Map([
+const utilities: SidebarDefinition = new Map([
 	[
 		'Utilities',
 		{
@@ -82,7 +82,7 @@ export const assemblerConfigs: SidebarDefinition = new Map([
 	]
 ]);
 
-export const patternConfigs: SidebarDefinition = new Map([
+const patternConfigs: SidebarDefinition = new Map([
 	[
 		'Pattern',
 		{
@@ -125,7 +125,7 @@ export const patternConfigs: SidebarDefinition = new Map([
 	]
 ]);
 
-export const globuleConfigs: SidebarDefinition = new Map([
+const globuleConfigs: SidebarDefinition = new Map([
 	[
 		'Silhouette',
 		{

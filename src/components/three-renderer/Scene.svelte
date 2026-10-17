@@ -3,24 +3,16 @@
 	import { interactivity } from '@threlte/extras';
 	import {
 		superGlobuleStore,
-		selectedBand,
 		model3dExtremesStore,
 		showMeasureIndicators
 	} from '#lib/stores/index.js';
-	import GlobuleMesh from '../globuleMesh/GlobuleMesh.svelte';
 	import type { AxisExtremes, GlobuleGeometry } from '#lib/types.js';
 	import DesignerCamera from './DesignerCamera.svelte';
 	import DesignerLighting from './DesignerLighting.svelte';
-	import {
-		interactionMode,
-		isMeasureInteractionMode,
-		isPointSelectInteractionMode
-	} from './interaction-mode';
 	import { clearMeasurements, measurements } from '#lib/stores/measurementStore.js';
 	import { BufferGeometry, Vector3 } from 'three';
 	import { materials } from './materials';
 	import { generateTempId } from '#lib/id-handler.js';
-	import { formatAddress } from '#lib/recombination.js';
 	import ProjectionGeometryComponent from '../projection/ProjectionGeometryComponent.svelte';
 	import Highlight from '../projection/Highlight.svelte';
 	import type { GlobuleAddress_Facet } from '#lib/projection-geometry/types.js';
@@ -82,8 +74,7 @@
 	};
 
 	// Static, non-reactive geometry for the measurement indicators. Building it
-	// once (rather than via GlobuleMesh, which holds its BufferGeometry in
-	// $state) avoids Svelte proxying a Three.js object whose per-frame mutations
+	// once (rather than holding a BufferGeometry in $state) avoids Svelte proxying a Three.js object whose per-frame mutations
 	// would feed back as reactive invalidations and trip effect_update_depth.
 	const indicatorGeometry = new BufferGeometry().setFromPoints(indicator.points);
 	indicatorGeometry.computeVertexNormals();
@@ -101,17 +92,8 @@
 	];
 </script>
 
-<div>{formatAddress($selectedBand)}</div>
 <DesignerCamera direction={$cameraDirection ?? undefined} />
 <DesignerLighting />
-
-{#if isPointSelectInteractionMode($interactionMode) && !isMeasureInteractionMode($interactionMode)}
-	{#each $interactionMode.data.points as point, i (i)}
-		<T.Group position={[point.x, point.y, point.z]}>
-			<GlobuleMesh geometry={indicator} material="default" />
-		</T.Group>
-	{/each}
-{/if}
 
 {#if $showMeasureIndicators && $model3dExtremesStore}
 	{#each measureIndicators($model3dExtremesStore) as { point, material }, i (i)}

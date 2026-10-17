@@ -163,7 +163,7 @@ export const expandTesselationAdjustments = (
  * The band ends that facet `f` of a `facetCount`-facet band carries: `start` on
  * the first facet, `end` on the last, both on the only facet of a one-facet band.
  */
-export const bandEndsAtFacet = (f: number, facetCount: number): BandEnd[] => [
+const bandEndsAtFacet = (f: number, facetCount: number): BandEnd[] => [
 	...(f === 0 ? (['start'] as const) : []),
 	...(f === facetCount - 1 ? (['end'] as const) : [])
 ];

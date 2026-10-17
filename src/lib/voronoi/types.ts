@@ -42,7 +42,7 @@ export type VoronoiConfig = {
 	fillAll?: boolean;
 };
 
-export type VoronoiSeedConfig = {
+type VoronoiSeedConfig = {
 	type: 'VoronoiSeedConfig';
 	seedMethod: SeedMethod;
 	relaxationIterations: number;

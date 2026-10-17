@@ -2,7 +2,7 @@ import type { MeshGraph } from './mesh-graph';
 
 export type GeodesicField = { nearestSeed: number; distance: number }[];
 
-export interface GeodesicSolver {
+interface GeodesicSolver {
 	/**
 	 * Multi-source shortest path. seedVertexIds[i] is the graph vertex for seed i;
 	 * returns, per graph vertex, the nearest seed index and its distance. Vertices

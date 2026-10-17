@@ -381,17 +381,3 @@ export function generatePatternAsync(
 		}
 	});
 }
-
-/**
- * Terminates the worker (useful for cleanup)
- */
-export function terminateWorker(): void {
-	if (worker) {
-		worker.terminate();
-		worker = null;
-		pendingResolvers.clear();
-		pendingPatternResolvers.clear();
-		isWorking.set(false);
-		isPatternWorking.set(false);
-	}
-}

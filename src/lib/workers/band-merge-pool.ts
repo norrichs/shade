@@ -67,7 +67,7 @@ const resolveDefaultCreateWorker = async (): Promise<() => PoolWorker> => {
 };
 
 /** One core is left for the main thread, whose responsiveness is the point. */
-export const defaultPoolSize = (bandCount: number): number =>
+const defaultPoolSize = (bandCount: number): number =>
 	Math.max(
 		1,
 		Math.min(

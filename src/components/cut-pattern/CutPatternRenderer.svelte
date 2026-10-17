@@ -52,7 +52,7 @@
 		TransformConfig,
 		Tube
 	} from '#lib/projection-geometry/types.js';
-	import { getTransform } from './distrubute-panels';
+	import { getTransform } from './distribute-panels';
 	import { concatAddress } from '#lib/util.js';
 	import { resolveEndPartner } from '#lib/cut-pattern/resolve-partner-band.js';
 	import { buildBandCodeMap } from '#lib/cut-pattern/band-sort-index.js';

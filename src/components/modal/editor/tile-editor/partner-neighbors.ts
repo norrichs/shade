@@ -11,7 +11,7 @@ import { bandAddressOf } from './base-quad-selection';
 export type PartnerRole = 'top' | 'bottom' | 'left' | 'right';
 export type RuleSetKey = 'withinBand' | 'acrossBands' | 'partner.startEnd' | 'partner.endEnd';
 
-export type ResolvedBase = {
+type ResolvedBase = {
 	address: GlobuleAddress_Facet;
 	quad: Quadrilateral;
 	path: PathSegment[];

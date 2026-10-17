@@ -24,19 +24,9 @@ import { judgeTubeSplits } from './split-flat-bands';
 import { splitQuadsForTube } from './split-boundaries';
 import { getEdge } from '#lib/projection-geometry/generate-projection.js';
 import type { SuperGlobuleProjectionPattern } from '#lib/stores/superGlobuleStores.js';
-import {
-	shouldUsePanelPattern,
-	generateProjectionPanelPattern,
-	validateAllPanels,
-	getPanelEdgeMeta,
-	applyHolesToEdgeMeta,
-	type PanelHoleConfig
-} from './generate-panel-pattern';
+import { shouldUsePanelPattern, generateProjectionPanelPattern } from './generate-panel-pattern';
 import { resolveEndPartner, type BandEnd } from './resolve-partner-band';
 import { resolveRangeIndices, type ProjectionRange } from '#lib/projection-geometry/filters.js';
-
-// Re-export panel functions for backwards compatibility
-export { validateAllPanels, getPanelEdgeMeta, applyHolesToEdgeMeta, type PanelHoleConfig };
 
 // TODO: Refactor so that this accepts globules as tubes
 
@@ -387,25 +377,6 @@ export const getOtherTrianglePointFromTriangleEdge = (edge: TriangleEdge): Trian
 		ca: 'b'
 	};
 	return otherPoints[edge];
-};
-
-export const getOtherTrianglePointsFromTrianglePoint = (
-	point: TrianglePoint,
-	ordering: 'edge-order' | 'triangle-order'
-): [TrianglePoint, TrianglePoint] => {
-	const otherPoints = {
-		'edge-order': {
-			a: ['b', 'c'],
-			b: ['a', 'c'],
-			c: ['a', 'b']
-		},
-		'triangle-order': {
-			a: ['b', 'c'],
-			b: ['c', 'a'],
-			c: ['a', 'b']
-		}
-	};
-	return otherPoints[ordering][point] as [TrianglePoint, TrianglePoint];
 };
 
 export const corrected = (s: string): TriangleEdge => {

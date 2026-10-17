@@ -32,7 +32,7 @@ import type {
 import {
 	getAllTrianglePoints,
 	getMinimalBoundingBoxAndRotationAngle
-} from '../../components/cut-pattern/distrubute-panels';
+} from '../../components/cut-pattern/distribute-panels';
 import { Triangle, Vector3 } from 'three';
 import { getBandTriangleEdges } from '#lib/projection-geometry/generate-projection.js';
 
@@ -571,7 +571,7 @@ export const alignBands = (bands: Band[]) => {
 	});
 };
 
-export const normalizeBand = (band: Band): Band => {
+const normalizeBand = (band: Band): Band => {
 	const anchor = new Vector3(band.bounds?.left || 0, band.bounds?.top || 0, 0);
 	const newFacets = band.facets.map((facet) => {
 		return {

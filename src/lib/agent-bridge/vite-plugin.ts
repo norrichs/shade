@@ -12,7 +12,7 @@ import {
 } from './protocol.ts';
 
 const DEFAULT_TIMEOUT_MS = 120_000;
-export const AGENT_IMAGE_DIR = join(tmpdir(), 'shades-agent');
+const AGENT_IMAGE_DIR = join(tmpdir(), 'shades-agent');
 
 type Pending = {
 	expected: number;

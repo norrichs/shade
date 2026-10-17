@@ -133,72 +133,9 @@ const generateGlobuleTubes = (subGlobuleConfigs: SubGlobuleConfig[]): Tube[] => 
 	return tubes;
 };
 
-export const cloneSubGlobuleConfig = (original: SubGlobuleConfig): SubGlobuleConfig => {
-	return {
-		...original,
-		id: generateTempId('sub'),
-		globuleConfig: cloneGlobuleConfig(original.globuleConfig),
-		transforms: structuredClone(original.transforms)
-	};
-};
-
-export const copySubGlobuleConfig = (original: SubGlobuleConfig): SubGlobuleConfig => {
-	return {
-		...original,
-		id: generateTempId('sub'),
-		transforms: structuredClone(original.transforms)
-	};
-};
-
 export const cloneGlobuleConfig = (original: GlobuleConfig): GlobuleConfig => {
 	return {
 		...structuredClone(original),
 		id: generateTempId('glb')
 	};
-};
-
-export const updateGlobuleConfigs = (
-	superGlobuleConfig: SuperGlobuleConfig,
-	newGlobuleConfig: GlobuleConfig
-): SuperGlobuleConfig => {
-	return {
-		...superGlobuleConfig,
-		subGlobuleConfigs: superGlobuleConfig.subGlobuleConfigs.map((subGlobuleConfig) => {
-			return {
-				...subGlobuleConfig,
-				globuleConfig:
-					subGlobuleConfig.globuleConfig.id === newGlobuleConfig.id
-						? newGlobuleConfig
-						: subGlobuleConfig.globuleConfig
-			};
-		}),
-		projectionConfigs: superGlobuleConfig.projectionConfigs.map((pc) => {
-			if (pc.surfaceConfig.type === 'GlobuleConfig') {
-				return {
-					...pc,
-					surfaceConfig: {
-						...newGlobuleConfig,
-						transform: pc.surfaceConfig.transform
-					} as SurfaceConfig
-				};
-			}
-			return pc;
-		})
-	};
-};
-
-export const divergeSubGlobuleConfig = (
-	superGlobuleConfig: SuperGlobuleConfig,
-	subGlobuleConfigId: Id
-): SuperGlobuleConfig => {
-	const index = superGlobuleConfig.subGlobuleConfigs.findIndex(
-		(sgc) => sgc.id === subGlobuleConfigId
-	);
-	if (index >= 0) {
-		superGlobuleConfig.subGlobuleConfigs[index] = {
-			...superGlobuleConfig.subGlobuleConfigs[index],
-			globuleConfig: cloneGlobuleConfig(superGlobuleConfig.subGlobuleConfigs[index].globuleConfig)
-		};
-	}
-	return superGlobuleConfig;
 };

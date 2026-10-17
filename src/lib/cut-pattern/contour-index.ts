@@ -8,7 +8,7 @@ import {
 } from './path-contours';
 import type { BandEnds, Pt as EndPt } from './post-process-types';
 
-export type ContourKind = 'outline' | 'hole';
+type ContourKind = 'outline' | 'hole';
 
 /**
  * One contour of a merged band path. `start`/`end` index the merged

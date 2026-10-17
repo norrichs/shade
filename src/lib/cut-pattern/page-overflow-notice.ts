@@ -12,7 +12,7 @@ export type PageOverflow = { itemIndex: number; requiredScale: number };
 export const suggestedPageScale = (requiredScale: number): number =>
 	Math.ceil(requiredScale * 10000) / 10000;
 
-export const formatOverflowMessage = (suggested: number): string =>
+const formatOverflowMessage = (suggested: number): string =>
 	`A pattern is too large to fit the page. Increase pageScale to ~${suggested} to fit.`;
 
 type OverflowDeps = {

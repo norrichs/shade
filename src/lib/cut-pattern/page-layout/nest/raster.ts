@@ -70,7 +70,7 @@ const slabXRange = (poly: Pt[], y0: number, y1: number): [number, number] | null
 	return lo <= hi ? [lo, hi] : null;
 };
 
-export const mergeSpans = (spans: Span[]): Span[] => {
+const mergeSpans = (spans: Span[]): Span[] => {
 	if (spans.length <= 1) return spans.slice();
 	const s = spans.slice().sort((a, b) => a[0] - b[0]);
 	const out: Span[] = [[s[0][0], s[0][1]]];

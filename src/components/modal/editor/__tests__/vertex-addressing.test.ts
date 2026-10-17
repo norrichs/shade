@@ -1,8 +1,6 @@
 import {
 	flatIndex,
 	flatIndexes,
-	findVertexByFlatIndex,
-	computeConnections,
 	addRuleForPairing,
 	removeRulesForPairing
 } from '../vertex-addressing';
@@ -57,55 +55,6 @@ describe('flatIndexes', () => {
 		});
 		const vertices = computeVertices(unit);
 		expect(flatIndexes(unit, vertices[0])).toEqual([0, 1]);
-	});
-});
-
-describe('findVertexByFlatIndex', () => {
-	const unit = makeUnit({
-		start: [
-			['M', 0, 0],
-			['L', 1, 1],
-			['M', 1, 1]
-		]
-	});
-	const vertices = computeVertices(unit);
-
-	it('finds vertex containing the flat index', () => {
-		const v0 = findVertexByFlatIndex(unit, vertices, 0);
-		expect(v0?.x).toBe(0);
-
-		const v1 = findVertexByFlatIndex(unit, vertices, 1);
-		expect(v1?.x).toBe(1);
-
-		const v2 = findVertexByFlatIndex(unit, vertices, 2);
-		expect(v2?.x).toBe(1);
-	});
-
-	it('returns undefined for out-of-range index', () => {
-		expect(findVertexByFlatIndex(unit, vertices, 99)).toBeUndefined();
-	});
-});
-
-describe('computeConnections', () => {
-	it('groups rules by (sourceVertex, targetVertex)', () => {
-		const unit = makeUnit({
-			start: [
-				['M', 0, 0],
-				['L', 0, 0],
-				['M', 5, 5],
-				['L', 5, 5]
-			]
-		});
-		const vertices = computeVertices(unit);
-		const rules: IndexPair[] = [
-			{ source: 2, target: 0 },
-			{ source: 3, target: 1 }
-		];
-		const connections = computeConnections(rules, unit, vertices);
-		expect(connections).toHaveLength(1);
-		expect(connections[0].sourceVertex.x).toBe(5);
-		expect(connections[0].targetVertex.x).toBe(0);
-		expect(connections[0].rules).toEqual(rules);
 	});
 });
 

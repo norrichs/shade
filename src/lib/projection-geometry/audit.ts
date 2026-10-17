@@ -11,8 +11,8 @@ import {
 	Raycaster
 } from 'three';
 
-export type FacetDirection = 'inside' | 'outside';
-export type SideOrientation = 'inside' | 'outside' | 'mixed';
+type FacetDirection = 'inside' | 'outside';
+type SideOrientation = 'inside' | 'outside' | 'mixed';
 
 /**
  * Build a mesh from a tube's facet triangles

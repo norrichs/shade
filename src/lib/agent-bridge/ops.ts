@@ -277,7 +277,7 @@ const asString = (v: unknown, name: string) => {
 	return v;
 };
 
-export const ops: Record<string, Op> = {
+const ops: Record<string, Op> = {
 	help: {
 		describe: 'List every op with its arguments.',
 		run: () => ({

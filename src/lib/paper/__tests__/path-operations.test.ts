@@ -1,11 +1,5 @@
 import type { PathSegment } from '#lib/types.js';
-import {
-	unitePaths,
-	subtractPaths,
-	intersectPaths,
-	excludePaths,
-	uniteMany
-} from '../path-operations';
+import { unitePaths, uniteMany } from '../path-operations';
 import { getPaperScope } from '../scope';
 import { pathSegmentsToPaper } from '../path-segment-to-paper';
 
@@ -49,29 +43,6 @@ describe('path-operations', () => {
 		expect(united.filter((s) => s[0] === 'M').length).toBe(2);
 		expect(united.filter((s) => s[0] === 'Z').length).toBe(2);
 		expect(area(united)).toBeCloseTo(200, 1);
-	});
-
-	test('subtractPaths removes the overlap', () => {
-		const a = rect(0, 0, 10, 10);
-		const b = rect(5, 0, 10, 10);
-		const diff = subtractPaths(a, b);
-		// a (100) minus overlap (50) = 50.
-		expect(area(diff)).toBeCloseTo(50, 1);
-	});
-
-	test('intersectPaths returns just the overlap', () => {
-		const a = rect(0, 0, 10, 10);
-		const b = rect(5, 0, 10, 10);
-		const inter = intersectPaths(a, b);
-		expect(area(inter)).toBeCloseTo(50, 1);
-	});
-
-	test('excludePaths returns symmetric difference', () => {
-		const a = rect(0, 0, 10, 10);
-		const b = rect(5, 0, 10, 10);
-		const xor = excludePaths(a, b);
-		// Combined (150) minus overlap (50) = 100.
-		expect(area(xor)).toBeCloseTo(100, 1);
 	});
 
 	describe('uniteMany', () => {

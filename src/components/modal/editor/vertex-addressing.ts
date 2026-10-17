@@ -10,39 +10,6 @@ export const flatIndex = (unit: UnitDefinition, ref: VertexRef): number => {
 export const flatIndexes = (unit: UnitDefinition, vertex: Vertex): number[] =>
 	vertex.refs.map((ref) => flatIndex(unit, ref));
 
-export const findVertexByFlatIndex = (
-	unit: UnitDefinition,
-	vertices: Vertex[],
-	index: number
-): Vertex | undefined => vertices.find((v) => flatIndexes(unit, v).includes(index));
-
-export type Connection = {
-	sourceVertex: Vertex;
-	targetVertex: Vertex;
-	rules: IndexPair[];
-};
-
-export const computeConnections = (
-	rules: IndexPair[],
-	unit: UnitDefinition,
-	vertices: Vertex[]
-): Connection[] => {
-	const byKey = new Map<string, Connection>();
-	for (const rule of rules) {
-		const sourceVertex = findVertexByFlatIndex(unit, vertices, rule.source);
-		const targetVertex = findVertexByFlatIndex(unit, vertices, rule.target);
-		if (!sourceVertex || !targetVertex) continue;
-		const key = `${sourceVertex.x}::${sourceVertex.y}->${targetVertex.x}::${targetVertex.y}`;
-		const existing = byKey.get(key);
-		if (existing) {
-			existing.rules.push(rule);
-		} else {
-			byKey.set(key, { sourceVertex, targetVertex, rules: [rule] });
-		}
-	}
-	return Array.from(byKey.values());
-};
-
 export const addRuleForPairing = (
 	rules: IndexPair[],
 	unit: UnitDefinition,

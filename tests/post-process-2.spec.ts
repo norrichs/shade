@@ -2,9 +2,13 @@ import { expect, test, type Page } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 import type { GlobulePatternConfig } from '#lib/types.js';
 import type { PostProcessConfig } from '#lib/cut-pattern/hole-drop-config.js';
-import type * as Stores from '#lib/stores/index.js';
-import type * as ShadesConfig from '#lib/shades-config.js';
-import type * as ExportGuard from '#lib/cut-pattern/export-guard.js';
+import type { patternConfigStore, viewControlStore } from '#lib/stores/index.js';
+import type { tiledPatternConfigs } from '#lib/shades-config.js';
+import type {
+	SCREEN_ONLY_SELECTOR,
+	collectExportNodes,
+	findUntagged
+} from '#lib/cut-pattern/export-guard.js';
 
 /**
  * End-to-end cover for pattern post-processing 2: geometry tagging + layer
@@ -266,8 +270,13 @@ test.describe('post-processing 2 — panel patterns', () => {
 		await page.goto('/designer2');
 		await page.evaluate(
 			async ([storesPath, configPath]) => {
-				const stores = (await import(/* @vite-ignore */ storesPath)) as typeof Stores;
-				const config = (await import(/* @vite-ignore */ configPath)) as typeof ShadesConfig;
+				const stores = (await import(/* @vite-ignore */ storesPath)) as {
+					patternConfigStore: typeof patternConfigStore;
+					viewControlStore: typeof viewControlStore;
+				};
+				const config = (await import(/* @vite-ignore */ configPath)) as {
+					tiledPatternConfigs: typeof tiledPatternConfigs;
+				};
 				stores.patternConfigStore.update((c) => ({
 					...c,
 					patternTypeConfig: structuredClone(config.tiledPatternConfigs['tiledPanelPattern-0']),
@@ -290,7 +299,11 @@ test.describe('post-processing 2 — panel patterns', () => {
 		).toBeGreaterThan(0);
 
 		const untagged = await page.evaluate(async (guardPath: string) => {
-			const guard = (await import(/* @vite-ignore */ guardPath)) as typeof ExportGuard;
+			const guard = (await import(/* @vite-ignore */ guardPath)) as {
+				SCREEN_ONLY_SELECTOR: typeof SCREEN_ONLY_SELECTOR;
+				collectExportNodes: typeof collectExportNodes;
+				findUntagged: typeof findUntagged;
+			};
 			const root = document.getElementById('pattern-svg')!;
 			const probe = root.cloneNode(true) as Element;
 			probe.querySelectorAll(guard.SCREEN_ONLY_SELECTOR).forEach((n: Element) => n.remove());

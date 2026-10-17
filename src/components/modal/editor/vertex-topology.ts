@@ -9,7 +9,7 @@ import { flatIndexes } from './vertex-addressing';
 
 export type Group = 'start' | 'middle' | 'end';
 
-export const groupBaseIndex = (unit: UnitDefinition, group: Group): number => {
+const groupBaseIndex = (unit: UnitDefinition, group: Group): number => {
 	if (group === 'start') return 0;
 	if (group === 'middle') return unit.start.length;
 	return unit.start.length + unit.middle.length;
@@ -29,7 +29,7 @@ const shiftPair = (pair: IndexPair, threshold: number, delta: number): IndexPair
 	target: shiftIndex(pair.target, threshold, delta)
 });
 
-export const shiftRulesForInsertion = (
+const shiftRulesForInsertion = (
 	rules: AdjustmentRules,
 	threshold: number,
 	delta: number

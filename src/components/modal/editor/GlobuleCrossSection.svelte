@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { get } from 'svelte/store';
-	import { selectedBand, superConfigStore } from '#lib/stores/index.js';
+	import { superConfigStore } from '#lib/stores/index.js';
 	import { getLength } from '#lib/patterns/utils.js';
 	import type {
 		BezierConfig,
@@ -25,7 +25,8 @@
 
 	// Derived from the store so an externally loaded config shows up here; the old
 	// version read into a plain `let` and never updated.
-	let sgIndex = $derived($selectedBand?.s ?? 0);
+	// Always the first sub-globule: the band-selection store that once chose it had no writers.
+	const sgIndex = 0;
 	let globuleConfig = $derived($superConfigStore.subGlobuleConfigs[sgIndex]?.globuleConfig);
 	let shapeConfig = $derived(globuleConfig?.shapeConfig);
 

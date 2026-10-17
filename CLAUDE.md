@@ -308,7 +308,8 @@ Applies repeating decorative patterns to flattened geometry.
 All types defined in `src/lib/types.ts` (31KB):
 
 - Configuration hierarchy: `SuperGlobuleConfig` → `GlobuleConfig` → `ProjectionConfig` → Pattern configs
-- Use type guards from `src/lib/matchers.ts` for runtime checks
+- Type guards for runtime checks live next to their types in `src/lib/types.ts` (e.g. `isTiledPatternConfig`)
+- Run `yarn knip` to catch unused files/exports/deps (config in `knip.json`); never run `knip --fix` unattended — it has mangled identifiers here
 - Validators in `src/lib/validators.ts`
 
 ## State Management

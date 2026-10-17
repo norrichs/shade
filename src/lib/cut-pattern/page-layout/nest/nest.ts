@@ -13,12 +13,12 @@ import { Grid } from './grid';
 
 export type NestGeom = PageGeom & { rotationStep: number; cellMm: number };
 export const NEST_CELL_MM = 1;
-export const NEST_MAX_CELLS = 250_000;
-export const NEST_COARSE = 4;
+const NEST_MAX_CELLS = 250_000;
+const NEST_COARSE = 4;
 
 const EPS = 1e-6;
 
-export const nestCellSize = (g: NestGeom): number =>
+const nestCellSize = (g: NestGeom): number =>
 	Math.max(g.cellMm * g.pageScale, Math.sqrt((g.contentWidth * g.contentHeight) / NEST_MAX_CELLS));
 
 type Prepared = {

@@ -108,9 +108,3 @@ export const resolvePair = (
 		ghostOriginalPath
 	};
 };
-
-export const pairsEqual = (a: ResolvedPair | null, b: ResolvedPair | null): boolean => {
-	if (a === null && b === null) return true;
-	if (a === null || b === null) return false;
-	return JSON.stringify(a) === JSON.stringify(b);
-};

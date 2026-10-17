@@ -17,8 +17,8 @@ import type {
 	TransformConfig
 } from './projection-geometry/types';
 import type { VoronoiConfig } from './voronoi/types';
-import type { PanelHoleConfig } from './cut-pattern/generate-pattern';
-import type { DistributionConfig } from '../components/cut-pattern/distrubute-panels';
+import type { PanelHoleConfig } from './cut-pattern/generate-panel-pattern';
+import type { DistributionConfig } from '../components/cut-pattern/distribute-panels';
 import type { ProjectionRange } from './projection-geometry/filters';
 import type { EndCapConfig, EndCapGeometry } from './geometry/end-caps';
 
@@ -38,11 +38,6 @@ export type BandSortGroup = {
 export type BandSortIndex = {
 	mode: BandSortMode;
 	groups: BandSortGroup[];
-};
-
-export type IndexRange = {
-	groups?: [number, number];
-	bandsInGroup?: [number, number];
 };
 
 export type PatternViewConfig = {
@@ -66,16 +61,16 @@ export type PatternViewConfig = {
 	gap?: number;
 	patternLayoutMode: PatternLayoutMode;
 };
-export type PatternStyle = 'faceted' | 'outlined' | 'patterned' | 'none' | 'layered';
+type PatternStyle = 'faceted' | 'outlined' | 'patterned' | 'none' | 'layered';
 
-export type PatternShowConfig = {
+type PatternShowConfig = {
 	[key: string]: PatternStyle;
 	band: PatternStyle;
 	strut: PatternStyle;
 	level: PatternStyle;
 };
 
-export type TilePattern =
+type TilePattern =
 	| { type: 'each-facet' }
 	| { type: 'each-rectangle' }
 	| {
@@ -97,7 +92,7 @@ export type DynamicPath = { width: number; path: PathSegment[]; svgPath: string 
 export type PatternGenerator = UnitPatternGenerator | BandPatternGenerator;
 
 /** A named edge of a quad, going from the first vertex to the second. */
-export type QuadEdgeName = 'ab' | 'bc' | 'cd' | 'da';
+type QuadEdgeName = 'ab' | 'bc' | 'cd' | 'da';
 
 /**
  * How a tiled pattern's self-tag / label is anchored to the geometry.
@@ -139,7 +134,7 @@ export type TagAnchor = {
  * Band-level pass run after tiling, with the whole (sparse, tube-indexed) tiling
  * for partner lookups. Must not mutate its inputs.
  */
-export type AdjustAfterTiling = (
+type AdjustAfterTiling = (
 	bands: BandCutPattern[],
 	tiledPatternConfig: TiledPatternConfig,
 	tubes: TubeCutPattern[]
@@ -177,34 +172,34 @@ export type BandPatternGenerator = {
 	adjustAfterTiling?: AdjustAfterTiling;
 };
 
-export type CircleConfig = {
+type CircleConfig = {
 	[key: string]: 'CircleConfig' | PointConfig2 | number;
 	type: 'CircleConfig';
 	center: PointConfig2;
 	radius: number;
 };
 
-export type PathConfig = {
+type PathConfig = {
 	[key: string]: 'PathConfig' | BezierConfig[];
 	type: 'PathConfig';
 	curves: BezierConfig[];
 };
 
-export type HoleGeometryConfig = CircleConfig | PathConfig;
+type HoleGeometryConfig = CircleConfig | PathConfig;
 
-export type HoleConfigTriangle = {
+type HoleConfigTriangle = {
 	type: 'HoleConfigTriangle';
 	corners: [PointConfig2, PointConfig2, PointConfig2];
 	geometry: HoleGeometryConfig[];
 };
 
-export type HoleConfigSquare = {
+type HoleConfigSquare = {
 	type: 'HoleConfigSquare';
 	corners: [PointConfig2, PointConfig2, PointConfig2, PointConfig2];
 	geometry: HoleGeometryConfig[];
 };
 
-export type HoleConfigBand = {
+type HoleConfigBand = {
 	type: 'HoleConfigBand';
 	locate: {
 		[key: string]:
@@ -238,7 +233,7 @@ export type CutoutConfig = {
 export type EdgeConfig = { lead: TrianglePoint; follow: TrianglePoint };
 
 export type PixelScale = { value: number; unit: 'cm' | 'inch' | 'mm' };
-export type PageSize = { height: number; width: number; unit: 'cm' | 'inch' | 'mm' };
+type PageSize = { height: number; width: number; unit: 'cm' | 'inch' | 'mm' };
 
 export type PatternLayoutMode = 'linear' | 'line-wrap' | 'page';
 
@@ -317,14 +312,8 @@ export type PatternConfig = {
 	// patternedConfig: CutPatternConfig;
 };
 
-export type TabPattern =
+type TabPattern =
 	FullTabPattern | TrapTabPattern | MultiFacetFullTabPattern | MultiFacetTrapTabPattern;
-
-export type FacetPattern = {
-	svgPath: string;
-	triangle: ThreeTriangle;
-	tab?: TabPattern;
-};
 
 export type CutPattern = {
 	path: PathSegment[];
@@ -344,63 +333,32 @@ export type CutPattern = {
 	};
 };
 
-export type FullTabPattern = {
+type FullTabPattern = {
 	style: 'full';
 	svgPath: string;
 	triangle: ThreeTriangle;
 };
 
-export type TrapTabPattern = {
+type TrapTabPattern = {
 	style: 'trapezoid';
 	svgPath: string;
 	triangle: ThreeTriangle;
 };
 
-export type MultiFacetTrapTabPattern = {
+type MultiFacetTrapTabPattern = {
 	style: 'multi-facet-trapezoid';
 	svgPath: string;
 	triangle1: ThreeTriangle;
 	triangle2: ThreeTriangle;
 };
-export type MultiFacetFullTabPattern = {
+type MultiFacetFullTabPattern = {
 	style: 'multi-facet-full';
 	svgPath: string;
 	triangle1: ThreeTriangle;
 	triangle2: ThreeTriangle;
 };
 
-export type OutlinePattern = {
-	tab?: {
-		style: TabStyle['style'];
-	};
-	outline: {
-		svgPath: string;
-		points: Vector3[];
-	};
-	scoring?: (
-		| {
-				svgPath: string;
-				points: Vector3[];
-		  }
-		| undefined
-	)[];
-	cutouts?: {
-		svgPath: string;
-		points?: Vector3[];
-	}[];
-};
-
-export type LevelPattern = {
-	outline: {
-		svgPath: string;
-		points: Vector2[];
-	};
-};
-
-export type Pattern =
-	FacetedBandPattern | OutlinedBandPattern | LevelSetPattern | BandCutPatternPattern;
-
-export type Flag = 0 | 1;
+type Flag = 0 | 1;
 
 export type PathSegment =
 	| MovePathSegment
@@ -413,7 +371,7 @@ export type PathSegment =
 export type MovePathSegment = ['M', number, number];
 export type LinePathSegment = ['L', number, number];
 export type ArcPathSegment = ['A', number, number, number, Flag, Flag, number, number];
-export type ReturnPathSegment = ['Z'];
+type ReturnPathSegment = ['Z'];
 export type CubicBezierPathSegment = ['C', number, number, number, number, number, number];
 export type QuadraticBezierPathSegment = ['Q', number, number, number, number];
 
@@ -427,26 +385,6 @@ export const isCubicBezierPathSegment = (seg: PathSegment): seg is CubicBezierPa
 	seg[0] === 'C' && seg.length === 7;
 export const isQuadraticBezierPathSegment = (seg: PathSegment): seg is QuadraticBezierPathSegment =>
 	seg[0] === 'Q' && seg.length === 5;
-export const isReturnPathSegment = (seg: PathSegment): seg is ReturnPathSegment =>
-	seg[0] === 'Z' && seg.length === 1;
-
-export type PatternName = 'flower-of-life-1';
-export type BandCutPatternConfig = {
-	range?: [number, number];
-	pattern: {
-		name: PatternName;
-	};
-};
-
-export type Patterns = {
-	band: BandPattern;
-	strut: OutlinedStrutPattern | FacetedStrutPattern | NullBandPattern;
-	level: LevelSetPattern | NullBandPattern;
-};
-
-export type BandPattern = (
-	OutlinedBandPattern | FacetedBandPattern | BandCutPatternPattern | NullBandPattern
-) & { meta?: { minLength?: number; maxLength?: number } };
 
 export type BandCutPattern = {
 	sideOrientation?: 'inside' | 'outside' | 'mixed';
@@ -622,22 +560,7 @@ export type PanelPattern = {
 
 export type PanelBase = { p0: TrianglePoint; p1: TrianglePoint; v0: Vector3; v1: Vector3 };
 
-export type NullBandPattern = { projectionType: 'none' };
-export type FacetedBandPattern = { projectionType: 'faceted'; bands: { facets: FacetPattern[] }[] };
-export type OutlinedBandPattern = { projectionType: 'outlined'; bands: OutlinePattern[] };
-export type BandCutPatternPattern = {
-	projectionType: 'patterned';
-	bands: BandCutPattern[];
-};
-
-export type LevelSetPattern = { projectionType: 'outlined'; levels: LevelPattern[] };
-export type FacetedStrutPattern = {
-	projectionType: 'faceted';
-	struts: { facets: FacetPattern[] }[];
-};
-export type OutlinedStrutPattern = { projectionType: 'outlined'; struts: OutlinePattern[] };
-
-export type Axis = 'z' | 'x' | 'y';
+type Axis = 'z' | 'x' | 'y';
 
 export type TrianglePoint = 'a' | 'b' | 'c';
 export type TriangleSide = 'ab' | 'ac' | 'bc';
@@ -743,7 +666,7 @@ export type FlatStripConfig = {
 export type TiledPattern = string;
 
 export type TilingBasis = 'quadrilateral' | 'band' | 'triangle';
-export type DynamicStrokeBasis = 'quadWidth' | 'quadHeight' | 'ranked';
+type DynamicStrokeBasis = 'quadWidth' | 'quadHeight' | 'ranked';
 export type SkipEdges = 'all' | 'not-both' | 'not-first' | 'not-last' | 'none';
 
 export type PatternLabelsConfig = {
@@ -888,7 +811,7 @@ export const isOutlinedPatternConfig = (c: PatternTypeConfig): c is OutlinedPatt
 
 export type GridVariant = 'rect' | 'triangle-0' | 'triangle-1';
 export type PanelVariant = 'triangle-0' | 'triangle-1';
-export type ShieldTesselationVariant = 'rect';
+type ShieldTesselationVariant = 'rect';
 
 export type TiledPatternVariant = undefined | GridVariant | ShieldTesselationVariant;
 
@@ -928,7 +851,7 @@ export type LevelConfig = {
 	height?: number;
 };
 
-export type FacetTab = FullTab | TrapTab | MultiFacetFullTab | MultiFacetTrapTab;
+type FacetTab = FullTab | TrapTab | MultiFacetFullTab | MultiFacetTrapTab;
 
 export type TabFootprint = { triangle: ThreeTriangle; free: 'a' | 'b' | 'c' };
 export type TabFootprintInvert = { triangle: ThreeTriangle; free: 'ab' | 'ac' | 'bc' };
@@ -956,7 +879,7 @@ export type MultiFacetFullTab = {
 	scored?: { a: Vector3; b: Vector3 };
 };
 
-export type MultiFacetTrapTab = {
+type MultiFacetTrapTab = {
 	style: 'multi-facet-trapezoid';
 	footprint: [TabFootprint, TabFootprintInvert];
 	direction: TabDirection;
@@ -1033,12 +956,6 @@ orientation 'axial-left' (-1)
 
 */
 
-export type GlobulePoints = {
-	type: 'GlobulePoints';
-	globuleConfigId: number;
-	points: Vector3[];
-};
-
 type BandSelection = string;
 
 export type Band = {
@@ -1098,23 +1015,6 @@ export type PointConfig2 = {
 	y: number;
 	pointType?: 'smooth' | 'angled';
 };
-
-export type PointConfig3 = {
-	type: 'PointConfig2';
-	x: number;
-	y: number;
-	z: number;
-	pointType?: 'smooth' | 'angled';
-};
-
-export type LineConfig = {
-	type: 'LineConfig';
-	points: [PointConfig2, PointConfig2];
-};
-
-export type CurveConfig = SilhouetteConfig | ShapeConfig | DepthCurveConfig | SpineCurveConfig;
-
-export type CurveConfigType = CurveConfig['type'];
 
 export type SilhouetteConfig = {
 	type: 'SilhouetteConfig';
@@ -1200,23 +1100,11 @@ export type StrutConfig = {
 	width: number;
 };
 
-export type Tiling = BandStyle;
+type Tiling = BandStyle;
 export type StrutOrientation = 'inside' | 'outside' | 'half';
 export type RadiateOrientation = 'level' | 'orthogonal' | 'hybrid';
 
-export type GeometryConfig =
-	| ShapeConfig
-	| LevelConfig
-	| SilhouetteConfig
-	| DepthCurveConfig
-	| SpineCurveConfig
-	| BandConfig
-	| StrutConfig
-	| RenderConfig;
-
-export type GeometryConfigType = GeometryConfig['type'];
 export type Id = TempId | number;
-export type GlobuleConfigType = 'GlobuleConfig' | 'SuperGlobuleConfig';
 // SUPER
 export type SuperGlobuleConfig = {
 	type: 'SuperGlobuleConfig';
@@ -1319,23 +1207,11 @@ export type GlobuleGeometry = {
 	name?: string;
 	points: Vector3[];
 };
-export type BandGeometry = {
-	type: 'BandGeometry';
-	coord: BandConfigCoordinates;
-	coordStack: GlobuleConfigCoordinates[];
-	address: GeometryAddress<number>;
-	globuleConfigId: Id;
-	subGlobuleConfigId: Id;
-	globuleIndex: number;
-	bandIndex: number;
-	name?: string;
-	points: Vector3[];
-};
 
 // number array allows for arbitrary, and repeating application of transforms
-export type Recurrence = RecombinatoryRecurrence[];
+type Recurrence = RecombinatoryRecurrence[];
 
-export type GlobuleAddressed = undefined;
+type GlobuleAddressed = undefined;
 export type BandAddressed = number;
 
 export type GeometryAddress<T extends GlobuleAddressed | BandAddressed> = {
@@ -1344,19 +1220,19 @@ export type GeometryAddress<T extends GlobuleAddressed | BandAddressed> = {
 	b: T;
 };
 
-export type GlobuleAddress = number[]; // where array position indicates transform index and arrayitem value indicates recurrence index
+type GlobuleAddress = number[]; // where array position indicates transform index and arrayitem value indicates recurrence index
 
 export type GlobuleConfigCoordinates = { s: number; t: number; r: number };
 export type BandConfigCoordinates = GlobuleConfigCoordinates & { b: number };
-export type BandEnd = 'start' | 'end';
-export type BandMapping = {
+type BandEnd = 'start' | 'end';
+type BandMapping = {
 	originJoin: BandEnd;
 	partnerJoin: BandEnd;
 	originIndex: number;
 	partnerAddress: GeometryAddress<number>;
 };
 
-export type Recombination = {
+type Recombination = {
 	bandMap: BandMapping[];
 };
 
@@ -1366,26 +1242,24 @@ export type RecombinatoryRecurrence = {
 	recombines?: Recombination;
 };
 
-export type Plane = [Point3, Point3, Point3];
+type GlobuleTransformTranslate = { translate: Point3 };
+type GlobuleTransformRotate = { rotate: GlobuleRotate };
+type GlobuleTransformReflect = { reflect: GlobuleReflect };
+type GlobuleTransformScale = { scale: GlobuleScale };
 
-export type GlobuleTransformTranslate = { translate: Point3 };
-export type GlobuleTransformRotate = { rotate: GlobuleRotate };
-export type GlobuleTransformReflect = { reflect: GlobuleReflect };
-export type GlobuleTransformScale = { scale: GlobuleScale };
-
-export type GlobuleTransform =
+type GlobuleTransform =
 	| GlobuleTransformTranslate
 	| GlobuleTransformRotate
 	| GlobuleTransformReflect
 	| GlobuleTransformScale;
 
-export type ChainableTransform = {
+type ChainableTransform = {
 	recurs: Recurrence;
 } & GlobuleTransform;
 
-export type GlobuleReflect = { anchor: Point3; normal: Point3 };
-export type GlobuleScale = { anchor: Point3; scaleValue: number };
-export type GlobuleRotate = { angle: number; anchor: Point3; axis: Point3 };
+type GlobuleReflect = { anchor: Point3; normal: Point3 };
+type GlobuleScale = { anchor: Point3; scaleValue: number };
+type GlobuleRotate = { angle: number; anchor: Point3; axis: Point3 };
 
 export type GlobuleConfig = {
 	[key: string]:
@@ -1434,7 +1308,7 @@ export type TabConfig = {
 };
 export type TabWidth = { style: 'fixed'; value: number } | { style: 'fraction'; value: number };
 export type BandStyle = 'circumference' | 'helical-left' | 'helical-right';
-export type TabScore = 0.5 | 0.75 | 0.9;
+type TabScore = 0.5 | 0.75 | 0.9;
 export type StripSide = 'greater' | 'lesser';
 export type TabDirection = StripSide | 'both';
 // TODO - add a direction setting which will result in tabs on both sides
@@ -1472,7 +1346,7 @@ export type BandConfig = {
 	tabStyle: TabStyle;
 };
 
-export type RenderRange = {
+type RenderRange = {
 	[key: string]: number | string | undefined;
 	rangeStyle: 'slice';
 	bandStart: number;
@@ -1501,14 +1375,6 @@ export type RenderConfig = {
 
 export type Strip = Band | Strut;
 
-export type Intersector = { dimension: 'x'; value: number } | { dimension: 'y'; value: number };
-
-// Flower of Life
-export interface Circle {
-	x: number;
-	y: number;
-	r: number;
-}
 export type Point = {
 	x: number;
 	y: number;
@@ -1519,120 +1385,12 @@ export type Point3 = {
 	y: number;
 	z: number;
 };
-export type Triangle = {
-	[key: string]: Point;
-	a: Point;
-	b: Point;
-	c: Point;
-};
-
-export type Ellipse = {
-	r0: number;
-	r1: number;
-	center?: Point;
-	rotation: number;
-};
-
-export interface EllipseSegment {
-	ellipse: Ellipse;
-	p1: Point;
-	p2: Point;
-}
 
 // interface FlowerOfLifeBand {
 // 	mode: PatternMode;
 // 	facets: FlowerOfLifeTriangle[];
 // 	svgBand: string;
 // }
-
-export type PatternMode = 'layout' | 'contained' | 'contributing' | 'autoband';
-
-export interface TrianglePatternMode {
-	ab: PatternMode;
-	bc: PatternMode;
-	ac: PatternMode;
-}
-export type FlowerOfLifeConfig =
-	| {
-			type: 'matched';
-			triangle: Triangle;
-			width: number;
-			mode?: PatternMode;
-			anchor?: Point;
-	  }
-	| {
-			type: 'specified';
-			anchor?: Point;
-			width: number;
-			skewX?: number;
-			rotation?: number;
-			scaleX?: number;
-			scaleY?: number;
-			mode?: PatternMode | { ab?: PatternMode; bc?: PatternMode; ac?: PatternMode };
-	  };
-export type MatchedFlowerOfLifeConfig = {
-	type: 'matched';
-	triangle: Triangle;
-	width: number;
-	mode?: PatternMode;
-	anchor?: Point;
-};
-export type BandTesselationConfig = {
-	type: 'matched';
-	mode: PatternMode;
-	tiles: [MatchedFlowerOfLifeConfig, MatchedFlowerOfLifeConfig][];
-};
-
-export interface FlowerOfLifeTriangle {
-	triangle: Triangle;
-	ab: {
-		mode?: PatternMode;
-		layout?: EllipseSegment;
-		edge: EllipseSegment;
-		inner: EllipseSegment;
-	};
-	bc: {
-		mode?: PatternMode;
-		layout?: EllipseSegment;
-		edge: EllipseSegment;
-		inner: EllipseSegment;
-	};
-	ac: {
-		mode?: PatternMode;
-		layout?: EllipseSegment;
-		edge: EllipseSegment;
-		inner: EllipseSegment;
-	};
-	containedSVG?: string;
-	layoutSVG?: string;
-	reflected?: boolean;
-	svgPath?: string;
-	segments?: PathSegment[];
-}
-
-export type FlowerOfLifePathSegments = [
-	MovePathSegment,
-
-	LinePathSegment,
-	ArcPathSegment,
-	LinePathSegment,
-
-	LinePathSegment,
-	ArcPathSegment,
-	LinePathSegment,
-
-	LinePathSegment,
-	ArcPathSegment,
-	LinePathSegment,
-
-	ReturnPathSegment,
-
-	MovePathSegment,
-	ArcPathSegment,
-	ArcPathSegment,
-	ArcPathSegment,
-	ReturnPathSegment
-];
 
 // Quadrilaterals
 
@@ -1668,85 +1426,10 @@ export type QuadrilateralTransformMatrix = {
 	w: Vector3;
 };
 
-export type HexPattern =
-	| [
-			MovePathSegment,
-			LinePathSegment,
-			LinePathSegment,
-			LinePathSegment,
-			LinePathSegment,
-
-			MovePathSegment,
-			LinePathSegment,
-			MovePathSegment,
-			LinePathSegment,
-			MovePathSegment,
-			LinePathSegment,
-
-			MovePathSegment,
-			LinePathSegment,
-			LinePathSegment,
-			LinePathSegment,
-			LinePathSegment,
-
-			MovePathSegment,
-			LinePathSegment,
-			MovePathSegment,
-			LinePathSegment
-	  ]
-	| [
-			MovePathSegment,
-			LinePathSegment,
-			LinePathSegment,
-			LinePathSegment,
-			LinePathSegment,
-
-			LinePathSegment,
-			LinePathSegment,
-			LinePathSegment,
-			LinePathSegment,
-			LinePathSegment,
-			LinePathSegment,
-			ReturnPathSegment,
-
-			MovePathSegment,
-			LinePathSegment,
-
-			MovePathSegment,
-			LinePathSegment,
-			MovePathSegment,
-			LinePathSegment,
-
-			MovePathSegment,
-			LinePathSegment,
-			MovePathSegment,
-			LinePathSegment
-	  ];
-
-export type SegmentVariant = 'insettable' | 'permeable' | 'edge' | 'interior';
-export type InsettableSegment = {
-	[key: string]: Point | SegmentVariant;
-	p0: Point;
-	p1: Point;
-	variant: SegmentVariant;
-};
-export type Perimeter = { isPerimeter: boolean; index: number };
-
-export type InsettablePolygon = {
-	perimeter: Perimeter;
-	segments: InsettableSegment[];
-};
-
-export type FlowerOfLifePattern = {
-	triangle: Triangle;
-};
-
 export type TempIdPrefix = 'sup' | 'sub' | 'glb' | 'cfg';
-export type TempId = string;
+type TempId = string;
 
 /////////////////////////////////
-
-export type SelectBarOption = { name: string; value?: unknown };
 
 export type ScaleUnit = 'in' | 'mm' | 'px';
 export type PatternScale = {

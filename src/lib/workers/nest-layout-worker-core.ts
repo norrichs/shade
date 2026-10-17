@@ -3,7 +3,7 @@ import type { NestShape } from '#lib/cut-pattern/page-layout/nest/types.js';
 import type { PageRect } from '#lib/cut-pattern/page-layout/types.js';
 
 export type NestRequest = { requestId: number; shapes: NestShape[]; geom: NestGeom };
-export type NestWireResult = {
+type NestWireResult = {
 	origins: { x: number; y: number }[];
 	rotations: number[];
 	pages: PageRect[];

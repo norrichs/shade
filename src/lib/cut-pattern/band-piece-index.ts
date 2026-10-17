@@ -33,7 +33,7 @@ export type PieceIndexedBand = {
 };
 
 /** Inclusive parent-quad range a band covers. */
-export type QuadRange = { first: number; last: number };
+type QuadRange = { first: number; last: number };
 
 export type TubePieceIndex<B extends PieceIndexedBand> = {
 	/** Parent bands in first-appearance order; each is its bands in piece order. */
@@ -59,7 +59,7 @@ const parentKey = (a: BandAddress): string => `${a.globule}:${a.tube}:${a.band}`
  * outlined output has the outline, one facet per quad, then an optional fill,
  * and both mark quad facets with `quad`. Undefined when neither gives a count.
  */
-export const quadRangeOf = (band: PieceIndexedBand): QuadRange | undefined => {
+const quadRangeOf = (band: PieceIndexedBand): QuadRange | undefined => {
 	let count = band.quadCount ?? 0;
 	if (band.quadCount === undefined) for (const facet of band.facets ?? []) if (facet?.quad) count++;
 	if (count === 0) return undefined;

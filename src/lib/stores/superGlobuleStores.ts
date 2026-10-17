@@ -129,7 +129,7 @@ export function triggerManualRegeneration(): void {
  * Extracts minimal mesh data from SuperGlobule for lightweight 3D rendering
  * Used in 2d-only mode to preserve 3D visualization while freeing memory
  */
-export function extractMeshData(
+function extractMeshData(
 	superGlobule: SuperGlobule,
 	patternSource: PatternSource = 'projection'
 ): SuperGlobuleMesh {
@@ -199,15 +199,6 @@ export const superConfigStore = persistable<SuperGlobuleConfig>(
 
 // Internal writable store for the SuperGlobule result
 const superGlobuleInternal = writable<SuperGlobule | null>(null);
-
-// Frozen mesh store for 2d-only mode (lightweight 3D representation)
-export const frozenMeshStore = writable<SuperGlobuleMesh | null>(null);
-
-// Persisted pattern store for 2d-only mode (maintains patterns when 3D is cleared)
-export const persistedPatternStore = writable<Pick<
-	PatternGenerationResult,
-	'projectionPattern' | 'globuleTubePattern'
-> | null>(null);
 
 // Track whether we've done the initial generation
 let isInitialized = false;
@@ -591,15 +582,6 @@ export function isSuperGlobuleProjectionPanelPattern(
 	return (
 		!!pattern &&
 		(pattern as SuperGlobuleProjectionPanelPattern).type === 'SuperGlobuleProjectionPanelPattern'
-	);
-}
-
-export function isSuperGlobuleProjectionCutPattern(
-	pattern: SuperGlobulePattern | undefined
-): pattern is SuperGlobuleProjectionCutPattern {
-	return (
-		!!pattern &&
-		(pattern as SuperGlobuleProjectionCutPattern).type === 'SuperGlobuleProjectionCutPattern'
 	);
 }
 

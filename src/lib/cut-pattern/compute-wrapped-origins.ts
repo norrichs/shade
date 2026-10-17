@@ -1,7 +1,6 @@
 import { Vector3 } from 'three';
 
 export const GAP_BETWEEN_BANDS = 20;
-export const ROW_GAP = GAP_BETWEEN_BANDS;
 
 export type WrapInput = {
 	width: number;
@@ -25,7 +24,7 @@ export type WrapOpts = {
 
 export const computeWrappedOrigins = (bands: WrapInput[], opts: WrapOpts = {}): Vector3[] => {
 	const gap = opts.gap ?? GAP_BETWEEN_BANDS;
-	const rowGap = opts.rowGap ?? ROW_GAP;
+	const rowGap = opts.rowGap ?? GAP_BETWEEN_BANDS;
 	const lineWrap = opts.lineWrap ?? false;
 	const wrapWidth = opts.wrapWidth ?? Infinity;
 

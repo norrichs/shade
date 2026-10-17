@@ -1,40 +1,38 @@
 import type { GeometryType } from '#lib/cut-pattern/post-process-types.js';
 
-export const LAYER_IDS = [
-	'C00',
-	'C01',
-	'C02',
-	'C03',
-	'C04',
-	'C05',
-	'C06',
-	'C07',
-	'C08',
-	'C09',
-	'C10',
-	'C11',
-	'C12',
-	'C13',
-	'C14',
-	'C15',
-	'C16',
-	'C17',
-	'C18',
-	'C19',
-	'C20',
-	'C21',
-	'C22',
-	'C23',
-	'C24',
-	'C25',
-	'C26',
-	'C27',
-	'C28',
-	'C29',
-	'T1',
-	'T2'
-] as const;
-export type LayerId = (typeof LAYER_IDS)[number];
+export type LayerId =
+	| 'C00'
+	| 'C01'
+	| 'C02'
+	| 'C03'
+	| 'C04'
+	| 'C05'
+	| 'C06'
+	| 'C07'
+	| 'C08'
+	| 'C09'
+	| 'C10'
+	| 'C11'
+	| 'C12'
+	| 'C13'
+	| 'C14'
+	| 'C15'
+	| 'C16'
+	| 'C17'
+	| 'C18'
+	| 'C19'
+	| 'C20'
+	| 'C21'
+	| 'C22'
+	| 'C23'
+	| 'C24'
+	| 'C25'
+	| 'C26'
+	| 'C27'
+	| 'C28'
+	| 'C29'
+	| 'T1'
+	| 'T2';
 
 export type LightBurnLayer = {
 	id: LayerId;
@@ -95,7 +93,7 @@ const BY_INDEX = new Map(LIGHTBURN_LAYERS.map((l) => [l.index, l]));
 
 export const isLayerId = (v: unknown): v is LayerId =>
 	typeof v === 'string' && BY_ID.has(v as LayerId);
-export const layerById = (id: LayerId): LightBurnLayer => BY_ID.get(id)!;
+const layerById = (id: LayerId): LightBurnLayer => BY_ID.get(id)!;
 export const layerByIndex = (index: number): LightBurnLayer | undefined => BY_INDEX.get(index);
 /** Tool layers are never sent to the laser and carry no cut settings. */
 export const isToolLayer = (l: LightBurnLayer): boolean => l.id === 'T1' || l.id === 'T2';

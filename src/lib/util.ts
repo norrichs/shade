@@ -1,7 +1,5 @@
-import { CubicBezierCurve, CurvePath, Triangle, Vector2, Vector3 } from 'three';
-import { Bezier, type Line } from 'bezier-js';
-import type { BezierConfig, Point, Point3, SuperGlobule } from '#lib/types.js';
-import type { Intersector } from '#lib/types.js';
+import { CubicBezierCurve, CurvePath, Vector2, Vector3 } from 'three';
+import type { BezierConfig, Point3 } from '#lib/types.js';
 import type {
 	GlobuleAddress,
 	GlobuleAddress_Facet,
@@ -22,70 +20,8 @@ import type { ExportFrame } from '#lib/download/export-frame.js';
 export { SCREEN_ONLY_SELECTOR };
 
 export const rad = (deg: number): number => (Math.PI / 180) * deg;
-export const deg = (rad: number): number => (180 / Math.PI) * rad;
-
-export const getPolar = (x: number, y: number, cx = 0, cy = 0): { r: number; theta: number } => {
-	const r = Math.sqrt(Math.pow(x - cx, 2) + Math.pow(y - cy, 2));
-	const sinx = Math.sin(x - cx);
-	const cosy = Math.cos(y - cy);
-	const theta =
-		sinx >= 0 && cosy >= 0
-			? Math.asin(sinx)
-			: sinx >= 0 && cosy < 0
-				? Math.PI - Math.asin(sinx)
-				: sinx < 0 && cosy < 0
-					? Math.PI + Math.asin(sinx)
-					: Math.PI * 2 + Math.asin(sinx);
-	return { r, theta };
-};
 
 // | { type: 'line'; line: [Vector2, Vector2] };
-
-// Given a bezier curve and a value along a dimension,
-// find the points on the curve that have that value
-export const getCubicBezierIntersection = (
-	threeBezier:
-		| CubicBezierCurve
-		| { v0: Vector2; v1: Vector2; v2: Vector2; v3: Vector2 }
-		| { v0: Point; v1: Point; v2: Point; v3: Point },
-	intersector: Intersector
-	// precision = 0.001,
-	// iterationLimit = 10
-): Vector2 | Vector2[] | undefined => {
-	const { v0, v1, v2, v3 } = threeBezier;
-	const bezier = new Bezier(v0, v1, v2, v3);
-	const dim = intersector.dimension;
-	const val = intersector.value;
-	const intersectorLine: Line = {
-		p1: {
-			x: dim === 'x' ? val : -1000,
-			y: dim === 'x' ? -1000 : val
-		},
-		p2: {
-			x: dim === 'x' ? val : 1000,
-			y: dim === 'x' ? 1000 : val
-		}
-	};
-	const ints = bezier.intersects(intersectorLine);
-	const intPoints = ints
-		.map((t) => {
-			if (typeof t === 'number') {
-				const point = bezier.get(t);
-				return new Vector2(point.x, point.y);
-			}
-			return new Vector2(0, 0);
-		})
-		.filter((point) => point !== undefined);
-	return intPoints;
-	// const points = bezier.getSpacedPoints(100);
-	// const ints: Vector2[] = []
-	// points.forEach((point, i) => {
-	// 	if (i === 0 || i === points.length - 1) {
-	// 		return
-	// 	}
-	// 	if (points[i-1][intersector.dimension] )
-	// })
-};
 
 // `SCREEN_ONLY_SELECTOR` is defined in `export-guard.ts` (so `collectExportNodes`
 // can enforce the same screen-only exclusion without a util↔export-guard import
@@ -120,7 +56,7 @@ export const buildExportSvg = (frame: ExportFrame): { svg: Element } | { error: 
 	return { svg };
 };
 
-export const generateSvgUrl = (frame: ExportFrame): string | { error: string } => {
+const generateSvgUrl = (frame: ExportFrame): string | { error: string } => {
 	const built = buildExportSvg(frame);
 	if ('error' in built) return built;
 	const blob = new Blob([new XMLSerializer().serializeToString(built.svg)], {
@@ -166,14 +102,7 @@ export const round = (n: number, decimals?: number) => {
 	return Math.round(n * x) / x;
 };
 
-export const formatPoint3 = (p: Point3, decimals?: number) => {
-	return `(${round(p.x, decimals)}, ${round(p.y, decimals)}, ${round(p.z, decimals)})`;
-};
-
-export const isClose = (n0?: number, n1?: number, precision: number = 1 / 1000000) =>
-	n1 !== undefined && n0 !== undefined && Math.abs(n1 - n0) < precision;
-
-export const getCubicBezier = (cfg: BezierConfig) => {
+const getCubicBezier = (cfg: BezierConfig) => {
 	const [p0, p1, p2, p3] = cfg.points;
 	return new CubicBezierCurve(
 		new Vector2(p0.x, p0.y),
@@ -199,56 +128,9 @@ export const getVector3 = (cfg: Point3 | Point3[]) => {
 
 export const average = (arr: number[]) => arr.reduce((acc, val) => acc + val, 0) / arr.length;
 
-export const getSlope = (v0: Vector2, v1: Vector2): number => {
-	return (v1.y - v0.y) / (v1.x - v0.x);
-};
-
-export const getIntersectionOfLines = (
-	l1: { p0: Vector2; p1: Vector2 },
-	l2: { p0: Vector2; p1: Vector2 }
-): Vector2 | null => {
-	let b1, b2, x, y: number;
-
-	const m1 = getSlope(l1.p0, l1.p1);
-	const m2 = getSlope(l2.p0, l2.p1);
-	if (m1 === m2) {
-		return null;
-	} else if (!Number.isFinite(m1)) {
-		x = l1.p1.x;
-		b2 = l2.p1.y - m2 * l2.p1.x;
-		y = m2 * x + b2;
-	} else if (!Number.isFinite(m2)) {
-		x = l2.p1.x;
-		b1 = l1.p1.y - m1 * l1.p1.x;
-		y = m1 * x + b1;
-	} else {
-		b1 = l1.p1.y - m1 * l1.p1.x;
-		b2 = l2.p1.y - m2 * l2.p1.x;
-		x = (b2 - b1) / (m1 - m2);
-		y = m1 * x + b1;
-	}
-	if (!Number.isFinite(x) || !Number.isFinite(y)) {
-		console.error('--------- Infinite', x, y, m1, m2, b1, b2);
-	}
-	return new Vector2(x, y);
-};
-
-export const printTriangle = (t: Triangle, decimals = 3) => {
-	return `a: ${round(t.a.x, decimals)}, ${round(t.a.y, decimals)}, ${round(t.a.z, decimals)}
-b: ${round(t.b.x, decimals)}, ${round(t.b.y, decimals)}, ${round(t.b.z, decimals)}
-c: ${round(t.c.x, decimals)}, ${round(t.c.y, decimals)}, ${round(t.c.z, decimals)}`;
-};
-
 export const formatAngle = (angle: number, precision = 1 / 10) => {
 	const p = 1 / precision;
 	return `${Math.round(((angle * 180) / Math.PI) * p) / p}°`;
-};
-
-export const getFacetByAddress = (
-	sg: SuperGlobule,
-	a: GlobuleAddress_Facet | GlobuleAddress_FacetEdge
-) => {
-	return sg.projections[a.globule].tubes[a.tube].bands[a.band].facets[a.facet];
 };
 
 export const addressIsInArray = (
@@ -261,7 +143,7 @@ export const addressIsInArray = (
 
 export type AddressFormat = 'gtbf' | 'gtb' | 'gt' | 'tbf' | 'tb' | 'tb-slash' | 't' | 'b' | 'f';
 
-export const isGlobuleAddress_FacetEdge = (a: GlobuleAddress): a is GlobuleAddress_FacetEdge =>
+const isGlobuleAddress_FacetEdge = (a: GlobuleAddress): a is GlobuleAddress_FacetEdge =>
 	isGlobuleAddress_Facet(a) && Object.hasOwn(a, 'edge');
 export const isGlobuleAddress_Facet = (a: GlobuleAddress): a is GlobuleAddress_Facet =>
 	isGlobuleAddress_Band(a) && Object.hasOwn(a, 'facet');
@@ -271,7 +153,7 @@ export const isGlobuleAddress_Band = (a: GlobuleAddress): a is GlobuleAddress_Ba
 	isGlobuleAddress_Tube(a) && Object.hasOwn(a, 'band');
 export const isGlobuleAddress_Tube = (a: GlobuleAddress): a is GlobuleAddress_Tube =>
 	isGlobuleAddress_Globule(a) && Object.hasOwn(a, 'tube');
-export const isGlobuleAddress_Globule = (a: GlobuleAddress): a is GlobuleAddress_Globule =>
+const isGlobuleAddress_Globule = (a: GlobuleAddress): a is GlobuleAddress_Globule =>
 	Object.hasOwn(a, 'globule');
 
 export const concatAddress_Facet = (a: GlobuleAddress_Facet, format: AddressFormat = 'gtbf') => {
@@ -316,10 +198,8 @@ export const concatAddress_Band = (a: GlobuleAddress_Band, format: AddressFormat
 			return `g${a.globule}t${a.tube}b${a.band}`;
 	}
 };
-export const concatAddress_BandPiece = (
-	a: GlobuleAddress_BandPiece,
-	format: AddressFormat = 'gtb'
-) => `${concatAddress_Band(a, format)}p${a.piece}`;
+const concatAddress_BandPiece = (a: GlobuleAddress_BandPiece, format: AddressFormat = 'gtb') =>
+	`${concatAddress_Band(a, format)}p${a.piece}`;
 export const concatAddress_Tube = (a: GlobuleAddress_Tube, format: AddressFormat = 't') => {
 	switch (format) {
 		case 't':

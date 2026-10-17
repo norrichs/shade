@@ -25,7 +25,7 @@ import { assemblerHighlightRing } from '#lib/cut-pattern/pattern-band-space.js';
 
 export type { BandRingLookup };
 
-export const bandRingLookup = derived(
+const bandRingLookup = derived(
 	[superGlobulePatternStore, patternConfigStore, viewControlStore],
 	([$superGlobulePatternStore, $patternConfigStore, $viewControlStore]): BandRingLookup => {
 		const empty: BandRingLookup = () => [];

@@ -5,7 +5,7 @@ import type { UnitDefinition } from '../../spec-types';
 export type UnitGroup = 'start' | 'middle' | 'end';
 
 /** One unit group of one (row, column) tile, placed at `offset` in the tiled path. */
-export type TileBlock = {
+type TileBlock = {
 	group: UnitGroup;
 	row: number;
 	column: number;

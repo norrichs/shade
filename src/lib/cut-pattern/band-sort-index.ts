@@ -3,7 +3,6 @@ import type {
 	BandSortMode,
 	BandSortGroup,
 	BandRef,
-	IndexRange,
 	TubeCutPattern
 } from '#lib/types.js';
 import { isSameParentBand } from '#lib/util.js';
@@ -199,23 +198,6 @@ export const buildBandSortIndex = (tubes: TubeCutPattern[], mode: BandSortMode):
 		case 'end-connection-tube':
 			return buildEndConnectionIndex(tubes);
 	}
-};
-
-export const sliceBandSortIndex = (index: BandSortIndex, range: IndexRange): BandSortIndex => {
-	const groupStart = range.groups?.[0] ?? 0;
-	const groupEnd = range.groups?.[1] ?? index.groups.length;
-	const slicedGroups = index.groups.slice(groupStart, groupEnd);
-
-	if (!range.bandsInGroup) return { ...index, groups: slicedGroups };
-
-	const [bandStart, bandEnd] = range.bandsInGroup;
-	return {
-		...index,
-		groups: slicedGroups.map((group) => ({
-			...group,
-			bands: group.bands.slice(bandStart, bandEnd)
-		}))
-	};
 };
 
 export const buildBandCodeMap = (index: BandSortIndex): Map<string, string> => {

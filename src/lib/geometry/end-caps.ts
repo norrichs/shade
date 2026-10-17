@@ -24,7 +24,7 @@ export interface EndCapGeometry {
  * Generate end cap triangles from a level
  * Creates a triangular fan from level vertices to a center point
  */
-export function generateEndCap(
+function generateEndCap(
 	level: Level,
 	direction: 'top' | 'bottom',
 	offset: number = 0

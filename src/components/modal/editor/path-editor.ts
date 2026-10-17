@@ -11,17 +11,6 @@ export const getPointClass = (curveIndex: number, pointIndex: number) => {
 	return pointIndex === 1 || pointIndex === 2 ? 'direction' : 'anchor';
 };
 
-export type LimitedPoint = PointConfig2 & {
-	xLimit?: number | ((data: unknown) => number);
-	yLimit?: number | ((data: unknown) => number);
-};
-
-export type LimitedBezierConfig = {
-	[key: string]: LimitedPoint[] | string;
-	type: 'BezierConfig';
-	points: [LimitedPoint, LimitedPoint, LimitedPoint, LimitedPoint];
-};
-
 export type FlattenedPolygon = {
 	edges: {
 		edgePoints: Vector2[];

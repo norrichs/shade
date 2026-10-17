@@ -1,5 +1,5 @@
 import { Vector2 } from 'three';
-import { buildCellCurvedInsets2d, vertexKey, type CurvedCellEdge } from '../curved-inset-2d';
+import { buildCellCurvedInsets2d, type CurvedCellEdge } from '../curved-inset-2d';
 
 // A unit square cell centered on the seed at the origin.
 //   P0=(1,1)  P1=(-1,1)  P2=(-1,-1)  P3=(1,-1)
@@ -91,10 +91,5 @@ describe('buildCellCurvedInsets2d', () => {
 		// Both edges touch a degree-1 vertex, so both fall back.
 		expect(out.get(0)).toBeNull();
 		expect(out.get(1)).toBeNull();
-	});
-
-	it('vertexKey is stable for equal coordinates', () => {
-		expect(vertexKey([1.0, -0.3])).toBe(vertexKey([1.0, -0.3]));
-		expect(vertexKey([1.0, -0.3])).not.toBe(vertexKey([1.0, 0.3]));
 	});
 });

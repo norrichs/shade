@@ -12,7 +12,6 @@ import type {
 	TubePanelPattern
 } from '#lib/types.js';
 import { Triangle, Vector3 } from 'three';
-import { radToDeg } from 'three/src/math/MathUtils.js';
 
 export type ProjectionDistribution = {
 	tubes: {
@@ -253,49 +252,6 @@ const redrawTriangle = ({
 	return newTriangle;
 };
 
-export const rotateVectors = (vectors: Vector3[], angle: number) => {
-	return vectors.map((vector) => {
-		return vector.clone().applyAxisAngle(Z_AXIS, angle);
-	});
-};
-
-export const shiftVectors = (vectors: Vector3[], shiftVector: Vector3) => {
-	return vectors.map((vector) => {
-		return vector.clone().addScaledVector(shiftVector, 1);
-	});
-};
-
-export const redrawTriangle2 = (
-	triangle: Triangle,
-	shiftVector: Vector3,
-	angle: number,
-	anchorPoint: TrianglePoint
-): Triangle => {
-	const anchor = triangle[anchorPoint].clone();
-	const [p1, p2] = getOtherTriangleElements(anchorPoint);
-	const newTriangle = new Triangle(
-		triangle[anchorPoint].clone(),
-		triangle[p1].clone(),
-		triangle[p2].clone()
-	);
-
-	// translate the triangle 0,0,0
-	newTriangle[anchorPoint] = newTriangle[anchorPoint].addScaledVector(anchor, -1);
-	newTriangle[p1] = newTriangle[p1].addScaledVector(anchor, -1);
-	newTriangle[p2] = newTriangle[p2].addScaledVector(anchor, -1);
-
-	newTriangle[anchorPoint].applyAxisAngle(Z_AXIS, -angle);
-	newTriangle[p2].applyAxisAngle(Z_AXIS, -angle);
-
-	newTriangle[anchorPoint] = newTriangle[anchorPoint]
-		.addScaledVector(shiftVector, 1)
-		.addScaledVector(anchor, 1);
-	newTriangle[p1] = newTriangle[p1].addScaledVector(shiftVector, 1).addScaledVector(anchor, 1);
-	newTriangle[p2] = newTriangle[p2].addScaledVector(shiftVector, 1).addScaledVector(anchor, 1);
-
-	return newTriangle;
-};
-
 export function signedZAxisAngleTo(u: Vector3, v: Vector3) {
 	const angle = u.angleTo(v);
 
@@ -371,31 +327,6 @@ export const getTransform = (
 	return '';
 };
 
-export const getBandTransforms = (tubes: TubePanelPattern[]) => {
-	return {
-		tubes: tubes.map((tube) => ({
-			bands: tube.bands.map((band) => getBandTransform(band))
-		}))
-	};
-};
-
-const getBandTransform = (band: BandPanelPattern) => {
-	const firstPanel = band.panels[0];
-	const lastPanel = band.panels[band.panels.length - 1];
-	const firstPanelCenter = new Vector3();
-	const lastPanelCenter = new Vector3();
-	firstPanel.triangle.getMidpoint(firstPanelCenter);
-	lastPanel.triangle.getMidpoint(lastPanelCenter);
-	const vector = lastPanelCenter.clone().addScaledVector(firstPanelCenter, -1);
-	const angle = vector.angleTo(new Vector3(0, 1, 0));
-	return { x: 0, y: 0, angle: radToDeg(angle) };
-};
-
-export const getBandSlopeVector = (band: BandPanelPattern) => {
-	const points = getAllTrianglePoints(band);
-	return findSlopeVectorByLeastSquares(points);
-};
-
 type GenericBand = { panels?: { triangle: Triangle }[]; facets?: { triangle: Triangle }[] };
 export const getAllTrianglePoints = (band: GenericBand): Vector3[] => {
 	const points: Vector3[] = [];
@@ -405,63 +336,6 @@ export const getAllTrianglePoints = (band: GenericBand): Vector3[] => {
 		points.push(panel.triangle.c);
 	});
 	return points;
-};
-
-const findSlopeVectorByLeastSquares = (points: Vector3[]) => {
-	const values_x = points.map((point) => point.x);
-	const values_y = points.map((point) => point.y);
-
-	let x_sum = 0;
-	let y_sum = 0;
-	let xy_sum = 0;
-	let xx_sum = 0;
-	let count = 0;
-
-	const values_length = values_x.length;
-
-	for (let i = 0; i < values_length; i++) {
-		const x = values_x[i];
-		const y = values_y[i];
-		x_sum += x;
-		y_sum += y;
-		xx_sum += x * x;
-		xy_sum += x * y;
-		count++;
-	}
-
-	const m = (count * xy_sum - x_sum * y_sum) / (count * xx_sum - x_sum * x_sum);
-
-	const vector = new Vector3(1, m, 0);
-	return vector;
-
-	/*
-	 * We then return the x and y data points according to our fit
-	 */
-	// var result_values_x = [];
-	// var result_values_y = [];
-
-	// for (let i = 0; i < values_length; i++) {
-	// 		x = values_x[i];
-	// 		y = x * m + b;
-	// 		result_values_x.push(x);
-	// 		result_values_y.push(y);
-	// }
-
-	// return [result_values_x, result_values_y];
-};
-
-export const getBounds = (
-	pattern: TubePanelPattern[]
-): {
-	bands: { angle: number; width: number; height: number; averageX: number; averageY: number }[];
-}[] => {
-	const bounds = pattern.map((tube) => ({
-		bands: tube.bands.map((band) =>
-			getMinimalBoundingBoxAndRotationAngle(getAllTrianglePoints(band))
-		)
-	}));
-
-	return bounds;
 };
 
 export const getMinimalBoundingBoxAndRotationAngle = (

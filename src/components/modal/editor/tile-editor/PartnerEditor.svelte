@@ -57,11 +57,10 @@
 	};
 
 	// The 3D view indexes parent bands by quad; pieces are mapped to parent quads.
-	// `handleClear` passes null; the store has always received it as-is (every
-	// address is null then, so nothing is highlighted).
+	// `handleClear` passes null (every address is null then, so nothing is highlighted).
 	const writeHighlight = (source: PartnerHighlightSource | null, b: PartnerBundle | null) => {
 		partnerHighlightStore.set({
-			source: source as PartnerHighlightSource,
+			source,
 			...partnerHighlightAddresses(source ? flattenBands(source) : [], b)
 		});
 	};

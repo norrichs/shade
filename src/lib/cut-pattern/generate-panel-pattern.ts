@@ -23,8 +23,7 @@ import type {
 import { Line3, Plane, Triangle, Vector3 } from 'three';
 import {
 	getBandTriangleEdges,
-	isSameVector3,
-	printProjectionAddress
+	isSameVector3
 } from '#lib/projection-geometry/generate-projection.js';
 import { getMidPoint, svgPathStringFromSegments } from '#lib/patterns/utils.js';
 import {
@@ -32,7 +31,7 @@ import {
 	findLineIntersection,
 	getEdgeVector,
 	signedZAxisAngleTo
-} from '../../components/cut-pattern/distrubute-panels';
+} from '../../components/cut-pattern/distribute-panels';
 import {
 	corrected,
 	getBandBasePoints,
@@ -601,7 +600,7 @@ const generatePanelPattern = ({
 	return panel;
 };
 
-export const getPanelEdgeMeta = (
+const getPanelEdgeMeta = (
 	address: GlobuleAddress_Facet,
 	tubes: Tube[]
 ): PanelPattern['meta']['edges'] => {
@@ -648,7 +647,7 @@ const getInsetLines = (edge: TriangleEdge, index: number, insets: number[], tria
 	return { v0: insetPoint0, v1: insetPoint1 };
 };
 
-export const applyHolesToEdgeMeta = (
+const applyHolesToEdgeMeta = (
 	meta: PanelPattern['meta'],
 	triangle: Triangle,
 	config: PanelHoleConfig
@@ -877,47 +876,4 @@ export const getFlatTriangle = ({ triangle, base }: { triangle: Triangle; base: 
 	flatTriangle[p2] = flat[p2];
 
 	return flatTriangle;
-};
-
-export const validateAllPanels = (tubes: TubePanelPattern[]) => {
-	tubes.forEach((tube) => {
-		tube.bands.forEach((band) => {
-			band.panels.forEach((panel) => {
-				(['ab', 'bc', 'ac'] as TriangleEdge[]).forEach((edge) => {
-					try {
-						validateEdge(edge, panel, tubes);
-					} catch (err) {
-						console.error(err);
-					}
-				});
-			});
-		});
-	});
-};
-
-const validateEdge = (edge: TriangleEdge, panel: PanelPattern, tubes: TubePanelPattern[]) => {
-	const partnerAddress = panel.meta.edges[corrected(edge)].partner;
-	const panelAddress = panel.address;
-	const panelEdgeAddress = { ...panelAddress, edge };
-	const partner = tubes[partnerAddress.tube].bands[partnerAddress.band].panels[panelAddress.facet];
-	const partnerEdge = partnerAddress.edge;
-	const partnerSelfAddress = partner.meta.edges[partnerEdge].partner;
-
-	if (!facetEdgeAddressMatch(panelEdgeAddress, partnerSelfAddress)) {
-		throw Error(
-			`self partner address mismatch ${printProjectionAddress(
-				panelEdgeAddress
-			)} : ${printProjectionAddress(partnerSelfAddress)}`
-		);
-	}
-};
-
-const facetEdgeAddressMatch = (a0: GlobuleAddress_FacetEdge, a1: GlobuleAddress_FacetEdge) => {
-	return (
-		a0.globule === a1.globule &&
-		a0.tube === a1.tube &&
-		a0.band === a1.band &&
-		a0.facet === a1.facet &&
-		a0.edge === a1.edge
-	);
 };

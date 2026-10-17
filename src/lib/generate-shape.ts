@@ -35,8 +35,7 @@ import type {
 	StrutOrientation,
 	TabDirection,
 	TabFootprintInvert,
-	GlobuleData,
-	SpineCurveConfig
+	GlobuleData
 } from '#lib/types.js';
 import { generateEdgeConfig } from './cut-pattern/generate-cut-pattern';
 import { generateLevelSet2, generateSections } from './generate-level';
@@ -48,18 +47,6 @@ import {
 } from './projection-geometry/generate-projection';
 
 // Rotated Shape Levels are 2d.  How can I enforce that?
-
-// Tab type guards live in $lib/tab-guards so they can be imported without
-// pulling generate-shape (and its cut-pattern transitive deps) into modules
-// that Jest's transform can't handle. Re-exported here for backward compat.
-export { isFullTab, isTrapTab, isMultiFacetFullTab, isMultiFacetTrapTab } from './tab-guards';
-
-export const isBezierCurveConfig = (curve: BezierConfig | PointConfig2): curve is BezierConfig =>
-	Object.hasOwn(curve, 'p0') &&
-	Object.hasOwn(curve, 'p1') &&
-	Object.hasOwn(curve, 'p2') &&
-	Object.hasOwn(curve, 'p3') &&
-	curve.type === 'BezierConfig';
 
 export const generateSilhouette = (config: SilhouetteConfig): CurvePath<Vector2> => {
 	const silhouette = new CurvePath<Vector2>();
@@ -78,23 +65,6 @@ export const generateSilhouette = (config: SilhouetteConfig): CurvePath<Vector2>
 	return silhouette;
 };
 
-export const generateSpineCurve = (config: SpineCurveConfig): CurvePath<Vector2> => {
-	const spineCurve = new CurvePath<Vector2>();
-	for (const curve of config.curves) {
-		if (curve.type === 'BezierConfig') {
-			spineCurve.add(
-				new CubicBezierCurve(
-					new Vector2(curve.points[0].x, curve.points[0].y),
-					new Vector2(curve.points[1].x, curve.points[1].y),
-					new Vector2(curve.points[2].x, curve.points[2].y),
-					new Vector2(curve.points[3].x, curve.points[3].y)
-				)
-			);
-		}
-	}
-	return spineCurve;
-};
-
 export const generateDepthCurve = (config: DepthCurveConfig): CurvePath<Vector2> => {
 	const dCurve = new CurvePath<Vector2>();
 	for (const curve of config.curves) {
@@ -110,20 +80,6 @@ export const generateDepthCurve = (config: DepthCurveConfig): CurvePath<Vector2>
 		}
 	}
 	return dCurve;
-};
-
-// utility function to generate a regular polygon of type LevelPrototype
-export const generateRegularPolygonLevel = (sides: number, radius: number): LevelPrototype => {
-	const output: LevelPrototype = {
-		center: new Vector2(0, 0),
-		vertices: []
-	};
-	const a = (Math.PI * 2) / sides;
-
-	for (let i = 0; i < sides; i++) {
-		output.vertices.push(new Vector2(radius * Math.cos(a * i), radius * Math.sin(a * i)));
-	}
-	return output;
 };
 
 // const validateShapeConfig = (config: ShapeConfig): Validation => {
@@ -751,20 +707,15 @@ export const generateTrapTab = (
 	return tab;
 };
 
-export const isStrut = (strip: Strip): strip is Strut => (strip as Strut).tiling !== undefined;
-export const isBand = (strip: Strip): strip is Strut =>
-	(strip as Band).facets !== undefined && (strip as Strut).tiling === undefined;
+const isStrut = (strip: Strip): strip is Strut => (strip as Strut).tiling !== undefined;
 
-export const isLevels = (shapes: (Strip | Level)[]): shapes is Level[] =>
+const isLevels = (shapes: (Strip | Level)[]): shapes is Level[] =>
 	(shapes as unknown as Level[]).every((shape) => shape.level && shape.center);
 
-export const isStrip = (shapes: (Strip | Level)[]): shapes is Strip[] =>
+const isStrip = (shapes: (Strip | Level)[]): shapes is Strip[] =>
 	(shapes as unknown as Level[]).every((shape) => !shape.level && !shape.center);
 
-export const getRenderable = (
-	config: RenderConfig,
-	shapes: (Level | Strip)[]
-): (Level | Strip)[] => {
+const getRenderable = (config: RenderConfig, shapes: (Level | Strip)[]): (Level | Strip)[] => {
 	if (config.ranges?.rangeStyle === 'slice') {
 		const {
 			bandStart,

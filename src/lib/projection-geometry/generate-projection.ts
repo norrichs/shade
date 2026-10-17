@@ -9,7 +9,7 @@ import type {
 	SuperGlobule,
 	GlobuleConfig
 } from '#lib/types.js';
-import { average, getCubicBezierCurvePath, getIntersectionOfLines, getVector3 } from '#lib/util.js';
+import { average, getCubicBezierCurvePath, getVector3 } from '#lib/util.js';
 import {
 	CapsuleGeometry,
 	CurvePath,
@@ -54,7 +54,6 @@ import type {
 } from './types';
 import { isTubeClosed } from './tube-closure';
 import { materials } from '../../components/three-renderer/materials';
-import { getLength } from '#lib/patterns/utils.js';
 import {
 	corrected,
 	getTrianglePointAsKVFromTriangleEdge,
@@ -148,13 +147,13 @@ export const getMatrix4 = (
 	return resultMatrix;
 };
 
-export const generateSphereMesh = ({ radius }: SphereConfig) => {
+const generateSphereMesh = ({ radius }: SphereConfig) => {
 	const sphereGeometry = new SphereGeometry(radius, 100, 100);
 	const sphereMesh = new Mesh(sphereGeometry, materials.default);
 	return sphereMesh;
 };
 
-export const generateGlobuleMesh = (config: GlobuleConfig) => {
+const generateGlobuleMesh = (config: GlobuleConfig) => {
 	const tube = generateGlobuleTube(config);
 	const geometries = collateGlobuleTubeGeometry([tube], {
 		any: true,
@@ -176,12 +175,7 @@ export const generateGlobuleMesh = (config: GlobuleConfig) => {
 	return globuleMesh;
 };
 
-export const generateCapsuleMesh = ({
-	radius,
-	height,
-	capSegments,
-	radialSegments
-}: CapsuleConfig) => {
+const generateCapsuleMesh = ({ radius, height, capSegments, radialSegments }: CapsuleConfig) => {
 	const capsuleGeometry = new CapsuleGeometry(radius, height, capSegments, radialSegments);
 	const capsuleMesh = new Mesh(capsuleGeometry, materials.default);
 	return capsuleMesh;
@@ -253,7 +247,7 @@ export const generateSurface = (cfg: SurfaceConfig) => {
 };
 
 /** Rays are cast from here onto the surface. */
-export const getProjectionCenter = (surfaceConfig: SurfaceConfig): Vector3 =>
+const getProjectionCenter = (surfaceConfig: SurfaceConfig): Vector3 =>
 	surfaceConfig.type === 'GlobuleConfig'
 		? new Vector3(0, 0, 0)
 		: (getVector3(surfaceConfig.center) as Vector3);
@@ -296,7 +290,7 @@ const computeDrapedEdgeDivisions = (
 	return new Map(keys.map((key, i) => [key, counts[i]]));
 };
 
-export const generatePolyhedron = (
+const generatePolyhedron = (
 	projectorConfig: ProjectorConfig<Point3, Point3, EdgeCurveConfig, CrossSectionConfig>,
 	options: { sampling?: ResolvedEdgeSampling; surface?: Object3D; center?: Vector3 } = {}
 ) => {
@@ -365,7 +359,7 @@ export const generatePolyhedron = (
 	return polyhedron;
 };
 
-export const getPolygonCenter = (
+const getPolygonCenter = (
 	polygon: PolygonConfig<Point3, Point3, EdgeCurveConfig, CrossSectionConfig>
 ): Vector3 => {
 	const xArr: number[] = [];
@@ -429,36 +423,6 @@ const generateEdge = ({
 	return { edgePoints, curvePoints };
 };
 
-export const mapPointsFromTriangle = (
-	triangle: { a: Vector2; b: Vector2; c: Vector2 },
-	points: Vector2[],
-	reverse?: boolean
-) => {
-	const { a, b, c } = triangle;
-	const mappedPoints = reverse
-		? points.reverse().map((point) => {
-				const int = getIntersectionOfLines({ p0: c, p1: point }, { p0: a, p1: b });
-				if (!int) {
-					throw new Error('no intersection!');
-				}
-				return {
-					x: getLength(int, point) / getLength(int, c),
-					y: getLength(a, int) / getLength(a, b)
-				};
-			})
-		: points.map((point) => {
-				const int = getIntersectionOfLines({ p0: c, p1: point }, { p0: a, p1: b });
-				if (!int) {
-					throw new Error('no intersection!');
-				}
-				return {
-					x: getLength(int, point) / getLength(int, c),
-					y: getLength(a, b) / getLength(a, int)
-				};
-			});
-	return mappedPoints;
-};
-
 export const mapPointsToTriangle = <V extends Vector2 | Vector3>(
 	triangle: { a: V; b: V; c: V },
 	points: Vector2[],
@@ -507,10 +471,7 @@ export const getPoints = (
 	return vectors;
 };
 
-export const getCrossSectionScale = (
-	crossSectionScaling: CrossSectionScaling,
-	edgeWidth?: number
-) => {
+const getCrossSectionScale = (crossSectionScaling: CrossSectionScaling, edgeWidth?: number) => {
 	let xScale: number;
 	if (crossSectionScaling.width === 'curve') {
 		if (!edgeWidth) {
@@ -540,11 +501,7 @@ type GenerateProjectionProps = {
 	projectionConfig: ProjectionConfig<Point3, Point3, EdgeCurveConfig, CrossSectionConfig>;
 };
 
-export const generateProjection = ({
-	surface,
-	projector,
-	projectionConfig
-}: GenerateProjectionProps) => {
+const generateProjection = ({ surface, projector, projectionConfig }: GenerateProjectionProps) => {
 	const startTime = performance.now();
 
 	const center = getProjectionCenter(projectionConfig.surfaceConfig);
@@ -886,7 +843,7 @@ const sortEdges = (
 	return sortedAndMapped;
 };
 
-export const generateTubeBands = (
+const generateTubeBands = (
 	projection: Projection,
 	projectionConfig: ProjectionConfig<undefined, number, number, number>,
 	projectionAddress: GlobuleAddress
@@ -1399,7 +1356,7 @@ export const isSameVector3 = (v0: Vector3, v1: Vector3, precision = 1 / 10_000) 
  * divisions=1: 5 points → 4 bands
  * divisions=2: 7 points → 6 bands
  */
-export const generateSurfaceProjectionBands = (
+const generateSurfaceProjectionBands = (
 	projection: Projection,
 	projectionConfig: ProjectionConfig<undefined, number, number, number>,
 	projectionAddress: GlobuleAddress,
@@ -1767,7 +1724,7 @@ export const printProjectionAddress = (
 	return globule + tube + band + facet + edge;
 };
 
-export const getSections = (
+const getSections = (
 	tubeAddress: GlobuleAddress_Tube,
 	projections: SuperGlobule['projections']
 ): Section[] => {

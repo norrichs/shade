@@ -29,7 +29,7 @@ export type AdjustmentRules = {
 	trimsEnds?: boolean;
 };
 
-export type TiledPatternAlgorithm =
+type TiledPatternAlgorithm =
 	| 'shield-tesselation'
 	| 'hex'
 	| 'box'

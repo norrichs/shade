@@ -1,4 +1,4 @@
-import type { BandCutPattern, PathSegment, Point } from '#lib/types.js';
+import type { BandCutPattern, Point } from '#lib/types.js';
 import type { TabGeometry } from './generate-tab-geometry';
 
 export type BandTabRecord = NonNullable<BandCutPattern['tabs']>[number];
@@ -138,7 +138,3 @@ export const collectOutlinedBandTabs = (
 
 	return records;
 };
-
-// Re-export PathSegment to keep TabGeometry's path shape addressable downstream
-// without forcing tests to import from the generation module directly.
-export type { PathSegment };

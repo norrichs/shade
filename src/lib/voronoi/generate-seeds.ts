@@ -15,7 +15,7 @@ export type AreaTableEntry = {
 	triangle: SurfaceTriangle;
 };
 
-export function triangleArea(triangle: SurfaceTriangle): number {
+function triangleArea(triangle: SurfaceTriangle): number {
 	const [a, b, c] = triangle;
 	const ab = b.clone().sub(a);
 	const ac = c.clone().sub(a);

@@ -1,0 +1,9 @@
+{
+	"$schema": "https://unpkg.com/knip@6/schema.json",
+	"entry": [
+		"src/routes/**/+*.{js,ts,svelte}!",
+		"src/lib/workers/*.worker.ts!",
+		"src/types/*.d.ts!"
+	],
+	"project": ["src/**/*.{ts,js,svelte}!", "tests/**/*.ts", "drizzle/**/*.ts!", "*.{ts,js}"]
+}

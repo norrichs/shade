@@ -1,7 +1,7 @@
 import { Vector3 } from 'three';
 import type { SurfaceTriangle } from '../types';
 
-export type GraphNeighbor = { to: number; weight: number };
+type GraphNeighbor = { to: number; weight: number };
 
 export type MeshGraph = {
 	/** Welded unique vertex positions, indexed by vertex id. */

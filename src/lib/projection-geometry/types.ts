@@ -25,21 +25,10 @@ export type CapsuleConfig = {
 	heightSegments: number;
 };
 
-export type SurfaceGeometryConfig = SphereConfig | CapsuleConfig | GlobuleConfig;
+type SurfaceGeometryConfig = SphereConfig | CapsuleConfig | GlobuleConfig;
 
 export type SurfaceConfig = SurfaceGeometryConfig & {
 	transform: TransformConfig | 'inherit';
-};
-
-// Validation:
-//   - curve[0].points[0].x === curve[curve.length-1].points[3].x
-//   - curve[0].points[0].x < 1
-//   - curve[0].y === 0, curve[curve.length-1].points[3].y === 1
-export type OldEdgeConfig = {
-	p0: Point3;
-	p1: Point3;
-	widthCurve: BezierConfig[];
-	heightCurve?: BezierConfig[];
 };
 
 export type VerticesConfig = Point3[];
@@ -82,13 +71,6 @@ export type CrossSectionScaling = {
 	height: 'curve' | 'matchWidth' | number;
 };
 
-type PolygonIndex = number;
-type EdgeIndex = number;
-
-export type EdgeMap = {
-	edgePairs: [[PolygonIndex, EdgeIndex], [PolygonIndex, EdgeIndex]][];
-};
-
 export type TransformConfig = {
 	translate: Point3;
 	scale: Point3;
@@ -119,7 +101,7 @@ export type PolyhedronConfig<
 	// edgeMap: EdgeMap;
 };
 
-export type ManualDivisionsConfig =
+type ManualDivisionsConfig =
 	| { divisions: 2; divisionsArray: [number] }
 	| { divisions: 3; divisionsArray: [number, number] }
 	| { divisions: 4; divisionsArray: [number, number, number] }
@@ -147,7 +129,7 @@ export type CrossSectionConfig = {
 	scaling: CrossSectionScaling;
 	shouldSkewCurve: boolean;
 };
-export type CrossSectionConfigVector2 = {
+type CrossSectionConfigVector2 = {
 	curves: CurvePath<Vector2>;
 	center: Vector2;
 	sampleMethod: ProjectionCurveSampleMethod;
@@ -160,7 +142,7 @@ export type EdgeCurveConfig = {
 	curves: BezierConfig[];
 	sampleMethod: ProjectionCurveSampleMethod;
 };
-export type EdgeCurveConfigVector2 = {
+type EdgeCurveConfigVector2 = {
 	curves: CurvePath<Vector2>;
 	sampleMethod: ProjectionCurveSampleMethod;
 };
@@ -256,13 +238,6 @@ export type Tube = {
 	// partners: TubePartnerAddresses;
 };
 
-export type TubePartnerAddresses = {
-	startStart: [GlobuleAddress_FacetEdge, GlobuleAddress_FacetEdge];
-	startEnd: [GlobuleAddress_FacetEdge, GlobuleAddress_FacetEdge];
-	endStart: [GlobuleAddress_FacetEdge, GlobuleAddress_FacetEdge];
-	endEnd: [GlobuleAddress_FacetEdge, GlobuleAddress_FacetEdge];
-};
-
 // export type Section = {};
 
 export type ProjectionEdge = {
@@ -302,7 +277,7 @@ export type GlobuleAddress_Band = GlobuleAddress_Tube & {
 	band: number;
 };
 
-export type GlobuleAddress_Quad = GlobuleAddress_Band & {
+type GlobuleAddress_Quad = GlobuleAddress_Band & {
 	quad: number;
 };
 
@@ -323,9 +298,3 @@ export type GlobuleAddress_FacetEdge = GlobuleAddress_Facet & {
 
 export type TriangleEdge = `ab` | 'bc' | 'ac';
 export type TriangleEdgePermissive = TriangleEdge | 'ba' | 'cb' | 'ca';
-// TODO:  a mapper is required between configuration and GlobuleAddress
-export type TriangleVectorLabel = 'a' | 'b' | 'c';
-export type OrientedTriangleSide = {
-	v0: { label: TriangleVectorLabel; vector: Vector3 };
-	v1: { label: TriangleVectorLabel; vector: Vector3 };
-};
