@@ -27,28 +27,28 @@
 		<Container direction="column">
 			<Container direction="row">
 				<div>Selected:</div>
-				{#each selectedBands as bandAddress}
+				{#each selectedBands as bandAddress, i (i)}
 					<div>{bandAddress}</div>
 				{/each}
 			</Container>
 
 			<Container direction="row">
 				<div>Start Partners:</div>
-				{#each selectedStartPartners as bandAddress}
+				{#each selectedStartPartners as bandAddress, i (i)}
 					<div>{bandAddress}</div>
 				{/each}
 			</Container>
 
 			<Container direction="row">
 				<div>End Partners:</div>
-				{#each selectedEndPartners as bandAddress}
+				{#each selectedEndPartners as bandAddress, i (i)}
 					<div>{bandAddress}</div>
 				{/each}
 			</Container>
 
 			<Container direction="row">
 				<div>Partners:</div>
-				{#each selectedPartners as bandAddress}
+				{#each selectedPartners as bandAddress, i (i)}
 					<div>{bandAddress}</div>
 				{/each}
 			</Container>

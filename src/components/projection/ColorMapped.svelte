@@ -60,7 +60,7 @@
 	);
 </script>
 
-{#each geometry || [] as g, i}
+{#each geometry || [] as g, i (i)}
 	<T.Mesh
 		geometry={g}
 		material={groupMaterials[i]}

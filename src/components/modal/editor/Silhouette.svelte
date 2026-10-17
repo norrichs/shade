@@ -186,7 +186,7 @@
 							fill="rgba(255,0,0,0.35)"
 							stroke="none"
 						/>
-						{#each sampledPoints(canv) as point}
+						{#each sampledPoints(canv) as point, pointIdx (pointIdx)}
 							<circle cx={point.x} cy={point.y} r={2 * canv.scale} fill="rgba(0,0,0,0.5)" />
 						{/each}
 					{/snippet}
@@ -303,7 +303,7 @@
 
 					{#if levelConfig.levelOffsets[0]}
 						<header class="group">Level offset</header>
-						{#each ['x', 'y', 'z'] as const as axis}
+						{#each ['x', 'y', 'z'] as const as axis (axis)}
 							<LabeledControl label={axis.toUpperCase()}>
 								<NumberInput
 									value={levelConfig.levelOffsets[0][axis]}
@@ -312,7 +312,7 @@
 								/>
 							</LabeledControl>
 						{/each}
-						{#each [['rotX', 'Rotate X'], ['rotY', 'Rotate Y'], ['rotZ', 'Rotate Z']] as const as [axis, label]}
+						{#each [['rotX', 'Rotate X'], ['rotY', 'Rotate Y'], ['rotZ', 'Rotate Z']] as const as [axis, label] (axis)}
 							<LabeledControl {label}>
 								<NumberInput
 									value={toDegrees(levelConfig.levelOffsets[0][axis])}

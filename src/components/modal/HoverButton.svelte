@@ -22,7 +22,7 @@
 
 <button onclick={onClick} style={`--color: ${color}`}>
 	<div class="title-container">
-		{#each words as word}
+		{#each words as word, wordIdx (wordIdx)}
 			<div class="word">
 				<div class="word-initial">{word[0]}</div>
 				<div class="word-rest">{word[1]}</div>

@@ -15,7 +15,7 @@
 	let bufferGeometry: BufferGeometry | undefined = $state(undefined);
 
 	$effect(() => {
-		if (!!geometry?.points) {
+		if (geometry?.points) {
 			bufferGeometry = new BufferGeometry().setFromPoints(geometry.points);
 			bufferGeometry.computeVertexNormals();
 		}

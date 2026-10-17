@@ -1,5 +1,5 @@
 <script lang="ts" module>
-	// @ts-ignore
+	// @ts-expect-error -- package "exports" has no "types" condition, so its d.ts is not resolved
 	import { asDraggable } from 'svelte-drag-and-drop-actions';
 </script>
 
@@ -246,8 +246,8 @@
 		{@render overlayAbove?.(overlayContext)}
 		{@render children?.()}
 	</svg>
-	{#each displayCurveDef as curve, curveIndex}
-		{#each curve.points as point, pointIndex}
+	{#each displayCurveDef as curve, curveIndex (curveIndex)}
+		{#each curve.points as point, pointIndex (pointIndex)}
 			<DraggablePoint
 				{config}
 				{canv}

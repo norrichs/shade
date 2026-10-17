@@ -269,7 +269,7 @@
 	{/if}
 
 	{#if showCrease}
-		{#each edges as edge}
+		{#each edges as edge (edge)}
 			<path
 				d={edgeSegment(panel.triangle, edge)}
 				class="crease"
@@ -288,7 +288,7 @@
 		font-family="Relief SingleLine OTF-SVG"
 	>
 		<SvgText
-			id={`svg-text-Test`}
+			id="svg-text-Test"
 			string={addressString}
 			angle={0}
 			size={labelSize * 2}
@@ -296,7 +296,7 @@
 			offset={{ x: 'center', y: 'center' }}
 		/>
 
-		{#each triangleEdges as edge}
+		{#each triangleEdges as edge (edge)}
 			<SvgText
 				id={`label-${addressString}_${edge}`}
 				string={panelEdgeLabel(edge)}
@@ -326,12 +326,12 @@
 				{/if}
 			{/each} -->
 
-			{#each edges as edge}
+			{#each edges as edge (edge)}
 				<RegistrationMark {edge} triangle={panel.triangle} style="tick" length={2.5} />
 			{/each}
 		{/if}
-		{#each edges as edge}
-			{#each panel.meta.edges[edge].holes || [] as hole}
+		{#each edges as edge (edge)}
+			{#each panel.meta.edges[edge].holes || [] as hole, holeIdx (holeIdx)}
 				{#if patternStyle === 'cut'}
 					<circle
 						cx={hole.location.x}
@@ -384,7 +384,7 @@
 			<!-- View-style design aids: never cut. -->
 			<g class="screen-only">
 				{#if showErrors}
-					{#each edges as edge}
+					{#each edges as edge (edge)}
 						<path
 							d={edgeSegment(panel.triangle, edge)}
 							stroke-width={6}
@@ -411,7 +411,7 @@
 					/>
 				{/if}
 				{#if verbose}
-					{#each trianglePoints as p}
+					{#each trianglePoints as p (p)}
 						<circle
 							cx={panel.triangle[p].x}
 							cy={panel.triangle[p].y}

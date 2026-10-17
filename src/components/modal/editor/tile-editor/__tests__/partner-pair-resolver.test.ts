@@ -1,19 +1,20 @@
 import { resolvePair, pairsEqual, type ResolvedPair } from '../partner-pair-resolver';
-import type { BandCutPattern } from '#lib/types.js';
+import type { BandCutPattern, PathSegment } from '#lib/types.js';
+import type { Vector3 } from 'three';
 import type { GlobuleAddress_Band } from '#lib/projection-geometry/types.js';
 
 const makeQuad = (id: number) => ({
-	a: { x: id * 10, y: 0, z: 0 } as any,
-	b: { x: id * 10 + 5, y: 0, z: 0 } as any,
-	c: { x: id * 10 + 5, y: 5, z: 0 } as any,
-	d: { x: id * 10, y: 5, z: 0 } as any
+	a: { x: id * 10, y: 0, z: 0 } as Vector3,
+	b: { x: id * 10 + 5, y: 0, z: 0 } as Vector3,
+	c: { x: id * 10 + 5, y: 5, z: 0 } as Vector3,
+	d: { x: id * 10, y: 5, z: 0 } as Vector3
 });
 
 const makeFacet = (id: number) => ({
 	path: [
 		['M', id, id],
 		['L', id + 1, id + 1]
-	] as any,
+	] as PathSegment[],
 	quad: makeQuad(id),
 	label: `${id}`
 });
@@ -44,7 +45,7 @@ const makeBand = (
 						endPartnerTransform: options.endPartnerTransform
 					}
 				: undefined
-	}) as any;
+	}) as unknown as BandCutPattern; // partial fixture
 
 describe('resolvePair', () => {
 	it('returns null when band has no meta for the mode', () => {
@@ -144,7 +145,7 @@ const makePiece = (
 		address,
 		facets: facetIds.map(makeFacet),
 		meta
-	}) as any;
+	}) as unknown as BandCutPattern; // partial fixture
 
 describe('resolvePair — split bands', () => {
 	const plain = (tube: number, band: number): GlobuleAddress_Band => ({ globule: 0, tube, band });

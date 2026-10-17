@@ -59,7 +59,7 @@
 			// selection so the controls below have something to bind to; identity seed
 			// means nothing moves. See ./transform-config.
 			config.projectionConfigs[0].projectorConfig.polyhedron = {
-				...(newPolyhedron as any),
+				...newPolyhedron,
 				transform: identityTransform()
 			};
 			superConfigStore.set(config);
@@ -91,7 +91,7 @@
 					value={$superConfigStore.projectionConfigs[0].projectorConfig.polyhedron.name}
 					onchange={handleChangePolyhedron}
 				>
-					{#each polyhedronConfigs as polyhedron}
+					{#each polyhedronConfigs as polyhedron, polyhedronIdx (polyhedronIdx)}
 						<option value={polyhedron.name}>{polyhedron.name}</option>
 					{/each}
 				</select>

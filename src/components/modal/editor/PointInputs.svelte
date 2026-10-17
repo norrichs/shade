@@ -39,8 +39,8 @@
 		>
 	</div>
 	<div class="fields">
-		{#each curveDef as curve, curveIndex}
-			{#each curve.points as point, pointIndex}
+		{#each curveDef as curve, curveIndex (curveIndex)}
+			{#each curve.points as point, pointIndex (pointIndex)}
 				<PointInput
 					{point}
 					displayPoint={displayCurveDef[curveIndex].points[pointIndex]}

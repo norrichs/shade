@@ -108,7 +108,7 @@
 		<div>{interaction.prompt}</div>
 		<div>{$mode.data.points.length}</div>
 		<div>
-			{#each $mode.data.points as point}
+			{#each $mode.data.points as point, pointIdx (pointIdx)}
 				<div>{`(${round(point.x, 2)}, ${round(point.y)}, ${round(point.z)})`}</div>
 			{/each}
 		</div>

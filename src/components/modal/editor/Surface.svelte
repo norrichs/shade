@@ -4,7 +4,7 @@
 	import LabeledControl from './LabeledControl.svelte';
 	import Container from './Container.svelte';
 	import Editor from './Editor.svelte';
-	import type { SurfaceConfig } from '#lib/projection-geometry/types.js';
+	import type { SphereConfig, SurfaceConfig } from '#lib/projection-geometry/types.js';
 	import PointInput from '../../controls/super-control/PointInput.svelte';
 	import NumberInput from '../../controls/super-control/NumberInput.svelte';
 	import {
@@ -92,7 +92,7 @@
 						hasButtons
 						onChange={(v) => {
 							const config = get(superConfigStore);
-							(config.projectionConfigs[0].surfaceConfig as any).radius = v;
+							(config.projectionConfigs[0].surfaceConfig as SphereConfig).radius = v;
 							superConfigStore.set(config);
 						}}
 					/>

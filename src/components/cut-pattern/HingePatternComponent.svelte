@@ -106,7 +106,7 @@
 				y: hingePattern.pattern.registrationPoint.y
 			}}
 		/>
-		{#each hingePattern.pattern.holes as hole}
+		{#each hingePattern.pattern.holes as hole, holeIdx (holeIdx)}
 			<circle
 				cx={hole.location.x}
 				cy={hole.location.y}
@@ -172,7 +172,7 @@
 		offset={{ x: 'center', y: 'center' }}
 		size={3}
 	/>
-	{#each hingePattern.pattern.holes as hole}
+	{#each hingePattern.pattern.holes as hole, holeIdx (holeIdx)}
 		<circle
 			cx={hole.location.x}
 			cy={hole.location.y}

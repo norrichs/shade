@@ -111,6 +111,8 @@
 	let highlightFor = $derived.by(() => {
 		const highlight = $assemblerHighlight;
 		const spaceOf = $patternBandSpaces;
+		// Plain memo, rebuilt with each derivation; it must not be reactive itself.
+		// eslint-disable-next-line svelte/prefer-svelte-reactivity
 		const cache = new Map<GeometrySource, AssemblerHighlight>();
 		return (source: GeometrySource): AssemblerHighlight => {
 			if (!highlight) return null;
@@ -135,7 +137,7 @@
 		showNormals = false,
 		colorByBand = true
 	}: {
-		onClick: (event: any, address: GlobuleAddress_Facet) => void;
+		onClick: (event: { stopPropagation: () => void }, address: GlobuleAddress_Facet) => void;
 		showNormals?: boolean;
 		colorByBand?: boolean;
 	} = $props();

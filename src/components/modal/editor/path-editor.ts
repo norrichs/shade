@@ -11,21 +11,9 @@ export const getPointClass = (curveIndex: number, pointIndex: number) => {
 	return pointIndex === 1 || pointIndex === 2 ? 'direction' : 'anchor';
 };
 
-export const cloneCurves = (curveDef: BezierConfig[], curves: LimitedBezierConfig[]) => {
-	curves = curveDef.map((curve, c) => ({
-		...curve,
-		points: curve.points.map((point, p) => {
-			return {
-				...point,
-				xLimit: c + p === 0 ? 0 : undefined
-			};
-		}) as LimitedBezierConfig['points']
-	}));
-};
-
 export type LimitedPoint = PointConfig2 & {
-	xLimit?: number | ((data: any) => number);
-	yLimit?: number | ((data: any) => number);
+	xLimit?: number | ((data: unknown) => number);
+	yLimit?: number | ((data: unknown) => number);
 };
 
 export type LimitedBezierConfig = {
@@ -253,7 +241,7 @@ export const neighborPointMatch: LimitFunction = ({
 
 // Utility functions
 
-const isEndPoint = (curveIndex: number, pointIndex: number, curveDef: any[]) => {
+const isEndPoint = (curveIndex: number, pointIndex: number, curveDef: unknown[]) => {
 	return (
 		(curveIndex === 0 && pointIndex === 0) ||
 		(curveIndex === curveDef.length - 1 && pointIndex === 3)

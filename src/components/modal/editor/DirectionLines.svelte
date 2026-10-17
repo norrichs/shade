@@ -4,7 +4,7 @@
 	let { curveDef, canvScale }: { curveDef: BezierConfig[]; canvScale: number } = $props();
 </script>
 
-{#each curveDef as curve}
+{#each curveDef as curve, curveIdx (curveIdx)}
 	<line
 		x1={curve.points[0].x}
 		y1={curve.points[0].y}

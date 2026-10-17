@@ -224,7 +224,8 @@ const redrawTriangle = ({
 	p0: TrianglePoint;
 	p1: TrianglePoint;
 }) => {
-	const normalizedVector = vector.normalize();
+	// normalize() mutates `vector` in place; callers rely on that side effect.
+	vector.normalize();
 
 	const p2 = getOtherTriangleElements([p0, p1]);
 
@@ -416,13 +417,11 @@ const findSlopeVectorByLeastSquares = (points: Vector3[]) => {
 	let xx_sum = 0;
 	let count = 0;
 
-	let x = 0;
-	let y = 0;
-	let values_length = values_x.length;
+	const values_length = values_x.length;
 
 	for (let i = 0; i < values_length; i++) {
-		x = values_x[i];
-		y = values_y[i];
+		const x = values_x[i];
+		const y = values_y[i];
 		x_sum += x;
 		y_sum += y;
 		xx_sum += x * x;
@@ -430,8 +429,7 @@ const findSlopeVectorByLeastSquares = (points: Vector3[]) => {
 		count++;
 	}
 
-	let m = (count * xy_sum - x_sum * y_sum) / (count * xx_sum - x_sum * x_sum);
-	let b = y_sum / count - (m * x_sum) / count;
+	const m = (count * xy_sum - x_sum * y_sum) / (count * xx_sum - x_sum * x_sum);
 
 	const vector = new Vector3(1, m, 0);
 	return vector;
@@ -534,8 +532,6 @@ const getBoundingBoxAtAngle = (
 	let maxX = -Infinity;
 	let minY = Infinity;
 	let maxY = -Infinity;
-	let averageX = 0;
-	let averageY = 0;
 	// Rotate each point and find the axis-aligned bounding box in the rotated space
 
 	const rotatedCoordinates = points.map((point) => {
@@ -551,8 +547,8 @@ const getBoundingBoxAtAngle = (
 		maxY = Math.max(maxY, coordinate.y);
 	});
 
-	averageX = getAverage(rotatedCoordinates.map((coordinate) => coordinate.x));
-	averageY = getAverage(rotatedCoordinates.map((coordinate) => coordinate.y));
+	const averageX = getAverage(rotatedCoordinates.map((coordinate) => coordinate.x));
+	const averageY = getAverage(rotatedCoordinates.map((coordinate) => coordinate.y));
 
 	return {
 		rotatedCoordinates,

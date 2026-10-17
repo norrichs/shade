@@ -53,7 +53,7 @@
 	{id}
 >
 	<g transform={`translate(${xOffset}, ${yOffset})`} data-test-id="svg-text">
-		{#each characterPaths.chars as { char, offset, charId }, i}
+		{#each characterPaths.chars as { char, offset, charId }, i (i)}
 			<path
 				data-char-id={charId}
 				data-geometry={geometry}

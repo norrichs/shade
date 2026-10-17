@@ -27,11 +27,16 @@
 					quad: facet.quad,
 					triangles: facet.triangles
 				};
-			}) as { label: string; labelPoint: Point; quad: Quadrilateral; triangles?: any }[]
+			}) as {
+			label: string;
+			labelPoint: Point;
+			quad: Quadrilateral;
+			triangles?: CutPattern['triangles'];
+		}[]
 	);
 </script>
 
-{#each facets as facet, facetIndex}
+{#each facets as facet, facetIndex (facetIndex)}
 	<g class="svg-pattern-quad">
 		<path
 			d={svgQuad(facet.quad)}

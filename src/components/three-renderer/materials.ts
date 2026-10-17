@@ -21,16 +21,6 @@ const defaultStandardMaterialConfig = {
 	side: DoubleSide
 };
 
-// Physical material config for selected geometry (better visuals)
-const defaultPhysicalMaterialConfig = {
-	color: theme.colorDefault,
-	transparent: true,
-	opacity: 1,
-	clearcoat: 1,
-	clearcoatRoughness: 0,
-	side: DoubleSide
-};
-
 const colorList: ThreeColor[] = [
 	'darkred',
 	'red',

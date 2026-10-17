@@ -59,7 +59,7 @@
 			value={draft?.id ?? ''}
 			onchange={(e) => onSelectVariant((e.target as HTMLSelectElement).value)}
 		>
-			{#each dropdownEntries as variant}
+			{#each dropdownEntries as variant, variantIdx (variantIdx)}
 				<option value={variant.id}>{variant.name}</option>
 			{/each}
 		</select>

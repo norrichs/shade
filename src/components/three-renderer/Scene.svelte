@@ -57,7 +57,10 @@
 		clearMeasurements();
 	});
 
-	const handleProjectionClick = (event: any, address: GlobuleAddress_Facet) => {
+	const handleProjectionClick = (
+		event: { stopPropagation: () => void },
+		address: GlobuleAddress_Facet
+	) => {
 		event.stopPropagation();
 		selectedProjection.set(address);
 	};

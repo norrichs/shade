@@ -26,7 +26,7 @@
 		<Button onclick={() => (showMode = showMode === 'onHover' ? 'always' : 'onHover')}
 			>{showMode}</Button
 		>
-		{#each sidebarDefinition as [title, floater]}
+		{#each sidebarDefinition as [title, floater] (title)}
 			<HoverButton
 				onClick={() => toggleFloater(title)}
 				shortTitle={floater.shortTitle}

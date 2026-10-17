@@ -18,11 +18,20 @@
 		onChange: (next: BaseQuadAddress | null) => void;
 	} = $props();
 
+	type PatternTubes = { bands: BandCutPattern[] }[];
+	/** The pattern stores hold either `{ tubes }` or `{ projectionCutPattern: { tubes } }`. */
+	type PatternTubesHolder = {
+		projectionCutPattern?: { tubes?: PatternTubes };
+		tubes?: PatternTubes;
+	};
+
 	type SourcedTubes = { source: PartnerHighlightSource; tubes: { bands: BandCutPattern[] }[] };
 
 	const allSources = $derived.by((): SourcedTubes[] => {
-		const tubesOf = (raw: any): { bands: BandCutPattern[] }[] | undefined =>
-			raw?.projectionCutPattern?.tubes ?? raw?.tubes;
+		const tubesOf = (raw: unknown): { bands: BandCutPattern[] }[] | undefined => {
+			const r = raw as PatternTubesHolder | null | undefined;
+			return r?.projectionCutPattern?.tubes ?? r?.tubes;
+		};
 		const out: SourcedTubes[] = [];
 		const proj = tubesOf($superGlobulePatternStore?.projectionPattern);
 		if (proj && proj.length) out.push({ source: 'projection', tubes: proj });

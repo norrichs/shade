@@ -2,7 +2,10 @@
 <script lang="ts">
 	import type { TiledPatternSpec, IndexPair } from '#lib/patterns/spec-types.js';
 	import { superGlobulePatternStore } from '#lib/stores/superGlobuleStores.js';
-	import { partnerHighlightStore } from '#lib/stores/partnerHighlightStore.js';
+	import {
+		partnerHighlightStore,
+		type PartnerHighlightSource
+	} from '#lib/stores/partnerHighlightStore.js';
 	import type { BandCutPattern } from '#lib/types.js';
 	import BaseQuadSelector from './BaseQuadSelector.svelte';
 	import { facetAddressOf, type BaseQuadAddress } from './base-quad-selection';
@@ -27,12 +30,21 @@
 		onChange: (next: TiledPatternSpec) => void;
 	} = $props();
 
+	type PatternTubes = { bands: BandCutPattern[] }[];
+	/** The pattern stores hold either `{ tubes }` or `{ projectionCutPattern: { tubes } }`. */
+	type PatternTubesHolder = {
+		projectionCutPattern?: { tubes?: PatternTubes };
+		tubes?: PatternTubes;
+	};
+
 	let address: BaseQuadAddress | null = $state(null);
 	let snapshot: PartnerBundle | null = $state(null);
 
 	const tubesForSource = (source: string): { bands: BandCutPattern[] }[] | undefined => {
-		const tubesOf = (raw: any): { bands: BandCutPattern[] }[] | undefined =>
-			raw?.projectionCutPattern?.tubes ?? raw?.tubes;
+		const tubesOf = (raw: unknown): { bands: BandCutPattern[] }[] | undefined => {
+			const r = raw as PatternTubesHolder | null | undefined;
+			return r?.projectionCutPattern?.tubes ?? r?.tubes;
+		};
 		if (source === 'projection') return tubesOf($superGlobulePatternStore?.projectionPattern);
 		if (source === 'surface') return tubesOf($superGlobulePatternStore?.surfaceProjectionPattern);
 		if (source === 'globuleTube') return tubesOf($superGlobulePatternStore?.globuleTubePattern);
@@ -45,9 +57,11 @@
 	};
 
 	// The 3D view indexes parent bands by quad; pieces are mapped to parent quads.
-	const writeHighlight = (source: any, b: PartnerBundle | null) => {
+	// `handleClear` passes null; the store has always received it as-is (every
+	// address is null then, so nothing is highlighted).
+	const writeHighlight = (source: PartnerHighlightSource | null, b: PartnerBundle | null) => {
 		partnerHighlightStore.set({
-			source,
+			source: source as PartnerHighlightSource,
 			...partnerHighlightAddresses(source ? flattenBands(source) : [], b)
 		});
 	};
@@ -69,7 +83,7 @@
 		const bands = flattenBands(next.source);
 		const fresh = resolveBaseAndPartners(bands, facetAddressOf(next));
 		snapshot = fresh;
-		writeHighlight(next.source as any, fresh);
+		writeHighlight(next.source, fresh);
 	};
 
 	const livePair = $derived.by((): PartnerBundle | null => {
@@ -87,13 +101,13 @@
 	const handleRefresh = () => {
 		if (!address) return;
 		snapshot = livePair;
-		writeHighlight(address.source as any, livePair);
+		writeHighlight(address.source, livePair);
 	};
 
 	const handleClear = () => {
 		address = null;
 		snapshot = null;
-		writeHighlight(null as any, null);
+		writeHighlight(null, null);
 	};
 
 	const ruleArray = (key: RuleSetKey): IndexPair[] => {

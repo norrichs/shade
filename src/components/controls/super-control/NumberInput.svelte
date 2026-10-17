@@ -24,11 +24,7 @@
 	// Local state so the input is always editable, even when the parent
 	// passes value={expr} without bind:  (Svelte 5 runes treat unbound
 	// props as parent-owned, overwriting local mutations on re-render).
-	let internalValue = $state(value);
-
-	$effect(() => {
-		internalValue = value;
-	});
+	let internalValue = $derived(value);
 
 	const propagate = (v: number) => {
 		value = v;

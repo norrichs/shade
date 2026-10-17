@@ -643,7 +643,7 @@
 			{/each}
 		</g>
 	{:else}
-		{#each filteredTubes || [] as tube, t}
+		{#each filteredTubes || [] as tube, t (t)}
 			<g id={`${concatAddress(tube.address)}`}>
 				{#each tube.bands || [] as band, b (concatAddress(band.address))}
 					<BandComponent

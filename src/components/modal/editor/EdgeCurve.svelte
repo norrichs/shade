@@ -54,10 +54,10 @@
 						(_, i) => (space / (newDivisions - oldDivisions)) * (i + 1)
 					)
 				);
-				config.sampleMethod.divisionsArray = newDivisionsArray as any;
+				config.sampleMethod.divisionsArray = newDivisionsArray as typeof oldDivisionsArray;
 			} else {
 				newDivisionsArray.splice(newDivisions, oldDivisions - newDivisions);
-				config.sampleMethod.divisionsArray = newDivisionsArray as any;
+				config.sampleMethod.divisionsArray = newDivisionsArray as typeof oldDivisionsArray;
 			}
 		} else {
 			console.log('newDivisions', newDivisions);
@@ -101,7 +101,7 @@
 </script>
 
 <Editor>
-	{#each $superConfigStore.projectionConfigs[0].projectorConfig.polyhedron.edgeCurves as edgeCurve, edgeCurveIndex}
+	{#each $superConfigStore.projectionConfigs[0].projectorConfig.polyhedron.edgeCurves as edgeCurve, edgeCurveIndex (edgeCurveIndex)}
 		<section class="cross-section-container">
 			<header>{edgeCurveIndex}</header>
 			<Container direction="row">
@@ -117,12 +117,12 @@
 						/>
 					</LabeledControl>
 					<svg width="200" height="200" viewBox="-100 -100 200 200">
-						{#each polygonPaths as polygonPath}
+						{#each polygonPaths as polygonPath, polygonPathIdx (polygonPathIdx)}
 							<path d={polygonPath} class="polygon-path" />
 						{/each}
 						{#if flattenedPolygon}
-							{#each flattenedPolygon.edges as edge}
-								{#each edge.edgePoints as edgePoint, edgePointIndex}
+							{#each flattenedPolygon.edges as edge, edgeIdx (edgeIdx)}
+								{#each edge.edgePoints as edgePoint, edgePointIndex (edgePointIndex)}
 									<circle
 										cx={edgePoint.x}
 										cy={edgePoint.y}
@@ -130,7 +130,7 @@
 										fill={`rgba(255, 0, 0, ${edgePointIndex / edge.edgePoints.length})`}
 									/>
 								{/each}
-								{#each edge.curvePoints as curvePoint, curvePointIndex}
+								{#each edge.curvePoints as curvePoint, curvePointIndex (curvePointIndex)}
 									<circle
 										cx={curvePoint.x}
 										cy={curvePoint.y}
@@ -196,7 +196,7 @@
 					>
 						{#if edgeCurve.sampleMethod.method === 'manualDivisions'}
 							<LabeledControl label="Divide at:">
-								{#each edgeCurve.sampleMethod.divisionsArray as division, index}
+								{#each edgeCurve.sampleMethod.divisionsArray as division, index (index)}
 									<div>{Math.round(division * 100) / 100}</div>
 									<input
 										type="range"

@@ -69,8 +69,8 @@
 
 {#if showPathPointIndices}
 	<g stroke="none" text-anchor="middle">
-		{#each pathPointIndices.slice(effectiveFacetRange[0], effectiveFacetRange[1]) as facet, f}
-			{#each facet as point}
+		{#each pathPointIndices.slice(effectiveFacetRange[0], effectiveFacetRange[1]) as facet, f (f)}
+			{#each facet as point, pointIdx (pointIdx)}
 				{#if point}
 					<rect
 						x={point.x - 2.5}

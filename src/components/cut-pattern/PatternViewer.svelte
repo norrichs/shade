@@ -14,7 +14,7 @@
 	import CutPatternRenderer from './CutPatternRenderer.svelte';
 	import { buildBandSortIndex } from '#lib/cut-pattern/band-sort-index.js';
 	import { collectBandErrors } from '#lib/cut-pattern/collect-band-errors.js';
-	import type { BandSortIndex, TubeCutPattern } from '#lib/types.js';
+	import type { BandSortIndex, BandSortMode, TubeCutPattern } from '#lib/types.js';
 
 	let showBands = true;
 	let showQuadPattern = false;
@@ -33,17 +33,17 @@
 
 	// One shared definition of "the tubes in scope", so this view and the Splits
 	// panel cannot drift (collate-tubes.ts:28-38).
-	let collatedPatterns: TubeCutPattern[] = [];
+	let collatedPatterns: TubeCutPattern[];
 	$: collatedPatterns = $collatedTubesStore;
 
-	let sortMode = $patternConfigStore.patternViewConfig.bandSortMode ?? 'tube-order';
+	let sortMode: BandSortMode;
 	$: sortMode = $patternConfigStore.patternViewConfig.bandSortMode ?? 'tube-order';
 
 	let sortIndex: BandSortIndex | undefined;
 	$: sortIndex =
 		sortMode === 'tube-order' ? undefined : buildBandSortIndex(collatedPatterns, sortMode);
 
-	let bandErrors: string[] = [];
+	let bandErrors: string[];
 	$: bandErrors = collectBandErrors([
 		$superGlobulePatternStore.globuleTubePattern,
 		$superGlobulePatternStore.projectionPattern,

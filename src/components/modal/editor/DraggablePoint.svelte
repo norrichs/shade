@@ -1,5 +1,5 @@
 <script lang="ts" module>
-	// @ts-ignore
+	// @ts-expect-error -- package "exports" has no "types" condition, so its d.ts is not resolved
 	import { asDraggable } from 'svelte-drag-and-drop-actions';
 	import { getPointClass, type PathEditorCanvas, type PathEditorConfig } from './path-editor';
 	import type { PointConfig2 } from '#lib/types.js';

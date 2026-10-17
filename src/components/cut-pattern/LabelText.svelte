@@ -21,7 +21,7 @@
 </script>
 
 <g bind:this={element} {transform}>
-	{#each lines as lineString, i}
+	{#each lines as lineString, i (i)}
 		<SvgText
 			string={lineString}
 			anchor={{ ...anchor, y: anchor.y + (size / 2) * (i + 1) }}

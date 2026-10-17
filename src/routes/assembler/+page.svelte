@@ -22,7 +22,7 @@
 	// {globule, tube, band} addresses) to resolve a clicked member cell back to a
 	// band — the CSV text omits the globule index.
 	let tubes = $derived.by<TubeCutPattern[]>(() => {
-		const patternState = $superGlobulePatternStore as any;
+		const patternState = $superGlobulePatternStore;
 		if (!patternState || typeof patternState === 'string') return [];
 		try {
 			const config = $patternConfigStore;

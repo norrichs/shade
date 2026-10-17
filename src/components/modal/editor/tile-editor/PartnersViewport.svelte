@@ -122,7 +122,7 @@
 
 	const viewBox = $derived.by(() => {
 		const partners = [tTop, tBottom, tLeft, tRight].filter((p) => p !== null);
-		const corners: Pt[] = [tBaseQuad.a, tBaseQuad.b, tBaseQuad.c, tBaseQuad.d] as any;
+		const corners: Pt[] = [tBaseQuad.a, tBaseQuad.b, tBaseQuad.c, tBaseQuad.d];
 		for (const p of partners) {
 			corners.push(p!.quad.a, p!.quad.b, p!.quad.c, p!.quad.d);
 		}
@@ -207,6 +207,8 @@
 		if (!originalPath || removedSet.size === 0 || path.length === originalPath.length) {
 			return computeVerticesFromFlatPath(path);
 		}
+		// Local accumulator inside a pure helper; never read reactively.
+		// eslint-disable-next-line svelte/prefer-svelte-reactivity
 		const byKey = new Map<string, Vertex>();
 		let shrunkIdx = 0;
 		for (let i = 0; i < originalPath.length; i++) {
@@ -353,17 +355,17 @@
 
 	// Labels render on path indices that participate in a visible connection in this bundle.
 	// Derived from `allConnections` so per-partner direction (baseIsTarget) is already resolved.
-	const baseLabeledIndices = $derived.by(() => {
-		const set = new Set<number>();
-		for (const c of allConnections) set.add(c.baseIndex);
-		return set;
-	});
+	const baseLabeledIndices = $derived(new Set<number>(allConnections.map((c) => c.baseIndex)));
 
+	// Built fresh on every derivation and never mutated afterwards, so plain
+	// Map/Set are correct; SvelteMap/SvelteSet would add nothing.
 	const partnerLabeledIndicesByRole = $derived.by(() => {
+		// eslint-disable-next-line svelte/prefer-svelte-reactivity
 		const map = new Map<PartnerRole, Set<number>>();
 		for (const c of allConnections) {
 			let set = map.get(c.partner.role);
 			if (!set) {
+				// eslint-disable-next-line svelte/prefer-svelte-reactivity
 				set = new Set<number>();
 				map.set(c.partner.role, set);
 			}
@@ -384,8 +386,7 @@
 	} | null = $state(null);
 
 	const tooltipFor = (v: Vertex, color: string) => {
-		const all = new Set<number>();
-		for (const r of v.refs) all.add(r.index);
+		const all = new Set<number>(v.refs.map((r) => r.index));
 		tooltip = {
 			x: v.x,
 			y: v.y,

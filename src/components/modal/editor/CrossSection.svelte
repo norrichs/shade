@@ -50,10 +50,10 @@
 						(_, i) => (space / (newDivisions - oldDivisions)) * (i + 1)
 					)
 				);
-				crossSection.sampleMethod.divisionsArray = newDivisionsArray as any;
+				crossSection.sampleMethod.divisionsArray = newDivisionsArray as typeof oldDivisionsArray;
 			} else {
 				newDivisionsArray.splice(newDivisions, oldDivisions - newDivisions);
-				crossSection.sampleMethod.divisionsArray = newDivisionsArray as any;
+				crossSection.sampleMethod.divisionsArray = newDivisionsArray as typeof oldDivisionsArray;
 			}
 		} else {
 			console.log('newDivisions', newDivisions);
@@ -72,7 +72,7 @@
 </script>
 
 <Editor>
-	{#each $superConfigStore.projectionConfigs[0].projectorConfig.polyhedron.crossSectionCurves as crossSection, crossSectionIndex}
+	{#each $superConfigStore.projectionConfigs[0].projectorConfig.polyhedron.crossSectionCurves as crossSection, crossSectionIndex (crossSectionIndex)}
 		<section class="cross-section-container">
 			<header>{crossSectionIndex}</header>
 			<Container>
@@ -148,7 +148,7 @@
 					>
 						{#if crossSection.sampleMethod.method === 'manualDivisions'}
 							<div>
-								{#each crossSection.sampleMethod.divisionsArray as division, index}
+								{#each crossSection.sampleMethod.divisionsArray as division, index (index)}
 									<div>{Math.round(division * 100) / 100}</div>
 									<input
 										type="range"

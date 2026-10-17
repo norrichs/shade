@@ -1,19 +1,20 @@
 import { resolveBaseAndPartners, partnerHighlightAddresses } from '../partner-neighbors';
-import type { BandCutPattern } from '#lib/types.js';
+import type { BandCutPattern, PathSegment } from '#lib/types.js';
+import type { Vector3 } from 'three';
 import type { GlobuleAddress_Facet } from '#lib/projection-geometry/types.js';
 
 const makeQuad = (id: number) => ({
-	a: { x: id * 10, y: 0, z: 0 } as any,
-	b: { x: id * 10 + 5, y: 0, z: 0 } as any,
-	c: { x: id * 10 + 5, y: 5, z: 0 } as any,
-	d: { x: id * 10, y: 5, z: 0 } as any
+	a: { x: id * 10, y: 0, z: 0 } as Vector3,
+	b: { x: id * 10 + 5, y: 0, z: 0 } as Vector3,
+	c: { x: id * 10 + 5, y: 5, z: 0 } as Vector3,
+	d: { x: id * 10, y: 5, z: 0 } as Vector3
 });
 
 const makeFacet = (id: number) => ({
 	path: [
 		['M', id, id],
 		['L', id + 1, id + 1]
-	] as any,
+	] as PathSegment[],
 	quad: makeQuad(id),
 	label: `${id}`
 });
@@ -22,14 +23,14 @@ const makeBand = (
 	bandIdx: number,
 	tube: number,
 	facetCount = 3,
-	options: any = {}
+	options: { meta?: Record<string, unknown> } = {}
 ): BandCutPattern =>
 	({
 		projectionType: 'patterned',
 		address: { globule: 0, tube, band: bandIdx },
 		facets: Array.from({ length: facetCount }, (_, i) => makeFacet(bandIdx * 100 + i)),
 		meta: options.meta
-	}) as any;
+	}) as unknown as BandCutPattern; // partial fixture
 
 describe('resolveBaseAndPartners', () => {
 	it('returns null base when address is invalid', () => {
@@ -156,7 +157,7 @@ describe('left/right partner resolution', () => {
 				d: { x: 0, y: 5, z: 0 }
 			},
 			label: '0'
-		} as any;
+		};
 		const rightFacet = {
 			path: [
 				['M', 100, 0],
@@ -169,17 +170,17 @@ describe('left/right partner resolution', () => {
 				d: { x: 100, y: 5, z: 0 }
 			},
 			label: '0'
-		} as any;
+		};
 		const baseBand = {
 			projectionType: 'patterned',
 			address: { globule: 0, tube: 0, band: 0 },
 			facets: [baseFacet]
-		} as any;
+		} as unknown as BandCutPattern; // partial fixture
 		const rightBand = {
 			projectionType: 'patterned',
 			address: { globule: 0, tube: 0, band: 1 },
 			facets: [rightFacet]
-		} as any;
+		} as unknown as BandCutPattern; // partial fixture
 		const result = resolveBaseAndPartners([baseBand, rightBand], {
 			globule: 0,
 			tube: 0,

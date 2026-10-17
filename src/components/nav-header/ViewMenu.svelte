@@ -10,21 +10,21 @@
 
 <PopoverMenu menuName={MENU_NAME}>
 	<header>Show Projection:</header>
-	{#each Object.keys($viewControlStore.showProjectionGeometry) as key}
+	{#each Object.keys($viewControlStore.showProjectionGeometry) as key (key)}
 		<div class="entry">
 			<input type="checkbox" bind:checked={$viewControlStore.showProjectionGeometry[key]} />
 			<span>{key}</span>
 		</div>
 	{/each}
 	<header>Show Globule Tubes:</header>
-	{#each Object.keys($viewControlStore.showGlobuleTubeGeometry) as key}
+	{#each Object.keys($viewControlStore.showGlobuleTubeGeometry) as key (key)}
 		<div class="entry">
 			<input type="checkbox" bind:checked={$viewControlStore.showGlobuleTubeGeometry[key]} />
 			<span>{key}</span>
 		</div>
 	{/each}
 	<header>Show Voronoi:</header>
-	{#each Object.keys($viewControlStore.showVoronoiGeometry) as key}
+	{#each Object.keys($viewControlStore.showVoronoiGeometry) as key (key)}
 		<div class="entry">
 			<input type="checkbox" bind:checked={$viewControlStore.showVoronoiGeometry[key]} />
 			<span>{key}</span>

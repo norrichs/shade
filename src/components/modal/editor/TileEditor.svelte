@@ -90,6 +90,8 @@
 	const handleToggleSkip = (vertex: Vertex) => {
 		if (!draft) return;
 		const indices = flatIndexes(draft.unit, vertex);
+		// Local scratch set inside an event handler; never read reactively.
+		// eslint-disable-next-line svelte/prefer-svelte-reactivity
 		const current = new Set(draft.adjustments.skipRemove);
 		const allIn = indices.every((i) => current.has(i));
 		for (const i of indices) {

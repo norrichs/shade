@@ -78,7 +78,7 @@
 				{`e: ${bandLabels.endPartner}`}
 			</text>
 		{/if}
-		{#each quadLabels as l}
+		{#each quadLabels as l, labelIdx (labelIdx)}
 			{#if l?.a}
 				<rect
 					x={l.a.position.x - 7}
