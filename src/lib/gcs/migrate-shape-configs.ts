@@ -40,8 +40,3 @@ export function normalizeShapeConfigs(config: SuperGlobuleConfig): SuperGlobuleC
 		})
 	};
 }
-
-/** The primary GCS: the `isPrimary` entry, else the first. */
-export function primaryShapeConfig(globule: GlobuleConfig): ShapeConfig {
-	return globule.shapeConfigs.find((s) => s.isPrimary) ?? globule.shapeConfigs[0];
-}

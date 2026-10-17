@@ -46,7 +46,7 @@ export function validateShapeConfigs(
 		for (let i = 0; i < n; i++) {
 			const label = gcsLabel(i);
 			const pinned = shapeConfigs[i].level;
-			if (pinned !== undefined && (!Number.isInteger(pinned) || pinned < 0 || pinned > divisions)) {
+			if (pinned != null && (!Number.isInteger(pinned) || pinned < 0 || pinned > divisions)) {
 				itemErrors.push({
 					index: i,
 					message: `${label}: level ${pinned} is outside 0–${divisions}`

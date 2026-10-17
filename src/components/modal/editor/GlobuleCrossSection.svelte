@@ -121,8 +121,10 @@
 		selectedGcsIndex.set(selected + 1);
 	};
 	const onDelete = () => {
+		// Compute before updateList: the store (and so shapeConfigs) updates synchronously.
+		const next = Math.max(0, Math.min(selected, shapeConfigs.length - 2));
 		updateList((list) => deleteGcs(list, selected));
-		selectedGcsIndex.set(Math.min(selected, shapeConfigs.length - 2));
+		selectedGcsIndex.set(next);
 	};
 	const onMove = (dir: -1 | 1) => {
 		const target = selected + dir;
@@ -359,17 +361,20 @@
 						/>
 					</LabeledControl>
 					<LabeledControl label="Level" show={shapeConfigs.length > 1}>
-						<NumberInput
-							value={levels[selected] ?? 0}
-							onChange={(v) => updateList((list) => setGcsLevel(list, selected, Math.round(v)))}
-							min={0}
-							max={divisions}
-							step={1}
-							hasButtons
-						/>
-						{#if shapeConfig.level === undefined}
-							<span class="gcs-note">auto</span>
+						<span class:gcs-auto={shapeConfig.level == null}>
+							<NumberInput
+								value={levels[selected] ?? 0}
+								onChange={(v) => updateList((list) => setGcsLevel(list, selected, Math.round(v)))}
+								min={0}
+								max={divisions}
+								step={1}
+								hasButtons
+							/>
+						</span>
+						{#if shapeConfig.level == null}
+							<span class="gcs-note"><em>auto</em></span>
 						{:else}
+							<span class="gcs-note">pinned</span>
 							<button
 								type="button"
 								title="Back to auto"
@@ -451,6 +456,10 @@
 	.gcs-error {
 		color: #c00;
 		font-size: 0.85em;
+	}
+	.gcs-auto {
+		opacity: 0.55;
+		font-style: italic;
 	}
 	.gcs-readout,
 	.gcs-note {

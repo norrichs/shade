@@ -1,6 +1,6 @@
 import { effectiveGcsLevels, gcsLabel } from '../gcs-placement';
 
-const cfgs = (...levels: (number | undefined)[]) => levels.map((level) => ({ level }));
+const cfgs = (...levels: (number | null | undefined)[]) => levels.map((level) => ({ level }));
 
 describe('effectiveGcsLevels', () => {
 	it('spreads all unpinned (3, div 10)', () => {
@@ -16,6 +16,10 @@ describe('effectiveGcsLevels', () => {
 	});
 	it('respects a pinned first', () => {
 		expect(effectiveGcsLevels(cfgs(3, undefined, undefined), 9)).toEqual([3, 6, 9]);
+	});
+	it('treats a null level as auto', () => {
+		expect(effectiveGcsLevels(cfgs(null, null, null), 10)).toEqual([0, 5, 10]);
+		expect(effectiveGcsLevels(cfgs(null, 2, null), 10)).toEqual([0, 2, 10]);
 	});
 	it('single ignores level', () => {
 		expect(effectiveGcsLevels(cfgs(7), 10)).toEqual([0]);

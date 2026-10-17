@@ -4,6 +4,12 @@ import { validateShapeConfigs } from '../validate-shape-configs';
 const sc = (isPrimary?: boolean, level?: number) => ({ isPrimary, level }) as ShapeConfig;
 
 describe('validateShapeConfigs', () => {
+	it('treats a null level as auto (no error)', () => {
+		const list = [sc(true), { isPrimary: false, level: null }, sc()] as unknown as ShapeConfig[];
+		const r = validateShapeConfigs(list, [30, 30, 30], 10);
+		expect(r.errors).toEqual([]);
+		expect(r.levels).toEqual([0, 5, 10]);
+	});
 	it('accepts a valid 5x6 + 6x5', () => {
 		const r = validateShapeConfigs([sc(true), sc()], [30, 30], 10);
 		expect(r.isValid).toBe(true);

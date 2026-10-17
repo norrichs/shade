@@ -272,7 +272,21 @@ function triggerAsyncGeneration(config: SuperGlobuleConfig): void {
 
 		try {
 			const userGates = pipelineGatesFromViewControls(get(viewControlStore));
-			const { blocked, message } = gcsBlockedPipelines(config, validateGlobuleShapeConfigs);
+			const { blocked, message } = gcsBlockedPipelines(config, (g) => {
+				try {
+					return validateGlobuleShapeConfigs(g);
+				} catch (error) {
+					// A throwing validator must block the pipelines, not kill generation.
+					return {
+						isValid: false,
+						errors: [
+							{ index: null, message: error instanceof Error ? error.message : String(error) }
+						],
+						levels: [],
+						bandCount: 0
+					};
+				}
+			});
 			const raw = await generateSuperGlobuleAsync(config, applyBlocks(userGates, blocked));
 			// Blocked pipelines keep their previous output instead of going empty.
 			const result = backfillBlocked(raw, lastValidResult, blocked, userGates);

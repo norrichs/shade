@@ -1,4 +1,4 @@
-import { normalizeShapeConfigs, primaryShapeConfig } from '../migrate-shape-configs';
+import { normalizeShapeConfigs } from '../migrate-shape-configs';
 import type { GlobuleConfig, ShapeConfig, SuperGlobuleConfig } from '../../types';
 
 const S = {
@@ -51,14 +51,5 @@ describe('normalizeShapeConfigs', () => {
 		} as unknown as SuperGlobuleConfig;
 		const once = normalizeShapeConfigs(cfg);
 		expect(normalizeShapeConfigs(once)).toEqual(once);
-	});
-});
-
-describe('primaryShapeConfig', () => {
-	it('returns the isPrimary entry, else the first', () => {
-		const a = { ...S, symmetryNumber: 1 };
-		const b = { ...S, symmetryNumber: 2, isPrimary: true };
-		expect(primaryShapeConfig({ shapeConfigs: [a, b] } as unknown as GlobuleConfig)).toBe(b);
-		expect(primaryShapeConfig({ shapeConfigs: [a, S] } as unknown as GlobuleConfig)).toBe(a);
 	});
 });

@@ -1166,9 +1166,9 @@ export type ShapeConfig = {
 	id?: number;
 	/** Marks the primary GCS of a globule (the one legacy single-GCS readers use). */
 	isPrimary?: boolean;
-	/** Position of this GCS along the silhouette; unset until blending is authored. */
+	/** Silhouette level (integer 0..divisions) this GCS sits at; null/undefined = auto-spread. */
 	level?: number;
-	/** How this GCS blends toward the next one. */
+	/** How this GCS blends toward the next one in the list. */
 	blend?: GcsBlend;
 	// divisions: number;
 	sampleMethod: CurveSampleMethod;
