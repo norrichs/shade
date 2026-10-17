@@ -106,7 +106,12 @@ Create `src/components/modal/editor/tile-editor/editor-mode.ts` (use **tabs**):
 import type { UnitDefinition } from '$lib/patterns/spec-types';
 
 export type EditorMode =
-	'unit' | 'withinBand' | 'acrossBands' | 'partnerStart' | 'partnerEnd' | 'skipRemove';
+	| 'unit'
+	| 'withinBand'
+	| 'acrossBands'
+	| 'partnerStart'
+	| 'partnerEnd'
+	| 'skipRemove';
 
 export const ruleModes: EditorMode[] = ['withinBand', 'acrossBands', 'partnerStart', 'partnerEnd'];
 

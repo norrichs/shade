@@ -40,9 +40,9 @@ main thread and in the geometry worker.
 
 Rejected alternatives:
 
-- _Mesh embedded in config_ — megabytes through every config clone,
+- *Mesh embedded in config* — megabytes through every config clone,
   `JSON.parse(JSON.stringify())`, worker message, localStorage (~5 MB cap) and DB row.
-- _Worker-owned mesh via postMessage_ — stateful protocol fragile across worker
+- *Worker-owned mesh via postMessage* — stateful protocol fragile across worker
   restarts; still needs IndexedDB for persistence.
 
 ## Data model
@@ -75,7 +75,10 @@ export type ImportedMeshConfig = {
 };
 
 export type SurfaceGeometryConfig =
-	SphereConfig | CapsuleConfig | GlobuleConfig | ImportedMeshConfig;
+	| SphereConfig
+	| CapsuleConfig
+	| GlobuleConfig
+	| ImportedMeshConfig;
 ```
 
 The user transform comes from the existing `SurfaceConfig` intersection
@@ -113,15 +116,15 @@ a new asset.
 
 ## Modules — `src/lib/mesh-import/`
 
-| File                | Responsibility                                                                                                                                                                                                                                                                                                                                                                                                   |
-| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `parse-model.ts`    | `File` → three `Object3D` by extension. GLB/glTF via `GLTFLoader` + `MeshoptDecoder`; STL via `STLLoader`; OBJ via `OBJLoader`. Draco → error "re-export without Draco compression". glTF with external buffer URIs → error "export as GLB". Unknown extension → error.                                                                                                                                          |
-| `clean-mesh.ts`     | `Object3D` → `{ positions, index, diagnostics }`. Bake node world matrices; skip `Line`/`Points` (count as `droppedPrimitives`); keep only `position`; `mergeGeometries` into one; `mergeVertices` with tolerance relative to bbox diagonal (1e-6 × diagonal); drop degenerate (zero-area / repeated-index) triangles; count open edges. Pure. Throws if zero triangles remain.                                  |
-| `normalize.ts`      | `computeFit(positions, upAxis, targetSize)` → `{ offset, scale }`; `normalizeMatrix(normalize)` → `Matrix4` = scale · translate(offset) · upAxisRotation. Default up axis: `+y` for glb/gltf/obj, `+z` for stl. Pure.                                                                                                                                                                                            |
-| `simplify.ts`       | `simplifyAsset(source, targetTriangles)` → new `MeshAsset` via `meshoptimizer`'s `MeshoptSimplifier` (await `.ready`). Never returns more triangles than source.                                                                                                                                                                                                                                                 |
-| `asset-store.ts`    | `hashMesh(positions, index)` (`crypto.subtle.digest('SHA-256')`); IndexedDB `putAsset` / `getAsset` (db `shades-assets`, store `meshAssets`, keyPath `id`); in-memory registry; `resolveAsset(id)` (registry → IndexedDB); `getLoadedAsset(id)` (sync, registry only); `ensureAssetsLoaded(config)` (collects `assetId`s from `projectionConfigs[].surfaceConfig`, resolves missing, silently tolerates misses). |
-| `asset-geometry.ts` | `getAssetGeometry(assetId)` → cached `BufferGeometry` per thread (built from registry asset, BVH computed once). Throws `MissingMeshAssetError` when the asset isn't loaded.                                                                                                                                                                                                                                     |
-| `import-model.ts`   | Orchestrates the UI action: parse → clean → hash → put → computeFit → returns an `ImportedMeshConfig` (with `identityTransform()`).                                                                                                                                                                                                                                                                              |
+| File | Responsibility |
+|---|---|
+| `parse-model.ts` | `File` → three `Object3D` by extension. GLB/glTF via `GLTFLoader` + `MeshoptDecoder`; STL via `STLLoader`; OBJ via `OBJLoader`. Draco → error "re-export without Draco compression". glTF with external buffer URIs → error "export as GLB". Unknown extension → error. |
+| `clean-mesh.ts` | `Object3D` → `{ positions, index, diagnostics }`. Bake node world matrices; skip `Line`/`Points` (count as `droppedPrimitives`); keep only `position`; `mergeGeometries` into one; `mergeVertices` with tolerance relative to bbox diagonal (1e-6 × diagonal); drop degenerate (zero-area / repeated-index) triangles; count open edges. Pure. Throws if zero triangles remain. |
+| `normalize.ts` | `computeFit(positions, upAxis, targetSize)` → `{ offset, scale }`; `normalizeMatrix(normalize)` → `Matrix4` = scale · translate(offset) · upAxisRotation. Default up axis: `+y` for glb/gltf/obj, `+z` for stl. Pure. |
+| `simplify.ts` | `simplifyAsset(source, targetTriangles)` → new `MeshAsset` via `meshoptimizer`'s `MeshoptSimplifier` (await `.ready`). Never returns more triangles than source. |
+| `asset-store.ts` | `hashMesh(positions, index)` (`crypto.subtle.digest('SHA-256')`); IndexedDB `putAsset` / `getAsset` (db `shades-assets`, store `meshAssets`, keyPath `id`); in-memory registry; `resolveAsset(id)` (registry → IndexedDB); `getLoadedAsset(id)` (sync, registry only); `ensureAssetsLoaded(config)` (collects `assetId`s from `projectionConfigs[].surfaceConfig`, resolves missing, silently tolerates misses). |
+| `asset-geometry.ts` | `getAssetGeometry(assetId)` → cached `BufferGeometry` per thread (built from registry asset, BVH computed once). Throws `MissingMeshAssetError` when the asset isn't loaded. |
+| `import-model.ts` | Orchestrates the UI action: parse → clean → hash → put → computeFit → returns an `ImportedMeshConfig` (with `identityTransform()`). |
 
 Works in both the main thread and the worker; IndexedDB and `crypto.subtle` are
 available in Web Workers. Only `parse-model.ts` / `import-model.ts` are main-thread-only.
@@ -166,7 +169,7 @@ non-fatal `pipelineErrors` (toast; other pipelines still render). On the main
 thread the post-result surface rebuild must catch it too and leave `surface`
 unset rather than rejecting the whole result.
 
-The Surface editor shows a banner: "Model _<fileName>_ isn't on this device" +
+The Surface editor shows a banner: "Model *<fileName>* isn't on this device" +
 **Re-pick file**. On re-pick:
 
 - hash matches `assetId` (or `simplify.sourceAssetId`) → store, regenerate; if the

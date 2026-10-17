@@ -146,7 +146,8 @@ In `migrateGlobulePatternConfig`, before `return config;`, add:
 
 ```ts
 const pvc = config.patternViewConfig as
-	{ lineWrap?: boolean; patternLayoutMode?: string } | undefined;
+	| { lineWrap?: boolean; patternLayoutMode?: string }
+	| undefined;
 if (pvc && pvc.patternLayoutMode === undefined) {
 	pvc.patternLayoutMode = pvc.lineWrap ? 'line-wrap' : 'linear';
 }

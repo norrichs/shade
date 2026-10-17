@@ -67,7 +67,7 @@ Therefore **within-tube adjacency is derived structurally, not from facet partne
 ### Address / member formatting
 
 - Band address (tube-order col 1, ring members): `formatBandAddress(addr) = `t${addr.tube}/b${addr.band}``.
-  (Globule is omitted in display per the spec's `t{tube}/b{band}` format; the lookup key still includes globule.)
+(Globule is omitted in display per the spec's `t{tube}/b{band}` format; the lookup key still includes globule.)
 
 ---
 

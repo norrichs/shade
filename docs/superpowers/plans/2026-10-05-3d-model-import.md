@@ -29,36 +29,36 @@
 
 1. **Two generations in flight while an asset is loading from IndexedDB** — the worker must post results in request order; a later request must not finish first and then be overwritten by the earlier, stale one. (Test in Task 6.)
 2. **Exported GLBs storing positions as `InterleavedBufferAttribute`** — cleaning must read them correctly instead of crashing or producing garbage. (Test in Task 1.)
-3. **A second surface built from the cached geometry** must still use the BVH-accelerated raycast; `optimizeSurfaceForRaycasting` only assigns `acceleratedRaycast` when it _builds_ the tree, so a reused geometry would silently fall back to brute force. (Test in Task 5.)
+3. **A second surface built from the cached geometry** must still use the BVH-accelerated raycast; `optimizeSurfaceForRaycasting` only assigns `acceleratedRaycast` when it *builds* the tree, so a reused geometry would silently fall back to brute force. (Test in Task 5.)
 4. **Saved config whose model isn't on this device** — the worker result must still resolve and the other pipelines render; the main-thread surface rebuild must not throw. (Tests in Tasks 5 and 6.)
-5. **Re-picking the original file for a simplified config** must restore the _same_ derived asset id (meshopt is deterministic), not reset simplification. (Test in Task 7.)
+5. **Re-picking the original file for a simplified config** must restore the *same* derived asset id (meshopt is deterministic), not reset simplification. (Test in Task 7.)
 
 ---
 
 ## File Structure
 
-| File                                                       | Status             | Responsibility                                                                                                   |
-| ---------------------------------------------------------- | ------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| `src/lib/projection-geometry/types.ts`                     | modify             | `UpAxis`, `ImportedMeshNormalize`, `ImportedMeshConfig`, `ImportedSurfaceConfig`; extend `SurfaceGeometryConfig` |
-| `src/lib/mesh-import/types.ts`                             | create             | `MeshSourceFormat`, `MeshDiagnostics`, `IndexedMesh`, `CleanMesh`, `MeshAsset`                                   |
-| `src/lib/mesh-import/clean-mesh.ts`                        | create             | `cleanMesh`, `computeDiagnostics`, `compactMesh`                                                                 |
-| `src/lib/mesh-import/normalize.ts`                         | create             | `DEFAULT_TARGET_SIZE`, `defaultUpAxis`, `upAxisRotation`, `computeFit`, `normalizeMatrix`                        |
-| `src/lib/mesh-import/asset-store.ts`                       | create             | hashing, IndexedDB, registry, `assetStatus` store, `ensureAssetsLoaded`                                          |
-| `src/lib/mesh-import/simplify.ts`                          | create             | `simplifyMesh`, `simplifyAsset`                                                                                  |
-| `src/lib/mesh-import/asset-geometry.ts`                    | create             | `MissingMeshAssetError`, cached `getAssetGeometry`                                                               |
-| `src/lib/projection-geometry/generate-projection.ts`       | modify             | `ImportedMeshConfig` branch in `generateSurface`; `generateSurfaceIfAvailable`                                   |
-| `src/lib/workers/super-globule-worker-core.ts`             | modify             | `ensureAssets` dep; ordered async generate                                                                       |
-| `src/lib/stores/workerStore.ts`                            | modify             | await assets before posting; tolerant surface rebuild                                                            |
-| `src/lib/mesh-import/parse-model.ts`                       | create             | `ModelImportError`, `detectFormat`, `parseModel`                                                                 |
-| `src/lib/mesh-import/import-model.ts`                      | create             | `ingestModelFile`, `importModelFile`, `replaceImportedModel`, `applySimplify`, `revertSimplify`, `refit`         |
-| `src/components/modal/editor/Surface.svelte`               | modify             | "Import model…" option, hidden file input                                                                        |
-| `src/components/modal/editor/ImportedMeshControls.svelte`  | create             | model / fit / center / simplify / missing-asset UI                                                               |
-| `src/components/three-renderer/SurfaceCenterMarker.svelte` | create             | viewport marker at the ray center                                                                                |
-| `src/components/three-renderer/Scene.svelte`               | modify             | mount the marker                                                                                                 |
-| `scripts/make-fixture-glb.mjs`                             | create             | writes the E2E GLB fixture                                                                                       |
-| `tests/fixtures/deformed-icosphere.glb`                    | create (generated) | E2E fixture                                                                                                      |
-| `tests/model-import.spec.ts`                               | create             | E2E                                                                                                              |
-| `jest.config.js`                                           | modify             | let ts-jest transform `meshoptimizer` and `fake-indexeddb`                                                       |
+| File | Status | Responsibility |
+|---|---|---|
+| `src/lib/projection-geometry/types.ts` | modify | `UpAxis`, `ImportedMeshNormalize`, `ImportedMeshConfig`, `ImportedSurfaceConfig`; extend `SurfaceGeometryConfig` |
+| `src/lib/mesh-import/types.ts` | create | `MeshSourceFormat`, `MeshDiagnostics`, `IndexedMesh`, `CleanMesh`, `MeshAsset` |
+| `src/lib/mesh-import/clean-mesh.ts` | create | `cleanMesh`, `computeDiagnostics`, `compactMesh` |
+| `src/lib/mesh-import/normalize.ts` | create | `DEFAULT_TARGET_SIZE`, `defaultUpAxis`, `upAxisRotation`, `computeFit`, `normalizeMatrix` |
+| `src/lib/mesh-import/asset-store.ts` | create | hashing, IndexedDB, registry, `assetStatus` store, `ensureAssetsLoaded` |
+| `src/lib/mesh-import/simplify.ts` | create | `simplifyMesh`, `simplifyAsset` |
+| `src/lib/mesh-import/asset-geometry.ts` | create | `MissingMeshAssetError`, cached `getAssetGeometry` |
+| `src/lib/projection-geometry/generate-projection.ts` | modify | `ImportedMeshConfig` branch in `generateSurface`; `generateSurfaceIfAvailable` |
+| `src/lib/workers/super-globule-worker-core.ts` | modify | `ensureAssets` dep; ordered async generate |
+| `src/lib/stores/workerStore.ts` | modify | await assets before posting; tolerant surface rebuild |
+| `src/lib/mesh-import/parse-model.ts` | create | `ModelImportError`, `detectFormat`, `parseModel` |
+| `src/lib/mesh-import/import-model.ts` | create | `ingestModelFile`, `importModelFile`, `replaceImportedModel`, `applySimplify`, `revertSimplify`, `refit` |
+| `src/components/modal/editor/Surface.svelte` | modify | "Import model…" option, hidden file input |
+| `src/components/modal/editor/ImportedMeshControls.svelte` | create | model / fit / center / simplify / missing-asset UI |
+| `src/components/three-renderer/SurfaceCenterMarker.svelte` | create | viewport marker at the ray center |
+| `src/components/three-renderer/Scene.svelte` | modify | mount the marker |
+| `scripts/make-fixture-glb.mjs` | create | writes the E2E GLB fixture |
+| `tests/fixtures/deformed-icosphere.glb` | create (generated) | E2E fixture |
+| `tests/model-import.spec.ts` | create | E2E |
+| `jest.config.js` | modify | let ts-jest transform `meshoptimizer` and `fake-indexeddb` |
 
 `validators.ts` has no surface-config validation today (verified), so no validator change is needed.
 
@@ -67,14 +67,12 @@
 ### Task 1: Types and mesh cleaning
 
 **Files:**
-
 - Modify: `src/lib/projection-geometry/types.ts:12-33`
 - Create: `src/lib/mesh-import/types.ts`
 - Create: `src/lib/mesh-import/clean-mesh.ts`
 - Test: `src/lib/mesh-import/__tests__/clean-mesh.test.ts`
 
 **Interfaces:**
-
 - Consumes: nothing.
 - Produces:
   - `type UpAxis = '+x' | '-x' | '+y' | '-y' | '+z' | '-z'`
@@ -126,8 +124,7 @@ export type ImportedMeshConfig = {
 Change the union and add the convenience alias right after `SurfaceConfig`:
 
 ```ts
-export type SurfaceGeometryConfig =
-	SphereConfig | CapsuleConfig | GlobuleConfig | ImportedMeshConfig;
+export type SurfaceGeometryConfig = SphereConfig | CapsuleConfig | GlobuleConfig | ImportedMeshConfig;
 
 export type SurfaceConfig = SurfaceGeometryConfig & {
 	transform: TransformConfig | 'inherit';
@@ -322,16 +319,7 @@ Expected: FAIL — `Cannot find module '../clean-mesh'`.
 `src/lib/mesh-import/clean-mesh.ts`:
 
 ```ts
-import {
-	Box3,
-	BufferAttribute,
-	BufferGeometry,
-	Line,
-	Mesh,
-	Object3D,
-	Points,
-	Vector3
-} from 'three';
+import { Box3, BufferAttribute, BufferGeometry, Line, Mesh, Object3D, Points, Vector3 } from 'three';
 import { mergeGeometries, mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import type { CleanMesh, IndexedMesh, MeshDiagnostics } from './types';
 
@@ -496,12 +484,10 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ### Task 2: Normalization (auto-fit)
 
 **Files:**
-
 - Create: `src/lib/mesh-import/normalize.ts`
 - Test: `src/lib/mesh-import/__tests__/normalize.test.ts`
 
 **Interfaces:**
-
 - Consumes: `UpAxis`, `ImportedMeshNormalize` (Task 1), `MeshSourceFormat` (Task 1).
 - Produces:
   - `DEFAULT_TARGET_SIZE = 800`
@@ -581,7 +567,9 @@ describe('computeFit + normalizeMatrix', () => {
 	);
 
 	it('throws for a zero-size model', () => {
-		expect(() => computeFit(new Float32Array([1, 1, 1, 1, 1, 1]), '+z', 800)).toThrow('zero size');
+		expect(() => computeFit(new Float32Array([1, 1, 1, 1, 1, 1]), '+z', 800)).toThrow(
+			'zero size'
+		);
 	});
 });
 
@@ -615,7 +603,8 @@ import type { MeshSourceFormat } from './types';
 export const DEFAULT_TARGET_SIZE = 800;
 
 /** glTF and OBJ are conventionally Y-up; STL usually comes from Z-up CAD tools. */
-export const defaultUpAxis = (format: MeshSourceFormat): UpAxis => (format === 'stl' ? '+z' : '+y');
+export const defaultUpAxis = (format: MeshSourceFormat): UpAxis =>
+	format === 'stl' ? '+z' : '+y';
 
 /** Rotation taking the source `upAxis` onto the app's up axis, +Z. */
 export const upAxisRotation = (upAxis: UpAxis): Matrix4 => {
@@ -685,13 +674,11 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ### Task 3: Asset store (hash, IndexedDB, registry)
 
 **Files:**
-
 - Modify: `package.json` (dev dependency), `jest.config.js:21-23`
 - Create: `src/lib/mesh-import/asset-store.ts`
 - Test: `src/lib/mesh-import/__tests__/asset-store.test.ts`
 
 **Interfaces:**
-
 - Consumes: `IndexedMesh`, `MeshAsset` (Task 1); `SuperGlobuleConfig` from `$lib/types`.
 - Produces:
   - `hashMesh(mesh: IndexedMesh): Promise<string>`
@@ -985,13 +972,11 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ### Task 4: Simplification
 
 **Files:**
-
 - Modify: `package.json` (runtime dependency)
 - Create: `src/lib/mesh-import/simplify.ts`
 - Test: `src/lib/mesh-import/__tests__/simplify.test.ts`
 
 **Interfaces:**
-
 - Consumes: `compactMesh`, `computeDiagnostics`, `cleanMesh` (Task 1); `hashMesh` (Task 3); `IndexedMesh`, `MeshAsset`.
 - Produces:
   - `simplifyMesh(mesh: IndexedMesh, targetTriangles: number): Promise<IndexedMesh>`
@@ -1108,10 +1093,7 @@ export async function simplifyMesh(
 	return compactMesh(mesh.positions, simplified);
 }
 
-export async function simplifyAsset(
-	source: MeshAsset,
-	targetTriangles: number
-): Promise<MeshAsset> {
+export async function simplifyAsset(source: MeshAsset, targetTriangles: number): Promise<MeshAsset> {
 	const mesh = await simplifyMesh(source, targetTriangles);
 	return {
 		...mesh,
@@ -1148,13 +1130,11 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ### Task 5: Surface generation from an imported asset
 
 **Files:**
-
 - Create: `src/lib/mesh-import/asset-geometry.ts`
 - Modify: `src/lib/projection-geometry/generate-projection.ts:233-268` (`generateSurface`)
 - Test: `src/lib/projection-geometry/__tests__/generate-surface-imported.test.ts`
 
 **Interfaces:**
-
 - Consumes: `getLoadedAsset`, `registerAsset`, `resetAssetStoreForTests` (Task 3); `normalizeMatrix` (Task 2); `cleanMesh` (Task 1); `ImportedSurfaceConfig` (Task 1); `materials` (already imported in `generate-projection.ts:62`).
 - Produces:
   - `class MissingMeshAssetError extends Error { assetId: string; fileName: string }`
@@ -1384,13 +1364,11 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ### Task 6: Worker and main-thread asset loading
 
 **Files:**
-
 - Modify: `src/lib/workers/super-globule-worker-core.ts` (`WorkerCoreDeps`, `createWorkerCore`, generate branch at ~126-143)
 - Modify: `src/lib/stores/workerStore.ts:288-308` (surface rebuild) and `:340-370` (`generateSuperGlobuleAsync`)
 - Test: `src/lib/workers/__tests__/super-globule-worker-core.test.ts` (add cases)
 
 **Interfaces:**
-
 - Consumes: `ensureAssetsLoaded` (Task 3); `generateSurfaceIfAvailable` (Task 5).
 - Produces: `WorkerCoreDeps.ensureAssets: (config: SuperGlobuleConfig) => Promise<void> | undefined`. Generate requests are processed strictly in arrival order; with all assets loaded they still post synchronously (existing tests unchanged).
 
@@ -1470,11 +1448,11 @@ import { ensureAssetsLoaded } from '$lib/mesh-import/asset-store';
 Add to `WorkerCoreDeps`:
 
 ```ts
-/**
- * Load imported-mesh assets the config references into this thread's
- * registry. Returns undefined when nothing needs loading (sync fast path).
- */
-ensureAssets: (config: SuperGlobuleConfig) => Promise<void> | undefined;
+	/**
+	 * Load imported-mesh assets the config references into this thread's
+	 * registry. Returns undefined when nothing needs loading (sync fast path).
+	 */
+	ensureAssets: (config: SuperGlobuleConfig) => Promise<void> | undefined;
 ```
 
 Add to the defaults in `createWorkerCore`:
@@ -1486,64 +1464,64 @@ Add to the defaults in `createWorkerCore`:
 Replace the body of the `if (message.type === 'generate') { … }` branch with a call into two helpers, and define the helpers just above `const handle = …`:
 
 ```ts
-const runGenerate = (message: GenerateMessage, post: (response: WorkerResponse) => void) => {
-	const { payload, gates, requestId } = message;
-	try {
-		deps.log('[Worker] Starting generateSuperGlobule');
-		const start = deps.now();
-		const superGlobule = deps.generateSuperGlobule(payload, gates);
-		deps.log(`[Worker] generateSuperGlobule completed in ${deps.now() - start}ms`);
-		held = { requestId, superGlobule };
-		post({ type: 'result', payload: deps.stripNonSerializable(superGlobule), requestId });
-	} catch (error) {
-		post({
-			type: 'error',
-			error: error instanceof Error ? error.message : 'Unknown error',
-			requestId
-		});
-	}
-};
+	const runGenerate = (message: GenerateMessage, post: (response: WorkerResponse) => void) => {
+		const { payload, gates, requestId } = message;
+		try {
+			deps.log('[Worker] Starting generateSuperGlobule');
+			const start = deps.now();
+			const superGlobule = deps.generateSuperGlobule(payload, gates);
+			deps.log(`[Worker] generateSuperGlobule completed in ${deps.now() - start}ms`);
+			held = { requestId, superGlobule };
+			post({ type: 'result', payload: deps.stripNonSerializable(superGlobule), requestId });
+		} catch (error) {
+			post({
+				type: 'error',
+				error: error instanceof Error ? error.message : 'Unknown error',
+				requestId
+			});
+		}
+	};
 
-/**
- * Generate requests run strictly in arrival order. Once any request has to
- * wait for assets, later ones queue behind it — otherwise a later request
- * could post first and then be overwritten by the earlier, stale result.
- * A failed asset load still generates: the missing asset surfaces as a
- * per-pipeline error.
- */
-let generateQueue: Promise<void> | null = null;
-const track = (job: Promise<void>) => {
-	generateQueue = job;
-	void job.then(() => {
-		if (generateQueue === job) generateQueue = null;
-	});
-};
-const handleGenerate = (message: GenerateMessage, post: (response: WorkerResponse) => void) => {
-	if (!generateQueue) {
-		const ready = deps.ensureAssets(message.payload);
-		if (!ready) {
-			runGenerate(message, post);
+	/**
+	 * Generate requests run strictly in arrival order. Once any request has to
+	 * wait for assets, later ones queue behind it — otherwise a later request
+	 * could post first and then be overwritten by the earlier, stale result.
+	 * A failed asset load still generates: the missing asset surfaces as a
+	 * per-pipeline error.
+	 */
+	let generateQueue: Promise<void> | null = null;
+	const track = (job: Promise<void>) => {
+		generateQueue = job;
+		void job.then(() => {
+			if (generateQueue === job) generateQueue = null;
+		});
+	};
+	const handleGenerate = (message: GenerateMessage, post: (response: WorkerResponse) => void) => {
+		if (!generateQueue) {
+			const ready = deps.ensureAssets(message.payload);
+			if (!ready) {
+				runGenerate(message, post);
+				return;
+			}
+			track(ready.catch(() => {}).then(() => runGenerate(message, post)));
 			return;
 		}
-		track(ready.catch(() => {}).then(() => runGenerate(message, post)));
-		return;
-	}
-	track(
-		generateQueue
-			.then(() => deps.ensureAssets(message.payload))
-			.catch(() => {})
-			.then(() => runGenerate(message, post))
-	);
-};
+		track(
+			generateQueue
+				.then(() => deps.ensureAssets(message.payload))
+				.catch(() => {})
+				.then(() => runGenerate(message, post))
+		);
+	};
 ```
 
 And the branch inside `handle` becomes:
 
 ```ts
-if (message.type === 'generate') {
-	handleGenerate(message, post);
-	return;
-}
+		if (message.type === 'generate') {
+			handleGenerate(message, post);
+			return;
+		}
 ```
 
 - [ ] **Step 4: Run tests to verify they pass**
@@ -1566,24 +1544,24 @@ and add `generateSurfaceIfAvailable` to the existing import from `$lib/projectio
 In `generateSuperGlobuleAsync`, replace the `try { const w = getWorker(); … w.postMessage(JSON.parse(JSON.stringify(message))); } catch …` block with:
 
 ```ts
-// Deep clone now (strips Svelte 5 $state proxies, which can't be posted)
-// so later config edits can't leak into this request while assets load.
-const plainMessage = JSON.parse(JSON.stringify(message));
-const send = () => {
-	try {
-		getWorker().postMessage(plainMessage);
-	} catch (error) {
-		pendingResolvers.delete(requestId);
-		isWorking.set(pendingResolvers.size > 0);
-		workerError.set(error instanceof Error ? error.message : 'Failed to start worker');
-		reject(error);
-	}
-};
-// The post-result surface rebuild below runs on this thread, so the
-// imported mesh must be in this thread's registry too.
-const assetsReady = ensureAssetsLoaded(config);
-if (assetsReady) void assetsReady.then(send);
-else send();
+		// Deep clone now (strips Svelte 5 $state proxies, which can't be posted)
+		// so later config edits can't leak into this request while assets load.
+		const plainMessage = JSON.parse(JSON.stringify(message));
+		const send = () => {
+			try {
+				getWorker().postMessage(plainMessage);
+			} catch (error) {
+				pendingResolvers.delete(requestId);
+				isWorking.set(pendingResolvers.size > 0);
+				workerError.set(error instanceof Error ? error.message : 'Failed to start worker');
+				reject(error);
+			}
+		};
+		// The post-result surface rebuild below runs on this thread, so the
+		// imported mesh must be in this thread's registry too.
+		const assetsReady = ensureAssetsLoaded(config);
+		if (assetsReady) void assetsReady.then(send);
+		else send();
 ```
 
 (`ensureAssetsLoaded` never rejects, so `.then(send)` is enough. Note `isWorking.set(pendingResolvers.size > 0)` — with async sends another request may still be pending; the original code set `false` unconditionally.)
@@ -1591,11 +1569,15 @@ else send();
 In the result handler, replace both surface rebuilds:
 
 ```ts
-rehydrated.projections[i].surface = generateSurfaceIfAvailable(prepared.surfaceConfig) as Object3D;
+						rehydrated.projections[i].surface = generateSurfaceIfAvailable(
+							prepared.surfaceConfig
+						) as Object3D;
 ```
 
 ```ts
-rehydrated.voronoiResult.surface = generateSurfaceIfAvailable(resolvedSurfaceConfig) as Object3D;
+					rehydrated.voronoiResult.surface = generateSurfaceIfAvailable(
+						resolvedSurfaceConfig
+					) as Object3D;
 ```
 
 (Both consumers — `ProjectionGeometryComponent.svelte:265` and `collate-geometry.ts:37` — already tolerate a missing surface; the worker posts these fields as `null` today. Import `Object3D` as a type from `three` if it isn't already imported.)
@@ -1619,14 +1601,12 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ### Task 7: Parsing files and the import operations
 
 **Files:**
-
 - Create: `src/lib/mesh-import/parse-model.ts`
 - Create: `src/lib/mesh-import/import-model.ts`
 - Test: `src/lib/mesh-import/__tests__/parse-model.test.ts`
 - Test: `src/lib/mesh-import/__tests__/import-model.test.ts`
 
 **Interfaces:**
-
 - Consumes: `cleanMesh` (1); `computeFit`, `defaultUpAxis`, `DEFAULT_TARGET_SIZE` (2); `hashMesh`, `putAsset`, `resolveAsset` (3); `simplifyAsset` (4); `identityTransform` from `src/components/modal/editor/transform-config.ts`; `ImportedSurfaceConfig`, `UpAxis`.
 - Produces:
   - `class ModelImportError extends Error`
@@ -1797,7 +1777,9 @@ const glbJson = (buffer: ArrayBuffer): GltfJson => {
 };
 
 const parseGltf = async (buffer: ArrayBuffer, format: 'glb' | 'gltf'): Promise<Object3D> => {
-	checkGltfJson(format === 'glb' ? glbJson(buffer) : JSON.parse(new TextDecoder().decode(buffer)));
+	checkGltfJson(
+		format === 'glb' ? glbJson(buffer) : JSON.parse(new TextDecoder().decode(buffer))
+	);
 	const loader = new GLTFLoader();
 	loader.setMeshoptDecoder(MeshoptDecoder);
 	try {
@@ -1809,9 +1791,7 @@ const parseGltf = async (buffer: ArrayBuffer, format: 'glb' | 'gltf'): Promise<O
 	}
 };
 
-export async function parseModel(
-	file: File
-): Promise<{ root: Object3D; format: MeshSourceFormat }> {
+export async function parseModel(file: File): Promise<{ root: Object3D; format: MeshSourceFormat }> {
 	const format = detectFormat(file.name);
 	const buffer = await file.arrayBuffer();
 	switch (format) {
@@ -1919,10 +1899,7 @@ describe('simplify / revert', () => {
 describe('replaceImportedModel', () => {
 	it('re-picking the same file keeps the config', async () => {
 		const text = sphereStl(1);
-		const cfg = {
-			...(await importModelFile(stlFile('ball.stl', text))),
-			center: { x: 1, y: 2, z: 3 }
-		};
+		const cfg = { ...(await importModelFile(stlFile('ball.stl', text))), center: { x: 1, y: 2, z: 3 } };
 		resetAssetStoreForTests(); // simulate "not on this device"
 		globalThis.indexedDB = new IDBFactory();
 		const { config, sameFile } = await replaceImportedModel(cfg, stlFile('ball.stl', text));
@@ -2123,12 +2100,10 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ### Task 8: Surface editor UI
 
 **Files:**
-
 - Modify: `src/components/modal/editor/Surface.svelte`
 - Create: `src/components/modal/editor/ImportedMeshControls.svelte`
 
 **Interfaces:**
-
 - Consumes: `importModelFile`, `replaceImportedModel`, `applySimplify`, `revertSimplify`, `refit` (7); `resolveAsset`, `assetStatus` (3); `toastStore` from `$lib/stores/toastStore`; `superConfigStore` from `$lib/stores`; existing `LabeledControl`, `NumberInput`, `PointInput`, `TransformControls`.
 - Produces: the hidden file input has `data-testid="model-file-input"` (used by Task 10's E2E); the replace / re-pick input has `data-testid="model-replace-input"`.
 
@@ -2139,54 +2114,54 @@ UI code has no Jest coverage here (components aren't unit-tested in this repo); 
 In the `<script>` block add imports:
 
 ```ts
-import { importModelFile } from '$lib/mesh-import/import-model';
-import { toastStore } from '$lib/stores/toastStore';
-import ImportedMeshControls from './ImportedMeshControls.svelte';
-import type { ImportedSurfaceConfig } from '$lib/projection-geometry/types';
+	import { importModelFile } from '$lib/mesh-import/import-model';
+	import { toastStore } from '$lib/stores/toastStore';
+	import ImportedMeshControls from './ImportedMeshControls.svelte';
+	import type { ImportedSurfaceConfig } from '$lib/projection-geometry/types';
 ```
 
 Add state and the file handler:
 
 ```ts
-let fileInput: HTMLInputElement | undefined = $state();
-let importing = $state(false);
+	let fileInput: HTMLInputElement | undefined = $state();
+	let importing = $state(false);
 
-const handleFilePicked = async (event: Event) => {
-	const input = event.currentTarget as HTMLInputElement;
-	const file = input.files?.[0];
-	input.value = ''; // allow picking the same file again later
-	if (!file) return;
-	importing = true;
-	try {
-		const surface = await importModelFile(file);
-		const config = get(superConfigStore);
-		config.projectionConfigs[0].surfaceConfig = surface;
-		superConfigStore.set(config);
-		toastStore.add({ type: 'success', message: `Imported ${file.name}`, duration: 3000 });
-	} catch (error) {
-		toastStore.add({
-			type: 'error',
-			message: error instanceof Error ? error.message : 'Import failed',
-			dismissible: true
-		});
-	} finally {
-		importing = false;
-	}
-};
+	const handleFilePicked = async (event: Event) => {
+		const input = event.currentTarget as HTMLInputElement;
+		const file = input.files?.[0];
+		input.value = ''; // allow picking the same file again later
+		if (!file) return;
+		importing = true;
+		try {
+			const surface = await importModelFile(file);
+			const config = get(superConfigStore);
+			config.projectionConfigs[0].surfaceConfig = surface;
+			superConfigStore.set(config);
+			toastStore.add({ type: 'success', message: `Imported ${file.name}`, duration: 3000 });
+		} catch (error) {
+			toastStore.add({
+				type: 'error',
+				message: error instanceof Error ? error.message : 'Import failed',
+				dismissible: true
+			});
+		} finally {
+			importing = false;
+		}
+	};
 ```
 
 At the top of `handleChangeSurfaceType`, before the `switch`, add:
 
 ```ts
-if (selectedType === 'import') {
-	// Keep showing the current type until a file actually loads; a cancelled
-	// picker then leaves everything as it was.
-	(event.target as HTMLSelectElement).value = surfaceTypeValue;
-	fileInput?.click();
-	return;
-}
-// The current imported model's own option: nothing to change.
-if (selectedType === 'importedmesh') return;
+		if (selectedType === 'import') {
+			// Keep showing the current type until a file actually loads; a cancelled
+			// picker then leaves everything as it was.
+			(event.target as HTMLSelectElement).value = surfaceTypeValue;
+			fileInput?.click();
+			return;
+		}
+		// The current imported model's own option: nothing to change.
+		if (selectedType === 'importedmesh') return;
 ```
 
 (`surfaceTypeValue` for an imported surface is `'importedmesh'`, from the existing `type.replace('Config', '').toLowerCase()` derivation.)
@@ -2194,24 +2169,24 @@ if (selectedType === 'importedmesh') return;
 Replace the `<select>` with:
 
 ```svelte
-<select value={surfaceTypeValue} onchange={handleChangeSurfaceType} disabled={importing}>
-	<option value="sphere">Sphere</option>
-	<option value="capsule">Capsule</option>
-	<option value="globule">Globule</option>
-	{#if surfaceConfig.type === 'ImportedMeshConfig'}
-		<option value="importedmesh">Imported: {surfaceConfig.fileName}</option>
-	{/if}
-	<option value="import">Import model…</option>
-</select>
-<input
-	bind:this={fileInput}
-	data-testid="model-file-input"
-	type="file"
-	accept=".glb,.gltf,.stl,.obj"
-	hidden
-	onchange={handleFilePicked}
-/>
-{#if importing}<span>Importing…</span>{/if}
+				<select value={surfaceTypeValue} onchange={handleChangeSurfaceType} disabled={importing}>
+					<option value="sphere">Sphere</option>
+					<option value="capsule">Capsule</option>
+					<option value="globule">Globule</option>
+					{#if surfaceConfig.type === 'ImportedMeshConfig'}
+						<option value="importedmesh">Imported: {surfaceConfig.fileName}</option>
+					{/if}
+					<option value="import">Import model…</option>
+				</select>
+				<input
+					bind:this={fileInput}
+					data-testid="model-file-input"
+					type="file"
+					accept=".glb,.gltf,.stl,.obj"
+					hidden
+					onchange={handleFilePicked}
+				/>
+				{#if importing}<span>Importing…</span>{/if}
 ```
 
 After the `TransformControls` block, add:
@@ -2353,7 +2328,8 @@ After the `TransformControls` block, add:
 			</LabeledControl>
 			{#if asset.diagnostics.openEdges > 0}
 				<p class="warning">
-					{asset.diagnostics.openEdges} open edges — Projection needs a closed mesh visible from the center
+					{asset.diagnostics.openEdges} open edges — Projection needs a closed mesh visible from
+					the center
 				</p>
 			{/if}
 		{/if}
@@ -2378,7 +2354,10 @@ After the `TransformControls` block, add:
 		<LabeledControl label="Ray center">
 			<PointInput bind:value={$superConfigStore.projectionConfigs[0].surfaceConfig.center} />
 		</LabeledControl>
-		<button disabled={busy} onclick={() => commit({ ...surface, center: { x: 0, y: 0, z: 0 } })}>
+		<button
+			disabled={busy}
+			onclick={() => commit({ ...surface, center: { x: 0, y: 0, z: 0 } })}
+		>
 			Reset to model center
 		</button>
 
@@ -2441,12 +2420,10 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ### Task 9: Ray-center marker in the viewport
 
 **Files:**
-
 - Create: `src/components/three-renderer/SurfaceCenterMarker.svelte`
 - Modify: `src/components/three-renderer/Scene.svelte:49` (import) and `:326` (mount)
 
 **Interfaces:**
-
 - Consumes: `superConfigStore` from `$lib/stores`.
 - Produces: nothing used by other tasks.
 
@@ -2484,7 +2461,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 Next to the `ProjectionGeometryComponent` import (line ~49):
 
 ```ts
-import SurfaceCenterMarker from './SurfaceCenterMarker.svelte';
+	import SurfaceCenterMarker from './SurfaceCenterMarker.svelte';
 ```
 
 Right after `<ProjectionGeometryComponent onClick={handleProjectionClick} />` (line ~326):
@@ -2513,13 +2490,11 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ### Task 10: E2E fixture and test
 
 **Files:**
-
 - Create: `scripts/make-fixture-glb.mjs`
 - Create: `tests/fixtures/deformed-icosphere.glb` (generated)
 - Create: `tests/model-import.spec.ts`
 
 **Interfaces:**
-
 - Consumes: `data-testid="model-file-input"` (Task 8); `superConfigStore`, `superGlobuleStore` exported from `/src/lib/stores/index.ts`.
 - Produces: nothing.
 
@@ -2589,29 +2564,19 @@ Buffer.from(indices.buffer).copy(bin, posBytes);
 const total = 12 + 8 + jsonChunk.length + 8 + bin.length;
 const out = Buffer.alloc(total);
 let o = 0;
-out.writeUInt32LE(0x46546c67, o);
-o += 4; // 'glTF'
-out.writeUInt32LE(2, o);
-o += 4;
-out.writeUInt32LE(total, o);
-o += 4;
-out.writeUInt32LE(jsonChunk.length, o);
-o += 4;
-out.writeUInt32LE(0x4e4f534a, o);
-o += 4; // 'JSON'
-jsonChunk.copy(out, o);
-o += jsonChunk.length;
-out.writeUInt32LE(bin.length, o);
-o += 4;
-out.writeUInt32LE(0x004e4942, o);
-o += 4; // 'BIN\0'
+out.writeUInt32LE(0x46546c67, o); o += 4; // 'glTF'
+out.writeUInt32LE(2, o); o += 4;
+out.writeUInt32LE(total, o); o += 4;
+out.writeUInt32LE(jsonChunk.length, o); o += 4;
+out.writeUInt32LE(0x4e4f534a, o); o += 4; // 'JSON'
+jsonChunk.copy(out, o); o += jsonChunk.length;
+out.writeUInt32LE(bin.length, o); o += 4;
+out.writeUInt32LE(0x004e4942, o); o += 4; // 'BIN\0'
 bin.copy(out, o);
 
 mkdirSync('tests/fixtures', { recursive: true });
 writeFileSync('tests/fixtures/deformed-icosphere.glb', out);
-console.log(
-	`wrote tests/fixtures/deformed-icosphere.glb (${total} bytes, ${indices.length / 3} triangles)`
-);
+console.log(`wrote tests/fixtures/deformed-icosphere.glb (${total} bytes, ${indices.length / 3} triangles)`);
 ```
 
 - [ ] **Step 2: Generate the fixture**
@@ -2685,10 +2650,7 @@ const selectVoronoiGeometry = async (page: Page) => {
 
 const openSurfacePanel = async (page: Page) => {
 	// Rail buttons render an accelerator letter in a separate span; match the rest.
-	await page
-		.locator('button', { hasText: /urface/i })
-		.first()
-		.click();
+	await page.locator('button', { hasText: /urface/i }).first().click();
 	await expect(page.locator('[data-testid="model-file-input"]')).toBeAttached();
 };
 

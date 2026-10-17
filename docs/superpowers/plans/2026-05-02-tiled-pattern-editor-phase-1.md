@@ -550,7 +550,8 @@ const invertGroup = (
 		.map(
 			(seg) =>
 				[seg[0] === 'M' ? 'L' : 'M', maxX - (seg[1] || 0), seg[2] || 0] as
-					MovePathSegment | LinePathSegment
+					| MovePathSegment
+					| LinePathSegment
 		);
 
 const buildUnit = (

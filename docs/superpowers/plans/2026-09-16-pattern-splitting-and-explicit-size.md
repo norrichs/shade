@@ -25,7 +25,7 @@
 - **`patternConfigStore.update(callback)` does not work. Never write config that way.** `persistable` returns `update: function (value: T) { update((value) => value); … }` (`src/lib/persistable.ts:78-81`) — the parameter is a **value**, the inner `writable.update` is called with the identity function, so the store state never changes and the argument is only handed to `schedulePersist`. Passing a callback is also a type error (`T` is `GlobulePatternConfig`, not a function). The two idioms this codebase actually uses, both of which change the store:
   - `patternConfigStore.set(mutate(get(patternConfigStore)))` — `PatternView.svelte:39`, also `TileEditor.svelte:134`, `LabelEditor.svelte:54`. Use this when a `$derived` chain reads through the edited path, because it rebuilds object references.
   - direct assignment, `$patternConfigStore.patternConfig.… = x` — `PageLayout.svelte:63`, `:265`, `CutPatternRenderer.svelte:297` (the "Fit page" toast). Svelte 5's `$` assignment calls `.set()` with the same root object, so **references down the edited path are NOT rebuilt**; a panel reading through `$derived` can go stale (this is exactly why `PageLayout.svelte:26` keeps a `{ ...pageLayout }` shallow copy).
-    Tasks 14, 16 and 18 all write `patternConfig`, and all three must use the `.set(...)`-with-rebuilt-object form, which satisfies both this constraint and the spec's "rebuild object references down the edited path" requirement (design L396-402).
+  Tasks 14, 16 and 18 all write `patternConfig`, and all three must use the `.set(...)`-with-rebuilt-object form, which satisfies both this constraint and the spec's "rebuild object references down the edited path" requirement (design L396-402).
 - `BandCutPattern['address']` is `GlobuleAddress_Band` (`types.ts:429`), which has no `piece`. Task 9 widens it to `GlobuleAddress_Band | GlobuleAddress_BandPiece`; before that point, read a possible piece via the `isGlobuleAddress_BandPiece` type guard rather than by reaching for `.piece`. Note the already-committed `tube-pattern-characterization.test.ts` asserts `b.address.piece === undefined`, so it carries one `svelte-check` error until Task 9 lands.
 
 ## Beads Tracking
@@ -593,7 +593,7 @@ const bandKeyOf = (band: { address?: GlobuleAddress_Band; geometry: BufferGeomet
 
 and update its **five** `{#each}` usages (lines 279, 312, 350, 358, 402) from `bandKey(band)` to `bandKeyOf(band)`. Add `import { bandKey } from '$lib/cut-pattern/band-key';`.
 
-**The `band.geometry.uuid` fallback is load-bearing — keep it exactly.** Verified in the working tree: the existing function returns the geometry's own uuid when `band.address` is absent, and its comment explains why ("Bands without an address (see `collateAddressedBandGeometry`) still render, so the key falls back to the geometry's own uuid"). Returning `''` instead would give every address-less band the _same_ Svelte `{#each}` key, and Svelte would reuse one band's DOM for all of them. This is the only one of the four copies whose signature takes `{ address?, geometry }` rather than an address, and the only one with a fallback.
+**The `band.geometry.uuid` fallback is load-bearing — keep it exactly.** Verified in the working tree: the existing function returns the geometry's own uuid when `band.address` is absent, and its comment explains why ("Bands without an address (see `collateAddressedBandGeometry`) still render, so the key falls back to the geometry's own uuid"). Returning `''` instead would give every address-less band the *same* Svelte `{#each}` key, and Svelte would reuse one band's DOM for all of them. This is the only one of the four copies whose signature takes `{ address?, geometry }` rather than an address, and the only one with a fallback.
 
 - [ ] **Step 6: Run the full unit suite and the type check**
 
@@ -814,20 +814,20 @@ Add `isSameAddress` and `isGlobuleAddress_BandPiece` to the imports from `$lib/u
 In `src/lib/patterns/tesselation/shared/helpers.ts`, lines 121-125 currently read:
 
 ```ts
-const partnerTube = tubes[partnerAddress.tube];
-if (!partnerTube) return undefined;
-const partnerBand =
-	partnerTube.bands.find((b) => b.address.band === partnerAddress.band) ??
-	partnerTube.bands[partnerAddress.band];
+	const partnerTube = tubes[partnerAddress.tube];
+	if (!partnerTube) return undefined;
+	const partnerBand =
+		partnerTube.bands.find((b) => b.address.band === partnerAddress.band) ??
+		partnerTube.bands[partnerAddress.band];
 ```
 
 Replace all five lines with:
 
 ```ts
-// findBandByAddress already returns undefined for a missing tube, so the
-// separate partnerTube guard goes too — leaving it would make `partnerTube`
-// an unused local and fail `npm run lint`.
-const partnerBand = findBandByAddress(tubes, partnerAddress);
+	// findBandByAddress already returns undefined for a missing tube, so the
+	// separate partnerTube guard goes too — leaving it would make `partnerTube`
+	// an unused local and fail `npm run lint`.
+	const partnerBand = findBandByAddress(tubes, partnerAddress);
 ```
 
 Add `import { findBandByAddress } from '$lib/cut-pattern/generate-pattern';`.
@@ -873,14 +873,12 @@ bd close shades-1qz
 **Interfaces:**
 
 - Produces: `TubeSplits`, `SplitConfig`, and
-
   ```ts
   validateSplitConfig(
   	config: SplitConfig,
   	quadCountsByTube: Record<number, number>
   ): { config: SplitConfig; dropped: TubeSplits[] }
   ```
-
   It returns the dropped splits as well as the cleaned config, because Task 16 has to render "any splits dropped by `validateSplitConfig`" and a bare cleaned config carries no record of what went. Consumed by Tasks 8, 14, 15, 16.
 
 - [ ] **Step 1: Write the failing test**
@@ -1087,7 +1085,7 @@ let splitValidation = $derived(
 
 `splitValidation.dropped` feeds the warning row. Pruning the stored config is a separate, explicit user action rather than an `$effect` — an effect that writes config from a derived read of that same config is a feedback loop, and one regeneration per geometry change is already enough. Add a "Prune dropped splits" button, shown only when `splitValidation.dropped.length > 0`, that writes `splitValidation.config` back using the `.set(...)` idiom from Global Constraints.
 
-Note for the implementer: `splitFlatBands` (Task 8) independently rejects and reports an out-of-range index at generation time, so a stale index is never _applied_ even before it is pruned. This step is about making it visible and removable, not about correctness of the geometry.
+Note for the implementer: `splitFlatBands` (Task 8) independently rejects and reports an out-of-range index at generation time, so a stale index is never *applied* even before it is pruned. This step is about making it visible and removable, not about correctness of the geometry.
 
 - [ ] **Step 8: Commit**
 
@@ -1151,7 +1149,7 @@ In `src/lib/types.ts`, in the `Band` type (`:923-934`):
 
 These go on `Band` itself rather than a subtype, because `alignBands`, `getQuadrilaterals` and `generateTiling` are all typed on `Band` and a piece must be assignable to it.
 
-`parentIndex` / `pieceIndex` are plain fields rather than an address component on purpose. An earlier draft of this plan had `splitFlatBands` fabricate `{ globule: 0, tube: 0, band: 0, piece: i }` when the parent band had no address. That is not a harmless test affordance: for any tube built by `generate-projection.ts:714` or `:732` — neither of which sets a band address — _every_ piece of _every_ band would claim `g0t0b0`, and Task 11 would then derive seam partners pointing at that one wrong band, in the wrong tube, for every split in the model. Do not fabricate an address.
+`parentIndex` / `pieceIndex` are plain fields rather than an address component on purpose. An earlier draft of this plan had `splitFlatBands` fabricate `{ globule: 0, tube: 0, band: 0, piece: i }` when the parent band had no address. That is not a harmless test affordance: for any tube built by `generate-projection.ts:714` or `:732` — neither of which sets a band address — *every* piece of *every* band would claim `g0t0b0`, and Task 11 would then derive seam partners pointing at that one wrong band, in the wrong tube, for every split in the model. Do not fabricate an address.
 
 - [ ] **Step 2: Write the failing test**
 
@@ -1208,7 +1206,7 @@ describe('splitFlatBands', () => {
 		expect(result.bands.map((b) => b.parentQuadOffset)).toEqual([0, 2, 4]);
 	});
 
-	it("records each piece's parent index, not a fabricated address", () => {
+	it('records each piece\'s parent index, not a fabricated address', () => {
 		// Two parents, so a piece index and a parent index cannot be confused.
 		// Pieces must NOT invent an address: bands built by
 		// generate-projection.ts:714/:732 have none, and a fabricated g0t0b0
@@ -1247,7 +1245,7 @@ describe('splitFlatBands', () => {
 		expect(result.bands[2].seamAt).toEqual({ start: true });
 	});
 
-	it("does not set parentAscending — that is the caller's job", () => {
+	it('does not set parentAscending — that is the caller\'s job', () => {
 		// The flip test reads POST-rotation coordinates (reAlignBand runs after
 		// the minimal-bounding-box rotation), so it cannot be computed here from
 		// the pre-align flat band; and the bbox helpers live in a module that
@@ -1438,7 +1436,12 @@ describe('generateTubeCutPattern — with splits', () => {
 		// (collate-tubes.ts:34-38).
 		expect(new Set(result.bands.map((b) => b.id)).size).toBe(4);
 		// Neither piece may be refused.
-		expect(result.bands.map((b) => b.error)).toEqual([undefined, undefined, undefined, undefined]);
+		expect(result.bands.map((b) => b.error)).toEqual([
+			undefined,
+			undefined,
+			undefined,
+			undefined
+		]);
 	});
 
 	it('leaves output identical to the baseline when splitQuads is empty', () => {
@@ -1458,7 +1461,9 @@ describe('generateTubeCutPattern — with splits', () => {
 		);
 		// Compare addresses too: comparing only id and facet count would pass even
 		// if the piece plumbing perturbed every address or dropped `meta`.
-		expect(withEmpty.bands.map((b) => b.address)).toEqual(withoutProp.bands.map((b) => b.address));
+		expect(withEmpty.bands.map((b) => b.address)).toEqual(
+			withoutProp.bands.map((b) => b.address)
+		);
 		expect(withEmpty.bands.map((b) => b.meta)).toEqual(withoutProp.bands.map((b) => b.meta));
 	});
 });
@@ -1523,8 +1528,8 @@ Add the import: `import { splitFlatBands } from './split-flat-bands';`
 First the type. In `src/lib/types.ts:429`:
 
 ```ts
-projectionType: 'patterned';
-address: GlobuleAddress_Band | GlobuleAddress_BandPiece;
+	projectionType: 'patterned';
+	address: GlobuleAddress_Band | GlobuleAddress_BandPiece;
 ```
 
 This is the task that first assigns a piece address to a `BandCutPattern`, so the widening belongs here rather than in Task 10. Add `GlobuleAddress_BandPiece` to the file's existing import from `$lib/projection-geometry/types`. (It also clears the one `svelte-check` error the already-committed `tube-pattern-characterization.test.ts` carries for reading `b.address.piece`.)
@@ -1532,25 +1537,25 @@ This is the task that first assigns a piece address to a `BandCutPattern`, so th
 Now the index. In `generateTiling`, `:270` currently reads:
 
 ```ts
-const globalBandIndex = bandIndex + bandIndexOffset;
+		const globalBandIndex = bandIndex + bandIndexOffset;
 ```
 
-The whole correction hangs on one observation: **`bandIndex` is an index into `bands`, which after the split is the array of pieces.** Every consumer of `bandIndex + bandIndexOffset` wants the _parent_ band's position in that array instead, and `splitFlatBands` recorded exactly that as `parentIndex`. So redefine the quantity once, at its source, and every consumer is fixed at once:
+The whole correction hangs on one observation: **`bandIndex` is an index into `bands`, which after the split is the array of pieces.** Every consumer of `bandIndex + bandIndexOffset` wants the *parent* band's position in that array instead, and `splitFlatBands` recorded exactly that as `parentIndex`. So redefine the quantity once, at its source, and every consumer is fixed at once:
 
 ```ts
-// `bands` is the post-split array, so `bandIndex` is a PIECE index. Every
-// use below wants the parent band's index in the pre-split (selected
-// visible band) space — which is the space `address.band`, bandCount,
-// finishOuterEdge and leftPartnerBand have always worked in. An unsplit
-// band has no parentIndex and falls through to today's value exactly.
-const parentBandIndex = bands?.[bandIndex]?.parentIndex ?? bandIndex;
-const globalBandIndex = parentBandIndex + bandIndexOffset;
-const piece = bands?.[bandIndex]?.pieceIndex;
-const pieceSuffix = piece === undefined ? '' : `-p${piece}`;
-const addressWithPiece: GlobuleAddress_Band | GlobuleAddress_BandPiece =
-	piece === undefined
-		? { ...address, band: globalBandIndex }
-		: { ...address, band: globalBandIndex, piece };
+		// `bands` is the post-split array, so `bandIndex` is a PIECE index. Every
+		// use below wants the parent band's index in the pre-split (selected
+		// visible band) space — which is the space `address.band`, bandCount,
+		// finishOuterEdge and leftPartnerBand have always worked in. An unsplit
+		// band has no parentIndex and falls through to today's value exactly.
+		const parentBandIndex = bands?.[bandIndex]?.parentIndex ?? bandIndex;
+		const globalBandIndex = parentBandIndex + bandIndexOffset;
+		const piece = bands?.[bandIndex]?.pieceIndex;
+		const pieceSuffix = piece === undefined ? '' : `-p${piece}`;
+		const addressWithPiece: GlobuleAddress_Band | GlobuleAddress_BandPiece =
+			piece === undefined
+				? { ...address, band: globalBandIndex }
+				: { ...address, band: globalBandIndex, piece };
 ```
 
 Note `parentIndex`/`pieceIndex` are read off `Band`, where Task 8 declared them as plain `number | undefined` fields — **not** off `band.address`, which is `GeometryAddress<BandAddressed> | GlobuleAddress_Band` (`types.ts:931`) and has no `piece` on either arm, so `bands?.[bandIndex]?.address?.piece` would not type-check.
@@ -1562,20 +1567,20 @@ Then:
 - `:284` `finishOuterEdge` and `:290` `bandContext.bandIndex` both read `bandIndex + bandIndexOffset` literally. Replace both with `globalBandIndex`, which now already carries the parent value:
 
 ```ts
-const finishOuterEdge = globalBandIndex === bandCount - 1 && hasFreeSide;
-const realLeftPartner = sourceBand ? getLeftPartnerBandIndex(sourceBand) : undefined;
-const leftPartnerBand =
-	realLeftPartner === undefined ? undefined : toVisibleBandIndex(realLeftPartner);
-const bandContext = {
-	hasOuterPartner: !hasFreeSide,
-	bandIndex: globalBandIndex,
-	leftPartnerBand
-};
+		const finishOuterEdge = globalBandIndex === bandCount - 1 && hasFreeSide;
+		const realLeftPartner = sourceBand ? getLeftPartnerBandIndex(sourceBand) : undefined;
+		const leftPartnerBand =
+			realLeftPartner === undefined ? undefined : toVisibleBandIndex(realLeftPartner);
+		const bandContext = {
+			hasOuterPartner: !hasFreeSide,
+			bandIndex: globalBandIndex,
+			leftPartnerBand
+		};
 ```
 
 Why this and not `bands[bandIndex].address.band`: the two are different index spaces. `address.band` is a **real tube band** index, while `bandCount` (`= totalBandCount = visibleBands.length`, `:260`/`:132`) and `leftPartnerBand` (via `toVisibleBandIndex`) are in the **visible band** space — which is why `visibleIndexByReal` exists at `:106-110` and why the comment there says so explicitly. Using `address.band` would change unsplit behaviour on any tube with a hidden band: the last visible band would lose its finished outer edge, or a non-last band would gain one. Phase 0's snapshot cannot catch that, because its fixture has every band visible. `parentIndex` keeps everything in the space it is already in.
 
-With `bandContext.bandIndex` and `leftPartnerBand` now both in parent/visible space, `adjustAfterMapping`'s neighbour logic (`:354-360`, typed at `types.ts:152`) stays consistent for a split tube. All three of the pieces of a parent band report the same `bandIndex`, which is correct: they _are_ that band.
+With `bandContext.bandIndex` and `leftPartnerBand` now both in parent/visible space, `adjustAfterMapping`'s neighbour logic (`:354-360`, typed at `types.ts:152`) stays consistent for a split tube. All three of the pieces of a parent band report the same `bandIndex`, which is correct: they *are* that band.
 
 - [ ] **Step 5: Inherit the parent flip in `reAlignBand`**
 
@@ -1594,7 +1599,9 @@ The spec is explicit that the flip test reads **post-rotation** coordinates, so 
  * `a` vertex is at i*3.
  */
 export const computeBandAscending = (band: Band): boolean => {
-	const { rotatedCoordinates } = getMinimalBoundingBoxAndRotationAngle(getAllTrianglePoints(band));
+	const { rotatedCoordinates } = getMinimalBoundingBoxAndRotationAngle(
+		getAllTrianglePoints(band)
+	);
 	const lastA = (band.facets.length - 1) * 3;
 	if (rotatedCoordinates.length <= lastA) return false;
 	return rotatedCoordinates[0].y < rotatedCoordinates[lastA].y;
@@ -1604,9 +1611,9 @@ export const computeBandAscending = (band: Band): boolean => {
 Then in `:523-524`, replace the bare local computation:
 
 ```ts
-const isAscending =
-	band.parentAscending ??
-	newBand.facets[0].triangle.a.y < newBand.facets[newBand.facets.length - 1].triangle.a.y;
+	const isAscending =
+		band.parentAscending ??
+		newBand.facets[0].triangle.a.y < newBand.facets[newBand.facets.length - 1].triangle.a.y;
 ```
 
 An unsplit band has no `parentAscending`, so it falls through to today's computation and the Phase 0 snapshot is untouched. `??` (not `||`) matters: an explicit `false` must win.
@@ -1649,24 +1656,24 @@ const generateOutlinedTubePattern = (
 **(b) The split itself**, between `getFlatStripV2` and `alignBands` at `:621-626`. Outlined patterns have no `subunitCount`, so pass `1`; and stamp the parent flip the same way as the tiled path, importing `computeBandAscending` from `./generate-tiled-pattern` (this file already imports `alignBands` from there):
 
 ```ts
-const flatBands = selectedBands.map((band) =>
-	getFlatStripV2(band, { bandStyle: 'helical-right', pixelScale })
-);
-
-const splitResult = splitFlatBands(flatBands, splitQuads ?? [], 1);
-if (splitResult.rejected.length) {
-	console.warn(
-		`outlined: ${splitResult.rejected.length} split(s) dropped in tube ${address.tube} — ${splitResult.rejected[0].reason}`
+	const flatBands = selectedBands.map((band) =>
+		getFlatStripV2(band, { bandStyle: 'helical-right', pixelScale })
 	);
-}
-const parentAscending = flatBands.map(computeBandAscending);
-const splitBands = splitResult.bands.map((band) =>
-	band.parentIndex === undefined
-		? band
-		: { ...band, parentAscending: parentAscending[band.parentIndex] }
-);
 
-const alignedBands = alignBands(splitBands);
+	const splitResult = splitFlatBands(flatBands, splitQuads ?? [], 1);
+	if (splitResult.rejected.length) {
+		console.warn(
+			`outlined: ${splitResult.rejected.length} split(s) dropped in tube ${address.tube} — ${splitResult.rejected[0].reason}`
+		);
+	}
+	const parentAscending = flatBands.map(computeBandAscending);
+	const splitBands = splitResult.bands.map((band) =>
+		band.parentIndex === undefined
+			? band
+			: { ...band, parentAscending: parentAscending[band.parentIndex] }
+	);
+
+	const alignedBands = alignBands(splitBands);
 ```
 
 **(c) The band id and address, which otherwise collide.** This is the four-site collision the spec says must be fixed (design L145-150), and it exists in the outlined path too. `generateOutlinedBandPattern` builds both from its `bandIndex` parameter:
@@ -1681,23 +1688,23 @@ and `generateOutlinedTubePattern` passes `rangeStart + i` as that `bandIndex` (`
 Fix it the same way the tiled path does, in `generateOutlinedTubePattern`'s `map` (`:661-673`):
 
 ```ts
-const bandCount = alignedBands.length;
-const bandPatterns = alignedBands.map((band, i) =>
-	generateOutlinedBandPattern(
-		band,
-		// Parent band index, so a split does not renumber bands.
-		(band.parentIndex ?? i) + rangeStart,
-		config,
-		pixelScale,
-		address,
-		allQuads[i],
-		allQuads[i - 1],
-		allQuads[i + 1],
-		bandCount,
-		i,
-		band.pieceIndex
-	)
-);
+	const bandCount = alignedBands.length;
+	const bandPatterns = alignedBands.map((band, i) =>
+		generateOutlinedBandPattern(
+			band,
+			// Parent band index, so a split does not renumber bands.
+			(band.parentIndex ?? i) + rangeStart,
+			config,
+			pixelScale,
+			address,
+			allQuads[i],
+			allQuads[i - 1],
+			allQuads[i + 1],
+			bandCount,
+			i,
+			band.pieceIndex
+		)
+	);
 ```
 
 and give `generateOutlinedBandPattern` a trailing `piece?: number` parameter (after `localBandIndex`, which already has a default), used in exactly the two places the tiled path uses it:
@@ -1737,14 +1744,14 @@ Task 9 gave both generation paths a `splitQuads` prop and nothing passes one. Th
 
 The chain, end to end, with what is wrong at each link today:
 
-| Link                                                                                                     | Today                                                                                                | Needed                                     |
-| -------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------ |
-| `patternConfig.splits`                                                                                   | exists after Task 7                                                                                  | —                                          |
-| `patternGenerationConfig` (`globulePatternStores.ts:37-53`)                                              | carries only `patternTypeConfig / pixelScale / showBands / range / patternSource`                    | add `splits`, so a split write regenerates |
-| `runPatternGeneration` (`run-pattern-generation.ts:55-65`)                                               | rebuilds the config as `patternConfig: { pixelScale: genConfig.pixelScale }` — drops everything else | carry `splits` through                     |
-| `generateProjectionPattern` (`generate-pattern.ts:117-141`)                                              | destructures `patternConfig: { pixelScale }`                                                         | also read `splits`                         |
-| `generateTubeCutPattern` × 2 (`generate-pattern.ts:180`, `:207`)                                         | pass no `splitQuads`                                                                                 | select this tube's quads                   |
-| `generateOutlinedProjectionPattern` → `generateOutlinedTubePattern` (`generate-outlined-pattern.ts:670`) | passes no `splitQuads`                                                                               | same, as the 6th positional arg            |
+| Link                                                             | Today                                                                                          | Needed                                     |
+| ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| `patternConfig.splits`                                           | exists after Task 7                                                                            | —                                          |
+| `patternGenerationConfig` (`globulePatternStores.ts:37-53`)      | carries only `patternTypeConfig / pixelScale / showBands / range / patternSource`               | add `splits`, so a split write regenerates |
+| `runPatternGeneration` (`run-pattern-generation.ts:55-65`)       | rebuilds the config as `patternConfig: { pixelScale: genConfig.pixelScale }` — drops everything else | carry `splits` through                     |
+| `generateProjectionPattern` (`generate-pattern.ts:117-141`)      | destructures `patternConfig: { pixelScale }`                                                    | also read `splits`                         |
+| `generateTubeCutPattern` × 2 (`generate-pattern.ts:180`, `:207`) | pass no `splitQuads`                                                                            | select this tube's quads                   |
+| `generateOutlinedProjectionPattern` → `generateOutlinedTubePattern` (`generate-outlined-pattern.ts:670`) | passes no `splitQuads`                                        | same, as the 6th positional arg            |
 
 **Files:**
 
@@ -1817,44 +1824,44 @@ This function is the worker's entry point (`super-globule-worker-core.ts:158`) a
 In `src/lib/cut-pattern/generate-pattern.ts`, extend the destructure at `:121-124`:
 
 ```ts
-const {
-	patternTypeConfig,
-	patternConfig: { pixelScale, splits }
-} = globulePatternConfig;
+	const {
+		patternTypeConfig,
+		patternConfig: { pixelScale, splits }
+	} = globulePatternConfig;
 ```
 
 Add one helper beside it — this is the selection rule the spec states (design L190-192):
 
 ```ts
-// Splits are persisted per tube as absolute quad indices. An absent entry
-// yields an empty array, which is splitFlatBands' documented no-op path.
-const splitQuadsFor = (tube: number) =>
-	splits?.tubeSplits.find((t) => t.tube === tube)?.quads ?? [];
+	// Splits are persisted per tube as absolute quad indices. An absent entry
+	// yields an empty array, which is splitFlatBands' documented no-op path.
+	const splitQuadsFor = (tube: number) =>
+		splits?.tubeSplits.find((t) => t.tube === tube)?.quads ?? [];
 ```
 
 Then pass it at all three sites. The tiled path, `:180-186`:
 
 ```ts
-const tubePattern = generateTubeCutPattern({
-	address,
-	bands,
-	tiledPatternConfig,
-	pixelScale,
-	bandRange: { start: bandStart, end: bandEnd },
-	splitQuads: splitQuadsFor(address.tube)
-});
+			const tubePattern = generateTubeCutPattern({
+				address,
+				bands,
+				tiledPatternConfig,
+				pixelScale,
+				bandRange: { start: bandStart, end: bandEnd },
+				splitQuads: splitQuadsFor(address.tube)
+			});
 ```
 
 and the referenced-tube stub path, `:207-212` — this one matters as much as the first: `getEndPartnerTransforms` resolves partner addresses against these stubs, so a stub generated **without** splits would have a different band set from the real thing and partner lookups into it would miss:
 
 ```ts
-tubePatterns[t] = generateTubeCutPattern({
-	address,
-	bands,
-	tiledPatternConfig,
-	pixelScale,
-	splitQuads: splitQuadsFor(address.tube)
-});
+				tubePatterns[t] = generateTubeCutPattern({
+					address,
+					bands,
+					tiledPatternConfig,
+					pixelScale,
+					splitQuads: splitQuadsFor(address.tube)
+				});
 ```
 
 The outlined path needs `splits` threaded one level further, since `generateOutlinedProjectionPattern` is what owns the tube loop. Add a sixth parameter to it (`:654-660`):
@@ -1873,27 +1880,27 @@ export const generateOutlinedProjectionPattern = (
 pass this tube's quads at `:670`:
 
 ```ts
-const tubePattern = generateOutlinedTubePattern(
-	address,
-	bands,
-	config,
-	pixelScale,
-	{ start: bandStart, end: bandEnd },
-	splits?.tubeSplits.find((t) => t.tube === address.tube)?.quads ?? []
-);
+		const tubePattern = generateOutlinedTubePattern(
+			address,
+			bands,
+			config,
+			pixelScale,
+			{ start: bandStart, end: bandEnd },
+			splits?.tubeSplits.find((t) => t.tube === address.tube)?.quads ?? []
+		);
 ```
 
 and pass `splits` from its caller at `generate-pattern.ts:135-141`:
 
 ```ts
-return generateOutlinedProjectionPattern(
-	effectiveTubes,
-	id,
-	patternTypeConfig,
-	pixelScale,
-	projectionRange,
-	splits
-);
+		return generateOutlinedProjectionPattern(
+			effectiveTubes,
+			id,
+			patternTypeConfig,
+			pixelScale,
+			projectionRange,
+			splits
+		);
 ```
 
 Add `SplitConfig` to the type imports in `generate-outlined-pattern.ts`.
@@ -1930,12 +1937,7 @@ describe('runPatternGeneration — splits', () => {
 	});
 
 	it('is a no-op when no splits are configured', () => {
-		const without = runPatternGeneration({
-			superGlobule,
-			superConfig,
-			genConfig: baseGenConfig,
-			gates
-		});
+		const without = runPatternGeneration({ superGlobule, superConfig, genConfig: baseGenConfig, gates });
 		const withEmpty = runPatternGeneration({
 			superGlobule,
 			superConfig,
@@ -2030,23 +2032,23 @@ Run `npm run check 2>&1 | tail -5` first and record the count, then work this ta
 
 **Will error — the compiler does find these three:**
 
-| Site                                | Action                                                        |
-| ----------------------------------- | ------------------------------------------------------------- |
-| `helpers.ts:118`, `:121`, `:127`    | Step 4 below                                                  |
-| `generate-pattern.ts:540-547`       | Step 3 below (rewritten anyway)                               |
+| Site                                | Action                                     |
+| ----------------------------------- | ------------------------------------------ |
+| `helpers.ts:118`, `:121`, `:127`    | Step 4 below                               |
+| `generate-pattern.ts:540-547`       | Step 3 below (rewritten anyway)            |
 | `CutPatternRenderer.svelte:183-187` | Step 4a below — the plan previously left this one unaddressed |
 
 **Compiles silently, behaviour changes — decide each explicitly:**
 
-| Site                                                     | What happens with an absent partner                                                                                                                             | Decision                                                                                                                                                                                               |
-| -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `collect-band-tabs.ts:10-11`, `sameBandAddress` `:78-84` | Already declares both optional and returns `false` for `undefined`; a tab that classified as `'start'`/`'end'` becomes `'mid'` (`:125-131`), changing its label | **Accept, no code change.** A seam end genuinely is not a band end, and `'mid'` is the honest classification. Note it in the commit message so a surprised label is traceable.                         |
-| `band-sort-index.ts:40`                                  | Already filters `(p): p is BandRef => !!p`; the end-connection graph loses an edge, so band order shifts                                                        | **Accept, no code change.** A piece with one resolvable end has degree 1 and lands at the end of its chain, which is correct. The spec already accepts positional drift here (design L164-168).        |
-| `build-pattern-csv.ts:52-53`                             | Already `if (band.meta?.…)`; the partner column is narrower                                                                                                     | **Accept, no code change.**                                                                                                                                                                            |
-| `resolve-tab-label.ts:25`, `:30`                         | Already `band.meta?.startPartnerBand`; renders an empty label                                                                                                   | **Accept, no code change.**                                                                                                                                                                            |
-| `QuadLabels.svelte:40-41`                                | Passes into `concatAddress(a: GlobuleAddress \| undefined)`; renders `''`                                                                                       | **Accept, no code change.**                                                                                                                                                                            |
-| `tile-editor/partner-pair-resolver.ts:61-64`             | Reads `mainBand.meta[partnerKey]` through a computed key and already returns `null` on absence                                                                  | **Accept, no code change.** (Note: this file is under `src/components/modal/editor/tile-editor/`, not `src/lib/cut-pattern/`.)                                                                         |
-| `generate-pattern.ts:223`                                | `!!firstInRange?.bands[0]?.meta?.startPartnerBand` gates `doAdjustAfterTiling` for the **whole tube**                                                           | **Fix.** If band 0 is a piece whose start is the parent's unpartnered outer end, tesselation adjustment silently switches off for every band in the tube. Change to accept either end — Step 3a below. |
+| Site                                                    | What happens with an absent partner                                                                                                | Decision                                                                                                                                                                                             |
+| ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `collect-band-tabs.ts:10-11`, `sameBandAddress` `:78-84` | Already declares both optional and returns `false` for `undefined`; a tab that classified as `'start'`/`'end'` becomes `'mid'` (`:125-131`), changing its label | **Accept, no code change.** A seam end genuinely is not a band end, and `'mid'` is the honest classification. Note it in the commit message so a surprised label is traceable.                        |
+| `band-sort-index.ts:40`                                  | Already filters `(p): p is BandRef => !!p`; the end-connection graph loses an edge, so band order shifts                            | **Accept, no code change.** A piece with one resolvable end has degree 1 and lands at the end of its chain, which is correct. The spec already accepts positional drift here (design L164-168).       |
+| `build-pattern-csv.ts:52-53`                             | Already `if (band.meta?.…)`; the partner column is narrower                                                                        | **Accept, no code change.**                                                                                                                                                                          |
+| `resolve-tab-label.ts:25`, `:30`                         | Already `band.meta?.startPartnerBand`; renders an empty label                                                                       | **Accept, no code change.**                                                                                                                                                                          |
+| `QuadLabels.svelte:40-41`                                | Passes into `concatAddress(a: GlobuleAddress \| undefined)`; renders `''`                                                            | **Accept, no code change.**                                                                                                                                                                          |
+| `tile-editor/partner-pair-resolver.ts:61-64`             | Reads `mainBand.meta[partnerKey]` through a computed key and already returns `null` on absence                                      | **Accept, no code change.** (Note: this file is under `src/components/modal/editor/tile-editor/`, not `src/lib/cut-pattern/`.)                                                                        |
+| `generate-pattern.ts:223`                                | `!!firstInRange?.bands[0]?.meta?.startPartnerBand` gates `doAdjustAfterTiling` for the **whole tube**                               | **Fix.** If band 0 is a piece whose start is the parent's unpartnered outer end, tesselation adjustment silently switches off for every band in the tube. Change to accept either end — Step 3a below. |
 
 - [ ] **Step 2a: Record the baseline**
 
@@ -2116,13 +2118,9 @@ it('resolves a cross-band partner to the piece with the matching index', () => {
 
 	getEndPartnerTransforms([tube([asker]), tube([partner0, partner1])]);
 
-	expect(
-		findBandByAddress(
-			[tube([asker]), tube([partner0, partner1])],
-			{ globule: 0, tube: 1, band: 0 },
-			1
-		)?.address
-	).toEqual({ globule: 0, tube: 1, band: 0, piece: 1 });
+	expect(findBandByAddress([tube([asker]), tube([partner0, partner1])],
+		{ globule: 0, tube: 1, band: 0 }, 1)?.address)
+		.toEqual({ globule: 0, tube: 1, band: 0, piece: 1 });
 });
 ```
 
@@ -2152,37 +2150,41 @@ const partnerFacetIndex =
 `:175-201` `getPartnerBands` is the third erroring site, and it has a second defect the widening exposes: it indexes **positionally**, `startTube.bands[meta.startPartnerBand.band]`, which is piece-blind and fetches the wrong band as soon as a tube contains pieces (the array is longer than the band count). Replace `:183-187`:
 
 ```ts
-const startAddress = meta.startPartnerBand;
-const endAddress = meta.endPartnerBand;
-// The asking band's own piece index. MUST be passed: a cross-band partner
-// address is stored as a bare {globule,tube,band} triple, so it falls to
-// findBandByAddress's pass 2, and with fromPiece omitted pass 2 resolves to
-// the partner's LAST piece no matter which piece is asking. A two-argument
-// call type-checks perfectly and fails silently — this is the third site in
-// this plan to hit that trap, after getEndPartnerTransforms and
-// getTransformedPartnerCutPattern.
-// `: 0` for consistency with helpers.ts:127 and getEndPartnerTransforms —
-// see the note in Step 3 on why undefined and 0 are not interchangeable.
-const fromPiece = isGlobuleAddress_BandPiece(band.address) ? band.address.piece : 0;
-// Resolve by address, not by position: once a tube holds pieces its bands
-// array is longer than its band count, so bands[address.band] is wrong.
-// findBandByAddress also handles a plain address whose band was split.
-const startBand = startAddress ? findBandByAddress(tubes, startAddress, fromPiece) : undefined;
-const endBand = endAddress ? findBandByAddress(tubes, endAddress, fromPiece) : undefined;
-// An outer end with no partner is normal for a split piece; render the
-// ends that did resolve rather than dropping both.
-if (!startBand && !endBand) return undefined;
+		const startAddress = meta.startPartnerBand;
+		const endAddress = meta.endPartnerBand;
+		// The asking band's own piece index. MUST be passed: a cross-band partner
+		// address is stored as a bare {globule,tube,band} triple, so it falls to
+		// findBandByAddress's pass 2, and with fromPiece omitted pass 2 resolves to
+		// the partner's LAST piece no matter which piece is asking. A two-argument
+		// call type-checks perfectly and fails silently — this is the third site in
+		// this plan to hit that trap, after getEndPartnerTransforms and
+		// getTransformedPartnerCutPattern.
+		// `: 0` for consistency with helpers.ts:127 and getEndPartnerTransforms —
+		// see the note in Step 3 on why undefined and 0 are not interchangeable.
+		const fromPiece = isGlobuleAddress_BandPiece(band.address) ? band.address.piece : 0;
+		// Resolve by address, not by position: once a tube holds pieces its bands
+		// array is longer than its band count, so bands[address.band] is wrong.
+		// findBandByAddress also handles a plain address whose band was split.
+		const startBand = startAddress
+			? findBandByAddress(tubes, startAddress, fromPiece)
+			: undefined;
+		const endBand = endAddress ? findBandByAddress(tubes, endAddress, fromPiece) : undefined;
+		// An outer end with no partner is normal for a split piece; render the
+		// ends that did resolve rather than dropping both.
+		if (!startBand && !endBand) return undefined;
 ```
 
 and make the returned array skip an unresolved end rather than pairing it with `IDENTITY_TRANSFORM`:
 
 ```ts
-return [
-	...(startBand
-		? [{ band: startBand, transform: meta.startPartnerTransform ?? IDENTITY_TRANSFORM }]
-		: []),
-	...(endBand ? [{ band: endBand, transform: meta.endPartnerTransform ?? IDENTITY_TRANSFORM }] : [])
-];
+		return [
+			...(startBand
+				? [{ band: startBand, transform: meta.startPartnerTransform ?? IDENTITY_TRANSFORM }]
+				: []),
+			...(endBand
+				? [{ band: endBand, transform: meta.endPartnerTransform ?? IDENTITY_TRANSFORM }]
+				: [])
+		];
 ```
 
 Add `import { findBandByAddress } from '$lib/cut-pattern/generate-pattern';`. The `if (!startTube || !endTube) return undefined;` guard at `:185` goes away with the positional lookup.
@@ -2192,17 +2194,18 @@ Add `import { findBandByAddress } from '$lib/cut-pattern/generate-pattern';`. Th
 `generate-pattern.ts:221-224` reads:
 
 ```ts
-const doAdjustAfterTiling =
-	hasAdjustAfterTiling && (!needsEndPartners || !!firstInRange?.bands[0]?.meta?.startPartnerBand);
+		const doAdjustAfterTiling =
+			hasAdjustAfterTiling &&
+			(!needsEndPartners || !!firstInRange?.bands[0]?.meta?.startPartnerBand);
 ```
 
-`bands[0]` may now be a piece whose _start_ is the parent band's unpartnered outer end, which would switch tesselation adjustment off for the entire tube. Accept either end:
+`bands[0]` may now be a piece whose *start* is the parent band's unpartnered outer end, which would switch tesselation adjustment off for the entire tube. Accept either end:
 
 ```ts
-const firstBandMeta = firstInRange?.bands[0]?.meta;
-const doAdjustAfterTiling =
-	hasAdjustAfterTiling &&
-	(!needsEndPartners || !!(firstBandMeta?.startPartnerBand || firstBandMeta?.endPartnerBand));
+		const firstBandMeta = firstInRange?.bands[0]?.meta;
+		const doAdjustAfterTiling =
+			hasAdjustAfterTiling &&
+			(!needsEndPartners || !!(firstBandMeta?.startPartnerBand || firstBandMeta?.endPartnerBand));
 ```
 
 For every band today both ends are present, so this is identical to the current behaviour — which Phase 0's snapshot confirms.
@@ -2220,26 +2223,17 @@ import { getEndPartnerTransforms } from '../generate-pattern';
 import type { BandCutPattern, TubeCutPattern } from '$lib/types';
 
 // Two quads' worth of path so getEndPartnerTransform has geometry to read.
-const band = (address: BandCutPattern['address'], meta: BandCutPattern['meta']): BandCutPattern =>
+const band = (
+	address: BandCutPattern['address'],
+	meta: BandCutPattern['meta']
+): BandCutPattern =>
 	({
 		address,
 		meta,
 		id: `id-${JSON.stringify(address)}`,
 		facets: [
-			{
-				path: [
-					['M', 0, 0],
-					['L', 1, 0]
-				],
-				label: '0'
-			},
-			{
-				path: [
-					['M', 0, 1],
-					['L', 1, 1]
-				],
-				label: '1'
-			}
+			{ path: [['M', 0, 0], ['L', 1, 0]], label: '0' },
+			{ path: [['M', 0, 1], ['L', 1, 1]], label: '1' }
 		]
 	}) as unknown as BandCutPattern;
 
@@ -2251,18 +2245,12 @@ describe('getEndPartnerTransforms — each end resolved independently', () => {
 		// This is the whole point of the widening. Previously both transforms were
 		// gated on both addresses, so a piece whose outer end is unpartnered got
 		// NEITHER — and its seam silently failed to overlap.
-		const p0 = band(
-			{ globule: 0, tube: 0, band: 0, piece: 0 },
-			{
-				endPartnerBand: { globule: 0, tube: 0, band: 0, piece: 1 }
-			}
-		);
-		const p1 = band(
-			{ globule: 0, tube: 0, band: 0, piece: 1 },
-			{
-				startPartnerBand: { globule: 0, tube: 0, band: 0, piece: 0 }
-			}
-		);
+		const p0 = band({ globule: 0, tube: 0, band: 0, piece: 0 }, {
+			endPartnerBand: { globule: 0, tube: 0, band: 0, piece: 1 }
+		});
+		const p1 = band({ globule: 0, tube: 0, band: 0, piece: 1 }, {
+			startPartnerBand: { globule: 0, tube: 0, band: 0, piece: 0 }
+		});
 
 		getEndPartnerTransforms([tube([p0, p1])]);
 
@@ -2274,20 +2262,14 @@ describe('getEndPartnerTransforms — each end resolved independently', () => {
 
 	it('still sets both transforms when both ends resolve', () => {
 		// The unsplit case, unchanged.
-		const a = band(
-			{ globule: 0, tube: 0, band: 0 },
-			{
-				startPartnerBand: { globule: 0, tube: 0, band: 1 },
-				endPartnerBand: { globule: 0, tube: 0, band: 1 }
-			}
-		);
-		const b = band(
-			{ globule: 0, tube: 0, band: 1 },
-			{
-				startPartnerBand: { globule: 0, tube: 0, band: 0 },
-				endPartnerBand: { globule: 0, tube: 0, band: 0 }
-			}
-		);
+		const a = band({ globule: 0, tube: 0, band: 0 }, {
+			startPartnerBand: { globule: 0, tube: 0, band: 1 },
+			endPartnerBand: { globule: 0, tube: 0, band: 1 }
+		});
+		const b = band({ globule: 0, tube: 0, band: 1 }, {
+			startPartnerBand: { globule: 0, tube: 0, band: 0 },
+			endPartnerBand: { globule: 0, tube: 0, band: 0 }
+		});
 
 		getEndPartnerTransforms([tube([a, b])]);
 
@@ -2345,7 +2327,7 @@ still declare their **local** partner variables as plain `GlobuleAddress_Band`:
 - `collect-band-tabs.ts:10-11` (`BandTabMeta`)
 
 Those are harmless today only because assigning a narrower value to a wider field
-is legal. This task inverts that: you start _producing_ piece-bearing seam
+is legal. This task inverts that: you start *producing* piece-bearing seam
 addresses at those write sites, so the locals must admit the union too.
 
 **When you hit the resulting type errors, widen the declaration — do not add a
@@ -2463,33 +2445,35 @@ Expected: FAIL — `meta` is undefined, because the fixture's outer ends have no
 In `src/lib/cut-pattern/generate-tiled-pattern.ts`, after the existing `endPartnerBand` derivation (`:382-384`), override each seam end:
 
 ```ts
-// A seam end's partner is the adjacent piece of the same parent band. The
-// existing endsMatched machinery then produces the overlapping strokes
-// that form the glue surface — a seam end is an ordinary partnered end.
-//
-// Build the sibling address the SAME way Step 4 of Task 9 builds this
-// band's own `addressWithPiece`: `{ ...address, band: globalBandIndex,
-// piece }`. That is what makes the two sides agree. Deriving it from
-// `band.address` instead would use the flat band's address, whose `band`
-// component is a real tube band index rather than the visible-band index
-// `addressWithPiece` carries — so for any band past the first, or any tube
-// with more than one band, `findBandByAddress` would never resolve the
-// sibling and the seam would silently fail to match.
-//
-// `seamPiece` rather than `piece`: Task 9 Step 4 already declared `piece`
-// in this same `quadBands.map` callback.
-const seamAt = bands?.[bandIndex]?.seamAt;
-const seamPiece = piece;
-const siblingAddress = (offset: number) => ({
-	...address,
-	band: globalBandIndex,
-	piece: (seamPiece as number) + offset
-});
-const seamStartPartner = seamAt?.start && seamPiece !== undefined ? siblingAddress(-1) : undefined;
-const seamEndPartner = seamAt?.end && seamPiece !== undefined ? siblingAddress(+1) : undefined;
+		// A seam end's partner is the adjacent piece of the same parent band. The
+		// existing endsMatched machinery then produces the overlapping strokes
+		// that form the glue surface — a seam end is an ordinary partnered end.
+		//
+		// Build the sibling address the SAME way Step 4 of Task 9 builds this
+		// band's own `addressWithPiece`: `{ ...address, band: globalBandIndex,
+		// piece }`. That is what makes the two sides agree. Deriving it from
+		// `band.address` instead would use the flat band's address, whose `band`
+		// component is a real tube band index rather than the visible-band index
+		// `addressWithPiece` carries — so for any band past the first, or any tube
+		// with more than one band, `findBandByAddress` would never resolve the
+		// sibling and the seam would silently fail to match.
+		//
+		// `seamPiece` rather than `piece`: Task 9 Step 4 already declared `piece`
+		// in this same `quadBands.map` callback.
+		const seamAt = bands?.[bandIndex]?.seamAt;
+		const seamPiece = piece;
+		const siblingAddress = (offset: number) => ({
+			...address,
+			band: globalBandIndex,
+			piece: (seamPiece as number) + offset
+		});
+		const seamStartPartner =
+			seamAt?.start && seamPiece !== undefined ? siblingAddress(-1) : undefined;
+		const seamEndPartner =
+			seamAt?.end && seamPiece !== undefined ? siblingAddress(+1) : undefined;
 
-const resolvedStartPartner = seamStartPartner ?? startPartnerBand;
-const resolvedEndPartner = seamEndPartner ?? endPartnerBand;
+		const resolvedStartPartner = seamStartPartner ?? startPartnerBand;
+		const resolvedEndPartner = seamEndPartner ?? endPartnerBand;
 ```
 
 `seamAt` is read off the aligned `Band` (`bands[bandIndex]`), where `splitFlatBands` set it and both `reAlignBand` and `normalizeBand` preserve it by spreading the band (`generate-tiled-pattern.ts:510`, `:499`).
@@ -2598,7 +2582,7 @@ describe('label anchors across a split', () => {
 		expect(split.bands.map((b) => isAnchored(b.tagAnchorPoint))).toEqual([true, false, false]);
 	});
 
-	it("puts piece 0 's anchor in the same place the unsplit band had it", () => {
+	it('puts piece 0 \'s anchor in the same place the unsplit band had it', () => {
 		// Piece 0 is a prefix of the parent with parentQuadOffset 0 and its own
 		// bounding box; for this fixture the first quad's geometry is identical,
 		// so the anchor point must be too.
@@ -2790,13 +2774,13 @@ In `src/lib/cut-pattern/generate-outlined-pattern.ts`, add to `OutlineEdge` (83-
 In `getOutlineEdges`, the far-end cap is pushed at 228-235 and the near-end cap at 268-275. Set the field on each from the band's `seamAt` and `address.piece`:
 
 ```ts
-// `pieceIndex`, not `band.address?.piece`: Band['address'] is
-// `GeometryAddress<BandAddressed> | GlobuleAddress_Band` (types.ts:931) and
-// neither arm has `piece`, so an address read would not type-check. Task 8
-// puts the piece ordinal on the band as a plain field for exactly this.
-const piece = band.pieceIndex;
-const farEndSeamPartner = band.seamAt?.end && piece !== undefined ? piece + 1 : undefined;
-const nearEndSeamPartner = band.seamAt?.start && piece !== undefined ? piece - 1 : undefined;
+	// `pieceIndex`, not `band.address?.piece`: Band['address'] is
+	// `GeometryAddress<BandAddressed> | GlobuleAddress_Band` (types.ts:931) and
+	// neither arm has `piece`, so an address read would not type-check. Task 8
+	// puts the piece ordinal on the band as a plain field for exactly this.
+	const piece = band.pieceIndex;
+	const farEndSeamPartner = band.seamAt?.end && piece !== undefined ? piece + 1 : undefined;
+	const nearEndSeamPartner = band.seamAt?.start && piece !== undefined ? piece - 1 : undefined;
 ```
 
 Add `seamPartnerPiece: farEndSeamPartner` to the far-end push (`:228-235`, the one with `endIsStartCap: false`) and `seamPartnerPiece: nearEndSeamPartner` to the near-end push (`:268-275`, `endIsStartCap: true`).
@@ -3058,14 +3042,14 @@ Create `src/components/cut-pattern/SplitTargets.svelte`. It receives the band an
 In `BandComponent.svelte`, alongside the existing `patternTypeConfig` derived at `:56`:
 
 ```ts
-import { resolvePatternEntry } from '$lib/patterns/resolve-pattern';
-import type { UnitPatternGenerator } from '$lib/types';
+	import { resolvePatternEntry } from '$lib/patterns/resolve-pattern';
+	import type { UnitPatternGenerator } from '$lib/types';
 
-// One patternTypeConfig serves every tube (types.ts:1310,
-// run-pattern-generation.ts:64), so this is not per-tube.
-let subunitCount = $derived(
-	(resolvePatternEntry(patternTypeConfig.type) as UnitPatternGenerator).subunitCount ?? 1
-);
+	// One patternTypeConfig serves every tube (types.ts:1310,
+	// run-pattern-generation.ts:64), so this is not per-tube.
+	let subunitCount = $derived(
+		(resolvePatternEntry(patternTypeConfig.type) as UnitPatternGenerator).subunitCount ?? 1
+	);
 ```
 
 This must be the same value Task 9 passes to `splitFlatBands`, which resolves it the same way from the same config — if they ever diverge, splits vanish with a console warning.
@@ -3075,54 +3059,54 @@ This must be the same value Task 9 passes to `splitFlatBands`, which resolves it
 In `src/components/cut-pattern/BandComponent.svelte`, inside the band `<g>` (after `{@render children?.()}`, `:~148`), render `<SplitTargets>` when the mode is active, plus the always-on split lines when it is not (the spec wants existing splits visible at all times, design L425-426). `patternConfigStore` is already imported here (`:9`) for reads; this component now also writes it:
 
 ```ts
-import { interactionMode } from '../three-renderer/interaction-mode';
-import { get } from 'svelte/store';
+	import { interactionMode } from '../three-renderer/interaction-mode';
+	import { get } from 'svelte/store';
 
-let isSplitMode = $derived($interactionMode.type === 'quad-split-select');
-let splitQuads = $derived(
-	$patternConfigStore.patternConfig.splits?.tubeSplits.find((t) => t.tube === band.address.tube)
-		?.quads ?? []
-);
+	let isSplitMode = $derived($interactionMode.type === 'quad-split-select');
+	let splitQuads = $derived(
+		$patternConfigStore.patternConfig.splits?.tubeSplits.find((t) => t.tube === band.address.tube)
+			?.quads ?? []
+	);
 
-const toggleSplit = (quadIndex: number) => {
-	const tube = band.address.tube;
-	// `.set(mutate(get(store)))` — the idiom at PatternView.svelte:39.
-	// patternConfigStore.update(callback) does NOT work: persistable's
-	// `update` takes a VALUE and calls writable.update with the identity
-	// function (persistable.ts:78-81), so the store never changes and the
-	// click silently does nothing. See Global Constraints.
-	const store = get(patternConfigStore);
-	const existing = store.patternConfig.splits?.tubeSplits ?? [];
-	const quads = existing.find((t) => t.tube === tube)?.quads ?? [];
-	const next = quads.includes(quadIndex)
-		? quads.filter((q) => q !== quadIndex)
-		: [...quads, quadIndex].sort((a, b) => a - b);
-	// Every object on the edited path is rebuilt — new root, new
-	// patternConfig, new splits, new tubeSplits array — because a panel
-	// reading through a $derived chain goes stale when a step returns the
-	// same reference (design L396-402; cf. the shallow-copy note at
-	// PageLayout.svelte:20-26).
-	patternConfigStore.set({
-		...store,
-		patternConfig: {
-			...store.patternConfig,
-			splits: {
-				tubeSplits: [
-					...existing.filter((t) => t.tube !== tube),
-					...(next.length ? [{ tube, quads: next }] : [])
-				].sort((a, b) => a.tube - b.tube)
+	const toggleSplit = (quadIndex: number) => {
+		const tube = band.address.tube;
+		// `.set(mutate(get(store)))` — the idiom at PatternView.svelte:39.
+		// patternConfigStore.update(callback) does NOT work: persistable's
+		// `update` takes a VALUE and calls writable.update with the identity
+		// function (persistable.ts:78-81), so the store never changes and the
+		// click silently does nothing. See Global Constraints.
+		const store = get(patternConfigStore);
+		const existing = store.patternConfig.splits?.tubeSplits ?? [];
+		const quads = existing.find((t) => t.tube === tube)?.quads ?? [];
+		const next = quads.includes(quadIndex)
+			? quads.filter((q) => q !== quadIndex)
+			: [...quads, quadIndex].sort((a, b) => a - b);
+		// Every object on the edited path is rebuilt — new root, new
+		// patternConfig, new splits, new tubeSplits array — because a panel
+		// reading through a $derived chain goes stale when a step returns the
+		// same reference (design L396-402; cf. the shallow-copy note at
+		// PageLayout.svelte:20-26).
+		patternConfigStore.set({
+			...store,
+			patternConfig: {
+				...store.patternConfig,
+				splits: {
+					tubeSplits: [
+						...existing.filter((t) => t.tube !== tube),
+						...(next.length ? [{ tube, quads: next }] : [])
+					].sort((a, b) => a.tube - b.tube)
+				}
 			}
-		}
-	});
-};
+		});
+	};
 ```
 
 and in the markup:
 
 ```svelte
-{#if isSplitMode}
-	<SplitTargets {band} {subunitCount} {splitQuads} onToggle={toggleSplit} />
-{/if}
+	{#if isSplitMode}
+		<SplitTargets {band} {subunitCount} {splitQuads} onToggle={toggleSplit} />
+	{/if}
 ```
 
 `patternConfigStore` really is `{ …, patternConfig: PatternConfig, … }` at the top level (`GlobulePatternConfig`, `types.ts:1303-1311`), so this nesting is correct as written.
@@ -3390,6 +3374,7 @@ In `src/components/modal/editor/PageLayout.svelte`, inside the `{#if mode === 'p
   };
   ```
 
+
   Two prerequisites the earlier draft left as placeholders, both of which have to
   be built before `autoSplit` above can compile:
 
@@ -3452,8 +3437,9 @@ In `src/components/modal/editor/PageLayout.svelte`, inside the `{#if mode === 'p
   import type { UnitPatternGenerator } from '$lib/types';
 
   let subunitCount = $derived(
-  	(resolvePatternEntry($patternConfigStore.patternTypeConfig.type) as UnitPatternGenerator)
-  		.subunitCount ?? 1
+  	(
+  		resolvePatternEntry($patternConfigStore.patternTypeConfig.type) as UnitPatternGenerator
+  	).subunitCount ?? 1
   );
   ```
 
@@ -3707,11 +3693,11 @@ To each of the three model-size rows, add an input to the right. `raw` is the bo
 Define `rawSize` first; no step previously did, and the snippet below references it. `Box3.getSize` requires a target `Vector3`, and `three` is **not** currently imported into this file:
 
 ```ts
-import { Vector3 } from 'three';
+	import { Vector3 } from 'three';
 
-// Raw model extents in pattern units, straight off the bounds — the inverse
-// input to derivePageScaleForTarget.
-let rawSize = $derived($model3dBoundsStore ? $model3dBoundsStore.getSize(new Vector3()) : null);
+	// Raw model extents in pattern units, straight off the bounds — the inverse
+	// input to derivePageScaleForTarget.
+	let rawSize = $derived($model3dBoundsStore ? $model3dBoundsStore.getSize(new Vector3()) : null);
 ```
 
 Guard the rows on `rawSize` the same way they already guard on `derived3d`, then:

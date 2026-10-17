@@ -24,16 +24,16 @@ Per-task briefs and implementer/reviewer reports are in that same `.superpowers/
 
 Design decisions Ben made, which the code should reflect:
 
-| Decision                      | Choice                                                                                                                                     |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| Split sources                 | Both hand-placed and auto-derived                                                                                                          |
-| Split address                 | Absolute quad index, scoped to a **tube** — every band in that tube cuts at those indices; a band with fewer quads is simply not cut there |
-| Authority                     | Auto-split materialises into the persisted list; thereafter plain hand data. Out-of-range indices are **dropped, never clamped**           |
-| Seam joinery                  | Pattern-type dependent. Tiled: existing band-end stroke overlap. Outlined: new split-end tab. Panel: not applicable                        |
-| Split site                    | Partition the **flattened** band, so pieces are a literal partition of one flat layout                                                     |
-| Legal positions               | Only where `quadIndex % subunitCount === 0`                                                                                                |
-| Cross-band partner resolution | Same piece index, falling back to the partner's **last** piece                                                                             |
-| Explicit size                 | One-shot: sets `pageScale`, then forgotten                                                                                                 |
+| Decision | Choice |
+| --- | --- |
+| Split sources | Both hand-placed and auto-derived |
+| Split address | Absolute quad index, scoped to a **tube** — every band in that tube cuts at those indices; a band with fewer quads is simply not cut there |
+| Authority | Auto-split materialises into the persisted list; thereafter plain hand data. Out-of-range indices are **dropped, never clamped** |
+| Seam joinery | Pattern-type dependent. Tiled: existing band-end stroke overlap. Outlined: new split-end tab. Panel: not applicable |
+| Split site | Partition the **flattened** band, so pieces are a literal partition of one flat layout |
+| Legal positions | Only where `quadIndex % subunitCount === 0` |
+| Cross-band partner resolution | Same piece index, falling back to the partner's **last** piece |
+| Explicit size | One-shot: sets `pageScale`, then forgotten |
 
 **Explicit size setting** (Phase 6, Tasks 17–18, not started) is a separate, independent half: make the page-layout panel's measurement readouts editable, deriving `pageScale` from the number typed.
 
@@ -44,7 +44,7 @@ Design decisions Ben made, which the code should reflect:
 - **31 commits** on the branch: 21 touching `src/`, 10 touching `docs/`.
 - **Test suite: 961 passed, 101 snapshots passed.** `npm run test:unit`.
 - **`npm run check`: 431 errors.** This is the clean baseline and contains **no** tolerated errors — earlier in the run it carried known noise, which has been cleared. Any rise is real signal. Judge by the diff in count; do not expect zero (the project's historical baseline is ~434).
-- **62 modified files in the working tree.** These are _not_ uncommitted feature work. They are Prettier reflow from a repo-wide `npm run format` run early in the session, verified semantically inert (line re-wrapping only). Left uncommitted deliberately: reverting needs `git checkout --` which this project forbids, and committing 62 unrelated formatting changes would bury the feature diff. **Do not commit them and do not treat them as yours.**
+- **62 modified files in the working tree.** These are *not* uncommitted feature work. They are Prettier reflow from a repo-wide `npm run format` run early in the session, verified semantically inert (line re-wrapping only). Left uncommitted deliberately: reverting needs `git checkout --` which this project forbids, and committing 62 unrelated formatting changes would bury the feature diff. **Do not commit them and do not treat them as yours.**
 
 ---
 
@@ -69,13 +69,13 @@ Design decisions Ben made, which the code should reflect:
 
 ## What remains
 
-| Task | Phase | What                                                                                  | Beads        |
-| ---- | ----- | ------------------------------------------------------------------------------------- | ------------ |
-| 14   | 5     | Split placement UI — per-boundary click targets, `quad-split-select` interaction mode | `shades-rya` |
-| 15   | 5     | `deriveAutoSplits` solver                                                             | `shades-rya` |
-| 16   | 5     | Splits panel group + auto-split button                                                | `shades-rya` |
-| 17   | 6     | `derivePageScaleForTarget` + the missing zero guard in `derivePageDimensions`         | `shades-ehy` |
-| 18   | 6     | Editable size inputs on the measurement rows                                          | `shades-ehy` |
+| Task | Phase | What | Beads |
+| --- | --- | --- | --- |
+| 14 | 5 | Split placement UI — per-boundary click targets, `quad-split-select` interaction mode | `shades-rya` |
+| 15 | 5 | `deriveAutoSplits` solver | `shades-rya` |
+| 16 | 5 | Splits panel group + auto-split button | `shades-rya` |
+| 17 | 6 | `derivePageScaleForTarget` + the missing zero guard in `derivePageDimensions` | `shades-ehy` |
+| 18 | 6 | Editable size inputs on the measurement rows | `shades-ehy` |
 
 Phase 6 (17–18) touches nothing Phases 0–5 touch and can land independently.
 
@@ -94,7 +94,7 @@ Check it against the spec's decisions table. Specific things worth confirming, b
 - **Unsplit output is unchanged.** This is the single most important property; the Phase 0 snapshot is the proof vehicle and must match without `-u`.
 - **Band indices stay stable.** A piece is addressed by an added `piece` component, never by renumbering bands.
 - **Pieces are a literal partition.** Concatenating the pieces' facet arrays reproduces the parent's exactly — that's the mechanical statement of "the glued result is the original."
-- **Seam wiring is reciprocal.** Piece N's end partner is N+1 _and_ N+1's start partner is N. One-directional wiring snaps each seam to the far end of its neighbour — working-looking code, unusable output.
+- **Seam wiring is reciprocal.** Piece N's end partner is N+1 *and* N+1's start partner is N. One-directional wiring snaps each seam to the far end of its neighbour — working-looking code, unusable output.
 - **`splitEnd` unset changes nothing** for outlined patterns.
 
 ### 2. Verify the functionality actually works
@@ -115,7 +115,7 @@ Suggested route:
 
 ## Known unverified, and one false record
 
-**The ledger contains a false entry. Strike it.** Under Task 13 there is an entry beginning _"CONTROLLER CORRECTION — I WAS WRONG AND THE IMPLEMENTER WAS RIGHT"_, crediting a stale-HMR diagnosis. That conclusion was **wrong**. A cache-busted reload still showed no control, which killed the theory. The actual explanation is almost certainly "Traps: two editors" below — I was looking at `TilingControl`, not `PatternView`. Do not trust that entry; replace it with what you find.
+**The ledger contains a false entry. Strike it.** Under Task 13 there is an entry beginning *"CONTROLLER CORRECTION — I WAS WRONG AND THE IMPLEMENTER WAS RIGHT"*, crediting a stale-HMR diagnosis. That conclusion was **wrong**. A cache-busted reload still showed no control, which killed the theory. The actual explanation is almost certainly "Traps: two editors" below — I was looking at `TilingControl`, not `PatternView`. Do not trust that entry; replace it with what you find.
 
 **Task 13's UI control is unverified.** The markup is correct at `PatternView.svelte:240` and mirrors the Band End row exactly, using the file's uncontrolled `value=` + `onchange` + `setTab` idiom. Nobody has seen it render. It is the first thing to check.
 
@@ -131,11 +131,11 @@ Suggested route:
 
 **Two editors.** `designer2/+page.svelte:81` mounts the legacy `components/controls/TilingControl.svelte`. `components/modal/editor/PatternView.svelte` is mounted separately, via `HoverSidebar` with `projectionConfigs` at `:87`. **Both render a panel with tab controls and near-identical labels.** `TilingControl` has `Tab Shape`, `Tab Width`, `Band Edge Tabs`, `Adjacent Tab Layout`, `Band End Tabs` as plain `<span>`s and **zero** `LabeledControl` usages; `PatternView` uses `LabeledControl` throughout. If you're looking at a panel with no `LabeledControl` elements in the DOM, you're in the legacy one and nothing from Tasks 12–13 will be there. I lost a dozen turns and produced three wrong theories to this.
 
-**Stale server.** A dev server started _before_ a commit can serve a page whose module graph predates it. Check the server's start time against your commit time. `curl http://localhost:9776/src/<path>.svelte | grep <marker>` tells you what the server is actually serving, without any UI navigation.
+**Stale server.** A dev server started *before* a commit can serve a page whose module graph predates it. Check the server's start time against your commit time. `curl http://localhost:9776/src/<path>.svelte | grep <marker>` tells you what the server is actually serving, without any UI navigation.
 
 **Briefs drift.** A brief is a snapshot taken when it was extracted. Fix rounds keep landing in files later tasks also touch, so **re-run `scripts/task-brief` and reconnoitre the tree before each dispatch**. Twice a brief told an implementer to write code that already existed.
 
-**Briefs predicted wrong RED failures, four times.** One reason is general: **Jest does not type-check `.test.ts` files**, so any brief predicting a _type error_ as the RED failure is wrong by construction. Tasks 14–18 were audited and contain none of these.
+**Briefs predicted wrong RED failures, four times.** One reason is general: **Jest does not type-check `.test.ts` files**, so any brief predicting a *type error* as the RED failure is wrong by construction. Tasks 14–18 were audited and contain none of these.
 
 **Tests that cannot fail — six instances.** The recurring shape is an optional parameter that is never passed: it type-checks, returns a plausible answer, and the test passes either way. Twice a brief itself mandated such a test and the implementer correctly refused. **For every test, work out by hand what it would receive if the change were absent.** If that equals what it asserts, the test is worthless.
 
@@ -173,13 +173,13 @@ This plan's issues are therefore: `shades-1xp` (Phase 4, in progress, pending th
 
 **Not ready for Phase 5.** Bugs found, all blocking `shades-rya`:
 
-| Beads        | Sev | What                                                                                                                                  |
-| ------------ | --- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `shades-guk` | P1  | `adjustTesselation` uses array-previous band as neighbour → crash on unequal pieces (Shield/Hex/Box), silent distortion on equal ones |
-| `shades-umy` | P1  | piece-vs-plain `isSameAddress` breaks cross-tube end-partner start/end detection, corrupting even unsplit tubes                       |
-| `shades-at0` | P1  | outlined side neighbours / tab layout indexed over pieces                                                                             |
-| `shades-a2a` | P2  | sort-index renderer resolves every piece to piece 0                                                                                   |
-| `shades-0he` | P2  | ruling: `splitEnd` before/after is reversed relative to the spec                                                                      |
-| `shades-tb5` | P2  | pre-existing: `persistable.update()` ignores its updater                                                                              |
+| Beads | Sev | What |
+| --- | --- | --- |
+| `shades-guk` | P1 | `adjustTesselation` uses array-previous band as neighbour → crash on unequal pieces (Shield/Hex/Box), silent distortion on equal ones |
+| `shades-umy` | P1 | piece-vs-plain `isSameAddress` breaks cross-tube end-partner start/end detection, corrupting even unsplit tubes |
+| `shades-at0` | P1 | outlined side neighbours / tab layout indexed over pieces |
+| `shades-a2a` | P2 | sort-index renderer resolves every piece to piece 0 |
+| `shades-0he` | P2 | ruling: `splitEnd` before/after is reversed relative to the spec |
+| `shades-tb5` | P2 | pre-existing: `persistable.update()` ignores its updater |
 
 Also: unsplit output differs from `63f7017` when bands are hidden (likely a fix, but contradicts the spec's claim); `validateSplitConfig` is never called; hexparquet hard-codes `endsMatched: false`, so the overlap-stroke check needs a tesselation pattern. Details in the ledger's "VERIFICATION PASS" section. Root cause shared by guk/at0/a2a: code that treats array position as band identity — audit `build-pattern-csv.ts:41` and `resolve-tab-label.ts:43` when fixing.
