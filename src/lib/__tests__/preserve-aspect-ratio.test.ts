@@ -1,8 +1,7 @@
-import { primaryShapeConfig } from '$lib/gcs/migrate-shape-configs';
 import { describe, it, expect } from '@jest/globals';
 
 import { generateSections, getSilhouetteSpans } from '../generate-level';
-import { generateLevelPrototype, generateSilhouette } from '../generate-shape';
+import { buildPrototypeAt, generateSilhouette } from '../generate-shape';
 import type { GlobuleConfig, NarrowRegionConfig, SilhouetteConfig } from '../types';
 import type { Section } from '../projection-geometry/types';
 import sconce from './asymmetric-sconce-globule.fixture.json';
@@ -18,12 +17,12 @@ const sectionsFor = (
 		...globule.levelConfig,
 		silhouetteSampleMethod: { method: 'preserveAspectRatio' as const, divisions, narrowRegion }
 	};
-	const prototype = generateLevelPrototype(primaryShapeConfig(globule), levelConfig);
+	const prototypeAt = buildPrototypeAt({ ...globule, levelConfig });
 	return generateSections(
 		levelConfig,
 		globule.silhouetteConfig,
 		globule.depthCurveConfig,
-		prototype
+		prototypeAt
 	);
 };
 

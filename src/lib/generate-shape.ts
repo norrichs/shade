@@ -1,4 +1,5 @@
-import { primaryShapeConfig } from '$lib/gcs/migrate-shape-configs';
+import { makePrototypeAt, type PrototypeAt } from '$lib/gcs/gcs-blend';
+import { validateShapeConfigs, type GcsValidation } from '$lib/gcs/validate-shape-configs';
 import { CurvePath, Vector2, Vector3, CubicBezierCurve, Triangle } from 'three';
 import { generateGlobuleEndCaps } from './geometry/end-caps';
 import { radialShapeCurveConfigs, radialSideCurveConfigs } from './geometry/radial-shape';
@@ -214,6 +215,38 @@ export const generateLevelPrototype = (
 	levelConfig: LevelConfig
 ): LevelPrototype => {
 	return generateRadialShapeLevelPrototype(config, levelConfig, 0);
+};
+
+const validatePrototypes = (config: GlobuleConfig, prototypes: LevelPrototype[]): GcsValidation =>
+	validateShapeConfigs(
+		config.shapeConfigs,
+		prototypes.map((p) => p.vertices.length),
+		config.levelConfig.silhouetteSampleMethod.divisions
+	);
+
+/** Validates a globule's cross-section list against its generated prototypes. */
+export const validateGlobuleShapeConfigs = (config: GlobuleConfig): GcsValidation =>
+	validatePrototypes(
+		config,
+		config.shapeConfigs.map((shape) => generateLevelPrototype(shape, config.levelConfig))
+	);
+
+/**
+ * The blended cross section as a function of silhouette t. Throws the first
+ * validation error for an invalid list (the worker's defense in depth).
+ */
+export const buildPrototypeAt = (config: GlobuleConfig): PrototypeAt => {
+	const prototypes = config.shapeConfigs.map((shape) =>
+		generateLevelPrototype(shape, config.levelConfig)
+	);
+	const validation = validatePrototypes(config, prototypes);
+	if (!validation.isValid) throw new Error(validation.errors[0].message);
+	return makePrototypeAt(
+		prototypes,
+		validation.levels,
+		config.levelConfig.silhouetteSampleMethod.divisions,
+		config.shapeConfigs.map((shape) => shape.blend)
+	);
 };
 
 const generateRadialShapeLevelPrototype = (
@@ -815,15 +848,12 @@ export const getRenderable = (
 
 export const generateGlobuleData = (configStore: GlobuleConfig): GlobuleData => {
 	const config = structuredClone(configStore);
-	const rotatedShapePrototype: LevelPrototype | LevelPrototype[] = generateLevelPrototype(
-		primaryShapeConfig(config),
-		config.levelConfig
-	);
+	const prototypeAt = buildPrototypeAt(config);
 	const levels = generateLevelSet2(
 		config.levelConfig,
 		config.silhouetteConfig,
 		config.depthCurveConfig,
-		rotatedShapePrototype
+		prototypeAt
 	);
 
 	const struts = generateStruts(levels, config.strutConfig);
@@ -854,15 +884,12 @@ export const generateGlobuleTube = (
 	address: GlobuleAddress_Tube = { globule: 0, tube: 0 }
 ): Tube => {
 	const config = structuredClone(configStore);
-	const rotatedShapePrototype: LevelPrototype | LevelPrototype[] = generateLevelPrototype(
-		primaryShapeConfig(config),
-		config.levelConfig
-	);
+	const prototypeAt = buildPrototypeAt(config);
 	const sections = generateSections(
 		config.levelConfig,
 		config.silhouetteConfig,
 		config.depthCurveConfig,
-		rotatedShapePrototype
+		prototypeAt
 	);
 
 	const bands = generateProjectionBands(sections, 'axial-right', address);

@@ -1,8 +1,7 @@
-import { primaryShapeConfig } from '$lib/gcs/migrate-shape-configs';
 import { describe, it, expect } from '@jest/globals';
 
 import { generateSections } from '../generate-level';
-import { generateLevelPrototype } from '../generate-shape';
+import { buildPrototypeAt } from '../generate-shape';
 import { generateDefaultGlobuleConfig } from '../shades-config';
 import { DEFAULT_DEPTH_CURVE_BASELINE, type DepthCurveConfig } from '../types';
 
@@ -30,12 +29,12 @@ const depthCurve = (x: number, depthCurveBaseline: number): DepthCurveConfig => 
  */
 const midLevelRadiusSpread = (config: DepthCurveConfig): number => {
 	const globule = generateDefaultGlobuleConfig();
-	const prototype = generateLevelPrototype(primaryShapeConfig(globule), globule.levelConfig);
+	const prototypeAt = buildPrototypeAt(globule);
 	const sections = generateSections(
 		globule.levelConfig,
 		globule.silhouetteConfig,
 		config,
-		prototype
+		prototypeAt
 	);
 	const mid = sections[Math.floor(sections.length / 2)];
 	const radii = mid.points.map((p) => Math.hypot(p.x, p.y));
