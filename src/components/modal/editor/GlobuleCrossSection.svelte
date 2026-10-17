@@ -22,12 +22,40 @@
 	import { neighborPointMatch, pointOnRay, radialEndLock } from './path-editor';
 	import { pathFromCurves, radializeCurves } from './curve-preview';
 	import { isReflectedSymmetry, radialUnitAngle } from '$lib/geometry/radial-shape';
+	import { effectiveGcsLevels, gcsLabel } from '$lib/gcs/gcs-placement';
+	import { generateLevelPrototype, validateGlobuleShapeConfigs } from '$lib/generate-shape';
+	import { selectedGcsIndex } from './gcs-editor-store';
+	import { addGcs, deleteGcs, moveGcs, setGcsLevel, setPrimary } from './gcs-editor';
 
 	// Derived from the store so an externally loaded config shows up here; the old
 	// version read into a plain `let` and never updated.
 	let sgIndex = $derived($selectedBand?.s ?? 0);
 	let globuleConfig = $derived($superConfigStore.subGlobuleConfigs[sgIndex]?.globuleConfig);
-	let shapeConfig = $derived(globuleConfig?.shapeConfigs?.[0]);
+	let shapeConfigs = $derived(globuleConfig?.shapeConfigs ?? []);
+	// Clamp so a shrunken list (or an externally loaded config) never leaves the
+	// selection out of range.
+	let selected = $derived(
+		Math.min(Math.max($selectedGcsIndex, 0), Math.max(shapeConfigs.length - 1, 0))
+	);
+	let shapeConfig = $derived(shapeConfigs[selected]);
+
+	// Plain numbers/strings only: no Three.js objects in derived proxies.
+	let divisions = $derived(globuleConfig?.levelConfig.silhouetteSampleMethod.divisions ?? 0);
+	let validation = $derived(globuleConfig ? validateGlobuleShapeConfigs(globuleConfig) : undefined);
+	let levels = $derived(effectiveGcsLevels(shapeConfigs, divisions));
+	let vertexCounts = $derived(
+		globuleConfig
+			? shapeConfigs.map(
+					(shape) => generateLevelPrototype(shape, globuleConfig.levelConfig).vertices.length
+				)
+			: []
+	);
+	let invalidIndices = $derived(
+		new Set((validation?.errors ?? []).filter((e) => e.index !== null).map((e) => e.index))
+	);
+	let listErrors = $derived((validation?.errors ?? []).filter((e) => e.index === null));
+	let selectedErrors = $derived((validation?.errors ?? []).filter((e) => e.index === selected));
+	let bandCount = $derived(validation?.bandCount ?? 0);
 
 	let isRadial = $derived(
 		shapeConfig?.symmetry === 'radial' || shapeConfig?.symmetry === 'radial-lateral'
@@ -61,13 +89,46 @@
 						globuleConfig: {
 							...sub.globuleConfig,
 							shapeConfigs: sub.globuleConfig.shapeConfigs.map((shape, i) =>
-								i === 0 ? mutate(shape) : shape
+								i === selected ? mutate(shape) : shape
 							)
 						}
 					}
 				: sub
 		);
 		superConfigStore.set(config);
+	};
+
+	/** Replace the whole list (add/delete/move/primary/level), rebuilding references. */
+	const updateList = (transform: (list: ShapeConfig[]) => ShapeConfig[]) => {
+		const config: SuperGlobuleConfig = get(superConfigStore);
+		if (!config.subGlobuleConfigs[sgIndex]) return;
+		config.subGlobuleConfigs = config.subGlobuleConfigs.map((sub, index) =>
+			index === sgIndex
+				? {
+						...sub,
+						globuleConfig: {
+							...sub.globuleConfig,
+							shapeConfigs: transform(sub.globuleConfig.shapeConfigs)
+						}
+					}
+				: sub
+		);
+		superConfigStore.set(config);
+	};
+
+	const onAdd = () => {
+		updateList((list) => addGcs(list, selected));
+		selectedGcsIndex.set(selected + 1);
+	};
+	const onDelete = () => {
+		updateList((list) => deleteGcs(list, selected));
+		selectedGcsIndex.set(Math.min(selected, shapeConfigs.length - 2));
+	};
+	const onMove = (dir: -1 | 1) => {
+		const target = selected + dir;
+		if (target < 0 || target >= shapeConfigs.length) return;
+		updateList((list) => moveGcs(list, selected, dir));
+		selectedGcsIndex.set(target);
 	};
 
 	const setCurves = (curves: BezierConfig[]) => updateShape((shape) => ({ ...shape, curves }));
@@ -209,6 +270,41 @@
 <Editor>
 	<section>
 		<header>Globule Cross Section</header>
+		{#each listErrors as error}
+			<div class="gcs-error">{error.message}</div>
+		{/each}
+		<div class="gcs-strip">
+			{#each shapeConfigs as shape, i (shape.id ?? i)}
+				<button
+					type="button"
+					class="gcs-chip"
+					class:selected={i === selected}
+					class:invalid={invalidIndices.has(i)}
+					onclick={() => selectedGcsIndex.set(i)}
+				>
+					{gcsLabel(i)}{shape.isPrimary ? ' ★' : ''}
+				</button>
+			{/each}
+			<button type="button" title="Duplicate after selected" onclick={onAdd}>+</button>
+			<button
+				type="button"
+				title="Delete selected"
+				disabled={shapeConfigs.length <= 1}
+				onclick={onDelete}>−</button
+			>
+			<button
+				type="button"
+				title="Move earlier"
+				disabled={selected === 0}
+				onclick={() => onMove(-1)}>←</button
+			>
+			<button
+				type="button"
+				title="Move later"
+				disabled={selected >= shapeConfigs.length - 1}
+				onclick={() => onMove(1)}>→</button
+			>
+		</div>
 		<Container direction="row">
 			<Container direction="column">
 				{#if shapeConfig}
@@ -247,6 +343,40 @@
 
 			<Container direction="column">
 				{#if shapeConfig}
+					<LabeledControl label="Primary">
+						<input
+							type="checkbox"
+							checked={!!shapeConfig.isPrimary}
+							disabled={!!shapeConfig.isPrimary}
+							onchange={() => updateList((list) => setPrimary(list, selected))}
+						/>
+					</LabeledControl>
+					<LabeledControl label="Level" show={shapeConfigs.length > 1}>
+						<NumberInput
+							value={levels[selected] ?? 0}
+							onChange={(v) => updateList((list) => setGcsLevel(list, selected, Math.round(v)))}
+							min={0}
+							max={divisions}
+							step={1}
+							hasButtons
+						/>
+						{#if shapeConfig.level === undefined}
+							<span class="gcs-note">auto</span>
+						{:else}
+							<button
+								type="button"
+								title="Back to auto"
+								onclick={() => updateList((list) => setGcsLevel(list, selected, undefined))}
+								>auto</button
+							>
+						{/if}
+					</LabeledControl>
+					<div class="gcs-readout">
+						{vertexCounts[selected] ?? 0} points / {bandCount} bands
+					</div>
+					{#each selectedErrors as error}
+						<div class="gcs-error">{error.message}</div>
+					{/each}
 					<LabeledControl label="Symmetry">
 						<select value={shapeConfig.symmetry} onchange={setSymmetry}>
 							<option value="asymmetric">asymmetric</option>
@@ -295,3 +425,29 @@
 		</Container>
 	</section>
 </Editor>
+
+<style>
+	.gcs-strip {
+		display: flex;
+		gap: 4px;
+		margin-bottom: 8px;
+		flex-wrap: wrap;
+	}
+	.gcs-chip.selected {
+		font-weight: bold;
+		outline: 2px solid currentColor;
+	}
+	.gcs-chip.invalid {
+		color: #c00;
+		border-color: #c00;
+	}
+	.gcs-error {
+		color: #c00;
+		font-size: 0.85em;
+	}
+	.gcs-readout,
+	.gcs-note {
+		font-size: 0.85em;
+		opacity: 0.75;
+	}
+</style>
