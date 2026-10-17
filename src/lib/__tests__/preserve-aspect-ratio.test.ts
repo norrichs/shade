@@ -1,3 +1,4 @@
+import { primaryShapeConfig } from '$lib/gcs/migrate-shape-configs';
 import { describe, it, expect } from '@jest/globals';
 
 import { generateSections, getSilhouetteSpans } from '../generate-level';
@@ -17,7 +18,7 @@ const sectionsFor = (
 		...globule.levelConfig,
 		silhouetteSampleMethod: { method: 'preserveAspectRatio' as const, divisions, narrowRegion }
 	};
-	const prototype = generateLevelPrototype(globule.shapeConfig, levelConfig);
+	const prototype = generateLevelPrototype(primaryShapeConfig(globule), levelConfig);
 	return generateSections(
 		levelConfig,
 		globule.silhouetteConfig,

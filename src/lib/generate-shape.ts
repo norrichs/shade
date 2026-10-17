@@ -1,3 +1,4 @@
+import { primaryShapeConfig } from '$lib/gcs/migrate-shape-configs';
 import { CurvePath, Vector2, Vector3, CubicBezierCurve, Triangle } from 'three';
 import { generateGlobuleEndCaps } from './geometry/end-caps';
 import { radialShapeCurveConfigs, radialSideCurveConfigs } from './geometry/radial-shape';
@@ -211,7 +212,7 @@ const normalizeConfigPoints = (
 export const generateLevelPrototype = (
 	config: ShapeConfig,
 	levelConfig: LevelConfig
-): LevelPrototype | LevelPrototype[] => {
+): LevelPrototype => {
 	return generateRadialShapeLevelPrototype(config, levelConfig, 0);
 };
 
@@ -815,7 +816,7 @@ export const getRenderable = (
 export const generateGlobuleData = (configStore: GlobuleConfig): GlobuleData => {
 	const config = structuredClone(configStore);
 	const rotatedShapePrototype: LevelPrototype | LevelPrototype[] = generateLevelPrototype(
-		config.shapeConfig,
+		primaryShapeConfig(config),
 		config.levelConfig
 	);
 	const levels = generateLevelSet2(
@@ -854,7 +855,7 @@ export const generateGlobuleTube = (
 ): Tube => {
 	const config = structuredClone(configStore);
 	const rotatedShapePrototype: LevelPrototype | LevelPrototype[] = generateLevelPrototype(
-		config.shapeConfig,
+		primaryShapeConfig(config),
 		config.levelConfig
 	);
 	const sections = generateSections(

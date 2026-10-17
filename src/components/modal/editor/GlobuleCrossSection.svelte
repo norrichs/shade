@@ -27,7 +27,7 @@
 	// version read into a plain `let` and never updated.
 	let sgIndex = $derived($selectedBand?.s ?? 0);
 	let globuleConfig = $derived($superConfigStore.subGlobuleConfigs[sgIndex]?.globuleConfig);
-	let shapeConfig = $derived(globuleConfig?.shapeConfig);
+	let shapeConfig = $derived(globuleConfig?.shapeConfigs?.[0]);
 
 	let isRadial = $derived(
 		shapeConfig?.symmetry === 'radial' || shapeConfig?.symmetry === 'radial-lateral'
@@ -60,7 +60,9 @@
 						...sub,
 						globuleConfig: {
 							...sub.globuleConfig,
-							shapeConfig: mutate(sub.globuleConfig.shapeConfig)
+							shapeConfigs: sub.globuleConfig.shapeConfigs.map((shape, i) =>
+								i === 0 ? mutate(shape) : shape
+							)
 						}
 					}
 				: sub

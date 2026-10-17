@@ -771,21 +771,6 @@ const generateLevel = (
 	return level;
 };
 
-export const getLevelLines = (
-	// { points, normals }: { points: Vector2[]; normals: Vector2[] },
-	{ levelConfig, shapeConfig }: GlobuleConfig
-) => {
-	const levelPrototype = generateLevelPrototype(shapeConfig, levelConfig);
-
-	if (!Array.isArray(levelPrototype)) {
-		// let intersection0, intersection1;
-		// for (let i = 0; i < levelPrototype.vertices.length; i++) {
-		// 	const v0 = levelPrototype.vertices[i];
-		// 	const v1 = levelPrototype.vertices[(i + 1) % levelPrototype.vertices.length];
-		// }
-	}
-};
-
 export const getCurvePoints = (curveConfig: SilhouetteConfig, { divisions }: CurveSampleMethod) => {
 	const curve = generateSilhouette(curveConfig);
 	// const pointCount = method === 'divideCurve' ? curveConfig.curves.length * divisions : divisions;

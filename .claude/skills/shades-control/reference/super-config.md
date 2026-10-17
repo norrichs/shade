@@ -112,7 +112,7 @@ Path: `…globuleConfig.silhouetteConfig.curves` (`SilhouetteConfig`, `types.ts:
 
 #### Shape — the cross-section ("level")
 
-Path: `…globuleConfig.shapeConfig` (`ShapeConfig`, `types.ts:1148`).
+Path: `…globuleConfig.shapeConfigs[i]` (`ShapeConfig`, `types.ts`). A globule carries a list of cross sections; `isPrimary: true` marks the primary one (index 0 for now; generation uses it alone) and `level` / `blend` are reserved for upcoming multi-GCS blending.
 
 | Field            | Type                                                                 | Meaning / range                                                                                                                                                                                                                                  |
 | ---------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |

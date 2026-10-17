@@ -1,3 +1,4 @@
+import { normalizeShapeConfigs } from '$lib/gcs/migrate-shape-configs';
 import { AUTO_PERSIST_KEY, bootstrapShouldUsePersisted, persistable } from '$lib/persistable';
 import { generateDefaultSuperGlobuleConfig } from '$lib/shades-config';
 import type {
@@ -201,11 +202,13 @@ export function extractMeshData(
 // SUPER CONFIGS
 export const superConfigStore = persistable<SuperGlobuleConfig>(
 	((): SuperGlobuleConfig => {
-		const config = normalizeVoronoiConfig(
-			loadPersistedOrDefault(
-				bootstrapShouldUsePersisted(),
-				generateDefaultSuperGlobuleConfig
-			) as SuperGlobuleConfig
+		const config = normalizeShapeConfigs(
+			normalizeVoronoiConfig(
+				loadPersistedOrDefault(
+					bootstrapShouldUsePersisted(),
+					generateDefaultSuperGlobuleConfig
+				) as SuperGlobuleConfig
+			)
 		);
 		console.log('SUPER GLOBULE CONFIG STORE', { config });
 		return config;
