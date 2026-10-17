@@ -1,14 +1,14 @@
-import { AUTO_PERSIST_KEY, bootstrapShouldUsePersisted, persistable } from '$lib/persistable';
-import { generateDefaultGlobulePatternConfig } from '$lib/shades-config';
+import { AUTO_PERSIST_KEY, bootstrapShouldUsePersisted, persistable } from '#lib/persistable.js';
+import { generateDefaultGlobulePatternConfig } from '#lib/shades-config.js';
 import type {
 	GlobulePatternConfig,
 	PatternSource,
 	PatternTypeConfig,
 	PixelScale,
 	SplitConfig
-} from '$lib/types';
-import { migrateGlobulePatternConfig } from '$lib/validators';
-import type { ProjectionRange } from '$lib/projection-geometry/filters';
+} from '#lib/types.js';
+import { migrateGlobulePatternConfig } from '#lib/validators.js';
+import type { ProjectionRange } from '#lib/projection-geometry/filters.js';
 import { derived } from 'svelte/store';
 import { loadPersistedOrDefault } from './stores';
 

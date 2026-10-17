@@ -1,4 +1,4 @@
-import type { GridVariant, PathSegment, Quadrilateral, TiledPatternConfig } from '$lib/types';
+import type { GridVariant, PathSegment, Quadrilateral, TiledPatternConfig } from '#lib/types.js';
 import { translatePS } from './utils';
 
 type Props = {
@@ -9,23 +9,21 @@ type Props = {
 };
 
 const generateUnit = (
-	edge = false,
 	w: number,
 	h: number,
 	variant: GridVariant
 ): { start: PathSegment[]; middle: PathSegment[]; end: PathSegment[] } => {
 	switch (variant) {
 		case 'triangle-0':
-			return unitTriangle(edge, w, h, 'triangle-0');
+			return unitTriangle(w, h, 'triangle-0');
 		case 'triangle-1':
-			return unitTriangle(edge, w, h, 'triangle-1');
+			return unitTriangle(w, h, 'triangle-1');
 		default:
-			return unitRect(edge, w, h);
+			return unitRect(w, h);
 	}
 };
 
 const unitRect = (
-	edge = false,
 	w: number,
 	h: number
 ): { start: PathSegment[]; middle: PathSegment[]; end: PathSegment[] } => ({
@@ -47,7 +45,6 @@ const unitRect = (
 });
 
 const unitTriangle = (
-	edge = false,
 	w: number,
 	h: number,
 	subVariant: 'triangle-0' | 'triangle-1'
@@ -114,7 +111,7 @@ export const generateGridPatternWithMeta = ({
 	for (let c = 0; c < columns; c++) {
 		const isLastColumn = c === columns - 1;
 		for (let r = 0; r < rows; r++) {
-			const unit = generateUnit(isLastColumn, w, h, variant);
+			const unit = generateUnit(w, h, variant);
 			if (r > 0 && r < rows - 1) {
 				middleSegments.push(...translatePS(unit.start, col * c, row * r));
 				const base = middleSegments.length;

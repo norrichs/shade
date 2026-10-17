@@ -38,7 +38,7 @@ const segmentTotals = (page: Page): Promise<{ raw: number; rendered: number; ban
 					const pieces = value as unknown[];
 					total += pieces.reduce<number>(
 						(n, piece) =>
-							n + (Array.isArray(piece) ? 1 : ((piece as { segments: unknown[] }).segments.length)),
+							n + (Array.isArray(piece) ? 1 : (piece as { segments: unknown[] }).segments.length),
 						0
 					);
 				}

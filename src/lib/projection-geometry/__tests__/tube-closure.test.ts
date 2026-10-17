@@ -1,5 +1,5 @@
 import { Vector3 } from 'three';
-import type { Section } from '$lib/projection-geometry/types';
+import type { Section } from '#lib/projection-geometry/types.js';
 import { CLOSURE_RATIO, isSectionClosed, isTubeClosed } from '../tube-closure';
 
 /** A unit square. Closed form repeats the first point; open form does not. */

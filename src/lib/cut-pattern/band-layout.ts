@@ -4,12 +4,12 @@ import type {
 	CutPattern,
 	PatternLabelsConfig,
 	Point
-} from '$lib/types';
-import type { GlobuleAddress_Band } from '$lib/projection-geometry/types';
-import type { LabelTextDims } from '$lib/stores/mergedPathStore';
+} from '#lib/types.js';
+import type { GlobuleAddress_Band } from '#lib/projection-geometry/types.js';
+import type { LabelTextDims } from '#lib/stores/mergedPathStore.js';
 import { buildSelfTagLines } from './build-self-tag-lines';
 import { effectiveBandBounds } from './label-footprint';
-import { concatAddress } from '$lib/util';
+import { concatAddress } from '#lib/util.js';
 
 /**
  * Per-band layout helpers for CutPatternRenderer.
@@ -60,7 +60,7 @@ export const buildEffectiveBoundsIndex = (
 	return index;
 };
 
-export const pivotOf = (bounds: BoundingBox | undefined): Point => ({
+const pivotOf = (bounds: BoundingBox | undefined): Point => ({
 	x: (bounds?.left ?? 0) + (bounds?.width ?? 0) / 2,
 	y: (bounds?.top ?? 0) + (bounds?.height ?? 0) / 2
 });
@@ -77,7 +77,7 @@ export const buildPivotIndex = (
 };
 
 /** Lowest point (max y) across all facet paths; the legacy tag anchor fallback. */
-export const minPoint = (facets: CutPattern[]): Point => {
+const minPoint = (facets: CutPattern[]): Point => {
 	let maxY = 0;
 	let X = 0;
 	facets.forEach((facet) =>

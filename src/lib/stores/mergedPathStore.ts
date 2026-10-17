@@ -1,17 +1,17 @@
 import { derived, writable, get, type Writable } from 'svelte/store';
-import type { PathSegment } from '$lib/types';
-import type { BandContourIndex } from '$lib/cut-pattern/contour-index';
-import { postProcessBandPath } from '$lib/cut-pattern/drop-holes';
-import { DEFAULT_POST_PROCESS, type PostProcessConfig } from '$lib/cut-pattern/hole-drop-config';
+import type { PathSegment } from '#lib/types.js';
+import type { BandContourIndex } from '#lib/cut-pattern/contour-index.js';
+import { postProcessBandPath } from '#lib/cut-pattern/drop-holes.js';
+import { DEFAULT_POST_PROCESS, type PostProcessConfig } from '#lib/cut-pattern/hole-drop-config.js';
 import { patternConfigStore } from './globulePatternStores';
 import {
 	GEOMETRY_TYPES,
 	type GeometryType,
 	type TaggedPath
-} from '$lib/cut-pattern/post-process-types';
-import { layerStroke } from '$lib/lightburn/layers';
-import { resolveLabelsToPatternUnits } from '$lib/cut-pattern/label-units';
-import type { PatternLabelsConfig } from '$lib/types';
+} from '#lib/cut-pattern/post-process-types.js';
+import { layerStroke } from '#lib/lightburn/layers.js';
+import { resolveLabelsToPatternUnits } from '#lib/cut-pattern/label-units.js';
+import type { PatternLabelsConfig } from '#lib/types.js';
 
 export type LabelTextDims = { width: number; height: number };
 

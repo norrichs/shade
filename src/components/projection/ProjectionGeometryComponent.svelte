@@ -1,25 +1,26 @@
 <script lang="ts">
 	import { T } from '@threlte/core';
+	import type { IntersectionEvent } from '@threlte/extras';
 	import { getBandMaterial, getMaterial, materials } from '../three-renderer/materials';
 	import { BufferGeometry, Mesh, Object3D, Vector3 } from 'three';
 	import {
 		collateGeometry,
 		collateGlobuleTubeGeometry,
 		collateVoronoiGeometry
-	} from '$lib/projection-geometry/collate-geometry';
+	} from '#lib/projection-geometry/collate-geometry.js';
 	import {
 		viewControlStore,
 		type ShowProjectionGeometries,
 		type ShowGlobuleTubeGeometries,
 		superGlobuleStore
-	} from '$lib/stores';
+	} from '#lib/stores/index.js';
 	import type {
 		Polyhedron,
 		Projection,
 		GlobuleAddress_Band,
 		GlobuleAddress_Facet,
 		Tube
-	} from '$lib/projection-geometry/types';
+	} from '#lib/projection-geometry/types.js';
 	import ColorMapped from './ColorMapped.svelte';
 	import {
 		assemblerHighlight,
@@ -36,14 +37,14 @@
 		patternBandSpaces,
 		type AssemblerHighlight,
 		type GeometrySource
-	} from '$lib/stores';
+	} from '#lib/stores/index.js';
 	import { handleFacetSelect, highlightRealBand } from '../three-renderer/selection-helpers';
-	import { assemblerHighlightOnSource } from '$lib/cut-pattern/pattern-band-space';
+	import { assemblerHighlightOnSource } from '#lib/cut-pattern/pattern-band-space.js';
 	import { get } from 'svelte/store';
 	import { interactionMode, isMeasureInteractionMode } from '../three-renderer/interaction-mode';
 	import { nearestVertexFromEvent } from '../three-renderer/nearest-vertex';
-	import { addMeasurementPoint } from '$lib/stores/measurementStore';
-	import { bandKey } from '$lib/cut-pattern/band-key';
+	import { addMeasurementPoint } from '#lib/stores/measurementStore.js';
+	import { bandKey } from '#lib/cut-pattern/band-key.js';
 
 	// Non-interactive visual meshes (bands, sections, the surface) must NOT
 	// participate in pointer raycasting — otherwise an opaque grey band/surface in
@@ -110,6 +111,8 @@
 	let highlightFor = $derived.by(() => {
 		const highlight = $assemblerHighlight;
 		const spaceOf = $patternBandSpaces;
+		// Plain memo, rebuilt with each derivation; it must not be reactive itself.
+		// eslint-disable-next-line svelte/prefer-svelte-reactivity
 		const cache = new Map<GeometrySource, AssemblerHighlight>();
 		return (source: GeometrySource): AssemblerHighlight => {
 			if (!highlight) return null;
@@ -134,7 +137,7 @@
 		showNormals = false,
 		colorByBand = true
 	}: {
-		onClick: (event: any, address: GlobuleAddress_Facet) => void;
+		onClick: (event: { stopPropagation: () => void }, address: GlobuleAddress_Facet) => void;
 		showNormals?: boolean;
 		colorByBand?: boolean;
 	} = $props();
@@ -292,7 +295,7 @@
 							colorByBand
 						}
 					)}
-					onclick={(ev) =>
+					onclick={(ev: IntersectionEvent<MouseEvent>) =>
 						handleFacetSelect(
 							ev,
 							'surfaceProjection',
@@ -355,7 +358,7 @@
 						colorByBand
 					}
 				)}
-				onclick={(ev) =>
+				onclick={(ev: IntersectionEvent<MouseEvent>) =>
 					handleFacetSelect(ev, 'projection', facet.address, (a) => selectedProjection.set(a))}
 			/>
 		{/each}
@@ -400,7 +403,7 @@
 			<T.Mesh
 				geometry={facet.geometry}
 				material={highlightedFacetMaterial('voronoi', facet.address, $selectedVoronoiGeometry)}
-				onclick={(ev) =>
+				onclick={(ev: IntersectionEvent<MouseEvent>) =>
 					handleFacetSelect(ev, 'voronoi', facet.address, (a) => selectedVoronoi.set(a))}
 			/>
 		{/each}
@@ -415,7 +418,7 @@
 						zebraStriped: true
 					}
 				)}
-				onclick={(ev) =>
+				onclick={(ev: IntersectionEvent<MouseEvent>) =>
 					handleFacetSelect(
 						ev,
 						'voronoiSurface',
@@ -454,7 +457,7 @@
 					facet.address,
 					$selectedGlobuleTubeGeometry
 				)}
-				onclick={(ev) =>
+				onclick={(ev: IntersectionEvent<MouseEvent>) =>
 					handleFacetSelect(ev, 'globuleTube', facet.address, (a) => selectedGlobuleTube.set(a))}
 			/>
 		{/each}

@@ -1,11 +1,11 @@
-<script lang="ts" context="module">
-	// @ts-ignore
+<script lang="ts" module>
+	// @ts-expect-error -- package "exports" has no "types" condition, so its d.ts is not resolved
 	import { asDraggable } from 'svelte-drag-and-drop-actions';
 </script>
 
 <script lang="ts">
-	import type { Snippet } from 'svelte';
-	import type { BezierConfig, PointConfig2 } from '$lib/types';
+	import { untrack, type Snippet } from 'svelte';
+	import type { BezierConfig, PointConfig2 } from '#lib/types.js';
 	import Button from '../../design-system/Button.svelte';
 	import CurveDefPath from './CurveDefPath.svelte';
 	import {
@@ -209,7 +209,11 @@
 	};
 
 	// Unkeyed editors keep their toggle local and never write to the shared store.
-	let localUi = $state({ ...defaultPathEditorUiState(), pointInputMode });
+	// The prop only seeds the local toggle; later prop changes don't reset it.
+	let localUi = $state({
+		...defaultPathEditorUiState(),
+		pointInputMode: untrack(() => pointInputMode)
+	});
 	let ui = $derived(
 		editorId
 			? ($pathEditorUiStore[editorId] ?? { ...defaultPathEditorUiState(), pointInputMode })
@@ -242,8 +246,8 @@
 		{@render overlayAbove?.(overlayContext)}
 		{@render children?.()}
 	</svg>
-	{#each displayCurveDef as curve, curveIndex}
-		{#each curve.points as point, pointIndex}
+	{#each displayCurveDef as curve, curveIndex (curveIndex)}
+		{#each curve.points as point, pointIndex (pointIndex)}
 			<DraggablePoint
 				{config}
 				{canv}

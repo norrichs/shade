@@ -8,23 +8,43 @@ import {
 	type GlyphDict
 } from '../page-label';
 import type { PlacedBand } from '../../post-process-types';
-import type { PathSegment } from '$lib/types';
+import type { PathSegment } from '#lib/types.js';
 
-const glyphPath: PathSegment[] = [['M', 0, 0], ['L', 1, 0], ['L', 1, 1]];
+const glyphPath: PathSegment[] = [
+	['M', 0, 0],
+	['L', 1, 0],
+	['L', 1, 1]
+];
 const glyph = { path: glyphPath, width: 1 };
 const dict: GlyphDict = {
-	a: glyph, b: glyph, '?': glyph, o: glyph, f: glyph, '1': glyph, '2': glyph,
+	a: glyph,
+	b: glyph,
+	'?': glyph,
+	o: glyph,
+	f: glyph,
+	'1': glyph,
+	'2': glyph,
 	' ': { path: [], width: 0.5 }
 };
 const rectPoly = (x0: number, y0: number, x1: number, y1: number) => [
-	{ x: x0, y: y0 }, { x: x1, y: y0 }, { x: x1, y: y1 }, { x: x0, y: y1 }, { x: x0, y: y0 }
+	{ x: x0, y: y0 },
+	{ x: x1, y: y0 },
+	{ x: x1, y: y1 },
+	{ x: x0, y: y1 },
+	{ x: x0, y: y0 }
 ];
 
 describe('composePageLabel', () => {
 	it('joins the enabled parts', () => {
-		expect(composePageLabel({ text: 'hello', configName: true, pageNumber: true }, 'shade', 0, 3)).toBe('hello - shade - 1 of 3');
-		expect(composePageLabel({ text: '', configName: false, pageNumber: true }, 'shade', 1, 3)).toBe('2 of 3');
-		expect(composePageLabel({ text: '', configName: true, pageNumber: false }, undefined, 0, 1)).toBe('');
+		expect(
+			composePageLabel({ text: 'hello', configName: true, pageNumber: true }, 'shade', 0, 3)
+		).toBe('hello - shade - 1 of 3');
+		expect(composePageLabel({ text: '', configName: false, pageNumber: true }, 'shade', 1, 3)).toBe(
+			'2 of 3'
+		);
+		expect(
+			composePageLabel({ text: '', configName: true, pageNumber: false }, undefined, 0, 1)
+		).toBe('');
 		expect(composePageLabel(undefined, 'x', 0, 1)).toBe('');
 	});
 });
@@ -52,21 +72,43 @@ describe('placeBox', () => {
 		expect(p.y + 5).toBeCloseTo(90, 6);
 	});
 	it('avoids a band covering the corner', () => {
-		const p = placeBox({ content, width: 20, height: 5, obstacles: [], solids: [rectPoly(40, 60, 95, 95)] })!;
+		const p = placeBox({
+			content,
+			width: 20,
+			height: 5,
+			obstacles: [],
+			solids: [rectPoly(40, 60, 95, 95)]
+		})!;
 		expect(p.x + 20 > 40 && p.y + 5 > 60).toBe(false);
 	});
 	it('returns null when nothing fits', () => {
-		expect(placeBox({ content, width: 20, height: 5, obstacles: [], solids: [rectPoly(0, 0, 100, 100)] })).toBeNull();
+		expect(
+			placeBox({ content, width: 20, height: 5, obstacles: [], solids: [rectPoly(0, 0, 100, 100)] })
+		).toBeNull();
 	});
 });
 
 describe('buildPageLabels', () => {
 	it('numbers pages and flags unplaceable ones', () => {
-		const pages = [{ x: 0, y: 0, width: 100, height: 100 }, { x: 0, y: 110, width: 100, height: 100 }];
-		const full: PlacedBand = { bandId: 'f', page: 1, outlines: [rectPoly(0, 110, 100, 210)], holes: [] };
+		const pages = [
+			{ x: 0, y: 0, width: 100, height: 100 },
+			{ x: 0, y: 110, width: 100, height: 100 }
+		];
+		const full: PlacedBand = {
+			bandId: 'f',
+			page: 1,
+			outlines: [rectPoly(0, 110, 100, 210)],
+			holes: []
+		};
 		const labels = buildPageLabels({
-			pages, marginPx: 5, pageScale: 1, bands: [full], disconnects: [],
-			config: { text: '', configName: false, pageNumber: true }, configName: undefined, dict
+			pages,
+			marginPx: 5,
+			pageScale: 1,
+			bands: [full],
+			disconnects: [],
+			config: { text: '', configName: false, pageNumber: true },
+			configName: undefined,
+			dict
 		});
 		expect(labels.map((l) => l.text)).toEqual(['1 of 2', '2 of 2']);
 		expect(labels[0].unplaced).toBeUndefined();
@@ -75,8 +117,14 @@ describe('buildPageLabels', () => {
 	it('returns nothing when the label is empty', () => {
 		expect(
 			buildPageLabels({
-				pages: [{ x: 0, y: 0, width: 100, height: 100 }], marginPx: 5, pageScale: 1, bands: [],
-				disconnects: [], config: undefined, configName: 'x', dict
+				pages: [{ x: 0, y: 0, width: 100, height: 100 }],
+				marginPx: 5,
+				pageScale: 1,
+				bands: [],
+				disconnects: [],
+				config: undefined,
+				configName: 'x',
+				dict
 			})
 		).toEqual([]);
 	});

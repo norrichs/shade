@@ -1,6 +1,9 @@
 import { describe, it, expect } from '@jest/globals';
-import type { BandCutPattern } from '$lib/types';
-import type { GlobuleAddress_Band, GlobuleAddress_BandPiece } from '$lib/projection-geometry/types';
+import type { BandCutPattern } from '#lib/types.js';
+import type {
+	GlobuleAddress_Band,
+	GlobuleAddress_BandPiece
+} from '#lib/projection-geometry/types.js';
 import { bandOptionsForTube, facetAddressOf } from '../base-quad-selection';
 
 const band = (address: GlobuleAddress_Band | GlobuleAddress_BandPiece, facets: number) =>

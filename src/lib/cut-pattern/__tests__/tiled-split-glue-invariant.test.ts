@@ -1,15 +1,15 @@
 import { beforeAll, describe, it, expect } from '@jest/globals';
-import { generateSuperGlobule } from '$lib/generate-superglobule';
+import { generateSuperGlobule } from '#lib/generate-superglobule.js';
 import {
 	generateDefaultSuperGlobuleConfig,
 	generateDefaultGlobulePatternConfig,
 	tiledPatternConfigs
-} from '$lib/shades-config';
+} from '#lib/shades-config.js';
 import { runPatternGeneration } from '../run-pattern-generation';
-import { isGlobuleAddress_BandPiece } from '$lib/util';
+import { isGlobuleAddress_BandPiece } from '#lib/util.js';
 import type { PatternGenerationResult } from '../run-pattern-generation';
-import type { PatternGenerationConfig } from '$lib/stores/globulePatternStores';
-import type { SuperGlobuleProjectionCutPattern } from '$lib/stores/superGlobuleStores';
+import type { PatternGenerationConfig } from '#lib/stores/globulePatternStores.js';
+import type { SuperGlobuleProjectionCutPattern } from '#lib/stores/superGlobuleStores.js';
 import type {
 	BandCutPattern,
 	PathSegment,
@@ -18,7 +18,7 @@ import type {
 	SuperGlobuleConfig,
 	TiledPatternConfig,
 	TubeCutPattern
-} from '$lib/types';
+} from '#lib/types.js';
 
 /**
  * shades-guk: the glue invariant — the property pattern splitting exists for.
@@ -46,7 +46,6 @@ import type {
  */
 
 const gates: PipelineGates = {
-	globule: false,
 	globuleTube: false,
 	projection: true,
 	voronoi: false

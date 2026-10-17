@@ -1,18 +1,23 @@
 import { describe, it, expect, beforeAll } from '@jest/globals';
 import { createHash } from 'crypto';
-import { generateSuperGlobule } from '$lib/generate-superglobule';
+import { generateSuperGlobule } from '#lib/generate-superglobule.js';
 import {
 	defaultOutlinedPatternConfig,
 	generateDefaultGlobulePatternConfig,
 	generateDefaultSuperGlobuleConfig
-} from '$lib/shades-config';
+} from '#lib/shades-config.js';
 import { runPatternGeneration } from '../run-pattern-generation';
 import { resolveTabLabel } from '../resolve-tab-label';
 import { buildPatternCsv } from '../build-pattern-csv';
 import { buildBandSortIndex } from '../band-sort-index';
-import type { SuperGlobuleProjectionCutPattern } from '$lib/stores/superGlobuleStores';
-import type { PatternGenerationConfig } from '$lib/stores/globulePatternStores';
-import type { PatternTypeConfig, PipelineGates, TabEdgeOption, TubeCutPattern } from '$lib/types';
+import type { SuperGlobuleProjectionCutPattern } from '#lib/stores/superGlobuleStores.js';
+import type { PatternGenerationConfig } from '#lib/stores/globulePatternStores.js';
+import type {
+	PatternTypeConfig,
+	PipelineGates,
+	TabEdgeOption,
+	TubeCutPattern
+} from '#lib/types.js';
 
 /**
  * GUARD (Task 10): unsplit tab labels and CSV text must not change.
@@ -28,7 +33,6 @@ import type { PatternTypeConfig, PipelineGates, TabEdgeOption, TubeCutPattern } 
  */
 
 const gates: PipelineGates = {
-	globule: false,
 	globuleTube: false,
 	projection: true,
 	voronoi: false

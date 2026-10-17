@@ -13,8 +13,8 @@ import {
 	patternFacetToReal,
 	realBandToPattern
 } from '../pattern-band-space';
-import type { GlobuleAddress_Band, Tube } from '$lib/projection-geometry/types';
-import type { AssemblerHighlight } from '$lib/assembler-highlight';
+import type { GlobuleAddress_Band, Tube } from '#lib/projection-geometry/types.js';
+import type { AssemblerHighlight } from '#lib/assembler-highlight.js';
 
 /**
  * Task 12: pattern band addresses count only the bands that were patterned

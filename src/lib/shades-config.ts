@@ -1,4 +1,4 @@
-import { LABEL_MM_DEFAULTS } from '$lib/cut-pattern/label-units';
+import { LABEL_MM_DEFAULTS } from '#lib/cut-pattern/label-units.js';
 import type {
 	CutoutConfig,
 	PatternConfig,
@@ -23,16 +23,16 @@ import type {
 	RecombinatoryRecurrence,
 	TiledPattern,
 	PatternScale
-} from '$lib/types';
+} from '#lib/types.js';
 import { DEFAULT_DEPTH_CURVE_BASELINE } from './types';
 import type { EndCapConfig } from './geometry/end-caps';
 import { rad } from './util';
-import { GENERAL_CONFIG, generateTempId, GLOBULE_CONFIG, SUPER_GLOBULE_CONFIG } from './id-handler';
+import { generateTempId, GLOBULE_CONFIG, SUPER_GLOBULE_CONFIG } from './id-handler';
 import { degToRad, mmFromInches } from './patterns/utils';
 import { defaultProjectionConfig } from './projection-geometry/configs';
 import { radialUnitAngle } from './geometry/radial-shape';
-import type { PanelHoleConfig } from './cut-pattern/generate-pattern';
-import type { DistributionConfig } from '../components/cut-pattern/distrubute-panels';
+import type { PanelHoleConfig } from './cut-pattern/generate-panel-pattern';
+import type { DistributionConfig } from '../components/cut-pattern/distribute-panels';
 import type { VoronoiConfig } from './voronoi/types';
 import { defaultCrossSection } from './projection-geometry/curve-definitions';
 
@@ -57,21 +57,6 @@ const defaultSilhouetteConfig = (): SilhouetteConfig => ({
 		}
 	]
 });
-
-const defaultSilhouetteConfigV2: SilhouetteConfig = {
-	type: 'SilhouetteConfig',
-	curves: [
-		{
-			type: 'BezierConfig',
-			points: [
-				{ type: 'PointConfig2', x: 50, y: -20 },
-				{ type: 'PointConfig2', x: 150, y: -20 },
-				{ type: 'PointConfig2', x: 150, y: 50 },
-				{ type: 'PointConfig2', x: 50, y: 50 }
-			]
-		}
-	]
-};
 
 const defaultDepthCurveConfig = (): DepthCurveConfig => ({
 	type: 'DepthCurveConfig',
@@ -215,7 +200,7 @@ const defaultLevelConfig = (): LevelConfig => ({
 	]
 });
 
-export const initTabStyle = (style: TabStyle['style']): TabStyle => {
+const initTabStyle = (style: TabStyle['style']): TabStyle => {
 	const defaultTabStyles: { [key: string]: TabStyle } = {
 		full: { style: 'full', direction: 'lesser' },
 		trapezoid: { style: 'trapezoid', direction: 'lesser', width: { style: 'fixed', value: 5 } },
@@ -274,7 +259,7 @@ const defaultRenderConfig = (): RenderConfig => ({
 	}
 });
 
-export const defaultScaleConfig: PatternScale = {
+const defaultScaleConfig: PatternScale = {
 	unit: 'mm',
 	unitPerSvgUnit: mmFromInches(1) / 20,
 	quantity: Math.round(mmFromInches(24) * 10) / 10,
@@ -284,7 +269,7 @@ export const defaultScaleConfig: PatternScale = {
 	}
 };
 
-export const defaultPanelHoleConfig: PanelHoleConfig = {
+const defaultPanelHoleConfig: PanelHoleConfig = {
 	holeDistribution: 'vertex',
 	units: 'in',
 	thickness: 0.47,
@@ -296,7 +281,7 @@ export const defaultPanelHoleConfig: PanelHoleConfig = {
 	nutDiameter: 5 / 16
 };
 
-export const defaultDistributionConfig: DistributionConfig = {
+const defaultDistributionConfig: DistributionConfig = {
 	type: 'contiguous',
 	panelOffset: 0,
 	reAlignBands: true
@@ -490,7 +475,7 @@ export const tiledPatternConfigs: { [key: string]: TiledPatternConfig } = {
 	}
 };
 
-export const defaultTiledPatternConfig = (): TiledPatternConfig => {
+const defaultTiledPatternConfig = (): TiledPatternConfig => {
 	const pattern: TiledPattern = 'tiledShieldTesselationPattern';
 	return {
 		...tiledPatternConfigs[pattern],
@@ -596,7 +581,8 @@ export const defaultPatternConfig = (): PatternConfig => ({
 		algorithm: 'flex-wrap',
 		reorderWindow: 8,
 		allowRotation: false,
-		keepConnected: 0
+		keepConnected: 0,
+		rotationStep: 15
 	},
 	splits: { tubeSplits: [] },
 	postProcess: { dropHoles: { mode: 'none' }, runSeed: 0 },
@@ -607,7 +593,7 @@ export const defaultPatternConfig = (): PatternConfig => ({
 	showTabs: true
 });
 
-export const defaultPatternViewConfig = (): PatternViewConfig => ({
+const defaultPatternViewConfig = (): PatternViewConfig => ({
 	showBands: true,
 	showQuads: false,
 	showTriangles: false,
@@ -625,7 +611,7 @@ export const defaultPatternViewConfig = (): PatternViewConfig => ({
 	patternLayoutMode: 'linear'
 });
 
-export const getLevels = (sampleMethod: CurveSampleMethod, curveCount: number) => {
+const getLevels = (sampleMethod: CurveSampleMethod, curveCount: number) => {
 	if (sampleMethod.method === 'divideCurve') {
 		return sampleMethod.divisions * curveCount + 1;
 	}
@@ -637,7 +623,12 @@ export const generateDefaultGlobuleConfig = (): GlobuleConfig => {
 		type: 'GlobuleConfig',
 		id: generateTempId(GLOBULE_CONFIG),
 		name: 'New Globule',
-		shapeConfig: generateDefaultRadialShapeConfig(5, { method: 'divideCurve', divisions: 30 }), // generateDefaultAsymmetricShapeConfig({ method: 'divideCurve', divisions: 1 }),
+		shapeConfigs: [
+			{
+				...generateDefaultRadialShapeConfig(5, { method: 'divideCurve', divisions: 30 }),
+				isPrimary: true
+			}
+		], // generateDefaultAsymmetricShapeConfig({ method: 'divideCurve', divisions: 1 }),
 		levelConfig: defaultLevelConfig(),
 		silhouetteConfig: defaultSilhouetteConfig(),
 		depthCurveConfig: defaultDepthCurveConfig(),
@@ -663,24 +654,6 @@ const defaultSubGlobuleConfig = (cfg?: Partial<SubGlobuleConfig>): SubGlobuleCon
 		globuleConfig: generateDefaultGlobuleConfig()
 	};
 	return { ...subglob, ...cfg };
-};
-
-export const generateSubGlobuleConfigWrapper = (globule: GlobuleConfig) => {
-	return defaultSubGlobuleConfig({
-		globuleConfig: globule
-	});
-};
-
-export const generateSuperGlobuleConfigWrapper = (globule: GlobuleConfig) => {
-	const superGlobuleConfig: SuperGlobuleConfig = {
-		type: 'SuperGlobuleConfig',
-		id: generateTempId(SUPER_GLOBULE_CONFIG),
-		name: 'Default Super Globule',
-		subGlobuleConfigs: [generateSubGlobuleConfigWrapper(globule)],
-		projectionConfigs: []
-	};
-
-	return superGlobuleConfig;
 };
 
 export const generateDefaultSuperGlobuleConfig = (): SuperGlobuleConfig => {

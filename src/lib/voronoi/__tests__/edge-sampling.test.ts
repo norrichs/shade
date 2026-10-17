@@ -1,8 +1,7 @@
 import { Vector3 } from 'three';
 import { slerp, edgeArcLength, sampleEdgeAsDirections } from '../edge-sampling';
 
-const coordToDirection = (a: number, _b: number): Vector3 =>
-	new Vector3(Math.cos(a), Math.sin(a), 0);
+const coordToDirection = (a: number): Vector3 => new Vector3(Math.cos(a), Math.sin(a), 0);
 
 describe('slerp', () => {
 	it('returns endpoints at t=0 and t=1', () => {

@@ -1,0 +1,311 @@
+{
+	"type": "GlobuleConfig",
+	"id": "glb_f26abf54-c36a-46e8-9dcf-29380beaff6f",
+	"name": "New Globule",
+	"shapeConfigs": [
+		{
+			"type": "ShapeConfig",
+			"symmetry": "radial",
+			"symmetryNumber": 1,
+			"sampleMethod": {
+				"method": "divideCurve",
+				"divisions": 20
+			},
+			"curves": [
+				{
+					"type": "BezierConfig",
+					"points": [
+						{
+							"type": "PointConfig2",
+							"x": 0,
+							"y": 94.67759489423811
+						},
+						{
+							"type": "PointConfig2",
+							"x": -160.57047723433246,
+							"y": 91.00000000000003
+						},
+						{
+							"type": "PointConfig2",
+							"x": -56.443203194380864,
+							"y": -179.23567741049277
+						},
+						{
+							"type": "PointConfig2",
+							"x": -2.6666666666666665,
+							"y": -176.49180382932138
+						}
+					]
+				},
+				{
+					"type": "BezierConfig",
+					"points": [
+						{
+							"type": "PointConfig2",
+							"x": -2.6666666666666665,
+							"y": -176.49180382932138
+						},
+						{
+							"type": "PointConfig2",
+							"x": 47.12698868007733,
+							"y": -173.95115126525243
+						},
+						{
+							"type": "PointConfig2",
+							"x": 39.3621505345086,
+							"y": -45.25282691156024
+						},
+						{
+							"type": "PointConfig2",
+							"x": 47.261607469062255,
+							"y": -25.990096293763372
+						}
+					]
+				},
+				{
+					"type": "BezierConfig",
+					"points": [
+						{
+							"type": "PointConfig2",
+							"x": 47.261607469062255,
+							"y": -25.990096293763372
+						},
+						{
+							"type": "PointConfig2",
+							"x": 57.74589154756088,
+							"y": -0.4242958092789664
+						},
+						{
+							"type": "PointConfig2",
+							"x": 124.57047723433246,
+							"y": 91.01092822757148
+						},
+						{
+							"type": "PointConfig2",
+							"x": 2.31893227076397e-14,
+							"y": 94.67759489423811
+						}
+					]
+				}
+			],
+			"isPrimary": true
+		}
+	],
+	"levelConfig": {
+		"type": "LevelConfig",
+		"silhouetteSampleMethod": {
+			"method": "preserveAspectRatio",
+			"divisions": 30
+		},
+		"levelPrototypeSampleMethod": "curve",
+		"levelCount": 11,
+		"levelOffsets": [
+			{
+				"x": 0,
+				"y": 0,
+				"z": 0,
+				"rotX": 0,
+				"rotY": 0,
+				"rotZ": 0,
+				"scaleX": 1,
+				"scaleY": 1,
+				"depth": 1
+			}
+		]
+	},
+	"silhouetteConfig": {
+		"type": "SilhouetteConfig",
+		"curves": [
+			{
+				"type": "BezierConfig",
+				"points": [
+					{
+						"type": "PointConfig2",
+						"x": 0,
+						"y": -0.3333333333333333
+					},
+					{
+						"type": "PointConfig2",
+						"x": 84.99999999999999,
+						"y": -0.33333333333333326
+					},
+					{
+						"type": "PointConfig2",
+						"x": 170.85949804645253,
+						"y": 0.9127477037807239
+					},
+					{
+						"type": "PointConfig2",
+						"x": 162.25,
+						"y": -44.416666666666664
+					}
+				]
+			},
+			{
+				"type": "BezierConfig",
+				"points": [
+					{
+						"type": "PointConfig2",
+						"x": 162.25,
+						"y": -44.416666666666664
+					},
+					{
+						"type": "PointConfig2",
+						"x": 158.6207432248364,
+						"y": -63.52487522081477
+					},
+					{
+						"type": "PointConfig2",
+						"x": 131.67803634155726,
+						"y": -63.97764474342341
+					},
+					{
+						"type": "PointConfig2",
+						"x": 109.09375,
+						"y": -65.63541666666666,
+						"pointType": "angled"
+					}
+				]
+			},
+			{
+				"type": "BezierConfig",
+				"points": [
+					{
+						"type": "PointConfig2",
+						"x": 109.09375,
+						"y": -65.63541666666666,
+						"pointType": "angled"
+					},
+					{
+						"type": "PointConfig2",
+						"x": 111.09375,
+						"y": -84.30208333333333
+					},
+					{
+						"type": "PointConfig2",
+						"x": 102.42708333333334,
+						"y": -85.63541666666666
+					},
+					{
+						"type": "PointConfig2",
+						"x": 81.09375,
+						"y": -85.63541666666666
+					}
+				]
+			}
+		]
+	},
+	"depthCurveConfig": {
+		"type": "DepthCurveConfig",
+		"depthCurveBaseline": 100,
+		"curves": [
+			{
+				"type": "BezierConfig",
+				"points": [
+					{
+						"type": "PointConfig2",
+						"x": 100,
+						"y": -100
+					},
+					{
+						"type": "PointConfig2",
+						"x": 100,
+						"y": -75
+					},
+					{
+						"type": "PointConfig2",
+						"x": 100,
+						"y": 75
+					},
+					{
+						"type": "PointConfig2",
+						"x": 100,
+						"y": 100
+					}
+				]
+			}
+		]
+	},
+	"spineCurveConfigs": [
+		{
+			"type": "SpineCurveConfig",
+			"id": "cfg_ca59152f-acbf-46b4-a88c-68390fd16562",
+			"angle": 0,
+			"curves": [
+				{
+					"type": "BezierConfig",
+					"points": [
+						{
+							"type": "PointConfig2",
+							"x": 0,
+							"y": -100
+						},
+						{
+							"type": "PointConfig2",
+							"x": 0,
+							"y": -75
+						},
+						{
+							"type": "PointConfig2",
+							"x": 0,
+							"y": 75
+						},
+						{
+							"type": "PointConfig2",
+							"x": 0,
+							"y": 100
+						}
+					]
+				}
+			]
+		}
+	],
+	"bandConfig": {
+		"type": "BandConfig",
+		"bandStyle": "helical-right",
+		"offsetBy": 0,
+		"tabStyle": {
+			"style": "trapezoid",
+			"direction": "lesser",
+			"width": {
+				"style": "fixed",
+				"value": 5
+			}
+		}
+	},
+	"strutConfig": {
+		"type": "StrutConfig",
+		"tiling": "helical-right",
+		"orientation": "inside",
+		"radiate": "hybrid",
+		"width": 5
+	},
+	"renderConfig": {
+		"type": "RenderConfig",
+		"ranges": {
+			"rangeStyle": "slice",
+			"bandStart": 0,
+			"bandCount": 0,
+			"facetStart": 0,
+			"facetCount": 0,
+			"levelStart": 0,
+			"levelCount": 1,
+			"strutStart": 0,
+			"strutCount": 0
+		},
+		"show": {
+			"tabs": false,
+			"levels": false,
+			"bands": true,
+			"edges": false,
+			"patterns": true,
+			"struts": true
+		}
+	},
+	"endCaps": {
+		"enabled": true,
+		"topCap": true,
+		"bottomCap": true,
+		"capOffset": 0
+	}
+}

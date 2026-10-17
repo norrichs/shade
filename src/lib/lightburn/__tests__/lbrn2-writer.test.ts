@@ -8,7 +8,14 @@ const project: LbProject = {
 			shapes: [
 				{ kind: 'rect', cutIndex: 30, x: 0, y: 0, width: 300, height: 300 },
 				{ kind: 'path', cutIndex: 0, segments: [['M', 0, 0], ['L', 10, 0], ['L', 10, 10], ['Z']] },
-				{ kind: 'path', cutIndex: 1, segments: [['M', 1, 1], ['L', 2, 2]] }
+				{
+					kind: 'path',
+					cutIndex: 1,
+					segments: [
+						['M', 1, 1],
+						['L', 2, 2]
+					]
+				}
 			]
 		},
 		{ shapes: [{ kind: 'rect', cutIndex: 30, x: 0, y: 310, width: 300, height: 300 }] }

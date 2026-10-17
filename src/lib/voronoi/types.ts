@@ -2,7 +2,7 @@ import type {
 	CrossSectionConfig,
 	ProjectionBandConfig,
 	TransformConfig
-} from '$lib/projection-geometry/types';
+} from '#lib/projection-geometry/types.js';
 
 export type VoronoiMethod = 'spherical' | 'uv' | 'geodesic';
 
@@ -42,7 +42,7 @@ export type VoronoiConfig = {
 	fillAll?: boolean;
 };
 
-export type VoronoiSeedConfig = {
+type VoronoiSeedConfig = {
 	type: 'VoronoiSeedConfig';
 	seedMethod: SeedMethod;
 	relaxationIterations: number;

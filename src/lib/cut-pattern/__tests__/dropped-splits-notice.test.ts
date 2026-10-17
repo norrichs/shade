@@ -1,14 +1,14 @@
 import { describe, it, expect, jest } from '@jest/globals';
 import { createDroppedSplitsNotifier, formatDroppedSplitsMessage } from '../dropped-splits-notice';
-import type { Toast } from '$lib/stores/toastStore';
+import type { Toast } from '#lib/stores/toastStore.js';
 
 const outOfRange = { tube: 0, quad: 9, reason: 'out of range for 6 quads' };
 const nonMultiple = { tube: 1, quad: 2, reason: 'not a multiple of subunitCount 3' };
 
 const toastDeps = () => {
 	let n = 0;
-	const add = jest.fn((_toast: Omit<Toast, 'id'>) => `t${++n}`);
-	const remove = jest.fn((_id: string) => {});
+	const add = jest.fn<(toast: Omit<Toast, 'id'>) => string>(() => `t${++n}`);
+	const remove = jest.fn<(id: string) => void>(() => {});
 	return { add, remove };
 };
 

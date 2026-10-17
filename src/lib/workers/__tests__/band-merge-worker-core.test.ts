@@ -1,15 +1,15 @@
 import { describe, it, expect, jest } from '@jest/globals';
 import { createBandMergeCore, type MergeResponse } from '../band-merge-worker-core';
-import { holesOf } from '$lib/cut-pattern/contour-index';
-import { computeMergedBandPaths } from '$lib/cut-pattern/prepare-merge';
-import { toBandMergePayloads } from '$lib/cut-pattern/band-merge-payload';
+import { holesOf } from '#lib/cut-pattern/contour-index.js';
+import { computeMergedBandPaths } from '#lib/cut-pattern/prepare-merge.js';
+import { toBandMergePayloads } from '#lib/cut-pattern/band-merge-payload.js';
 import {
 	buildDefaultGeometry,
 	splitAllTubesAt,
 	generateProjectionTubes
-} from '$lib/cut-pattern/__tests__/helpers/real-geometry';
-import { tiledPatternConfigs } from '$lib/shades-config';
-import type { PatternLabelsConfig } from '$lib/types';
+} from '#lib/cut-pattern/__tests__/helpers/real-geometry.js';
+import { tiledPatternConfigs } from '#lib/shades-config.js';
+import type { PatternLabelsConfig } from '#lib/types.js';
 
 const tiledConfig = tiledPatternConfigs['tiledHexPattern-1'];
 const labels: PatternLabelsConfig = {

@@ -1,8 +1,8 @@
 import { describe, it, expect } from '@jest/globals';
 import { Vector3 } from 'three';
-import type { SurfaceTriangle, VoronoiConfig } from '$lib/voronoi/types';
-import { OPENING } from '$lib/types';
-import { defaultVoronoiConfig } from '$lib/shades-config';
+import type { SurfaceTriangle, VoronoiConfig } from '#lib/voronoi/types.js';
+import { OPENING } from '#lib/types.js';
+import { defaultVoronoiConfig } from '#lib/shades-config.js';
 import { generateGeodesicVoronoi } from '../geodesic-voronoi';
 
 /** Flat NxN grid in the z=0 plane — an OPEN surface (perimeter rim). */

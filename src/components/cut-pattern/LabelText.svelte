@@ -1,7 +1,7 @@
 <script lang="ts">
-	import type { Point } from '$lib/types';
+	import type { Point } from '#lib/types.js';
 	import SvgText from './SvgText/SvgText.svelte';
-	import type { GeometryType } from '$lib/cut-pattern/post-process-types';
+	import type { GeometryType } from '#lib/cut-pattern/post-process-types.js';
 
 	let {
 		lines = [],
@@ -21,7 +21,7 @@
 </script>
 
 <g bind:this={element} {transform}>
-	{#each lines as lineString, i}
+	{#each lines as lineString, i (i)}
 		<SvgText
 			string={lineString}
 			anchor={{ ...anchor, y: anchor.y + (size / 2) * (i + 1) }}

@@ -2,20 +2,20 @@
 	import { untrack } from 'svelte';
 	import { Vector3 } from 'three';
 	import { get } from 'svelte/store';
-	import { superConfigStore } from '$lib/stores';
+	import { superConfigStore } from '#lib/stores/index.js';
 	import { importedMeshBusy } from './imported-mesh-busy';
-	import { toastStore } from '$lib/stores/toastStore';
-	import { assetStatus, resolveAsset } from '$lib/mesh-import/asset-store';
+	import { toastStore } from '#lib/stores/toastStore.js';
+	import { assetStatus, resolveAsset } from '#lib/mesh-import/asset-store.js';
 	import {
 		applySimplify,
 		refit,
 		replaceImportedModel,
 		revertSimplify
-	} from '$lib/mesh-import/import-model';
-	import { getMatrix4 } from '$lib/projection-geometry/generate-projection';
-	import type { Point3 } from '$lib/types';
-	import type { MeshAsset } from '$lib/mesh-import/types';
-	import type { ImportedSurfaceConfig, UpAxis } from '$lib/projection-geometry/types';
+	} from '#lib/mesh-import/import-model.js';
+	import { getMatrix4 } from '#lib/projection-geometry/generate-projection.js';
+	import type { Point3 } from '#lib/types.js';
+	import type { MeshAsset } from '#lib/mesh-import/types.js';
+	import type { ImportedSurfaceConfig, UpAxis } from '#lib/projection-geometry/types.js';
 	import LabeledControl from './LabeledControl.svelte';
 	import Container from './Container.svelte';
 	import NumberInput from '../../controls/super-control/NumberInput.svelte';

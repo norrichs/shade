@@ -1,4 +1,4 @@
-import type { PathSegment } from '$lib/types';
+import type { PathSegment } from '#lib/types.js';
 import { holesOf, type BandContourIndex } from './contour-index';
 import { lookup, sampleDropCurve, type PostProcessConfig } from './hole-drop-config';
 import type { TaggedPath } from './post-process-types';

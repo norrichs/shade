@@ -1,6 +1,6 @@
-import { mulberry32 } from '$lib/rng';
-import { svgPathStringFromSegments } from '$lib/patterns/utils';
-import type { CutPattern, PathSegment, ProceduralFillConfig } from '$lib/types';
+import { mulberry32 } from '#lib/rng.js';
+import { svgPathStringFromSegments } from '#lib/patterns/utils.js';
+import type { CutPattern, PathSegment, ProceduralFillConfig } from '#lib/types.js';
 import { packCircles, type Circle } from './circle-packing';
 import type { Polygon } from './polygon-2d';
 

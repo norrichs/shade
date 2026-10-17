@@ -1,6 +1,6 @@
 import { describe, it, expect } from '@jest/globals';
-import type { BandSortIndex, TubeCutPattern } from '$lib/types';
-import { concatAddress } from '$lib/util';
+import type { BandSortIndex, TubeCutPattern } from '#lib/types.js';
+import { concatAddress } from '#lib/util.js';
 import { resolveIndexBands, groupCodeForBand } from '../resolve-index-bands';
 import { buildBandCodeMap } from '../band-sort-index';
 

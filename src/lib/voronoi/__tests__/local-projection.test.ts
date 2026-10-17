@@ -8,7 +8,7 @@ import {
 	DoubleSide,
 	Raycaster
 } from 'three';
-import { OPENING } from '$lib/types';
+import { OPENING } from '#lib/types.js';
 import { computeEdgeInsetsLocalProjection } from '../local-projection';
 import { computeEdgeInsetsCenterOut } from '../inset-center-out';
 import type { VoronoiEdge } from '../types';
@@ -83,8 +83,8 @@ describe('computeEdgeInsetsLocalProjection', () => {
 		[1.5, 0] // cell 3
 	];
 	const edgeProjections: EdgeProjection[] = edges.map((e) => {
-		const ends = [e.vertices[0], e.vertices[1]].map(
-			(v) => intersect(coordToDirection(v[0], v[1]))!
+		const ends = [e.vertices[0], e.vertices[1]].map((v) =>
+			intersect(coordToDirection(v[0], v[1]))!
 		);
 		const mid = intersect(
 			coordToDirection(

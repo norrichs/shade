@@ -1,7 +1,7 @@
 import { derived } from 'svelte/store';
 
-import { collateTubes } from '$lib/cut-pattern/collate-tubes';
-import type { TubeCutPattern } from '$lib/types';
+import { collateTubes } from '#lib/cut-pattern/collate-tubes.js';
+import type { TubeCutPattern } from '#lib/types.js';
 
 import { superGlobulePatternStore, patternSourceStore } from './superGlobuleStores';
 import { viewControlStore } from './viewControlStore';

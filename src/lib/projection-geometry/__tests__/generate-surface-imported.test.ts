@@ -3,19 +3,19 @@ import { BoxGeometry, Mesh, Raycaster, Vector3, type Object3D } from 'three';
 import { acceleratedRaycast } from 'three-mesh-bvh';
 import { generateSurface, generateSurfaceIfAvailable } from '../generate-projection';
 import type { ImportedSurfaceConfig, SurfaceConfig } from '../types';
-import { cleanMesh } from '$lib/mesh-import/clean-mesh';
+import { cleanMesh } from '#lib/mesh-import/clean-mesh.js';
 import {
 	getLoadedAsset,
 	hashMesh,
 	registerAsset,
 	resetAssetStoreForTests
-} from '$lib/mesh-import/asset-store';
+} from '#lib/mesh-import/asset-store.js';
 import { IcosahedronGeometry } from 'three';
 import { webcrypto } from 'node:crypto';
 import {
 	MissingMeshAssetError,
 	resetAssetGeometryCacheForTests
-} from '$lib/mesh-import/asset-geometry';
+} from '#lib/mesh-import/asset-geometry.js';
 
 const cubeConfig = (over: Partial<ImportedSurfaceConfig> = {}): SurfaceConfig =>
 	({

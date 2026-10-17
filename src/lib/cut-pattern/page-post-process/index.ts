@@ -18,7 +18,16 @@ export const pagePostProcess = (input: {
 	const { bands, pages, pageScale, marginPx, gap, config, configName, dict } = input;
 	const disconnects = config.disconnectSurround ? computeDisconnects(bands, pages, gap) : [];
 	const pageLabels = dict
-		? buildPageLabels({ pages, marginPx, pageScale, bands, disconnects, config: config.pageLabel, configName, dict })
+		? buildPageLabels({
+				pages,
+				marginPx,
+				pageScale,
+				bands,
+				disconnects,
+				config: config.pageLabel,
+				configName,
+				dict
+			})
 		: [];
 	return { disconnects, pageLabels };
 };

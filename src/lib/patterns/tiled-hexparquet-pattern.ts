@@ -1,4 +1,4 @@
-import type { BandCutPattern, PathSegment, Quadrilateral, TiledPatternConfig } from '$lib/types';
+import type { BandCutPattern, PathSegment, Quadrilateral, TiledPatternConfig } from '#lib/types.js';
 import type { IndexPair } from './spec-types';
 import type { FacetSnapRule } from './adjust/snap-adjacent-facets';
 import { snapAdjacentFacets } from './adjust/snap-adjacent-facets';
@@ -8,9 +8,9 @@ import {
 	alongsideFacetIndex,
 	findSideNeighbourInBands,
 	pieceIndexOf
-} from '$lib/cut-pattern/resolve-partner-band';
-import { isSameParentBand } from '$lib/util';
-import type { GlobuleAddress_BandPiece } from '$lib/projection-geometry/types';
+} from '#lib/cut-pattern/resolve-partner-band.js';
+import { isSameParentBand } from '#lib/util.js';
+import type { GlobuleAddress_BandPiece } from '#lib/projection-geometry/types.js';
 
 /**
  * Hexparquet: three subunits cycled along a band, one per quad. Quad i+1 lies

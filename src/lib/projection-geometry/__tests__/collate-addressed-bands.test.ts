@@ -1,7 +1,7 @@
 import { describe, it, expect } from '@jest/globals';
 import { Triangle, Vector3 } from 'three';
 import { collateAddressedBandGeometry, collateVoronoiGeometry } from '../collate-geometry';
-import type { Band } from '$lib/types';
+import type { Band } from '#lib/types.js';
 
 const facet = (band: number, facetIndex: number) => ({
 	triangle: new Triangle(

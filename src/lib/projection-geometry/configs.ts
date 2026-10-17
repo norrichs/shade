@@ -1,4 +1,4 @@
-import { generateTempId } from '$lib/id-handler';
+import { generateTempId } from '#lib/id-handler.js';
 import cube from './models/cube';
 import doublyTruncatedIcosohedron from './models/doubly-truncated-icosohedron';
 import icosohedron from './models/icosohedron';

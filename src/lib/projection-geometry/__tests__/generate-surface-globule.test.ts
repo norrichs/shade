@@ -1,5 +1,5 @@
 import { Mesh } from 'three';
-import { generateDefaultSuperGlobuleConfig } from '$lib/shades-config';
+import { generateDefaultSuperGlobuleConfig } from '#lib/shades-config.js';
 import { generateSurface } from '../generate-projection';
 import type { SurfaceConfig } from '../types';
 

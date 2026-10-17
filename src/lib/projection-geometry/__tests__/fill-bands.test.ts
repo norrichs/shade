@@ -1,6 +1,6 @@
 import { describe, it, expect } from '@jest/globals';
 import { Triangle, Vector3 } from 'three';
-import type { Band } from '$lib/types';
+import type { Band } from '#lib/types.js';
 import type { Section } from '../types';
 import {
 	isDegenerateTriangle,

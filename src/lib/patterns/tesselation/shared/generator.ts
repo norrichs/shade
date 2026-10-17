@@ -1,4 +1,4 @@
-import type { Band, GridVariant, PathSegment } from '$lib/types';
+import type { Band, GridVariant, PathSegment } from '#lib/types.js';
 import { translatePS } from '../../utils';
 import type { TiledPatternSpec } from '../../spec-types';
 import { scaleSegment } from './helpers';

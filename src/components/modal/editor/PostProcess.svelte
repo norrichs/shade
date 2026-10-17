@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { patternConfigStore, lightburnTemplateStore } from '$lib/stores';
+	import { patternConfigStore, lightburnTemplateStore } from '#lib/stores/index.js';
 	import {
 		DEFAULT_POST_PROCESS,
 		DEFAULT_CONNECT_GAP_MM,
@@ -7,11 +7,20 @@
 		type HoleDropConfig,
 		type HoleDropMode,
 		type PageLabelConfig
-	} from '$lib/cut-pattern/hole-drop-config';
-	import { GEOMETRY_TYPES, GEOMETRY_TYPE_LABELS, type GeometryType } from '$lib/cut-pattern/post-process-types';
-	import { LIGHTBURN_LAYERS, layerOptionLabel, resolveLayer, type LayerId } from '$lib/lightburn/layers';
-	import { readTemplateUpload, missingTemplateLayers } from '$lib/lightburn/template-status';
-	import type { BezierConfig } from '$lib/types';
+	} from '#lib/cut-pattern/hole-drop-config.js';
+	import {
+		GEOMETRY_TYPES,
+		GEOMETRY_TYPE_LABELS,
+		type GeometryType
+	} from '#lib/cut-pattern/post-process-types.js';
+	import {
+		LIGHTBURN_LAYERS,
+		layerOptionLabel,
+		resolveLayer,
+		type LayerId
+	} from '#lib/lightburn/layers.js';
+	import { readTemplateUpload, missingTemplateLayers } from '#lib/lightburn/template-status.js';
+	import type { BezierConfig } from '#lib/types.js';
 	import NumberInput from '../../controls/super-control/NumberInput.svelte';
 	import Container from './Container.svelte';
 	import Editor from './Editor.svelte';
@@ -45,18 +54,24 @@
 		};
 	};
 
-	const setFlag = (flag: 'dropOutline' | 'dropLabelText' | 'disconnectSurround', value: boolean) => {
+	const setFlag = (
+		flag: 'dropOutline' | 'dropLabelText' | 'disconnectSurround',
+		value: boolean
+	) => {
 		$patternConfigStore.patternConfig.postProcess = { ...postProcess, [flag]: value };
 	};
 
 	const patch = (next: Partial<typeof postProcess>) => {
 		$patternConfigStore.patternConfig.postProcess = { ...postProcess, ...next };
 	};
-	let connect = $derived(postProcess.connectSurround ?? { enabled: false, gapMm: DEFAULT_CONNECT_GAP_MM });
+	let connect = $derived(
+		postProcess.connectSurround ?? { enabled: false, gapMm: DEFAULT_CONNECT_GAP_MM }
+	);
 	let pageLabel = $derived<PageLabelConfig>(
 		postProcess.pageLabel ?? { pageNumber: false, configName: false, text: '' }
 	);
-	const setPageLabel = (next: Partial<PageLabelConfig>) => patch({ pageLabel: { ...pageLabel, ...next } });
+	const setPageLabel = (next: Partial<PageLabelConfig>) =>
+		patch({ pageLabel: { ...pageLabel, ...next } });
 	const setLayer = (type: GeometryType, id: LayerId) =>
 		patch({ layerMap: { ...(postProcess.layerMap ?? {}), [type]: id } });
 
@@ -174,7 +189,8 @@
 				<input
 					type="checkbox"
 					checked={connect.enabled}
-					onchange={(e) => patch({ connectSurround: { ...connect, enabled: e.currentTarget.checked } })}
+					onchange={(e) =>
+						patch({ connectSurround: { ...connect, enabled: e.currentTarget.checked } })}
 				/>
 			</LabeledControl>
 			{#if connect.enabled}
@@ -192,13 +208,25 @@
 
 		<h4>Page labels</h4>
 		<LabeledControl label="Page number">
-			<input type="checkbox" checked={pageLabel.pageNumber} onchange={(e) => setPageLabel({ pageNumber: e.currentTarget.checked })} />
+			<input
+				type="checkbox"
+				checked={pageLabel.pageNumber}
+				onchange={(e) => setPageLabel({ pageNumber: e.currentTarget.checked })}
+			/>
 		</LabeledControl>
 		<LabeledControl label="Config name">
-			<input type="checkbox" checked={pageLabel.configName} onchange={(e) => setPageLabel({ configName: e.currentTarget.checked })} />
+			<input
+				type="checkbox"
+				checked={pageLabel.configName}
+				onchange={(e) => setPageLabel({ configName: e.currentTarget.checked })}
+			/>
 		</LabeledControl>
 		<LabeledControl label="Text">
-			<input type="text" value={pageLabel.text} onchange={(e) => setPageLabel({ text: e.currentTarget.value.trim() })} />
+			<input
+				type="text"
+				value={pageLabel.text}
+				onchange={(e) => setPageLabel({ text: e.currentTarget.value.trim() })}
+			/>
 		</LabeledControl>
 
 		<h4>Layers</h4>
@@ -206,7 +234,10 @@
 			{@const current = resolveLayer(type, postProcess.layerMap)}
 			<LabeledControl label={GEOMETRY_TYPE_LABELS[type]}>
 				<span class="swatch" style="background: {current.hex}"></span>
-				<select value={current.id} onchange={(e) => setLayer(type, e.currentTarget.value as LayerId)}>
+				<select
+					value={current.id}
+					onchange={(e) => setLayer(type, e.currentTarget.value as LayerId)}
+				>
 					{#each LIGHTBURN_LAYERS as layer (layer.id)}
 						<option value={layer.id}>{layerOptionLabel(layer)}</option>
 					{/each}
@@ -228,7 +259,9 @@
 		{#if templateError}<p class="error">{templateError}</p>{/if}
 		{#if $lightburnTemplateStore}
 			<p class="hint">
-				{$lightburnTemplateStore.fileName} · loaded {new Date($lightburnTemplateStore.loadedAt).toLocaleString()}
+				{$lightburnTemplateStore.fileName} · loaded {new Date(
+					$lightburnTemplateStore.loadedAt
+				).toLocaleString()}
 			</p>
 		{:else}
 			<p class="hint">No template: cut settings will use LightBurn defaults.</p>

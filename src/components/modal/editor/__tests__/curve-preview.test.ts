@@ -6,9 +6,9 @@ import {
 	pathFromCurves,
 	radializeCurves
 } from '../curve-preview';
-import { radialShapeCurveConfigs } from '$lib/geometry/radial-shape';
-import { generateDefaultRadialShapeConfig } from '$lib/shades-config';
-import type { BezierConfig, PointConfig2 } from '$lib/types';
+import { radialShapeCurveConfigs } from '#lib/geometry/radial-shape.js';
+import { generateDefaultRadialShapeConfig } from '#lib/shades-config.js';
+import type { BezierConfig, PointConfig2 } from '#lib/types.js';
 
 const sampleMethod = { method: 'divideCurve', divisions: 4 } as const;
 

@@ -1,15 +1,15 @@
 import { describe, it, expect } from '@jest/globals';
-import { generateSuperGlobule } from '$lib/generate-superglobule';
+import { generateSuperGlobule } from '#lib/generate-superglobule.js';
 import {
 	generateDefaultSuperGlobuleConfig,
 	generateDefaultGlobulePatternConfig
-} from '$lib/shades-config';
+} from '#lib/shades-config.js';
 import { generateProjectionPattern } from '../generate-pattern';
 import { runPatternGeneration } from '../run-pattern-generation';
-import type { SuperGlobuleProjectionCutPattern } from '$lib/stores/superGlobuleStores';
-import type { PatternGenerationConfig } from '$lib/stores/globulePatternStores';
+import type { SuperGlobuleProjectionCutPattern } from '#lib/stores/superGlobuleStores.js';
+import type { PatternGenerationConfig } from '#lib/stores/globulePatternStores.js';
 import type { PatternGenerationResult } from '../run-pattern-generation';
-import type { PipelineGates, SuperGlobuleConfig } from '$lib/types';
+import type { PipelineGates, SuperGlobuleConfig } from '#lib/types.js';
 
 /**
  * Task 9a (shades-0u5): before this task, `patternGenerationConfig` never carried
@@ -30,7 +30,6 @@ import type { PipelineGates, SuperGlobuleConfig } from '$lib/types';
  */
 
 const gates: PipelineGates = {
-	globule: false,
 	globuleTube: false,
 	projection: true,
 	voronoi: false

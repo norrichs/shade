@@ -1,11 +1,11 @@
-import { generateSuperGlobule as defaultGenerateSuperGlobule } from '$lib/generate-superglobule';
+import { generateSuperGlobule as defaultGenerateSuperGlobule } from '#lib/generate-superglobule.js';
 import {
 	runPatternGeneration as defaultRunPatternGeneration,
 	type PatternGenerationResult
-} from '$lib/cut-pattern/run-pattern-generation';
-import { ensureAssetsLoaded } from '$lib/mesh-import/asset-store';
-import type { PatternGenerationConfig } from '$lib/stores/globulePatternStores';
-import type { PipelineGates, SuperGlobule, SuperGlobuleConfig } from '$lib/types';
+} from '#lib/cut-pattern/run-pattern-generation.js';
+import { ensureAssetsLoaded } from '#lib/mesh-import/asset-store.js';
+import type { PatternGenerationConfig } from '#lib/stores/globulePatternStores.js';
+import type { PipelineGates, SuperGlobule, SuperGlobuleConfig } from '#lib/types.js';
 
 /**
  * Message protocol between the main thread and the geometry worker.
@@ -71,7 +71,7 @@ export type WorkerCoreDeps = {
  * Strips non-serializable Object3D instances from the result
  * The surface can be regenerated on the main thread if needed
  */
-export function stripNonSerializable(superGlobule: SuperGlobule): SuperGlobule {
+function stripNonSerializable(superGlobule: SuperGlobule): SuperGlobule {
 	return {
 		...superGlobule,
 		projections: superGlobule.projections.map((projection) => ({
@@ -79,33 +79,6 @@ export function stripNonSerializable(superGlobule: SuperGlobule): SuperGlobule {
 			// Replace Object3D with null - it can't be serialized
 			// and can be regenerated on main thread if needed
 			surface: null as unknown as typeof projection.surface
-		})),
-		// Strip end cap meshes from subGlobules
-		subGlobules: superGlobule.subGlobules.map((subGlobule) => ({
-			...subGlobule,
-			data: subGlobule.data.map((globule) => ({
-				...globule,
-				data: {
-					...globule.data,
-					// Strip end cap meshes - they contain non-serializable Three.js objects
-					endCaps: globule.data.endCaps
-						? {
-								topCap: globule.data.endCaps.topCap
-									? {
-											...globule.data.endCaps.topCap,
-											mesh: null as never
-										}
-									: null,
-								bottomCap: globule.data.endCaps.bottomCap
-									? {
-											...globule.data.endCaps.bottomCap,
-											mesh: null as never
-										}
-									: null
-							}
-						: undefined
-				}
-			}))
 		})),
 		voronoiResult: superGlobule.voronoiResult
 			? {

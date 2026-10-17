@@ -1,11 +1,6 @@
 import { Vector2 } from 'three';
 import { sampleQuadratic, quadraticLineSplitT } from './bezier-2d';
 
-/** Stable key for a Voronoi vertex coordinate; equal coords (shared vertices) collide. */
-export function vertexKey(coord: [number, number]): string {
-	return `${coord[0].toFixed(6)},${coord[1].toFixed(6)}`;
-}
-
 export type CurvedCellEdge = {
 	edgeId: number; // caller's global edge index, echoed back in the output map
 	// Stable per-corner keys; two edges meeting at one corner must share the key (the

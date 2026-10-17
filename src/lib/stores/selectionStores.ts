@@ -1,29 +1,24 @@
 import type {
 	GeometryAddress,
 	BandAddressed,
-	GlobuleAddressed,
 	Id,
 	BandConfigCoordinates,
 	GlobuleConfigCoordinates,
 	Facet,
 	SuperGlobule
-} from '$lib/types';
+} from '#lib/types.js';
 import { derived, get, writable } from 'svelte/store';
-import {
-	superConfigStore,
-	superGlobulePatternStore,
-	superGlobuleStore
-} from './superGlobuleStores';
+import { superGlobulePatternStore, superGlobuleStore } from './superGlobuleStores';
 import type {
 	GlobuleAddress_Band,
 	GlobuleAddress_Facet,
 	GlobuleAddress_FacetEdge,
 	GlobuleAddress_Tube,
 	Tube
-} from '$lib/projection-geometry/types';
+} from '#lib/projection-geometry/types.js';
 import { BufferGeometry } from 'three';
 import { partnerHighlightStore } from './partnerHighlightStore';
-import { getBandPartnerInfo, type BandPartnerInfo } from '$lib/cut-pattern/band-partner-info';
+import { getBandPartnerInfo, type BandPartnerInfo } from '#lib/cut-pattern/band-partner-info.js';
 import {
 	concatAddress_Band,
 	concatAddress_Tube,
@@ -32,23 +27,23 @@ import {
 	isGlobuleAddress_Band,
 	isGlobuleAddress_Facet,
 	isGlobuleAddress_Tube
-} from '$lib/util';
+} from '#lib/util.js';
 import {
 	sameGlobuleBand,
 	toggleAssemblerHighlight,
 	type AssemblerHighlight
-} from '$lib/assembler-highlight';
+} from '#lib/assembler-highlight.js';
 import {
 	geometrySourceOfPartnerHighlight,
 	patternBandSpaceLookup,
 	patternFacetToReal,
 	type PatternBandSpaceOf
-} from '$lib/cut-pattern/pattern-band-space';
+} from '#lib/cut-pattern/pattern-band-space.js';
 
 /**
  * Assembler-page highlight state. The `AssemblerHighlight` type and the
  * `sameGlobuleBand` equality helper live in the store-free leaf module
- * `$lib/assembler-highlight` so low-level renderer code can use them without
+ * `#lib/assembler-highlight.js` so low-level renderer code can use them without
  * an import cycle; re-exported here for existing consumers.
  */
 export { sameGlobuleBand, type AssemblerHighlight };
@@ -92,25 +87,7 @@ export type SelectedProjectionGeometry = {
 	selectedEndPartners: (GlobuleAddress_Facet | undefined)[];
 } | null;
 
-export const selectedGlobule = writable<{
-	address?: GeometryAddress<BandAddressed | GlobuleAddressed>;
-	subGlobuleConfigIndex: number;
-	subGlobuleConfigId?: Id;
-	// subGlobuleRecurrence?: number;
-	subGlobuleGeometryIndex?: number;
-	globuleId?: Id;
-}>({
-	address: undefined,
-	subGlobuleConfigIndex: 0,
-	subGlobuleConfigId: undefined,
-	// subGlobuleRecurrence: undefined,
-	subGlobuleGeometryIndex: undefined,
-	globuleId: undefined
-});
-
-export type SelectionType = 'highlighted' | 'active' | 'hovered';
-
-export type ActiveGeometryAddress = GeometryAddress<BandAddressed> & { t?: number };
+type SelectionType = 'highlighted' | 'active' | 'hovered';
 
 export type BandSelection = {
 	selection: SelectionType[];
@@ -126,32 +103,6 @@ export type BandSelection = {
 	bandIndex?: number;
 };
 
-export const selectedBand = writable<ActiveGeometryAddress>({ s: 0, g: [], b: 0 });
-
-export const generateGenericSelection = (sgIndex: number, tCount?: number, bIndex?: number) => {
-	return { s: sgIndex, g: new Array(tCount).fill(0), b: bIndex ?? 0 };
-};
-
-export const selectedSubGlobuleIndex = derived(
-	[superConfigStore, selectedGlobule],
-	([$superConfigStore, $selectedGlobule]) => {
-		const index = $selectedGlobule.globuleId
-			? $superConfigStore.subGlobuleConfigs.findIndex(
-					(subGlobuleConfig) => subGlobuleConfig.globuleConfig.id === $selectedGlobule.globuleId
-				)
-			: 0;
-
-		return index;
-	}
-);
-
-export const selectedGlobuleConfig = derived(
-	[superConfigStore, selectedSubGlobuleIndex],
-	([$superConfigStore, $selectedSubGlobuleIndex]) => {
-		return $superConfigStore.subGlobuleConfigs[$selectedSubGlobuleIndex].globuleConfig;
-	}
-);
-
 export type SelectionMode = {
 	sequential: 'replace' | 'add' | 'remove';
 	includes: {
@@ -163,7 +114,7 @@ export type SelectionMode = {
 	};
 };
 
-export const selectMode = writable<SelectionMode>({
+const selectMode = writable<SelectionMode>({
 	sequential: 'replace',
 	includes: {
 		// tube: true,
@@ -254,12 +205,8 @@ const getPartnerFacets = (facets: Facet[], sg: SuperGlobule, mode: SelectionMode
 
 export const selectedProjectionGeometry = derived(
 	[selectedProjection, superGlobuleStore, superGlobulePatternStore, selectMode],
-	([
-		$selectedProjection,
-		$superGlobuleStore,
-		$superGlobulePatternStore,
-		$selectMode
-	]): SelectedProjectionGeometry => {
+	// superGlobulePatternStore is a dependency (recompute trigger) whose value is unused.
+	([$selectedProjection, $superGlobuleStore, , $selectMode]): SelectedProjectionGeometry => {
 		if (!$selectedProjection) return null;
 
 		const selectedFacets: Facet[] = getSelectedFacet(
@@ -563,7 +510,7 @@ export type GeometrySource =
 	| 'voronoiSurface';
 
 /** Resolve the `Tube[]` array backing a given geometry source. */
-export const tubesForGeometrySource = (
+const tubesForGeometrySource = (
 	sg: SuperGlobule,
 	source: GeometrySource,
 	globule = 0
@@ -618,7 +565,7 @@ export type SelectedBandEntry = { source: GeometrySource; address: GlobuleAddres
  * Ordered log of clicked bands. Appending in click order lets the user note the
  * bands that visually form a ring, then read their partner metadata below.
  */
-export const selectedBandLog = writable<SelectedBandEntry[]>([]);
+const selectedBandLog = writable<SelectedBandEntry[]>([]);
 
 const sameBandEntry = (a: SelectedBandEntry, b: SelectedBandEntry) =>
 	a.source === b.source &&
@@ -704,17 +651,19 @@ export const partnerHighlightGeometry = derived(
 			$partnerHighlightStore.left,
 			$partnerHighlightStore.right
 		];
-		if (all.every((a) => a === null)) return [];
+		const { source } = $partnerHighlightStore;
+		// A null source (the editor's Clear) always comes with all-null addresses.
+		if (source === null || all.every((a) => a === null)) return [];
 
 		const tubesForSource = (globuleIdx: number) => {
 			const proj = $superGlobuleStore.projections[globuleIdx];
-			if ($partnerHighlightStore.source === 'surface') return proj?.surfaceProjectionTubes;
-			if ($partnerHighlightStore.source === 'globuleTube') return $superGlobuleStore.globuleTubes;
+			if (source === 'surface') return proj?.surfaceProjectionTubes;
+			if (source === 'globuleTube') return $superGlobuleStore.globuleTubes;
 			return proj?.tubes;
 		};
 
 		// The highlight is in pattern band space (parent quads); 3D tubes are real.
-		const geometrySource = geometrySourceOfPartnerHighlight($partnerHighlightStore.source);
+		const geometrySource = geometrySourceOfPartnerHighlight(source);
 		const facetToGeometry = (patternAddr: GlobuleAddress_Facet | null): BufferGeometry | null => {
 			if (!patternAddr) return null;
 			const addr = patternFacetToReal(

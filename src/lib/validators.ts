@@ -1,4 +1,3 @@
-import type { CutoutConfig } from './cut-pattern/generate-cut-pattern';
 import type {
 	GlobulePatternConfig,
 	OutlinedPatternConfig,
@@ -6,10 +5,10 @@ import type {
 	ProceduralFillConfig,
 	TiledPatternConfig
 } from './types';
-import { GEOMETRY_TYPES } from '$lib/cut-pattern/post-process-types';
-import { isLayerId } from '$lib/lightburn/layers';
-import { DEFAULT_CONNECT_GAP_MM } from '$lib/cut-pattern/hole-drop-config';
-import { migrateLabelsToMm } from '$lib/cut-pattern/label-units';
+import { GEOMETRY_TYPES } from '#lib/cut-pattern/post-process-types.js';
+import { isLayerId } from '#lib/lightburn/layers.js';
+import { DEFAULT_CONNECT_GAP_MM } from '#lib/cut-pattern/hole-drop-config.js';
+import { migrateLabelsToMm } from '#lib/cut-pattern/label-units.js';
 
 export type Validity = {
 	isValid: boolean;
@@ -66,8 +65,7 @@ export const migrateGlobulePatternConfig = <T extends Partial<GlobulePatternConf
 ): T => {
 	if (!config || typeof config !== 'object') return config;
 	const patternTypeConfig = config.patternTypeConfig as
-		| ((TiledPatternConfig | OutlinedPatternConfig) & { labels?: unknown })
-		| undefined;
+		((TiledPatternConfig | OutlinedPatternConfig) & { labels?: unknown }) | undefined;
 	if (patternTypeConfig && patternTypeConfig.labels) {
 		const migrated = migratePatternLabels(patternTypeConfig.labels);
 		if (migrated) {
@@ -75,8 +73,7 @@ export const migrateGlobulePatternConfig = <T extends Partial<GlobulePatternConf
 		}
 	}
 	const pvc = config.patternViewConfig as
-		| { lineWrap?: boolean; patternLayoutMode?: string }
-		| undefined;
+		{ lineWrap?: boolean; patternLayoutMode?: string } | undefined;
 	if (pvc && pvc.patternLayoutMode === undefined) {
 		pvc.patternLayoutMode = pvc.lineWrap ? 'line-wrap' : 'linear';
 	}
@@ -91,7 +88,8 @@ export const migrateGlobulePatternConfig = <T extends Partial<GlobulePatternConf
 			algorithm: 'flex-wrap',
 			reorderWindow: 8,
 			allowRotation: false,
-			keepConnected: 0
+			keepConnected: 0,
+			rotationStep: 15
 		};
 	} else if (pc && pc.pageLayout) {
 		const pl = pc.pageLayout;
@@ -99,6 +97,7 @@ export const migrateGlobulePatternConfig = <T extends Partial<GlobulePatternConf
 		if (pl.allowRotation === undefined) pl.allowRotation = false;
 		if (pl.algorithm === undefined) pl.algorithm = 'flex-wrap';
 		if (pl.keepConnected === undefined) pl.keepConnected = 0;
+		if (pl.rotationStep === undefined) pl.rotationStep = 15;
 	}
 
 	// Labels moved from pattern units to mm. Convert at this config's own page
@@ -174,32 +173,6 @@ export const migrateGlobulePatternConfig = <T extends Partial<GlobulePatternConf
 		}
 	}
 	return config;
-};
-
-export const validateCutoutConfig = (config: CutoutConfig): Validity => {
-	const validity: Validity = { isValid: true, messages: [] };
-	if (
-		['each-facet', 'alternating-facet'].includes(config.tilePattern.type) &&
-		config.holeConfigs.flat().some((hole) => hole.type === 'HoleConfigSquare')
-	) {
-		validity.isValid = false;
-		validity.messages.push('hole pattern tiling is triangular, but some hole configs are square');
-	}
-	if (
-		config.tilePattern.type === 'each-rectangle' &&
-		config.holeConfigs.flat().some((hole) => hole.type === 'HoleConfigTriangle')
-	) {
-		validity.isValid = false;
-		validity.messages.push(
-			'hole pattern tiling is rectangular, but some hole configs are triangular'
-		);
-	}
-
-	if (!validity.isValid) {
-		validity.messages.forEach((message) => console.error(message));
-	}
-
-	return validity;
 };
 
 /**

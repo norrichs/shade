@@ -1,6 +1,6 @@
 import { describe, it, expect } from '@jest/globals';
 import { Box3, Vector3 } from 'three';
-import type { UpAxis } from '$lib/projection-geometry/types';
+import type { UpAxis } from '#lib/projection-geometry/types.js';
 import {
 	DEFAULT_TARGET_SIZE,
 	computeFit,
@@ -64,9 +64,7 @@ describe('computeFit + normalizeMatrix', () => {
 	);
 
 	it('throws for a zero-size model', () => {
-		expect(() => computeFit(new Float32Array([1, 1, 1, 1, 1, 1]), '+z', 800)).toThrow(
-			'zero size'
-		);
+		expect(() => computeFit(new Float32Array([1, 1, 1, 1, 1, 1]), '+z', 800)).toThrow('zero size');
 	});
 });
 

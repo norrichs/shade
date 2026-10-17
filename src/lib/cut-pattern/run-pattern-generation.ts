@@ -4,21 +4,19 @@ import type {
 	SuperGlobule,
 	SuperGlobuleConfig,
 	TubeSplitRejection
-} from '$lib/types';
-import type { Tube } from '$lib/projection-geometry/types';
-import type { PatternGenerationConfig } from '$lib/stores/globulePatternStores';
+} from '#lib/types.js';
+import type { Tube } from '#lib/projection-geometry/types.js';
+import type { PatternGenerationConfig } from '#lib/stores/globulePatternStores.js';
 import type {
-	SuperGlobuleBandPattern,
 	SuperGlobuleProjectionCutPattern,
 	SuperGlobuleProjectionPattern
-} from '$lib/stores/superGlobuleStores';
-import { generateProjectionPattern, generateSuperGlobulePattern } from './generate-pattern';
+} from '#lib/stores/superGlobuleStores.js';
+import { generateProjectionPattern } from './generate-pattern';
 import { resolvePatternGenerationTargets } from './pattern-generation-gates';
 import { dedupeSplitRejections } from './split-flat-bands';
 import { keepsFillBands } from './pattern-band-space';
 
 export type PatternGenerationResult = {
-	superGlobulePattern: SuperGlobuleBandPattern | null;
 	projectionPattern: SuperGlobuleProjectionPattern | undefined;
 	globuleTubePattern: SuperGlobuleProjectionPattern | null;
 	surfaceProjectionPattern: SuperGlobuleProjectionPattern | undefined;
@@ -33,7 +31,6 @@ export type PatternGenerationResult = {
 };
 
 export const EMPTY_PATTERN_RESULT: PatternGenerationResult = {
-	superGlobulePattern: null,
 	projectionPattern: undefined,
 	globuleTubePattern: null,
 	surfaceProjectionPattern: undefined,
@@ -81,7 +78,7 @@ export const runPatternGeneration = ({
 	genConfig,
 	gates
 }: PatternGenerationInput): PatternGenerationResult => {
-	// generateSuperGlobulePattern still expects the full config shape.
+	// generateProjectionPattern still expects the full config shape.
 	const patternConfigForGeneration: GlobulePatternConfig = {
 		type: 'GlobulePatternConfig',
 		id: '',
@@ -116,9 +113,6 @@ export const runPatternGeneration = ({
 	const patternFor = (tubes: Tube[]) =>
 		generateProjectionPattern(tubes, superConfig.id, patternConfigForGeneration, genConfig.range);
 
-	const superGlobulePattern = targets.superGlobule
-		? generateSuperGlobulePattern(superGlobule, superConfig, patternConfigForGeneration)
-		: null;
 	const globuleTubePattern = targets.globuleTube ? patternFor(globuleTubes) : null;
 	const projectionPattern = targets.projection ? patternFor(projection.tubes) : undefined;
 	const surfaceProjectionPattern = targets.surfaceProjection
@@ -130,7 +124,6 @@ export const runPatternGeneration = ({
 		: undefined;
 
 	return {
-		superGlobulePattern,
 		globuleTubePattern,
 		projectionPattern,
 		surfaceProjectionPattern,

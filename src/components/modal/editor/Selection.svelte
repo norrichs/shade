@@ -1,9 +1,9 @@
 <script lang="ts">
 	import Container from './Container.svelte';
 	import Editor from './Editor.svelte';
-	import { selectedProjectionGeometry } from '$lib/stores';
-	import type { GlobuleAddress_Facet } from '$lib/projection-geometry/types';
-	import { concatAddress } from '$lib/util';
+	import { selectedProjectionGeometry } from '#lib/stores/index.js';
+	import type { GlobuleAddress_Facet } from '#lib/projection-geometry/types.js';
+	import { concatAddress } from '#lib/util.js';
 
 	const getUniqueAddresses = (selected: (GlobuleAddress_Facet | undefined)[] | undefined) => {
 		if (!selected) return [];
@@ -27,28 +27,28 @@
 		<Container direction="column">
 			<Container direction="row">
 				<div>Selected:</div>
-				{#each selectedBands as bandAddress}
+				{#each selectedBands as bandAddress, i (i)}
 					<div>{bandAddress}</div>
 				{/each}
 			</Container>
 
 			<Container direction="row">
 				<div>Start Partners:</div>
-				{#each selectedStartPartners as bandAddress}
+				{#each selectedStartPartners as bandAddress, i (i)}
 					<div>{bandAddress}</div>
 				{/each}
 			</Container>
 
 			<Container direction="row">
 				<div>End Partners:</div>
-				{#each selectedEndPartners as bandAddress}
+				{#each selectedEndPartners as bandAddress, i (i)}
 					<div>{bandAddress}</div>
 				{/each}
 			</Container>
 
 			<Container direction="row">
 				<div>Partners:</div>
-				{#each selectedPartners as bandAddress}
+				{#each selectedPartners as bandAddress, i (i)}
 					<div>{bandAddress}</div>
 				{/each}
 			</Container>

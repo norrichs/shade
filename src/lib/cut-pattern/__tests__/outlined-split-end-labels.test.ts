@@ -1,25 +1,25 @@
 import { describe, it, expect, beforeAll } from '@jest/globals';
 import { createHash } from 'crypto';
-import { generateSuperGlobule } from '$lib/generate-superglobule';
+import { generateSuperGlobule } from '#lib/generate-superglobule.js';
 import {
 	defaultOutlinedPatternConfig,
 	generateDefaultGlobulePatternConfig,
 	generateDefaultSuperGlobuleConfig
-} from '$lib/shades-config';
+} from '#lib/shades-config.js';
 import { runPatternGeneration } from '../run-pattern-generation';
 import { resolveTabLabel } from '../resolve-tab-label';
 import { buildPatternCsv } from '../build-pattern-csv';
 import { buildBandSortIndex } from '../band-sort-index';
-import { concatAddress, isGlobuleAddress_BandPiece, isSameParentBand } from '$lib/util';
-import type { SuperGlobuleProjectionCutPattern } from '$lib/stores/superGlobuleStores';
-import type { PatternGenerationConfig } from '$lib/stores/globulePatternStores';
+import { concatAddress, isGlobuleAddress_BandPiece, isSameParentBand } from '#lib/util.js';
+import type { SuperGlobuleProjectionCutPattern } from '#lib/stores/superGlobuleStores.js';
+import type { PatternGenerationConfig } from '#lib/stores/globulePatternStores.js';
 import type {
 	BandCutPattern,
 	OutlinedPatternConfig,
 	PipelineGates,
 	SplitConfig,
 	TubeCutPattern
-} from '$lib/types';
+} from '#lib/types.js';
 
 /**
  * Outlined split ends, real wiring (Task 10 fix round 1).
@@ -38,7 +38,6 @@ import type {
  */
 
 const gates: PipelineGates = {
-	globule: false,
 	globuleTube: false,
 	projection: true,
 	voronoi: false

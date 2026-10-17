@@ -1,14 +1,13 @@
 import { Box3, Matrix4, Vector3 } from 'three';
-import type { Point3 } from '$lib/types';
-import type { ImportedMeshNormalize, UpAxis } from '$lib/projection-geometry/types';
+import type { Point3 } from '#lib/types.js';
+import type { ImportedMeshNormalize, UpAxis } from '#lib/projection-geometry/types.js';
 import type { MeshSourceFormat } from './types';
 
 /** Largest bbox dimension after fit — matches the default sphere's 400 radius. */
 export const DEFAULT_TARGET_SIZE = 800;
 
 /** glTF and OBJ are conventionally Y-up; STL usually comes from Z-up CAD tools. */
-export const defaultUpAxis = (format: MeshSourceFormat): UpAxis =>
-	format === 'stl' ? '+z' : '+y';
+export const defaultUpAxis = (format: MeshSourceFormat): UpAxis => (format === 'stl' ? '+z' : '+y');
 
 /** Rotation taking the source `upAxis` onto the app's up axis, +Z. */
 export const upAxisRotation = (upAxis: UpAxis): Matrix4 => {

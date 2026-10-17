@@ -3,10 +3,9 @@ import type {
 	BandSortMode,
 	BandSortGroup,
 	BandRef,
-	IndexRange,
 	TubeCutPattern
-} from '$lib/types';
-import { isSameParentBand } from '$lib/util';
+} from '#lib/types.js';
+import { isSameParentBand } from '#lib/util.js';
 import { bandKey } from './band-key';
 import { pieceIndexOf, type BandEnd } from './resolve-partner-band';
 import {
@@ -148,7 +147,7 @@ const buildEndConnectionIndex = (tubes: TubeCutPattern[]): BandSortIndex => {
 			if (claimed.has(key)) break;
 			claimed.add(key);
 			chain.push(current);
-			const next = neighboursOf(current).find((n) => {
+			const next: BandRef | undefined = neighboursOf(current).find((n) => {
 				const nk = bandKey(n);
 				return nk !== prevKey && !claimed.has(nk);
 			});
@@ -199,23 +198,6 @@ export const buildBandSortIndex = (tubes: TubeCutPattern[], mode: BandSortMode):
 		case 'end-connection-tube':
 			return buildEndConnectionIndex(tubes);
 	}
-};
-
-export const sliceBandSortIndex = (index: BandSortIndex, range: IndexRange): BandSortIndex => {
-	const groupStart = range.groups?.[0] ?? 0;
-	const groupEnd = range.groups?.[1] ?? index.groups.length;
-	const slicedGroups = index.groups.slice(groupStart, groupEnd);
-
-	if (!range.bandsInGroup) return { ...index, groups: slicedGroups };
-
-	const [bandStart, bandEnd] = range.bandsInGroup;
-	return {
-		...index,
-		groups: slicedGroups.map((group) => ({
-			...group,
-			bands: group.bands.slice(bandStart, bandEnd)
-		}))
-	};
 };
 
 export const buildBandCodeMap = (index: BandSortIndex): Map<string, string> => {

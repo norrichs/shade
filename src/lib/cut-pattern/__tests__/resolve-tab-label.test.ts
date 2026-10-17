@@ -1,7 +1,7 @@
 import { resolveTabLabel } from '../resolve-tab-label';
-import { sliceProjectionCutPattern } from '$lib/projection-geometry/filters';
-import type { BandCutPattern, TubeCutPattern } from '$lib/types';
-import type { GlobuleAddress_Band } from '$lib/projection-geometry/types';
+import { sliceProjectionCutPattern } from '#lib/projection-geometry/filters.js';
+import type { BandCutPattern, TubeCutPattern } from '#lib/types.js';
+import type { GlobuleAddress_Band } from '#lib/projection-geometry/types.js';
 
 type BandTab = NonNullable<BandCutPattern['tabs']>[number];
 

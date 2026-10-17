@@ -1,4 +1,4 @@
-import type { PathSegment, Quadrilateral, TiledPatternConfig } from '$lib/types';
+import type { PathSegment, Quadrilateral, TiledPatternConfig } from '#lib/types.js';
 import { translatePS } from './utils';
 import { snapAdjacentFacets, type FacetSnapRule } from './adjust/snap-adjacent-facets';
 
@@ -199,7 +199,7 @@ export type GetSegmentFunction = (
  * snaps onto the next facet's matching start pair's second node. This chains the
  * x = 0 (and mirrored w6) verticals across quads.
  */
-export const getAsanohaSnapRules = (
+const getAsanohaSnapRules = (
 	getSegments: GetSegmentFunction,
 	rows: number,
 	columns: number,

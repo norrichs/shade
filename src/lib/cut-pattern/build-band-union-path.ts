@@ -1,6 +1,6 @@
-import type { PathSegment } from '$lib/types';
+import type { PathSegment } from '#lib/types.js';
 import { expandFacetStroke, type StrokeInput } from './expand-stroke';
-import { uniteMany } from '$lib/paper';
+import { uniteMany } from '#lib/paper/index.js';
 
 /**
  * Split a path into its individual drawing edges. Each returned edge is a

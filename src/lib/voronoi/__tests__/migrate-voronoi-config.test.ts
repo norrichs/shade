@@ -1,4 +1,4 @@
-import type { SuperGlobuleConfig } from '$lib/types';
+import type { SuperGlobuleConfig } from '#lib/types.js';
 import type { VoronoiConfig } from '../types';
 
 // Inline the default voronoi config to avoid pulling in uuid (via shades-config -> id-handler)
@@ -37,7 +37,7 @@ const inlineDefaultVoronoiConfig: VoronoiConfig = {
 };
 
 // Mock shades-config to avoid uuid transitive dependency
-jest.mock('$lib/shades-config', () => ({
+jest.mock('#lib/shades-config.js', () => ({
 	defaultVoronoiConfig: inlineDefaultVoronoiConfig
 }));
 

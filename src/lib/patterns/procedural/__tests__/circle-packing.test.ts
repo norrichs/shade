@@ -1,4 +1,4 @@
-import { mulberry32 } from '$lib/rng';
+import { mulberry32 } from '#lib/rng.js';
 import { packCircles, type Circle, type CirclePackingParams } from '../circle-packing';
 import { distanceToPolygonEdge, type Polygon } from '../polygon-2d';
 

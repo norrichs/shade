@@ -10,22 +10,22 @@
  * Lives in its own module rather than in `selectionStores` because the lookup
  * needs `patternConfigStore` / `viewControlStore`, and pulling those into
  * `selectionStores` (which sits underneath much of the store graph) risks the
- * same import cycle that `$lib/assembler-highlight` was carved out to avoid.
+ * same import cycle that `#lib/assembler-highlight.js` was carved out to avoid.
  */
 import { derived, get } from 'svelte/store';
-import type { GlobuleAddress_Band } from '$lib/projection-geometry/types';
-import { buildBandRingLookup, type BandRingLookup } from '$lib/cut-pattern/band-ring-lookup';
-import { collateTubes } from '$lib/cut-pattern/collate-tubes';
-import { buildBandSortIndex } from '$lib/cut-pattern/band-sort-index';
+import type { GlobuleAddress_Band } from '#lib/projection-geometry/types.js';
+import { buildBandRingLookup, type BandRingLookup } from '#lib/cut-pattern/band-ring-lookup.js';
+import { collateTubes } from '#lib/cut-pattern/collate-tubes.js';
+import { buildBandSortIndex } from '#lib/cut-pattern/band-sort-index.js';
 import { patternSourceStore, superGlobulePatternStore } from './superGlobuleStores';
 import { patternConfigStore } from './globulePatternStores';
 import { viewControlStore } from './viewControlStore';
 import { setAssemblerHighlight, type GeometrySource } from './selectionStores';
-import { assemblerHighlightRing } from '$lib/cut-pattern/pattern-band-space';
+import { assemblerHighlightRing } from '#lib/cut-pattern/pattern-band-space.js';
 
 export type { BandRingLookup };
 
-export const bandRingLookup = derived(
+const bandRingLookup = derived(
 	[superGlobulePatternStore, patternConfigStore, viewControlStore],
 	([$superGlobulePatternStore, $patternConfigStore, $viewControlStore]): BandRingLookup => {
 		const empty: BandRingLookup = () => [];

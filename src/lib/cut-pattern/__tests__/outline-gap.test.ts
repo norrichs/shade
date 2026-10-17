@@ -2,14 +2,19 @@ import { describe, it, expect } from '@jest/globals';
 import { insertGaps, applyConnectSurround } from '../outline-gap';
 import { flattenPath } from '../path-contours';
 import type { TaggedPath } from '../post-process-types';
-import type { PathSegment } from '$lib/types';
+import type { PathSegment } from '#lib/types.js';
 
 const length = (segs: PathSegment[]) =>
 	flattenPath(segs).reduce(
-		(n, run) => n + run.slice(1).reduce((m, p, i) => m + Math.hypot(p.x - run[i].x, p.y - run[i].y), 0),
+		(n, run) =>
+			n + run.slice(1).reduce((m, p, i) => m + Math.hypot(p.x - run[i].x, p.y - run[i].y), 0),
 		0
 	);
-const outline = (segments: PathSegment[]): TaggedPath => ({ geometry: 'pattern-outline', segments, contour: 0 });
+const outline = (segments: PathSegment[]): TaggedPath => ({
+	geometry: 'pattern-outline',
+	segments,
+	contour: 0
+});
 const square: PathSegment[] = [['M', 0, 0], ['L', 10, 0], ['L', 10, 10], ['L', 0, 10], ['Z']];
 const K = 0.5522847498 * 10;
 const circle: PathSegment[] = [
@@ -23,7 +28,14 @@ const circle: PathSegment[] = [
 
 describe('insertGaps', () => {
 	it('cuts one gap per point out of a line contour', () => {
-		const out = insertGaps(outline(square), [{ x: 5, y: 0 }, { x: 5, y: 10 }], 2);
+		const out = insertGaps(
+			outline(square),
+			[
+				{ x: 5, y: 0 },
+				{ x: 5, y: 10 }
+			],
+			2
+		);
 		const gaps = out.filter((p) => p.geometry === 'outline-gap');
 		const rest = out.filter((p) => p.geometry === 'pattern-outline');
 		expect(gaps).toHaveLength(2);
@@ -35,10 +47,22 @@ describe('insertGaps', () => {
 
 	it('cuts gaps out of a cubic contour within tolerance', () => {
 		const total = length(circle);
-		const out = insertGaps(outline(circle), [{ x: 0, y: -10 }, { x: 0, y: 10 }], 2);
-		out.filter((p) => p.geometry === 'outline-gap').forEach((g) => expect(length(g.segments)).toBeCloseTo(2, 1));
+		const out = insertGaps(
+			outline(circle),
+			[
+				{ x: 0, y: -10 },
+				{ x: 0, y: 10 }
+			],
+			2
+		);
+		out
+			.filter((p) => p.geometry === 'outline-gap')
+			.forEach((g) => expect(length(g.segments)).toBeCloseTo(2, 1));
 		// both sides are 8-sample flattenings of differently split curves; compare to within 0.5
-		expect(length(out.find((p) => p.geometry === 'pattern-outline')!.segments)).toBeCloseTo(total - 4, 0);
+		expect(length(out.find((p) => p.geometry === 'pattern-outline')!.segments)).toBeCloseTo(
+			total - 4,
+			0
+		);
 	});
 
 	it('handles a window that wraps the contour start', () => {
@@ -50,9 +74,14 @@ describe('insertGaps', () => {
 	});
 
 	it('merges overlapping windows', () => {
-		const gaps = insertGaps(outline(square), [{ x: 4, y: 0 }, { x: 5, y: 0 }], 2).filter(
-			(p) => p.geometry === 'outline-gap'
-		);
+		const gaps = insertGaps(
+			outline(square),
+			[
+				{ x: 4, y: 0 },
+				{ x: 5, y: 0 }
+			],
+			2
+		).filter((p) => p.geometry === 'outline-gap');
 		expect(gaps).toHaveLength(1);
 		expect(length(gaps[0].segments)).toBeCloseTo(3, 6);
 	});

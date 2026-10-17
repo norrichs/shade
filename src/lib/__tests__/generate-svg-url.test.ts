@@ -1,5 +1,5 @@
 import { buildExportSvg } from '../util';
-import type { ExportFrame } from '$lib/download/export-frame';
+import type { ExportFrame } from '#lib/download/export-frame.js';
 
 /**
  * The exported SVG drives a cutter/plotter: anything serialised into it is a
@@ -90,12 +90,8 @@ class FakeElement {
 	}
 
 	closest(selector: string): FakeElement | null {
-		let node: FakeElement | undefined = this;
-		while (node) {
-			if (node.matches(selector)) return node;
-			node = node.parent;
-		}
-		return null;
+		if (this.matches(selector)) return this;
+		return this.parent ? this.parent.closest(selector) : null;
 	}
 
 	remove(): void {
@@ -136,7 +132,10 @@ const buildPatternSvg = ({ interactive }: { interactive: boolean }): FakeElement
 		);
 	}
 	const band = new FakeElement('g', ['band']).append(
-		new FakeElement('path', ['band-outline'], { d: 'M0 0 L10 0', 'data-geometry': 'pattern-outline' }),
+		new FakeElement('path', ['band-outline'], {
+			d: 'M0 0 L10 0',
+			'data-geometry': 'pattern-outline'
+		}),
 		new FakeElement('g', ['svg-pattern-quad']).append(new FakeElement('path', [], { d: 'M0 0' })),
 		// The assembler cross-view highlight: a filled rect over the whole band.
 		new FakeElement('rect', ['screen-only'], { fill: 'rgb(255,0,0)', width: '10' }),

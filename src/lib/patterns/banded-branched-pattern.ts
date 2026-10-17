@@ -5,7 +5,7 @@ import {
 	type DynamicPath,
 	type PathSegment,
 	isMovePathSegment
-} from '$lib/types';
+} from '#lib/types.js';
 import type { Point } from 'bezier-js';
 import {
 	getDirection,
@@ -19,10 +19,8 @@ export const generateBranched = (
 	quadBand: Quadrilateral[],
 	config: { rows: number; columns: number; variant: number; minWidth?: number; maxWidth?: number }
 ): DynamicPathCollection => {
-	const { rows, columns, variant } = config;
 	const minWidth = config.maxWidth || 1;
 	const maxWidth = config.maxWidth || 2;
-	const outlineWidth = maxWidth;
 
 	const getOutline = (): DynamicPath => {
 		const left: PathSegment[][] = [];
@@ -61,7 +59,7 @@ export const generateBranched = (
 
 	const outline: DynamicPath = getOutline();
 
-	const stubbyOutline = outline.map((section, i) => {
+	const stubbyOutline = outline.map((section) => {
 		if (
 			section.path.length === 2 &&
 			isMovePathSegment(section.path[0]) &&

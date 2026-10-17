@@ -1,12 +1,12 @@
-import type { TransformConfig } from '$lib/projection-geometry/types';
+import type { TransformConfig } from '#lib/projection-geometry/types.js';
 import type {
 	BandCutPattern,
 	CutPattern,
 	PathSegment,
 	SkipEdges,
 	TubeCutPattern
-} from '$lib/types';
-import { resolveEndPartner, type BandEnd } from '$lib/cut-pattern/resolve-partner-band';
+} from '#lib/types.js';
+import { resolveEndPartner, type BandEnd } from '#lib/cut-pattern/resolve-partner-band.js';
 import type { IndexPair } from '../../spec-types';
 
 export const scaleSegment = (seg: PathSegment, w: number, h: number): PathSegment => {
@@ -36,7 +36,6 @@ export const replaceInPlace = ({
 	source: PathSegment[];
 }) => {
 	for (const { source: si, target: ti } of pairs) {
-		// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 		// @ts-expect-error: writing 3-tuple where caller may have wider PathSegment union
 		target[ti] = [target[ti][0], source[si][1], source[si][2]];
 	}

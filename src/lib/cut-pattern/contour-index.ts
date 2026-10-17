@@ -1,4 +1,4 @@
-import type { PathSegment } from '$lib/types';
+import type { PathSegment } from '#lib/types.js';
 import {
 	splitContours,
 	pointInPolygon,
@@ -8,7 +8,7 @@ import {
 } from './path-contours';
 import type { BandEnds, Pt as EndPt } from './post-process-types';
 
-export type ContourKind = 'outline' | 'hole';
+type ContourKind = 'outline' | 'hole';
 
 /**
  * One contour of a merged band path. `start`/`end` index the merged
@@ -43,9 +43,7 @@ export type ContourIndexInput = {
 };
 
 export const holesOf = (index: BandContourIndex) =>
-	index.contours.filter(
-		(c): c is ContourRef & { bandFraction: number } => c.kind === 'hole'
-	);
+	index.contours.filter((c): c is ContourRef & { bandFraction: number } => c.kind === 'hole');
 
 /**
  * Nesting depth of each contour, by containment rather than by winding.
@@ -233,8 +231,7 @@ export const buildContourIndex = (
 			area: Math.abs(contour.area)
 		};
 		if (isHole) {
-			ref.bandFraction =
-				input.pieceStartFraction + localFractionOf(contour.centroid, line) * span;
+			ref.bandFraction = input.pieceStartFraction + localFractionOf(contour.centroid, line) * span;
 		} else {
 			outlinePoints.push(...contour.points);
 		}

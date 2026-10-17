@@ -1,4 +1,4 @@
-import type { LinePathSegment, MovePathSegment } from '$lib/types';
+import type { LinePathSegment, MovePathSegment } from '#lib/types.js';
 import type { TiledPatternSpec } from '../../spec-types';
 
 const UNIT_WIDTH = 42;

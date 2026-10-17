@@ -2,7 +2,7 @@ import { describe, it, expect } from '@jest/globals';
 import { concatPieces, dropHoles, mulberry32, postProcessBandPath, seedFor } from '../drop-holes';
 import { defaultDropCurve, type PostProcessConfig } from '../hole-drop-config';
 import type { BandContourIndex } from '../contour-index';
-import type { BezierConfig, PathSegment, PointConfig2 } from '$lib/types';
+import type { BezierConfig, PathSegment, PointConfig2 } from '#lib/types.js';
 
 const pt = (x: number, y: number): PointConfig2 => ({ type: 'PointConfig2', x, y });
 
@@ -221,7 +221,11 @@ describe('postProcessBandPath tagged output', () => {
 
 	it('emits one tagged piece per contour, in contour order', () => {
 		const pieces = postProcessBandPath(path, index, cfg({ mode: 'none' }));
-		expect(pieces.map((p) => p.geometry)).toEqual(['pattern-outline', 'pattern-hole', 'pattern-hole']);
+		expect(pieces.map((p) => p.geometry)).toEqual([
+			'pattern-outline',
+			'pattern-hole',
+			'pattern-hole'
+		]);
 		expect(pieces.map((p) => p.contour)).toEqual([0, 1, 2]);
 		expect(concatPieces(pieces)).toEqual(path);
 	});
@@ -232,14 +236,19 @@ describe('postProcessBandPath tagged output', () => {
 	});
 
 	it('omits outline pieces with dropOutline', () => {
-		const pieces = postProcessBandPath(path, index, { ...cfg({ mode: 'none' }), dropOutline: true });
+		const pieces = postProcessBandPath(path, index, {
+			...cfg({ mode: 'none' }),
+			dropOutline: true
+		});
 		expect(pieces.every((p) => p.geometry === 'pattern-hole')).toBe(true);
 		expect(pieces).toHaveLength(2);
 	});
 
 	it('matches the flat dropHoles output when re-concatenated', () => {
 		const config = cfg({ mode: 'random', chance: 0.5 });
-		expect(concatPieces(postProcessBandPath(path, index, config))).toEqual(dropHoles(path, index, config));
+		expect(concatPieces(postProcessBandPath(path, index, config))).toEqual(
+			dropHoles(path, index, config)
+		);
 	});
 
 	it('treats an unindexed non-empty path as one outline piece', () => {
@@ -261,7 +270,9 @@ describe('postProcessBandPath tagged output', () => {
 		const pieces = postProcessBandPath(path, index, config, 2); // 1 mm × 2 units/mm = 2 units
 		expect(pieces.filter((p) => p.geometry === 'outline-gap')).toHaveLength(2);
 		expect(
-			postProcessBandPath(path, index, { ...config, dropOutline: true }, 2).some((p) => p.geometry === 'outline-gap')
+			postProcessBandPath(path, index, { ...config, dropOutline: true }, 2).some(
+				(p) => p.geometry === 'outline-gap'
+			)
 		).toBe(false);
 	});
 });

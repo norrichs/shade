@@ -1,8 +1,7 @@
 <script lang="ts">
-	import { svgTriangle } from '$lib/patterns/flower-of-life';
-	import { svgQuad } from '$lib/patterns/quadrilateral';
-	import { getMidPoint } from '$lib/patterns/utils';
-	import type { BandCutPattern, CutPattern, Point, Quadrilateral } from '$lib/types';
+	import { svgQuad, svgTriangle } from '#lib/patterns/quadrilateral.js';
+	import { getMidPoint } from '#lib/patterns/utils.js';
+	import type { BandCutPattern, CutPattern, Point, Quadrilateral } from '#lib/types.js';
 
 	let {
 		band,
@@ -28,11 +27,16 @@
 					quad: facet.quad,
 					triangles: facet.triangles
 				};
-			}) as { label: string; labelPoint: Point; quad: Quadrilateral; triangles?: any }[]
+			}) as {
+			label: string;
+			labelPoint: Point;
+			quad: Quadrilateral;
+			triangles?: CutPattern['triangles'];
+		}[]
 	);
 </script>
 
-{#each facets as facet, facetIndex}
+{#each facets as facet, facetIndex (facetIndex)}
 	<g class="svg-pattern-quad">
 		<path
 			d={svgQuad(facet.quad)}

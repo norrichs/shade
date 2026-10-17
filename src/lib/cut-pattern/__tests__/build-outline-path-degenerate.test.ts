@@ -9,8 +9,7 @@ jest.mock('../generate-cut-pattern', () => ({
 jest.mock('../generate-tiled-pattern', () => ({
 	alignBands: jest.fn(),
 	generateTubeCutPattern: jest.fn(),
-	applyTubePatternPostProcessing: jest.fn(),
-	generateTiledBandPattern: jest.fn()
+	applyTubePatternPostProcessing: jest.fn()
 }));
 jest.mock('../generate-panel-pattern', () => ({
 	shouldUsePanelPattern: jest.fn(),

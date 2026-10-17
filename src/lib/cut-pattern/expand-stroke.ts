@@ -1,7 +1,7 @@
-import type { PathSegment } from '$lib/types';
-import { svgPathStringFromSegments } from '$lib/patterns/utils';
-import { getPaperScope } from '$lib/paper/scope';
-import { paperToPathSegments } from '$lib/paper';
+import type { PathSegment } from '#lib/types.js';
+import { svgPathStringFromSegments } from '#lib/patterns/utils.js';
+import { getPaperScope } from '#lib/paper/scope.js';
+import { paperToPathSegments } from '#lib/paper/index.js';
 // @ts-expect-error - svg-path-outline ships no types
 import outline from 'svg-path-outline';
 

@@ -9,9 +9,9 @@
  * The returned index is the row's ORIGINAL position, matching `index.groups[r]` /
  * `flatBands[r]`, so it stays valid after the filters reorder or drop rows.
  */
-import type { BandSortIndex } from '$lib/types';
-import type { GlobuleAddress_Band } from '$lib/projection-geometry/types';
-import { sameGlobuleBand } from '$lib/assembler-highlight';
+import type { BandSortIndex } from '#lib/types.js';
+import type { GlobuleAddress_Band } from '#lib/projection-geometry/types.js';
+import { sameGlobuleBand } from '#lib/assembler-highlight.js';
 import { bandKey } from './band-key';
 
 /**

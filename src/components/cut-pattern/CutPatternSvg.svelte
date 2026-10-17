@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import { patternConfigStore } from '$lib/stores';
-	import type { PatternViewConfig } from '$lib/types';
+	import { patternConfigStore } from '#lib/stores/index.js';
+	import type { PatternViewConfig } from '#lib/types.js';
 
 	let {
 		width = 4000,

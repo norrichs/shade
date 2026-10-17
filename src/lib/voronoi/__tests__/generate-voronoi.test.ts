@@ -1,7 +1,6 @@
 import {
 	Mesh,
 	Object3D,
-	SphereGeometry,
 	PlaneGeometry,
 	MeshBasicMaterial,
 	DoubleSide,
@@ -9,20 +8,19 @@ import {
 	Vector3
 } from 'three';
 import type { VoronoiConfig } from '../types';
-import type { GlobuleAddress } from '$lib/projection-geometry/types';
-import type { Band, Facet, FacetOrientation } from '$lib/types';
+import type { GlobuleAddress } from '#lib/projection-geometry/types.js';
+import type { Band, Facet, FacetOrientation } from '#lib/types.js';
 
 // Mock generate-projection to avoid Svelte store transitive deps
-jest.mock('$lib/projection-geometry/generate-projection', () => {
+jest.mock('#lib/projection-geometry/generate-projection.js', () => {
 	const {
 		SphereGeometry,
 		MeshBasicMaterial,
 		DoubleSide: DS,
 		Mesh,
 		Object3D,
-		Triangle,
-		Vector3
-	} = require('three');
+		Triangle
+	} = jest.requireActual<typeof import('three')>('three');
 
 	return {
 		generateSurface: jest.fn(() => {
@@ -39,8 +37,7 @@ jest.mock('$lib/projection-geometry/generate-projection', () => {
 			(
 				sections: { points: Vector3[] }[],
 				orientation: FacetOrientation,
-				tubeAddress: { globule: number; tube: number },
-				_tubeSymmetry?: string
+				tubeAddress: { globule: number; tube: number }
 			): Band[] => {
 				const bands: Band[] = [];
 				const pointsPerSection = sections[0].points.length;
@@ -94,7 +91,7 @@ jest.mock('$lib/projection-geometry/generate-projection', () => {
 		}),
 
 		getEdgeMatchedTriangles: jest.fn(
-			(t0: typeof Triangle.prototype, t1: typeof Triangle.prototype, _edgeToMatch?: string) => {
+			(t0: typeof Triangle.prototype, t1: typeof Triangle.prototype) => {
 				const PRECISION = 1 / 10_000;
 				const isSame = (v0: Vector3, v1: Vector3) =>
 					Math.abs(v0.x - v1.x) < PRECISION &&
@@ -133,23 +130,22 @@ jest.mock('../../../components/three-renderer/materials', () => ({
 }));
 
 // Mock generate-pattern (transitive dep of generate-projection)
-jest.mock('$lib/cut-pattern/generate-pattern', () => ({
+jest.mock('#lib/cut-pattern/generate-pattern.js', () => ({
 	corrected: jest.fn((e: string) => e),
 	getTrianglePointAsKVFromTriangleEdge: jest.fn(),
 	getTrianglePointFromTriangleEdge: jest.fn()
 }));
 
 // Mock stores
-jest.mock('$lib/stores/superGlobuleStores', () => ({}));
-jest.mock('$lib/stores/selectionStores', () => ({}));
+jest.mock('#lib/stores/superGlobuleStores.js', () => ({}));
+jest.mock('#lib/stores/selectionStores.js', () => ({}));
 
 import { makeVoronoi, matchFacets } from '../generate-voronoi';
 import * as geodesicModule from '../geodesic/geodesic-voronoi';
 import {
 	generateSurface,
 	generateProjectionBands
-} from '$lib/projection-geometry/generate-projection';
-import { OPENING } from '$lib/types';
+} from '#lib/projection-geometry/generate-projection.js';
 
 const testSurfaceConfig = {
 	type: 'SphereConfig' as const,

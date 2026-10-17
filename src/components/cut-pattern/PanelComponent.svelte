@@ -1,9 +1,12 @@
 <script lang="ts">
-	import { corrected, getTrianglePointFromTriangleEdge } from '$lib/cut-pattern/generate-pattern';
-	import { svgPathStringFromSegments } from '$lib/patterns/utils';
-	import { printProjectionAddress } from '$lib/projection-geometry/generate-projection';
-	import type { TriangleEdge } from '$lib/projection-geometry/types';
-	import type { PanelPattern, PathSegment, TrianglePoint } from '$lib/types';
+	import {
+		corrected,
+		getTrianglePointFromTriangleEdge
+	} from '#lib/cut-pattern/generate-pattern.js';
+	import { svgPathStringFromSegments } from '#lib/patterns/utils.js';
+	import { printProjectionAddress } from '#lib/projection-geometry/generate-projection.js';
+	import type { TriangleEdge } from '#lib/projection-geometry/types.js';
+	import type { PanelPattern, PathSegment, TrianglePoint } from '#lib/types.js';
 	import { Vector3, type Triangle } from 'three';
 
 	import {
@@ -12,8 +15,8 @@
 		selectedProjectionGeometry,
 		isSuperGlobuleProjectionPanelPattern,
 		layerStrokes
-	} from '$lib/stores';
-	import { addressIsInArray, formatAngle } from '$lib/util';
+	} from '#lib/stores/index.js';
+	import { addressIsInArray, formatAngle } from '#lib/util.js';
 	import SvgText from './SvgText/SvgText.svelte';
 	import RegistrationMark from './RegistrationMark.svelte';
 
@@ -21,7 +24,6 @@
 	export let showCrease = true;
 	export let patternStyle: 'view' | 'cut';
 	export let labelSize: number;
-	export let labelStyle: 'svgLabels' | 'textLabels' = 'textLabels';
 	export let edgeLabelAnchor: 'start' | 'end' | 'center' = 'center';
 	export let verbose = false;
 	export let showErrors = false;
@@ -77,9 +79,11 @@
 	};
 
 	const isMatched = (edge: TriangleEdge) => {
-		const { thisEdgeStr, reflectedEdgeStr } = getPairAddresses(edge);
-		if (!isSuperGlobuleProjectionPanelPattern($superGlobulePatternStore.projectionPattern))
+		// getPairAddresses is false exactly when this is not a projection panel pattern.
+		const pair = getPairAddresses(edge);
+		if (!pair || !isSuperGlobuleProjectionPanelPattern($superGlobulePatternStore.projectionPattern))
 			return '';
+		const { thisEdgeStr, reflectedEdgeStr } = pair;
 		const { tubes } = $superGlobulePatternStore.projectionPattern.projectionPanelPattern;
 		const partnerAddress = panel.meta.edges[corrected(edge)].partner;
 		const partner =
@@ -119,8 +123,9 @@
 			tubes[partnerAddress.tube].bands[partnerAddress.band].panels[partnerAddress.facet];
 		const reflectedAddress = partner.meta.edges[corrected(partnerAddress.edge)].partner;
 		if (!isMatched(edge)) {
-			const { thisEdgeStr, reflectedEdgeStr } = getPairAddresses(edge);
-			return `${thisEdgeStr} <- ${reflectedEdgeStr}`;
+			const pair = getPairAddresses(edge);
+			if (!pair) return '';
+			return `${pair.thisEdgeStr} <- ${pair.reflectedEdgeStr}`;
 		}
 		return `-> ${printProjectionAddress(reflectedAddress, { hideGlobule: true })}`;
 	};
@@ -251,12 +256,20 @@
 			d={svgPathFromTriangle(panel.triangle)}
 			fill={panelFill}
 			stroke="none"
+			role="button"
+			tabindex="-1"
 			on:click={handleClick}
+			on:keydown={(e) => {
+				if (e.key === 'Enter' || e.key === ' ') {
+					e.preventDefault();
+					handleClick();
+				}
+			}}
 		/>
 	{/if}
 
 	{#if showCrease}
-		{#each edges as edge}
+		{#each edges as edge (edge)}
 			<path
 				d={edgeSegment(panel.triangle, edge)}
 				class="crease"
@@ -275,7 +288,7 @@
 		font-family="Relief SingleLine OTF-SVG"
 	>
 		<SvgText
-			id={`svg-text-Test`}
+			id="svg-text-Test"
 			string={addressString}
 			angle={0}
 			size={labelSize * 2}
@@ -283,7 +296,7 @@
 			offset={{ x: 'center', y: 'center' }}
 		/>
 
-		{#each triangleEdges as edge}
+		{#each triangleEdges as edge (edge)}
 			<SvgText
 				id={`label-${addressString}_${edge}`}
 				string={panelEdgeLabel(edge)}
@@ -313,12 +326,12 @@
 				{/if}
 			{/each} -->
 
-			{#each edges as edge}
+			{#each edges as edge (edge)}
 				<RegistrationMark {edge} triangle={panel.triangle} style="tick" length={2.5} />
 			{/each}
 		{/if}
-		{#each edges as edge}
-			{#each panel.meta.edges[edge].holes || [] as hole}
+		{#each edges as edge (edge)}
+			{#each panel.meta.edges[edge].holes || [] as hole, holeIdx (holeIdx)}
 				{#if patternStyle === 'cut'}
 					<circle
 						cx={hole.location.x}
@@ -371,7 +384,7 @@
 			<!-- View-style design aids: never cut. -->
 			<g class="screen-only">
 				{#if showErrors}
-					{#each edges as edge}
+					{#each edges as edge (edge)}
 						<path
 							d={edgeSegment(panel.triangle, edge)}
 							stroke-width={6}
@@ -398,7 +411,7 @@
 					/>
 				{/if}
 				{#if verbose}
-					{#each trianglePoints as p}
+					{#each trianglePoints as p (p)}
 						<circle
 							cx={panel.triangle[p].x}
 							cy={panel.triangle[p].y}

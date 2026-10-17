@@ -1,4 +1,7 @@
-import type { GlobuleAddress_Band, GlobuleAddress_BandPiece } from '$lib/projection-geometry/types';
+import type {
+	GlobuleAddress_Band,
+	GlobuleAddress_BandPiece
+} from '#lib/projection-geometry/types.js';
 
 /**
  * Stable string key for a band or band piece.

@@ -4,8 +4,8 @@
 		pausePatternUpdates,
 		isManualMode,
 		hasPendingChanges
-	} from '$lib/stores/uiStores';
-	import { superGlobulePatternStore } from '$lib/stores/superGlobuleStores';
+	} from '#lib/stores/uiStores.js';
+	import { superGlobulePatternStore } from '#lib/stores/superGlobuleStores.js';
 	import Container from './Container.svelte';
 	import Editor from './Editor.svelte';
 

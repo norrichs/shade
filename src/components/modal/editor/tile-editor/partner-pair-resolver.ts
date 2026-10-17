@@ -1,15 +1,15 @@
-import type { BandCutPattern, PathSegment, Quadrilateral } from '$lib/types';
+import type { BandCutPattern, PathSegment, Quadrilateral } from '#lib/types.js';
 import type {
 	GlobuleAddress_Band,
 	GlobuleAddress_BandPiece,
 	GlobuleAddress_Facet
-} from '$lib/projection-geometry/types';
-import type { TransformConfig } from '$lib/projection-geometry/types';
-import { newTransformPS } from '$lib/patterns/tesselation/shared/helpers';
+} from '#lib/projection-geometry/types.js';
+import type { TransformConfig } from '#lib/projection-geometry/types.js';
+import { newTransformPS } from '#lib/patterns/tesselation/shared/helpers.js';
 import {
 	findBandCarryingEnd,
 	resolveEndPartnerInBands
-} from '$lib/cut-pattern/resolve-partner-band';
+} from '#lib/cut-pattern/resolve-partner-band.js';
 
 const transformQuad = (quad: Quadrilateral, transform: TransformConfig): Quadrilateral => {
 	const {
@@ -107,10 +107,4 @@ export const resolvePair = (
 		mainOriginalPath,
 		ghostOriginalPath
 	};
-};
-
-export const pairsEqual = (a: ResolvedPair | null, b: ResolvedPair | null): boolean => {
-	if (a === null && b === null) return true;
-	if (a === null || b === null) return false;
-	return JSON.stringify(a) === JSON.stringify(b);
 };

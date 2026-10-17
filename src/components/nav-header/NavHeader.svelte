@@ -14,39 +14,45 @@
 		postProcessConfig,
 		loadedConfigName,
 		resolvedPatternLabels
-	} from '$lib/stores';
+	} from '#lib/stores/index.js';
 	import {
 		isManualMode,
 		hasPendingChanges,
 		designerPanels,
 		nextPanelLayout,
 		panelLayoutLabel
-	} from '$lib/stores/uiStores';
-	import { triggerManualRegeneration, isGenerating } from '$lib/stores/superGlobuleStores';
-	import { selectedSurfaceProjection, rotateToSelection } from '$lib/stores/selectionStores';
-	import { downloadSvg, downloadTextFile, SCREEN_ONLY_SELECTOR } from '$lib/util';
-	import { toastStore } from '$lib/stores/toastStore';
-	import { exportFrame } from '$lib/download/export-frame';
-	import { fileStamp } from '$lib/download/file-stamp';
-	import { buildLbProject } from '$lib/lightburn/build-lb-project';
-	import { collectDomShapes } from '$lib/lightburn/collect-dom-shapes';
-	import { writeLbrn2 } from '$lib/lightburn/lbrn2-writer';
-	import { layerByIndex } from '$lib/lightburn/layers';
-	import { collectExportNodes, findUntagged, untaggedMessage } from '$lib/cut-pattern/export-guard';
+	} from '#lib/stores/uiStores.js';
+	import { triggerManualRegeneration, isGenerating } from '#lib/stores/superGlobuleStores.js';
+	import { selectedSurfaceProjection, rotateToSelection } from '#lib/stores/selectionStores.js';
+	import { downloadSvg, downloadTextFile, SCREEN_ONLY_SELECTOR } from '#lib/util.js';
+	import { toastStore } from '#lib/stores/toastStore.js';
+	import { resolve } from '$app/paths';
+	import { exportFrame } from '#lib/download/export-frame.js';
+	import { fileStamp } from '#lib/download/file-stamp.js';
+	import { buildLbProject } from '#lib/lightburn/build-lb-project.js';
+	import { collectDomShapes } from '#lib/lightburn/collect-dom-shapes.js';
+	import { writeLbrn2 } from '#lib/lightburn/lbrn2-writer.js';
+	import { layerByIndex } from '#lib/lightburn/layers.js';
+	import {
+		collectExportNodes,
+		findUntagged,
+		untaggedMessage
+	} from '#lib/cut-pattern/export-guard.js';
 	import { interactionMode } from '../three-renderer/interaction-mode';
 	import Button from '../design-system/Button.svelte';
 	import WorkingIndicator from './WorkingIndicator.svelte';
 	import ViewMenu from './ViewMenu.svelte';
+	import AgentBridgeIndicator from './AgentBridgeIndicator.svelte';
 	import BandSelectionPanel from '../projection/BandSelectionPanel.svelte';
-	import { toBandMergePayloads } from '$lib/cut-pattern/band-merge-payload';
-	import { mergeBand, type MergeCtx } from '$lib/cut-pattern/merge-band';
-	import { createBandMergePool, isTotalPoolFailure } from '$lib/workers/band-merge-pool';
-	import { buildContourIndex, type BandContourIndex } from '$lib/cut-pattern/contour-index';
-	import type { PathSegment } from '$lib/types';
-	import { collateTubes } from '$lib/cut-pattern/collate-tubes';
+	import { toBandMergePayloads } from '#lib/cut-pattern/band-merge-payload.js';
+	import { mergeBand, type MergeCtx } from '#lib/cut-pattern/merge-band.js';
+	import { createBandMergePool, isTotalPoolFailure } from '#lib/workers/band-merge-pool.js';
+	import { buildContourIndex, type BandContourIndex } from '#lib/cut-pattern/contour-index.js';
+	import type { PathSegment } from '#lib/types.js';
+	import { collateTubes } from '#lib/cut-pattern/collate-tubes.js';
 	import { get } from 'svelte/store';
-	import { buildBandSortIndex } from '$lib/cut-pattern/band-sort-index';
-	import { buildPatternCsv } from '$lib/cut-pattern/build-pattern-csv';
+	import { buildBandSortIndex } from '#lib/cut-pattern/band-sort-index.js';
+	import { buildPatternCsv } from '#lib/cut-pattern/build-pattern-csv.js';
 	import { tick, onDestroy } from 'svelte';
 
 	$: regenerateDisabled = !$isManualMode || $isGenerating || !$hasPendingChanges;
@@ -99,7 +105,10 @@
 		// when the rendered text bbox changes, so it is not part of the key.
 		const patternRef = $superGlobulePatternStore;
 		if (invalidationKey !== lastInvalidationKey || patternRef !== lastPatternRef) {
+			// Read on the next run of this reactive block; ESLint analyses `$:` as straight-line code.
+			// eslint-disable-next-line no-useless-assignment
 			lastInvalidationKey = invalidationKey;
+			// eslint-disable-next-line no-useless-assignment
 			lastPatternRef = patternRef;
 			mergedBandPathsRaw.set(new Map());
 			bandContourIndexes.set(new Map());
@@ -145,7 +154,7 @@
 
 	/** Collate, extract payloads and build the per-run merge context. */
 	const prepareInputs = (): { payloads: ReturnType<typeof toBandMergePayloads>; ctx: MergeCtx } => {
-		const patternState = get(superGlobulePatternStore) as any;
+		const patternState = get(superGlobulePatternStore);
 		const config = get(patternConfigStore);
 		const view = get(viewControlStore);
 		const labelDims = get(labelTextDimensions);
@@ -188,7 +197,10 @@
 		prepareFailed = 0;
 
 		if (payloads.length <= 2) {
+			// Local accumulators handed to publish(); never read reactively.
+			// eslint-disable-next-line svelte/prefer-svelte-reactivity
 			const paths = new Map<string, PathSegment[]>();
+			// eslint-disable-next-line svelte/prefer-svelte-reactivity
 			const contours = new Map<string, BandContourIndex>();
 			for (const payload of payloads) {
 				const path = mergeBand(payload, ctx);
@@ -248,7 +260,7 @@
 		if (prepareState === 'running') return false;
 		prepareState = 'running';
 		const start = performance.now();
-		let published = false;
+		let published: boolean;
 		try {
 			published = await runPrepare();
 		} catch (error) {
@@ -362,7 +374,7 @@
 	let csvText = '';
 
 	const buildTubesForCsv = () => {
-		const patternState = get(superGlobulePatternStore) as any;
+		const patternState = get(superGlobulePatternStore);
 		const config = get(patternConfigStore);
 		const view = get(viewControlStore);
 		return collateTubes({
@@ -409,17 +421,13 @@
 <header>
 	<nav>
 		<div class="left-group">
-			<a href="/designer2">Designer</a>
-			<a href="/assembler">Assembler</a>
+			<a href={resolve('/designer2')}>Designer</a>
+			<a href={resolve('/assembler')}>Assembler</a>
 			<ViewMenu />
 			<BandSelectionPanel />
 		</div>
 
 		<WorkingIndicator />
-
-		<!-- <div>
-			{formatAddress($selectedBand)}
-		</div> -->
 
 		<!-- {#if $selectedProjectionGeometry}
 			<div>
@@ -433,9 +441,10 @@
 		{/if} -->
 
 		<div class="button-group">
+			<AgentBridgeIndicator />
 			<select class="band-select" value={selectedBandLabel} onchange={handleBandSelect}>
 				<option value="">-- band --</option>
-				{#each bandOptions as opt}
+				{#each bandOptions as opt, optIdx (optIdx)}
 					<option value={opt.label}>{opt.label}</option>
 				{/each}
 			</select>

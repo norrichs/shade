@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { materials } from '../three-renderer/materials';
-	import { selectedProjectionGeometry, partnerHighlightGeometry } from '$lib/stores';
-	import type { HighlightRole } from '$lib/stores/selectionStores';
+	import { selectedProjectionGeometry, partnerHighlightGeometry } from '#lib/stores/index.js';
+	import type { HighlightRole } from '#lib/stores/selectionStores.js';
 	import { T } from '@threlte/core';
 
 	const partnerActive = $derived($partnerHighlightGeometry.length > 0);

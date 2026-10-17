@@ -1,14 +1,14 @@
 <script lang="ts">
 	import { get } from 'svelte/store';
-	import { patternConfigStore } from '$lib/stores';
-	import { tilePatternSpecStore } from '$lib/stores/tilePatternSpecStore';
+	import { patternConfigStore } from '#lib/stores/index.js';
+	import { tilePatternSpecStore } from '#lib/stores/tilePatternSpecStore.js';
 	import {
 		defaultCircleHolesFillConfig,
 		defaultOutlinedPatternConfig,
 		tiledPatternConfigs
-	} from '$lib/shades-config';
-	import { algorithms } from '$lib/patterns/pattern-registry';
-	import type { TiledPatternSpec } from '$lib/patterns/spec-types';
+	} from '#lib/shades-config.js';
+	import { algorithms } from '#lib/patterns/pattern-registry.js';
+	import type { TiledPatternSpec } from '#lib/patterns/spec-types.js';
 	import type {
 		GlobulePatternConfig,
 		GridVariant,
@@ -16,8 +16,8 @@
 		TabShape,
 		TiledPatternConfig,
 		TilingBasis
-	} from '$lib/types';
-	import { isOutlinedPatternConfig, isTiledPatternConfig } from '$lib/types';
+	} from '#lib/types.js';
+	import { isOutlinedPatternConfig, isTiledPatternConfig } from '#lib/types.js';
 	import PatternTileButton from '../../pattern/PatternTileButton.svelte';
 	import Container from './Container.svelte';
 	import Editor from './Editor.svelte';
@@ -33,7 +33,7 @@
 	);
 	let tabConfig = $derived(outlined?.tabConfig);
 	let fill = $derived(outlined?.fill);
-	let inner = $derived((patternTypeConfig as { config: Record<string, any> }).config);
+	let inner = $derived((patternTypeConfig as { config: TiledPatternConfig['config'] }).config);
 
 	const update = (mutate: (config: GlobulePatternConfig) => GlobulePatternConfig) =>
 		patternConfigStore.set(mutate(get(patternConfigStore)));
@@ -147,7 +147,7 @@
 					{#if group.tiles.length > 0}
 						<div class="group-header">{group.displayName}</div>
 						<div class="option-tile-group">
-							{#each group.tiles as tile}
+							{#each group.tiles as tile, tileIdx (tileIdx)}
 								<PatternTileButton size={45} patternType={tile.type} tilingBasis={tile.tiling} />
 							{/each}
 						</div>
@@ -179,7 +179,7 @@
 								onchange={(event) =>
 									setTab({ shape: (event.currentTarget as HTMLSelectElement).value })}
 							>
-								{#each tabShapes as shape}<option value={shape}>{shape}</option>{/each}
+								{#each tabShapes as shape (shape)}<option value={shape}>{shape}</option>{/each}
 							</select>
 						</LabeledControl>
 						<LabeledControl label="Width">
@@ -210,7 +210,8 @@
 										) as TabEdgeOption
 									})}
 							>
-								{#each edgeOptions as option}<option value={option}>{option}</option>{/each}
+								{#each edgeOptions as option (option)}<option value={option}>{option}</option
+									>{/each}
 							</select>
 						</LabeledControl>
 						<LabeledControl label="Adjacent Layout">
@@ -234,7 +235,8 @@
 										) as TabEdgeOption
 									})}
 							>
-								{#each edgeOptions as option}<option value={option}>{option}</option>{/each}
+								{#each edgeOptions as option (option)}<option value={option}>{option}</option
+									>{/each}
 							</select>
 						</LabeledControl>
 						<LabeledControl label="Split End">
@@ -247,7 +249,8 @@
 										) as TabEdgeOption
 									})}
 							>
-								{#each edgeOptions as option}<option value={option}>{option}</option>{/each}
+								{#each edgeOptions as option (option)}<option value={option}>{option}</option
+									>{/each}
 							</select>
 						</LabeledControl>
 					{/if}
@@ -336,7 +339,8 @@
 											'rect') as GridVariant
 									})}
 							>
-								{#each ['rect', 'triangle-0', 'triangle-1'] as option}<option>{option}</option
+								{#each ['rect', 'triangle-0', 'triangle-1'] as option (option)}<option
+										>{option}</option
 									>{/each}
 							</select>
 						</LabeledControl>
@@ -410,7 +414,7 @@
 								onchange={(event) =>
 									setInner({ skipEdges: (event.currentTarget as HTMLSelectElement).value })}
 							>
-								{#each ['all', 'none', 'not-first', 'not-last', 'not-both'] as option}
+								{#each ['all', 'none', 'not-first', 'not-last', 'not-both'] as option (option)}
 									<option value={option}>{option}</option>
 								{/each}
 							</select>

@@ -2,7 +2,7 @@
 	import {
 		sliceProjectionCutPattern,
 		type ProjectionRange
-	} from '$lib/projection-geometry/filters';
+	} from '#lib/projection-geometry/filters.js';
 	import {
 		patternConfigStore,
 		viewControlStore,
@@ -17,23 +17,23 @@
 		loadedConfigName,
 		exportPagesStore,
 		resolvedPatternLabels
-	} from '$lib/stores';
-	import { computeSplitBudget, EMPTY_SPLIT_BUDGET } from '$lib/cut-pattern/split-budget';
-	import { createOverflowNotifier } from '$lib/cut-pattern/page-overflow-notice';
+	} from '#lib/stores/index.js';
+	import { computeSplitBudget, EMPTY_SPLIT_BUDGET } from '#lib/cut-pattern/split-budget.js';
+	import { createOverflowNotifier } from '#lib/cut-pattern/page-overflow-notice.js';
 	import {
 		buildEffectiveBoundsIndex,
 		buildPivotIndex,
 		buildTagAnchorIndex,
 		effectiveBoundsForBand,
 		type EffectiveBoundsContext
-	} from '$lib/cut-pattern/band-layout';
+	} from '#lib/cut-pattern/band-layout.js';
 	import { Vector3 } from 'three';
 	import { get } from 'svelte/store';
 	import {
 		computeWrappedOrigins,
 		GAP_BETWEEN_BANDS,
 		type WrapInput
-	} from '$lib/cut-pattern/compute-wrapped-origins';
+	} from '#lib/cut-pattern/compute-wrapped-origins.js';
 	import type {
 		BandCutPattern,
 		BandSortIndex,
@@ -43,27 +43,39 @@
 		PageLayoutConfig,
 		PointConfig2,
 		TubeCutPattern
-	} from '$lib/types';
+	} from '#lib/types.js';
 	import BandComponent from './BandComponent.svelte';
 	import BandCutPatternComponent from './BandCutPatternComponent.svelte';
 	import QuadPattern from '../pattern-svg/QuadPattern.svelte';
-	import type { GlobuleAddress_Band, TransformConfig, Tube } from '$lib/projection-geometry/types';
-	import { getTransform } from './distrubute-panels';
-	import { concatAddress } from '$lib/util';
-	import { resolveEndPartner } from '$lib/cut-pattern/resolve-partner-band';
-	import { buildBandCodeMap } from '$lib/cut-pattern/band-sort-index';
+	import type {
+		GlobuleAddress_Band,
+		TransformConfig,
+		Tube
+	} from '#lib/projection-geometry/types.js';
+	import { getTransform } from './distribute-panels';
+	import { concatAddress } from '#lib/util.js';
+	import { resolveEndPartner } from '#lib/cut-pattern/resolve-partner-band.js';
+	import { buildBandCodeMap } from '#lib/cut-pattern/band-sort-index.js';
 	import {
 		resolveIndexBands,
 		groupCodeForBand,
 		type ResolvedBand
-	} from '$lib/cut-pattern/resolve-index-bands';
+	} from '#lib/cut-pattern/resolve-index-bands.js';
 	import PageGeometry from './PageGeometry.svelte';
-	import { buildPageGeom, PAGE_LAYOUT_ALGORITHMS } from '$lib/cut-pattern/page-layout/registry';
-	import type { LayoutItem, PageLayoutResult } from '$lib/cut-pattern/page-layout/types';
-	import { toastStore } from '$lib/stores/toastStore';
-	import { placeBand } from '$lib/cut-pattern/page-post-process/place-bands';
-	import { pagePostProcess } from '$lib/cut-pattern/page-post-process';
-	import type { GlyphDict } from '$lib/cut-pattern/page-post-process/page-label';
+	import {
+		buildNestGeom,
+		buildPageGeom,
+		nestAllowsQuarterTurn,
+		PAGE_LAYOUT_ALGORITHMS
+	} from '#lib/cut-pattern/page-layout/registry.js';
+	import { buildNestShape } from '#lib/cut-pattern/page-layout/nest/nest-shape.js';
+	import { nestClient } from '#lib/cut-pattern/page-layout/nest/nest-client.js';
+	import { skylinePageLayout } from '#lib/cut-pattern/page-layout/skyline.js';
+	import type { LayoutItem, PageLayoutResult } from '#lib/cut-pattern/page-layout/types.js';
+	import { toastStore } from '#lib/stores/toastStore.js';
+	import { placeBand } from '#lib/cut-pattern/page-post-process/place-bands.js';
+	import { pagePostProcess } from '#lib/cut-pattern/page-post-process/index.js';
+	import type { GlyphDict } from '#lib/cut-pattern/page-post-process/page-label.js';
 	import PageAnnotations from './PageAnnotations.svelte';
 	import { svgTextDictionary } from './SvgText/svg-text-store';
 	import { processSvg } from './SvgText/svg-text';
@@ -253,26 +265,111 @@
 	let pivots = $derived(buildPivotIndex(bandList, boundsIndex));
 	let tagAnchors = $derived(buildTagAnchorIndex(bandList));
 
-	let pageResult = $derived.by((): PageLayoutResult | undefined => {
-		if (layoutMode !== 'page' || !pageLayoutCfg) return undefined;
+	let isNest = $derived(layoutMode === 'page' && pageLayoutCfg?.algorithm === 'nest');
+
+	// Shapes for the nest worker, one per page band, built from the same
+	// bounds/pivot indexes the renderer already keys by band identity.
+	let nestShapes = $derived.by(() => {
+		if (!isNest) return undefined;
+		const ctx = boundsContext();
+		return pageBands.map(({ band }) =>
+			buildNestShape(band, ctx, pivots.get(band) ?? { x: 0, y: 0 })
+		);
+	});
+	let nestGeom = $derived(
+		isNest && pageLayoutCfg ? { ...buildNestGeom(pageLayoutCfg), gap } : undefined
+	);
+
+	// $state.raw: the result holds Vector3s; a deep proxy loops
+	// (effect_update_depth_exceeded).
+	let nestResult = $state.raw<
+		{ shapes: unknown; geom: unknown; result: PageLayoutResult } | undefined
+	>();
+	let nestPending = $state(false);
+	let nestFailed = $state(false);
+	// Plain counter (not $state): identifies the latest request. The client
+	// resolves a superseded request with null synchronously inside the newer
+	// request(), i.e. after `reqSeq` has moved on, so only the latest reply —
+	// success or failure — ever touches `nestPending`/`nestFailed`.
+	let reqSeq = 0;
+
+	// Request a nest for the current inputs. Reads only `nestShapes`/`nestGeom`
+	// (never `nestPending`/`nestFailed`/`nestResult`), so its own writes do not
+	// re-trigger it.
+	$effect(() => {
+		const shapes = nestShapes;
+		const g = nestGeom;
+		if (!shapes || !g) {
+			// Leaving nest mode: ignore any in-flight reply.
+			reqSeq++;
+			nestPending = false;
+			nestFailed = false;
+			return;
+		}
+		const id = ++reqSeq;
+		nestPending = true;
+		nestClient.request(shapes, g).then((result) => {
+			if (id !== reqSeq) return; // superseded; the newer request owns the status
+			nestPending = false;
+			if (result) {
+				nestResult = { shapes, geom: g, result };
+				nestFailed = false;
+			} else {
+				nestFailed = true; // worker failed; pageResult keeps the skyline fallback
+			}
+		});
+	});
+
+	let pageLayout = $derived.by((): { result?: PageLayoutResult; fallback: boolean } => {
+		if (layoutMode !== 'page' || !pageLayoutCfg) return { fallback: false };
 		const items = toLayoutItems(pageBands);
 		// Use the single shared gap so all three layout modes stay consistent.
 		const geom = { ...buildPageGeom(pageLayoutCfg), gap };
-		const algo = PAGE_LAYOUT_ALGORITHMS[pageLayoutCfg.algorithm];
-		return algo(items, geom);
+		if (pageLayoutCfg.algorithm === 'nest') {
+			// Latest worker result for the CURRENT inputs; until it lands, skyline
+			// with rotation so the page never blanks.
+			if (nestResult && nestResult.shapes === nestShapes && nestResult.geom === nestGeom) {
+				return { result: nestResult.result, fallback: false };
+			}
+			const result = skylinePageLayout(items, {
+				...geom,
+				allowRotation: nestAllowsQuarterTurn(buildNestGeom(pageLayoutCfg).rotationStep)
+			});
+			return { result, fallback: true };
+		}
+		return {
+			result: PAGE_LAYOUT_ALGORITHMS[pageLayoutCfg.algorithm](items, geom),
+			fallback: false
+		};
 	});
+	// The skyline stand-in only tries 0°/90°, so it can "overflow" on a band the nest
+	// fits diagonally, and its requiredScale is not the nest's. Never surface that
+	// overflow (no toast, no "Fit page" scale, no overflow in the editor): drop the
+	// stand-in and show the bands line-wrapped until the nest answers.
+	let fallbackOverflowed = $derived(pageLayout.fallback && !!pageLayout.result?.overflow);
+	let pageResult = $derived(fallbackOverflowed ? undefined : pageLayout.result);
 
-	// Publish the page count to the Page Layout editor. Guard on a value key so we
-	// only write when it actually changes — an unconditional store write here
-	// re-enters the reactive flush and trips effect_update_depth_exceeded.
+	// Publish the page count (and nest status) to the Page Layout editor. Guard on
+	// a value key so we only write when it actually changes — an unconditional
+	// store write here re-enters the reactive flush and trips
+	// effect_update_depth_exceeded.
 	let lastPageInfoKey = '';
 	$effect(() => {
 		const pageCount = pageResult?.pages.length ?? 0;
 		const overflow = !!pageResult?.overflow;
-		const key = `${pageCount}:${overflow}`;
+		const utilisation = pageResult?.utilisation;
+		const pending = nestPending;
+		const failed = nestFailed;
+		const key = `${pageCount}:${overflow}:${pending}:${failed}:${utilisation?.map((u) => u.toFixed(3)).join(',') ?? ''}`;
 		if (key === lastPageInfoKey) return;
 		lastPageInfoKey = key;
-		pageLayoutInfoStore.set({ pageCount, overflow });
+		pageLayoutInfoStore.set({
+			pageCount,
+			overflow,
+			utilisation,
+			nestPending: pending,
+			nestFailed: failed
+		});
 	});
 
 	// The per-piece length budget and overflow preconditions the Splits panel
@@ -312,8 +409,12 @@
 			{
 				contentWidth: geom.contentWidth,
 				contentHeight: geom.contentHeight,
-				// Only skyline minimises over orientations; flex-wrap ignores the flag.
-				allowRotation: pageLayoutCfg.algorithm === 'skyline' && !!pageLayoutCfg.allowRotation
+				// Skyline (when enabled) and nest (when its step reaches 90°) can turn a
+				// piece onto its side; flex-wrap never rotates.
+				allowRotation:
+					(pageLayoutCfg.algorithm === 'skyline' && !!pageLayoutCfg.allowRotation) ||
+					(pageLayoutCfg.algorithm === 'nest' &&
+						nestAllowsQuarterTurn(buildNestGeom(pageLayoutCfg).rotationStep))
 			}
 		);
 	});
@@ -342,9 +443,11 @@
 
 	// Line-wrap is on in line-wrap mode, and also as the page-mode overflow fallback:
 	// when a pattern is too large to fit a page we drop pages but still wrap, so
-	// patterns stay visible without running off in one infinite row.
+	// patterns stay visible without running off in one infinite row. A suppressed
+	// nest-fallback overflow wraps the same way, just without the toast.
 	let lineWrap = $derived(
-		layoutMode === 'line-wrap' || (layoutMode === 'page' && !!pageResult?.overflow)
+		layoutMode === 'line-wrap' ||
+			(layoutMode === 'page' && (!!pageResult?.overflow || fallbackOverflowed))
 	);
 
 	let origins = $derived(getCumulativeOrigins(filteredTubes, gap, 'center', lineWrap, wrapWidth));
@@ -540,7 +643,7 @@
 			{/each}
 		</g>
 	{:else}
-		{#each filteredTubes || [] as tube, t}
+		{#each filteredTubes || [] as tube, t (t)}
 			<g id={`${concatAddress(tube.address)}`}>
 				{#each tube.bands || [] as band, b (concatAddress(band.address))}
 					<BandComponent

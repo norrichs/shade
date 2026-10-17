@@ -1,11 +1,9 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 
 const generateProjectionPattern = jest.fn();
-const generateSuperGlobulePattern = jest.fn();
 
 jest.mock('../generate-pattern', () => ({
-	generateProjectionPattern: (...args: unknown[]) => generateProjectionPattern(...args),
-	generateSuperGlobulePattern: (...args: unknown[]) => generateSuperGlobulePattern(...args)
+	generateProjectionPattern: (...args: unknown[]) => generateProjectionPattern(...args)
 }));
 
 import { runPatternGeneration, EMPTY_PATTERN_RESULT } from '../run-pattern-generation';
@@ -17,7 +15,6 @@ const input = (over: Partial<PatternGenerationInput> = {}): PatternGenerationInp
 	superGlobule: {
 		projections: [{ tubes: [tube(0)], surfaceProjectionTubes: [tube(1)] }],
 		globuleTubes: [tube(2)],
-		subGlobules: [],
 		voronoiResult: { tubes: [tube(3)], surfaceProjectionTubes: [] }
 	} as unknown as PatternGenerationInput['superGlobule'],
 	superConfig: { id: 'cfg-1' } as PatternGenerationInput['superConfig'],
@@ -28,13 +25,12 @@ const input = (over: Partial<PatternGenerationInput> = {}): PatternGenerationInp
 		range: { tubes: undefined, bands: undefined, facets: undefined },
 		patternSource: 'voronoi'
 	} as unknown as PatternGenerationInput['genConfig'],
-	gates: { globule: false, globuleTube: true, projection: true, voronoi: true },
+	gates: { globuleTube: true, projection: true, voronoi: true },
 	...over
 });
 
 beforeEach(() => {
 	generateProjectionPattern.mockReset().mockImplementation((tubes: unknown) => ({ tubes }));
-	generateSuperGlobulePattern.mockReset().mockReturnValue({ type: 'SuperGlobulePattern' });
 });
 
 describe('runPatternGeneration', () => {
@@ -44,7 +40,6 @@ describe('runPatternGeneration', () => {
 		expect(out.voronoiPattern).toEqual({ tubes: [tube(3)] });
 		expect(out.projectionPattern).toBeUndefined();
 		expect(out.globuleTubePattern).toBeNull();
-		expect(out.superGlobulePattern).toBeNull();
 	});
 
 	it('passes the config id and range through to generateProjectionPattern', () => {
@@ -57,12 +52,15 @@ describe('runPatternGeneration', () => {
 		expect(passedRange).toBe(range);
 	});
 
-	it('generates the globule band pattern when the globule gate is on', () => {
-		const out = runPatternGeneration(
-			input({ gates: { globule: true, globuleTube: false, projection: false, voronoi: false } })
-		);
-		expect(generateSuperGlobulePattern).toHaveBeenCalledTimes(1);
-		expect(out.superGlobulePattern).toEqual({ type: 'SuperGlobulePattern' });
+	it('generates the globule tube pattern for the globule source', () => {
+		const base = input();
+		const out = runPatternGeneration({
+			...base,
+			genConfig: { ...base.genConfig, patternSource: 'globule' }
+		});
+		expect(generateProjectionPattern).toHaveBeenCalledTimes(1);
+		expect(out.globuleTubePattern).toEqual({ tubes: [tube(2)] });
+		expect(out.voronoiPattern).toBeUndefined();
 	});
 
 	it('skips sources with no tubes even when selected', () => {

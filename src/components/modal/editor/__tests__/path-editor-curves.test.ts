@@ -1,4 +1,4 @@
-import type { BezierConfig, PointConfig2 } from '$lib/types';
+import type { BezierConfig, PointConfig2 } from '#lib/types.js';
 import {
 	addCurve,
 	anchorDragsHandles,

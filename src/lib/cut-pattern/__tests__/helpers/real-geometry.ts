@@ -1,12 +1,12 @@
-import { generateSuperGlobule } from '$lib/generate-superglobule';
+import { generateSuperGlobule } from '#lib/generate-superglobule.js';
 import {
 	generateDefaultGlobulePatternConfig,
 	generateDefaultSuperGlobuleConfig
-} from '$lib/shades-config';
-import { isGlobuleAddress_BandPiece } from '$lib/util';
+} from '#lib/shades-config.js';
+import { isGlobuleAddress_BandPiece } from '#lib/util.js';
 import { runPatternGeneration } from '../../run-pattern-generation';
-import type { PatternGenerationConfig } from '$lib/stores/globulePatternStores';
-import type { SuperGlobuleProjectionCutPattern } from '$lib/stores/superGlobuleStores';
+import type { PatternGenerationConfig } from '#lib/stores/globulePatternStores.js';
+import type { SuperGlobuleProjectionCutPattern } from '#lib/stores/superGlobuleStores.js';
 import type {
 	BandCutPattern,
 	PathSegment,
@@ -14,7 +14,7 @@ import type {
 	PipelineGates,
 	SuperGlobuleConfig,
 	TubeCutPattern
-} from '$lib/types';
+} from '#lib/types.js';
 
 /**
  * Shared setup and end-match oracle for the real-geometry pattern tests.
@@ -25,7 +25,6 @@ import type {
  */
 
 export const projectionGates: PipelineGates = {
-	globule: false,
 	globuleTube: false,
 	projection: true,
 	voronoi: false

@@ -1,11 +1,11 @@
-import { AUTO_PERSIST_KEY, persistable } from '$lib/persistable';
+import { AUTO_PERSIST_KEY, persistable } from '#lib/persistable.js';
 
 export type ComputationMode = 'continuous' | '3d-only' | '2d-only';
 
 /** Which designer panes are visible, left to right. */
 export type PanelLayout = 'model-pattern' | 'pattern-model' | 'model' | 'pattern';
 
-export const PANEL_LAYOUTS: { value: PanelLayout; label: string }[] = [
+const PANEL_LAYOUTS: { value: PanelLayout; label: string }[] = [
 	{ value: 'model-pattern', label: 'Model | Pattern' },
 	{ value: 'pattern-model', label: 'Pattern | Model' },
 	{ value: 'model', label: 'Model' },
@@ -21,7 +21,7 @@ export type DesignerPanels = {
 	split: number;
 };
 
-export const DEFAULT_DESIGNER_PANELS: DesignerPanels = { layout: 'model-pattern', split: 2 / 3 };
+const DEFAULT_DESIGNER_PANELS: DesignerPanels = { layout: 'model-pattern', split: 2 / 3 };
 
 export const designerPanels = persistable<DesignerPanels>(
 	DEFAULT_DESIGNER_PANELS,

@@ -1,44 +1,40 @@
-import { AUTO_PERSIST_KEY, bootstrapShouldUsePersisted, persistable } from '$lib/persistable';
-import { generateDefaultSuperGlobuleConfig } from '$lib/shades-config';
+import { normalizeShapeConfigs } from '#lib/gcs/migrate-shape-configs.js';
+import { applyBlocks, backfillBlocked, gcsBlockedPipelines } from '#lib/gcs/gcs-gates.js';
+import { validateGlobuleShapeConfigs } from '#lib/generate-shape.js';
+import { AUTO_PERSIST_KEY, bootstrapShouldUsePersisted, persistable } from '#lib/persistable.js';
+import { generateDefaultSuperGlobuleConfig } from '#lib/shades-config.js';
 import type {
 	Id,
-	BandCutPattern,
-	GlobulePatternConfig,
 	ProjectionPanelPattern,
 	SuperGlobule,
 	SuperGlobuleConfig,
-	TubeCutPattern,
 	ProjectionCutPattern,
 	SuperGlobuleMesh,
 	AxisExtremes,
-	BandGeometry,
-	SuperGlobuleGeometry,
 	PipelineGates,
 	PatternSource,
 	TubeSplitRejection
-} from '$lib/types';
-import { collectRenderedPoints } from '$lib/collect-rendered-points';
-import type { GlobuleAddress_Facet, Tube } from '$lib/projection-geometry/types';
+} from '#lib/types.js';
+import { collectRenderedPoints } from '#lib/collect-rendered-points.js';
+import { computeTubeOpenings, type TubeOpening } from '#lib/tube-openings.js';
+import type { GlobuleAddress_Facet } from '#lib/projection-geometry/types.js';
 import { derived, writable, get } from 'svelte/store';
 import { loadPersistedOrDefault } from './stores';
-import { normalizeVoronoiConfig } from '$lib/voronoi/migrate-voronoi-config';
-import { generateSuperGlobule } from '$lib/generate-superglobule';
-import {
-	generateSuperGlobuleBandGeometry,
-	generateSuperGlobuleGeometry
-} from '$lib/generate-globulegeometry';
-import { validateAllPanels } from '$lib/cut-pattern/generate-pattern';
+import { normalizeVoronoiConfig } from '#lib/voronoi/migrate-voronoi-config.js';
+import { generateSuperGlobule } from '#lib/generate-superglobule.js';
 import {
 	EMPTY_PATTERN_RESULT,
 	runPatternGeneration,
 	type PatternGenerationResult
-} from '$lib/cut-pattern/run-pattern-generation';
+} from '#lib/cut-pattern/run-pattern-generation.js';
 import {
 	patternConfigStore,
 	patternGenerationConfig,
 	type PatternGenerationConfig
 } from './globulePatternStores';
+
 import { computationMode, pausePatternUpdates, isManualMode, hasPendingChanges } from './uiStores';
+
 import {
 	generateSuperGlobuleAsync,
 	generatePatternAsync,
@@ -48,9 +44,9 @@ import {
 	StalePatternError,
 	workerError
 } from './workerStore';
-import { browser } from '$app/environment';
+import { browser } from '$app/env';
 import { toastStore } from './toastStore';
-import { createDroppedSplitsNotifier } from '$lib/cut-pattern/dropped-splits-notice';
+import { createDroppedSplitsNotifier } from '#lib/cut-pattern/dropped-splits-notice.js';
 import { viewControlStore, type ViewControls } from './viewControlStore';
 import { Box3, Vector3 } from 'three';
 
@@ -67,7 +63,6 @@ export const isGenerating = derived(
  */
 function pipelineGatesFromViewControls(vc: ViewControls): PipelineGates {
 	return {
-		globule: vc.showGlobuleGeometry.any,
 		globuleTube: vc.showGlobuleTubeGeometry.any,
 		projection: vc.showProjectionGeometry.any,
 		voronoi: vc.showVoronoiGeometry.any
@@ -83,7 +78,7 @@ const patternGates = derived<typeof viewControlStore, PipelineGates>(
 	viewControlStore,
 	($viewControlStore, set) => {
 		const gates = pipelineGatesFromViewControls($viewControlStore);
-		const key = `${gates.globule}|${gates.globuleTube}|${gates.projection}|${gates.voronoi}`;
+		const key = `${gates.globuleTube}|${gates.projection}|${gates.voronoi}`;
 		if (key !== lastPatternGateKey) {
 			lastPatternGateKey = key;
 			set(gates);
@@ -138,15 +133,10 @@ export function triggerManualRegeneration(): void {
  * Extracts minimal mesh data from SuperGlobule for lightweight 3D rendering
  * Used in 2d-only mode to preserve 3D visualization while freeing memory
  */
-export function extractMeshData(
+function extractMeshData(
 	superGlobule: SuperGlobule,
 	patternSource: PatternSource = 'projection'
 ): SuperGlobuleMesh {
-	// Extract band geometry for 3D rendering
-	const geometryResult: SuperGlobuleGeometry = generateSuperGlobuleBandGeometry(superGlobule);
-	const bandGeometry: BandGeometry[] =
-		geometryResult.variant === 'Band' ? geometryResult.subGlobules.flat() : [];
-
 	// Extract projection addresses for selection mapping
 	const projectionAddresses: GlobuleAddress_Facet[] = [];
 	superGlobule.projections.forEach((proj, globuleIdx) => {
@@ -165,12 +155,9 @@ export function extractMeshData(
 	});
 
 	// Compute bounds from the geometry actually rendered for the active pattern
-	// source (projection/voronoi facet triangles), falling back to the globule
-	// band points when that source has no geometry. Track the actual extreme
-	// point on each axis so the measured extents can be visualised.
-	const renderedPoints = collectRenderedPoints(superGlobule, patternSource);
-	const points: Vector3[] =
-		renderedPoints.length > 0 ? renderedPoints : bandGeometry.flatMap((bg) => bg.points);
+	// source (projection/voronoi/globule-tube facet triangles). Track the actual
+	// extreme point on each axis so the measured extents can be visualised.
+	const points: Vector3[] = collectRenderedPoints(superGlobule, patternSource);
 
 	const bounds = new Box3();
 	let extremes: AxisExtremes | null = null;
@@ -191,21 +178,25 @@ export function extractMeshData(
 	return {
 		type: 'SuperGlobuleMesh',
 		superGlobuleConfigId: superGlobule.superGlobuleConfigId,
-		bandGeometry,
 		projectionAddresses,
 		bounds,
-		extremes
+		extremes,
+		// Taken from the globule tubes whatever the pattern source: a projection or
+		// voronoi model draped on a globule surface keeps that surface's openings.
+		openings: computeTubeOpenings(superGlobule.globuleTubes)
 	};
 }
 
 // SUPER CONFIGS
 export const superConfigStore = persistable<SuperGlobuleConfig>(
 	((): SuperGlobuleConfig => {
-		const config = normalizeVoronoiConfig(
-			loadPersistedOrDefault(
-				bootstrapShouldUsePersisted(),
-				generateDefaultSuperGlobuleConfig
-			) as SuperGlobuleConfig
+		const config = normalizeShapeConfigs(
+			normalizeVoronoiConfig(
+				loadPersistedOrDefault(
+					bootstrapShouldUsePersisted(),
+					generateDefaultSuperGlobuleConfig
+				) as SuperGlobuleConfig
+			)
 		);
 		console.log('SUPER GLOBULE CONFIG STORE', { config });
 		return config;
@@ -218,21 +209,15 @@ export const superConfigStore = persistable<SuperGlobuleConfig>(
 // Internal writable store for the SuperGlobule result
 const superGlobuleInternal = writable<SuperGlobule | null>(null);
 
-// Frozen mesh store for 2d-only mode (lightweight 3D representation)
-export const frozenMeshStore = writable<SuperGlobuleMesh | null>(null);
-
-// Persisted pattern store for 2d-only mode (maintains patterns when 3D is cleared)
-export const persistedPatternStore = writable<{
-	superGlobulePattern: any;
-	projectionPattern: any;
-	globuleTubePattern: any;
-} | null>(null);
-
 // Track whether we've done the initial generation
 let isInitialized = false;
 
 // Track last valid result for error recovery
 let lastValidResult: SuperGlobule | null = null;
+
+// Last cross-section validation message surfaced as a toast; an unchanged message is
+// not re-raised on every regeneration (e.g. while dragging an unrelated slider).
+let lastGcsToastMessage: string | null = null;
 
 /**
  * Triggers async generation of the SuperGlobule
@@ -262,10 +247,34 @@ function triggerAsyncGeneration(config: SuperGlobuleConfig): void {
 		console.log('SUPER GLOBULE STORE - Starting async generation');
 
 		try {
-			const gates = pipelineGatesFromViewControls(get(viewControlStore));
-			const result = await generateSuperGlobuleAsync(config, gates);
+			const userGates = pipelineGatesFromViewControls(get(viewControlStore));
+			const { blocked, message } = gcsBlockedPipelines(config, (g) => {
+				try {
+					return validateGlobuleShapeConfigs(g);
+				} catch (error) {
+					// A throwing validator must block the pipelines, not kill generation.
+					return {
+						isValid: false,
+						errors: [
+							{ index: null, message: error instanceof Error ? error.message : String(error) }
+						],
+						levels: [],
+						bandCount: 0
+					};
+				}
+			});
+			const raw = await generateSuperGlobuleAsync(config, applyBlocks(userGates, blocked));
+			// Blocked pipelines keep their previous output instead of going empty.
+			const result = backfillBlocked(raw, lastValidResult, blocked, userGates);
 			lastValidResult = result; // Store successful result
 			superGlobuleInternal.set(result);
+			// Set after the worker result: the worker clears workerError on every result.
+			if (message === null) {
+				lastGcsToastMessage = null;
+			} else if (message !== lastGcsToastMessage) {
+				lastGcsToastMessage = message;
+				workerError.set(message);
+			}
 			console.log('SUPER GLOBULE STORE - Async generation complete');
 		} catch (error) {
 			console.error('SUPER GLOBULE STORE - Async generation failed:', error);
@@ -318,7 +327,7 @@ if (browser) {
 	let prevGateKey: string | null = null;
 	viewControlStore.subscribe((vc) => {
 		const g = pipelineGatesFromViewControls(vc);
-		const key = `${g.globule}|${g.globuleTube}|${g.projection}|${g.voronoi}`;
+		const key = `${g.globuleTube}|${g.projection}|${g.voronoi}`;
 		if (prevGateKey === null) {
 			prevGateKey = key; // skip the initial subscription call
 			return;
@@ -425,7 +434,6 @@ if (browser) {
 const emptySuperGlobule = (superGlobuleConfigId: Id): SuperGlobule => ({
 	type: 'SuperGlobule',
 	superGlobuleConfigId,
-	subGlobules: [],
 	globuleTubes: [],
 	projections: [],
 	voronoiResult: undefined
@@ -480,17 +488,11 @@ export const model3dExtremesStore = derived(
 	($mesh): AxisExtremes | null => $mesh?.extremes ?? null
 );
 
-export const superGlobuleGeometryStore = derived(superGlobuleStore, ($superGlobuleStore) => {
-	const superGlobuleGeometry = generateSuperGlobuleGeometry($superGlobuleStore);
-	console.log('SUPER GLOBULE GEOMETRY STORE', { $superGlobuleStore, superGlobuleGeometry });
-	return superGlobuleGeometry;
-});
-
-export const superGlobuleBandGeometryStore = derived(superGlobuleStore, ($superGlobuleStore) => {
-	const superGlobuleGeometry = generateSuperGlobuleBandGeometry($superGlobuleStore);
-	console.log('SUPER GLOBULE BAND GEOMETRY STORE', { $superGlobuleStore, superGlobuleGeometry });
-	return superGlobuleGeometry;
-});
+// The tube openings, preset measurements alongside the axis extents above.
+export const model3dOpeningsStore = derived(
+	superGlobuleMeshStore,
+	($mesh): TubeOpening[] => $mesh?.openings ?? []
+);
 
 // ---------------------------------------------------------------------------
 // 2D pattern generation
@@ -615,13 +617,7 @@ if (browser) {
 	});
 }
 
-export type SuperGlobulePattern = SuperGlobuleBandPattern | SuperGlobuleProjectionPattern;
-
-export function isSuperGlobuleBandPattern(
-	pattern: SuperGlobulePattern
-): pattern is SuperGlobuleBandPattern {
-	return (pattern as SuperGlobuleBandPattern).type === 'SuperGlobulePattern';
-}
+export type SuperGlobulePattern = SuperGlobuleProjectionPattern;
 
 export function isSuperGlobuleProjectionPanelPattern(
 	pattern: SuperGlobulePattern | undefined
@@ -632,24 +628,8 @@ export function isSuperGlobuleProjectionPanelPattern(
 	);
 }
 
-export function isSuperGlobuleProjectionCutPattern(
-	pattern: SuperGlobulePattern | undefined
-): pattern is SuperGlobuleProjectionCutPattern {
-	return (
-		!!pattern &&
-		(pattern as SuperGlobuleProjectionCutPattern).type === 'SuperGlobuleProjectionCutPattern'
-	);
-}
-
-export type SuperGlobuleBandPattern = {
-	type: 'SuperGlobulePattern';
-	superGlobuleConfigId: Id;
-	bandPatterns: BandCutPattern[];
-};
-
 export type SuperGlobuleProjectionPattern =
-	| SuperGlobuleProjectionPanelPattern
-	| SuperGlobuleProjectionCutPattern;
+	SuperGlobuleProjectionPanelPattern | SuperGlobuleProjectionCutPattern;
 
 export type SuperGlobuleProjectionPanelPattern = {
 	type: 'SuperGlobuleProjectionPanelPattern';

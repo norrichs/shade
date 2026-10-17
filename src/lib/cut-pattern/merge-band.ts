@@ -1,4 +1,4 @@
-import type { PathSegment, PatternLabelsConfig } from '$lib/types';
+import type { PathSegment, PatternLabelsConfig } from '#lib/types.js';
 import type { BandMergePayload } from './band-merge-payload';
 import {
 	buildLabelOutlinePath,
@@ -9,7 +9,7 @@ import { transformLabelOutlineToBandSpace } from './transform-label-outline';
 import { mergeOutlineWithLabel } from './merge-outline-with-label';
 import { insertKeepConnectedBreak } from './keep-connected';
 import { buildBandUnionPath } from './build-band-union-path';
-import { uniteMany } from '$lib/paper';
+import { uniteMany } from '#lib/paper/index.js';
 
 /** The merge inputs that are identical for every band in one run. */
 export type MergeCtx = {

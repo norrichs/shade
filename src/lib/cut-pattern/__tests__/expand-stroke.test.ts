@@ -1,7 +1,7 @@
-import type { PathSegment } from '$lib/types';
+import type { PathSegment } from '#lib/types.js';
 import { expandFacetStroke } from '../expand-stroke';
-import { getPaperScope } from '$lib/paper/scope';
-import { pathSegmentsToPaper } from '$lib/paper';
+import { getPaperScope } from '#lib/paper/scope.js';
+import { pathSegmentsToPaper } from '#lib/paper/index.js';
 
 const area = (segments: PathSegment[]): number => {
 	const item = pathSegmentsToPaper(segments);

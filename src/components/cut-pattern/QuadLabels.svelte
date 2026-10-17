@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { getMidPoint } from '$lib/patterns/utils';
-	import type { BandCutPattern } from '$lib/types';
-	import { concatAddress } from '$lib/util';
+	import { getMidPoint } from '#lib/patterns/utils.js';
+	import type { BandCutPattern } from '#lib/types.js';
+	import { concatAddress } from '#lib/util.js';
 
 	let { showQuadLabels = false, band }: { showQuadLabels?: boolean; band: BandCutPattern } =
 		$props();
@@ -78,7 +78,7 @@
 				{`e: ${bandLabels.endPartner}`}
 			</text>
 		{/if}
-		{#each quadLabels as l}
+		{#each quadLabels as l, labelIdx (labelIdx)}
 			{#if l?.a}
 				<rect
 					x={l.a.position.x - 7}

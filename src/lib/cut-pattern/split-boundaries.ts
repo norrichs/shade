@@ -1,4 +1,4 @@
-import { resolvePatternEntry } from '$lib/patterns/resolve-pattern';
+import { resolvePatternEntry } from '#lib/patterns/resolve-pattern.js';
 import {
 	isOutlinedPatternConfig,
 	type BandCutPattern,
@@ -8,7 +8,7 @@ import {
 	type Point,
 	type SplitConfig,
 	type TubeSplits
-} from '$lib/types';
+} from '#lib/types.js';
 
 /**
  * The click targets the split-placing interaction offers on one band.
@@ -55,7 +55,7 @@ export const MIN_HIT_WIDTH = 2;
  * the gap between them, so they cannot overlap and a click always toggles the
  * hairline it was aimed at.
  */
-export const HIT_WIDTH_FACTOR = 0.8;
+const HIT_WIDTH_FACTOR = 0.8;
 
 /**
  * Splits configured for one tube, found by tube number.

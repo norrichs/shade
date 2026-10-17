@@ -1,7 +1,7 @@
 import { describe, it, expect } from '@jest/globals';
 import { Vector3 } from 'three';
 import { resamplePolyline, straightenToGeodesic } from '../geodesic-straighten';
-import type { SurfaceTriangle } from '$lib/voronoi/types';
+import type { SurfaceTriangle } from '#lib/voronoi/types.js';
 import { buildMeshGraph } from '../mesh-graph';
 import { SurfaceProjector } from '../smooth-chains';
 

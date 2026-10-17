@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { getChars, processSvg } from './svg-text';
 	import Fonts from './fonts';
-	import type { Point } from '$lib/types';
+	import type { Point } from '#lib/types.js';
 	import { svgTextDictionary } from './svg-text-store';
-	import { onMount } from 'svelte';
-	import type { GeometryType } from '$lib/cut-pattern/post-process-types';
-	import { layerStrokes } from '$lib/stores';
+	import { onMount, untrack } from 'svelte';
+	import type { GeometryType } from '#lib/cut-pattern/post-process-types.js';
+	import { layerStrokes } from '#lib/stores/index.js';
 
 	let {
 		id = undefined,
@@ -29,9 +29,12 @@
 		strokeWidth?: number;
 	} = $props();
 
+	// The glyph dictionary is a one-time, app-wide init: whichever font the first
+	// mounted SvgText names seeds it, and later fontName changes don't rebuild it.
 	let dict = $svgTextDictionary;
 	if (!dict) {
-		$svgTextDictionary = processSvg(Fonts[fontName].keyString, Fonts[fontName].svgString);
+		const font = Fonts[untrack(() => fontName)];
+		$svgTextDictionary = processSvg(font.keyString, font.svgString);
 		dict = $svgTextDictionary;
 	}
 
@@ -50,7 +53,7 @@
 	{id}
 >
 	<g transform={`translate(${xOffset}, ${yOffset})`} data-test-id="svg-text">
-		{#each characterPaths.chars as { char, offset, charId }, i}
+		{#each characterPaths.chars as { char, offset, charId }, i (i)}
 			<path
 				data-char-id={charId}
 				data-geometry={geometry}

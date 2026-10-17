@@ -1,9 +1,9 @@
 import { Raycaster, Vector2, Vector3, type Object3D } from 'three';
-import { buildCellCurvedInsets2d, type CurvedCellEdge } from '$lib/voronoi/curved-inset-2d';
+import { buildCellCurvedInsets2d, type CurvedCellEdge } from '#lib/voronoi/curved-inset-2d.js';
 import {
 	normalizeEdgeDivisions,
 	normalizeEdgeDivisionsMultiplier
-} from '$lib/voronoi/edge-divisions';
+} from '#lib/voronoi/edge-divisions.js';
 import type { EdgeSamplingConfig } from './types';
 
 /**

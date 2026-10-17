@@ -1,13 +1,13 @@
 import { describe, it, expect } from '@jest/globals';
 
-import { cloneGlobuleConfig, generateSuperGlobule } from '$lib/generate-superglobule';
+import { cloneGlobuleConfig, generateSuperGlobule } from '#lib/generate-superglobule.js';
 import { generateProjectionPattern } from '../generate-pattern';
 import {
 	generateDefaultSuperGlobuleConfig,
 	generateDefaultGlobulePatternConfig
-} from '$lib/shades-config';
-import type { SuperGlobuleProjectionCutPattern } from '$lib/stores/superGlobuleStores';
-import { concatAddress, concatAddress_Tube } from '$lib/util';
+} from '#lib/shades-config.js';
+import type { SuperGlobuleProjectionCutPattern } from '#lib/stores/superGlobuleStores.js';
+import { concatAddress, concatAddress_Tube } from '#lib/util.js';
 
 /**
  * End-to-end guard for the bare-globule workflow: configure a globule with no
@@ -15,7 +15,6 @@ import { concatAddress, concatAddress_Tube } from '$lib/util';
  */
 describe('bare globule -> globule tubes -> cut pattern', () => {
 	const superGlobule = generateSuperGlobule(generateDefaultSuperGlobuleConfig(), {
-		globule: false,
 		globuleTube: true,
 		projection: false,
 		voronoi: false
@@ -70,7 +69,6 @@ describe('bare globule -> globule tubes -> cut pattern', () => {
 			transforms: []
 		});
 		const multi = generateSuperGlobule(config, {
-			globule: false,
 			globuleTube: true,
 			projection: false,
 			voronoi: false

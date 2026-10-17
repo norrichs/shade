@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, test } from '@jest/globals';
-import type { PathSegment } from '$lib/types';
+import type { PathSegment } from '#lib/types.js';
 import { uniteMany } from '../path-operations';
 import { getPaperScope } from '../scope';
 import { pathSegmentsToPaper } from '../path-segment-to-paper';

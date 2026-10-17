@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { BezierConfig } from '$lib/types';
+	import type { BezierConfig } from '#lib/types.js';
 	import { addControlPoint, type PathEditorCanvas } from './path-editor';
 
 	let {

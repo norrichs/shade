@@ -1,11 +1,11 @@
-import type { PathSegment } from '$lib/types';
+import type { PathSegment } from '#lib/types.js';
 import type { UnitDefinition } from '../../spec-types';
 
 /** One of the three index groups of a tesselation unit tile. */
 export type UnitGroup = 'start' | 'middle' | 'end';
 
 /** One unit group of one (row, column) tile, placed at `offset` in the tiled path. */
-export type TileBlock = {
+type TileBlock = {
 	group: UnitGroup;
 	row: number;
 	column: number;

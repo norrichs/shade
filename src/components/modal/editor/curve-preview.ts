@@ -13,21 +13,21 @@
  * 2. **Delegates radial repetition to the shared module.** `radializeCurves` takes
  *    a plain `{ symmetryNumber, symmetry }` options object (not a caller-built
  *    `ShapeConfig`), then constructs the `ShapeConfig` itself and calls
- *    `radialShapeCurveConfigs` from `$lib/geometry/radial-shape` — the same
+ *    `radialShapeCurveConfigs` from `#lib/geometry/radial-shape.js` — the same
  *    function the generator uses. This is deliberate: it keeps the preview and
  *    the generator computing radial repetition identically. Do not hand-roll
  *    radial repetition here again; that would reintroduce the duplicate-
  *    implementation drift this module exists to eliminate.
  */
-import { radialShapeCurveConfigs } from '$lib/geometry/radial-shape';
-import type { BezierConfig, PointConfig2, ShapeConfig } from '$lib/types';
+import { radialShapeCurveConfigs } from '#lib/geometry/radial-shape.js';
+import type { BezierConfig, PointConfig2, ShapeConfig } from '#lib/types.js';
 
 const clonePoint = (point: PointConfig2): PointConfig2 => ({ ...point });
 
 const clonePoints = (points: BezierConfig['points']): BezierConfig['points'] =>
 	points.map(clonePoint) as BezierConfig['points'];
 
-export const cloneCurves = (curves: BezierConfig[]): BezierConfig[] =>
+const cloneCurves = (curves: BezierConfig[]): BezierConfig[] =>
 	curves.map((curve) => ({ ...curve, points: clonePoints(curve.points) }));
 
 /** Points closer than this at a joint are the same point, modulo float drift. */

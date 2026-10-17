@@ -12,8 +12,7 @@ jest.mock('../generate-cut-pattern', () => ({
 jest.mock('../generate-tiled-pattern', () => ({
 	alignBands: jest.fn(),
 	generateTubeCutPattern: jest.fn(),
-	applyTubePatternPostProcessing: jest.fn(),
-	generateTiledBandPattern: jest.fn()
+	applyTubePatternPostProcessing: jest.fn()
 }));
 jest.mock('../generate-panel-pattern', () => ({
 	shouldUsePanelPattern: jest.fn(),
@@ -28,7 +27,7 @@ import { Vector3, Triangle } from 'three';
 
 import { generateOutlinedBandPattern } from '../generate-outlined-pattern';
 import { resolveEndPartner } from '../resolve-partner-band';
-import type { Band, OutlinedPatternConfig, Quadrilateral, TubeCutPattern } from '$lib/types';
+import type { Band, OutlinedPatternConfig, Quadrilateral, TubeCutPattern } from '#lib/types.js';
 
 /**
  * This test drives the REAL production path — `generateOutlinedBandPattern`'s

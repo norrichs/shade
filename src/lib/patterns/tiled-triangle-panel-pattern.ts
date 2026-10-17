@@ -1,5 +1,4 @@
-import type { PanelVariant, PathSegment, Quadrilateral, TiledPatternConfig } from '$lib/types';
-import { translatePS } from './utils';
+import type { PanelVariant, PathSegment } from '#lib/types.js';
 
 type Props = {
 	size: number;
@@ -7,22 +6,20 @@ type Props = {
 };
 
 const generateUnit = (
-	edge = false,
 	w: number,
 	h: number,
 	variant: PanelVariant
 ): { start: PathSegment[]; end: PathSegment[] } => {
 	switch (variant) {
 		case 'triangle-1':
-			return unitTriangle(edge, w, h, 'triangle-1');
+			return unitTriangle(w, h, 'triangle-1');
 		case 'triangle-0':
 		default:
-			return unitTriangle(edge, w, h, 'triangle-0');
+			return unitTriangle(w, h, 'triangle-0');
 	}
 };
 
 const unitTriangle = (
-	edge = false,
 	w: number,
 	h: number,
 	subVariant: 'triangle-0' | 'triangle-1'
@@ -39,14 +36,10 @@ const unitTriangle = (
 };
 
 export const generatePanelPattern = ({ size, variant }: Props): PathSegment[] => {
-	const unit = generateUnit(false, size, size, variant);
+	const unit = generateUnit(size, size, variant);
 	return [...unit.start, ...unit.end];
 };
 
-export const adjustPanelPatternAfterTiling = (
-	patternBand: PathSegment[][],
-	quadBand: Quadrilateral[],
-	tiledPatternConfig: TiledPatternConfig
-): PathSegment[][] => {
+export const adjustPanelPatternAfterTiling = (patternBand: PathSegment[][]): PathSegment[][] => {
 	return patternBand;
 };

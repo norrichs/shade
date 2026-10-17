@@ -2,9 +2,9 @@
  * Band → ring lookup for the Assembler's cross-view band highlight, built from a
  * `BandSortIndex`. Pure, so `bandRingStore` can derive it and tests can use it.
  */
-import type { BandSortIndex } from '$lib/types';
-import type { GlobuleAddress_Band } from '$lib/projection-geometry/types';
-import { concatAddress_Band } from '$lib/util';
+import type { BandSortIndex } from '#lib/types.js';
+import type { GlobuleAddress_Band } from '#lib/projection-geometry/types.js';
+import { concatAddress_Band } from '#lib/util.js';
 import { bandKey } from './band-key';
 
 /** Every band in `band`'s ring (including itself); empty when it has none. */

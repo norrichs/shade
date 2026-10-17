@@ -1,6 +1,6 @@
 <script lang="ts">
-	import type { PageRect } from '$lib/cut-pattern/page-layout/types';
-	import { layerStrokes } from '$lib/stores';
+	import type { PageRect } from '#lib/cut-pattern/page-layout/types.js';
+	import { layerStrokes } from '#lib/stores/index.js';
 
 	let { pages = [] }: { pages?: PageRect[] } = $props();
 </script>

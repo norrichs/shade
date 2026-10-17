@@ -4,7 +4,7 @@ import type {
 	GlobuleAddress_FacetEdge,
 	TriangleEdge,
 	Tube
-} from '$lib/projection-geometry/types';
+} from '#lib/projection-geometry/types.js';
 import type {
 	BandPanelPattern,
 	Crease,
@@ -16,24 +16,22 @@ import type {
 	TiledPatternConfig,
 	TrianglePoint,
 	TubePanelPattern,
-	FacetOrientation,
 	ScaleUnit,
 	PatternScale,
 	HingePattern
-} from '$lib/types';
+} from '#lib/types.js';
 import { Line3, Plane, Triangle, Vector3 } from 'three';
 import {
 	getBandTriangleEdges,
-	isSameVector3,
-	printProjectionAddress
-} from '$lib/projection-geometry/generate-projection';
-import { getMidPoint, svgPathStringFromSegments } from '$lib/patterns/utils';
+	isSameVector3
+} from '#lib/projection-geometry/generate-projection.js';
+import { getMidPoint, svgPathStringFromSegments } from '#lib/patterns/utils.js';
 import {
 	distributePanels,
 	findLineIntersection,
 	getEdgeVector,
 	signedZAxisAngleTo
-} from '../../components/cut-pattern/distrubute-panels';
+} from '../../components/cut-pattern/distribute-panels';
 import {
 	corrected,
 	getBandBasePoints,
@@ -174,20 +172,17 @@ export const generateProjectionPanelPattern = ({
 		pattern,
 		tiledPatternConfig
 	);
-	const hingedPattern = generateHingedPattern(postProcessedPattern, tiledPatternConfig);
+	const hingedPattern = generateHingedPattern(postProcessedPattern);
 	return hingedPattern;
 };
 
-const generateHingedPattern = (
-	pattern: ProjectionPanelPattern,
-	tiledPatternConfig: TiledPatternConfig
-): ProjectionPanelPattern => {
+const generateHingedPattern = (pattern: ProjectionPanelPattern): ProjectionPanelPattern => {
 	const hingedPattern: ProjectionPanelPattern = {
 		...pattern,
-		tubes: pattern.tubes.map((tube, t) => {
+		tubes: pattern.tubes.map((tube) => {
 			return {
 				...tube,
-				bands: tube.bands.map((band, b) => {
+				bands: tube.bands.map((band) => {
 					const [{ base, second, outer }] = getBandTriangleEdges(band.orientation);
 
 					return {
@@ -196,11 +191,6 @@ const generateHingedPattern = (
 							const edges: TriangleEdge[] = [];
 							if (p % 2 === 0) edges.push(base, second, outer);
 							const hingePatterns = edges.map((edge) => {
-								const isPartnerDetatched =
-									edge === outer ||
-									(p === 0 && edge === base) ||
-									(p === band.panels.length - 1 && edge === second);
-
 								return getHingedEdgePatternV2(
 									panel as RequiredPanelPattern,
 									getPartnerPanel(panel, pattern.tubes, edge) as RequiredPanelPattern,
@@ -341,7 +331,7 @@ const getZeroedPanel = (
 	edge: TriangleEdge,
 	direction: 'positive' | 'negative'
 ): RequiredPanelPattern => {
-	const [p0, p1, p2] = getTrianglePointFromTriangleEdge(edge, 'triangle-order');
+	const [p0, p1] = getTrianglePointFromTriangleEdge(edge, 'triangle-order');
 
 	const offsetVector = anchor.clone();
 
@@ -527,7 +517,11 @@ const postProcessPanelPattern = (
 	pattern: ProjectionPanelPattern | { tubes: never[] },
 	tiledPatternConfig: TiledPatternConfig
 ): ProjectionPanelPattern => {
-	let { distributionConfig, panelHoleConfig: holeConfig, scaleConfig } = tiledPatternConfig.config;
+	const {
+		distributionConfig,
+		panelHoleConfig: holeConfig,
+		scaleConfig
+	} = tiledPatternConfig.config;
 
 	if (!holeConfig || !distributionConfig || !scaleConfig) {
 		throw new Error('missing config');
@@ -606,7 +600,7 @@ const generatePanelPattern = ({
 	return panel;
 };
 
-export const getPanelEdgeMeta = (
+const getPanelEdgeMeta = (
 	address: GlobuleAddress_Facet,
 	tubes: Tube[]
 ): PanelPattern['meta']['edges'] => {
@@ -617,7 +611,7 @@ export const getPanelEdgeMeta = (
 
 	const facet = band.facets[f];
 
-	let edgeMeta = Object.fromEntries(
+	const edgeMeta = Object.fromEntries(
 		(['ab', 'bc', 'ac'] as TriangleEdge[]).map((edge) => {
 			if (!facet.meta || !facet.meta[edge]) {
 				throw Error(`facet edge missing meta at address ${JSON.stringify(facet.address)}`);
@@ -628,9 +622,7 @@ export const getPanelEdgeMeta = (
 				facet.triangle,
 				partnerFacet.triangle,
 				edge,
-				partner.edge,
-				{ ...address, edge },
-				partner
+				partner.edge
 			);
 
 			const panelEdgeMeta: PanelEdgeMeta = {
@@ -655,7 +647,7 @@ const getInsetLines = (edge: TriangleEdge, index: number, insets: number[], tria
 	return { v0: insetPoint0, v1: insetPoint1 };
 };
 
-export const applyHolesToEdgeMeta = (
+const applyHolesToEdgeMeta = (
 	meta: PanelPattern['meta'],
 	triangle: Triangle,
 	config: PanelHoleConfig
@@ -773,9 +765,7 @@ const getCutAngle = (
 	t0: Triangle,
 	t1: Triangle,
 	edge0: TriangleEdge,
-	edge1: TriangleEdge,
-	address0?: GlobuleAddress_FacetEdge,
-	address1?: GlobuleAddress_FacetEdge
+	edge1: TriangleEdge
 ): { cutAngle: number; crease: Crease } => {
 	const n0 = new Vector3();
 	const n1 = new Vector3();
@@ -840,8 +830,7 @@ const getFacet = (tubes: Tube[], address: GlobuleAddress_Facet | GlobuleAddress_
 export const getFlatTriangle = ({ triangle, base }: { triangle: Triangle; base: PanelBase }) => {
 	const { p0, p1 } = base;
 	const p2 = ['a', 'b', 'c'].find((char) => char !== p0 && char !== p1) as
-		| TrianglePoint
-		| undefined;
+		TrianglePoint | undefined;
 
 	if (p2 === undefined) throw new Error('missing third triangle vector');
 
@@ -887,86 +876,4 @@ export const getFlatTriangle = ({ triangle, base }: { triangle: Triangle; base: 
 	flatTriangle[p2] = flat[p2];
 
 	return flatTriangle;
-};
-
-export const validateAllPanels = (tubes: TubePanelPattern[]) => {
-	tubes.forEach((tube) => {
-		tube.bands.forEach((band) => {
-			band.panels.forEach((panel) => {
-				(['ab', 'bc', 'ac'] as TriangleEdge[]).forEach((edge) => {
-					try {
-						validateEdge(edge, panel, tubes);
-					} catch (err) {
-						console.error(err);
-					}
-				});
-			});
-		});
-	});
-};
-
-const validateEdge = (edge: TriangleEdge, panel: PanelPattern, tubes: TubePanelPattern[]) => {
-	const partnerAddress = panel.meta.edges[corrected(edge)].partner;
-	const panelAddress = panel.address;
-	const panelEdgeAddress = { ...panelAddress, edge };
-	const partner = tubes[partnerAddress.tube].bands[partnerAddress.band].panels[panelAddress.facet];
-	const partnerEdge = partnerAddress.edge;
-	const partnerSelfAddress = partner.meta.edges[partnerEdge].partner;
-
-	if (!facetEdgeAddressMatch(panelEdgeAddress, partnerSelfAddress)) {
-		throw Error(
-			`self partner address mismatch ${printProjectionAddress(
-				panelEdgeAddress
-			)} : ${printProjectionAddress(partnerSelfAddress)}`
-		);
-	}
-};
-
-const validateEdgeMeta = ({
-	edge,
-	panelAddress,
-	edgeMeta,
-	tubes,
-	cutAnglePrecision = 1 / 1000000
-}: {
-	edge: TriangleEdge;
-	panelAddress: GlobuleAddress_Facet;
-	edgeMeta: PanelEdgeMeta;
-	tubes: TubePanelPattern[];
-	cutAnglePrecision?: number;
-}) => {
-	const pA = edgeMeta.partner;
-	const partner = tubes[pA.tube].bands[pA.band].panels[pA.facet];
-	const partnerMeta = partner.meta.edges[corrected(edge)];
-
-	const isCreaseMatched = partnerMeta?.crease === edgeMeta?.crease;
-	const isCutAngleMatched =
-		Math.abs(partnerMeta?.cutAngle - edgeMeta?.cutAngle) < cutAnglePrecision;
-
-	if (!isCreaseMatched || !isCutAngleMatched) {
-		throw Error(
-			`partner cut does not match - cutAngle ${partnerMeta?.cutAngle}, ${
-				edgeMeta?.cutAngle
-			} diff ${Math.abs(partnerMeta?.cutAngle - edgeMeta?.cutAngle)} - ${partnerMeta?.crease}, ${
-				edgeMeta?.crease
-			}
-this edge ${printProjectionAddress({
-				...panelAddress,
-				edge
-			})} -> ${printProjectionAddress(edgeMeta.partner)}
-partner   ${printProjectionAddress(pA)} -> ${printProjectionAddress(
-				partner.meta.edges[edge].partner
-			)}`
-		);
-	}
-};
-
-const facetEdgeAddressMatch = (a0: GlobuleAddress_FacetEdge, a1: GlobuleAddress_FacetEdge) => {
-	return (
-		a0.globule === a1.globule &&
-		a0.tube === a1.tube &&
-		a0.band === a1.band &&
-		a0.facet === a1.facet &&
-		a0.edge === a1.edge
-	);
 };

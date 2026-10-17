@@ -4,23 +4,28 @@
 		patternConfigStore,
 		selectedProjectionGeometry,
 		isSuperGlobuleProjectionPanelPattern
-	} from '$lib/stores';
+	} from '#lib/stores/index.js';
 	import BandPanelComponent from './BandPanelComponent.svelte';
 	import PanelComponent from './PanelComponent.svelte';
-	import type { PanelPattern, ProjectionPanelPattern, TubePanelPattern } from '$lib/types';
+	import type {
+		PanelPattern,
+		PatternScale,
+		ProjectionPanelPattern,
+		TubePanelPattern
+	} from '#lib/types.js';
 	import {
 		sliceProjectionPanelPattern,
 		type ProjectionRange
-	} from '$lib/projection-geometry/filters';
+	} from '#lib/projection-geometry/filters.js';
 	import Scalebar from './Scalebar.svelte';
 
 	import { svgTextDictionary } from './SvgText/svg-text-store';
 	import Fonts from './SvgText/fonts';
 	import { processSvg } from './SvgText/svg-text';
 	import HingePatternComponent from './HingePatternComponent.svelte';
-	import { translatePS } from '$lib/patterns/utils';
-	import type { TriangleEdge } from '$lib/projection-geometry/types';
-	import { concatAddress } from '$lib/util';
+	import { translatePS } from '#lib/patterns/utils.js';
+	import type { TriangleEdge } from '#lib/projection-geometry/types.js';
+	import { concatAddress } from '#lib/util.js';
 
 	let {
 		showSelectedOnly = false,
@@ -44,7 +49,11 @@
 		'config' in $patternConfigStore.patternTypeConfig
 			? $patternConfigStore.patternTypeConfig.config
 			: undefined;
-	let { distributionConfig, panelHoleConfig: holeConfig, scaleConfig } = tiledConfig ?? ({} as any);
+	// `scaleConfig` is not part of the tiled config type; older saved configs may still carry it.
+	const scaleConfig =
+		tiledConfig && 'scaleConfig' in tiledConfig
+			? (tiledConfig.scaleConfig as PatternScale | undefined)
+			: undefined;
 
 	const FONT_NAME = 'reliefSingleLine';
 	const updateLabels = (shouldUseSVGLabels: boolean) => {
@@ -127,11 +136,6 @@
 	$effect(() => {
 		updateLabels(shouldUseSVGLabels);
 	});
-	let labelStyle = $derived(
-		shouldUseSVGLabels
-			? ('svgLabels' as 'svgLabels' | 'textLabels')
-			: ('textLabels' as 'svgLabels' | 'textLabels')
-	);
 	let show = $derived(
 		isSuperGlobuleProjectionPanelPattern($superGlobulePatternStore.projectionPattern)
 	);
@@ -156,9 +160,9 @@
 				>
 					{#each band.panels as panel, p (concatAddress(panel.address))}
 						<g>
-							<PanelComponent {panel} {patternStyle} {labelSize} {labelStyle} {verbose} />
+							<PanelComponent {panel} {patternStyle} {labelSize} {verbose} />
 							{#if showHingePatterns}
-								{#each panel.meta.hingePatterns || [] as hingePattern, h}
+								{#each panel.meta.hingePatterns || [] as hingePattern, h (h)}
 									<g
 										transform={`translate(${hingePattern.bounds.width / 2}, ${
 											-hingePattern.bounds.height - p * 55 - h * 40

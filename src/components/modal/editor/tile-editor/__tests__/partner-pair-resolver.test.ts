@@ -1,19 +1,20 @@
-import { resolvePair, pairsEqual, type ResolvedPair } from '../partner-pair-resolver';
-import type { BandCutPattern } from '$lib/types';
-import type { GlobuleAddress_Band } from '$lib/projection-geometry/types';
+import { resolvePair } from '../partner-pair-resolver';
+import type { BandCutPattern, PathSegment } from '#lib/types.js';
+import type { Vector3 } from 'three';
+import type { GlobuleAddress_Band } from '#lib/projection-geometry/types.js';
 
 const makeQuad = (id: number) => ({
-	a: { x: id * 10, y: 0, z: 0 } as any,
-	b: { x: id * 10 + 5, y: 0, z: 0 } as any,
-	c: { x: id * 10 + 5, y: 5, z: 0 } as any,
-	d: { x: id * 10, y: 5, z: 0 } as any
+	a: { x: id * 10, y: 0, z: 0 } as Vector3,
+	b: { x: id * 10 + 5, y: 0, z: 0 } as Vector3,
+	c: { x: id * 10 + 5, y: 5, z: 0 } as Vector3,
+	d: { x: id * 10, y: 5, z: 0 } as Vector3
 });
 
 const makeFacet = (id: number) => ({
 	path: [
 		['M', id, id],
 		['L', id + 1, id + 1]
-	] as any,
+	] as PathSegment[],
 	quad: makeQuad(id),
 	label: `${id}`
 });
@@ -44,7 +45,7 @@ const makeBand = (
 						endPartnerTransform: options.endPartnerTransform
 					}
 				: undefined
-	}) as any;
+	}) as unknown as BandCutPattern; // partial fixture
 
 describe('resolvePair', () => {
 	it('returns null when band has no meta for the mode', () => {
@@ -144,7 +145,7 @@ const makePiece = (
 		address,
 		facets: facetIds.map(makeFacet),
 		meta
-	}) as any;
+	}) as unknown as BandCutPattern; // partial fixture
 
 describe('resolvePair — split bands', () => {
 	const plain = (tube: number, band: number): GlobuleAddress_Band => ({ globule: 0, tube, band });
@@ -229,57 +230,5 @@ describe('resolvePair — split bands', () => {
 		expect(result).not.toBeNull();
 		expect(result!.mainAddress).toEqual({ ...piece(0, 0, 1), facet: 1 });
 		expect(result!.ghostAddress).toEqual({ ...plain(1, 5), facet: 2 });
-	});
-});
-
-describe('pairsEqual', () => {
-	it('returns true for two null pairs', () => {
-		expect(pairsEqual(null, null)).toBe(true);
-	});
-
-	it('returns false when one is null and the other is not', () => {
-		const pair: ResolvedPair = {
-			mainAddress: { globule: 0, tube: 0, band: 0, facet: 0 },
-			ghostAddress: { globule: 0, tube: 1, band: 0, facet: 0 },
-			mainQuad: makeQuad(0),
-			ghostQuad: makeQuad(1),
-			mainPath: [['M', 0, 0]],
-			ghostPath: [['M', 1, 1]]
-		};
-		expect(pairsEqual(pair, null)).toBe(false);
-		expect(pairsEqual(null, pair)).toBe(false);
-	});
-
-	it('returns true when paths and quads are deep-equal', () => {
-		const a: ResolvedPair = {
-			mainAddress: { globule: 0, tube: 0, band: 0, facet: 0 },
-			ghostAddress: { globule: 0, tube: 1, band: 0, facet: 0 },
-			mainQuad: makeQuad(0),
-			ghostQuad: makeQuad(1),
-			mainPath: [['M', 0, 0]],
-			ghostPath: [['M', 1, 1]]
-		};
-		const b: ResolvedPair = {
-			mainAddress: { globule: 0, tube: 0, band: 0, facet: 0 },
-			ghostAddress: { globule: 0, tube: 1, band: 0, facet: 0 },
-			mainQuad: makeQuad(0),
-			ghostQuad: makeQuad(1),
-			mainPath: [['M', 0, 0]],
-			ghostPath: [['M', 1, 1]]
-		};
-		expect(pairsEqual(a, b)).toBe(true);
-	});
-
-	it('returns false when paths differ', () => {
-		const a: ResolvedPair = {
-			mainAddress: { globule: 0, tube: 0, band: 0, facet: 0 },
-			ghostAddress: { globule: 0, tube: 1, band: 0, facet: 0 },
-			mainQuad: makeQuad(0),
-			ghostQuad: makeQuad(1),
-			mainPath: [['M', 0, 0]],
-			ghostPath: [['M', 1, 1]]
-		};
-		const b: ResolvedPair = { ...a, ghostPath: [['M', 999, 999]] };
-		expect(pairsEqual(a, b)).toBe(false);
 	});
 });

@@ -1,4 +1,4 @@
-import type { Point } from '$lib/types';
+import type { Point } from '#lib/types.js';
 
 // SVG transform for a band placed at `origin`, optionally rotated `rotation`
 // degrees about `pivot` (the band's local bounds-center). Rotation 0 yields a

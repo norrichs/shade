@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { PointConfig2 } from '$lib/types';
+	import type { PointConfig2 } from '#lib/types.js';
 	import type { PathEditorCanvas, PathEditorConfig } from './path-editor';
 
 	let {

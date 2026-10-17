@@ -1,12 +1,16 @@
 <script lang="ts">
-	import { superConfigStore } from '$lib/stores';
+	import { superConfigStore } from '#lib/stores/index.js';
 	import { get } from 'svelte/store';
 	import LabeledControl from './LabeledControl.svelte';
 	import Container from './Container.svelte';
 	import Editor from './Editor.svelte';
-	import type { ImportedSurfaceConfig, SurfaceConfig } from '$lib/projection-geometry/types';
-	import { importModelFile } from '$lib/mesh-import/import-model';
-	import { toastStore } from '$lib/stores/toastStore';
+	import type {
+		ImportedSurfaceConfig,
+		SphereConfig,
+		SurfaceConfig
+	} from '#lib/projection-geometry/types.js';
+	import { importModelFile } from '#lib/mesh-import/import-model.js';
+	import { toastStore } from '#lib/stores/toastStore.js';
 	import ImportedMeshControls from './ImportedMeshControls.svelte';
 	import { importedMeshBusy } from './imported-mesh-busy';
 	import PointInput from '../../controls/super-control/PointInput.svelte';
@@ -14,7 +18,7 @@
 	import {
 		defaultCapsuleConfig,
 		defaultSphereConfig
-	} from '$lib/projection-geometry/surface-definitions';
+	} from '#lib/projection-geometry/surface-definitions.js';
 	import TransformControls from './TransformControls.svelte';
 	import { identityTransform, isInheritedTransform } from './transform-config';
 
@@ -147,19 +151,30 @@
 			{/if}
 
 			{#if surfaceConfig.type === 'SphereConfig' && 'radius' in surfaceConfig}
+				{@const sphereConfig = surfaceConfig}
 				<LabeledControl label="Sphere Radius">
 					<NumberInput
 						value={surfaceConfig.radius}
 						hasButtons
 						onChange={(v) => {
 							const config = get(superConfigStore);
-							(config.projectionConfigs[0].surfaceConfig as any).radius = v;
+							(config.projectionConfigs[0].surfaceConfig as SphereConfig).radius = v;
 							superConfigStore.set(config);
 						}}
 					/>
 				</LabeledControl>
 				<LabeledControl label="Sphere Center">
-					<PointInput bind:value={$superConfigStore.projectionConfigs[0].surfaceConfig.center} />
+					<!-- sphereConfig is the store's own surfaceConfig object, narrowed; mutate it
+					     and re-set the store, as the direct store binding did. -->
+					<PointInput
+						bind:value={
+							() => sphereConfig.center,
+							(center) => {
+								sphereConfig.center = center;
+								superConfigStore.set(get(superConfigStore));
+							}
+						}
+					/>
 				</LabeledControl>
 			{/if}
 

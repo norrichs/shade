@@ -1,4 +1,4 @@
-import type { PageRect } from '$lib/cut-pattern/page-layout/types';
+import type { PageRect } from '#lib/cut-pattern/page-layout/types.js';
 
 export type ExportFrame = {
 	width: string;

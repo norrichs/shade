@@ -1,4 +1,4 @@
-import type { PathSegment } from '$lib/types';
+import type { PathSegment } from '#lib/types.js';
 import type { BandEnds, Pt, TaggedPath } from './post-process-types';
 
 type Quad4 = [Pt, Pt, Pt, Pt];
@@ -7,7 +7,10 @@ type Cubic = { kind: 'C'; q: Quad4; len: number; lut: number[] };
 type Edge = Line | Cubic;
 
 const LUT_N = 64;
-const lerp = (a: Pt, b: Pt, t: number): Pt => ({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
+const lerp = (a: Pt, b: Pt, t: number): Pt => ({
+	x: a.x + (b.x - a.x) * t,
+	y: a.y + (b.y - a.y) * t
+});
 const dist = (a: Pt, b: Pt) => Math.hypot(a.x - b.x, a.y - b.y);
 
 const cubicAt = ([p0, c1, c2, p1]: Quad4, t: number): Pt => {
@@ -27,7 +30,10 @@ const splitCubic = (q: Quad4, t: number): [Quad4, Quad4] => {
 	const d = lerp(a, b, t);
 	const e = lerp(b, c, t);
 	const f = lerp(d, e, t);
-	return [[p0, a, d, f], [f, e, c, p1]];
+	return [
+		[p0, a, d, f],
+		[f, e, c, p1]
+	];
 };
 
 /** The part of a cubic between t0 and t1, exactly. */
@@ -89,7 +95,8 @@ const edgesOf = (segs: PathSegment[]): Edge[] | null => {
 			edges.push(cubicEdge([cur, lerp(cur, c, 2 / 3), lerp(p1, c, 2 / 3), p1]));
 			cur = p1;
 		} else if (s[0] === 'Z') {
-			if (dist(cur, start) > 1e-9) edges.push({ kind: 'L', p0: cur, p1: start, len: dist(cur, start) });
+			if (dist(cur, start) > 1e-9)
+				edges.push({ kind: 'L', p0: cur, p1: start, len: dist(cur, start) });
 			cur = start;
 		}
 	}
@@ -118,7 +125,10 @@ const closestArc = (edges: Edge[], cum: number[], p: Pt): { s: number; d: number
 		if (e.kind === 'L') {
 			const dx = e.p1.x - e.p0.x;
 			const dy = e.p1.y - e.p0.y;
-			const t = Math.max(0, Math.min(1, ((p.x - e.p0.x) * dx + (p.y - e.p0.y) * dy) / (e.len * e.len)));
+			const t = Math.max(
+				0,
+				Math.min(1, ((p.x - e.p0.x) * dx + (p.y - e.p0.y) * dy) / (e.len * e.len))
+			);
 			const d = dist(p, lerp(e.p0, e.p1, t));
 			if (d < best.d) best = { s: cum[i] + t * e.len, d };
 			return;
@@ -222,7 +232,8 @@ export const insertGaps = (piece: TaggedPath, points: Pt[], gap: number): Tagged
 		const next = merged[(k + 1) % merged.length];
 		const restStart = w.start + w.span;
 		const restEnd = k + 1 < merged.length ? next.start : next.start + total;
-		if (restEnd - restStart > 1e-9) outlineSegs.push(...sliceCyclic(edges, cum, restStart, restEnd - restStart));
+		if (restEnd - restStart > 1e-9)
+			outlineSegs.push(...sliceCyclic(edges, cum, restStart, restEnd - restStart));
 	});
 	return [{ geometry: 'pattern-outline', segments: outlineSegs, contour: piece.contour }, ...gaps];
 };
@@ -235,7 +246,11 @@ const distanceTo = (piece: TaggedPath, p: Pt): number => {
 };
 
 /** Connect surround: one gap per band end, in whichever outline piece the end lies on. */
-export const applyConnectSurround = (pieces: TaggedPath[], ends: BandEnds, gap: number): TaggedPath[] => {
+export const applyConnectSurround = (
+	pieces: TaggedPath[],
+	ends: BandEnds,
+	gap: number
+): TaggedPath[] => {
 	const assigned = new Map<number, Pt[]>();
 	for (const end of [ends.start, ends.end]) {
 		let bestI = -1;

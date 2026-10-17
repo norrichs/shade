@@ -1,6 +1,6 @@
 import { Vector3 } from 'three';
 import { shouldHaveTab } from '../generate-outlined-pattern';
-import type { OutlinedTabConfig } from '$lib/types';
+import type { OutlinedTabConfig } from '#lib/types.js';
 
 // Minimal OutlineEdge for a before/after side. start/end/interiorPoint are
 // unused by shouldHaveTab for before/after sides but required by the type.

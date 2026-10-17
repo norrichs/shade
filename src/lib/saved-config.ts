@@ -1,8 +1,9 @@
-import type { SuperGlobuleConfig, GlobulePatternConfig } from '$lib/types';
-import type { ViewControls } from '$lib/stores/viewControlStore';
-import type { TiledPatternSpec } from '$lib/patterns/spec-types';
-import { normalizeVoronoiConfig } from '$lib/voronoi/migrate-voronoi-config';
-import { migrateGlobulePatternConfig } from '$lib/validators';
+import { normalizeShapeConfigs } from '#lib/gcs/migrate-shape-configs.js';
+import type { SuperGlobuleConfig, GlobulePatternConfig } from '#lib/types.js';
+import type { ViewControls } from '#lib/stores/viewControlStore.js';
+import type { TiledPatternSpec } from '#lib/patterns/spec-types.js';
+import { normalizeVoronoiConfig } from '#lib/voronoi/migrate-voronoi-config.js';
+import { migrateGlobulePatternConfig } from '#lib/validators.js';
 
 /**
  * Versioned envelope persisted as a saved config's `configJson`.
@@ -97,7 +98,9 @@ export const parseSavedConfig = (raw: string): ParsedSavedConfig => {
 	// Legacy v1: the row itself is a SuperGlobuleConfig.
 	if (parsed?.type === 'SuperGlobuleConfig') {
 		return {
-			superGlobuleConfig: normalizeVoronoiConfig(parsed as SuperGlobuleConfig),
+			superGlobuleConfig: normalizeShapeConfigs(
+				normalizeVoronoiConfig(parsed as SuperGlobuleConfig)
+			),
 			tilePatternSpecs: []
 		};
 	}
@@ -105,7 +108,7 @@ export const parseSavedConfig = (raw: string): ParsedSavedConfig => {
 	// v2 / v3 envelope.
 	const envelope = parsed as SavedConfigEnvelope;
 	return {
-		superGlobuleConfig: normalizeVoronoiConfig(envelope.superGlobuleConfig),
+		superGlobuleConfig: normalizeShapeConfigs(normalizeVoronoiConfig(envelope.superGlobuleConfig)),
 		globulePatternConfig: envelope.globulePatternConfig
 			? migrateGlobulePatternConfig(envelope.globulePatternConfig)
 			: undefined,

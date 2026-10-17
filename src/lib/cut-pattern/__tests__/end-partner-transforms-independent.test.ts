@@ -1,7 +1,7 @@
 import { describe, it, expect } from '@jest/globals';
 
 import { getEndPartnerTransforms } from '../generate-pattern';
-import type { BandCutPattern, TubeCutPattern } from '$lib/types';
+import type { BandCutPattern, TubeCutPattern } from '#lib/types.js';
 
 // Two quads' worth of path so getEndPartnerTransform has geometry to read.
 const band = (address: BandCutPattern['address'], meta: BandCutPattern['meta']): BandCutPattern =>

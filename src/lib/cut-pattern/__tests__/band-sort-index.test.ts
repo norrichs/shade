@@ -1,9 +1,8 @@
-import type { BandSortGroup, TubeCutPattern } from '$lib/types';
+import type { BandSortGroup, TubeCutPattern } from '#lib/types.js';
 import {
 	formatGroupCode,
 	buildBandSortIndex,
 	buildBandCodeMap,
-	sliceBandSortIndex,
 	createEndConnectionNeighbours
 } from '../band-sort-index';
 import { bandKey } from '../band-key';
@@ -152,23 +151,6 @@ describe('buildBandCodeMap', () => {
 		const index = buildBandSortIndex(twoRingTubes(), 'tube-order');
 		const map = buildBandCodeMap(index);
 		expect(map.size).toBe(0);
-	});
-});
-
-describe('sliceBandSortIndex preserves code', () => {
-	test('group-only slice keeps the original code (no renumbering)', () => {
-		const index = buildBandSortIndex(twoRingTubes(), 'end-connection-tube');
-		const sliced = sliceBandSortIndex(index, { groups: [1, 2] });
-		expect(sliced.groups.length).toBe(1);
-		// The kept group is the original ring 1, so its code stays '0001' (not re-zeroed).
-		expect(sliced.groups[0].code).toBe('0001');
-	});
-
-	test('bandsInGroup slice keeps the code while trimming bands', () => {
-		const index = buildBandSortIndex(twoRingTubes(), 'end-connection-tube');
-		const sliced = sliceBandSortIndex(index, { groups: [0, 1], bandsInGroup: [0, 1] });
-		expect(sliced.groups[0].code).toBe('0000');
-		expect(sliced.groups[0].bands).toHaveLength(1);
 	});
 });
 

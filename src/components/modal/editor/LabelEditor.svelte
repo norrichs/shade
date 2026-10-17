@@ -3,11 +3,11 @@
 	import Editor from './Editor.svelte';
 	import LabeledControl from './LabeledControl.svelte';
 	import NumberInput from '../../controls/super-control/NumberInput.svelte';
-	import { patternConfigStore } from '$lib/stores';
+	import { patternConfigStore } from '#lib/stores/index.js';
 	import { get } from 'svelte/store';
-	import { isOutlinedPatternConfig } from '$lib/types';
-	import type { PatternLabelsConfig } from '$lib/types';
-	import { LABEL_MM_DEFAULTS } from '$lib/cut-pattern/label-units';
+	import { isOutlinedPatternConfig } from '#lib/types.js';
+	import type { PatternLabelsConfig } from '#lib/types.js';
+	import { LABEL_MM_DEFAULTS } from '#lib/cut-pattern/label-units.js';
 
 	type OnTab = NonNullable<PatternLabelsConfig['onTab']>;
 	type SelfTag = NonNullable<PatternLabelsConfig['selfTag']>;

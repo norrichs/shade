@@ -1,17 +1,17 @@
-import type { BandCutPattern, PathSegment, Quadrilateral } from '$lib/types';
-import type { GlobuleAddress_Facet } from '$lib/projection-geometry/types';
+import type { BandCutPattern, PathSegment, Quadrilateral } from '#lib/types.js';
+import type { GlobuleAddress_Facet } from '#lib/projection-geometry/types.js';
 import { resolvePair } from './partner-pair-resolver';
 import {
 	alongsideFacetIndex,
 	findAdjacentSideNeighbour,
 	findBandByExactAddressInBands
-} from '$lib/cut-pattern/resolve-partner-band';
+} from '#lib/cut-pattern/resolve-partner-band.js';
 import { bandAddressOf } from './base-quad-selection';
 
 export type PartnerRole = 'top' | 'bottom' | 'left' | 'right';
 export type RuleSetKey = 'withinBand' | 'acrossBands' | 'partner.startEnd' | 'partner.endEnd';
 
-export type ResolvedBase = {
+type ResolvedBase = {
 	address: GlobuleAddress_Facet;
 	quad: Quadrilateral;
 	path: PathSegment[];
@@ -96,6 +96,8 @@ export const resolveBaseAndPartners = (
 	if (!baseBand) return null;
 	const baseFacet = baseBand.facets[baseAddress.facet];
 	if (!baseFacet?.quad) return null;
+	// Hoisted so the narrowing survives into the resolver closures below.
+	const baseQuad = baseFacet.quad;
 
 	const base: ResolvedBase = {
 		address: baseAddress,
@@ -187,7 +189,7 @@ export const resolveBaseAndPartners = (
 		const facet = index === undefined ? undefined : left.facets[index];
 		if (index === undefined || !facet?.quad) return null;
 		// partner's right edge (b-c) coincides with base's left edge (a-d):
-		const fn = rigidFromTwoPoints(facet.quad.b, facet.quad.c, baseFacet.quad.a, baseFacet.quad.d);
+		const fn = rigidFromTwoPoints(facet.quad.b, facet.quad.c, baseQuad.a, baseQuad.d);
 		// Runtime processes base with prevBand=left as source → base IS current; baseIsTarget=true.
 		return {
 			role: 'left',
@@ -216,7 +218,7 @@ export const resolveBaseAndPartners = (
 			const facet = right.facets[index];
 			if (!facet?.quad) return null;
 			// partner's left edge (a-d) coincides with base's right edge (b-c):
-			const fn = rigidFromTwoPoints(facet.quad.a, facet.quad.d, baseFacet.quad.b, baseFacet.quad.c);
+			const fn = rigidFromTwoPoints(facet.quad.a, facet.quad.d, baseQuad.b, baseQuad.c);
 			// Runtime processes right (band+1) with base (band) as its source → right is current,
 			// base is neighbor. rule.target lives on the right partner; baseIsTarget=false.
 			return {

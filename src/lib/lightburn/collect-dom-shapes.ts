@@ -1,7 +1,7 @@
-import type { PathSegment } from '$lib/types';
-import { isGeometryType } from '$lib/cut-pattern/post-process-types';
-import { SCREEN_ONLY_SELECTOR } from '$lib/cut-pattern/export-guard';
-import { parsePathD, applyMatrix, type Matrix } from '$lib/download/parse-path-d';
+import type { PathSegment } from '#lib/types.js';
+import { isGeometryType } from '#lib/cut-pattern/post-process-types.js';
+import { SCREEN_ONLY_SELECTOR } from '#lib/cut-pattern/export-guard.js';
+import { parsePathD, applyMatrix, type Matrix } from '#lib/download/parse-path-d.js';
 import { toCubicSegments } from './lbrn2-path';
 import type { ExportShape } from './build-lb-project';
 
@@ -12,13 +12,7 @@ const rectSegments = (el: SVGRectElement): PathSegment[] => {
 	const y = el.y.baseVal.value;
 	const w = el.width.baseVal.value;
 	const h = el.height.baseVal.value;
-	return [
-		['M', x, y],
-		['L', x + w, y],
-		['L', x + w, y + h],
-		['L', x, y + h],
-		['Z']
-	];
+	return [['M', x, y], ['L', x + w, y], ['L', x + w, y + h], ['L', x, y + h], ['Z']];
 };
 
 /**

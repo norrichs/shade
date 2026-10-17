@@ -7,18 +7,22 @@
 	import { assemblerConfigs } from '../../components/modal/sidebar-definitions';
 	import Toast from '../../components/Toast.svelte';
 
-	import { superGlobulePatternStore, patternConfigStore, viewControlStore } from '$lib/stores';
-	import { collateTubes } from '$lib/cut-pattern/collate-tubes';
-	import { buildBandSortIndex } from '$lib/cut-pattern/band-sort-index';
-	import { buildPatternCsv } from '$lib/cut-pattern/build-pattern-csv';
-	import type { BandSortIndex, TubeCutPattern } from '$lib/types';
+	import {
+		superGlobulePatternStore,
+		patternConfigStore,
+		viewControlStore
+	} from '#lib/stores/index.js';
+	import { collateTubes } from '#lib/cut-pattern/collate-tubes.js';
+	import { buildBandSortIndex } from '#lib/cut-pattern/band-sort-index.js';
+	import { buildPatternCsv } from '#lib/cut-pattern/build-pattern-csv.js';
+	import type { BandSortIndex, TubeCutPattern } from '#lib/types.js';
 
 	// Collate the live tubes once, then derive the sort index and CSV from them.
 	// PatternData needs the structured `tubes`/`index` (which carry full
 	// {globule, tube, band} addresses) to resolve a clicked member cell back to a
 	// band — the CSV text omits the globule index.
 	let tubes = $derived.by<TubeCutPattern[]>(() => {
-		const patternState = $superGlobulePatternStore as any;
+		const patternState = $superGlobulePatternStore;
 		if (!patternState || typeof patternState === 'string') return [];
 		try {
 			const config = $patternConfigStore;

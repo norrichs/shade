@@ -1,4 +1,4 @@
-import type { Point } from '$lib/types';
+import type { Point } from '#lib/types.js';
 
 /**
  * Inputs to `computeOutlinedLabelAnchor`.

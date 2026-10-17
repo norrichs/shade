@@ -1,21 +1,21 @@
-import { writable, derived, type Readable } from 'svelte/store';
-import type { SuperGlobuleConfig, SuperGlobule, PipelineGates } from '$lib/types';
-import type { Tube } from '$lib/projection-geometry/types';
+import { writable } from 'svelte/store';
+import type { SuperGlobuleConfig, SuperGlobule, PipelineGates } from '#lib/types.js';
+import type { Tube } from '#lib/projection-geometry/types.js';
 import type {
 	WorkerMessage,
 	WorkerResponse,
 	PatternMessage
-} from '$lib/workers/super-globule-worker-core';
+} from '#lib/workers/super-globule-worker-core.js';
 import type { PatternGenerationConfig } from './globulePatternStores';
-import type { PatternGenerationResult } from '$lib/cut-pattern/run-pattern-generation';
-import { rehydratePatternResult } from '$lib/workers/rehydrate-pattern';
+import type { PatternGenerationResult } from '#lib/cut-pattern/run-pattern-generation.js';
+import { rehydratePatternResult } from '#lib/workers/rehydrate-pattern.js';
 import { Vector3, Triangle, type Object3D } from 'three';
-import { ensureAssetsLoaded } from '$lib/mesh-import/asset-store';
+import { ensureAssetsLoaded } from '#lib/mesh-import/asset-store.js';
 import { createOrderedSender } from './ordered-sender';
 import {
 	generateSurfaceIfAvailable,
 	prepareProjectionConfig
-} from '$lib/projection-geometry/generate-projection';
+} from '#lib/projection-geometry/generate-projection.js';
 
 // Store to track if the worker is currently processing
 export const isWorking = writable<boolean>(false);
@@ -159,34 +159,6 @@ function rehydrateSuperGlobule(result: SuperGlobule): SuperGlobule {
 		}))
 	}));
 
-	// Rehydrate subGlobules
-	const subGlobules = result.subGlobules.map((subGlobule) => ({
-		...subGlobule,
-		data: subGlobule.data.map((globule) => ({
-			...globule,
-			data: {
-				...globule.data,
-				levels:
-					globule.data.levels?.map((level) => ({
-						...level,
-						center: rehydrateVector3(
-							level.center as unknown as Parameters<typeof rehydrateVector3>[0]
-						),
-						vertices: level.vertices.map(rehydrateVector3 as unknown as (v: Vector3) => Vector3)
-					})) ?? [],
-				bands: globule.data.bands.map((band) => ({
-					...band,
-					facets: band.facets.map((facet) => ({
-						...facet,
-						triangle: rehydrateTriangle(
-							facet.triangle as unknown as Parameters<typeof rehydrateTriangle>[0]
-						)
-					}))
-				}))
-			}
-		}))
-	}));
-
 	const rehydrateTubes = (tubes: Tube[]) =>
 		tubes.map((tube) => ({
 			...tube,
@@ -217,7 +189,6 @@ function rehydrateSuperGlobule(result: SuperGlobule): SuperGlobule {
 		...result,
 		projections,
 		globuleTubes,
-		subGlobules,
 		voronoiResult
 	};
 }
@@ -228,7 +199,7 @@ function rehydrateSuperGlobule(result: SuperGlobule): SuperGlobule {
 function getWorker(): Worker {
 	if (!worker) {
 		// Vite handles the worker bundling with this syntax
-		worker = new Worker(new URL('$lib/workers/super-globule.worker.ts', import.meta.url), {
+		worker = new Worker(new URL('../workers/super-globule.worker.ts', import.meta.url), {
 			type: 'module'
 		});
 
@@ -290,27 +261,34 @@ function getWorker(): Worker {
 				);
 
 				// Regenerate surfaces on main thread (Object3D can't be serialized through worker)
-				resolver.config.projectionConfigs.forEach((projConfig, i) => {
-					if (rehydrated.projections[i]) {
-						const prepared = prepareProjectionConfig(JSON.parse(JSON.stringify(projConfig)));
-						rehydrated.projections[i].surface = generateSurfaceIfAvailable(
-							prepared.surfaceConfig
+				try {
+					resolver.config.projectionConfigs.forEach((projConfig, i) => {
+						if (rehydrated.projections[i]) {
+							const prepared = prepareProjectionConfig(JSON.parse(JSON.stringify(projConfig)));
+							rehydrated.projections[i].surface = generateSurfaceIfAvailable(
+								prepared.surfaceConfig
+							) as Object3D;
+						}
+					});
+
+					// Regenerate Voronoi surface (uses projection's surface config)
+					const projSurfaceConfig = resolver.config.projectionConfigs[0]?.surfaceConfig;
+					const voronoiConfig = resolver.config.voronoiConfig;
+					if (projSurfaceConfig && voronoiConfig && rehydrated.voronoiResult) {
+						const plainSurfaceConfig = JSON.parse(JSON.stringify(projSurfaceConfig));
+						const resolvedSurfaceConfig =
+							plainSurfaceConfig.transform === 'inherit'
+								? { ...plainSurfaceConfig, transform: voronoiConfig.meta.transform }
+								: plainSurfaceConfig;
+						rehydrated.voronoiResult.surface = generateSurfaceIfAvailable(
+							resolvedSurfaceConfig
 						) as Object3D;
 					}
-				});
-
-				// Regenerate Voronoi surface (uses projection's surface config)
-				const projSurfaceConfig = resolver.config.projectionConfigs[0]?.surfaceConfig;
-				const voronoiConfig = resolver.config.voronoiConfig;
-				if (projSurfaceConfig && voronoiConfig && rehydrated.voronoiResult) {
-					const plainSurfaceConfig = JSON.parse(JSON.stringify(projSurfaceConfig));
-					const resolvedSurfaceConfig =
-						plainSurfaceConfig.transform === 'inherit'
-							? { ...plainSurfaceConfig, transform: voronoiConfig.meta.transform }
-							: plainSurfaceConfig;
-					rehydrated.voronoiResult.surface = generateSurfaceIfAvailable(
-						resolvedSurfaceConfig
-					) as Object3D;
+				} catch (error) {
+					// Surfaces may be missing, but pipelines that succeeded still render.
+					workerError.set(
+						`Surface rebuild failed: ${error instanceof Error ? error.message : String(error)}`
+					);
 				}
 
 				resolver.resolve(rehydrated);
@@ -424,18 +402,4 @@ export function generatePatternAsync(
 			reject(error instanceof Error ? error : new Error('Failed to post pattern request'));
 		}
 	});
-}
-
-/**
- * Terminates the worker (useful for cleanup)
- */
-export function terminateWorker(): void {
-	if (worker) {
-		worker.terminate();
-		worker = null;
-		pendingResolvers.clear();
-		pendingPatternResolvers.clear();
-		isWorking.set(false);
-		isPatternWorking.set(false);
-	}
 }

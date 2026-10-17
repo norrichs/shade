@@ -8,9 +8,9 @@ import {
 	isPrepared
 } from '../mergedPathStore';
 import { patternConfigStore } from '../globulePatternStores';
-import { concatPieces } from '$lib/cut-pattern/drop-holes';
-import type { BandContourIndex } from '$lib/cut-pattern/contour-index';
-import type { PathSegment } from '$lib/types';
+import { concatPieces } from '#lib/cut-pattern/drop-holes.js';
+import type { BandContourIndex } from '#lib/cut-pattern/contour-index.js';
+import type { PathSegment } from '#lib/types.js';
 
 describe('merged path stores', () => {
 	it('starts empty and unprepared', () => {

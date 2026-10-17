@@ -1,6 +1,6 @@
 import { Object3D, Raycaster, Vector3 } from 'three';
-import type { Facet, FacetEdgeMeta } from '$lib/types';
-import { OPENING } from '$lib/types';
+import type { Facet, FacetEdgeMeta } from '#lib/types.js';
+import { OPENING } from '#lib/types.js';
 import type {
 	CrossSectionConfig,
 	EdgeConfig,
@@ -12,7 +12,7 @@ import type {
 	SurfaceConfig,
 	TriangleEdge,
 	Tube
-} from '$lib/projection-geometry/types';
+} from '#lib/projection-geometry/types.js';
 import type { VoronoiConfig, VoronoiEdge, VoronoiResult } from './types';
 import { computeAdaptiveEdgeDivisions } from './edge-divisions';
 import { generateSeeds } from './generate-seeds';
@@ -37,13 +37,13 @@ import {
 	generateProjectionBands,
 	getEdge,
 	getEdgeMatchedTriangles
-} from '$lib/projection-geometry/generate-projection';
+} from '#lib/projection-geometry/generate-projection.js';
 import {
 	buildFillBand,
 	outerBorderPolyline,
 	reindexBandAddresses
-} from '$lib/projection-geometry/fill-bands';
-import type { Band } from '$lib/types';
+} from '#lib/projection-geometry/fill-bands.js';
+import type { Band } from '#lib/types.js';
 
 /**
  * `matchFacets` populates all three edges before assigning, so it works with a
@@ -125,8 +125,8 @@ function matchTubeEnds(tubes: Tube[]): void {
 		)
 	);
 
-	tubes.forEach((tube, t) =>
-		tube.bands.forEach((band, b) => {
+	tubes.forEach((tube) =>
+		tube.bands.forEach((band) => {
 			const firstFacet = band.facets[0];
 			const lastFacet = band.facets[band.facets.length - 1];
 

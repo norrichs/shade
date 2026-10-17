@@ -1,4 +1,4 @@
-import { AUTO_PERSIST_KEY, bootstrapShouldUsePersisted, persistable } from '$lib/persistable';
+import { AUTO_PERSIST_KEY, bootstrapShouldUsePersisted, persistable } from '#lib/persistable.js';
 import { loadPersistedOrDefault } from './stores';
 
 export type ShowProjectionGeometries = {
@@ -12,10 +12,6 @@ export type ShowProjectionGeometries = {
 	bands: boolean;
 };
 
-export type ShowGlobuleGeometries = {
-	[key: string]: boolean;
-	any: boolean;
-};
 export type ShowGlobuleTubeGeometries = {
 	[key: string]: boolean;
 	any: boolean;
@@ -35,7 +31,6 @@ export type ShowVoronoiGeometries = {
 
 export type ViewControls = {
 	showProjectionGeometry: ShowProjectionGeometries;
-	showGlobuleGeometry: ShowGlobuleGeometries;
 	showGlobuleTubeGeometry: ShowGlobuleTubeGeometries;
 	showVoronoiGeometry: ShowVoronoiGeometries;
 };
@@ -50,9 +45,6 @@ const defaultViewControls = (): ViewControls => ({
 		sections: false,
 		bands: false,
 		facets: false
-	},
-	showGlobuleGeometry: {
-		any: false
 	},
 	showGlobuleTubeGeometry: {
 		any: false,

@@ -3,7 +3,7 @@
  * the caller to write into superConfigStore; none touch stores themselves.
  * Main-thread only (parses files).
  */
-import type { ImportedSurfaceConfig, UpAxis } from '$lib/projection-geometry/types';
+import type { ImportedSurfaceConfig, UpAxis } from '#lib/projection-geometry/types.js';
 import { identityTransform } from '../../components/modal/editor/transform-config';
 import { cleanMesh } from './clean-mesh';
 import { computeFit, DEFAULT_TARGET_SIZE, defaultUpAxis } from './normalize';
@@ -13,7 +13,7 @@ import { parseModel } from './parse-model';
 import type { MeshAsset } from './types';
 
 /** parse → clean → hash → store. */
-export async function ingestModelFile(file: File): Promise<MeshAsset> {
+async function ingestModelFile(file: File): Promise<MeshAsset> {
 	const { root, format } = await parseModel(file);
 	const clean = cleanMesh(root);
 	const asset: MeshAsset = {

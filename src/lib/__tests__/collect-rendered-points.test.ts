@@ -41,8 +41,7 @@ describe('collectRenderedPoints', () => {
 
 	// The globule source measures the globule-tube pipeline's geometry — the same
 	// bands the pattern view renders for it — so the Page layout editor reports a
-	// real model size for a bare globule instead of falling back to the (usually
-	// empty) legacy sub-globule band geometry.
+	// real model size for a bare globule.
 	test('globule reads globuleTubes', () => {
 		const model = sg({
 			globuleTubes: [tube(7, 8)] as never,

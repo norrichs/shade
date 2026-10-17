@@ -1,5 +1,5 @@
 import { Vector3 } from 'three';
-import type { PathSegment, Quadrilateral } from '$lib/types';
+import type { PathSegment, Quadrilateral } from '#lib/types.js';
 import { snapAdjacentFacets, type FacetSnapRule } from '../snap-adjacent-facets';
 
 const quads = (count: number): Quadrilateral[] =>

@@ -1,8 +1,8 @@
 import type { MergeMessage, MergeResponse } from './band-merge-worker-core';
-import type { BandMergePayload } from '$lib/cut-pattern/band-merge-payload';
-import type { MergeCtx } from '$lib/cut-pattern/merge-band';
-import type { BandContourIndex } from '$lib/cut-pattern/contour-index';
-import type { PathSegment } from '$lib/types';
+import type { BandMergePayload } from '#lib/cut-pattern/band-merge-payload.js';
+import type { MergeCtx } from '#lib/cut-pattern/merge-band.js';
+import type { BandContourIndex } from '#lib/cut-pattern/contour-index.js';
+import type { PathSegment } from '#lib/types.js';
 
 /** The slice of the `Worker` API the pool uses, so tests can inject a fake. */
 export type PoolWorker = {
@@ -67,7 +67,7 @@ const resolveDefaultCreateWorker = async (): Promise<() => PoolWorker> => {
 };
 
 /** One core is left for the main thread, whose responsiveness is the point. */
-export const defaultPoolSize = (bandCount: number): number =>
+const defaultPoolSize = (bandCount: number): number =>
 	Math.max(
 		1,
 		Math.min(

@@ -1,6 +1,6 @@
 import { Triangle, Vector3 } from 'three';
 
-import type { Band, Facet, PixelScale, TiledPatternConfig } from '$lib/types';
+import type { Band, Facet, PixelScale, TiledPatternConfig } from '#lib/types.js';
 
 // A flat-ish strip of `facetCount` triangles zig-zagging up the y axis. This
 // mirrors the fixture approach in generate-tiling-subunits.test.ts (facets

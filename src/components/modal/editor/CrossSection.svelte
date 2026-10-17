@@ -1,12 +1,12 @@
 <script lang="ts">
-	import { getCrossSectionPath } from '$lib/projection-geometry/generate-projection';
+	import { getCrossSectionPath } from '#lib/projection-geometry/generate-projection.js';
 	import type {
 		CrossSectionConfig,
 		ProjectionCurveSampleMethod
-	} from '$lib/projection-geometry/types';
-	import { superConfigStore } from '$lib/stores';
+	} from '#lib/projection-geometry/types.js';
+	import { superConfigStore } from '#lib/stores/index.js';
 	import { get } from 'svelte/store';
-	import { generateCrossSectionPath } from '$lib/projection-geometry/preview-utils';
+	import { generateCrossSectionPath } from '#lib/projection-geometry/preview-utils.js';
 	import NumberInput from '../../controls/super-control/NumberInput.svelte';
 	import Button from '../../design-system/Button.svelte';
 	import LabeledControl from './LabeledControl.svelte';
@@ -50,10 +50,10 @@
 						(_, i) => (space / (newDivisions - oldDivisions)) * (i + 1)
 					)
 				);
-				crossSection.sampleMethod.divisionsArray = newDivisionsArray as any;
+				crossSection.sampleMethod.divisionsArray = newDivisionsArray as typeof oldDivisionsArray;
 			} else {
 				newDivisionsArray.splice(newDivisions, oldDivisions - newDivisions);
-				crossSection.sampleMethod.divisionsArray = newDivisionsArray as any;
+				crossSection.sampleMethod.divisionsArray = newDivisionsArray as typeof oldDivisionsArray;
 			}
 		} else {
 			console.log('newDivisions', newDivisions);
@@ -61,10 +61,19 @@
 		}
 		superConfigStore.set(get(superConfigStore));
 	};
+
+	// Sphere and capsule surfaces carry a numeric radius; globule and imported
+	// surfaces have none, so it is undefined there and the slider max falls
+	// back to 200.
+	let surfaceRadius = $derived.by(() => {
+		const surface = $superConfigStore.projectionConfigs[0].surfaceConfig;
+		const radius = 'radius' in surface ? surface.radius : undefined;
+		return typeof radius === 'number' ? radius : undefined;
+	});
 </script>
 
 <Editor>
-	{#each $superConfigStore.projectionConfigs[0].projectorConfig.polyhedron.crossSectionCurves as crossSection, crossSectionIndex}
+	{#each $superConfigStore.projectionConfigs[0].projectorConfig.polyhedron.crossSectionCurves as crossSection, crossSectionIndex (crossSectionIndex)}
 		<section class="cross-section-container">
 			<header>{crossSectionIndex}</header>
 			<Container>
@@ -140,7 +149,7 @@
 					>
 						{#if crossSection.sampleMethod.method === 'manualDivisions'}
 							<div>
-								{#each crossSection.sampleMethod.divisionsArray as division, index}
+								{#each crossSection.sampleMethod.divisionsArray as division, index (index)}
 									<div>{Math.round(division * 100) / 100}</div>
 									<input
 										type="range"
@@ -158,7 +167,7 @@
 							type="range"
 							min={0}
 							step={1}
-							max={$superConfigStore.projectionConfigs[0].surfaceConfig.radius || 100 * 2}
+							max={surfaceRadius || 100 * 2}
 							bind:value={crossSection.scaling.width}
 						/>
 					</LabeledControl>
@@ -167,7 +176,7 @@
 							type="range"
 							min={0}
 							step={1}
-							max={$superConfigStore.projectionConfigs[0].surfaceConfig.radius || 100 * 2}
+							max={surfaceRadius || 100 * 2}
 							bind:value={crossSection.scaling.height}
 						/>
 					</LabeledControl>

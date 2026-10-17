@@ -4,9 +4,9 @@ import { Triangle, Vector3 } from 'three';
 // generate-projection pulls in Svelte/store/material transitive deps; mock them
 // the same way the voronoi suite does so we can import the real geometry helper.
 jest.mock('../../../components/three-renderer/materials', () => ({ materials: { default: {} } }));
-jest.mock('$lib/stores/superGlobuleStores', () => ({}));
-jest.mock('$lib/stores/selectionStores', () => ({}));
-jest.mock('$lib/cut-pattern/generate-pattern', () => ({
+jest.mock('#lib/stores/superGlobuleStores.js', () => ({}));
+jest.mock('#lib/stores/selectionStores.js', () => ({}));
+jest.mock('#lib/cut-pattern/generate-pattern.js', () => ({
 	corrected: (e: string) => e,
 	getTrianglePointAsKVFromTriangleEdge: jest.fn(),
 	getTrianglePointFromTriangleEdge: jest.fn()

@@ -1,10 +1,11 @@
 <script lang="ts">
 	import { T, useThrelte } from '@threlte/core';
 	import { OrbitControls } from '@threlte/extras';
-	import { degToRad } from '$lib/patterns/utils';
-	import { isCameraInteracting, selectModeActive } from '$lib/stores/uiStores';
-	import { viewControlStore } from '$lib/stores';
+	import { degToRad } from '#lib/patterns/utils.js';
+	import { isCameraInteracting, selectModeActive } from '#lib/stores/uiStores.js';
+	import { viewControlStore } from '#lib/stores/index.js';
 	import { Vector3 } from 'three';
+	import type { OrbitControls as ThreeOrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
 	const INITIAL_POSITION: [number, number, number] = [0, 2000, -5];
 
@@ -17,7 +18,7 @@
 	} = $props();
 
 	const { camera, invalidate } = useThrelte();
-	let controls: any = $state(null);
+	let controls: ThreeOrbitControls | undefined = $state(undefined);
 
 	// Only reposition camera when direction is explicitly set (not on mount)
 	$effect(() => {

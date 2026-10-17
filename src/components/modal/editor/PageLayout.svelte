@@ -4,30 +4,34 @@
 		pageLayoutInfoStore,
 		showMeasureIndicators,
 		superConfigStore
-	} from '$lib/stores';
-	import { model3dBoundsStore } from '$lib/stores/superGlobuleStores';
-	import { PAGE_PRESETS } from '$lib/cut-pattern/page-layout/page-presets';
+	} from '#lib/stores/index.js';
+	import { model3dBoundsStore, model3dOpeningsStore } from '#lib/stores/superGlobuleStores.js';
+	import { PAGE_PRESETS } from '#lib/cut-pattern/page-layout/page-presets.js';
 	import {
 		derivePageDimensions,
 		deriveDistance,
 		inchToMm,
 		mmToInch
-	} from '$lib/cut-pattern/page-layout/units';
-	import { measurements, removeMeasurement, clearMeasurements } from '$lib/stores/measurementStore';
+	} from '#lib/cut-pattern/page-layout/units.js';
+	import {
+		measurements,
+		removeMeasurement,
+		clearMeasurements
+	} from '#lib/stores/measurementStore.js';
 	import { interactionMode, isMeasureInteractionMode } from '../../three-renderer/interaction-mode';
 	import { get } from 'svelte/store';
-	import { collatedTubesStore, splitBudgetStore } from '$lib/stores';
-	import { superGlobulePatternStore } from '$lib/stores/superGlobuleStores';
+	import { collatedTubesStore, splitBudgetStore } from '#lib/stores/index.js';
+	import { superGlobulePatternStore } from '#lib/stores/superGlobuleStores.js';
 	import {
 		applyAutoSplits,
 		clearAllSplits,
 		resolveSplitSubunitCount
-	} from '$lib/cut-pattern/split-boundaries';
-	import { proposeTubeSplits } from '$lib/cut-pattern/auto-split-bands';
-	import { describeAutoSplitResult } from '$lib/cut-pattern/auto-split-note';
-	import { derivePageScaleForTarget } from '$lib/cut-pattern/page-layout/derive-page-scale';
+	} from '#lib/cut-pattern/split-boundaries.js';
+	import { proposeTubeSplits } from '#lib/cut-pattern/auto-split-bands.js';
+	import { describeAutoSplitResult } from '#lib/cut-pattern/auto-split-note.js';
+	import { derivePageScaleForTarget } from '#lib/cut-pattern/page-layout/derive-page-scale.js';
 	import { Vector3 } from 'three';
-	import type { PatternLayoutMode, TubeSplits } from '$lib/types';
+	import type { PatternLayoutMode, TubeSplits } from '#lib/types.js';
 
 	// Shallow copy on purpose. Binding to `$patternConfigStore.…pageLayout.x` mutates
 	// that object in place, so a `$derived` returning the object itself resolves to the
@@ -244,6 +248,15 @@
 	});
 
 	const fmt = (n: number) => n.toFixed(2);
+
+	// Same conversion as the X/Y/Z rows: an opening's width is an axis extent.
+	const toPageUnits = (raw: number) => {
+		const mm = raw / (cfg.pageScale || 1);
+		return { mm, inch: mmToInch(mm) };
+	};
+	const openingLabel = (tube: number, end: 'start' | 'end', tubeCount: number) =>
+		`${tubeCount > 1 ? `t${tube} ` : ''}${end} opening`;
+	let openingTubeCount = $derived(new Set($model3dOpeningsStore.map((o) => o.tube)).size);
 </script>
 
 <div class="page-editor">
@@ -320,6 +333,7 @@
 			<select bind:value={$patternConfigStore.patternConfig.pageLayout.algorithm}>
 				<option value="flex-wrap">Flex-wrap</option>
 				<option value="skyline">Skyline</option>
+				<option value="nest">Nest (shape-aware)</option>
 			</select>
 		</label>
 
@@ -340,6 +354,30 @@
 				/>
 				allow rotation
 			</label>
+		{/if}
+
+		{#if $patternConfigStore.patternConfig.pageLayout.algorithm === 'nest'}
+			<label>
+				Rotation step (°)
+				<input
+					type="number"
+					min="0"
+					max="180"
+					step="5"
+					bind:value={$patternConfigStore.patternConfig.pageLayout.rotationStep}
+				/>
+			</label>
+			<div class="nest-status">
+				{#if $pageLayoutInfoStore.nestPending}
+					Nesting…
+				{:else if $pageLayoutInfoStore.nestFailed}
+					Nest failed — showing skyline layout (see console)
+				{:else if $pageLayoutInfoStore.utilisation?.length}
+					Material used: {$pageLayoutInfoStore.utilisation
+						.map((u) => `${Math.round(u * 100)}%`)
+						.join(' · ')}
+				{/if}
+			</div>
 		{/if}
 
 		<label>
@@ -479,6 +517,18 @@
 				<div>—</div>
 			{/if}
 
+			{#each $model3dOpeningsStore as opening (opening.id)}
+				{@const d = toPageUnits(opening.width)}
+				<div class="sized opening-{opening.end}">
+					<span
+						>{openingLabel(opening.tube, opening.end, openingTubeCount)}: {fmt(d.mm)} mm / {fmt(
+							d.inch
+						)} in</span
+					>
+					{@render targetInput(opening.width)}
+				</div>
+			{/each}
+
 			{#each completedMeasurements as m (m.id)}
 				{@const d = deriveDistance(m.a, m.b, cfg.pageScale)}
 				<div class="measurement">
@@ -594,6 +644,9 @@
 		align-self: center;
 		border: 1px solid #eee;
 	}
+	.nest-status {
+		font-size: 12px;
+	}
 	.derived {
 		border-top: 1px solid #eee;
 		padding-top: 6px;
@@ -610,6 +663,13 @@
 	}
 	.axis-z {
 		color: blue;
+	}
+	/* Match the tube-opening indicators in the 3D view: start magenta, end lavender. */
+	.opening-start {
+		color: magenta;
+	}
+	.opening-end {
+		color: #b57edc;
 	}
 	.indicator-toggle {
 		justify-content: flex-start;

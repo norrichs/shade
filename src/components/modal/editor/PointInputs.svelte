@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { BezierConfig } from '$lib/types';
+	import type { BezierConfig } from '#lib/types.js';
 	import PointInput from './PointInput.svelte';
 	import type { PointInputMode } from './path-editor-ui-store';
 	import type { PathEditorCanvas, PathEditorConfig } from './path-editor';
@@ -39,8 +39,8 @@
 		>
 	</div>
 	<div class="fields">
-		{#each curveDef as curve, curveIndex}
-			{#each curve.points as point, pointIndex}
+		{#each curveDef as curve, curveIndex (curveIndex)}
+			{#each curve.points as point, pointIndex (pointIndex)}
 				<PointInput
 					{point}
 					displayPoint={displayCurveDef[curveIndex].points[pointIndex]}

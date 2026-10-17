@@ -3,9 +3,20 @@ import { computeDisconnects } from '../disconnect';
 import type { PlacedBand } from '../../post-process-types';
 
 const rectPoly = (x0: number, y0: number, x1: number, y1: number) => [
-	{ x: x0, y: y0 }, { x: x1, y: y0 }, { x: x1, y: y1 }, { x: x0, y: y1 }, { x: x0, y: y0 }
+	{ x: x0, y: y0 },
+	{ x: x1, y: y0 },
+	{ x: x1, y: y1 },
+	{ x: x0, y: y1 },
+	{ x: x0, y: y0 }
 ];
-const vband = (id: string, x0: number, y0: number, x1: number, y1: number, page = 0): PlacedBand => ({
+const vband = (
+	id: string,
+	x0: number,
+	y0: number,
+	x1: number,
+	y1: number,
+	page = 0
+): PlacedBand => ({
 	bandId: id,
 	page,
 	outlines: [rectPoly(x0, y0, x1, y1)],
@@ -29,10 +40,16 @@ describe('computeDisconnects', () => {
 	});
 
 	it('reaches a facing neighbour once, not twice', () => {
-		const d = computeDisconnects([vband('a', 45, 10, 55, 40), vband('b', 45, 45, 55, 90)], [page], 2);
+		const d = computeDisconnects(
+			[vband('a', 45, 10, 55, 40), vband('b', 45, 45, 55, 90)],
+			[page],
+			2
+		);
 		const between = d.filter((s) => s.toBand !== null);
 		expect(between).toHaveLength(1);
-		expect(Math.hypot(between[0].b.x - between[0].a.x, between[0].b.y - between[0].a.y)).toBeCloseTo(5, 6);
+		expect(
+			Math.hypot(between[0].b.x - between[0].a.x, between[0].b.y - between[0].a.y)
+		).toBeCloseTo(5, 6);
 		expect(d).toHaveLength(3);
 	});
 
@@ -47,14 +64,24 @@ describe('computeDisconnects', () => {
 
 	it('skips an end buried inside another band', () => {
 		const a = vband('a', 45, 10, 55, 50);
-		const cover: PlacedBand = { bandId: 'cover', page: 0, outlines: [rectPoly(40, 45, 60, 60)], holes: [] };
+		const cover: PlacedBand = {
+			bandId: 'cover',
+			page: 0,
+			outlines: [rectPoly(40, 45, 60, 60)],
+			holes: []
+		};
 		const d = computeDisconnects([a, cover], [page], 2);
 		expect(d.find((s) => s.fromBand === 'a' && s.a.y === 50)).toBeUndefined();
 	});
 
 	it('ignores off-page ends, end-less bands and unknown pages, with no NaN', () => {
 		const off = vband('off', 45, -20, 55, -5);
-		const noEnds: PlacedBand = { bandId: 'n', page: 0, outlines: [rectPoly(10, 10, 20, 20)], holes: [] };
+		const noEnds: PlacedBand = {
+			bandId: 'n',
+			page: 0,
+			outlines: [rectPoly(10, 10, 20, 20)],
+			holes: []
+		};
 		const other = vband('o', 45, 10, 55, 80, 1);
 		const d = computeDisconnects([off, noEnds, other], [page], 2);
 		expect(d.filter((s) => s.fromBand === 'off')).toHaveLength(0);

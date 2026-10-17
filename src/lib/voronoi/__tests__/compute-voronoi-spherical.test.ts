@@ -16,12 +16,12 @@ describe('toLonLat', () => {
 	});
 
 	it('maps +Z axis to lat=90', () => {
-		const [lon, lat] = toLonLat(new Vector3(0, 0, 1), center);
+		const [, lat] = toLonLat(new Vector3(0, 0, 1), center);
 		expect(lat).toBeCloseTo(90, 5);
 	});
 
 	it('maps -Z axis to lat=-90', () => {
-		const [lon, lat] = toLonLat(new Vector3(0, 0, -1), center);
+		const [, lat] = toLonLat(new Vector3(0, 0, -1), center);
 		expect(lat).toBeCloseTo(-90, 5);
 	});
 

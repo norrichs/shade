@@ -1,4 +1,4 @@
-import type { ProjectionCutPattern, ProjectionPanelPattern, TubeCutPattern } from '$lib/types';
+import type { ProjectionPanelPattern, TubeCutPattern } from '#lib/types.js';
 
 export type ProjectionRange = {
 	projections?: number | [number] | [number, number];

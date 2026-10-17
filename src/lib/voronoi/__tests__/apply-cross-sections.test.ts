@@ -1,6 +1,6 @@
 import { Vector3 } from 'three';
 import { applyCrossSectionsToEdge } from '../apply-cross-sections';
-import type { CrossSectionConfig } from '$lib/projection-geometry/types';
+import type { CrossSectionConfig } from '#lib/projection-geometry/types.js';
 
 const makeSimpleCrossSection = (): CrossSectionConfig => ({
 	curves: [

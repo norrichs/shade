@@ -1,5 +1,5 @@
 import type { Tube } from './types';
-import type { Band } from '$lib/types';
+import type { Band } from '#lib/types.js';
 import {
 	Vector3,
 	Triangle,
@@ -11,8 +11,8 @@ import {
 	Raycaster
 } from 'three';
 
-export type FacetDirection = 'inside' | 'outside';
-export type SideOrientation = 'inside' | 'outside' | 'mixed';
+type FacetDirection = 'inside' | 'outside';
+type SideOrientation = 'inside' | 'outside' | 'mixed';
 
 /**
  * Build a mesh from a tube's facet triangles

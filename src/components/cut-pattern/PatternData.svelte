@@ -21,20 +21,20 @@
 	 * globule index, so clicks are resolved through the structured `index`/`tubes`
 	 * (which carry full `{globule, tube, band}` addresses) rather than cell text.
 	 */
-	import type { BandSortIndex, TubeCutPattern } from '$lib/types';
-	import type { GlobuleAddress_Band } from '$lib/projection-geometry/types';
+	import type { BandSortIndex, TubeCutPattern } from '#lib/types.js';
+	import type { GlobuleAddress_Band } from '#lib/projection-geometry/types.js';
 	import {
 		assemblerHighlight,
 		patternSourceStore,
 		sameGlobuleBand,
 		setAssemblerHighlightForBand
-	} from '$lib/stores';
+	} from '#lib/stores/index.js';
 	import {
 		assemblerHighlightInPattern,
 		geometrySourceOfPattern
-	} from '$lib/cut-pattern/pattern-band-space';
-	import { HIGHLIGHT_PRIMARY, HIGHLIGHT_SECONDARY } from '$lib/highlight-colors';
-	import { findBandRow } from '$lib/cut-pattern/band-row-lookup';
+	} from '#lib/cut-pattern/pattern-band-space.js';
+	import { HIGHLIGHT_PRIMARY, HIGHLIGHT_SECONDARY } from '#lib/highlight-colors.js';
+	import { findBandRow } from '#lib/cut-pattern/band-row-lookup.js';
 
 	let {
 		csv = '',

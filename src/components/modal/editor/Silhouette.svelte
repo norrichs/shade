@@ -1,9 +1,16 @@
 <script lang="ts">
 	import { get } from 'svelte/store';
-	import { selectedBand, superConfigStore } from '$lib/stores';
-	import { getCurvePoints } from '$lib/generate-level';
-	import type { BezierConfig, CurveSampleMethod, SuperGlobuleConfig } from '$lib/types';
-	import { isCurveSampleMethodMethod } from '$lib/types';
+	import { superConfigStore } from '#lib/stores/index.js';
+	import { getCurvePoints } from '#lib/generate-level.js';
+	import { validateGlobuleShapeConfigs } from '#lib/generate-shape.js';
+	import { gcsMarkers } from '#lib/gcs/gcs-markers.js';
+	import type {
+		BezierConfig,
+		CurveSampleMethod,
+		NarrowRegionConfig,
+		SuperGlobuleConfig
+	} from '#lib/types.js';
+	import { isCurveSampleMethodMethod } from '#lib/types.js';
 	import NumberInput from '../../controls/super-control/NumberInput.svelte';
 	import Container from './Container.svelte';
 	import Editor from './Editor.svelte';
@@ -15,7 +22,8 @@
 
 	// Derived from the store rather than read once into a `let`, so an externally
 	// loaded config (or an edit made from another panel) shows up here.
-	let sgIndex = $derived($selectedBand?.s ?? 0);
+	// Always the first sub-globule: the band-selection store that once chose it had no writers.
+	const sgIndex = 0;
 	let globuleConfig = $derived($superConfigStore.subGlobuleConfigs[sgIndex]?.globuleConfig);
 	let silhouetteConfig = $derived(globuleConfig?.silhouetteConfig);
 	let depthCurveConfig = $derived(globuleConfig?.depthCurveConfig);
@@ -100,6 +108,29 @@
 			} as CurveSampleMethod
 		}));
 
+	const DEFAULT_NARROW_REGION: NarrowRegionConfig = { width: 0, aspectRatio: 1 };
+
+	/** The narrow-region limit, when preserveAspectRatio is on and it is set (width > 0). */
+	let narrowRegion = $derived.by(() => {
+		const sampleMethod = levelConfig?.silhouetteSampleMethod;
+		if (sampleMethod?.method !== 'preserveAspectRatio') return undefined;
+		return sampleMethod.narrowRegion;
+	});
+	let narrowWidth = $derived(narrowRegion && narrowRegion.width > 0 ? narrowRegion.width : 0);
+
+	const setNarrowRegion = (patch: Partial<NarrowRegionConfig>) =>
+		updateLevelConfig((level) => {
+			const sampleMethod = level.silhouetteSampleMethod;
+			if (sampleMethod.method !== 'preserveAspectRatio') return level;
+			return {
+				...level,
+				silhouetteSampleMethod: {
+					...sampleMethod,
+					narrowRegion: { ...DEFAULT_NARROW_REGION, ...sampleMethod.narrowRegion, ...patch }
+				}
+			};
+		});
+
 	const setOffset = (axis: 'x' | 'y' | 'z', value: number) => updateFirstOffset({ [axis]: value });
 
 	// Stored in radians, edited in degrees. The legacy panel wrote only rotZ and
@@ -135,6 +166,25 @@
 			return [];
 		}
 	};
+
+	/** Cross-section positions in silhouette space; recomputed on config change, not on redraw. */
+	let markers = $derived.by(() => {
+		if (!globuleConfig) return [];
+		try {
+			return gcsMarkers(globuleConfig, validateGlobuleShapeConfigs(globuleConfig));
+		} catch {
+			return [];
+		}
+	});
+
+	/** Markers in the editor's display space (the y-flip needs the canvas). */
+	const markerPoints = (canv: PathEditorOverlayContext['canv']) => {
+		const flipAxis = canv.viewBoxData.top + canv.viewBoxData.height / 2;
+		return markers.map((marker) => ({
+			...marker,
+			point: { x: marker.point.x, y: 2 * flipAxis - marker.point.y }
+		}));
+	};
 </script>
 
 <Editor>
@@ -158,8 +208,26 @@
 							fill="rgba(255,0,0,0.35)"
 							stroke="none"
 						/>
-						{#each sampledPoints(canv) as point}
+						{#each sampledPoints(canv) as point, pointIdx (pointIdx)}
 							<circle cx={point.x} cy={point.y} r={2 * canv.scale} fill="rgba(0,0,0,0.5)" />
+						{/each}
+						{#each markerPoints(canv) as marker (marker.label)}
+							{@const color = marker.invalid ? '#c00' : '#06c'}
+							<circle
+								cx={marker.point.x}
+								cy={marker.point.y}
+								r={(marker.isPrimary ? 6 : 4.5) * canv.scale}
+								fill={marker.isPrimary ? color : 'rgba(255,255,255,0.7)'}
+								stroke={color}
+								stroke-width={(marker.isPrimary ? 2 : 1.5) * canv.scale}
+							/>
+							<text
+								x={marker.point.x + 8 * canv.scale}
+								y={marker.point.y - 8 * canv.scale}
+								font-size={12 * canv.scale}
+								font-weight={marker.isPrimary ? 'bold' : 'normal'}
+								fill={color}>{marker.label}</text
+							>
 						{/each}
 					{/snippet}
 					<PathEditor
@@ -176,6 +244,20 @@
 						overlay={silhouetteOverlay}
 					>
 						<line x1="0" y1="-100" x2="0" y2="100" stroke="black" stroke-width="0.25" />
+						<!-- Silhouette x below this is a narrow span: see NarrowRegionConfig -->
+						{#if narrowWidth}
+							{#each [narrowWidth, -narrowWidth] as x (x)}
+								<line
+									x1={x}
+									y1="-1000"
+									x2={x}
+									y2="1000"
+									stroke="rgba(0,120,0,0.6)"
+									stroke-width="0.5"
+									stroke-dasharray="4 4"
+								/>
+							{/each}
+						{/if}
 					</PathEditor>
 				{:else if $silhouetteTab === 'depth' && depthCurveConfig}
 					<PathEditor
@@ -236,10 +318,32 @@
 							hasButtons
 						/>
 					</LabeledControl>
+					{#if levelConfig.silhouetteSampleMethod.method === 'preserveAspectRatio'}
+						<!-- Width 0 turns the limit off. -->
+						<LabeledControl label="Narrow below">
+							<NumberInput
+								value={narrowRegion?.width ?? DEFAULT_NARROW_REGION.width}
+								onChange={(width) => setNarrowRegion({ width })}
+								min={0}
+								max={1000}
+								hasButtons
+							/>
+						</LabeledControl>
+						<LabeledControl label="Narrow aspect">
+							<NumberInput
+								value={narrowRegion?.aspectRatio ?? DEFAULT_NARROW_REGION.aspectRatio}
+								onChange={(aspectRatio) => setNarrowRegion({ aspectRatio })}
+								step={0.1}
+								min={0.1}
+								max={10}
+								hasButtons
+							/>
+						</LabeledControl>
+					{/if}
 
 					{#if levelConfig.levelOffsets[0]}
 						<header class="group">Level offset</header>
-						{#each ['x', 'y', 'z'] as const as axis}
+						{#each ['x', 'y', 'z'] as const as axis (axis)}
 							<LabeledControl label={axis.toUpperCase()}>
 								<NumberInput
 									value={levelConfig.levelOffsets[0][axis]}
@@ -248,7 +352,7 @@
 								/>
 							</LabeledControl>
 						{/each}
-						{#each [['rotX', 'Rotate X'], ['rotY', 'Rotate Y'], ['rotZ', 'Rotate Z']] as const as [axis, label]}
+						{#each [['rotX', 'Rotate X'], ['rotY', 'Rotate Y'], ['rotZ', 'Rotate Z']] as const as [axis, label] (axis)}
 							<LabeledControl {label}>
 								<NumberInput
 									value={toDegrees(levelConfig.levelOffsets[0][axis])}

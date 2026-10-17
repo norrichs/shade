@@ -4,17 +4,17 @@ import type {
 	VoronoiConfig,
 	VoronoiEdge,
 	GeodesicEdgeStyle
-} from '$lib/voronoi/types';
-import { generateAreaWeightedSeeds } from '$lib/voronoi/generate-seeds';
-import type { EdgeProjection } from '$lib/voronoi/project-edges-onto-surface';
-import { computeAdaptiveEdgeDivisions } from '$lib/voronoi/edge-divisions';
+} from '#lib/voronoi/types.js';
+import { generateAreaWeightedSeeds } from '#lib/voronoi/generate-seeds.js';
+import type { EdgeProjection } from '#lib/voronoi/project-edges-onto-surface.js';
+import { computeAdaptiveEdgeDivisions } from '#lib/voronoi/edge-divisions.js';
 import { buildMeshGraph, traceBoundaryLoops, type MeshGraph } from './mesh-graph';
 import { DijkstraGeodesicSolver, type GeodesicField } from './geodesic-solver';
 import { extractBoundaries, type BoundaryChain } from './extract-boundaries';
 import { buildRimChains } from './rim-edges';
 import { smoothChainPoints, SurfaceProjector } from './smooth-chains';
 import { straightenToGeodesic } from './geodesic-straighten';
-import { OPENING } from '$lib/types';
+import { OPENING } from '#lib/types.js';
 
 export type GeodesicVoronoiResult = {
 	edges: VoronoiEdge[];

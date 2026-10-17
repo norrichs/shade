@@ -6,7 +6,7 @@ import {
 	lookup,
 	LUT_SAMPLES
 } from '../hole-drop-config';
-import type { BezierConfig, PointConfig2 } from '$lib/types';
+import type { BezierConfig, PointConfig2 } from '#lib/types.js';
 
 const pt = (x: number, y: number): PointConfig2 => ({ type: 'PointConfig2', x, y });
 const curve = (

@@ -1,10 +1,10 @@
 <script lang="ts">
-	import { getMidPoint, svgPathStringFromSegments } from '$lib/patterns/utils';
-	import type { TransformConfig } from '$lib/projection-geometry/types';
-	import { patternConfigStore, mergedBandPaths, layerStrokes } from '$lib/stores';
-	import { resolveBandRenderMode } from '$lib/cut-pattern/band-render-mode';
-	import { concatPieces } from '$lib/cut-pattern/drop-holes';
-	import type { BandCutPattern, CutPattern, Quadrilateral } from '$lib/types';
+	import { getMidPoint, svgPathStringFromSegments } from '#lib/patterns/utils.js';
+	import type { TransformConfig } from '#lib/projection-geometry/types.js';
+	import { patternConfigStore, mergedBandPaths, layerStrokes } from '#lib/stores/index.js';
+	import { resolveBandRenderMode } from '#lib/cut-pattern/band-render-mode.js';
+	import { concatPieces } from '#lib/cut-pattern/drop-holes.js';
+	import type { BandCutPattern, CutPattern, Quadrilateral } from '#lib/types.js';
 	import QuadPattern from '../pattern-svg/QuadPattern.svelte';
 	import BoundsPattern from './BoundsPattern.svelte';
 	import PathPointIndices from './PathPointIndices.svelte';

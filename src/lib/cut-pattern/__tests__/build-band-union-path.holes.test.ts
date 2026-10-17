@@ -1,8 +1,8 @@
-import type { BandCutPattern, PathSegment } from '$lib/types';
+import type { BandCutPattern, PathSegment } from '#lib/types.js';
 import { buildBandUnionPath } from '../build-band-union-path';
 import type { StrokeInput } from '../expand-stroke';
-import { getPaperScope } from '$lib/paper/scope';
-import { pathSegmentsToPaper } from '$lib/paper';
+import { getPaperScope } from '#lib/paper/scope.js';
+import { pathSegmentsToPaper } from '#lib/paper/index.js';
 
 const contourCount = (segs: PathSegment[]): number => segs.filter((s) => s[0] === 'M').length;
 

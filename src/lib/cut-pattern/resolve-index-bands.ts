@@ -1,5 +1,5 @@
-import type { BandCutPattern, BandRef, BandSortIndex, TubeCutPattern } from '$lib/types';
-import { isSameAddress } from '$lib/util';
+import type { BandCutPattern, BandRef, BandSortIndex, TubeCutPattern } from '#lib/types.js';
+import { isSameAddress } from '#lib/util.js';
 import { bandKey } from './band-key';
 
 /**
@@ -15,10 +15,7 @@ import { bandKey } from './band-key';
 
 export type ResolvedBand = { band: BandCutPattern; tube: TubeCutPattern };
 
-export const resolveBandWithTube = (
-	tubes: TubeCutPattern[],
-	ref: BandRef
-): ResolvedBand | undefined => {
+const resolveBandWithTube = (tubes: TubeCutPattern[], ref: BandRef): ResolvedBand | undefined => {
 	const tube = tubes.find((t) => t.address.tube === ref.tube && t.address.globule === ref.globule);
 	if (!tube) return undefined;
 	const band = tube.bands.find((b) => isSameAddress(b.address, ref));

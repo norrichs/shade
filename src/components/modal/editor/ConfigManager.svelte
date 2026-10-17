@@ -1,17 +1,17 @@
 <script lang="ts">
-	import { superConfigStore, patternConfigStore, viewControlStore } from '$lib/stores';
-	import { loadedConfigStore } from '$lib/stores/loadedConfigStore';
-	import { triggerManualRegeneration } from '$lib/stores/superGlobuleStores';
-	import { isManualMode } from '$lib/stores/uiStores';
-	import { tilePatternSpecStore } from '$lib/stores/tilePatternSpecStore';
+	import { superConfigStore, patternConfigStore, viewControlStore } from '#lib/stores/index.js';
+	import { loadedConfigStore } from '#lib/stores/loadedConfigStore.js';
+	import { triggerManualRegeneration } from '#lib/stores/superGlobuleStores.js';
+	import { isManualMode } from '#lib/stores/uiStores.js';
+	import { tilePatternSpecStore } from '#lib/stores/tilePatternSpecStore.js';
 	import {
 		buildSavedConfig,
 		parseSavedConfig,
 		collectReferencedTilePatternSpecs
-	} from '$lib/saved-config';
-	import type { SuperGlobuleConfig, GlobulePatternConfig } from '$lib/types';
-	import type { ViewControls } from '$lib/stores/viewControlStore';
-	import type { TiledPatternSpec } from '$lib/patterns/spec-types';
+	} from '#lib/saved-config.js';
+	import type { SuperGlobuleConfig, GlobulePatternConfig } from '#lib/types.js';
+	import type { ViewControls } from '#lib/stores/viewControlStore.js';
+	import type { TiledPatternSpec } from '#lib/patterns/spec-types.js';
 	import { get } from 'svelte/store';
 	import Button from '../../design-system/Button.svelte';
 	import Container from './Container.svelte';

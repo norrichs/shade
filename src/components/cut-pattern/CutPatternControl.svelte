@@ -1,6 +1,6 @@
 <script lang="ts">
-	import type { ProjectionRange } from '$lib/projection-geometry/filters';
-	import { patternConfigStore } from '$lib/stores';
+	import type { ProjectionRange } from '#lib/projection-geometry/filters.js';
+	import { patternConfigStore } from '#lib/stores/index.js';
 	import CheckboxInput from '../controls/CheckboxInput.svelte';
 	import NumberInput from '../controls/super-control/NumberInput.svelte';
 	import PanControl from './PanControl.svelte';

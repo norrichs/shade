@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { PatternScale, Point } from '$lib/types';
+	import type { PatternScale, Point } from '#lib/types.js';
 
 	let { scale, origin = { x: 100, y: 100 } }: { scale: PatternScale; origin?: Point } = $props();
 

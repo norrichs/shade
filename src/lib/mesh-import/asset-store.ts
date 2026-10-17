@@ -8,7 +8,7 @@
  * own registry, both read the same IndexedDB.
  */
 import { writable } from 'svelte/store';
-import type { SuperGlobuleConfig } from '$lib/types';
+import type { SuperGlobuleConfig } from '#lib/types.js';
 import type { IndexedMesh, MeshAsset } from './types';
 
 const DB_NAME = 'shades-assets';

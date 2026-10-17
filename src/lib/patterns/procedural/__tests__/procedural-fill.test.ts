@@ -1,5 +1,5 @@
-import { svgPathStringFromSegments } from '$lib/patterns/utils';
-import type { ProceduralFillConfig } from '$lib/types';
+import { svgPathStringFromSegments } from '#lib/patterns/utils.js';
+import type { ProceduralFillConfig } from '#lib/types.js';
 import { circlesToPathSegments, generateProceduralFill } from '../procedural-fill';
 import type { Polygon } from '../polygon-2d';
 

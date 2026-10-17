@@ -2,7 +2,7 @@
 	import type { Snippet } from 'svelte';
 	import NavHeader from '../components/nav-header/NavHeader.svelte';
 	import './theme.css';
-	import { tilePatternSpecStore } from '$lib/stores/tilePatternSpecStore';
+	import { tilePatternSpecStore } from '#lib/stores/tilePatternSpecStore.js';
 
 	let { children }: { children: Snippet } = $props();
 

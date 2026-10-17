@@ -1,37 +1,14 @@
-import type { Edge, Polygon } from '$lib/projection-geometry/types';
-import type { BezierConfig, PointConfig2 } from '$lib/types';
+import type { Edge, Polygon } from '#lib/projection-geometry/types.js';
+import type { BezierConfig, PointConfig2 } from '#lib/types.js';
 import { Vector2 } from 'three';
 import { getPathFromVectors } from '../../projection/path-edit';
-import { getMidPoint } from '$lib/patterns/utils';
+import { getMidPoint } from '#lib/patterns/utils.js';
 
 export type { PathEditorConfig, PathEditorCanvas } from './path-editor-shared';
 export { getCanvas } from './path-editor-shared';
 
 export const getPointClass = (curveIndex: number, pointIndex: number) => {
 	return pointIndex === 1 || pointIndex === 2 ? 'direction' : 'anchor';
-};
-
-export const cloneCurves = (curveDef: BezierConfig[], curves: LimitedBezierConfig[]) => {
-	curves = curveDef.map((curve, c) => ({
-		...curve,
-		points: curve.points.map((point, p) => {
-			return {
-				...point,
-				xLimit: c + p === 0 ? 0 : undefined
-			};
-		}) as LimitedBezierConfig['points']
-	}));
-};
-
-export type LimitedPoint = PointConfig2 & {
-	xLimit?: number | ((data: any) => number);
-	yLimit?: number | ((data: any) => number);
-};
-
-export type LimitedBezierConfig = {
-	[key: string]: LimitedPoint[] | string;
-	type: 'BezierConfig';
-	points: [LimitedPoint, LimitedPoint, LimitedPoint, LimitedPoint];
 };
 
 export type FlattenedPolygon = {
@@ -253,7 +230,7 @@ export const neighborPointMatch: LimitFunction = ({
 
 // Utility functions
 
-const isEndPoint = (curveIndex: number, pointIndex: number, curveDef: any[]) => {
+const isEndPoint = (curveIndex: number, pointIndex: number, curveDef: unknown[]) => {
 	return (
 		(curveIndex === 0 && pointIndex === 0) ||
 		(curveIndex === curveDef.length - 1 && pointIndex === 3)

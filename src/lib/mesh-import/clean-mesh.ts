@@ -1,4 +1,13 @@
-import { Box3, BufferAttribute, BufferGeometry, Line, Mesh, Object3D, Points, Vector3 } from 'three';
+import {
+	Box3,
+	BufferAttribute,
+	BufferGeometry,
+	Line,
+	Mesh,
+	Object3D,
+	Points,
+	Vector3
+} from 'three';
 import { mergeGeometries, mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import type { CleanMesh, IndexedMesh, MeshDiagnostics } from './types';
 

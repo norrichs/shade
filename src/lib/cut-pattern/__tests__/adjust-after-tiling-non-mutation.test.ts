@@ -1,13 +1,18 @@
 import { describe, it, expect } from '@jest/globals';
-import { generateSuperGlobule } from '$lib/generate-superglobule';
+import { generateSuperGlobule } from '#lib/generate-superglobule.js';
 import {
 	generateDefaultSuperGlobuleConfig,
 	generateDefaultGlobulePatternConfig,
 	tiledPatternConfigs
-} from '$lib/shades-config';
+} from '#lib/shades-config.js';
 import { runPatternGeneration } from '../run-pattern-generation';
-import { patterns } from '$lib/patterns/pattern-definitions';
-import type { BandCutPattern, PipelineGates, TiledPatternConfig, TubeCutPattern } from '$lib/types';
+import { patterns } from '#lib/patterns/pattern-definitions.js';
+import type {
+	BandCutPattern,
+	PipelineGates,
+	TiledPatternConfig,
+	TubeCutPattern
+} from '#lib/types.js';
 
 /**
  * GUARDS (Task 17, from the Task 14 review). Task 14 hands every tube's
@@ -19,7 +24,6 @@ import type { BandCutPattern, PipelineGates, TiledPatternConfig, TubeCutPattern 
  */
 
 const gates: PipelineGates = {
-	globule: false,
 	globuleTube: false,
 	projection: true,
 	voronoi: false

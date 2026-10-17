@@ -1,7 +1,6 @@
-import type { PatternSource, PipelineGates } from '$lib/types';
+import type { PatternSource, PipelineGates } from '#lib/types.js';
 
 export type PatternGenerationTargets = {
-	superGlobule: boolean;
 	globuleTube: boolean;
 	projection: boolean;
 	surfaceProjection: boolean;
@@ -33,9 +32,9 @@ export type PatternGenerationAvailability = {
  * render sub-flags (bands/facets/sections) are deliberately not consulted here —
  * their 2D counterpart is `showBands`, which is applied instead.
  *
- * `patternSource` selects among all the variants, `globule` included: each tube
- * set is generated only when its own source is selected, because `collateTubes`
- * collates only that source's tubes.
+ * `patternSource` selects among all the variants (`'globule'` selects the globule
+ * tube set): each tube set is generated only when its own source is selected,
+ * because `collateTubes` collates only that source's tubes.
  */
 export const resolvePatternGenerationTargets = (
 	gates: PipelineGates,
@@ -43,7 +42,6 @@ export const resolvePatternGenerationTargets = (
 	showBands: boolean,
 	availability: PatternGenerationAvailability
 ): PatternGenerationTargets => ({
-	superGlobule: gates.globule,
 	globuleTube:
 		patternSource === 'globule' && gates.globuleTube && showBands && availability.hasGlobuleTubes,
 	projection:

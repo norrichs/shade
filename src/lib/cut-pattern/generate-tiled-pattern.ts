@@ -1,7 +1,5 @@
 import type {
 	Band,
-	BandAddressed,
-	GeometryAddress,
 	PathSegment,
 	BandCutPattern,
 	CutPattern,
@@ -11,18 +9,18 @@ import type {
 	TubeCutPattern,
 	Facet,
 	TagAnchor
-} from '$lib/types';
+} from '#lib/types.js';
 import {
 	getQuadrilaterals,
 	getQuadrilateralTransformMatrix,
 	transformPatternByQuad,
 	transformPointByQuadrilateralTransform
-} from '$lib/patterns/quadrilateral';
-import type { BandCutPatternPattern, TiledPatternConfig, UnitPatternGenerator } from '$lib/types';
+} from '#lib/patterns/quadrilateral.js';
+import type { TiledPatternConfig, UnitPatternGenerator } from '#lib/types.js';
 import { applyStrokeWidth, getFlatStripV2 } from './generate-cut-pattern';
-import { resolvePatternEntry } from '$lib/patterns/resolve-pattern';
+import { resolvePatternEntry } from '#lib/patterns/resolve-pattern.js';
 import { computeTiledLabelAngle } from './compute-tiled-label-angle';
-import { getQuadWidth, svgPathStringFromSegments } from '$lib/patterns/utils';
+import { getQuadWidth, svgPathStringFromSegments } from '#lib/patterns/utils.js';
 import { bandQuadCount, splitFlatBands, tubeQuadCountOf } from './split-flat-bands';
 import { buildPatternBandIndex, type PatternBandIndexOf } from './pattern-band-index';
 import type {
@@ -30,13 +28,13 @@ import type {
 	GlobuleAddress_BandPiece,
 	GlobuleAddress_FacetEdge,
 	GlobuleAddress_Tube
-} from '$lib/projection-geometry/types';
+} from '#lib/projection-geometry/types.js';
 import {
 	getAllTrianglePoints,
 	getMinimalBoundingBoxAndRotationAngle
-} from '../../components/cut-pattern/distrubute-panels';
+} from '../../components/cut-pattern/distribute-panels';
 import { Triangle, Vector3 } from 'three';
-import { getBandTriangleEdges } from '$lib/projection-geometry/generate-projection';
+import { getBandTriangleEdges } from '#lib/projection-geometry/generate-projection.js';
 
 /**
  * A band is an "edge" band when at least one of its facets' outer (side) edges has
@@ -193,13 +191,12 @@ export const applyTubePatternPostProcessing = (
 	tubeCutPattern: TubeCutPattern,
 	tiledPatternConfig: TiledPatternConfig
 ): TubeCutPattern => {
-	let processedBands = tubeCutPattern.bands.map((band) => {
+	let processedBands: BandCutPattern[] = tubeCutPattern.bands.map((band) => {
 		const patternBand = {
 			...band,
 			facets: band.facets.map((facet) => {
 				const segments = facet.path;
 				if (facet.addenda) {
-					const addendaSegments = facet.addenda.map((a) => a.path);
 					segments.push(...facet.addenda.map((a) => a.path).flat());
 				}
 				return { ...facet, svgPath: svgPathStringFromSegments([...segments]) };
@@ -212,52 +209,6 @@ export const applyTubePatternPostProcessing = (
 	processedBands = applyStrokeWidth(processedBands, tiledPatternConfig.config);
 
 	return { ...tubeCutPattern, bands: processedBands };
-};
-
-export const generateTiledBandPattern = ({
-	address,
-	bands,
-	tiledPatternConfig,
-	pixelScale
-}: {
-	address: GeometryAddress<BandAddressed>;
-	bands: Band[];
-	tiledPatternConfig: TiledPatternConfig;
-	pixelScale: PixelScale;
-}): BandCutPatternPattern => {
-	const pattern: BandCutPatternPattern = { projectionType: 'patterned', bands: [] };
-	const { adjustAfterTiling } = resolvePatternEntry(tiledPatternConfig.type);
-	// Creates a line pattern without inner and outer elements, appropriate for post processing in Affinity
-	// TODO - see if it's possible to convert the output of this to "expanded path" (e.g. convert stroke widths to paths instead of doing so in Affinity)
-
-	const visibleBands = bands.filter((b) => b.visible);
-	const quadBands = visibleBands.map((band) => {
-		const flatBand = getFlatStripV2(band, { bandStyle: 'helical-right', pixelScale });
-		return getQuadrilaterals(flatBand, pixelScale.value);
-	});
-
-	const tiling = generateTiling({ quadBands, tiledPatternConfig, address });
-
-	if (adjustAfterTiling) {
-		const adjusted = adjustAfterTiling(tiling, tiledPatternConfig);
-		pattern.bands = adjusted;
-	} else {
-		pattern.bands = tiling;
-	}
-
-	pattern.bands = pattern.bands.map((band) => ({
-		...band,
-		facets: band.facets.map((facet) => {
-			const segments = facet.path;
-			if (facet.addenda) {
-				const addendaSegments = facet.addenda.map((a) => a.path);
-				segments.push(...facet.addenda.map((a) => a.path).flat());
-			}
-			return { ...facet, svgPath: svgPathStringFromSegments([...segments]) };
-		})
-	}));
-
-	return pattern as BandCutPatternPattern;
 };
 
 /**
@@ -283,7 +234,7 @@ export type GenerateTilingProps = {
 	quadBands: Quadrilateral[][];
 	bands: Band[];
 	tiledPatternConfig: TiledPatternConfig;
-	address: GlobuleAddress_Tube | GeometryAddress<BandAddressed>;
+	address: GlobuleAddress_Tube;
 	bandIndexOffset?: number;
 	/** Total number of visible bands in the tube (used to detect the last band). */
 	totalBandCount?: number;
@@ -305,12 +256,7 @@ export const generateTiling = ({
 	patternBandIndexOf = (_tube: number, realBand: number) => realBand
 }: GenerateTilingProps): BandCutPattern[] => {
 	const bandCount = totalBandCount ?? quadBands.length;
-	const tiling: {
-		facets: CutPattern[];
-		svgPath?: string | undefined;
-		id: string;
-		tagAnchorPoint: Point;
-	}[] = quadBands.map((quadBand, bandIndex) => {
+	const tiling: BandCutPattern[] = quadBands.map((quadBand, bandIndex) => {
 		const entry = resolvePatternEntry(tiledPatternConfig.type) as UnitPatternGenerator;
 		const { getPattern, tagAnchor, adjustAfterMapping, getSubunitPatterns } = entry;
 		const subunitCount = entry.subunitCount ?? 1;
@@ -336,16 +282,14 @@ export const generateTiling = ({
 		// band has at least one facet whose outer (side) edge has no partner. (Band 0 is
 		// also an edge band, but its free side is x=0, which is already finished by the
 		// start/end verticals — the mirror only completes the w6 side.)
-		// `bands` is absent on the `generateTiledBandPattern` call path; treat a
-		// missing band as having a free side (no outer partner) rather than throwing.
+		// Treat a missing band as having a free side (no outer partner) rather
+		// than throwing.
 		const sourceBand = bands?.[bandIndex];
 		const hasFreeSide = sourceBand ? bandHasFreeSide(sourceBand) : true;
 		const finishOuterEdge = globalBandIndex === bandCount - 1 && hasFreeSide;
 		const realLeftPartner = sourceBand ? getLeftPartnerBandIndex(sourceBand) : undefined;
 		const leftPartnerBand =
-			realLeftPartner === undefined
-				? undefined
-				: patternBandIndexOf((address as GlobuleAddress_Tube).tube, realLeftPartner);
+			realLeftPartner === undefined ? undefined : patternBandIndexOf(address.tube, realLeftPartner);
 		const bandContext = {
 			hasOuterPartner: !hasFreeSide,
 			bandIndex: globalBandIndex,
@@ -353,21 +297,17 @@ export const generateTiling = ({
 		};
 
 		if (quadBand.length % subunitCount !== 0) {
-			// Match the type looseness of the address/bounds accesses on the normal
-			// return path below (both pre-existing type gaps) rather than introducing
-			// new svelte-check errors at this new call site.
-			const tubeAddress = address as GlobuleAddress_Tube;
 			return {
 				facets: [],
 				sideOrientation: bands[bandIndex].sideOrientation,
 				svgPath: undefined,
-				id: `${tiledPatternConfig.type}-band-${tubeAddress.globule}-${tubeAddress.tube}-${globalBandIndex}${pieceSuffix}`,
+				id: `${tiledPatternConfig.type}-band-${address.globule}-${address.tube}-${globalBandIndex}${pieceSuffix}`,
 				tagAnchorPoint: { x: 0, y: 0 },
 				projectionType: 'patterned',
 				address: addressWithPiece,
-				bounds: (bands[bandIndex] as unknown as { bounds?: BandCutPattern['bounds'] }).bounds,
+				bounds: bands[bandIndex].bounds,
 				error: `${tiledPatternConfig.type} needs a quad count divisible by ${subunitCount} (got ${quadBand.length})`
-			} as BandCutPattern;
+			};
 		}
 
 		let mappedPatternBand: PathSegment[][] | PathSegment[];
@@ -618,7 +558,7 @@ export const computeBandAscending = (band: Band): boolean => {
 };
 
 export const alignBands = (bands: Band[]) => {
-	return bands.map((originalBand, bandIndex) => {
+	return bands.map((originalBand) => {
 		const points = getAllTrianglePoints(originalBand);
 		const bounds = getMinimalBoundingBoxAndRotationAngle(points);
 		// TODO - make bounds a part of the type Band
@@ -631,7 +571,7 @@ export const alignBands = (bands: Band[]) => {
 	});
 };
 
-export const normalizeBand = (band: Band): Band => {
+const normalizeBand = (band: Band): Band => {
 	const anchor = new Vector3(band.bounds?.left || 0, band.bounds?.top || 0, 0);
 	const newFacets = band.facets.map((facet) => {
 		return {

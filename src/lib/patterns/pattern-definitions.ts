@@ -1,13 +1,13 @@
 import type {
 	PathSegment,
-	CutPattern,
 	Quadrilateral,
 	PatternGenerator,
 	TiledPatternConfig,
 	GridVariant,
 	PanelVariant,
-	BandCutPattern
-} from '$lib/types';
+	BandCutPattern,
+	TiledPatternVariant
+} from '#lib/types.js';
 import { adjustCarnation, generateCarnation } from './tiled-carnation-pattern';
 import { generateAuxetic } from './tiled-bowtie-pattern';
 import { generateBranched } from './banded-branched-pattern';
@@ -52,7 +52,7 @@ export const patterns: { [key: string]: PatternGenerator } = {
 		getPattern: (rows: number, columns: number) =>
 			generateCarnation({ size: 1, rows, columns, variant: 0 }),
 		tagAnchor: { facetIndex: 0, segmentIndex: 0 },
-		adjustAfterTiling: (tiledBands: { facets: CutPattern[] }[]) => {
+		adjustAfterTiling: (tiledBands: BandCutPattern[]) => {
 			return adjustCarnation(tiledBands, 0);
 		}
 	},
@@ -60,7 +60,7 @@ export const patterns: { [key: string]: PatternGenerator } = {
 		getPattern: (rows: number, columns: number) =>
 			generateCarnation({ size: 1, rows, columns, variant: 1 }),
 		tagAnchor: { facetIndex: 0, segmentIndex: 0 },
-		adjustAfterTiling: (tiledBands: { facets: CutPattern[] }[]) => {
+		adjustAfterTiling: (tiledBands: BandCutPattern[]) => {
 			return adjustCarnation(tiledBands, 1);
 		}
 	},
@@ -140,27 +140,27 @@ export const patterns: { [key: string]: PatternGenerator } = {
 			columns: number,
 			// eslint-disable-next-line @typescript-eslint/no-unused-vars
 			quadBand: Quadrilateral[] | undefined = undefined,
-			variant: PanelVariant | undefined = 'triangle-0'
+			variant: TiledPatternVariant = 'triangle-0'
 		) => {
-			return generatePanelPattern({ size: 1, variant });
+			// The registry hands any tiled variant; generatePanelPattern already treats
+			// everything but 'triangle-1' as 'triangle-0', so narrowing here is identical.
+			const panelVariant: PanelVariant = variant === 'triangle-1' ? 'triangle-1' : 'triangle-0';
+			return generatePanelPattern({ size: 1, variant: panelVariant });
 		},
 		tagAnchor: { facetIndex: 0, segmentIndex: 1 },
-		adjustAfterMapping: (
-			patternBand: PathSegment[][],
-			quadBand: Quadrilateral[],
-			tiledPatternConfig: TiledPatternConfig
-		) => adjustPanelPatternAfterTiling(patternBand, quadBand, tiledPatternConfig)
+		adjustAfterMapping: (patternBand: PathSegment[][]) => adjustPanelPatternAfterTiling(patternBand)
 	},
 	'bandedBranchedPattern-0': {
-		getPattern: (rows: 1 | 2 | 3, columns: 1 | 2 | 3 | 4 | 5, quadBand?: Quadrilateral[]) => {
+		getPattern: (rows: number, columns: number, quadBand?: Quadrilateral[]) => {
 			if (!quadBand) {
 				throw new Error('quadBand Required for bandedBranchPattern-0');
 			}
 			return generateBranched(quadBand, { rows, columns, variant: 0 });
 		},
 		tagAnchor: { facetIndex: 0, segmentIndex: 5 },
-		adjustAfterTiling: (tiledBands: { facets: CutPattern[] }[]) => {
-			return adjustCarnation(tiledBands);
+		adjustAfterTiling: (tiledBands: BandCutPattern[]) => {
+			// variant was omitted before; generateCarnation defaults an undefined variant to 0
+			return adjustCarnation(tiledBands, 0);
 		}
 	}
 };

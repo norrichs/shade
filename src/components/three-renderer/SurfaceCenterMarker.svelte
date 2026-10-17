@@ -6,7 +6,7 @@
 	 * effect-depth limit (see GlobuleMesh notes).
 	 */
 	import { T } from '@threlte/core';
-	import { superConfigStore } from '$lib/stores';
+	import { superConfigStore } from '#lib/stores/index.js';
 
 	let center = $derived.by(() => {
 		const surface = $superConfigStore.projectionConfigs[0]?.surfaceConfig;

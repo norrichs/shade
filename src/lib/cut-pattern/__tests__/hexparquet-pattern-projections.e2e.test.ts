@@ -1,13 +1,13 @@
 import { describe, it, expect } from '@jest/globals';
-import { generateSuperGlobule } from '$lib/generate-superglobule';
+import { generateSuperGlobule } from '#lib/generate-superglobule.js';
 import { generateProjectionPattern } from '../generate-pattern';
 import {
 	generateDefaultSuperGlobuleConfig,
 	generateDefaultGlobulePatternConfig,
 	tiledPatternConfigs
-} from '$lib/shades-config';
-import type { SuperGlobuleProjectionCutPattern } from '$lib/stores/superGlobuleStores';
-import type { SuperGlobuleConfig } from '$lib/types';
+} from '#lib/shades-config.js';
+import type { SuperGlobuleProjectionCutPattern } from '#lib/stores/superGlobuleStores.js';
+import type { SuperGlobuleConfig } from '#lib/types.js';
 
 /**
  * Real projection geometry for these tests: the default super-globule config's
@@ -36,7 +36,6 @@ describe('hexparquet end to end (projections, real geometry)', () => {
 	it('does not throw when a patterned band tube-end-partners a refused band', () => {
 		const config = buildDivisibleProjectionConfig();
 		const superGlobule = generateSuperGlobule(config, {
-			globule: false,
 			globuleTube: false,
 			projection: true,
 			voronoi: false
@@ -94,7 +93,6 @@ describe('hexparquet end to end (projections, real geometry)', () => {
 	it('surface-projection open tube: band 0 has no leftPartnerBand, later bands do', () => {
 		const config = buildDivisibleProjectionConfig();
 		const superGlobule = generateSuperGlobule(config, {
-			globule: false,
 			globuleTube: false,
 			projection: true,
 			voronoi: false

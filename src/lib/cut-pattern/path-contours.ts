@@ -1,4 +1,4 @@
-import type { PathSegment } from '$lib/types';
+import type { PathSegment } from '#lib/types.js';
 
 export type Pt = { x: number; y: number };
 export type BBox = { minX: number; minY: number; maxX: number; maxY: number };
@@ -201,7 +201,8 @@ export const flattenPath = (path: PathSegment[]): Pt[][] => {
 				const c1 = { x: seg[1], y: seg[2] };
 				const c2 = { x: seg[3], y: seg[4] };
 				const p1 = { x: seg[5], y: seg[6] };
-				for (let i = 1; i < CURVE_SAMPLES; i += 1) run.push(cubicAt(p0, c1, c2, p1, i / CURVE_SAMPLES));
+				for (let i = 1; i < CURVE_SAMPLES; i += 1)
+					run.push(cubicAt(p0, c1, c2, p1, i / CURVE_SAMPLES));
 				run.push(p1);
 				cur = p1;
 				break;

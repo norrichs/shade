@@ -1,8 +1,8 @@
 import { describe, it, expect } from '@jest/globals';
 
 import { radialSideCurveConfigs, radialShapeCurveConfigs, radialUnitAngle } from '../radial-shape';
-import { generateDefaultRadialShapeConfig } from '$lib/shades-config';
-import type { BezierConfig, ShapeConfig } from '$lib/types';
+import { generateDefaultRadialShapeConfig } from '#lib/shades-config.js';
+import type { BezierConfig, ShapeConfig } from '#lib/types.js';
 
 /** A single bezier spanning `unitAngle`, in the codebase's (-sin, cos) convention. */
 const runSpanning = (unitAngle: number): BezierConfig[] => [

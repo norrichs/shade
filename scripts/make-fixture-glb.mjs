@@ -59,16 +59,26 @@ Buffer.from(indices.buffer).copy(bin, posBytes);
 const total = 12 + 8 + jsonChunk.length + 8 + bin.length;
 const out = Buffer.alloc(total);
 let o = 0;
-out.writeUInt32LE(0x46546c67, o); o += 4; // 'glTF'
-out.writeUInt32LE(2, o); o += 4;
-out.writeUInt32LE(total, o); o += 4;
-out.writeUInt32LE(jsonChunk.length, o); o += 4;
-out.writeUInt32LE(0x4e4f534a, o); o += 4; // 'JSON'
-jsonChunk.copy(out, o); o += jsonChunk.length;
-out.writeUInt32LE(bin.length, o); o += 4;
-out.writeUInt32LE(0x004e4942, o); o += 4; // 'BIN\0'
+out.writeUInt32LE(0x46546c67, o);
+o += 4; // 'glTF'
+out.writeUInt32LE(2, o);
+o += 4;
+out.writeUInt32LE(total, o);
+o += 4;
+out.writeUInt32LE(jsonChunk.length, o);
+o += 4;
+out.writeUInt32LE(0x4e4f534a, o);
+o += 4; // 'JSON'
+jsonChunk.copy(out, o);
+o += jsonChunk.length;
+out.writeUInt32LE(bin.length, o);
+o += 4;
+out.writeUInt32LE(0x004e4942, o);
+o += 4; // 'BIN\0'
 bin.copy(out, o);
 
 mkdirSync('tests/fixtures', { recursive: true });
 writeFileSync('tests/fixtures/deformed-icosphere.glb', out);
-console.log(`wrote tests/fixtures/deformed-icosphere.glb (${total} bytes, ${indices.length / 3} triangles)`);
+console.log(
+	`wrote tests/fixtures/deformed-icosphere.glb (${total} bytes, ${indices.length / 3} triangles)`
+);

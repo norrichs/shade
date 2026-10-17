@@ -1,5 +1,5 @@
-import type { PathSegment } from '$lib/types';
-import { unitePaths } from '$lib/paper';
+import type { PathSegment } from '#lib/types.js';
+import { unitePaths } from '#lib/paper/index.js';
 
 /**
  * Combine a pattern outline path with a label outline path into a single

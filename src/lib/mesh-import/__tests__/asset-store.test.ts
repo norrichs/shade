@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 import { IDBFactory, IDBObjectStore } from 'fake-indexeddb';
 import { webcrypto } from 'node:crypto';
 import { get } from 'svelte/store';
-import type { SuperGlobuleConfig } from '$lib/types';
+import type { SuperGlobuleConfig } from '#lib/types.js';
 import type { MeshAsset } from '../types';
 import {
 	assetStatus,

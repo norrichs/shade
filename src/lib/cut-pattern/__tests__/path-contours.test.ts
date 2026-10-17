@@ -1,6 +1,6 @@
 import { describe, it, expect } from '@jest/globals';
 import { splitContours, pointInPolygon, bboxContains } from '../path-contours';
-import type { PathSegment } from '$lib/types';
+import type { PathSegment } from '#lib/types.js';
 
 /** A closed axis-aligned square, counter-clockwise in SVG's y-down space. */
 const square = (x: number, y: number, size: number): PathSegment[] => [

@@ -7,7 +7,7 @@ import {
 	isLayerId,
 	layerOptionLabel
 } from '../layers';
-import { GEOMETRY_TYPES } from '$lib/cut-pattern/post-process-types';
+import { GEOMETRY_TYPES } from '#lib/cut-pattern/post-process-types.js';
 
 describe('LightBurn layers', () => {
 	it('has all 32 layers with unique ids and indexes', () => {

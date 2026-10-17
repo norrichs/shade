@@ -9,12 +9,12 @@ import type {
 	GlobuleAddress_Facet,
 	Section
 } from './types';
-import type { Band, Facet } from '$lib/types';
+import type { Band, Facet } from '#lib/types.js';
 import {
 	type ShowGlobuleTubeGeometries,
 	type ShowProjectionGeometries,
 	type ShowVoronoiGeometries
-} from '$lib/stores/viewControlStore';
+} from '#lib/stores/viewControlStore.js';
 
 export const collateGeometry = (
 	{
@@ -114,7 +114,7 @@ export const collateVoronoiGeometry = (
 	};
 };
 
-export const collateProjectionGeometry = (projection: Projection, center: Vector3) => {
+const collateProjectionGeometry = (projection: Projection, center: Vector3) => {
 	const projectionPoints: Vector3[] = [];
 
 	projection.polygons.forEach((polygon) => {
@@ -131,7 +131,7 @@ export const collateProjectionGeometry = (projection: Projection, center: Vector
 	return projectionGeometry;
 };
 
-export const collateSurfaceProjectionGeometry = (projection: Projection) => {
+const collateSurfaceProjectionGeometry = (projection: Projection) => {
 	const points: Vector3[] = [];
 
 	projection.polygons.forEach((polygon) => {
@@ -150,7 +150,7 @@ export const collateSurfaceProjectionGeometry = (projection: Projection) => {
 	return geometry;
 };
 
-export const collateEdgePoints = (edgePoints: Vector3[], curvePoints: Vector3[]) => {
+const collateEdgePoints = (edgePoints: Vector3[], curvePoints: Vector3[]) => {
 	const points: Vector3[] = [];
 	for (let i = 0; i < edgePoints.length - 1; i++) {
 		points.push(
@@ -165,7 +165,7 @@ export const collateEdgePoints = (edgePoints: Vector3[], curvePoints: Vector3[])
 	return points;
 };
 
-export const collatePolygonGeometry = (polygon: Polygon) => {
+const collatePolygonGeometry = (polygon: Polygon) => {
 	const polygonPoints = polygon.edges
 		.map((edge: Edge) => collateEdgePoints(edge.edgePoints, edge.curvePoints))
 		.flat();
@@ -174,26 +174,7 @@ export const collatePolygonGeometry = (polygon: Polygon) => {
 	return polygonGeometry;
 };
 
-export const collatePolyhedronGeometry = (polyhedron: Polyhedron) => {
-	const polyhedronPoints = polyhedron.polygons
-		.map((polygon) =>
-			polygon.edges.map((edge: Edge) => collateEdgePoints(edge.edgePoints, edge.curvePoints))
-		)
-		.flat(2);
-	const polyhedronGeometry = new BufferGeometry().setFromPoints(polyhedronPoints);
-	polyhedronGeometry.computeVertexNormals();
-	return polyhedronGeometry;
-};
-
-export const collateCrossSectionPoints = (points: Vector3[], center: Vector3) => {
-	const geometryPoints: Vector3[] = [];
-	for (let i = 0; i < points.length - 1; i++) {
-		geometryPoints.push(points[i], center, points[i + 1]);
-	}
-	return geometryPoints;
-};
-
-export const collateSectionGeometry = (sections: Section[]) => {
+const collateSectionGeometry = (sections: Section[]) => {
 	const geometryPoints: Vector3[] = [];
 	sections.forEach(({ points }) => {
 		const v0 = points[0];
@@ -206,20 +187,6 @@ export const collateSectionGeometry = (sections: Section[]) => {
 	const sectionGeometry = new BufferGeometry().setFromPoints(geometryPoints);
 	sectionGeometry.computeVertexNormals();
 	return sectionGeometry;
-};
-
-export const collateBandGeometry = (bands: Band[]): BufferGeometry[] => {
-	const bandsGeometry: BufferGeometry[] = [];
-	bands.forEach((band) => {
-		const geometryPoints: Vector3[] = [];
-		band.facets.forEach(({ triangle: { a, b, c } }: Facet) => {
-			geometryPoints.push(a.clone(), b.clone(), c.clone());
-		});
-		const bandGeometry = new BufferGeometry().setFromPoints(geometryPoints);
-		bandGeometry.computeVertexNormals();
-		bandsGeometry.push(bandGeometry);
-	});
-	return bandsGeometry;
 };
 
 /**
@@ -263,12 +230,15 @@ export const collateAddressedBandGeometry = (
 	return out;
 };
 
-export const collateFacetGeometry = (
+const collateFacetGeometry = (
 	bands: Band[]
 ): { address: GlobuleAddress_Facet; geometry: BufferGeometry }[] => {
 	const facetGeometry: { address: GlobuleAddress_Facet; geometry: BufferGeometry }[] = [];
 	bands.forEach((band) => {
 		band.facets.forEach(({ address, triangle: { a, b, c } }) => {
+			// Facet meshes are keyed and picked by address; an unaddressed facet would
+			// throw in the renderer's facetKey, so it is skipped rather than emitted.
+			if (!address) return;
 			const geometry = new BufferGeometry().setFromPoints([a.clone(), b.clone(), c.clone()]);
 			geometry.computeVertexNormals();
 			facetGeometry.push({ geometry, address });

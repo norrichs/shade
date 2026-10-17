@@ -8,14 +8,8 @@ import type {
 	TrianglePoint,
 	SuperGlobule,
 	GlobuleConfig
-} from '$lib/types';
-import {
-	average,
-	concatAddress,
-	getCubicBezierCurvePath,
-	getIntersectionOfLines,
-	getVector3
-} from '$lib/util';
+} from '#lib/types.js';
+import { average, getCubicBezierCurvePath, getVector3 } from '#lib/util.js';
 import {
 	CapsuleGeometry,
 	CurvePath,
@@ -60,16 +54,15 @@ import type {
 } from './types';
 import { isTubeClosed } from './tube-closure';
 import { materials } from '../../components/three-renderer/materials';
-import { getLength } from '$lib/patterns/utils';
 import {
 	corrected,
 	getTrianglePointAsKVFromTriangleEdge,
 	getTrianglePointFromTriangleEdge
-} from '$lib/cut-pattern/generate-pattern';
-import { generateGlobuleTube, generateGlobuleData } from '$lib/generate-shape';
+} from '#lib/cut-pattern/generate-pattern.js';
+import { generateGlobuleTube, generateGlobuleData } from '#lib/generate-shape.js';
 import { collateGlobuleTubeGeometry } from './collate-geometry';
-import { getAssetGeometry, MissingMeshAssetError } from '$lib/mesh-import/asset-geometry';
-import { normalizeMatrix } from '$lib/mesh-import/normalize';
+import { getAssetGeometry, MissingMeshAssetError } from '#lib/mesh-import/asset-geometry.js';
+import { normalizeMatrix } from '#lib/mesh-import/normalize.js';
 import { auditSides, auditSurfaceProjectionSides } from './audit';
 import { buildFillBand, outerBorderPolyline, reindexBandAddresses } from './fill-bands';
 import {
@@ -80,7 +73,7 @@ import {
 	resolveEdgeSampling,
 	type ResolvedEdgeSampling
 } from './edge-sampling';
-import { computeAdaptiveEdgeDivisions } from '$lib/voronoi/edge-divisions';
+import { computeAdaptiveEdgeDivisions } from '#lib/voronoi/edge-divisions.js';
 
 export const preparePolygonConfig = (
 	polygonConfig: PolygonConfig<undefined, number, number, number>,
@@ -156,13 +149,13 @@ export const getMatrix4 = (
 	return resultMatrix;
 };
 
-export const generateSphereMesh = ({ radius }: SphereConfig) => {
+const generateSphereMesh = ({ radius }: SphereConfig) => {
 	const sphereGeometry = new SphereGeometry(radius, 100, 100);
 	const sphereMesh = new Mesh(sphereGeometry, materials.default);
 	return sphereMesh;
 };
 
-export const generateGlobuleMesh = (config: GlobuleConfig) => {
+const generateGlobuleMesh = (config: GlobuleConfig) => {
 	const tube = generateGlobuleTube(config);
 	const geometries = collateGlobuleTubeGeometry([tube], {
 		any: true,
@@ -184,13 +177,7 @@ export const generateGlobuleMesh = (config: GlobuleConfig) => {
 	return globuleMesh;
 };
 
-export const generateCapsuleMesh = ({
-	radius,
-	height,
-	capSegments,
-	radialSegments,
-	heightSegments
-}: CapsuleConfig) => {
+const generateCapsuleMesh = ({ radius, height, capSegments, radialSegments }: CapsuleConfig) => {
 	const capsuleGeometry = new CapsuleGeometry(radius, height, capSegments, radialSegments);
 	const capsuleMesh = new Mesh(capsuleGeometry, materials.default);
 	return capsuleMesh;
@@ -203,33 +190,25 @@ export const generateCapsuleMesh = ({
  * @param object - The Object3D to optimize (can contain nested meshes)
  */
 const optimizeSurfaceForRaycasting = (object: Object3D): void => {
-	let meshCount = 0;
-	let totalVertices = 0;
-
 	object.traverse((child) => {
 		if (child instanceof Mesh && child.geometry) {
+			const geometry = child.geometry;
 			// Check if BVH is already computed
-			if (!(child.geometry as any).boundsTree) {
+			if (!geometry.boundsTree) {
 				try {
 					// Compute BVH for this geometry
-					(child.geometry as any).computeBoundsTree = computeBoundsTree.bind(child.geometry);
-					(child.geometry as any).disposeBoundsTree = disposeBoundsTree.bind(child.geometry);
-					(child.geometry as any).computeBoundsTree();
+					geometry.computeBoundsTree = computeBoundsTree.bind(geometry);
+					geometry.disposeBoundsTree = disposeBoundsTree.bind(geometry);
+					geometry.computeBoundsTree();
 
 					// Replace raycast method with accelerated version
 					child.raycast = acceleratedRaycast;
-
-					meshCount++;
-					totalVertices += child.geometry.attributes.position?.count || 0;
 				} catch (error) {
 					console.warn('Failed to compute BVH for mesh:', error);
 				}
 			}
 		}
 	});
-
-	if (meshCount > 0) {
-	}
 };
 
 export const generateSurface = (cfg: SurfaceConfig) => {
@@ -293,7 +272,7 @@ export const generateSurfaceIfAvailable = (cfg: SurfaceConfig): Object3D | undef
 };
 
 /** Rays are cast from here onto the surface. */
-export const getProjectionCenter = (surfaceConfig: SurfaceConfig): Vector3 =>
+const getProjectionCenter = (surfaceConfig: SurfaceConfig): Vector3 =>
 	surfaceConfig.type === 'GlobuleConfig'
 		? new Vector3(0, 0, 0)
 		: (getVector3(surfaceConfig.center) as Vector3);
@@ -336,7 +315,7 @@ const computeDrapedEdgeDivisions = (
 	return new Map(keys.map((key, i) => [key, counts[i]]));
 };
 
-export const generatePolyhedron = (
+const generatePolyhedron = (
 	projectorConfig: ProjectorConfig<Point3, Point3, EdgeCurveConfig, CrossSectionConfig>,
 	options: { sampling?: ResolvedEdgeSampling; surface?: Object3D; center?: Vector3 } = {}
 ) => {
@@ -405,7 +384,7 @@ export const generatePolyhedron = (
 	return polyhedron;
 };
 
-export const getPolygonCenter = (
+const getPolygonCenter = (
 	polygon: PolygonConfig<Point3, Point3, EdgeCurveConfig, CrossSectionConfig>
 ): Vector3 => {
 	const xArr: number[] = [];
@@ -469,36 +448,6 @@ const generateEdge = ({
 	return { edgePoints, curvePoints };
 };
 
-export const mapPointsFromTriangle = (
-	triangle: { a: Vector2; b: Vector2; c: Vector2 },
-	points: Vector2[],
-	reverse?: boolean
-) => {
-	const { a, b, c } = triangle;
-	const mappedPoints = reverse
-		? points.reverse().map((point) => {
-				const int = getIntersectionOfLines({ p0: c, p1: point }, { p0: a, p1: b });
-				if (!int) {
-					throw new Error('no intersection!');
-				}
-				return {
-					x: getLength(int, point) / getLength(int, c),
-					y: getLength(a, int) / getLength(a, b)
-				};
-			})
-		: points.map((point) => {
-				const int = getIntersectionOfLines({ p0: c, p1: point }, { p0: a, p1: b });
-				if (!int) {
-					throw new Error('no intersection!');
-				}
-				return {
-					x: getLength(int, point) / getLength(int, c),
-					y: getLength(a, b) / getLength(a, int)
-				};
-			});
-	return mappedPoints;
-};
-
 export const mapPointsToTriangle = <V extends Vector2 | Vector3>(
 	triangle: { a: V; b: V; c: V },
 	points: Vector2[],
@@ -525,8 +474,6 @@ export const mapPointsToTriangle = <V extends Vector2 | Vector3>(
 	return mappedPoints;
 };
 
-const MANUAL_EDGE_DIVISIONS = [0.18, 0.38, 0.65];
-
 const getManualPoints = (curvePath: CurvePath<Vector2>, divisionsArray: number[]): Vector2[] => {
 	if (divisionsArray.some((d) => d <= 0 || d >= 1)) {
 		throw new Error('getManualPoints, divisions must be between 0 and 1');
@@ -549,10 +496,7 @@ export const getPoints = (
 	return vectors;
 };
 
-export const getCrossSectionScale = (
-	crossSectionScaling: CrossSectionScaling,
-	edgeWidth?: number
-) => {
+const getCrossSectionScale = (crossSectionScaling: CrossSectionScaling, edgeWidth?: number) => {
 	let xScale: number;
 	if (crossSectionScaling.width === 'curve') {
 		if (!edgeWidth) {
@@ -582,11 +526,7 @@ type GenerateProjectionProps = {
 	projectionConfig: ProjectionConfig<Point3, Point3, EdgeCurveConfig, CrossSectionConfig>;
 };
 
-export const generateProjection = ({
-	surface,
-	projector,
-	projectionConfig
-}: GenerateProjectionProps) => {
+const generateProjection = ({ surface, projector, projectionConfig }: GenerateProjectionProps) => {
 	const startTime = performance.now();
 
 	const center = getProjectionCenter(projectionConfig.surfaceConfig);
@@ -600,7 +540,6 @@ export const generateProjection = ({
 	// Object pool for temporary Vector3 calculations (optimization)
 	const xDirection = new Vector3();
 	const nearestPoint = new Vector3();
-	const tempVec = new Vector3();
 
 	const spDivisionsCount = projectionConfig.surfaceProjectionConfig?.divisions ?? 0;
 	const divRaycaster =
@@ -929,7 +868,7 @@ const sortEdges = (
 	return sortedAndMapped;
 };
 
-export const generateTubeBands = (
+const generateTubeBands = (
 	projection: Projection,
 	projectionConfig: ProjectionConfig<undefined, number, number, number>,
 	projectionAddress: GlobuleAddress
@@ -964,30 +903,6 @@ export const generateTubeBands = (
 	} catch (error) {
 		console.error('error matching tube ends or facets', error);
 	}
-
-	const bandAddressesByOrientation: {
-		axialLeft: string[];
-		axialRight: string[];
-		circumferential: string[];
-	} = tubes.reduce(
-		(acc, tube) => {
-			tube.bands.forEach((band) => {
-				switch (band.facets[0].orientation) {
-					case 'axial-left':
-						acc.axialLeft.push(concatAddress(band.address as GlobuleAddress));
-						break;
-					case 'axial-right':
-						acc.axialRight.push(concatAddress(band.address as GlobuleAddress));
-						break;
-					case 'circumferential':
-						acc.circumferential.push(concatAddress(band.address as GlobuleAddress));
-						break;
-				}
-			});
-			return acc;
-		},
-		{ axialLeft: [] as string[], axialRight: [] as string[], circumferential: [] as string[] }
-	);
 
 	return { tubes: tubes as Tube[] };
 };
@@ -1466,7 +1381,7 @@ export const isSameVector3 = (v0: Vector3, v1: Vector3, precision = 1 / 10_000) 
  * divisions=1: 5 points → 4 bands
  * divisions=2: 7 points → 6 bands
  */
-export const generateSurfaceProjectionBands = (
+const generateSurfaceProjectionBands = (
 	projection: Projection,
 	projectionConfig: ProjectionConfig<undefined, number, number, number>,
 	projectionAddress: GlobuleAddress,
@@ -1834,7 +1749,7 @@ export const printProjectionAddress = (
 	return globule + tube + band + facet + edge;
 };
 
-export const getSections = (
+const getSections = (
 	tubeAddress: GlobuleAddress_Tube,
 	projections: SuperGlobule['projections']
 ): Section[] => {

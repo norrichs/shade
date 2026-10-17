@@ -1,7 +1,7 @@
 import { describe, it, expect } from '@jest/globals';
 import { Triangle, Vector3 } from 'three';
 import { SurfaceProjector } from '../smooth-chains';
-import type { SurfaceTriangle } from '$lib/voronoi/types';
+import type { SurfaceTriangle } from '#lib/voronoi/types.js';
 import { buildMeshGraph } from '../mesh-graph';
 
 /** Deterministic pseudo-random in [0,1). */

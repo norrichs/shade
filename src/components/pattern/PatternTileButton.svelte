@@ -1,11 +1,11 @@
 <script lang="ts">
-	import { patternConfigStore } from '$lib/stores';
+	import { patternConfigStore } from '#lib/stores/index.js';
 	import PatternTile from './PatternTile.svelte';
-	import { tiledPatternConfigs } from '$lib/shades-config';
-	import { patterns } from '$lib/patterns';
-	import { tilePatternSpecStore } from '$lib/stores/tilePatternSpecStore';
-	import { algorithms } from '$lib/patterns/pattern-registry';
-	import type { TilingBasis, TiledPatternConfig } from '$lib/types';
+	import { tiledPatternConfigs } from '#lib/shades-config.js';
+	import { patterns } from '#lib/patterns/index.js';
+	import { tilePatternSpecStore } from '#lib/stores/tilePatternSpecStore.js';
+	import { algorithms } from '#lib/patterns/pattern-registry.js';
+	import type { TilingBasis, TiledPatternConfig } from '#lib/types.js';
 	import { get } from 'svelte/store';
 
 	let {

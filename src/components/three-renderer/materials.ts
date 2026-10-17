@@ -1,9 +1,9 @@
 import { DoubleSide, MeshPhysicalMaterial, MeshStandardMaterial } from 'three';
 import type { ThreeColor } from './colors';
-import type { GlobuleAddress_Band, GlobuleAddress_Facet } from '$lib/projection-geometry/types';
-import { sameGlobuleBand, type AssemblerHighlight } from '$lib/assembler-highlight';
-import type { SelectedProjectionGeometry } from '$lib/stores/selectionStores';
-import { HIGHLIGHT_PRIMARY, HIGHLIGHT_SECONDARY } from '$lib/highlight-colors';
+import type { GlobuleAddress_Band, GlobuleAddress_Facet } from '#lib/projection-geometry/types.js';
+import { sameGlobuleBand, type AssemblerHighlight } from '#lib/assembler-highlight.js';
+import type { SelectedProjectionGeometry } from '#lib/stores/selectionStores.js';
+import { HIGHLIGHT_PRIMARY, HIGHLIGHT_SECONDARY } from '#lib/highlight-colors.js';
 
 const theme = {
 	colorSelected: 'rgb(0,150,255)',
@@ -18,16 +18,6 @@ const defaultStandardMaterialConfig = {
 	color: theme.colorDefault,
 	transparent: true,
 	opacity: 1,
-	side: DoubleSide
-};
-
-// Physical material config for selected geometry (better visuals)
-const defaultPhysicalMaterialConfig = {
-	color: theme.colorDefault,
-	transparent: true,
-	opacity: 1,
-	clearcoat: 1,
-	clearcoatRoughness: 0,
 	side: DoubleSide
 };
 
@@ -152,6 +142,18 @@ export const materials = {
 	axisX: new MeshStandardMaterial({ color: 'red', transparent: false, side: DoubleSide }),
 	axisY: new MeshStandardMaterial({ color: 'lime', transparent: false, side: DoubleSide }),
 	axisZ: new MeshStandardMaterial({ color: 'blue', transparent: false, side: DoubleSide }),
+	// Tube-opening widths, one colour per end so the two rims read apart. The
+	// lavender is a saturated one: CSS 'lavender' is near-white on the beige scene.
+	tubeOpeningStart: new MeshStandardMaterial({
+		color: 'magenta',
+		transparent: false,
+		side: DoubleSide
+	}),
+	tubeOpeningEnd: new MeshStandardMaterial({
+		color: '#b57edc',
+		transparent: false,
+		side: DoubleSide
+	}),
 	// Magenta marks a measurement point still waiting for its partner; once
 	// paired, both ends turn black.
 	measurePending: new MeshStandardMaterial({
@@ -164,10 +166,6 @@ export const materials = {
 		transparent: false,
 		side: DoubleSide
 	})
-};
-
-export const materialByColor = (color: ThreeColor) => {
-	return new MeshStandardMaterial({ ...defaultStandardMaterialConfig, color });
 };
 
 export type Material = keyof typeof materials;

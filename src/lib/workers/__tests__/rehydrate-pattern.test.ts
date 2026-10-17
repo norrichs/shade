@@ -1,6 +1,6 @@
 import { Triangle, Vector3 } from 'three';
 import { rehydrateDeep, rehydratePatternResult } from '../rehydrate-pattern';
-import type { PatternGenerationResult } from '$lib/cut-pattern/run-pattern-generation';
+import type { PatternGenerationResult } from '#lib/cut-pattern/run-pattern-generation.js';
 
 /** Simulate a structured-clone round trip: prototypes are lost, own props remain. */
 const roundTrip = <T>(v: T): T => JSON.parse(JSON.stringify(v));
@@ -81,11 +81,6 @@ describe('rehydratePatternResult', () => {
 			]
 		};
 		const result = roundTrip({
-			superGlobulePattern: {
-				type: 'SuperGlobulePattern',
-				superGlobuleConfigId: 'c',
-				bandPatterns: [band]
-			},
 			projectionPattern: undefined,
 			globuleTubePattern: null,
 			surfaceProjectionPattern: undefined,
@@ -98,11 +93,10 @@ describe('rehydratePatternResult', () => {
 		}) as unknown as PatternGenerationResult;
 
 		const out = rehydratePatternResult(result) as unknown as {
-			superGlobulePattern: { bandPatterns: (typeof band)[] };
 			voronoiPattern: { projectionCutPattern: { tubes: { bands: (typeof band)[] }[] } };
 		};
-		expect(out.superGlobulePattern.bandPatterns[0].bounds.center).toBeInstanceOf(Vector3);
 		const vb = out.voronoiPattern.projectionCutPattern.tubes[0].bands[0];
+		expect(vb.bounds.center).toBeInstanceOf(Vector3);
 		expect(vb.facets[0].triangle).toBeInstanceOf(Triangle);
 		expect(vb.facets[0].path).toEqual([['M', 0, 0]]);
 	});

@@ -90,4 +90,33 @@ describe('buildSavedConfig / parseSavedConfig', () => {
 		expect(parsed.tilePatternSpecs).toEqual([]);
 		expect(parsed.globulePatternConfig).toBeUndefined();
 	});
+
+	describe('legacy shapeConfig migration', () => {
+		const shape = { type: 'ShapeConfig', symmetry: 'radial', symmetryNumber: 3, curves: [] };
+		const legacySuper = {
+			...superConfig,
+			subGlobuleConfigs: [{ globuleConfig: { type: 'GlobuleConfig', id: 'g', shapeConfig: shape } }]
+		};
+		const expectMigrated = (cfg: SuperGlobuleConfig) => {
+			const g = cfg.subGlobuleConfigs[0].globuleConfig;
+			expect(g.shapeConfigs).toEqual([{ ...shape, isPrimary: true }]);
+			expect('shapeConfig' in g).toBe(false);
+		};
+
+		it('parseSavedConfig migrates legacy shapeConfig (v1 row)', () => {
+			expectMigrated(parseSavedConfig(JSON.stringify(legacySuper)).superGlobuleConfig);
+		});
+
+		it('parseSavedConfig migrates legacy shapeConfig (v3 envelope)', () => {
+			const v3 = {
+				type: 'SavedConfig',
+				version: 3,
+				superGlobuleConfig: legacySuper,
+				globulePatternConfig: patternConfig('hex'),
+				viewControls,
+				tilePatternSpecs: []
+			};
+			expectMigrated(parseSavedConfig(JSON.stringify(v3)).superGlobuleConfig);
+		});
+	});
 });

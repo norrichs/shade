@@ -1,4 +1,4 @@
-import type { PathSegment } from '$lib/types';
+import type { PathSegment } from '#lib/types.js';
 
 const ARITY: Record<string, number> = { M: 2, L: 2, H: 1, V: 1, C: 6, Q: 4, A: 7, Z: 0 };
 
@@ -28,7 +28,8 @@ export const parsePathD = (d: string): PathSegment[] => {
 		const n = ARITY[cmd];
 		if (!cmd || !n) throw new Error(`parsePathD: stray number at token ${i}`);
 		const v = tokens.slice(i, i + n).map(Number);
-		if (v.length < n || v.some((x) => !Number.isFinite(x))) throw new Error('parsePathD: truncated command');
+		if (v.length < n || v.some((x) => !Number.isFinite(x)))
+			throw new Error('parsePathD: truncated command');
 		i += n;
 		switch (cmd) {
 			case 'M':
@@ -78,7 +79,15 @@ export const applyMatrix = (segs: PathSegment[], m: Matrix): PathSegment[] => {
 			case 'L':
 				return ['L', X(s[1], s[2]), Y(s[1], s[2])];
 			case 'C':
-				return ['C', X(s[1], s[2]), Y(s[1], s[2]), X(s[3], s[4]), Y(s[3], s[4]), X(s[5], s[6]), Y(s[5], s[6])];
+				return [
+					'C',
+					X(s[1], s[2]),
+					Y(s[1], s[2]),
+					X(s[3], s[4]),
+					Y(s[3], s[4]),
+					X(s[5], s[6]),
+					Y(s[5], s[6])
+				];
 			case 'Q':
 				return ['Q', X(s[1], s[2]), Y(s[1], s[2]), X(s[3], s[4]), Y(s[3], s[4])];
 			case 'Z':

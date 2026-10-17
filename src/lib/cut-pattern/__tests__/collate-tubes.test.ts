@@ -1,6 +1,6 @@
 import { collateTubes } from '../collate-tubes';
-import type { TubeCutPattern } from '$lib/types';
-import type { SuperGlobuleProjectionPattern } from '$lib/stores/superGlobuleStores';
+import type { TubeCutPattern } from '#lib/types.js';
+import type { SuperGlobuleProjectionPattern } from '#lib/stores/superGlobuleStores.js';
 
 const makeTube = (id: string): TubeCutPattern =>
 	({
@@ -134,6 +134,7 @@ describe('collateTubes', () => {
 			globuleTubePattern: makeCutPattern(['gt-0']),
 			projectionPattern: undefined,
 			surfaceProjectionPattern: undefined,
+			...voronoiDefaults,
 			...allOff,
 			patternSource: 'projection'
 		});

@@ -1,14 +1,14 @@
 <script lang="ts">
-	import { patterns } from '$lib/patterns';
-	import { transformPatternByQuad } from '$lib/patterns/quadrilateral';
-	import { scalePS, svgPathStringFromSegments } from '$lib/patterns/utils';
+	import { patterns } from '#lib/patterns/index.js';
+	import { transformPatternByQuad } from '#lib/patterns/quadrilateral.js';
+	import { scalePS, svgPathStringFromSegments } from '#lib/patterns/utils.js';
 	import type {
 		BandPatternGenerator,
 		DynamicPath,
 		Quadrilateral,
 		TilingBasis,
 		UnitPatternGenerator
-	} from '$lib/types';
+	} from '#lib/types.js';
 	import { Vector3 } from 'three';
 
 	let {

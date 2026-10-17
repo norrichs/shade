@@ -1,4 +1,4 @@
-import type { BandCutPattern, Quadrilateral, TubeCutPattern, TubeSplits } from '$lib/types';
+import type { BandCutPattern, Quadrilateral, TubeCutPattern, TubeSplits } from '#lib/types.js';
 
 import { deriveAutoSplits } from './auto-split';
 import { tubePieceIndex } from './band-piece-index';

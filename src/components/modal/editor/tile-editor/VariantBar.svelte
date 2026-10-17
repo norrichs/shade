@@ -1,6 +1,6 @@
 <script lang="ts">
-	import type { TiledPatternSpec } from '$lib/patterns/spec-types';
-	import { algorithms } from '$lib/patterns/pattern-registry';
+	import type { TiledPatternSpec } from '#lib/patterns/spec-types.js';
+	import { algorithms } from '#lib/patterns/pattern-registry.js';
 
 	let {
 		draft,
@@ -59,7 +59,7 @@
 			value={draft?.id ?? ''}
 			onchange={(e) => onSelectVariant((e.target as HTMLSelectElement).value)}
 		>
-			{#each dropdownEntries as variant}
+			{#each dropdownEntries as variant, variantIdx (variantIdx)}
 				<option value={variant.id}>{variant.name}</option>
 			{/each}
 		</select>

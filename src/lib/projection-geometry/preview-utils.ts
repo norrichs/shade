@@ -10,16 +10,15 @@
 import { Vector3 } from 'three';
 import type {
 	PolygonConfig,
-	EdgeConfig,
 	EdgeCurveConfig,
 	CrossSectionConfig,
 	TransformConfig,
 	Polygon,
 	Edge
 } from './types';
-import type { Point3 } from '$lib/types';
+import type { Point3 } from '#lib/types.js';
 import { getPoints, getMatrix4, mapPointsToTriangle } from './generate-projection';
-import { getVector3 } from '$lib/util';
+import { getVector3 } from '#lib/util.js';
 
 /**
  * Generates a Polygon object from config (without full 3D generation).

@@ -1,10 +1,5 @@
 import { Vector3, CurvePath, Vector2 } from 'three';
-import {
-	generateDepthCurve,
-	generateSilhouette,
-	generateLevelPrototype,
-	generateSpineCurve
-} from './generate-shape';
+import { generateDepthCurve, generateSilhouette } from './generate-shape';
 import type {
 	LevelConfig,
 	SilhouetteConfig,
@@ -13,12 +8,11 @@ import type {
 	Level,
 	LevelOffset,
 	CurveSampleMethod,
-	GlobuleConfig,
-	SpineCurveConfig,
-	CurveSampleMethodMethod
+	NarrowRegionConfig
 } from './types';
 import { DEFAULT_DEPTH_CURVE_BASELINE } from './types';
 import type { Section } from './projection-geometry/types';
+import type { PrototypeAt } from './gcs/gcs-blend';
 
 /**
  * The depth-curve x value that maps to depth 1 (the level's own cross-section,
@@ -37,21 +31,20 @@ export const generateLevelSet2 = (
 	silhouetteConfig: SilhouetteConfig,
 	depthCurveConfig: DepthCurveConfig,
 	// spineCurveConfigs: SpineCurveConfig[],
-	levelPrototype: LevelPrototype | LevelPrototype[]
+	prototypeAt: PrototypeAt
 ): Level[] => {
 	const levelCount = countLevels(levelConfig, silhouetteConfig);
-	const levelPrototypes: LevelPrototype[] = getLevelPrototypeArray(levelCount, levelPrototype);
 	const depthCurve: CurvePath<Vector2> = generateDepthCurve(depthCurveConfig);
 	const depthBaseline = resolveDepthBaseline(depthCurveConfig);
 	const silhouette: CurvePath<Vector2> = generateSilhouette(silhouetteConfig);
 	// get levels without offsets by applying silhouette points to depthed level prototype vertices
-	let rawLevels: Level[] = [];
+	let rawLevels: Level[];
 	if (levelConfig.silhouetteSampleMethod.method === 'preserveAspectRatio') {
 		rawLevels = generateRawLevelsConstantAspect({
 			silhouette,
 			depthCurve,
 			depthBaseline,
-			levelPrototypes,
+			prototypeAt,
 			sampleMethod: levelConfig.silhouetteSampleMethod,
 			divisionBasis: 0
 		});
@@ -69,7 +62,7 @@ export const generateLevelSet2 = (
 			silhouette,
 			depthCurve,
 			depthBaseline,
-			levelPrototypes,
+			prototypeAt,
 			sampleMethod: levelConfig.silhouetteSampleMethod
 		});
 	}
@@ -87,21 +80,20 @@ export const generateSections = (
 	silhouetteConfig: SilhouetteConfig,
 	depthCurveConfig: DepthCurveConfig,
 	// spineCurveConfigs: SpineCurveConfig[],
-	levelPrototype: LevelPrototype | LevelPrototype[]
+	prototypeAt: PrototypeAt
 ): Section[] => {
 	const levelCount = countLevels(levelConfig, silhouetteConfig);
-	const levelPrototypes: LevelPrototype[] = getLevelPrototypeArray(levelCount, levelPrototype);
 	const depthCurve: CurvePath<Vector2> = generateDepthCurve(depthCurveConfig);
 	const depthBaseline = resolveDepthBaseline(depthCurveConfig);
 	const silhouette: CurvePath<Vector2> = generateSilhouette(silhouetteConfig);
 	// get levels without offsets by applying silhouette points to depthed level prototype vertices
-	let rawLevels: Level[] = [];
+	let rawLevels: Level[];
 	if (levelConfig.silhouetteSampleMethod.method === 'preserveAspectRatio') {
 		rawLevels = generateRawLevelsConstantAspect({
 			silhouette,
 			depthCurve,
 			depthBaseline,
-			levelPrototypes,
+			prototypeAt,
 			sampleMethod: levelConfig.silhouetteSampleMethod,
 			divisionBasis: 0
 		});
@@ -119,7 +111,7 @@ export const generateSections = (
 			silhouette,
 			depthCurve,
 			depthBaseline,
-			levelPrototypes,
+			prototypeAt,
 			sampleMethod: levelConfig.silhouetteSampleMethod
 		});
 	}
@@ -169,58 +161,99 @@ const applyOffsetToLevel = (offset: LevelOffset, rawLevel: Level, levelNumber: n
 	return level;
 };
 
-const generateRawLevelsSpineCurve = ({
-	silhouette,
-	depthCurve,
-	spineCurves,
-	levelPrototypes,
-	sampleMethod
-}: {
+type ConstantAspectContext = {
 	silhouette: CurvePath<Vector2>;
 	depthCurve: CurvePath<Vector2>;
-	spineCurves: CurvePath<Vector2>[];
-	levelPrototypes: LevelPrototype[];
-	sampleMethod: CurveSampleMethod;
-}): Level[] => {
-	const levelCount = sampleMethod.divisions + 1;
-	const levels: Level[] = [];
-
-	// How will multiple spinecurves be reconciled if each operates in a separate plane?
-	// Can they be elevation based?  Is that possible?
-	// Should levels be arrayed along the silhouette curve, then modified according to the spineCurve?
-
-	for (let l = 0; l < levelCount; l++) {
-		const center = new Vector2();
-	}
-
-	return levels;
+	depthBaseline: number;
+	prototypeAt: PrototypeAt;
+	bandCount: number;
+	divisionBasis?: number;
 };
 
 const generateRawLevelsConstantAspect = ({
 	silhouette,
 	depthCurve,
 	depthBaseline,
-	levelPrototypes,
+	prototypeAt,
 	sampleMethod,
 	divisionBasis
 }: {
 	silhouette: CurvePath<Vector2>;
 	depthCurve: CurvePath<Vector2>;
 	depthBaseline: number;
-	levelPrototypes: LevelPrototype[];
+	prototypeAt: PrototypeAt;
 	sampleMethod: CurveSampleMethod;
 	divisionBasis?: number;
 }): Level[] => {
-	const levelCount = sampleMethod.divisions + 1;
-	const bandCount = levelPrototypes[0].vertices.length;
-	const spacing = 1 / sampleMethod.divisions;
-	const meridians = new Array<Vector3[]>(bandCount);
+	const ctx: ConstantAspectContext = {
+		silhouette,
+		depthCurve,
+		depthBaseline,
+		prototypeAt,
+		bandCount: prototypeAt(0).vertices.length,
+		divisionBasis
+	};
+	const narrowRegion =
+		sampleMethod.method === 'preserveAspectRatio' ? sampleMethod.narrowRegion : undefined;
+	const divisions = narrowRegion
+		? getNarrowRegionDivisions(ctx, sampleMethod.divisions, narrowRegion)
+		: equalizeDivisions(ctx, 0, 1, sampleMethod.divisions);
+	const meridians = sampleMeridians(ctx, divisions);
+
+	const levels: Level[] = [];
+	for (let levelNumber = 0; levelNumber < meridians[0].length; levelNumber++) {
+		const vertices = meridians.map((meridian) => meridian[levelNumber].clone());
+		const center = new Vector3(0, 0, vertices.reduce((sum, v) => sum + v.z, 0) / vertices.length);
+		levels.push({ level: levelNumber, center, vertices });
+	}
+	return levels;
+};
+
+/** A band's vertex placed at curve position `division`. */
+const meridianPointAt = (
+	{ silhouette, depthCurve, depthBaseline, prototypeAt }: ConstantAspectContext,
+	vertexNumber: number,
+	division: number
+): Vector3 => {
+	const depthedLevelPrototype = getDepthedLevelPrototype(
+		prototypeAt(division),
+		depthCurve.getPointAt(division).x / depthBaseline
+	);
+	return getMeridianPoint(division, silhouette, depthedLevelPrototype.vertices[vertexNumber]);
+};
+
+/** One meridian per band: the band's vertex traced through each division. */
+const sampleMeridians = (ctx: ConstantAspectContext, divisions: number[][]): Vector3[][] =>
+	divisions.map((bandDivisions, vertexNumber) =>
+		bandDivisions.map((division) => meridianPointAt(ctx, vertexNumber, division))
+	);
+
+/**
+ * Iteratively places `quadCount` quads between curve positions t0 and t1 so their
+ * aspect ratios converge on their own average. Returns per-band divisions, each
+ * running t0 → t1 inclusive.
+ */
+const equalizeDivisions = (
+	ctx: ConstantAspectContext,
+	t0: number,
+	t1: number,
+	quadCount: number
+): number[][] => {
+	const { bandCount, divisionBasis } = ctx;
+	const levelCount = quadCount + 1;
+	const span = t1 - t0;
+	const spacing = 1 / quadCount;
 	const iterations = 50;
 	const divergenceLimit = 0.1;
 
 	let divisions = new Array(bandCount).fill([]).map(() => {
-		return new Array(levelCount).fill(0).map((v, i) => (i === levelCount - 1 ? 1 : spacing * i));
+		return new Array(levelCount)
+			.fill(0)
+			.map((v, i) => (i === levelCount - 1 ? t1 : t0 + span * (spacing * i)));
 	});
+	// The divisions the last sampled meridians came from: the loop can run out
+	// after adjusting, and the levels must match what was measured.
+	let sampled = divisions;
 
 	const divergenceTest = (
 		divergences: number[],
@@ -235,69 +268,258 @@ const generateRawLevelsConstantAspect = ({
 	};
 
 	for (let iteration = 0; iteration < iterations; iteration++) {
-		for (let vertexNumber = 0; vertexNumber < bandCount; vertexNumber++) {
-			const silhouettePoints: Vector2[] = [];
-			meridians[vertexNumber] = [];
-			for (let levelNumber = 0; levelNumber < levelCount; levelNumber++) {
-				const division = divisions[vertexNumber][levelNumber];
-				const depthedLevelPrototype = getDepthedLevelPrototype(
-					levelPrototypes[vertexNumber % levelPrototypes.length],
-					depthCurve.getPointAt(division).x / depthBaseline
-				);
-				silhouettePoints.push(silhouette.getPointAt(division));
-				meridians[vertexNumber].push(
-					getMeridianPoint(division, silhouette, depthedLevelPrototype.vertices[vertexNumber])
-				);
-			}
-		}
+		sampled = divisions;
+		const meridians = sampleMeridians(ctx, divisions);
 		const aspectRatios = getAspectRatiosFromMeridians(meridians);
 		const divergences = aspectRatios.map((ar) => getDivergence(ar));
 		if (divergenceTest(divergences, divergenceLimit, divisionBasis)) {
 			break;
 		}
 
-		divisions = divisions.map((band, i) =>
-			adjustDivisions(band, aspectRatios[divisionBasis === undefined ? i : divisionBasis])
-		);
-		divisions = divisions.map((band, i, bands) => {
-			return band.map((divisionValue, j) => {
-				return (divisionValue + bands[(bands.length + i - 1) % bands.length][j]) / 2;
+		const adjusted = divisions
+			.map((band, i) =>
+				adjustDivisions(band, aspectRatios[divisionBasis === undefined ? i : divisionBasis], t0, t1)
+			)
+			.map((band, i, bands) => {
+				return band.map((divisionValue, j) => {
+					return (divisionValue + bands[(bands.length + i - 1) % bands.length][j]) / 2;
+				});
 			});
-		});
+		// Keep the last good divisions rather than sampling the curves at NaN.
+		if (adjusted.some((band) => band.some((d) => !Number.isFinite(d)))) {
+			break;
+		}
+		divisions = adjusted;
 	}
-
-	const levels: Level[] = [];
-	for (let levelNumber = 0; levelNumber < levelCount; levelNumber++) {
-		const vertices = meridians.map((meridian) => meridian[levelNumber].clone());
-		const center = new Vector3(0, 0, vertices.reduce((sum, v) => sum + v.z, 0) / vertices.length);
-		levels.push({ level: levelNumber, center, vertices });
-	}
-	return levels;
+	return sampled;
 };
 
-const getDivergence = (values: number[]) => {
-	const avg = values.reduce((sum, val) => sum + val, 0) / values.length;
-	return values.map((val) => Math.abs(avg - val) / avg).reduce((sum, val) => sum + val, 0);
+/** A stretch of the silhouette, by arc-length position, that is wholly narrow or wide. */
+type SilhouetteSpan = { t0: number; t1: number; narrow: boolean };
+
+/**
+ * Splits the silhouette at every point where its x crosses `width`. Crossings are
+ * found on a fixed grid and then refined by bisection, so a span boundary lands
+ * on the threshold itself rather than on the nearest grid step.
+ */
+export const getSilhouetteSpans = (
+	silhouette: CurvePath<Vector2>,
+	width: number
+): SilhouetteSpan[] => {
+	const samples = 256;
+	const isNarrow = (t: number) => silhouette.getPointAt(t).x < width;
+	const spans: SilhouetteSpan[] = [];
+	let start = 0;
+	let narrow = isNarrow(0);
+	for (let i = 1; i <= samples; i++) {
+		const t = i / samples;
+		if (isNarrow(t) === narrow) continue;
+		let lo = (i - 1) / samples;
+		let hi = t;
+		for (let step = 0; step < 30; step++) {
+			const mid = (lo + hi) / 2;
+			if (isNarrow(mid) === narrow) lo = mid;
+			else hi = mid;
+		}
+		spans.push({ t0: start, t1: hi, narrow });
+		start = hi;
+		narrow = !narrow;
+	}
+	spans.push({ t0: start, t1: 1, narrow });
+	return spans;
 };
 
-const adjustDivisions = (divisions: number[], aspectRatios: number[]) => {
-	const avgAspectRatio = aspectRatios.reduce((sum, val) => sum + val, 0) / aspectRatios.length;
+/**
+ * Splits `total` into whole shares proportional to `weights`, each at least 1
+ * (largest remainder). Assumes total >= weights.length.
+ */
+const apportion = (total: number, weights: number[]): number[] => {
+	const shares = weights.map(() => 1);
+	const spare = total - weights.length;
+	const weightSum = weights.reduce((sum, w) => sum + w, 0);
+	if (spare <= 0 || weightSum <= 0) return shares;
+	const ideal = weights.map((w) => (spare * w) / weightSum);
+	ideal.forEach((x, i) => (shares[i] += Math.floor(x)));
+	let left = spare - ideal.reduce((sum, x) => sum + Math.floor(x), 0);
+	const byRemainder = ideal
+		.map((x, i) => ({ i, remainder: x - Math.floor(x) }))
+		.sort((a, b) => b.remainder - a.remainder);
+	for (let k = 0; left > 0; k++, left--) shares[byRemainder[k % byRemainder.length].i]++;
+	return shares;
+};
+
+/**
+ * Sum of quad aspect ratios along the basis band once a span is equalized with
+ * `quadCount` quads. It is roughly independent of quadCount, so spans that should
+ * share one aspect ratio need quads in proportion to it. Only meaningful for wide
+ * spans: a span reaching a pole has no finite mass.
+ */
+const getAspectMass = (
+	ctx: ConstantAspectContext,
+	span: SilhouetteSpan,
+	quadCount: number
+): number => {
+	const divisions = equalizeDivisions(ctx, span.t0, span.t1, quadCount);
+	const band = getAspectRatiosFromMeridians(sampleMeridians(ctx, divisions))[
+		ctx.divisionBasis ?? 0
+	];
+	const values = band.filter((ar): ar is number => ar !== null && Number.isFinite(ar));
+	if (values.length === 0) return 0;
+	return (quadCount * values.reduce((sum, v) => sum + v, 0)) / values.length;
+};
+
+/**
+ * The basis band's centerline through a span, as cumulative 3D length against
+ * curve position. Used to space a narrow span's levels evenly up the band.
+ */
+const getBandProfile = (ctx: ConstantAspectContext, span: SilhouetteSpan) => {
+	const samples = 200;
+	const b0 = ctx.divisionBasis ?? 0;
+	const b1 = (b0 + 1) % ctx.bandCount;
+	const ts = new Array(samples + 1)
+		.fill(0)
+		.map((v, i) => (i === samples ? span.t1 : span.t0 + (span.t1 - span.t0) * (i / samples)));
+	const centers = ts.map((t) =>
+		meridianPointAt(ctx, b0, t)
+			.add(meridianPointAt(ctx, b1, t))
+			.multiplyScalar(0.5)
+	);
+	const lengths = [0];
+	for (let i = 1; i < centers.length; i++) {
+		lengths.push(lengths[i - 1] + centers[i].distanceTo(centers[i - 1]));
+	}
+	const widthAt = (t: number) =>
+		meridianPointAt(ctx, b0, t).distanceTo(meridianPointAt(ctx, b1, t));
+	return { ts, lengths, length: lengths[samples], widthAt };
+};
+
+/** quadCount + 1 positions from span.t0 to span.t1, evenly spaced by band length. */
+const spaceByLength = (
+	{ ts, lengths, length }: ReturnType<typeof getBandProfile>,
+	quadCount: number
+): number[] => {
+	const divisions = [ts[0]];
+	let j = 1;
+	for (let k = 1; k < quadCount; k++) {
+		const target = (length * k) / quadCount;
+		while (j < lengths.length - 1 && lengths[j] < target) j++;
+		const segment = lengths[j] - lengths[j - 1];
+		const f = segment > 0 ? (target - lengths[j - 1]) / segment : 0;
+		divisions.push(ts[j - 1] + (ts[j] - ts[j - 1]) * f);
+	}
+	divisions.push(ts[ts.length - 1]);
+	return divisions;
+};
+
+/**
+ * preserveAspectRatio with a narrow-region limit. Narrow spans are filled first
+ * with quads of one fixed height: aspectRatio times the band's width where the
+ * span meets a wide one. Their aspect ratio is aspectRatio at that boundary and
+ * grows as the silhouette narrows, so a span reaching a pole costs a finite
+ * number of quads (a fixed aspect ratio there would need infinitely many). The
+ * remaining divisions go to the wide spans, which run the usual equalization.
+ * Falls back to plain equalization when the limit cannot apply (no narrow or no
+ * wide span, or fewer divisions than spans).
+ */
+const getNarrowRegionDivisions = (
+	ctx: ConstantAspectContext,
+	totalDivisions: number,
+	{ width, aspectRatio }: NarrowRegionConfig
+): number[][] => {
+	const plain = () => equalizeDivisions(ctx, 0, 1, totalDivisions);
+	if (!(width > 0) || !(aspectRatio > 0)) return plain();
+
+	const spans = getSilhouetteSpans(ctx.silhouette, width);
+	const narrowSpans = spans.filter((s) => s.narrow);
+	const wideSpans = spans.filter((s) => !s.narrow);
+	if (narrowSpans.length === 0 || wideSpans.length === 0 || totalDivisions < spans.length) {
+		return plain();
+	}
+
+	const profiles = narrowSpans.map((span) => getBandProfile(ctx, span));
+	let narrowCounts = narrowSpans.map((span, i) => {
+		const { length, widthAt } = profiles[i];
+		// Spans alternate, so every narrow span meets a wide one at t0, t1 or both.
+		const boundaries = [span.t0, span.t1].filter((t) => t > 0 && t < 1);
+		const boundaryWidth = boundaries.reduce((sum, t) => sum + widthAt(t), 0) / boundaries.length;
+		const quadHeight = aspectRatio * boundaryWidth;
+		return quadHeight > 0 ? Math.max(1, Math.round(length / quadHeight)) : 1;
+	});
+	const narrowBudget = totalDivisions - wideSpans.length;
+	if (narrowCounts.reduce((sum, n) => sum + n, 0) > narrowBudget) {
+		narrowCounts = apportion(narrowBudget, narrowCounts);
+	}
+
+	const wideTotal = totalDivisions - narrowCounts.reduce((sum, n) => sum + n, 0);
+	let wideCounts = [wideTotal];
+	if (wideSpans.length > 1) {
+		// Share between wide spans so they settle on a common aspect ratio.
+		const wideLength = wideSpans.reduce((sum, s) => sum + s.t1 - s.t0, 0);
+		const provisional = apportion(
+			wideTotal,
+			wideSpans.map((s) => (s.t1 - s.t0) / wideLength)
+		);
+		wideCounts = apportion(
+			wideTotal,
+			wideSpans.map((s, i) => getAspectMass(ctx, s, provisional[i]))
+		);
+	}
+
+	const bands: number[][] = new Array(ctx.bandCount).fill(0).map(() => []);
+	let narrowIndex = 0;
+	let wideIndex = 0;
+	spans.forEach((span, spanIndex) => {
+		let spanDivisions: number[][];
+		if (span.narrow) {
+			const shared = spaceByLength(profiles[narrowIndex], narrowCounts[narrowIndex]);
+			spanDivisions = bands.map(() => shared);
+			narrowIndex++;
+		} else {
+			spanDivisions = equalizeDivisions(ctx, span.t0, span.t1, wideCounts[wideIndex]);
+			wideIndex++;
+		}
+		spanDivisions.forEach((d, b) => bands[b].push(...(spanIndex === 0 ? d : d.slice(1))));
+	});
+	return bands;
+};
+
+/** Aspect ratio of each quad along a band; null for a quad that touches a pole. */
+type AspectRatio = number | null;
+
+const averageAspectRatio = (aspectRatios: AspectRatio[]): number => {
+	const values = aspectRatios.filter((ar): ar is number => ar !== null);
+	return values.reduce((sum, val) => sum + val, 0) / values.length;
+};
+
+const getDivergence = (aspectRatios: AspectRatio[]) => {
+	const avg = averageAspectRatio(aspectRatios);
+	return aspectRatios
+		.filter((ar): ar is number => ar !== null)
+		.map((val) => Math.abs(avg - val) / avg)
+		.reduce((sum, val) => sum + val, 0);
+};
+
+const adjustDivisions = (divisions: number[], aspectRatios: AspectRatio[], t0 = 0, t1 = 1) => {
+	const avgAspectRatio = averageAspectRatio(aspectRatios);
 	const newDivisionsUnscaled = divisions.map((div, i) => {
 		if (i === 0) {
 			return 0;
 		}
 		const height = div - divisions[i - 1];
-		return (avgAspectRatio * height) / aspectRatios[i - 1];
+		const aspectRatio = aspectRatios[i - 1];
+		// A pole quad keeps its share of the curve: see getAspectRatioOfQuad.
+		return aspectRatio === null ? height : (avgAspectRatio * height) / aspectRatio;
 	});
 	const totalNewDivisionsUnscaled = newDivisionsUnscaled.reduce((sum, val) => sum + val, 0);
+	const span = t1 - t0;
 	const newDivisions: number[] = [];
 	newDivisionsUnscaled.forEach((div, i) => {
 		if (i === divisions.length - 1) {
-			newDivisions.push(1);
+			newDivisions.push(t1);
 		} else if (i === 0) {
-			newDivisions.push(0);
+			newDivisions.push(t0);
 		} else {
-			newDivisions.push(newDivisions[i - 1] + div / totalNewDivisionsUnscaled);
+			newDivisions.push(newDivisions[i - 1] + span * (div / totalNewDivisionsUnscaled));
 		}
 	});
 	return newDivisions;
@@ -323,13 +545,13 @@ const generateRawLevels = ({
 	silhouette,
 	depthCurve,
 	depthBaseline,
-	levelPrototypes,
+	prototypeAt,
 	sampleMethod
 }: {
 	silhouette: CurvePath<Vector2>;
 	depthCurve: CurvePath<Vector2>;
 	depthBaseline: number;
-	levelPrototypes: LevelPrototype[];
+	prototypeAt: PrototypeAt;
 	sampleMethod: CurveSampleMethod;
 }): Level[] => {
 	const fractionalDivisions: number[] = [];
@@ -364,13 +586,13 @@ const generateRawLevels = ({
 			scaleY: silhouetteValue.x * 2,
 			depth: depthValue
 		};
-		rawLevels.push(generateLevel(offset, levelPrototypes[i % levelPrototypes.length], i));
+		rawLevels.push(generateLevel(offset, prototypeAt(division), i));
 	});
 
 	return rawLevels;
 };
 
-const getAspectRatiosFromMeridians = (meridians: Vector3[][]): number[][] => {
+const getAspectRatiosFromMeridians = (meridians: Vector3[][]): AspectRatio[][] => {
 	const bandCount = meridians.length;
 	const pointCount = meridians[0].length;
 	let bands: { v0: Vector3; v1: Vector3; v2: Vector3; v3: Vector3 }[][] = new Array(bandCount);
@@ -400,7 +622,14 @@ const getAspectRatioOfQuad = ({
 	v1: Vector3;
 	v2: Vector3;
 	v3: Vector3;
-}) => {
+}): AspectRatio => {
+	// A quad with a collapsed side (silhouette x = 0) is a triangle whose apex is the
+	// pole. Shrinking it gives a similar triangle with the same aspect ratio, so
+	// balancing it only drives its height to zero and the divisions to NaN.
+	const poleTolerance = 1e-9;
+	if (v0.distanceTo(v3) < poleTolerance || v1.distanceTo(v2) < poleTolerance) {
+		return null;
+	}
 	const mid0 = new Vector3((v0.x + v1.x) / 2, (v0.y + v1.y) / 2, (v0.z + v1.z) / 2);
 	const mid1 = new Vector3((v1.x + v2.x) / 2, (v1.y + v2.y) / 2, (v1.z + v2.z) / 2);
 	const mid2 = new Vector3((v2.x + v3.x) / 2, (v2.y + v3.y) / 2, (v2.z + v3.z) / 2);
@@ -408,29 +637,6 @@ const getAspectRatioOfQuad = ({
 	const width = mid2.clone().addScaledVector(mid0, -1).length();
 	const height = mid3.clone().addScaledVector(mid1, -1).length();
 	return height / width;
-};
-
-const getLevelPrototypeArray = (
-	levelCount: number,
-	levelPrototype: LevelPrototype | LevelPrototype[]
-): LevelPrototype[] => {
-	let levelPrototypeArray: LevelPrototype[] = new Array(levelCount);
-	if (Array.isArray(levelPrototype)) {
-		levelPrototypeArray.fill(levelPrototype[0]);
-		levelPrototypeArray = levelPrototypeArray.map((lp, i): LevelPrototype => {
-			return {
-				center: levelPrototype[i % levelPrototype.length].center.clone(),
-				vertices: levelPrototype[i % levelPrototype.length].vertices.map((v) => v.clone())
-			};
-		});
-	} else {
-		levelPrototypeArray.fill(levelPrototype);
-		levelPrototypeArray = levelPrototypeArray.map((lp) => ({
-			center: lp.center.clone(),
-			vertices: lp.vertices.map((v) => v.clone())
-		}));
-	}
-	return levelPrototypeArray;
 };
 
 const countLevels = (levelConfig: LevelConfig, silhouetteConfig: SilhouetteConfig) => {
@@ -506,21 +712,6 @@ const generateLevel = (
 	return level;
 };
 
-export const getLevelLines = (
-	// { points, normals }: { points: Vector2[]; normals: Vector2[] },
-	{ levelConfig, shapeConfig }: GlobuleConfig
-) => {
-	const levelPrototype = generateLevelPrototype(shapeConfig, levelConfig);
-
-	if (!Array.isArray(levelPrototype)) {
-		// let intersection0, intersection1;
-		// for (let i = 0; i < levelPrototype.vertices.length; i++) {
-		// 	const v0 = levelPrototype.vertices[i];
-		// 	const v1 = levelPrototype.vertices[(i + 1) % levelPrototype.vertices.length];
-		// }
-	}
-};
-
 export const getCurvePoints = (curveConfig: SilhouetteConfig, { divisions }: CurveSampleMethod) => {
 	const curve = generateSilhouette(curveConfig);
 	// const pointCount = method === 'divideCurve' ? curveConfig.curves.length * divisions : divisions;
@@ -535,6 +726,3 @@ export const getCurvePoints = (curveConfig: SilhouetteConfig, { divisions }: Cur
 
 	return result;
 };
-
-const isLevelOffset = (levelOffset: LevelOffset | LevelOffset[]): levelOffset is LevelOffset =>
-	!Array.isArray(levelOffset);

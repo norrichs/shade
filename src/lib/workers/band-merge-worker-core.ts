@@ -1,7 +1,7 @@
-import { mergeBand as defaultMergeBand, type MergeCtx } from '$lib/cut-pattern/merge-band';
-import type { BandMergePayload } from '$lib/cut-pattern/band-merge-payload';
-import { buildContourIndex, type BandContourIndex } from '$lib/cut-pattern/contour-index';
-import type { PathSegment } from '$lib/types';
+import { mergeBand as defaultMergeBand, type MergeCtx } from '#lib/cut-pattern/merge-band.js';
+import type { BandMergePayload } from '#lib/cut-pattern/band-merge-payload.js';
+import { buildContourIndex, type BandContourIndex } from '#lib/cut-pattern/contour-index.js';
+import type { PathSegment } from '#lib/types.js';
 
 /**
  * Message protocol between the pool and one band-merge worker.

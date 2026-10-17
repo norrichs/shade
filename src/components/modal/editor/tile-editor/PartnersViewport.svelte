@@ -1,8 +1,8 @@
 <!-- src/components/modal/editor/tile-editor/PartnersViewport.svelte -->
 <script lang="ts">
-	import type { PathSegment, Quadrilateral } from '$lib/types';
-	import type { IndexPair } from '$lib/patterns/spec-types';
-	import { svgPathStringFromSegments } from '$lib/patterns/utils';
+	import type { PathSegment, Quadrilateral } from '#lib/types.js';
+	import type { IndexPair } from '#lib/patterns/spec-types.js';
+	import { svgPathStringFromSegments } from '#lib/patterns/utils.js';
 	import type { Vertex } from '../segment-vertices';
 	import { computeVerticesFromFlatPath } from '../segment-vertices';
 	import type { PartnerBundle, PartnerRole, ResolvedPartner } from './partner-neighbors';
@@ -122,7 +122,7 @@
 
 	const viewBox = $derived.by(() => {
 		const partners = [tTop, tBottom, tLeft, tRight].filter((p) => p !== null);
-		const corners: Pt[] = [tBaseQuad.a, tBaseQuad.b, tBaseQuad.c, tBaseQuad.d] as any;
+		const corners: Pt[] = [tBaseQuad.a, tBaseQuad.b, tBaseQuad.c, tBaseQuad.d];
 		for (const p of partners) {
 			corners.push(p!.quad.a, p!.quad.b, p!.quad.c, p!.quad.d);
 		}
@@ -207,6 +207,8 @@
 		if (!originalPath || removedSet.size === 0 || path.length === originalPath.length) {
 			return computeVerticesFromFlatPath(path);
 		}
+		// Local accumulator inside a pure helper; never read reactively.
+		// eslint-disable-next-line svelte/prefer-svelte-reactivity
 		const byKey = new Map<string, Vertex>();
 		let shrunkIdx = 0;
 		for (let i = 0; i < originalPath.length; i++) {
@@ -312,6 +314,14 @@
 
 	let selectedBaseVertex: Vertex | null = $state(null);
 
+	const selectConnection = (conn: ConnectionLine) => {
+		selectedConnection = {
+			partnerRole: conn.partner.role,
+			baseVertex: conn.baseVertex,
+			partnerVertex: conn.partnerVertex
+		};
+	};
+
 	const handleBaseVertexClick = (v: Vertex) => {
 		if (selectedBaseVertex === v) {
 			selectedBaseVertex = null;
@@ -345,17 +355,17 @@
 
 	// Labels render on path indices that participate in a visible connection in this bundle.
 	// Derived from `allConnections` so per-partner direction (baseIsTarget) is already resolved.
-	const baseLabeledIndices = $derived.by(() => {
-		const set = new Set<number>();
-		for (const c of allConnections) set.add(c.baseIndex);
-		return set;
-	});
+	const baseLabeledIndices = $derived(new Set<number>(allConnections.map((c) => c.baseIndex)));
 
+	// Built fresh on every derivation and never mutated afterwards, so plain
+	// Map/Set are correct; SvelteMap/SvelteSet would add nothing.
 	const partnerLabeledIndicesByRole = $derived.by(() => {
+		// eslint-disable-next-line svelte/prefer-svelte-reactivity
 		const map = new Map<PartnerRole, Set<number>>();
 		for (const c of allConnections) {
 			let set = map.get(c.partner.role);
 			if (!set) {
+				// eslint-disable-next-line svelte/prefer-svelte-reactivity
 				set = new Set<number>();
 				map.set(c.partner.role, set);
 			}
@@ -376,8 +386,7 @@
 	} | null = $state(null);
 
 	const tooltipFor = (v: Vertex, color: string) => {
-		const all = new Set<number>();
-		for (const r of v.refs) all.add(r.index);
+		const all = new Set<number>(v.refs.map((r) => r.index));
 		tooltip = {
 			x: v.x,
 			y: v.y,
@@ -478,12 +487,15 @@
 					selectedConnection?.partnerVertex === conn.partnerVertex}
 				class:highlighted
 				style:stroke-width={highlighted ? 0.6 * scale : 0.3 * scale}
-				onclick={() =>
-					(selectedConnection = {
-						partnerRole: conn.partner.role,
-						baseVertex: conn.baseVertex,
-						partnerVertex: conn.partnerVertex
-					})}
+				role="button"
+				tabindex="-1"
+				onclick={() => selectConnection(conn)}
+				onkeydown={(e) => {
+					if (e.key === 'Enter' || e.key === ' ') {
+						e.preventDefault();
+						selectConnection(conn);
+					}
+				}}
 				onmouseenter={() => {
 					const matches = allConnections.filter(
 						(c) => c.x1 === conn.x1 && c.y1 === conn.y1 && c.x2 === conn.x2 && c.y2 === conn.y2
@@ -502,7 +514,15 @@
 				class="base-vertex"
 				class:selected={selectedBaseVertex === v}
 				style:stroke-width={0.15 * scale}
+				role="button"
+				tabindex="-1"
 				onclick={() => handleBaseVertexClick(v)}
+				onkeydown={(e) => {
+					if (e.key === 'Enter' || e.key === ' ') {
+						e.preventDefault();
+						handleBaseVertexClick(v);
+					}
+				}}
 				onmouseenter={() => tooltipFor(v, labelColorFor('base', null))}
 				onmouseleave={clearTooltip}
 			/>
@@ -515,7 +535,15 @@
 					r={0.5 * scale}
 					class="partner-vertex"
 					style:stroke-width={0.15 * scale}
+					role="button"
+					tabindex="-1"
 					onclick={() => handlePartnerVertexClick(p, v)}
+					onkeydown={(e) => {
+						if (e.key === 'Enter' || e.key === ' ') {
+							e.preventDefault();
+							handlePartnerVertexClick(p, v);
+						}
+					}}
 					onmouseenter={() => tooltipFor(v, labelColorFor(p.role, p))}
 					onmouseleave={clearTooltip}
 				/>

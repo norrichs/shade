@@ -2,10 +2,11 @@ import { CurvePath, Vector2, Vector3 } from 'three';
 import type {
 	CrossSectionConfig,
 	CrossSectionScaling,
+	ProjectionCurveSampleMethod,
 	ProjectionEdge
-} from '$lib/projection-geometry/types';
-import type { BezierConfig, ProjectionCurveSampleMethod } from '$lib/types';
-import { getCubicBezierCurvePath } from '$lib/util';
+} from '#lib/projection-geometry/types.js';
+import type { BezierConfig } from '#lib/types.js';
+import { getCubicBezierCurvePath } from '#lib/util.js';
 
 type EdgeSection = ProjectionEdge['sections'][number];
 
@@ -86,7 +87,8 @@ export function applyCrossSectionsToEdge(
 		);
 
 		return {
-			intersections: { edge: edgePoint.clone(), curve: curvePoint.clone() },
+			// Voronoi has no surface-projection divisions; readers treat [] and absent alike.
+			intersections: { edge: edgePoint.clone(), curve: curvePoint.clone(), divisions: [] },
 			crossSectionPoints
 		};
 	});

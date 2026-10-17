@@ -1,7 +1,7 @@
 <script lang="ts">
-	import type { UnitDefinition } from '$lib/patterns/spec-types';
-	import type { PathSegment } from '$lib/types';
-	import { svgPathStringFromSegments } from '$lib/patterns/utils';
+	import type { UnitDefinition } from '#lib/patterns/spec-types.js';
+	import type { PathSegment } from '#lib/types.js';
+	import { svgPathStringFromSegments } from '#lib/patterns/utils.js';
 	import { getCanvas, type PathEditorConfig } from './path-editor-shared';
 	import { computeVertices, updateUnitForVertexMove, type Vertex } from './segment-vertices';
 	import DraggablePoint from './DraggablePoint.svelte';
@@ -65,6 +65,9 @@
 </script>
 
 <div class="container" style="width:{config.size.width}px; height:{config.size.height}px;">
+	<!-- Adding a vertex places it at the pointer position, so this canvas is
+	     inherently mouse-driven; there is no meaningful keyboard equivalent. -->
+	<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
 	<svg
 		width={config.size.width}
 		height={config.size.height}
@@ -84,9 +87,17 @@
 					cy={vertex.y}
 					r="0.6"
 					class="remove-target"
+					role="button"
+					tabindex="-1"
 					onclick={(e) => {
 						e.stopPropagation();
 						handleVertexClick(vertex);
+					}}
+					onkeydown={(e) => {
+						if (e.key === 'Enter' || e.key === ' ') {
+							e.preventDefault();
+							handleVertexClick(vertex);
+						}
 					}}
 				/>
 			{/each}
@@ -101,9 +112,17 @@
 					stroke={isVertexSkipped(v) ? 'rgb(160, 0, 0)' : 'rgb(80, 80, 80)'}
 					stroke-width="0.15"
 					style="cursor: pointer"
+					role="button"
+					tabindex="-1"
 					onclick={(e) => {
 						e.stopPropagation();
 						onToggleSkip?.(v);
+					}}
+					onkeydown={(e) => {
+						if (e.key === 'Enter' || e.key === ' ') {
+							e.preventDefault();
+							onToggleSkip?.(v);
+						}
 					}}
 				/>
 			{/each}

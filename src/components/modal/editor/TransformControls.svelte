@@ -9,7 +9,7 @@
 	 * Callers must pass a materialised transform — see `materializeTransform` in
 	 * `./transform-config`. A `'inherit'` transform has nothing to bind to.
 	 */
-	import type { TransformConfig } from '$lib/projection-geometry/types';
+	import type { TransformConfig } from '#lib/projection-geometry/types.js';
 	import LabeledControl from './LabeledControl.svelte';
 	import PointInput from '../../controls/super-control/PointInput.svelte';
 

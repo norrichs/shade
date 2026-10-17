@@ -1,6 +1,6 @@
 import { Triangle, Vector3 } from 'three';
-import type { Band, Facet } from '$lib/types';
-import type { Section, Tube } from '$lib/projection-geometry/types';
+import type { Band, Facet } from '#lib/types.js';
+import type { Section, Tube } from '#lib/projection-geometry/types.js';
 import { matchGlobuleTubeFacets, pruneOuterPartnersOutsideSet } from '../generate-projection';
 
 const square = (closed: boolean): Section => {

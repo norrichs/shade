@@ -1,4 +1,4 @@
-import type { PathSegment } from '$lib/types';
+import type { PathSegment } from '#lib/types.js';
 
 export type Pt = { x: number; y: number };
 
@@ -35,7 +35,7 @@ export const isGeometryType = (v: unknown): v is GeometryType =>
 export type TaggedPath = { geometry: GeometryType; segments: PathSegment[]; contour?: number };
 
 /** A band end, band-local. `outward` is a unit vector pointing away from the band. */
-export type BandEnd = { point: Pt; outward: Pt };
+type BandEnd = { point: Pt; outward: Pt };
 export type BandEnds = { start: BandEnd; end: BandEnd };
 
 /** Same semantics as `bandTransform(origin, rotation, pivot)`: rotate about pivot, then translate. */

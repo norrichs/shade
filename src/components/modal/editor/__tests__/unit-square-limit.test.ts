@@ -1,6 +1,6 @@
 import { describe, it, expect } from '@jest/globals';
 import { allPointsInUnitSquare } from '../path-editor';
-import type { BezierConfig, PointConfig2 } from '$lib/types';
+import type { BezierConfig, PointConfig2 } from '#lib/types.js';
 
 const pt = (x: number, y: number): PointConfig2 => ({ type: 'PointConfig2', x, y });
 

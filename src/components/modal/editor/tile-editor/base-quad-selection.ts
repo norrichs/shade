@@ -1,11 +1,11 @@
-import type { BandCutPattern } from '$lib/types';
+import type { BandCutPattern } from '#lib/types.js';
 import type {
 	GlobuleAddress_Band,
 	GlobuleAddress_BandPiece,
 	GlobuleAddress_Facet
-} from '$lib/projection-geometry/types';
-import type { PartnerHighlightSource } from '$lib/stores/partnerHighlightStore';
-import { concatAddress, isGlobuleAddress_BandPiece } from '$lib/util';
+} from '#lib/projection-geometry/types.js';
+import type { PartnerHighlightSource } from '#lib/stores/partnerHighlightStore.js';
+import { concatAddress, isGlobuleAddress_BandPiece } from '#lib/util.js';
 
 type BandAddress = GlobuleAddress_Band | GlobuleAddress_BandPiece;
 

@@ -2,14 +2,15 @@ import { describe, it, expect, jest } from '@jest/globals';
 import { createWorkerCore, type WorkerResponse } from '../super-globule-worker-core';
 import type { PatternMessage } from '../super-globule-worker-core';
 
-const geometry = { projections: [], globuleTubes: [], subGlobules: [] } as never;
+const geometryValue = { projections: [], globuleTubes: [] };
+const geometry = geometryValue as never;
 const patternMsg = (over: Partial<PatternMessage> = {}): PatternMessage => ({
 	type: 'pattern',
 	requestId: 10,
 	geometryRequestId: 1,
 	superConfig: { id: 'c' } as never,
 	genConfig: {} as never,
-	gates: { globule: false, globuleTube: false, projection: false, voronoi: true },
+	gates: { globuleTube: false, projection: false, voronoi: true },
 	...over
 });
 
@@ -41,7 +42,7 @@ describe('worker core', () => {
 		core.handle({ type: 'generate', payload: {} as never, gates: {} as never, requestId: 1 }, post);
 		expect(generateSuperGlobule).toHaveBeenCalledTimes(1);
 		expect(posted).toEqual([
-			{ type: 'result', payload: { ...geometry, stripped: true }, requestId: 1 }
+			{ type: 'result', payload: { ...geometryValue, stripped: true }, requestId: 1 }
 		]);
 		expect(core.heldGeometryRequestId()).toBe(1);
 	});

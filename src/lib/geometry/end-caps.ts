@@ -1,5 +1,4 @@
 import {
-	Vector3,
 	Triangle,
 	BufferGeometry,
 	Mesh,
@@ -7,7 +6,7 @@ import {
 	Float32BufferAttribute,
 	DoubleSide
 } from 'three';
-import type { Level } from '$lib/types';
+import type { Level } from '#lib/types.js';
 
 export interface EndCapConfig {
 	enabled: boolean;
@@ -25,7 +24,7 @@ export interface EndCapGeometry {
  * Generate end cap triangles from a level
  * Creates a triangular fan from level vertices to a center point
  */
-export function generateEndCap(
+function generateEndCap(
 	level: Level,
 	direction: 'top' | 'bottom',
 	offset: number = 0

@@ -1,4 +1,4 @@
-import type { PathSegment } from '$lib/types';
+import type { PathSegment } from '#lib/types.js';
 
 /**
  * Convert a paper.PathItem (Path or CompoundPath) back to PathSegment[].

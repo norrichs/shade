@@ -1,7 +1,7 @@
 import { addVertex, removeVertex, shiftRulesForRemoval } from '../vertex-topology';
-import type { TiledPatternSpec } from '$lib/patterns/spec-types';
+import type { TiledPatternSpec } from '#lib/patterns/spec-types.js';
 import { computeVertices } from '../segment-vertices';
-import { defaultShieldSpec } from '$lib/patterns/tesselation/shield';
+import { defaultShieldSpec } from '#lib/patterns/tesselation/shield/index.js';
 
 const makeSpec = (): TiledPatternSpec => ({
 	id: 'test',

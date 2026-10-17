@@ -1,5 +1,5 @@
 import { Triangle, Vector3 } from 'three';
-import type { PatternGenerationResult } from '$lib/cut-pattern/run-pattern-generation';
+import type { PatternGenerationResult } from '#lib/cut-pattern/run-pattern-generation.js';
 
 /**
  * Pattern results cross `postMessage`, which keeps own properties but drops

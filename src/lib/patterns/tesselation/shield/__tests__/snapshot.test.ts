@@ -1,6 +1,6 @@
 import { generateTesselationTile } from '../../shared/generator';
 import { defaultShieldSpec } from '../default-spec';
-import type { Band } from '$lib/types';
+import type { Band } from '#lib/types.js';
 
 describe('shield-tesselation generator snapshot', () => {
 	const sideOrientations: Band['sideOrientation'][] = ['inside', 'outside'];

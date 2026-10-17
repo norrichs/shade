@@ -3,27 +3,21 @@
 	import Floater from './Floater.svelte';
 	import type { FloaterContent, SidebarDefinition } from './sidebar-definitions';
 	import Button from '../design-system/Button.svelte';
+	import { openSidebarPanel } from '#lib/stores/sidebarStore.js';
 
 	let { sidebarDefinition }: { sidebarDefinition: SidebarDefinition } = $props();
 
-	let showFloater = $state(false);
-	let currentFloater: FloaterContent | undefined = $state(undefined);
+	// The open panel lives in a store so the agent bridge can open panels too.
+	const currentFloater: FloaterContent | undefined = $derived(
+		$openSidebarPanel ? sidebarDefinition.get($openSidebarPanel) : undefined
+	);
+	const showFloater = $derived(currentFloater !== undefined);
 	let showMode: 'onHover' | 'always' = $state('always');
 
+	$effect(() => () => openSidebarPanel.set(null));
+
 	const toggleFloater = (floater?: FloaterContent['title']) => {
-		if (!floater) {
-			showFloater = false;
-			currentFloater = undefined;
-		} else if (!currentFloater) {
-			showFloater = true;
-			currentFloater = sidebarDefinition.get(floater);
-		} else if (currentFloater && floater === currentFloater.title) {
-			showFloater = false;
-			currentFloater = undefined;
-		} else if (currentFloater && floater !== currentFloater.title) {
-			showFloater = true;
-			currentFloater = sidebarDefinition.get(floater);
-		}
+		openSidebarPanel.set(!floater || floater === $openSidebarPanel ? null : floater);
 	};
 </script>
 
@@ -32,7 +26,7 @@
 		<Button onclick={() => (showMode = showMode === 'onHover' ? 'always' : 'onHover')}
 			>{showMode}</Button
 		>
-		{#each sidebarDefinition as [title, floater]}
+		{#each sidebarDefinition as [title, floater] (title)}
 			<HoverButton
 				onClick={() => toggleFloater(title)}
 				shortTitle={floater.shortTitle}

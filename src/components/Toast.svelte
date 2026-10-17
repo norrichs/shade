@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { toastStore } from '$lib/stores/toastStore';
+	import { toastStore } from '#lib/stores/toastStore.js';
 	import { fade, fly } from 'svelte/transition';
 
 	function handleDismiss(id: string) {

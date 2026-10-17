@@ -1,5 +1,5 @@
 import { Vector3 } from 'three';
-import { mulberry32 } from '$lib/rng';
+import { mulberry32 } from '#lib/rng.js';
 import type {
 	SeedMethod,
 	CenterProjectionSeedMethod,
@@ -15,7 +15,7 @@ export type AreaTableEntry = {
 	triangle: SurfaceTriangle;
 };
 
-export function triangleArea(triangle: SurfaceTriangle): number {
+function triangleArea(triangle: SurfaceTriangle): number {
 	const [a, b, c] = triangle;
 	const ab = b.clone().sub(a);
 	const ac = c.clone().sub(a);

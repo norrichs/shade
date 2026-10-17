@@ -1,7 +1,7 @@
 import { describe, it, expect } from '@jest/globals';
 
 import { applyStrokeWidth } from '../generate-cut-pattern';
-import type { BandCutPattern, CutPattern } from '$lib/types';
+import type { BandCutPattern, CutPattern } from '#lib/types.js';
 
 const facet = (quadWidth: number): CutPattern => ({ path: [], quadWidth }) as unknown as CutPattern;
 

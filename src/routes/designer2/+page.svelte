@@ -10,10 +10,14 @@
 		clampSplit,
 		MIN_PANEL_FRACTION,
 		type PanelLayout
-	} from '$lib/stores/uiStores';
+	} from '#lib/stores/uiStores.js';
 	import HoverSidebar from '../../components/modal/HoverSidebar.svelte';
 	import { projectionConfigs } from '../../components/modal/sidebar-definitions';
 	import Toast from '../../components/Toast.svelte';
+	import { installAgentBridge } from '#lib/agent-bridge/client.js';
+
+	// Dev-only: lets Claude Code drive this page when the navbar dot is green.
+	$effect(() => installAgentBridge());
 
 	let main: HTMLElement | undefined = $state();
 	let dragging = $state(false);
@@ -71,7 +75,7 @@
 			aria-valuemin={MIN_PANEL_FRACTION * 100}
 			aria-valuemax={(1 - MIN_PANEL_FRACTION) * 100}
 			aria-valuenow={Math.round(split * 100)}
-			onpointermove={(ev) => {
+			onpointermove={(ev: PointerEvent & { currentTarget: EventTarget & HTMLDivElement }) => {
 				if (!dragging) handleY = ev.clientY - ev.currentTarget.getBoundingClientRect().top;
 			}}
 			use:asDraggable={{
