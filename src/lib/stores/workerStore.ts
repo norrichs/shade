@@ -259,23 +259,30 @@ function getWorker(): Worker {
 				);
 
 				// Regenerate surfaces on main thread (Object3D can't be serialized through worker)
-				resolver.config.projectionConfigs.forEach((projConfig, i) => {
-					if (rehydrated.projections[i]) {
-						const prepared = prepareProjectionConfig(JSON.parse(JSON.stringify(projConfig)));
-						rehydrated.projections[i].surface = generateSurface(prepared.surfaceConfig);
-					}
-				});
+				try {
+					resolver.config.projectionConfigs.forEach((projConfig, i) => {
+						if (rehydrated.projections[i]) {
+							const prepared = prepareProjectionConfig(JSON.parse(JSON.stringify(projConfig)));
+							rehydrated.projections[i].surface = generateSurface(prepared.surfaceConfig);
+						}
+					});
 
-				// Regenerate Voronoi surface (uses projection's surface config)
-				const projSurfaceConfig = resolver.config.projectionConfigs[0]?.surfaceConfig;
-				const voronoiConfig = resolver.config.voronoiConfig;
-				if (projSurfaceConfig && voronoiConfig && rehydrated.voronoiResult) {
-					const plainSurfaceConfig = JSON.parse(JSON.stringify(projSurfaceConfig));
-					const resolvedSurfaceConfig =
-						plainSurfaceConfig.transform === 'inherit'
-							? { ...plainSurfaceConfig, transform: voronoiConfig.meta.transform }
-							: plainSurfaceConfig;
-					rehydrated.voronoiResult.surface = generateSurface(resolvedSurfaceConfig);
+					// Regenerate Voronoi surface (uses projection's surface config)
+					const projSurfaceConfig = resolver.config.projectionConfigs[0]?.surfaceConfig;
+					const voronoiConfig = resolver.config.voronoiConfig;
+					if (projSurfaceConfig && voronoiConfig && rehydrated.voronoiResult) {
+						const plainSurfaceConfig = JSON.parse(JSON.stringify(projSurfaceConfig));
+						const resolvedSurfaceConfig =
+							plainSurfaceConfig.transform === 'inherit'
+								? { ...plainSurfaceConfig, transform: voronoiConfig.meta.transform }
+								: plainSurfaceConfig;
+						rehydrated.voronoiResult.surface = generateSurface(resolvedSurfaceConfig);
+					}
+				} catch (error) {
+					// Surfaces may be missing, but pipelines that succeeded still render.
+					workerError.set(
+						`Surface rebuild failed: ${error instanceof Error ? error.message : String(error)}`
+					);
 				}
 
 				resolver.resolve(rehydrated);

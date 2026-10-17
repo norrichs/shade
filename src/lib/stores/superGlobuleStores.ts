@@ -1,3 +1,6 @@
+import { normalizeShapeConfigs } from '#lib/gcs/migrate-shape-configs.js';
+import { applyBlocks, backfillBlocked, gcsBlockedPipelines } from '#lib/gcs/gcs-gates.js';
+import { validateGlobuleShapeConfigs } from '#lib/generate-shape.js';
 import { AUTO_PERSIST_KEY, bootstrapShouldUsePersisted, persistable } from '#lib/persistable.js';
 import { generateDefaultSuperGlobuleConfig } from '#lib/shades-config.js';
 import type {
@@ -13,6 +16,7 @@ import type {
 	TubeSplitRejection
 } from '#lib/types.js';
 import { collectRenderedPoints } from '#lib/collect-rendered-points.js';
+import { computeTubeOpenings, type TubeOpening } from '#lib/tube-openings.js';
 import type { GlobuleAddress_Facet } from '#lib/projection-geometry/types.js';
 import { derived, writable, get } from 'svelte/store';
 import { loadPersistedOrDefault } from './stores';
@@ -176,18 +180,23 @@ function extractMeshData(
 		superGlobuleConfigId: superGlobule.superGlobuleConfigId,
 		projectionAddresses,
 		bounds,
-		extremes
+		extremes,
+		// Taken from the globule tubes whatever the pattern source: a projection or
+		// voronoi model draped on a globule surface keeps that surface's openings.
+		openings: computeTubeOpenings(superGlobule.globuleTubes)
 	};
 }
 
 // SUPER CONFIGS
 export const superConfigStore = persistable<SuperGlobuleConfig>(
 	((): SuperGlobuleConfig => {
-		const config = normalizeVoronoiConfig(
-			loadPersistedOrDefault(
-				bootstrapShouldUsePersisted(),
-				generateDefaultSuperGlobuleConfig
-			) as SuperGlobuleConfig
+		const config = normalizeShapeConfigs(
+			normalizeVoronoiConfig(
+				loadPersistedOrDefault(
+					bootstrapShouldUsePersisted(),
+					generateDefaultSuperGlobuleConfig
+				) as SuperGlobuleConfig
+			)
 		);
 		console.log('SUPER GLOBULE CONFIG STORE', { config });
 		return config;
@@ -205,6 +214,10 @@ let isInitialized = false;
 
 // Track last valid result for error recovery
 let lastValidResult: SuperGlobule | null = null;
+
+// Last cross-section validation message surfaced as a toast; an unchanged message is
+// not re-raised on every regeneration (e.g. while dragging an unrelated slider).
+let lastGcsToastMessage: string | null = null;
 
 /**
  * Triggers async generation of the SuperGlobule
@@ -234,10 +247,34 @@ function triggerAsyncGeneration(config: SuperGlobuleConfig): void {
 		console.log('SUPER GLOBULE STORE - Starting async generation');
 
 		try {
-			const gates = pipelineGatesFromViewControls(get(viewControlStore));
-			const result = await generateSuperGlobuleAsync(config, gates);
+			const userGates = pipelineGatesFromViewControls(get(viewControlStore));
+			const { blocked, message } = gcsBlockedPipelines(config, (g) => {
+				try {
+					return validateGlobuleShapeConfigs(g);
+				} catch (error) {
+					// A throwing validator must block the pipelines, not kill generation.
+					return {
+						isValid: false,
+						errors: [
+							{ index: null, message: error instanceof Error ? error.message : String(error) }
+						],
+						levels: [],
+						bandCount: 0
+					};
+				}
+			});
+			const raw = await generateSuperGlobuleAsync(config, applyBlocks(userGates, blocked));
+			// Blocked pipelines keep their previous output instead of going empty.
+			const result = backfillBlocked(raw, lastValidResult, blocked, userGates);
 			lastValidResult = result; // Store successful result
 			superGlobuleInternal.set(result);
+			// Set after the worker result: the worker clears workerError on every result.
+			if (message === null) {
+				lastGcsToastMessage = null;
+			} else if (message !== lastGcsToastMessage) {
+				lastGcsToastMessage = message;
+				workerError.set(message);
+			}
 			console.log('SUPER GLOBULE STORE - Async generation complete');
 		} catch (error) {
 			console.error('SUPER GLOBULE STORE - Async generation failed:', error);
@@ -449,6 +486,12 @@ export const model3dBoundsStore = derived(superGlobuleMeshStore, ($mesh) => $mes
 export const model3dExtremesStore = derived(
 	superGlobuleMeshStore,
 	($mesh): AxisExtremes | null => $mesh?.extremes ?? null
+);
+
+// The tube openings, preset measurements alongside the axis extents above.
+export const model3dOpeningsStore = derived(
+	superGlobuleMeshStore,
+	($mesh): TubeOpening[] => $mesh?.openings ?? []
 );
 
 // ---------------------------------------------------------------------------

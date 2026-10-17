@@ -2,92 +2,95 @@
 	"type": "GlobuleConfig",
 	"id": "glb_f26abf54-c36a-46e8-9dcf-29380beaff6f",
 	"name": "New Globule",
-	"shapeConfig": {
-		"type": "ShapeConfig",
-		"symmetry": "radial",
-		"symmetryNumber": 1,
-		"sampleMethod": {
-			"method": "divideCurve",
-			"divisions": 20
-		},
-		"curves": [
-			{
-				"type": "BezierConfig",
-				"points": [
-					{
-						"type": "PointConfig2",
-						"x": 0,
-						"y": 94.67759489423811
-					},
-					{
-						"type": "PointConfig2",
-						"x": -160.57047723433246,
-						"y": 91.00000000000003
-					},
-					{
-						"type": "PointConfig2",
-						"x": -56.443203194380864,
-						"y": -179.23567741049277
-					},
-					{
-						"type": "PointConfig2",
-						"x": -2.6666666666666665,
-						"y": -176.49180382932138
-					}
-				]
+	"shapeConfigs": [
+		{
+			"type": "ShapeConfig",
+			"symmetry": "radial",
+			"symmetryNumber": 1,
+			"sampleMethod": {
+				"method": "divideCurve",
+				"divisions": 20
 			},
-			{
-				"type": "BezierConfig",
-				"points": [
-					{
-						"type": "PointConfig2",
-						"x": -2.6666666666666665,
-						"y": -176.49180382932138
-					},
-					{
-						"type": "PointConfig2",
-						"x": 47.12698868007733,
-						"y": -173.95115126525243
-					},
-					{
-						"type": "PointConfig2",
-						"x": 39.3621505345086,
-						"y": -45.25282691156024
-					},
-					{
-						"type": "PointConfig2",
-						"x": 47.261607469062255,
-						"y": -25.990096293763372
-					}
-				]
-			},
-			{
-				"type": "BezierConfig",
-				"points": [
-					{
-						"type": "PointConfig2",
-						"x": 47.261607469062255,
-						"y": -25.990096293763372
-					},
-					{
-						"type": "PointConfig2",
-						"x": 57.74589154756088,
-						"y": -0.4242958092789664
-					},
-					{
-						"type": "PointConfig2",
-						"x": 124.57047723433246,
-						"y": 91.01092822757148
-					},
-					{
-						"type": "PointConfig2",
-						"x": 2.31893227076397e-14,
-						"y": 94.67759489423811
-					}
-				]
-			}
-		]
-	},
+			"curves": [
+				{
+					"type": "BezierConfig",
+					"points": [
+						{
+							"type": "PointConfig2",
+							"x": 0,
+							"y": 94.67759489423811
+						},
+						{
+							"type": "PointConfig2",
+							"x": -160.57047723433246,
+							"y": 91.00000000000003
+						},
+						{
+							"type": "PointConfig2",
+							"x": -56.443203194380864,
+							"y": -179.23567741049277
+						},
+						{
+							"type": "PointConfig2",
+							"x": -2.6666666666666665,
+							"y": -176.49180382932138
+						}
+					]
+				},
+				{
+					"type": "BezierConfig",
+					"points": [
+						{
+							"type": "PointConfig2",
+							"x": -2.6666666666666665,
+							"y": -176.49180382932138
+						},
+						{
+							"type": "PointConfig2",
+							"x": 47.12698868007733,
+							"y": -173.95115126525243
+						},
+						{
+							"type": "PointConfig2",
+							"x": 39.3621505345086,
+							"y": -45.25282691156024
+						},
+						{
+							"type": "PointConfig2",
+							"x": 47.261607469062255,
+							"y": -25.990096293763372
+						}
+					]
+				},
+				{
+					"type": "BezierConfig",
+					"points": [
+						{
+							"type": "PointConfig2",
+							"x": 47.261607469062255,
+							"y": -25.990096293763372
+						},
+						{
+							"type": "PointConfig2",
+							"x": 57.74589154756088,
+							"y": -0.4242958092789664
+						},
+						{
+							"type": "PointConfig2",
+							"x": 124.57047723433246,
+							"y": 91.01092822757148
+						},
+						{
+							"type": "PointConfig2",
+							"x": 2.31893227076397e-14,
+							"y": 94.67759489423811
+						}
+					]
+				}
+			],
+			"isPrimary": true
+		}
+	],
 	"levelConfig": {
 		"type": "LevelConfig",
 		"silhouetteSampleMethod": {

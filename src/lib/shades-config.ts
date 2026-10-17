@@ -623,7 +623,12 @@ export const generateDefaultGlobuleConfig = (): GlobuleConfig => {
 		type: 'GlobuleConfig',
 		id: generateTempId(GLOBULE_CONFIG),
 		name: 'New Globule',
-		shapeConfig: generateDefaultRadialShapeConfig(5, { method: 'divideCurve', divisions: 30 }), // generateDefaultAsymmetricShapeConfig({ method: 'divideCurve', divisions: 1 }),
+		shapeConfigs: [
+			{
+				...generateDefaultRadialShapeConfig(5, { method: 'divideCurve', divisions: 30 }),
+				isPrimary: true
+			}
+		], // generateDefaultAsymmetricShapeConfig({ method: 'divideCurve', divisions: 1 }),
 		levelConfig: defaultLevelConfig(),
 		silhouetteConfig: defaultSilhouetteConfig(),
 		depthCurveConfig: defaultDepthCurveConfig(),

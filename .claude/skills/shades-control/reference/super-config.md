@@ -112,10 +112,19 @@ Path: `…globuleConfig.silhouetteConfig.curves` (`SilhouetteConfig`, `types.ts:
 
 #### Shape — the cross-section ("level")
 
-Path: `…globuleConfig.shapeConfig` (`ShapeConfig`, `types.ts:1148`).
+Path: `…globuleConfig.shapeConfigs[i]` (`ShapeConfig`, `types.ts`). A globule carries a list of cross sections (GCSs) in **silhouette-curve order**: A (index 0) sits at level 0, the start of the silhouette curve. Rules:
+
+- Exactly one entry has `isPrimary: true`. Every GCS must have the same prototype vertex count as the primary (that count is the band count).
+- `level` is an integer 0..`divisions` (`divisions` = `levelConfig.silhouetteSampleMethod.divisions`), strictly increasing in list order. **`null` or omitted = auto**: evenly spread between pinned neighbours (first defaults to 0, last to `divisions`). To unpin via `patchConfig`, write `level: null` (JSON cannot delete keys).
+- `blend: {mode:'linear'}` on a GCS describes the transition to the next GCS.
+- At most `divisions + 1` GCSs.
+- An invalid list blocks only the globule-dependent pipelines (globule, tubes, and projection/voronoi when the surface is a globule) and keeps the previous geometry; a toast names the first error.
 
 | Field            | Type                                                                 | Meaning / range                                                                                                                                                                                                                                  |
 | ---------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `isPrimary`      | boolean?                                                             | Exactly one GCS in the list must be `true`; its vertex count defines the band count.                                                                                                                                                             |
+| `level`          | int 0..divisions \| null?                                            | Silhouette level of this GCS. Strictly increasing in list order. `null`/omitted = auto-spread.                                                                                                                                                   |
+| `blend`          | `{mode:'linear'}`?                                                   | Blend from this GCS toward the next one.                                                                                                                                                                                                         |
 | `symmetry`       | `'asymmetric'\|'radial'\|'lateral'\|'radial-lateral'`                | How the authored run repeats (`src/lib/geometry/radial-shape.ts`). Reflected kinds (`lateral`, `radial-lateral`) mirror the run.                                                                                                                 |
 | `symmetryNumber` | int ≥ 1                                                              | Number of repeats. The authored run spans 2π/n, or π/n when reflected (`radial-shape.ts:26`). Default 5.                                                                                                                                         |
 | `sampleMethod`   | `{method:'divideCurve'\|'divideCurvePath'\|'divideSide', divisions}` | Vertex count around the level, which equals the **band count around the globule**. `divideCurve`: divisions × total curves. `divideSide`: divisions × sides. `divideCurvePath`: exactly `divisions`. Default `divideCurve`/30 × 5 repeats = 150. |

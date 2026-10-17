@@ -4,6 +4,7 @@
 	import {
 		superGlobuleStore,
 		model3dExtremesStore,
+		model3dOpeningsStore,
 		showMeasureIndicators
 	} from '#lib/stores/index.js';
 	import type { AxisExtremes, GlobuleGeometry } from '#lib/types.js';
@@ -62,14 +63,14 @@
 		globuleConfigId: generateTempId('cfg'),
 		points: [
 			new Vector3(0, 0, 0),
-			new Vector3(0, 0, 100),
-			new Vector3(0, 10, 100),
+			new Vector3(0, 0, 25),
+			new Vector3(0, 10, 25),
 			new Vector3(0, 0, 0),
-			new Vector3(0, 0, 100),
-			new Vector3(10, 10, 100),
+			new Vector3(0, 0, 25),
+			new Vector3(10, 10, 25),
 			new Vector3(0, 0, 0),
-			new Vector3(10, 10, 100),
-			new Vector3(10, 0, 100)
+			new Vector3(10, 10, 25),
+			new Vector3(10, 0, 25)
 		]
 	};
 
@@ -100,6 +101,19 @@
 		<T.Group position={[point.x, point.y, point.z]}>
 			<T.Mesh geometry={indicatorGeometry} material={materials[material]} />
 		</T.Group>
+	{/each}
+{/if}
+
+{#if $showMeasureIndicators}
+	{#each $model3dOpeningsStore as opening (opening.id)}
+		{#each [opening.a, opening.b] as point, i (i)}
+			<T.Group position={[point.x, point.y, point.z]}>
+				<T.Mesh
+					geometry={indicatorGeometry}
+					material={opening.end === 'start' ? materials.tubeOpeningStart : materials.tubeOpeningEnd}
+				/>
+			</T.Group>
+		{/each}
 	{/each}
 {/if}
 

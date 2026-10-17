@@ -21,6 +21,7 @@ import type { PanelHoleConfig } from './cut-pattern/generate-panel-pattern';
 import type { DistributionConfig } from '../components/cut-pattern/distribute-panels';
 import type { ProjectionRange } from './projection-geometry/filters';
 import type { EndCapConfig, EndCapGeometry } from './geometry/end-caps';
+import type { TubeOpening } from './tube-openings';
 
 export type PatternSource =
 	'globule' | 'projection' | 'surfaceProjection' | 'voronoi' | 'voronoiSurface';
@@ -1069,9 +1070,17 @@ export type CurveSampleMethodMethod = CurveSampleMethod['method'];
 export const isCurveSampleMethodMethod = (m: string): m is CurveSampleMethodMethod =>
 	['divideCurvePath', 'divideCurve', 'divideSide', 'preserveAspectRatio', 'spineCurve'].includes(m);
 
+export type GcsBlend = { mode: 'linear' };
+
 export type ShapeConfig = {
 	type: 'ShapeConfig';
 	id?: number;
+	/** Marks the primary GCS of a globule (the one legacy single-GCS readers use). */
+	isPrimary?: boolean;
+	/** Silhouette level (integer 0..divisions) this GCS sits at; null/undefined = auto-spread. */
+	level?: number;
+	/** How this GCS blends toward the next one in the list. */
+	blend?: GcsBlend;
 	// divisions: number;
 	sampleMethod: CurveSampleMethod;
 	symmetry: 'asymmetric' | 'radial' | 'lateral' | 'radial-lateral';
@@ -1177,6 +1186,8 @@ export type SuperGlobuleMesh = {
 	bounds: Box3;
 	/** Null when the model has no geometry points. */
 	extremes: AxisExtremes | null;
+	/** The open ends of the globule tubes, each measured across X. */
+	openings: TubeOpening[];
 };
 
 // SUB
@@ -1264,6 +1275,7 @@ type GlobuleRotate = { angle: number; anchor: Point3; axis: Point3 };
 export type GlobuleConfig = {
 	[key: string]:
 		| ShapeConfig
+		| ShapeConfig[]
 		| LevelConfig
 		| SilhouetteConfig
 		| DepthCurveConfig
@@ -1281,7 +1293,7 @@ export type GlobuleConfig = {
 	id: Id;
 	name?: string;
 	isModified?: boolean;
-	shapeConfig: ShapeConfig;
+	shapeConfigs: ShapeConfig[];
 	levelConfig: LevelConfig;
 	silhouetteConfig: SilhouetteConfig;
 	depthCurveConfig: DepthCurveConfig;

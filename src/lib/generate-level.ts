@@ -12,6 +12,7 @@ import type {
 } from './types';
 import { DEFAULT_DEPTH_CURVE_BASELINE } from './types';
 import type { Section } from './projection-geometry/types';
+import type { PrototypeAt } from './gcs/gcs-blend';
 
 /**
  * The depth-curve x value that maps to depth 1 (the level's own cross-section,
@@ -30,10 +31,9 @@ export const generateLevelSet2 = (
 	silhouetteConfig: SilhouetteConfig,
 	depthCurveConfig: DepthCurveConfig,
 	// spineCurveConfigs: SpineCurveConfig[],
-	levelPrototype: LevelPrototype | LevelPrototype[]
+	prototypeAt: PrototypeAt
 ): Level[] => {
 	const levelCount = countLevels(levelConfig, silhouetteConfig);
-	const levelPrototypes: LevelPrototype[] = getLevelPrototypeArray(levelCount, levelPrototype);
 	const depthCurve: CurvePath<Vector2> = generateDepthCurve(depthCurveConfig);
 	const depthBaseline = resolveDepthBaseline(depthCurveConfig);
 	const silhouette: CurvePath<Vector2> = generateSilhouette(silhouetteConfig);
@@ -44,7 +44,7 @@ export const generateLevelSet2 = (
 			silhouette,
 			depthCurve,
 			depthBaseline,
-			levelPrototypes,
+			prototypeAt,
 			sampleMethod: levelConfig.silhouetteSampleMethod,
 			divisionBasis: 0
 		});
@@ -62,7 +62,7 @@ export const generateLevelSet2 = (
 			silhouette,
 			depthCurve,
 			depthBaseline,
-			levelPrototypes,
+			prototypeAt,
 			sampleMethod: levelConfig.silhouetteSampleMethod
 		});
 	}
@@ -80,10 +80,9 @@ export const generateSections = (
 	silhouetteConfig: SilhouetteConfig,
 	depthCurveConfig: DepthCurveConfig,
 	// spineCurveConfigs: SpineCurveConfig[],
-	levelPrototype: LevelPrototype | LevelPrototype[]
+	prototypeAt: PrototypeAt
 ): Section[] => {
 	const levelCount = countLevels(levelConfig, silhouetteConfig);
-	const levelPrototypes: LevelPrototype[] = getLevelPrototypeArray(levelCount, levelPrototype);
 	const depthCurve: CurvePath<Vector2> = generateDepthCurve(depthCurveConfig);
 	const depthBaseline = resolveDepthBaseline(depthCurveConfig);
 	const silhouette: CurvePath<Vector2> = generateSilhouette(silhouetteConfig);
@@ -94,7 +93,7 @@ export const generateSections = (
 			silhouette,
 			depthCurve,
 			depthBaseline,
-			levelPrototypes,
+			prototypeAt,
 			sampleMethod: levelConfig.silhouetteSampleMethod,
 			divisionBasis: 0
 		});
@@ -112,7 +111,7 @@ export const generateSections = (
 			silhouette,
 			depthCurve,
 			depthBaseline,
-			levelPrototypes,
+			prototypeAt,
 			sampleMethod: levelConfig.silhouetteSampleMethod
 		});
 	}
@@ -166,7 +165,7 @@ type ConstantAspectContext = {
 	silhouette: CurvePath<Vector2>;
 	depthCurve: CurvePath<Vector2>;
 	depthBaseline: number;
-	levelPrototypes: LevelPrototype[];
+	prototypeAt: PrototypeAt;
 	bandCount: number;
 	divisionBasis?: number;
 };
@@ -175,14 +174,14 @@ const generateRawLevelsConstantAspect = ({
 	silhouette,
 	depthCurve,
 	depthBaseline,
-	levelPrototypes,
+	prototypeAt,
 	sampleMethod,
 	divisionBasis
 }: {
 	silhouette: CurvePath<Vector2>;
 	depthCurve: CurvePath<Vector2>;
 	depthBaseline: number;
-	levelPrototypes: LevelPrototype[];
+	prototypeAt: PrototypeAt;
 	sampleMethod: CurveSampleMethod;
 	divisionBasis?: number;
 }): Level[] => {
@@ -190,8 +189,8 @@ const generateRawLevelsConstantAspect = ({
 		silhouette,
 		depthCurve,
 		depthBaseline,
-		levelPrototypes,
-		bandCount: levelPrototypes[0].vertices.length,
+		prototypeAt,
+		bandCount: prototypeAt(0).vertices.length,
 		divisionBasis
 	};
 	const narrowRegion =
@@ -212,12 +211,12 @@ const generateRawLevelsConstantAspect = ({
 
 /** A band's vertex placed at curve position `division`. */
 const meridianPointAt = (
-	{ silhouette, depthCurve, depthBaseline, levelPrototypes }: ConstantAspectContext,
+	{ silhouette, depthCurve, depthBaseline, prototypeAt }: ConstantAspectContext,
 	vertexNumber: number,
 	division: number
 ): Vector3 => {
 	const depthedLevelPrototype = getDepthedLevelPrototype(
-		levelPrototypes[vertexNumber % levelPrototypes.length],
+		prototypeAt(division),
 		depthCurve.getPointAt(division).x / depthBaseline
 	);
 	return getMeridianPoint(division, silhouette, depthedLevelPrototype.vertices[vertexNumber]);
@@ -546,13 +545,13 @@ const generateRawLevels = ({
 	silhouette,
 	depthCurve,
 	depthBaseline,
-	levelPrototypes,
+	prototypeAt,
 	sampleMethod
 }: {
 	silhouette: CurvePath<Vector2>;
 	depthCurve: CurvePath<Vector2>;
 	depthBaseline: number;
-	levelPrototypes: LevelPrototype[];
+	prototypeAt: PrototypeAt;
 	sampleMethod: CurveSampleMethod;
 }): Level[] => {
 	const fractionalDivisions: number[] = [];
@@ -587,7 +586,7 @@ const generateRawLevels = ({
 			scaleY: silhouetteValue.x * 2,
 			depth: depthValue
 		};
-		rawLevels.push(generateLevel(offset, levelPrototypes[i % levelPrototypes.length], i));
+		rawLevels.push(generateLevel(offset, prototypeAt(division), i));
 	});
 
 	return rawLevels;
@@ -638,29 +637,6 @@ const getAspectRatioOfQuad = ({
 	const width = mid2.clone().addScaledVector(mid0, -1).length();
 	const height = mid3.clone().addScaledVector(mid1, -1).length();
 	return height / width;
-};
-
-const getLevelPrototypeArray = (
-	levelCount: number,
-	levelPrototype: LevelPrototype | LevelPrototype[]
-): LevelPrototype[] => {
-	let levelPrototypeArray: LevelPrototype[] = new Array(levelCount);
-	if (Array.isArray(levelPrototype)) {
-		levelPrototypeArray.fill(levelPrototype[0]);
-		levelPrototypeArray = levelPrototypeArray.map((lp, i): LevelPrototype => {
-			return {
-				center: levelPrototype[i % levelPrototype.length].center.clone(),
-				vertices: levelPrototype[i % levelPrototype.length].vertices.map((v) => v.clone())
-			};
-		});
-	} else {
-		levelPrototypeArray.fill(levelPrototype);
-		levelPrototypeArray = levelPrototypeArray.map((lp) => ({
-			center: lp.center.clone(),
-			vertices: lp.vertices.map((v) => v.clone())
-		}));
-	}
-	return levelPrototypeArray;
 };
 
 const countLevels = (levelConfig: LevelConfig, silhouetteConfig: SilhouetteConfig) => {
