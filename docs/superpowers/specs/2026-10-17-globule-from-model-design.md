@@ -144,14 +144,16 @@ Per level:
 1. Intersect the plane with every triangle → segments. Chain segments into closed loops by
    shared endpoints (welded mesh, so endpoints match up to float tolerance).
 2. **Multiple loops** *(my call)*: keep the loop with the largest enclosed area; report in the UI
-   that other loops were dropped at that level. Open (unclosed) chains, from a non-watertight
-   mesh, are an error for that level.
+   that other loops were dropped at that level, and warn when the two largest are within 20% of
+   each other's area (the kept one may switch between levels). Open (unclosed) chains are
+   ignored with a warning when the level also has a closed loop; a level with only open chains
+   is an error.
 3. Orient the loop counter-clockwise (viewed from +Z).
-4. **Start point** *(my call)*: where the loop crosses the ray from the globule axis (origin)
-   toward +X. If it crosses more than once, take the outermost crossing. If the loop doesn't
-   surround the axis, use the loop point with the smallest angular distance to +X measured
-   from the loop's centroid. Tie-breaking is the builder's, but it must be deterministic and
-   consistent across levels.
+4. **Start point** *(my call, revised after final review)*: the outermost place the loop
+   crosses the ray from **its own area centroid** toward +X. The original rule (ray from the
+   globule axis, with a centroid fallback for loops that miss it) jumped the start ~70° when an
+   off-axis slice drifted across the axis between levels — the twist this design rules out.
+   Measuring from each loop's centroid moves the start smoothly with the loop.
 5. Resample N points at equal arc length starting at the start point.
 6. Write a `ShapeConfig`:
    - `symmetry: 'asymmetric'`, `symmetryNumber: 1`
