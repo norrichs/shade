@@ -4,6 +4,10 @@ import { chevron, rect } from './fixtures';
 import type { NestShape, Pt } from '../types';
 import type { PageLayoutResult } from '../../types';
 
+// Wall-clock budgets flake when the machine is busy (e.g. a parallel lint/check run),
+// so they only run on request: `PERF=1 yarn test:unit nest`.
+const perfIt = process.env.PERF ? it : it.skip;
+
 const geom = (over: Partial<NestGeom> = {}): NestGeom => ({
 	pageScale: 1,
 	pageWidth: 300,
@@ -303,7 +307,7 @@ describe('nestPageLayout', () => {
 		assertValid(shapes, r, g);
 	});
 
-	it('150 mixed chevrons and rects at 15° finish in under 4 s', () => {
+	perfIt('150 mixed chevrons and rects at 15° finish in under 4 s', () => {
 		const shapes = Array.from({ length: 150 }, (_, i) =>
 			i % 3 === 0 ? rect(40, 15) : i % 3 === 1 ? chevron() : rect(60, 30)
 		);
@@ -312,7 +316,7 @@ describe('nestPageLayout', () => {
 		expect(Date.now() - t0).toBeLessThan(4000);
 	}, 30_000);
 
-	it('30 chevrons at 15° finish in under 2 s', () => {
+	perfIt('30 chevrons at 15° finish in under 2 s', () => {
 		const t0 = Date.now();
 		nestPageLayout(
 			Array.from({ length: 30 }, () => chevron()),

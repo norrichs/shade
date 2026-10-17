@@ -15,29 +15,29 @@ This project is used exclusively by the developer.
 ### Core Workflow
 
 ```bash
-npm run dev              # Start dev server
-npm run check            # TypeScript + Svelte type checking
-npm run format           # Auto-format with Prettier
-npm run lint             # ESLint
-npm run build            # Production build
-npm run preview          # Preview production build
+yarn dev                   # Start dev server
+yarn run check             # TypeScript + Svelte type checking
+yarn format                # Auto-format with Prettier
+yarn lint                  # ESLint
+yarn build                 # Production build
+yarn preview               # Preview production build
 ```
 
 ### Testing
 
 ```bash
-npm run test:unit                # Jest unit tests
-npm run test:unit:watch          # Jest watch mode
-npm run test:unit:coverage       # Coverage report
-npm test                         # Playwright E2E tests
+yarn test:unit                     # Jest unit tests
+yarn test:unit:watch               # Jest watch mode
+yarn test:unit:coverage            # Coverage report
+yarn test                              # Playwright E2E tests
 ```
 
 ### Database
 
 ```bash
-npm run drizzle:generate         # Generate migration from schema
-npm run drizzle:migrate          # Apply migrations
-npm run drizzle:studio           # Open Drizzle Studio GUI
+yarn drizzle:generate              # Generate migration from schema
+yarn drizzle:migrate               # Apply migrations
+yarn drizzle:studio                # Open Drizzle Studio GUI
 ```
 
 Environment variables: `VITE_TURSO_DB_URL` and `VITE_TURSO_DB_AUTH_TOKEN` in `.env`
@@ -294,9 +294,8 @@ Applies repeating decorative patterns to flattened geometry.
 **`src/routes/`** - SvelteKit pages and API
 
 - `/designer2/+page.svelte` - **Main design interface** (orchestrates all components)
-- `/api/globuleConfig/` - Globule CRUD endpoints
-- `/api/superGlobuleConfig/` - SuperGlobule CRUD endpoints
-- `/sandbox-*/` - Isolated feature testing pages
+- `/assembler/+page.svelte` - Assembly view (linked from the nav header)
+- `/api/config/`, `/api/config/[id]` - Config CRUD endpoints (Turso)
 
 **`src/lib/workers/`** - Web Worker implementations
 
@@ -365,7 +364,7 @@ Reactive Svelte stores with complex derivation chains:
 
 - **Unit tests:** Colocated in `**/__tests__/**/*.test.ts`, use Jest
 - **E2E tests:** In `/tests/`, use Playwright against production build
-- Run single test: `npm run test:unit -- path/to/test.test.ts`
+- Run single test: `yarn test:unit path/to/test.test.ts`
 
 ## Performance
 
@@ -377,8 +376,7 @@ Reactive Svelte stores with complex derivation chains:
 ## Git Workflow
 
 - Main branch: `main`
-- Current branch: `feature/update-globule-surface`
-- Recent focus: async geometry (worker implementation), pattern invariability, color improvements, geometry calculations
+- Package manager: yarn (v1, `yarn.lock`)
 
 **Never revert or drop a commit you did not author in this session.** Several
 sessions work this branch at once, and a commit that looks out of scope for your
@@ -391,7 +389,7 @@ names.
 
 ## Debugging
 
-- Use `/sandbox-*` routes for isolated testing
+- Use the `shades-control` skill / agent bridge to drive designer2 from chat
 - Check browser console for worker errors
 - `drizzle:studio` for database inspection
 - Monitor `isWorking` and `workerError` stores for worker state
