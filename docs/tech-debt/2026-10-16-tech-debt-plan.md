@@ -1,6 +1,37 @@
 # Tech Debt Audit & Plan — 2026-10-16
 
-Branch: `worktree-tech-debt-audit` (off `main` @ 35b8638). Audit only; no code changed yet.
+Branch: `worktree-tech-debt-audit` (off `main` @ 35b8638).
+
+## Outcome — 2026-10-17: all phases done
+
+| Check                      | Before                                     | After                                                                  |
+| -------------------------- | ------------------------------------------ | ---------------------------------------------------------------------- |
+| `yarn run check`           | 353 errors, 24 warnings                    | **0 / 0**                                                              |
+| `eslint .`                 | 316 errors, 3 warnings                     | **0**                                                                  |
+| `jest`                     | 2 flaky perf failures                      | 1703 passed, 2 skipped (PERF=1), 0 failed                              |
+| outdated majors            | 13                                         | 1 (TypeScript 7 — blocked by svelte-check, typescript-eslint, ts-jest) |
+| knip                       | 64 unused exports, 72 types, 5 unused deps | **clean** (`yarn knip`)                                                |
+| smoke (dev + prod preview) | —                                          | Voronoi 60 pattern bands, worker pool, 0 console errors (same as main) |
+
+Stack now: SvelteKit 3.1 / adapter-vercel 7 / Vite 8 / vite-plugin-svelte 7 / TypeScript 6 / ESLint 10 / three 0.186 / Svelte 5.57.
+
+Decisions taken: old globule pipeline retired; `/` redirects to `/designer2`; `documentation/` → `docs/archive/`; Kit 3 included. `prepare-merge.ts` kept (header: test-only regression reference).
+
+Backup branches (state before each phase): `backup/tech-debt-p0-start` … `backup/tech-debt-p6-start`.
+
+Follow-ups found, not done (behavior changes or out of scope):
+
+- Panel patterns ignore the projection range: `generateProjectionPanelPattern` reads `range.tubes.start/end`, but the range is tuple-shaped (`generate-pattern.ts`, documented disable).
+- "Select Bands" (`band-select-multiple`) enters a mode nothing consumes and nothing exits except PageLayout's mode buttons.
+- `src/lib/relief single line source/` — 8 unreferenced SVG/Affinity source files (left for Ben).
+- dotenv 18 prints an "injected env" line when loading `.env`.
+- `src/lib/persistable.ts` uses a literal NUL byte as a key separator (grep treats it as binary).
+- `main` moved 19 commits (multi-GCS) during this work; merging conflicts in 10 files and its new `$lib` imports need `#lib`.
+- History wart: `75eeca1` holds only Phase 1's file deletions (doesn't build alone); `d74ab63` holds the rest of Phase 1.
+
+---
+
+_Original audit and plan below._
 
 ## Baseline
 
