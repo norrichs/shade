@@ -270,7 +270,7 @@
 <Editor>
 	<section>
 		<header>Globule Cross Section</header>
-		{#each listErrors as error}
+		{#each listErrors as error, ei (ei)}
 			<div class="gcs-error">{error.message}</div>
 		{/each}
 		<div class="gcs-strip">
@@ -381,7 +381,7 @@
 					<div class="gcs-readout">
 						{vertexCounts[selected] ?? 0} points / {bandCount} bands
 					</div>
-					{#each selectedErrors as error}
+					{#each selectedErrors as error, ei (ei)}
 						<div class="gcs-error">{error.message}</div>
 					{/each}
 					<LabeledControl label="Symmetry">

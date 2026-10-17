@@ -4,10 +4,10 @@ import { applyBlocks, backfillBlocked, gcsBlockedPipelines } from '../gcs-gates'
 
 const gc = (id: number) => ({ id }) as unknown as GlobuleConfig;
 const stubValidate = (g: GlobuleConfig): GcsValidation =>
-	(g as any).id < 0
+	(g as unknown as { id: number }).id < 0
 		? {
 				isValid: false,
-				errors: [{ index: 1, message: `bad ${(g as any).id}` }],
+				errors: [{ index: 1, message: `bad ${(g as unknown as { id: number }).id}` }],
 				levels: [],
 				bandCount: 0
 			}
