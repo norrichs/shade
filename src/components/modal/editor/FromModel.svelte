@@ -146,15 +146,6 @@
 			/>
 		</LabeledControl>
 
-		{#if globuleConfig?.modelSource}
-			<ImportedMeshControls
-				surface={globuleConfig.modelSource}
-				read={readModelSource}
-				write={writeModelSource}
-				showRayCenter={false}
-			/>
-		{/if}
-
 		<LabeledControl label="Bands">
 			<NumberInput
 				value={bandCount}
@@ -183,6 +174,19 @@
 		{#each $fromModelMessages.warnings as message (message)}
 			<p class="warning">{message}</p>
 		{/each}
+
+		<!-- Below the Snapshot button so the panel's essentials stay on screen. -->
+		{#if globuleConfig?.modelSource}
+			<details>
+				<summary>Fit &amp; simplify</summary>
+				<ImportedMeshControls
+					surface={globuleConfig.modelSource}
+					read={readModelSource}
+					write={writeModelSource}
+					showRayCenter={false}
+				/>
+			</details>
+		{/if}
 	</Container>
 </details>
 
