@@ -136,7 +136,10 @@ const buildPatternSvg = ({ interactive }: { interactive: boolean }): FakeElement
 		);
 	}
 	const band = new FakeElement('g', ['band']).append(
-		new FakeElement('path', ['band-outline'], { d: 'M0 0 L10 0', 'data-geometry': 'pattern-outline' }),
+		new FakeElement('path', ['band-outline'], {
+			d: 'M0 0 L10 0',
+			'data-geometry': 'pattern-outline'
+		}),
 		new FakeElement('g', ['svg-pattern-quad']).append(new FakeElement('path', [], { d: 'M0 0' })),
 		// The assembler cross-view highlight: a filled rect over the whole band.
 		new FakeElement('rect', ['screen-only'], { fill: 'rgb(255,0,0)', width: '10' }),

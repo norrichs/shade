@@ -55,11 +55,13 @@
 ### Task 1: Raster primitives
 
 **Files:**
+
 - Create: `src/lib/cut-pattern/page-layout/nest/types.ts`
 - Create: `src/lib/cut-pattern/page-layout/nest/raster.ts`
 - Test: `src/lib/cut-pattern/page-layout/nest/__tests__/raster.test.ts`
 
 **Interfaces:**
+
 - Produces:
   - `type Pt = { x: number; y: number }`
   - `type Span = [number, number]` — half-open `[x0, x1)` in cells
@@ -116,7 +118,13 @@ describe('convexHull', () => {
 	});
 	it('handles collinear and single points', () => {
 		expect(convexHull([{ x: 1, y: 1 }])).toHaveLength(1);
-		expect(convexHull([{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 2, y: 0 }]).length).toBeLessThanOrEqual(2);
+		expect(
+			convexHull([
+				{ x: 0, y: 0 },
+				{ x: 1, y: 0 },
+				{ x: 2, y: 0 }
+			]).length
+		).toBeLessThanOrEqual(2);
 	});
 });
 
@@ -143,7 +151,9 @@ describe('rasterizeConvex', () => {
 		expect(r.w).toBe(10);
 		expect(r.ox).toBe(0);
 		expect(r.oy).toBe(0);
-		expect(r.rows.every((row) => row.length === 1 && row[0][0] === 0 && row[0][1] === 10)).toBe(true);
+		expect(r.rows.every((row) => row.length === 1 && row[0][0] === 0 && row[0][1] === 10)).toBe(
+			true
+		);
 		expect(r.area).toBe(100);
 	});
 	it('is conservative: an unaligned square covers every cell it touches', () => {
@@ -231,13 +241,15 @@ export const convexHull = (pts: Pt[]): Pt[] => {
 	const cross = (o: Pt, a: Pt, b: Pt) => (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
 	const lower: Pt[] = [];
 	for (const q of p) {
-		while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], q) <= EPS) lower.pop();
+		while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], q) <= EPS)
+			lower.pop();
 		lower.push(q);
 	}
 	const upper: Pt[] = [];
 	for (let i = p.length - 1; i >= 0; i--) {
 		const q = p[i];
-		while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], q) <= EPS) upper.pop();
+		while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], q) <= EPS)
+			upper.pop();
 		upper.push(q);
 	}
 	return lower.slice(0, -1).concat(upper.slice(0, -1));
@@ -299,25 +311,38 @@ export const mergeSpans = (spans: Span[]): Span[] => {
 	return out;
 };
 
-const areaOf = (rows: Span[][]) => rows.reduce((n, row) => n + row.reduce((m, [a, b]) => m + b - a, 0), 0);
+const areaOf = (rows: Span[][]) =>
+	rows.reduce((n, row) => n + row.reduce((m, [a, b]) => m + b - a, 0), 0);
 
 /** Conservative scan conversion: a cell is set if any polygon touches it. */
 export const rasterizeConvex = (polys: Pt[][], cell: number): Raster => {
-	const valid = polys.filter((p) => p.length > 0 && p.every((q) => Number.isFinite(q.x) && Number.isFinite(q.y)));
+	const valid = polys.filter(
+		(p) => p.length > 0 && p.every((q) => Number.isFinite(q.x) && Number.isFinite(q.y))
+	);
 	if (valid.length === 0) return { w: 0, h: 0, rows: [], ox: 0, oy: 0, area: 0 };
-	let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-	for (const p of valid) for (const q of p) {
-		minX = Math.min(minX, q.x); maxX = Math.max(maxX, q.x);
-		minY = Math.min(minY, q.y); maxY = Math.max(maxY, q.y);
-	}
+	let minX = Infinity,
+		minY = Infinity,
+		maxX = -Infinity,
+		maxY = -Infinity;
+	for (const p of valid)
+		for (const q of p) {
+			minX = Math.min(minX, q.x);
+			maxX = Math.max(maxX, q.x);
+			minY = Math.min(minY, q.y);
+			maxY = Math.max(maxY, q.y);
+		}
 	const ox = Math.floor(minX / cell);
 	const oy = Math.floor(minY / cell);
 	const w = Math.max(1, Math.ceil(maxX / cell) - ox);
 	const h = Math.max(1, Math.ceil(maxY / cell) - oy);
 	const rows: Span[][] = Array.from({ length: h }, () => []);
 	for (const p of valid) {
-		let pMinY = Infinity, pMaxY = -Infinity;
-		for (const q of p) { pMinY = Math.min(pMinY, q.y); pMaxY = Math.max(pMaxY, q.y); }
+		let pMinY = Infinity,
+			pMaxY = -Infinity;
+		for (const q of p) {
+			pMinY = Math.min(pMinY, q.y);
+			pMaxY = Math.max(pMaxY, q.y);
+		}
 		const r0 = Math.max(0, Math.floor(pMinY / cell) - oy);
 		const r1 = Math.min(h - 1, Math.max(r0, Math.ceil(pMaxY / cell) - oy - 1));
 		for (let r = r0; r <= r1; r++) {
@@ -339,7 +364,9 @@ export const dilateRaster = (r: Raster, k: number): Raster => {
 	if (k <= 0) return r;
 	const h = r.h + 2 * k;
 	const rows: Span[][] = Array.from({ length: h }, () => []);
-	const half = Array.from({ length: 2 * k + 1 }, (_, i) => Math.floor(Math.sqrt(k * k - (i - k) * (i - k))));
+	const half = Array.from({ length: 2 * k + 1 }, (_, i) =>
+		Math.floor(Math.sqrt(k * k - (i - k) * (i - k)))
+	);
 	r.rows.forEach((row, y) => {
 		for (const [a, b] of row) {
 			for (let dy = -k; dy <= k; dy++) {
@@ -348,7 +375,14 @@ export const dilateRaster = (r: Raster, k: number): Raster => {
 			}
 		}
 	});
-	return { w: r.w + 2 * k, h, rows: rows.map(mergeSpans), ox: r.ox - k, oy: r.oy - k, area: r.area };
+	return {
+		w: r.w + 2 * k,
+		h,
+		rows: rows.map(mergeSpans),
+		ox: r.ox - k,
+		oy: r.oy - k,
+		area: r.area
+	};
 };
 
 /** Coarse raster for placement at fine x/y that are multiples of c. */
@@ -386,11 +420,13 @@ git commit -m "feat(page-layout): raster primitives for shape-aware nesting"
 ### Task 2: NestShape from a band
 
 **Files:**
+
 - Modify: `src/lib/cut-pattern/label-footprint.ts` (extract `selfTagFootprintBox`)
 - Create: `src/lib/cut-pattern/page-layout/nest/nest-shape.ts`
 - Test: `src/lib/cut-pattern/page-layout/nest/__tests__/nest-shape.test.ts`
 
 **Interfaces:**
+
 - Consumes: `convexHull`, `inflateConvex` (Task 1); `flattenPath` from `src/lib/cut-pattern/path-contours.ts`; `EffectiveBoundsContext` from `src/lib/cut-pattern/band-layout.ts`; `buildSelfTagLines`.
 - Produces:
   - `selfTagFootprintBox(input: EffectiveBandBoundsInput): BoundingBox | undefined` in `label-footprint.ts` — the label box alone (undefined when the self-tag is off or the band has no anchor). `effectiveBandBounds` becomes `extent ∪ selfTagFootprintBox(...)` with unchanged results.
@@ -442,7 +478,14 @@ const quadFacet = (x: number, y: number, s: number, strokeWidth = 0) => ({
 });
 
 const band = (facets: unknown[], extra: Partial<BandCutPattern> = {}) =>
-	({ id: 'b', facets, address: { globule: 0, tube: 0, band: 0 }, projectionType: 'patterned', tagAnchorPoint: undefined, ...extra }) as unknown as BandCutPattern;
+	({
+		id: 'b',
+		facets,
+		address: { globule: 0, tube: 0, band: 0 },
+		projectionType: 'patterned',
+		tagAnchorPoint: undefined,
+		...extra
+	}) as unknown as BandCutPattern;
 
 const ctx: EffectiveBoundsContext = {
 	labels: undefined,
@@ -453,7 +496,10 @@ const ctx: EffectiveBoundsContext = {
 
 describe('buildNestShape', () => {
 	it('one convex polygon per facet, carrying the pivot', () => {
-		const s = buildNestShape(band([quadFacet(0, 0, 10), quadFacet(10, 0, 10)]), ctx, { x: 10, y: 5 });
+		const s = buildNestShape(band([quadFacet(0, 0, 10), quadFacet(10, 0, 10)]), ctx, {
+			x: 10,
+			y: 5
+		});
 		expect(s.polygons).toHaveLength(2);
 		expect(s.pivot).toEqual({ x: 10, y: 5 });
 	});
@@ -463,7 +509,17 @@ describe('buildNestShape', () => {
 	});
 	it('skips facets with empty or non-finite paths', () => {
 		const s = buildNestShape(
-			band([quadFacet(0, 0, 10), { path: [], label: '' }, { path: [['M', NaN, NaN], ['L', NaN, 0]], label: '' }]),
+			band([
+				quadFacet(0, 0, 10),
+				{ path: [], label: '' },
+				{
+					path: [
+						['M', NaN, NaN],
+						['L', NaN, 0]
+					],
+					label: ''
+				}
+			]),
 			ctx,
 			{ x: 0, y: 0 }
 		);
@@ -472,7 +528,11 @@ describe('buildNestShape', () => {
 	});
 	it('adds the self-tag footprint as a polygon when the tag is shown', () => {
 		const labelled = { ...ctx, labels: { selfTag: { enabled: true } } as never };
-		const s = buildNestShape(band([quadFacet(0, 0, 10)], { tagAnchorPoint: { x: 5, y: 10 } }), labelled, { x: 0, y: 0 });
+		const s = buildNestShape(
+			band([quadFacet(0, 0, 10)], { tagAnchorPoint: { x: 5, y: 10 } }),
+			labelled,
+			{ x: 0, y: 0 }
+		);
 		expect(s.polygons).toHaveLength(2);
 	});
 });
@@ -498,7 +558,11 @@ import type { NestShape, Pt } from './types';
  * stroke, plus the external self-tag box when it is shown. Convex parts keep
  * rasterisation simple and are close to exact for quad facets.
  */
-export const buildNestShape = (band: BandCutPattern, ctx: EffectiveBoundsContext, pivot: Point): NestShape => {
+export const buildNestShape = (
+	band: BandCutPattern,
+	ctx: EffectiveBoundsContext,
+	pivot: Point
+): NestShape => {
 	const polygons: Pt[][] = [];
 	for (const facet of band.facets ?? []) {
 		if (!facet.path?.length) continue;
@@ -520,7 +584,12 @@ export const buildNestShape = (band: BandCutPattern, ctx: EffectiveBoundsContext
 	});
 	if (tag) {
 		const { left: l, top: t, width: w, height: h } = tag;
-		polygons.push([{ x: l, y: t }, { x: l + w, y: t }, { x: l + w, y: t + h }, { x: l, y: t + h }]);
+		polygons.push([
+			{ x: l, y: t },
+			{ x: l + w, y: t },
+			{ x: l + w, y: t + h },
+			{ x: l, y: t + h }
+		]);
 	}
 	return { polygons, pivot: { x: pivot.x, y: pivot.y } };
 };
@@ -542,12 +611,14 @@ git commit -m "feat(page-layout): build per-band nest shapes from facet hulls an
 ### Task 3: `nestPageLayout` placement
 
 **Files:**
+
 - Modify: `src/lib/cut-pattern/page-layout/types.ts` (add `utilisation?: number[]` to `PageLayoutResult`)
 - Create: `src/lib/cut-pattern/page-layout/nest/nest.ts`
 - Test: `src/lib/cut-pattern/page-layout/nest/__tests__/nest.test.ts`
 - Test fixture helper: `src/lib/cut-pattern/page-layout/nest/__tests__/fixtures.ts`
 
 **Interfaces:**
+
 - Consumes: Task 1 primitives, `NestShape`; `PageGeom`, `PageLayoutResult`, `PageRect` from `../types`; `skylinePageLayout` (tests only).
 - Produces:
   - `type NestGeom = PageGeom & { rotationStep: number; cellMm: number }`
@@ -594,7 +665,10 @@ export const stripShape = (spine: Pt[], hw: number): NestShape => {
 	const ys = polygons.flat().map((p) => p.y);
 	return {
 		polygons,
-		pivot: { x: (Math.min(...xs) + Math.max(...xs)) / 2, y: (Math.min(...ys) + Math.max(...ys)) / 2 }
+		pivot: {
+			x: (Math.min(...xs) + Math.max(...xs)) / 2,
+			y: (Math.min(...ys) + Math.max(...ys)) / 2
+		}
 	};
 };
 
@@ -604,14 +678,23 @@ export const chevron = (hw = 8): NestShape => {
 	const half = (50 * Math.PI) / 180;
 	const apex = { x: 0, y: arm * Math.sin(half) };
 	const spine: Pt[] = [];
-	for (let t = 0; t <= 1.0001; t += 0.1) spine.push({ x: apex.x + t * arm * Math.cos(half), y: apex.y - t * arm * Math.sin(half) });
+	for (let t = 0; t <= 1.0001; t += 0.1)
+		spine.push({ x: apex.x + t * arm * Math.cos(half), y: apex.y - t * arm * Math.sin(half) });
 	spine.reverse();
-	for (let t = 0.1; t <= 1.0001; t += 0.1) spine.push({ x: apex.x + t * arm * Math.cos(half), y: apex.y + t * arm * Math.sin(half) });
+	for (let t = 0.1; t <= 1.0001; t += 0.1)
+		spine.push({ x: apex.x + t * arm * Math.cos(half), y: apex.y + t * arm * Math.sin(half) });
 	return stripShape(spine, hw);
 };
 
 export const rect = (w: number, h: number): NestShape => ({
-	polygons: [[{ x: 0, y: 0 }, { x: w, y: 0 }, { x: w, y: h }, { x: 0, y: h }]],
+	polygons: [
+		[
+			{ x: 0, y: 0 },
+			{ x: w, y: 0 },
+			{ x: w, y: h },
+			{ x: 0, y: h }
+		]
+	],
 	pivot: { x: w / 2, y: h / 2 }
 });
 ```
@@ -658,24 +741,34 @@ const placed = (s: NestShape, r: PageLayoutResult, i: number): Pt[][] => {
 
 // Exact distance between convex polygons (0 if they intersect).
 const segDist = (p: Pt, a: Pt, b: Pt) => {
-	const vx = b.x - a.x, vy = b.y - a.y;
+	const vx = b.x - a.x,
+		vy = b.y - a.y;
 	const L = vx * vx + vy * vy;
 	const t = L ? Math.max(0, Math.min(1, ((p.x - a.x) * vx + (p.y - a.y) * vy) / L)) : 0;
 	return Math.hypot(p.x - a.x - t * vx, p.y - a.y - t * vy);
 };
 const overlaps = (A: Pt[], B: Pt[]) => {
-	for (const P of [A, B]) for (let i = 0; i < P.length; i++) {
-		const a = P[i], b = P[(i + 1) % P.length];
-		const nx = -(b.y - a.y), ny = b.x - a.x;
-		const pa = A.map((q) => q.x * nx + q.y * ny), pb = B.map((q) => q.x * nx + q.y * ny);
-		if (Math.max(...pa) < Math.min(...pb) || Math.max(...pb) < Math.min(...pa)) return false;
-	}
+	for (const P of [A, B])
+		for (let i = 0; i < P.length; i++) {
+			const a = P[i],
+				b = P[(i + 1) % P.length];
+			const nx = -(b.y - a.y),
+				ny = b.x - a.x;
+			const pa = A.map((q) => q.x * nx + q.y * ny),
+				pb = B.map((q) => q.x * nx + q.y * ny);
+			if (Math.max(...pa) < Math.min(...pb) || Math.max(...pb) < Math.min(...pa)) return false;
+		}
 	return true;
 };
 const polyDist = (A: Pt[], B: Pt[]) => {
 	if (overlaps(A, B)) return 0;
 	let d = Infinity;
-	for (const [P, Q] of [[A, B], [B, A]]) for (const p of P) for (let i = 0; i < Q.length; i++) d = Math.min(d, segDist(p, Q[i], Q[(i + 1) % Q.length]));
+	for (const [P, Q] of [
+		[A, B],
+		[B, A]
+	])
+		for (const p of P)
+			for (let i = 0; i < Q.length; i++) d = Math.min(d, segDist(p, Q[i], Q[(i + 1) % Q.length]));
 	return d;
 };
 
@@ -683,7 +776,9 @@ const assertValid = (shapes: NestShape[], r: PageLayoutResult, g: NestGeom) => {
 	const all = shapes.map((s, i) => placed(s, r, i));
 	const cell = 1;
 	shapes.forEach((_, i) => {
-		const page = r.pages.findIndex((pg) => all[i].flat().every((p) => p.y >= pg.y - cell && p.y <= pg.y + pg.height + cell));
+		const page = r.pages.findIndex((pg) =>
+			all[i].flat().every((p) => p.y >= pg.y - cell && p.y <= pg.y + pg.height + cell)
+		);
 		expect(page).toBeGreaterThanOrEqual(0);
 		const pg = r.pages[page];
 		for (const p of all[i].flat()) {
@@ -695,10 +790,12 @@ const assertValid = (shapes: NestShape[], r: PageLayoutResult, g: NestGeom) => {
 	});
 	for (let i = 0; i < all.length; i++)
 		for (let j = i + 1; j < all.length; j++)
-			for (const A of all[i]) for (const B of all[j]) expect(polyDist(A, B)).toBeGreaterThanOrEqual(g.gap - 1e-6);
+			for (const A of all[i])
+				for (const B of all[j]) expect(polyDist(A, B)).toBeGreaterThanOrEqual(g.gap - 1e-6);
 };
 
-const perPage = (r: PageLayoutResult) => r.origins.filter((o) => o.y < r.pages[0].y + r.pages[0].height).length;
+const perPage = (r: PageLayoutResult) =>
+	r.origins.filter((o) => o.y < r.pages[0].y + r.pages[0].height).length;
 
 describe('nestPageLayout', () => {
 	it('zero shapes → one empty page', () => {
@@ -729,9 +826,15 @@ describe('nestPageLayout', () => {
 	});
 
 	it('only uses multiples of the rotation step', () => {
-		const r = nestPageLayout(Array.from({ length: 8 }, () => chevron()), geom({ rotationStep: 25 }));
+		const r = nestPageLayout(
+			Array.from({ length: 8 }, () => chevron()),
+			geom({ rotationStep: 25 })
+		);
 		for (const a of r.rotations) expect(a % 25).toBe(0);
-		const r0 = nestPageLayout(Array.from({ length: 4 }, () => chevron()), geom({ rotationStep: 0 }));
+		const r0 = nestPageLayout(
+			Array.from({ length: 4 }, () => chevron()),
+			geom({ rotationStep: 0 })
+		);
 		expect(r0.rotations.every((a) => a === 0)).toBe(true);
 	});
 
@@ -742,8 +845,17 @@ describe('nestPageLayout', () => {
 		const nest = nestPageLayout(shapes, g);
 		const xs = shapes[0].polygons.flat().map((p) => p.x);
 		const ys = shapes[0].polygons.flat().map((p) => p.y);
-		const box = { width: Math.max(...xs) - Math.min(...xs), height: Math.max(...ys) - Math.min(...ys), left: Math.min(...xs), top: Math.min(...ys), alignedYOffset: 0 };
-		const sky = skylinePageLayout(Array.from({ length: n }, () => box), { ...g, allowRotation: true });
+		const box = {
+			width: Math.max(...xs) - Math.min(...xs),
+			height: Math.max(...ys) - Math.min(...ys),
+			left: Math.min(...xs),
+			top: Math.min(...ys),
+			alignedYOffset: 0
+		};
+		const sky = skylinePageLayout(
+			Array.from({ length: n }, () => box),
+			{ ...g, allowRotation: true }
+		);
 		expect(perPage(nest)).toBeGreaterThanOrEqual(Math.ceil(1.5 * perPage(sky)));
 	});
 
@@ -764,7 +876,10 @@ describe('nestPageLayout', () => {
 	});
 
 	it('spills to a second page when the first is full', () => {
-		const r = nestPageLayout(Array.from({ length: 6 }, () => rect(140, 140)), geom({ rotationStep: 0 }));
+		const r = nestPageLayout(
+			Array.from({ length: 6 }, () => rect(140, 140)),
+			geom({ rotationStep: 0 })
+		);
 		expect(r.pages.length).toBeGreaterThanOrEqual(2);
 		expect(r.utilisation!.length).toBe(r.pages.length);
 	});
@@ -776,7 +891,10 @@ describe('nestPageLayout', () => {
 
 	it('30 chevrons at 15° finish in under 2 s', () => {
 		const t0 = Date.now();
-		nestPageLayout(Array.from({ length: 30 }, () => chevron()), geom());
+		nestPageLayout(
+			Array.from({ length: 30 }, () => chevron()),
+			geom()
+		);
 		expect(Date.now() - t0).toBeLessThan(2000);
 	});
 });
@@ -806,7 +924,10 @@ export const nestCellSize = (g: NestGeom): number =>
 class Grid {
 	occ: Uint8Array;
 	pre: Int32Array;
-	constructor(readonly W: number, readonly H: number) {
+	constructor(
+		readonly W: number,
+		readonly H: number
+	) {
 		this.occ = new Uint8Array(W * H);
 		this.pre = new Int32Array(H * (W + 1));
 	}
@@ -817,7 +938,8 @@ class Grid {
 			const row = r.rows[i];
 			if (row.length === 0) continue;
 			const base = (gy + i) * S;
-			for (const [a, b] of row) if (this.pre[base + gx + b] - this.pre[base + gx + a] !== 0) return false;
+			for (const [a, b] of row)
+				if (this.pre[base + gx + b] - this.pre[base + gx + a] !== 0) return false;
 		}
 		return true;
 	}
@@ -877,6 +999,7 @@ git commit -m "feat(page-layout): raster bottom-left-fill nest layout with rotat
 ### Task 4: Config, validator, geom builder
 
 **Files:**
+
 - Modify: `src/lib/types.ts:239-249` (`PageLayoutConfig`)
 - Modify: `src/lib/shades-config.ts:590-600`
 - Modify: `src/lib/validators.ts:83-102`
@@ -884,6 +1007,7 @@ git commit -m "feat(page-layout): raster bottom-left-fill nest layout with rotat
 - Test: `src/lib/cut-pattern/page-layout/__tests__/registry.test.ts` (create), and the existing validators test file if there is one (`grep -rl "reorderWindow" src/lib/__tests__ src/lib/**/__tests__`)
 
 **Interfaces:**
+
 - Consumes: `NestGeom`, `NEST_CELL_MM` (Task 3).
 - Produces:
   - `PageLayoutConfig.algorithm: 'flex-wrap' | 'skyline' | 'nest'`, `PageLayoutConfig.rotationStep: number`
@@ -899,7 +1023,11 @@ import { defaultPatternConfig } from '$lib/shades-config';
 
 describe('buildNestGeom', () => {
 	it('extends the page geom with rotationStep and cellMm', () => {
-		const cfg = { ...defaultPatternConfig().pageLayout, algorithm: 'nest' as const, rotationStep: 30 };
+		const cfg = {
+			...defaultPatternConfig().pageLayout,
+			algorithm: 'nest' as const,
+			rotationStep: 30
+		};
 		const g = buildNestGeom(cfg);
 		expect(g).toMatchObject(buildPageGeom(cfg));
 		expect(g.rotationStep).toBe(30);
@@ -928,7 +1056,7 @@ export const buildNestGeom = (cfg: PageLayoutConfig): NestGeom => ({
 });
 ```
 
-  - Fix every TypeScript error from the widened union: `npm run check` and grep `pageLayoutCfg.algorithm` / `PAGE_LAYOUT_ALGORITHMS[`. In `CutPatternRenderer.svelte`, the existing `PAGE_LAYOUT_ALGORITHMS[pageLayoutCfg.algorithm]` call must not receive `'nest'` — temporarily route `'nest'` to `skylinePageLayout` with `allowRotation: true` (Task 6 replaces this with the worker). Also update any other `PageLayoutConfig` literal (tests, fixtures, `sandbox-*` routes) that now lacks `rotationStep`.
+- Fix every TypeScript error from the widened union: `npm run check` and grep `pageLayoutCfg.algorithm` / `PAGE_LAYOUT_ALGORITHMS[`. In `CutPatternRenderer.svelte`, the existing `PAGE_LAYOUT_ALGORITHMS[pageLayoutCfg.algorithm]` call must not receive `'nest'` — temporarily route `'nest'` to `skylinePageLayout` with `allowRotation: true` (Task 6 replaces this with the worker). Also update any other `PageLayoutConfig` literal (tests, fixtures, `sandbox-*` routes) that now lacks `rotationStep`.
 - [ ] **Step 4: `npm run test:unit` (whole suite) and `npm run check` — both pass (check may have pre-existing warnings; no new errors).**
 - [ ] **Step 5: Commit**
 
@@ -942,6 +1070,7 @@ git commit -m "feat(page-layout): nest algorithm config, rotationStep default an
 ### Task 5: Worker and client
 
 **Files:**
+
 - Create: `src/lib/workers/nest-layout-worker-core.ts`
 - Create: `src/lib/workers/nest-layout.worker.ts`
 - Create: `src/lib/workers/nest-layout-worker-factory.ts`
@@ -949,6 +1078,7 @@ git commit -m "feat(page-layout): nest algorithm config, rotationStep default an
 - Test: `src/lib/workers/__tests__/nest-layout-worker-core.test.ts`, `src/lib/cut-pattern/page-layout/nest/__tests__/nest-client.test.ts`
 
 **Interfaces:**
+
 - Consumes: `nestPageLayout`, `NestGeom`, `NestShape`.
 - Produces:
   - `type NestRequest = { requestId: number; shapes: NestShape[]; geom: NestGeom }`
@@ -964,8 +1094,31 @@ git commit -m "feat(page-layout): nest algorithm config, rotationStep default an
 ```ts
 // nest-layout-worker-core.test.ts
 import { runNestRequest } from '../nest-layout-worker-core';
-const geom = { pageScale: 1, pageWidth: 100, pageHeight: 100, contentWidth: 100, contentHeight: 100, marginPx: 0, pageGap: 10, gap: 0, reorderWindow: 1, allowRotation: false, rotationStep: 0, cellMm: 1 };
-const sq = { polygons: [[{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 10, y: 10 }, { x: 0, y: 10 }]], pivot: { x: 5, y: 5 } };
+const geom = {
+	pageScale: 1,
+	pageWidth: 100,
+	pageHeight: 100,
+	contentWidth: 100,
+	contentHeight: 100,
+	marginPx: 0,
+	pageGap: 10,
+	gap: 0,
+	reorderWindow: 1,
+	allowRotation: false,
+	rotationStep: 0,
+	cellMm: 1
+};
+const sq = {
+	polygons: [
+		[
+			{ x: 0, y: 0 },
+			{ x: 10, y: 0 },
+			{ x: 10, y: 10 },
+			{ x: 0, y: 10 }
+		]
+	],
+	pivot: { x: 5, y: 5 }
+};
 it('echoes requestId and returns plain-object origins', () => {
 	const r = runNestRequest({ requestId: 7, shapes: [sq], geom });
 	expect(r.requestId).toBe(7);
@@ -992,8 +1145,31 @@ const fakeWorker = (): NestWorkerLike => {
 	};
 	return w;
 };
-const geom = { pageScale: 1, pageWidth: 100, pageHeight: 100, contentWidth: 100, contentHeight: 100, marginPx: 0, pageGap: 10, gap: 0, reorderWindow: 1, allowRotation: false, rotationStep: 0, cellMm: 1 };
-const sq = { polygons: [[{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 10, y: 10 }, { x: 0, y: 10 }]], pivot: { x: 5, y: 5 } };
+const geom = {
+	pageScale: 1,
+	pageWidth: 100,
+	pageHeight: 100,
+	contentWidth: 100,
+	contentHeight: 100,
+	marginPx: 0,
+	pageGap: 10,
+	gap: 0,
+	reorderWindow: 1,
+	allowRotation: false,
+	rotationStep: 0,
+	cellMm: 1
+};
+const sq = {
+	polygons: [
+		[
+			{ x: 0, y: 0 },
+			{ x: 10, y: 0 },
+			{ x: 10, y: 10 },
+			{ x: 0, y: 10 }
+		]
+	],
+	pivot: { x: 5, y: 5 }
+};
 
 it('resolves with Vector3 origins', async () => {
 	const c = createNestClient(async () => fakeWorker());
@@ -1063,7 +1239,9 @@ self.onmessage = (e: MessageEvent<NestRequest>) => {
 ```ts
 import type { NestWorkerLike } from '$lib/cut-pattern/page-layout/nest/nest-client';
 export const createNestLayoutWorker = (): NestWorkerLike =>
-	new Worker(new URL('./nest-layout.worker.ts', import.meta.url), { type: 'module' }) as unknown as NestWorkerLike;
+	new Worker(new URL('./nest-layout.worker.ts', import.meta.url), {
+		type: 'module'
+	}) as unknown as NestWorkerLike;
 ```
 
 `nest-client.ts`:
@@ -1150,12 +1328,14 @@ git commit -m "feat(page-layout): nest layout worker and superseding client"
 ### Task 6: Renderer wiring and editor UI
 
 **Files:**
+
 - Modify: `src/lib/stores/pageLayoutInfoStore.ts`
 - Modify: `src/components/cut-pattern/CutPatternRenderer.svelte`
 - Modify: `src/components/modal/editor/PageLayout.svelte` (algorithm select ~line 320; skyline-only block ~326-345)
 - Test: `src/lib/cut-pattern/page-layout/nest/__tests__/nest-shape.test.ts` (no new unit test for the Svelte wiring; verified in Task 7)
 
 **Interfaces:**
+
 - Consumes: `buildNestShape` (Task 2), `buildNestGeom` (Task 4), `nestClient` (Task 5), `skylinePageLayout`.
 - Produces: `pageLayoutInfoStore` value `{ pageCount: number; overflow: boolean; utilisation?: number[]; nestPending?: boolean }`.
 
@@ -1167,7 +1347,11 @@ git commit -m "feat(page-layout): nest layout worker and superseding client"
 import { buildNestShape } from '$lib/cut-pattern/page-layout/nest/nest-shape';
 import { nestClient } from '$lib/cut-pattern/page-layout/nest/nest-client';
 import { skylinePageLayout } from '$lib/cut-pattern/page-layout/skyline';
-import { buildNestGeom, buildPageGeom, PAGE_LAYOUT_ALGORITHMS } from '$lib/cut-pattern/page-layout/registry';
+import {
+	buildNestGeom,
+	buildPageGeom,
+	PAGE_LAYOUT_ALGORITHMS
+} from '$lib/cut-pattern/page-layout/registry';
 
 let isNest = $derived(layoutMode === 'page' && pageLayoutCfg?.algorithm === 'nest');
 
@@ -1178,10 +1362,14 @@ let nestShapes = $derived.by(() => {
 	const ctx = boundsContext();
 	return pageBands.map(({ band }) => buildNestShape(band, ctx, pivots.get(band) ?? { x: 0, y: 0 }));
 });
-let nestGeom = $derived(isNest && pageLayoutCfg ? { ...buildNestGeom(pageLayoutCfg), gap } : undefined);
+let nestGeom = $derived(
+	isNest && pageLayoutCfg ? { ...buildNestGeom(pageLayoutCfg), gap } : undefined
+);
 
 // $state.raw: the result holds Vector3s; a deep proxy loops (see memory note).
-let nestResult = $state.raw<{ shapes: unknown; geom: unknown; result: PageLayoutResult } | undefined>();
+let nestResult = $state.raw<
+	{ shapes: unknown; geom: unknown; result: PageLayoutResult } | undefined
+>();
 let nestPending = $state(false);
 
 $effect(() => {
@@ -1207,7 +1395,8 @@ let pageResult = $derived.by((): PageLayoutResult | undefined => {
 	if (pageLayoutCfg.algorithm === 'nest') {
 		// Latest worker result for the CURRENT inputs; until it lands, skyline
 		// with rotation so the page never blanks.
-		if (nestResult && nestResult.shapes === nestShapes && nestResult.geom === nestGeom) return nestResult.result;
+		if (nestResult && nestResult.shapes === nestShapes && nestResult.geom === nestGeom)
+			return nestResult.result;
 		return skylinePageLayout(items, { ...geom, allowRotation: true });
 	}
 	return PAGE_LAYOUT_ALGORITHMS[pageLayoutCfg.algorithm](items, geom);
@@ -1226,9 +1415,10 @@ pageLayoutInfoStore.set({ pageCount, overflow, utilisation, nestPending });
 Read `nestPending` inside that effect so it is tracked. In `splitBudget`, replace the `allowRotation` expression:
 
 ```ts
-allowRotation:
-	(pageLayoutCfg.algorithm === 'skyline' && !!pageLayoutCfg.allowRotation) ||
-	(pageLayoutCfg.algorithm === 'nest' && pageLayoutCfg.rotationStep > 0 && 90 % pageLayoutCfg.rotationStep === 0)
+allowRotation: (pageLayoutCfg.algorithm === 'skyline' && !!pageLayoutCfg.allowRotation) ||
+	(pageLayoutCfg.algorithm === 'nest' &&
+		pageLayoutCfg.rotationStep > 0 &&
+		90 % pageLayoutCfg.rotationStep === 0);
 ```
 
 and update the comment above it.
@@ -1253,7 +1443,9 @@ Make sure `pageResult.rotations[i]` (any angle) already flows to `BandComponent`
 		{#if $pageLayoutInfoStore.nestPending}
 			Nesting…
 		{:else if $pageLayoutInfoStore.utilisation?.length}
-			Material used: {$pageLayoutInfoStore.utilisation.map((u) => `${Math.round(u * 100)}%`).join(' · ')}
+			Material used: {$pageLayoutInfoStore.utilisation
+				.map((u) => `${Math.round(u * 100)}%`)
+				.join(' · ')}
 		{/if}
 	</div>
 {/if}
@@ -1274,10 +1466,12 @@ git commit -m "feat(page-layout): wire nest algorithm through worker into render
 ### Task 7: Arbitrary-angle downstream check and in-app verification
 
 **Files:**
+
 - Test: `src/lib/cut-pattern/page-post-process/__tests__/place-bands.test.ts` (create, or extend the existing test file for `placeBand` — `ls src/lib/cut-pattern/page-post-process/__tests__`)
 - Temporary: `.verify-nest.mjs` at the worktree root (deleted before commit)
 
 **Interfaces:**
+
 - Consumes: `toPageSpace`, `placeBand`, `rotateDirection` from `place-bands.ts`.
 
 - [ ] **Step 1: Failing/confirming test at 45°**
@@ -1311,7 +1505,7 @@ If the existing test file has a `placeBand` fixture, add one case with `rotation
   3. switches algorithm to `nest`, waits until "Nesting…" disappears and "Material used" appears; records page count and the utilisation text;
   4. asserts nest pages ≤ skyline pages, and that no console errors mentioning `nest` or `effect_update_depth_exceeded` occurred;
   5. screenshots the first page region (copy the pattern SVG's children into a small standalone SVG with a tight viewBox, as the memory note describes) to `$CLAUDE_JOB_DIR/tmp/nest-page1.png` (or `/tmp` in a subagent) for the final report.
-  Run it with `node .verify-nest.mjs`. Report both page counts and utilisation. Delete the script; stop the dev server.
+     Run it with `node .verify-nest.mjs`. Report both page counts and utilisation. Delete the script; stop the dev server.
 
 - [ ] **Step 4: Commit** (tests and any fixes only — not the verify script)
 

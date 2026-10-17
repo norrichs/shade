@@ -307,14 +307,18 @@ describe('nestPageLayout', () => {
 		assertValid(shapes, r, g);
 	});
 
-	perfIt('150 mixed chevrons and rects at 15° finish in under 4 s', () => {
-		const shapes = Array.from({ length: 150 }, (_, i) =>
-			i % 3 === 0 ? rect(40, 15) : i % 3 === 1 ? chevron() : rect(60, 30)
-		);
-		const t0 = Date.now();
-		nestPageLayout(shapes, geom());
-		expect(Date.now() - t0).toBeLessThan(4000);
-	}, 30_000);
+	perfIt(
+		'150 mixed chevrons and rects at 15° finish in under 4 s',
+		() => {
+			const shapes = Array.from({ length: 150 }, (_, i) =>
+				i % 3 === 0 ? rect(40, 15) : i % 3 === 1 ? chevron() : rect(60, 30)
+			);
+			const t0 = Date.now();
+			nestPageLayout(shapes, geom());
+			expect(Date.now() - t0).toBeLessThan(4000);
+		},
+		30_000
+	);
 
 	perfIt('30 chevrons at 15° finish in under 2 s', () => {
 		const t0 = Date.now();

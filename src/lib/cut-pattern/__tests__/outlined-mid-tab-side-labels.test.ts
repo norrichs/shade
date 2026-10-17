@@ -89,13 +89,11 @@ const midTabs = (tubes: TubeCutPattern[]) =>
 		tabs: tube.bands.flatMap((band) =>
 			(band.tabs ?? [])
 				.filter((t) => t.position === 'mid')
-				.map(
-					(t): MidTab => ({
-						band,
-						...edgeFromGeometry(band, t.base),
-						label: resolveTabLabel(t, band, tube, tubes)
-					})
-				)
+				.map((t): MidTab => ({
+					band,
+					...edgeFromGeometry(band, t.base),
+					label: resolveTabLabel(t, band, tube, tubes)
+				}))
 		)
 	}));
 

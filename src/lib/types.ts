@@ -23,11 +23,7 @@ import type { ProjectionRange } from './projection-geometry/filters';
 import type { EndCapConfig, EndCapGeometry } from './geometry/end-caps';
 
 export type PatternSource =
-	| 'globule'
-	| 'projection'
-	| 'surfaceProjection'
-	| 'voronoi'
-	| 'voronoiSurface';
+	'globule' | 'projection' | 'surfaceProjection' | 'voronoi' | 'voronoiSurface';
 export type BandSortMode = 'tube-order' | 'end-connection-tube';
 
 /** A band, or one piece of a split band (`piece` present). */
@@ -312,10 +308,7 @@ export type PatternConfig = {
 };
 
 export type TabPattern =
-	| FullTabPattern
-	| TrapTabPattern
-	| MultiFacetFullTabPattern
-	| MultiFacetTrapTabPattern;
+	FullTabPattern | TrapTabPattern | MultiFacetFullTabPattern | MultiFacetTrapTabPattern;
 
 export type FacetPattern = {
 	svgPath: string;
@@ -395,10 +388,7 @@ export type LevelPattern = {
 };
 
 export type Pattern =
-	| FacetedBandPattern
-	| OutlinedBandPattern
-	| LevelSetPattern
-	| BandCutPatternPattern;
+	FacetedBandPattern | OutlinedBandPattern | LevelSetPattern | BandCutPatternPattern;
 
 export type Flag = 0 | 1;
 
@@ -445,10 +435,7 @@ export type Patterns = {
 };
 
 export type BandPattern = (
-	| OutlinedBandPattern
-	| FacetedBandPattern
-	| BandCutPatternPattern
-	| NullBandPattern
+	OutlinedBandPattern | FacetedBandPattern | BandCutPatternPattern | NullBandPattern
 ) & { meta?: { minLength?: number; maxLength?: number } };
 
 export type BandCutPattern = {

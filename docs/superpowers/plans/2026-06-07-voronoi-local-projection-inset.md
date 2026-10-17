@@ -1608,8 +1608,8 @@ describe('computeEdgeInsetsLocalProjection', () => {
 		[0.5, 0] // cell 3
 	];
 	const edgeProjections: EdgeProjection[] = edges.map((e) => {
-		const dirs = [e.vertices[0], e.vertices[1]].map(
-			(v) => intersect(coordToDirection(v[0], v[1]))!
+		const dirs = [e.vertices[0], e.vertices[1]].map((v) =>
+			intersect(coordToDirection(v[0], v[1]))!
 		);
 		// subdivide: endpoints + midpoint
 		const mid = intersect(

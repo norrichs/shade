@@ -116,7 +116,19 @@ describe('postProcess config', () => {
 	});
 
 	it('clamps a tiny or non-finite gap', () => {
-		expect(migratePP({ dropHoles: { mode: 'none' }, runSeed: 0, connectSurround: { enabled: true, gapMm: 0 } }).connectSurround).toEqual({ enabled: true, gapMm: 0.1 });
-		expect(migratePP({ dropHoles: { mode: 'none' }, runSeed: 0, connectSurround: { enabled: true, gapMm: NaN } }).connectSurround).toEqual({ enabled: true, gapMm: 1.5 });
+		expect(
+			migratePP({
+				dropHoles: { mode: 'none' },
+				runSeed: 0,
+				connectSurround: { enabled: true, gapMm: 0 }
+			}).connectSurround
+		).toEqual({ enabled: true, gapMm: 0.1 });
+		expect(
+			migratePP({
+				dropHoles: { mode: 'none' },
+				runSeed: 0,
+				connectSurround: { enabled: true, gapMm: NaN }
+			}).connectSurround
+		).toEqual({ enabled: true, gapMm: 1.5 });
 	});
 });

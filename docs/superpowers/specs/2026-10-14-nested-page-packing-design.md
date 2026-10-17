@@ -99,11 +99,11 @@ synchronous, Jest-tested. `NestGeom` = `PageGeom` + `rotationStep` +
 - Overflow: computed before packing, exactly like skyline: an item fits a fresh
   page if, at some tried angle, its rotated bounding box (undilated) fits the
   content box. `requiredScale = pageScale × min over angles of
-  max(w/contentWidth, h/contentHeight)` for the worst item. Return
+max(w/contentWidth, h/contentHeight)` for the worst item. Return
   `{ origins: [], rotations: [], pages: [], overflow }`.
 - Output per piece: `origin` and `rotation` (degrees), in the same convention
   as skyline's commit so `BandComponent` / `bandTransform(origin, rotation,
-  pivot)` places it: rotation is about the pivot, and `origin` translates the
+pivot)` places it: rotation is about the pivot, and `origin` translates the
   pivot-rotated band so its raster lands at the chosen cell.
 - `pages`: same rects/stacking as skyline (`y = idx × (pageHeight + pageGap)`).
 - `utilisation: number[]` per page = Σ undilated piece cell area / content cell
@@ -130,12 +130,12 @@ rehydrated to `Vector3` on the main thread.
     dropped.
   - `pageResult`: for `'nest'`, the latest `nestResult` whose inputs are
     current; until it arrives, the skyline result (same items, `allowRotation:
-    true`) so the page never blanks.
+true`) so the page never blanks.
   - A `nestPending` boolean is published to the editor (value-key-guarded
     store write, like `pageLayoutInfoStore`) and `utilisation` alongside the
     page count.
 - `splitBudget`: for `'nest'`, pass `allowRotation: rotationStep > 0 && 90 %
-  rotationStep === 0` (the 90° orientation is then among the tried angles).
+rotationStep === 0` (the 90° orientation is then among the tried angles).
 
 ### 4. Config and UI
 
@@ -160,6 +160,7 @@ that assumes multiples of 90°.
 ### 6. Testing
 
 Unit (Jest):
+
 - `footprint.test.ts`: square rasterises to the expected spans at 0° and 45°;
   dilation radius; rotation about pivot.
 - `nest.test.ts`:

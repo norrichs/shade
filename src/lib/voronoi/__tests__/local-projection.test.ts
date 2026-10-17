@@ -83,8 +83,8 @@ describe('computeEdgeInsetsLocalProjection', () => {
 		[1.5, 0] // cell 3
 	];
 	const edgeProjections: EdgeProjection[] = edges.map((e) => {
-		const ends = [e.vertices[0], e.vertices[1]].map(
-			(v) => intersect(coordToDirection(v[0], v[1]))!
+		const ends = [e.vertices[0], e.vertices[1]].map((v) =>
+			intersect(coordToDirection(v[0], v[1]))!
 		);
 		const mid = intersect(
 			coordToDirection(

@@ -12,13 +12,7 @@ const rectSegments = (el: SVGRectElement): PathSegment[] => {
 	const y = el.y.baseVal.value;
 	const w = el.width.baseVal.value;
 	const h = el.height.baseVal.value;
-	return [
-		['M', x, y],
-		['L', x + w, y],
-		['L', x + w, y + h],
-		['L', x, y + h],
-		['Z']
-	];
+	return [['M', x, y], ['L', x + w, y], ['L', x + w, y + h], ['L', x, y + h], ['Z']];
 };
 
 /**

@@ -11,18 +11,23 @@ describe('fmt', () => {
 
 describe('encodeSubpaths', () => {
 	it('encodes a closed polyline', () => {
-		expect(encodeSubpaths([['M', 0, 0], ['L', 10, 0], ['L', 10, 10], ['L', 0, 10], ['Z']])).toEqual([
-			{
-				vertList: 'V0 0c0x1c1x1V10 0c0x1c1x1V10 10c0x1c1x1V0 10c0x1c1x1',
-				primList: 'L0 1L1 2L2 3L3 0'
-			}
-		]);
+		expect(encodeSubpaths([['M', 0, 0], ['L', 10, 0], ['L', 10, 10], ['L', 0, 10], ['Z']])).toEqual(
+			[
+				{
+					vertList: 'V0 0c0x1c1x1V10 0c0x1c1x1V10 10c0x1c1x1V0 10c0x1c1x1',
+					primList: 'L0 1L1 2L2 3L3 0'
+				}
+			]
+		);
 	});
 
 	it('stores cubic controls as c0 on the start and c1 on the end vertex', () => {
-		expect(encodeSubpaths([['M', 0, 0], ['C', 0, 5, 5, 10, 10, 10]])).toEqual([
-			{ vertList: 'V0 0c0x0c0y5c1x1V10 10c0x1c1x5c1y10', primList: 'B0 1' }
-		]);
+		expect(
+			encodeSubpaths([
+				['M', 0, 0],
+				['C', 0, 5, 5, 10, 10, 10]
+			])
+		).toEqual([{ vertList: 'V0 0c0x0c0y5c1x1V10 10c0x1c1x5c1y10', primList: 'B0 1' }]);
 	});
 
 	it('folds a closing point that repeats the start into vertex 0', () => {
@@ -32,21 +37,41 @@ describe('encodeSubpaths', () => {
 	});
 
 	it('emits one entry per M-run', () => {
-		expect(encodeSubpaths([['M', 0, 0], ['L', 1, 0], ['M', 5, 5], ['L', 6, 5]])).toHaveLength(2);
+		expect(
+			encodeSubpaths([
+				['M', 0, 0],
+				['L', 1, 0],
+				['M', 5, 5],
+				['L', 6, 5]
+			])
+		).toHaveLength(2);
 	});
 
 	it('rejects arcs', () => {
-		expect(() => encodeSubpaths([['M', 0, 0], ['A', 1, 1, 0, 0, 1, 2, 0]])).toThrow();
+		expect(() =>
+			encodeSubpaths([
+				['M', 0, 0],
+				['A', 1, 1, 0, 0, 1, 2, 0]
+			])
+		).toThrow();
 	});
 });
 
 describe('toCubicSegments', () => {
 	it('elevates quadratics exactly', () => {
-		expect(toCubicSegments([['M', 0, 0], ['Q', 3, 3, 6, 0]])[1]).toEqual(['C', 2, 2, 4, 2, 6, 0]);
+		expect(
+			toCubicSegments([
+				['M', 0, 0],
+				['Q', 3, 3, 6, 0]
+			])[1]
+		).toEqual(['C', 2, 2, 4, 2, 6, 0]);
 	});
 
 	it('turns a half-circle arc into cubics ending on the endpoint', () => {
-		const out = toCubicSegments([['M', -10, 0], ['A', 10, 10, 0, 0, 1, 10, 0]]);
+		const out = toCubicSegments([
+			['M', -10, 0],
+			['A', 10, 10, 0, 0, 1, 10, 0]
+		]);
 		expect(out.every((s) => ['M', 'L', 'C', 'Z'].includes(s[0]))).toBe(true);
 		const last = out[out.length - 1];
 		expect(last[0]).toBe('C');

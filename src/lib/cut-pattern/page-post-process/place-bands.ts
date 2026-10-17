@@ -42,11 +42,17 @@ export const placeBand = (args: {
 			.filter((c) => c.kind === 'outline')
 			.flatMap((c) => flattenPath(raw.slice(c.start, c.end)))
 	);
-	const holes = move(pieces.filter((p) => p.geometry === 'pattern-hole').flatMap((p) => flattenPath(p.segments)));
+	const holes = move(
+		pieces.filter((p) => p.geometry === 'pattern-hole').flatMap((p) => flattenPath(p.segments))
+	);
 
 	const pts = outlines.flat();
-	const cx = pts.length ? (Math.min(...pts.map((p) => p.x)) + Math.max(...pts.map((p) => p.x))) / 2 : NaN;
-	const cy = pts.length ? (Math.min(...pts.map((p) => p.y)) + Math.max(...pts.map((p) => p.y))) / 2 : NaN;
+	const cx = pts.length
+		? (Math.min(...pts.map((p) => p.x)) + Math.max(...pts.map((p) => p.x))) / 2
+		: NaN;
+	const cy = pts.length
+		? (Math.min(...pts.map((p) => p.y)) + Math.max(...pts.map((p) => p.y))) / 2
+		: NaN;
 	let page = pages.findIndex(
 		(r) => cx >= r.x && cx <= r.x + r.width && cy >= r.y && cy <= r.y + r.height
 	);

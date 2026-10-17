@@ -11,7 +11,10 @@ describe('exportFrame', () => {
 	});
 	it('spans every page from their union origin', () => {
 		const f = exportFrame(
-			[{ x: 100, y: 50, width: 600, height: 600 }, { x: 100, y: 670, width: 600, height: 600 }],
+			[
+				{ x: 100, y: 50, width: 600, height: 600 },
+				{ x: 100, y: 670, width: 600, height: 600 }
+			],
 			2
 		);
 		expect(f.heightMm).toBe(610);

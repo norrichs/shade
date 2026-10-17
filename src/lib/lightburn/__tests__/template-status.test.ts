@@ -6,10 +6,16 @@ const XML = `<LightBurnProject><CutSetting type="Cut"><index Value="0"/><name Va
 describe('readTemplateUpload', () => {
 	it('accepts a LightBurn project with cut layers', () => {
 		const r = readTemplateUpload('cutter.lbrn2', XML, new Date('2026-09-27T12:00:00Z'));
-		expect(r).toEqual({ ok: true, template: { fileName: 'cutter.lbrn2', xml: XML, loadedAt: '2026-09-27T12:00:00.000Z' } });
+		expect(r).toEqual({
+			ok: true,
+			template: { fileName: 'cutter.lbrn2', xml: XML, loadedAt: '2026-09-27T12:00:00.000Z' }
+		});
 	});
 	it('rejects other files and projects with no cut layers', () => {
-		expect(readTemplateUpload('x.svg', '<svg/>')).toEqual({ ok: false, error: 'Not a LightBurn project file' });
+		expect(readTemplateUpload('x.svg', '<svg/>')).toEqual({
+			ok: false,
+			error: 'Not a LightBurn project file'
+		});
 		expect(readTemplateUpload('e.lbrn2', '<LightBurnProject></LightBurnProject>')).toEqual({
 			ok: false,
 			error: 'The template has no cut layers'

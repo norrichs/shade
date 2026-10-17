@@ -40,5 +40,10 @@ export const rectEdges = (r: { x: number; y: number; width: number; height: numb
 	const p1 = { x: r.x + r.width, y: r.y };
 	const p2 = { x: r.x + r.width, y: r.y + r.height };
 	const p3 = { x: r.x, y: r.y + r.height };
-	return [{ a: p0, b: p1 }, { a: p1, b: p2 }, { a: p2, b: p3 }, { a: p3, b: p0 }];
+	return [
+		{ a: p0, b: p1 },
+		{ a: p1, b: p2 },
+		{ a: p2, b: p3 },
+		{ a: p3, b: p0 }
+	];
 };

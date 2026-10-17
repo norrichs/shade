@@ -71,7 +71,8 @@ const boxHits = (b: Box, obstacles: Seg[], solids: Pt[][]): boolean => {
 		{ x: b.x, y: b.y + b.height }
 	];
 	const edges: Seg[] = corners.map((a, i) => ({ a, b: corners[(i + 1) % 4] }));
-	const inBox = (p: Pt) => p.x >= b.x && p.x <= b.x + b.width && p.y >= b.y && p.y <= b.y + b.height;
+	const inBox = (p: Pt) =>
+		p.x >= b.x && p.x <= b.x + b.width && p.y >= b.y && p.y <= b.y + b.height;
 	for (const s of [...obstacles, ...segmentsOf(solids)]) {
 		if (inBox(s.a) || inBox(s.b)) return true;
 		if (edges.some((e) => segmentsIntersect(e, s))) return true;
@@ -94,7 +95,8 @@ export const placeBox = (args: {
 	solids: Pt[][];
 }): Pt | null => {
 	const { content, width, height, obstacles, solids } = args;
-	if (!(width > 0) || !(height > 0) || width > content.width || height > content.height) return null;
+	if (!(width > 0) || !(height > 0) || width > content.width || height > content.height)
+		return null;
 	const stepX = width / 4;
 	const stepY = height / 2;
 	for (let y = content.y + content.height - height; y >= content.y - 1e-9; y -= stepY) {

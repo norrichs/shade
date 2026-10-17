@@ -209,12 +209,13 @@ UI or the existing value.
 Each polygon edge is `{vertex1: index, widthCurve: edgeCurveIdx, crossSectionCurve: csIdx, isDirectionMatched}`.
 
 **Useful small edits**
-| Path | Meaning |
-|---|---|
-| `…polyhedron.edgeCurves.0.curves` | Edge (inset) curve. The bezier lives in the unit square: **y = position along the edge (0→1), x = fraction toward the polygon center**. Start at `{x:a, y:0}` and end at `{x:a, y:1}` (`types.ts:157`). Default `secondEdgeCurve`, 0.5→0.2→0.5 (`curve-definitions.ts:16`). |
-| `…polyhedron.edgeCurves.0.sampleMethod` | `{method:'divideCurvePath', divisions}` (default 4) or `{method:'manualDivisions', divisions:n, divisionsArray:[n-1 values strictly in (0,1)]}`. A value outside (0,1) throws (`generate-projection.ts:507`). |
-| `…polyhedron.crossSectionCurves.0` | Tube cross-section; see the table below. |
-| `…polyhedron.transform` | `'inherit'`, or a TransformConfig (the editor converts it to identity). |
+
+| Path                                    | Meaning                                                                                                                                                                                                                                                                     |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `…polyhedron.edgeCurves.0.curves`       | Edge (inset) curve. The bezier lives in the unit square: **y = position along the edge (0→1), x = fraction toward the polygon center**. Start at `{x:a, y:0}` and end at `{x:a, y:1}` (`types.ts:157`). Default `secondEdgeCurve`, 0.5→0.2→0.5 (`curve-definitions.ts:16`). |
+| `…polyhedron.edgeCurves.0.sampleMethod` | `{method:'divideCurvePath', divisions}` (default 4) or `{method:'manualDivisions', divisions:n, divisionsArray:[n-1 values strictly in (0,1)]}`. A value outside (0,1) throws (`generate-projection.ts:507`).                                                               |
+| `…polyhedron.crossSectionCurves.0`      | Tube cross-section; see the table below.                                                                                                                                                                                                                                    |
+| `…polyhedron.transform`                 | `'inherit'`, or a TransformConfig (the editor converts it to identity).                                                                                                                                                                                                     |
 
 ### Edge sampling (`projectionConfigs.0.edgeSampling`)
 

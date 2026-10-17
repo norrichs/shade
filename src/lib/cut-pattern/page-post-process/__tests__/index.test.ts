@@ -4,7 +4,11 @@ import type { PlacedBand } from '../../post-process-types';
 import { DEFAULT_POST_PROCESS } from '../../hole-drop-config';
 
 const rectPoly = (x0: number, y0: number, x1: number, y1: number) => [
-	{ x: x0, y: y0 }, { x: x1, y: y0 }, { x: x1, y: y1 }, { x: x0, y: y1 }, { x: x0, y: y0 }
+	{ x: x0, y: y0 },
+	{ x: x1, y: y0 },
+	{ x: x1, y: y1 },
+	{ x: x0, y: y1 },
+	{ x: x0, y: y0 }
 ];
 const band: PlacedBand = {
 	bandId: 'a',
@@ -23,22 +27,39 @@ const base = {
 	marginPx: 5,
 	gap: 2,
 	configName: 'shade',
-	dict: { '1': { path: [['M', 0, 0], ['L', 1, 1]], width: 1 } } as never
+	dict: {
+		'1': {
+			path: [
+				['M', 0, 0],
+				['L', 1, 1]
+			],
+			width: 1
+		}
+	} as never
 };
 
 describe('pagePostProcess', () => {
 	it('does nothing with everything off', () => {
-		expect(pagePostProcess({ ...base, config: DEFAULT_POST_PROCESS })).toEqual({ disconnects: [], pageLabels: [] });
+		expect(pagePostProcess({ ...base, config: DEFAULT_POST_PROCESS })).toEqual({
+			disconnects: [],
+			pageLabels: []
+		});
 	});
 	it('emits disconnects when enabled', () => {
-		const r = pagePostProcess({ ...base, config: { ...DEFAULT_POST_PROCESS, disconnectSurround: true } });
+		const r = pagePostProcess({
+			...base,
+			config: { ...DEFAULT_POST_PROCESS, disconnectSurround: true }
+		});
 		expect(r.disconnects).toHaveLength(2);
 	});
 	it('skips labels without a font dictionary', () => {
 		const r = pagePostProcess({
 			...base,
 			dict: undefined,
-			config: { ...DEFAULT_POST_PROCESS, pageLabel: { pageNumber: true, configName: false, text: '' } }
+			config: {
+				...DEFAULT_POST_PROCESS,
+				pageLabel: { pageNumber: true, configName: false, text: '' }
+			}
 		});
 		expect(r.pageLabels).toEqual([]);
 	});

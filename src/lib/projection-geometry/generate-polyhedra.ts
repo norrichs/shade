@@ -15,12 +15,7 @@ import type {
 } from './types';
 
 export type PolygonType =
-	| 'pentagon'
-	| 'hexagon'
-	| 'triangle'
-	| 'quadrilateral'
-	| 'decagon'
-	| 'dodecagon';
+	'pentagon' | 'hexagon' | 'triangle' | 'quadrilateral' | 'decagon' | 'dodecagon';
 
 export type PolygonMapRow = {
 	polygonType: PolygonType;

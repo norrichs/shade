@@ -59,15 +59,15 @@ data and runs only when bands are prepared and `layoutMode === 'page'`.
 
 **Whoever produces geometry tags it.** Nothing downstream infers a type.
 
-| Geometry type         | Producer                                                           |
-| --------------------- | ------------------------------------------------------------------ |
-| `pattern-outline`     | stage 1b contour index (depth-even contours), stage 2 output       |
-| `pattern-hole`        | stage 1b contour index (depth-odd contours, tiled only)            |
-| `outline-gap`         | stage 2 gap split                                                  |
-| `surround-disconnect` | stage 3 disconnect search                                          |
-| `label-text`          | `SvgText` (via `PatternLabel.svelte`, `OnTabLabel.svelte`)         |
-| `page-label`          | `SvgText` (via the new page-label component)                       |
-| `page-outline`        | `PageGeometry.svelte`                                              |
+| Geometry type         | Producer                                                     |
+| --------------------- | ------------------------------------------------------------ |
+| `pattern-outline`     | stage 1b contour index (depth-even contours), stage 2 output |
+| `pattern-hole`        | stage 1b contour index (depth-odd contours, tiled only)      |
+| `outline-gap`         | stage 2 gap split                                            |
+| `surround-disconnect` | stage 3 disconnect search                                    |
+| `label-text`          | `SvgText` (via `PatternLabel.svelte`, `OnTabLabel.svelte`)   |
+| `page-label`          | `SvgText` (via the new page-label component)                 |
+| `page-outline`        | `PageGeometry.svelte`                                        |
 
 The label **tag outline** (the box around `t0/b7`) is unioned into the band
 outline by stage 1, so it is part of `pattern-outline`. The label **glyphs**

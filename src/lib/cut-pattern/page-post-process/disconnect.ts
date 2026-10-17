@@ -13,9 +13,7 @@ const inside = (p: Pt, r: PageRect) =>
 	p.x >= r.x && p.x <= r.x + r.width && p.y >= r.y && p.y <= r.y + r.height;
 
 const closed = (poly: Pt[]) =>
-	poly.length > 3 &&
-	poly[0].x === poly[poly.length - 1].x &&
-	poly[0].y === poly[poly.length - 1].y;
+	poly.length > 3 && poly[0].x === poly[poly.length - 1].x && poly[0].y === poly[poly.length - 1].y;
 
 /**
  * Straight cuts from each band end to whatever it meets first within a cone
@@ -79,7 +77,8 @@ export const computeDisconnects = (
 							rayTo = null;
 						}
 					}
-					if (Number.isFinite(rayT) && (!best || rayT < best.t)) best = { t: rayT, dir, toBand: rayTo };
+					if (Number.isFinite(rayT) && (!best || rayT < best.t))
+						best = { t: rayT, dir, toBand: rayTo };
 				}
 				if (!best) continue;
 				out.push({

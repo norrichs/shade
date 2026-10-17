@@ -49,7 +49,7 @@ const bboxOf = (pts: Pt[]) => {
 /** Slide up, then left, one cell at a time, until neither moves. */
 const compact = (grid: Grid, r: Raster, p: Pos): Pos => {
 	let { gx, gy } = p;
-	for (let moved = true; moved; ) {
+	for (let moved = true; moved;) {
 		moved = false;
 		while (grid.fits(r, gx, gy - 1)) {
 			gy--;

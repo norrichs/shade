@@ -605,8 +605,7 @@ export function isSuperGlobuleProjectionCutPattern(
 }
 
 export type SuperGlobuleProjectionPattern =
-	| SuperGlobuleProjectionPanelPattern
-	| SuperGlobuleProjectionCutPattern;
+	SuperGlobuleProjectionPanelPattern | SuperGlobuleProjectionCutPattern;
 
 export type SuperGlobuleProjectionPanelPattern = {
 	type: 'SuperGlobuleProjectionPanelPattern';

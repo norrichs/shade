@@ -38,50 +38,51 @@
 
 ## Execution waves
 
-| Wave | Tasks | Mode |
-| ---- | ----- | ---- |
-| 0 | 1 → 2 → 3 → 4 | sequential, on the working branch |
-| 1 | 5, 6, 7, 8, 9 | **parallel**, one worktree each, merged back in any order |
-| 2 | 10, 11, 12 | **parallel**, one worktree each |
-| 3 | 13 | sequential: Playwright, full verification |
+| Wave | Tasks         | Mode                                                      |
+| ---- | ------------- | --------------------------------------------------------- |
+| 0    | 1 → 2 → 3 → 4 | sequential, on the working branch                         |
+| 1    | 5, 6, 7, 8, 9 | **parallel**, one worktree each, merged back in any order |
+| 2    | 10, 11, 12    | **parallel**, one worktree each                           |
+| 3    | 13            | sequential: Playwright, full verification                 |
 
 Wave 1 and 2 tasks touch disjoint files by construction (see each task's **Files**). If a merge conflicts, stop and report; do not resolve by discarding another task's work.
 
 ## File map
 
-| File | Task | Responsibility |
-| ---- | ---- | -------------- |
-| `src/lib/cut-pattern/post-process-types.ts` | 1 | `GeometryType`, `TaggedPath`, band-end and stage-3 types |
-| `src/lib/lightburn/layers.ts` | 1 | 32-layer palette, default map, stroke resolution |
-| `src/lib/lightburn/types.ts` | 1 | `LbProject` / `LbShape` |
-| `src/lib/cut-pattern/hole-drop-config.ts` | 1 | new `PostProcessConfig` fields |
-| `src/lib/validators.ts` | 1 | validate new fields |
-| `src/lib/stores/mergedPathStore.ts` | 1, 2, 3, 6 | `layerStrokes`; contour index rename; tagged output; pageScale |
-| `src/lib/stores/exportStores.ts` | 1 | `exportPagesStore`, `lightburnTemplateStore` |
-| `src/lib/cut-pattern/path-contours.ts` | 2 | `flattenPath` |
-| `src/lib/cut-pattern/contour-index.ts` (renamed from `hole-index.ts`) | 2 | contour kinds, axis, ends |
-| `src/lib/workers/band-merge-worker-core.ts`, `band-merge-pool.ts` | 2 | carry `contours` |
-| `src/components/nav-header/NavHeader.svelte` | 2, 12 | publish contours; downloads |
-| `src/lib/cut-pattern/drop-holes.ts` | 3, 6 | `TaggedPath[]` output; gap wiring |
-| `src/components/cut-pattern/BandCutPatternComponent.svelte` | 3 | render tagged pieces |
-| `src/lib/cut-pattern/export-guard.ts` | 4 | untagged-element check |
-| `SvgText.svelte`, `LabelText.svelte`, `OnTabLabel.svelte`, `PatternLabel.svelte`, `PageGeometry.svelte` | 4 | tag producers |
-| `src/lib/cut-pattern/page-post-process/disconnect.ts` | 5 | disconnect search |
-| `src/lib/cut-pattern/page-post-process/segments.ts` | 5 | ray/segment geometry helpers |
-| `src/lib/cut-pattern/outline-gap.ts` | 6 | arc-length gap split |
-| `src/lib/cut-pattern/page-post-process/page-label.ts` | 7 | label text, measurement, placement |
-| `src/lib/lightburn/lbrn2-path.ts`, `lbrn2-writer.ts`, `template.ts` | 8 | `.lbrn2` serialisation |
-| `src/lib/download/file-stamp.ts`, `export-frame.ts`, `parse-path-d.ts`, `src/lib/lightburn/build-lb-project.ts` | 9 | naming, mm frame, `d` parsing, shapes → `LbProject` |
-| `src/lib/cut-pattern/page-post-process/index.ts`, `place-bands.ts`, `src/components/cut-pattern/PageAnnotations.svelte`, `CutPatternRenderer.svelte` | 10 | stage 3 wiring and render |
-| `src/components/modal/editor/PostProcess.svelte` | 11 | controls |
-| `src/lib/util.ts`, `src/lib/lightburn/collect-dom-shapes.ts` | 12 | export plumbing |
-| `tests/post-process-2.spec.ts`, `tests/hole-drop.spec.ts` | 3, 13 | Playwright |
+| File                                                                                                                                                 | Task       | Responsibility                                                 |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | -------------------------------------------------------------- |
+| `src/lib/cut-pattern/post-process-types.ts`                                                                                                          | 1          | `GeometryType`, `TaggedPath`, band-end and stage-3 types       |
+| `src/lib/lightburn/layers.ts`                                                                                                                        | 1          | 32-layer palette, default map, stroke resolution               |
+| `src/lib/lightburn/types.ts`                                                                                                                         | 1          | `LbProject` / `LbShape`                                        |
+| `src/lib/cut-pattern/hole-drop-config.ts`                                                                                                            | 1          | new `PostProcessConfig` fields                                 |
+| `src/lib/validators.ts`                                                                                                                              | 1          | validate new fields                                            |
+| `src/lib/stores/mergedPathStore.ts`                                                                                                                  | 1, 2, 3, 6 | `layerStrokes`; contour index rename; tagged output; pageScale |
+| `src/lib/stores/exportStores.ts`                                                                                                                     | 1          | `exportPagesStore`, `lightburnTemplateStore`                   |
+| `src/lib/cut-pattern/path-contours.ts`                                                                                                               | 2          | `flattenPath`                                                  |
+| `src/lib/cut-pattern/contour-index.ts` (renamed from `hole-index.ts`)                                                                                | 2          | contour kinds, axis, ends                                      |
+| `src/lib/workers/band-merge-worker-core.ts`, `band-merge-pool.ts`                                                                                    | 2          | carry `contours`                                               |
+| `src/components/nav-header/NavHeader.svelte`                                                                                                         | 2, 12      | publish contours; downloads                                    |
+| `src/lib/cut-pattern/drop-holes.ts`                                                                                                                  | 3, 6       | `TaggedPath[]` output; gap wiring                              |
+| `src/components/cut-pattern/BandCutPatternComponent.svelte`                                                                                          | 3          | render tagged pieces                                           |
+| `src/lib/cut-pattern/export-guard.ts`                                                                                                                | 4          | untagged-element check                                         |
+| `SvgText.svelte`, `LabelText.svelte`, `OnTabLabel.svelte`, `PatternLabel.svelte`, `PageGeometry.svelte`                                              | 4          | tag producers                                                  |
+| `src/lib/cut-pattern/page-post-process/disconnect.ts`                                                                                                | 5          | disconnect search                                              |
+| `src/lib/cut-pattern/page-post-process/segments.ts`                                                                                                  | 5          | ray/segment geometry helpers                                   |
+| `src/lib/cut-pattern/outline-gap.ts`                                                                                                                 | 6          | arc-length gap split                                           |
+| `src/lib/cut-pattern/page-post-process/page-label.ts`                                                                                                | 7          | label text, measurement, placement                             |
+| `src/lib/lightburn/lbrn2-path.ts`, `lbrn2-writer.ts`, `template.ts`                                                                                  | 8          | `.lbrn2` serialisation                                         |
+| `src/lib/download/file-stamp.ts`, `export-frame.ts`, `parse-path-d.ts`, `src/lib/lightburn/build-lb-project.ts`                                      | 9          | naming, mm frame, `d` parsing, shapes → `LbProject`            |
+| `src/lib/cut-pattern/page-post-process/index.ts`, `place-bands.ts`, `src/components/cut-pattern/PageAnnotations.svelte`, `CutPatternRenderer.svelte` | 10         | stage 3 wiring and render                                      |
+| `src/components/modal/editor/PostProcess.svelte`                                                                                                     | 11         | controls                                                       |
+| `src/lib/util.ts`, `src/lib/lightburn/collect-dom-shapes.ts`                                                                                         | 12         | export plumbing                                                |
+| `tests/post-process-2.spec.ts`, `tests/hole-drop.spec.ts`                                                                                            | 3, 13      | Playwright                                                     |
 
 ---
 
 ## Task 1: Geometry types, LightBurn palette, config fields, export stores
 
 **Files:**
+
 - Create: `src/lib/cut-pattern/post-process-types.ts`
 - Create: `src/lib/lightburn/layers.ts`
 - Create: `src/lib/lightburn/types.ts`
@@ -93,6 +94,7 @@ Wave 1 and 2 tasks touch disjoint files by construction (see each task's **Files
 - Test: `src/lib/lightburn/__tests__/layers.test.ts`, `src/lib/__tests__/post-process-config.test.ts` (extend)
 
 **Interfaces:**
+
 - Produces: everything in `post-process-types.ts`, `layers.ts`, `lightburn/types.ts` below, verbatim; `PostProcessConfig` new fields; `layerStrokes: Readable<Record<GeometryType, string>>`; `exportPagesStore: Writable<ExportPages | null>`; `lightburnTemplateStore: Writable<LightburnTemplate | null>`.
 
 - [ ] **Step 1: Record the `npm run check` baseline**
@@ -247,10 +249,38 @@ export type PagePostProcessResult = { disconnects: Disconnect[]; pageLabels: Pag
 import type { GeometryType } from '$lib/cut-pattern/post-process-types';
 
 export const LAYER_IDS = [
-	'C00', 'C01', 'C02', 'C03', 'C04', 'C05', 'C06', 'C07', 'C08', 'C09',
-	'C10', 'C11', 'C12', 'C13', 'C14', 'C15', 'C16', 'C17', 'C18', 'C19',
-	'C20', 'C21', 'C22', 'C23', 'C24', 'C25', 'C26', 'C27', 'C28', 'C29',
-	'T1', 'T2'
+	'C00',
+	'C01',
+	'C02',
+	'C03',
+	'C04',
+	'C05',
+	'C06',
+	'C07',
+	'C08',
+	'C09',
+	'C10',
+	'C11',
+	'C12',
+	'C13',
+	'C14',
+	'C15',
+	'C16',
+	'C17',
+	'C18',
+	'C19',
+	'C20',
+	'C21',
+	'C22',
+	'C23',
+	'C24',
+	'C25',
+	'C26',
+	'C27',
+	'C28',
+	'C29',
+	'T1',
+	'T2'
 ] as const;
 export type LayerId = (typeof LAYER_IDS)[number];
 
@@ -374,49 +404,61 @@ Expected: PASS (6 tests).
 Append to `src/lib/__tests__/post-process-config.test.ts`, inside the existing `describe`:
 
 ```ts
-	const migratePP = (postProcess: Record<string, unknown>) =>
-		migrateGlobulePatternConfig({
-			patternConfig: { pageLayout: { keepConnected: 0 }, postProcess }
-		} as unknown as GlobulePatternConfig).patternConfig?.postProcess as Record<string, unknown>;
+const migratePP = (postProcess: Record<string, unknown>) =>
+	migrateGlobulePatternConfig({
+		patternConfig: { pageLayout: { keepConnected: 0 }, postProcess }
+	} as unknown as GlobulePatternConfig).patternConfig?.postProcess as Record<string, unknown>;
 
-	it('keeps valid post-processing 2 fields', () => {
-		const pp = migratePP({
+it('keeps valid post-processing 2 fields', () => {
+	const pp = migratePP({
+		dropHoles: { mode: 'none' },
+		runSeed: 0,
+		disconnectSurround: true,
+		connectSurround: { enabled: true, gapMm: 2 },
+		pageLabel: { pageNumber: true, configName: false, text: ' shade ' },
+		layerMap: { 'outline-gap': 'C05' },
+		downloadFormat: 'lbrn2'
+	});
+	expect(pp.disconnectSurround).toBe(true);
+	expect(pp.connectSurround).toEqual({ enabled: true, gapMm: 2 });
+	expect(pp.pageLabel).toEqual({ pageNumber: true, configName: false, text: 'shade' });
+	expect(pp.layerMap).toEqual({ 'outline-gap': 'C05' });
+	expect(pp.downloadFormat).toBe('lbrn2');
+});
+
+it('repairs malformed post-processing 2 fields', () => {
+	const pp = migratePP({
+		dropHoles: { mode: 'none' },
+		runSeed: 0,
+		disconnectSurround: 'yes',
+		connectSurround: { enabled: 1, gapMm: 999 },
+		pageLabel: { pageNumber: 'x', text: 5 },
+		layerMap: { 'outline-gap': 'C99', bogus: 'C01', 'pattern-hole': 'T2' },
+		downloadFormat: 'pdf'
+	});
+	expect('disconnectSurround' in pp).toBe(false);
+	expect(pp.connectSurround).toEqual({ enabled: false, gapMm: 20 });
+	expect(pp.pageLabel).toEqual({ pageNumber: false, configName: false, text: '' });
+	expect(pp.layerMap).toEqual({ 'pattern-hole': 'T2' });
+	expect('downloadFormat' in pp).toBe(false);
+});
+
+it('clamps a tiny or non-finite gap', () => {
+	expect(
+		migratePP({
 			dropHoles: { mode: 'none' },
 			runSeed: 0,
-			disconnectSurround: true,
-			connectSurround: { enabled: true, gapMm: 2 },
-			pageLabel: { pageNumber: true, configName: false, text: ' shade ' },
-			layerMap: { 'outline-gap': 'C05' },
-			downloadFormat: 'lbrn2'
-		});
-		expect(pp.disconnectSurround).toBe(true);
-		expect(pp.connectSurround).toEqual({ enabled: true, gapMm: 2 });
-		expect(pp.pageLabel).toEqual({ pageNumber: true, configName: false, text: 'shade' });
-		expect(pp.layerMap).toEqual({ 'outline-gap': 'C05' });
-		expect(pp.downloadFormat).toBe('lbrn2');
-	});
-
-	it('repairs malformed post-processing 2 fields', () => {
-		const pp = migratePP({
+			connectSurround: { enabled: true, gapMm: 0 }
+		}).connectSurround
+	).toEqual({ enabled: true, gapMm: 0.1 });
+	expect(
+		migratePP({
 			dropHoles: { mode: 'none' },
 			runSeed: 0,
-			disconnectSurround: 'yes',
-			connectSurround: { enabled: 1, gapMm: 999 },
-			pageLabel: { pageNumber: 'x', text: 5 },
-			layerMap: { 'outline-gap': 'C99', bogus: 'C01', 'pattern-hole': 'T2' },
-			downloadFormat: 'pdf'
-		});
-		expect('disconnectSurround' in pp).toBe(false);
-		expect(pp.connectSurround).toEqual({ enabled: false, gapMm: 20 });
-		expect(pp.pageLabel).toEqual({ pageNumber: false, configName: false, text: '' });
-		expect(pp.layerMap).toEqual({ 'pattern-hole': 'T2' });
-		expect('downloadFormat' in pp).toBe(false);
-	});
-
-	it('clamps a tiny or non-finite gap', () => {
-		expect(migratePP({ dropHoles: { mode: 'none' }, runSeed: 0, connectSurround: { enabled: true, gapMm: 0 } }).connectSurround).toEqual({ enabled: true, gapMm: 0.1 });
-		expect(migratePP({ dropHoles: { mode: 'none' }, runSeed: 0, connectSurround: { enabled: true, gapMm: NaN } }).connectSurround).toEqual({ enabled: true, gapMm: 1.5 });
-	});
+			connectSurround: { enabled: true, gapMm: NaN }
+		}).connectSurround
+	).toEqual({ enabled: true, gapMm: 1.5 });
+});
 ```
 
 - [ ] **Step 9: Run to verify failure**
@@ -468,41 +510,39 @@ Change the optional-flag loop to include `disconnectSurround`:
 and immediately after that loop add:
 
 ```ts
-			if ('connectSurround' in pp) {
-				const cs = pp.connectSurround as { enabled?: unknown; gapMm?: unknown } | null;
-				if (!cs || typeof cs !== 'object') delete pp.connectSurround;
-				else {
-					const gap =
-						typeof cs.gapMm === 'number' && Number.isFinite(cs.gapMm)
-							? cs.gapMm
-							: DEFAULT_CONNECT_GAP_MM;
-					pp.connectSurround = {
-						enabled: cs.enabled === true,
-						gapMm: Math.min(20, Math.max(0.1, gap))
-					};
-				}
-			}
-			if ('pageLabel' in pp) {
-				const pl = pp.pageLabel as Record<string, unknown> | null;
-				if (!pl || typeof pl !== 'object') delete pp.pageLabel;
-				else
-					pp.pageLabel = {
-						pageNumber: pl.pageNumber === true,
-						configName: pl.configName === true,
-						text: typeof pl.text === 'string' ? pl.text.trim() : ''
-					};
-			}
-			if ('layerMap' in pp) {
-				const lm = pp.layerMap as Record<string, unknown> | null;
-				if (!lm || typeof lm !== 'object') delete pp.layerMap;
-				else
-					for (const key of Object.keys(lm)) {
-						if (!(GEOMETRY_TYPES as readonly string[]).includes(key) || !isLayerId(lm[key]))
-							delete lm[key];
-					}
-			}
-			if ('downloadFormat' in pp && pp.downloadFormat !== 'svg' && pp.downloadFormat !== 'lbrn2')
-				delete pp.downloadFormat;
+if ('connectSurround' in pp) {
+	const cs = pp.connectSurround as { enabled?: unknown; gapMm?: unknown } | null;
+	if (!cs || typeof cs !== 'object') delete pp.connectSurround;
+	else {
+		const gap =
+			typeof cs.gapMm === 'number' && Number.isFinite(cs.gapMm) ? cs.gapMm : DEFAULT_CONNECT_GAP_MM;
+		pp.connectSurround = {
+			enabled: cs.enabled === true,
+			gapMm: Math.min(20, Math.max(0.1, gap))
+		};
+	}
+}
+if ('pageLabel' in pp) {
+	const pl = pp.pageLabel as Record<string, unknown> | null;
+	if (!pl || typeof pl !== 'object') delete pp.pageLabel;
+	else
+		pp.pageLabel = {
+			pageNumber: pl.pageNumber === true,
+			configName: pl.configName === true,
+			text: typeof pl.text === 'string' ? pl.text.trim() : ''
+		};
+}
+if ('layerMap' in pp) {
+	const lm = pp.layerMap as Record<string, unknown> | null;
+	if (!lm || typeof lm !== 'object') delete pp.layerMap;
+	else
+		for (const key of Object.keys(lm)) {
+			if (!(GEOMETRY_TYPES as readonly string[]).includes(key) || !isLayerId(lm[key]))
+				delete lm[key];
+		}
+}
+if ('downloadFormat' in pp && pp.downloadFormat !== 'svg' && pp.downloadFormat !== 'lbrn2')
+	delete pp.downloadFormat;
 ```
 
 If importing `hole-drop-config` from `validators.ts` creates an import cycle that breaks tests, inline `1.5` with a comment naming `DEFAULT_CONNECT_GAP_MM`.
@@ -524,11 +564,13 @@ import { layerStroke } from '$lib/lightburn/layers';
  * Stroke hex per geometry type, from the post-process layer map. Every exported
  * producer reads its stroke from here, so preview and export always agree.
  */
-export const layerStrokes = derived(postProcessConfig, (config) =>
-	Object.fromEntries(GEOMETRY_TYPES.map((t) => [t, layerStroke(t, config.layerMap)])) as Record<
-		GeometryType,
-		string
-	>
+export const layerStrokes = derived(
+	postProcessConfig,
+	(config) =>
+		Object.fromEntries(GEOMETRY_TYPES.map((t) => [t, layerStroke(t, config.layerMap)])) as Record<
+			GeometryType,
+			string
+		>
 );
 ```
 
@@ -595,6 +637,7 @@ git commit -m "feat(post-process): geometry types, LightBurn palette, config fie
 ## Task 2: Contour index (stage 1b) with kinds, axis and ends
 
 **Files:**
+
 - Rename: `src/lib/cut-pattern/hole-index.ts` → `src/lib/cut-pattern/contour-index.ts` (`git mv`)
 - Rename: `src/lib/cut-pattern/__tests__/hole-index.test.ts` → `contour-index.test.ts`
 - Modify: `src/lib/cut-pattern/path-contours.ts` (add `flattenPath`)
@@ -605,8 +648,10 @@ git commit -m "feat(post-process): geometry types, LightBurn palette, config fie
 - Modify tests referencing `BandHoleIndex`/`buildHoleIndex`/`holes`: `drop-holes.test.ts`, `hole-drop-integration.test.ts`, `band-merge-worker-core.test.ts`, `band-merge-pool.test.ts`, `merged-path-store.test.ts`, `tube-pattern-characterization.test.ts`, `band-render-mode.test.ts` (find all with `grep -rlE "BandHoleIndex|buildHoleIndex|bandHoleIndexes|holes:" src`)
 
 **Interfaces:**
+
 - Consumes: `BandEnds`, `Pt` from Task 1.
 - Produces:
+
   ```ts
   export type ContourKind = 'outline' | 'hole';
   export type ContourRef = { start: number; end: number; kind: ContourKind; depth: number; area: number; bandFraction?: number };
@@ -616,6 +661,7 @@ git commit -m "feat(post-process): geometry types, LightBurn palette, config fie
   // path-contours.ts
   export const flattenPath = (path: PathSegment[]): Pt[][]; // one polyline per M-run; Z appends the first point
   ```
+
   `MergeResponse` merge-result carries `contours: BandContourIndex` (not `holes`). `PoolRunResult.contours: Map<string, BandContourIndex>`. Store `bandContourIndexes: Writable<Map<string, BandContourIndex>>`.
 
 - [ ] **Step 1: Rename files**
@@ -667,8 +713,15 @@ describe('buildContourIndex kinds, axis and ends', () => {
 	it('puts the end on a protruding tag', () => {
 		// band plus a small tag sticking out below the last facet
 		const path: PathSegment[] = [
-			['M', 0, 0], ['L', 1, 0], ['L', 1, 10], ['L', 0.6, 10], ['L', 0.6, 12],
-			['L', 0.4, 12], ['L', 0.4, 10], ['L', 0, 10], ['Z']
+			['M', 0, 0],
+			['L', 1, 0],
+			['L', 1, 10],
+			['L', 0.6, 10],
+			['L', 0.6, 12],
+			['L', 0.4, 12],
+			['L', 0.4, 10],
+			['L', 0, 10],
+			['Z']
 		];
 		const index = buildContourIndex(path, input(10), 'tiled');
 		expect(index.ends!.end.point.y).toBeCloseTo(12, 6);
@@ -691,16 +744,26 @@ import { flattenPath } from '../path-contours';
 describe('flattenPath', () => {
 	it('splits runs and closes on Z', () => {
 		const runs = flattenPath([
-			['M', 0, 0], ['L', 1, 0], ['L', 1, 1], ['Z'],
-			['M', 5, 5], ['L', 6, 5]
+			['M', 0, 0],
+			['L', 1, 0],
+			['L', 1, 1],
+			['Z'],
+			['M', 5, 5],
+			['L', 6, 5]
 		]);
 		expect(runs).toHaveLength(2);
 		expect(runs[0][runs[0].length - 1]).toEqual({ x: 0, y: 0 });
-		expect(runs[1]).toEqual([{ x: 5, y: 5 }, { x: 6, y: 5 }]);
+		expect(runs[1]).toEqual([
+			{ x: 5, y: 5 },
+			{ x: 6, y: 5 }
+		]);
 	});
 
 	it('samples cubics and ends on the endpoint', () => {
-		const [run] = flattenPath([['M', 0, 0], ['C', 0, 1, 1, 1, 1, 0]]);
+		const [run] = flattenPath([
+			['M', 0, 0],
+			['C', 0, 1, 1, 1, 1, 0]
+		]);
 		expect(run.length).toBeGreaterThan(2);
 		expect(run[run.length - 1]).toEqual({ x: 1, y: 0 });
 	});
@@ -745,7 +808,8 @@ export const flattenPath = (path: PathSegment[]): Pt[][] => {
 				const c1 = { x: seg[1], y: seg[2] };
 				const c2 = { x: seg[3], y: seg[4] };
 				const p1 = { x: seg[5], y: seg[6] };
-				for (let i = 1; i < CURVE_SAMPLES; i += 1) run.push(cubicAt(p0, c1, c2, p1, i / CURVE_SAMPLES));
+				for (let i = 1; i < CURVE_SAMPLES; i += 1)
+					run.push(cubicAt(p0, c1, c2, p1, i / CURVE_SAMPLES));
 				run.push(p1);
 				cur = p1;
 				break;
@@ -827,9 +891,7 @@ export type ContourIndexInput = {
 };
 
 export const holesOf = (index: BandContourIndex) =>
-	index.contours.filter(
-		(c): c is ContourRef & { bandFraction: number } => c.kind === 'hole'
-	);
+	index.contours.filter((c): c is ContourRef & { bandFraction: number } => c.kind === 'hole');
 
 /** Major axis by PCA. A degenerate cloud gets +x. */
 const majorAxis = (points: Pt[]): { origin: Pt; direction: Pt } => {
@@ -917,8 +979,7 @@ export const buildContourIndex = (
 			area: Math.abs(contour.area)
 		};
 		if (isHole) {
-			ref.bandFraction =
-				input.pieceStartFraction + localFractionOf(contour.centroid, line) * span;
+			ref.bandFraction = input.pieceStartFraction + localFractionOf(contour.centroid, line) * span;
 		} else {
 			outlinePoints.push(...contour.points);
 		}
@@ -990,6 +1051,7 @@ git commit -m "feat(post-process): index every contour with kind, axis and band 
 ## Task 3: Stage 2 emits `TaggedPath[]`; renderer draws tagged pieces
 
 **Files:**
+
 - Modify: `src/lib/cut-pattern/drop-holes.ts` (`postProcessBandPath` returns `TaggedPath[]`)
 - Modify: `src/lib/stores/mergedPathStore.ts` (`applyPostProcess`, `mergedBandPaths` type)
 - Modify: `src/components/cut-pattern/BandCutPatternComponent.svelte` (merged branches)
@@ -997,8 +1059,10 @@ git commit -m "feat(post-process): index every contour with kind, axis and band 
 - Modify: `tests/hole-drop.spec.ts` (segment totals over pieces)
 
 **Interfaces:**
+
 - Consumes: `TaggedPath`, `layerStrokes` (Task 1); `BandContourIndex`, `holesOf` (Task 2).
 - Produces:
+
   ```ts
   export const postProcessBandPath = (path: PathSegment[], index: BandContourIndex, config: PostProcessConfig): TaggedPath[];
   export const applyPostProcess = (raw: Map<string, PathSegment[]>, indexes: Map<string, BandContourIndex>, config: PostProcessConfig): Map<string, TaggedPath[]>;
@@ -1026,7 +1090,11 @@ describe('postProcessBandPath tagged output', () => {
 
 	it('emits one tagged piece per contour, in contour order', () => {
 		const pieces = postProcessBandPath(path, index, cfg({ mode: 'none' }));
-		expect(pieces.map((p) => p.geometry)).toEqual(['pattern-outline', 'pattern-hole', 'pattern-hole']);
+		expect(pieces.map((p) => p.geometry)).toEqual([
+			'pattern-outline',
+			'pattern-hole',
+			'pattern-hole'
+		]);
 		expect(pieces.map((p) => p.contour)).toEqual([0, 1, 2]);
 		expect(concatPieces(pieces)).toEqual(path);
 	});
@@ -1037,14 +1105,19 @@ describe('postProcessBandPath tagged output', () => {
 	});
 
 	it('omits outline pieces with dropOutline', () => {
-		const pieces = postProcessBandPath(path, index, { ...cfg({ mode: 'none' }), dropOutline: true });
+		const pieces = postProcessBandPath(path, index, {
+			...cfg({ mode: 'none' }),
+			dropOutline: true
+		});
 		expect(pieces.every((p) => p.geometry === 'pattern-hole')).toBe(true);
 		expect(pieces).toHaveLength(2);
 	});
 
 	it('matches the flat dropHoles output when re-concatenated', () => {
 		const config = cfg({ mode: 'random', chance: 0.5 });
-		expect(concatPieces(postProcessBandPath(path, index, config))).toEqual(dropHoles(path, index, config));
+		expect(concatPieces(postProcessBandPath(path, index, config))).toEqual(
+			dropHoles(path, index, config)
+		);
 	});
 
 	it('treats an unindexed non-empty path as one outline piece', () => {
@@ -1174,14 +1247,14 @@ Keep the existing comments that still apply and the unchanged per-facet `{:else}
 `merged-path-store.test.ts` / `mergedPathStore.test.ts`: expectations on `mergedBandPaths` values become `TaggedPath[]` — compare `concatPieces(value)` where they compared a flat path. `tests/hole-drop.spec.ts` `readTotal`: count segments across pieces:
 
 ```ts
-				for (const value of paths.values()) {
-					const pieces = value as unknown[];
-					total += pieces.reduce<number>(
-						(n, piece) =>
-							n + (Array.isArray(piece) ? 1 : ((piece as { segments: unknown[] }).segments.length)),
-						0
-					);
-				}
+for (const value of paths.values()) {
+	const pieces = value as unknown[];
+	total += pieces.reduce<number>(
+		(n, piece) =>
+			n + (Array.isArray(piece) ? 1 : (piece as { segments: unknown[] }).segments.length),
+		0
+	);
+}
 ```
 
 (`mergedBandPathsRaw` values are still flat arrays of segments — each item is an array and counts 1; `mergedBandPaths` values are pieces — each counts its segments.)
@@ -1206,14 +1279,17 @@ git commit -m "feat(post-process): stage 2 emits tagged pieces; render one path 
 ## Task 4: Tag every exported producer; untagged-export guard
 
 **Files:**
+
 - Create: `src/lib/cut-pattern/export-guard.ts`
 - Test: `src/lib/cut-pattern/__tests__/export-guard.test.ts`
 - Modify: `src/components/cut-pattern/SvgText/SvgText.svelte`, `LabelText.svelte`, `OnTabLabel.svelte`, `PatternLabel.svelte`, `PageGeometry.svelte`
 - Modify: any other component the browser check (Step 6) finds emitting untagged exported elements
 
 **Interfaces:**
+
 - Consumes: `GeometryType`, `isGeometryType`, `layerStrokes`.
 - Produces:
+
   ```ts
   export type ExportNode = { tag: string; geometry: string | null; describe: string };
   export const EXPORTED_TAGS: readonly string[]; // ['path','rect','line','polyline','polygon','circle','ellipse','text']
@@ -1221,6 +1297,7 @@ git commit -m "feat(post-process): stage 2 emits tagged pieces; render one path 
   export const collectExportNodes = (root: Element): ExportNode[]; // DOM adapter, excludes .screen-only subtrees
   export const untaggedMessage = (bad: ExportNode[]): string;
   ```
+
   `SvgText` prop `geometry?: GeometryType` (default `'label-text'`); it no longer takes `color`.
 
 - [ ] **Step 1: Failing guard test**
@@ -1262,7 +1339,14 @@ import { isGeometryType } from './post-process-types';
 export type ExportNode = { tag: string; geometry: string | null; describe: string };
 
 export const EXPORTED_TAGS = [
-	'path', 'rect', 'line', 'polyline', 'polygon', 'circle', 'ellipse', 'text'
+	'path',
+	'rect',
+	'line',
+	'polyline',
+	'polygon',
+	'circle',
+	'ellipse',
+	'text'
 ] as const;
 
 /**
@@ -1276,7 +1360,10 @@ export const findUntagged = (nodes: ExportNode[]): ExportNode[] =>
 
 export const untaggedMessage = (bad: ExportNode[]): string =>
 	`Export blocked: ${bad.length} untagged element${bad.length === 1 ? '' : 's'} ` +
-	`(${bad.slice(0, 5).map((b) => b.describe).join(', ')}${bad.length > 5 ? ', …' : ''}).`;
+	`(${bad
+		.slice(0, 5)
+		.map((b) => b.describe)
+		.join(', ')}${bad.length > 5 ? ', …' : ''}).`;
 
 /** DOM adapter. `root` should already have screen-only nodes removed (a clone). */
 export const collectExportNodes = (root: Element): ExportNode[] =>
@@ -1338,13 +1425,16 @@ Each task runs in its own worktree branched from the wave-0 result and touches o
 ## Task 5: Disconnect surround (stage 3, pure)
 
 **Files:**
+
 - Create: `src/lib/cut-pattern/page-post-process/segments.ts`
 - Create: `src/lib/cut-pattern/page-post-process/disconnect.ts`
 - Test: `src/lib/cut-pattern/page-post-process/__tests__/disconnect.test.ts`, `segments.test.ts`
 
 **Interfaces:**
+
 - Consumes: `PlacedBand`, `Disconnect`, `Pt` (Task 1); `pointInPolygon` from `path-contours.ts`; `PageRect` from `page-layout/types.ts`.
 - Produces:
+
   ```ts
   // segments.ts
   export type Seg = { a: Pt; b: Pt };
@@ -1374,13 +1464,29 @@ describe('segments', () => {
 		expect(t).toBeCloseTo(5, 9);
 	});
 	it('misses a segment behind, beside, or parallel to the ray', () => {
-		expect(raySegment({ x: 0, y: 0 }, { x: 0, y: 1 }, { a: { x: -1, y: -5 }, b: { x: 1, y: -5 } })).toBeNull();
-		expect(raySegment({ x: 0, y: 0 }, { x: 0, y: 1 }, { a: { x: 2, y: 5 }, b: { x: 3, y: 5 } })).toBeNull();
-		expect(raySegment({ x: 0, y: 0 }, { x: 0, y: 1 }, { a: { x: 1, y: 0 }, b: { x: 1, y: 5 } })).toBeNull();
+		expect(
+			raySegment({ x: 0, y: 0 }, { x: 0, y: 1 }, { a: { x: -1, y: -5 }, b: { x: 1, y: -5 } })
+		).toBeNull();
+		expect(
+			raySegment({ x: 0, y: 0 }, { x: 0, y: 1 }, { a: { x: 2, y: 5 }, b: { x: 3, y: 5 } })
+		).toBeNull();
+		expect(
+			raySegment({ x: 0, y: 0 }, { x: 0, y: 1 }, { a: { x: 1, y: 0 }, b: { x: 1, y: 5 } })
+		).toBeNull();
 	});
 	it('detects crossing segments', () => {
-		expect(segmentsIntersect({ a: { x: 0, y: 0 }, b: { x: 2, y: 2 } }, { a: { x: 0, y: 2 }, b: { x: 2, y: 0 } })).toBe(true);
-		expect(segmentsIntersect({ a: { x: 0, y: 0 }, b: { x: 1, y: 0 } }, { a: { x: 0, y: 1 }, b: { x: 1, y: 1 } })).toBe(false);
+		expect(
+			segmentsIntersect(
+				{ a: { x: 0, y: 0 }, b: { x: 2, y: 2 } },
+				{ a: { x: 0, y: 2 }, b: { x: 2, y: 0 } }
+			)
+		).toBe(true);
+		expect(
+			segmentsIntersect(
+				{ a: { x: 0, y: 0 }, b: { x: 1, y: 0 } },
+				{ a: { x: 0, y: 1 }, b: { x: 1, y: 1 } }
+			)
+		).toBe(false);
 	});
 	it('rotates counter-clockwise in math orientation', () => {
 		const r = rotate({ x: 1, y: 0 }, 90);
@@ -1388,7 +1494,15 @@ describe('segments', () => {
 		expect(r.y).toBeCloseTo(1, 9);
 	});
 	it('turns polylines into segments', () => {
-		expect(segmentsOf([[{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 1, y: 1 }]])).toHaveLength(2);
+		expect(
+			segmentsOf([
+				[
+					{ x: 0, y: 0 },
+					{ x: 1, y: 0 },
+					{ x: 1, y: 1 }
+				]
+			])
+		).toHaveLength(2);
 	});
 });
 ```
@@ -1401,9 +1515,20 @@ import { computeDisconnects } from '../disconnect';
 import type { PlacedBand } from '../../post-process-types';
 
 const rectPoly = (x0: number, y0: number, x1: number, y1: number) => [
-	{ x: x0, y: y0 }, { x: x1, y: y0 }, { x: x1, y: y1 }, { x: x0, y: y1 }, { x: x0, y: y0 }
+	{ x: x0, y: y0 },
+	{ x: x1, y: y0 },
+	{ x: x1, y: y1 },
+	{ x: x0, y: y1 },
+	{ x: x0, y: y0 }
 ];
-const vband = (id: string, x0: number, y0: number, x1: number, y1: number, page = 0): PlacedBand => ({
+const vband = (
+	id: string,
+	x0: number,
+	y0: number,
+	x1: number,
+	y1: number,
+	page = 0
+): PlacedBand => ({
 	bandId: id,
 	page,
 	outlines: [rectPoly(x0, y0, x1, y1)],
@@ -1427,10 +1552,16 @@ describe('computeDisconnects', () => {
 	});
 
 	it('reaches a facing neighbour once, not twice', () => {
-		const d = computeDisconnects([vband('a', 45, 10, 55, 40), vband('b', 45, 45, 55, 90)], [page], 2);
+		const d = computeDisconnects(
+			[vband('a', 45, 10, 55, 40), vband('b', 45, 45, 55, 90)],
+			[page],
+			2
+		);
 		const between = d.filter((s) => s.toBand !== null);
 		expect(between).toHaveLength(1);
-		expect(Math.hypot(between[0].b.x - between[0].a.x, between[0].b.y - between[0].a.y)).toBeCloseTo(5, 6);
+		expect(
+			Math.hypot(between[0].b.x - between[0].a.x, between[0].b.y - between[0].a.y)
+		).toBeCloseTo(5, 6);
 		expect(d).toHaveLength(3);
 	});
 
@@ -1445,14 +1576,24 @@ describe('computeDisconnects', () => {
 
 	it('skips an end buried inside another band', () => {
 		const a = vband('a', 45, 10, 55, 50);
-		const cover: PlacedBand = { bandId: 'cover', page: 0, outlines: [rectPoly(40, 45, 60, 60)], holes: [] };
+		const cover: PlacedBand = {
+			bandId: 'cover',
+			page: 0,
+			outlines: [rectPoly(40, 45, 60, 60)],
+			holes: []
+		};
 		const d = computeDisconnects([a, cover], [page], 2);
 		expect(d.find((s) => s.fromBand === 'a' && s.a.y === 50)).toBeUndefined();
 	});
 
 	it('ignores off-page ends, end-less bands and unknown pages, with no NaN', () => {
 		const off = vband('off', 45, -20, 55, -5);
-		const noEnds: PlacedBand = { bandId: 'n', page: 0, outlines: [rectPoly(10, 10, 20, 20)], holes: [] };
+		const noEnds: PlacedBand = {
+			bandId: 'n',
+			page: 0,
+			outlines: [rectPoly(10, 10, 20, 20)],
+			holes: []
+		};
 		const other = vband('o', 45, 10, 55, 80, 1);
 		const d = computeDisconnects([off, noEnds, other], [page], 2);
 		expect(d.filter((s) => s.fromBand === 'off')).toHaveLength(0);
@@ -1509,7 +1650,12 @@ export const rectEdges = (r: { x: number; y: number; width: number; height: numb
 	const p1 = { x: r.x + r.width, y: r.y };
 	const p2 = { x: r.x + r.width, y: r.y + r.height };
 	const p3 = { x: r.x, y: r.y + r.height };
-	return [{ a: p0, b: p1 }, { a: p1, b: p2 }, { a: p2, b: p3 }, { a: p3, b: p0 }];
+	return [
+		{ a: p0, b: p1 },
+		{ a: p1, b: p2 },
+		{ a: p2, b: p3 },
+		{ a: p3, b: p0 }
+	];
 };
 ```
 
@@ -1531,9 +1677,7 @@ const inside = (p: Pt, r: PageRect) =>
 	p.x >= r.x && p.x <= r.x + r.width && p.y >= r.y && p.y <= r.y + r.height;
 
 const closed = (poly: Pt[]) =>
-	poly.length > 3 &&
-	poly[0].x === poly[poly.length - 1].x &&
-	poly[0].y === poly[poly.length - 1].y;
+	poly.length > 3 && poly[0].x === poly[poly.length - 1].x && poly[0].y === poly[poly.length - 1].y;
 
 /**
  * Straight cuts from each band end to whatever it meets first within a cone
@@ -1597,7 +1741,8 @@ export const computeDisconnects = (
 							rayTo = null;
 						}
 					}
-					if (Number.isFinite(rayT) && (!best || rayT < best.t)) best = { t: rayT, dir, toBand: rayTo };
+					if (Number.isFinite(rayT) && (!best || rayT < best.t))
+						best = { t: rayT, dir, toBand: rayTo };
 				}
 				if (!best) continue;
 				out.push({
@@ -1650,6 +1795,7 @@ git commit -m "feat(post-process): disconnect-surround search"
 ## Task 6: Connect surround — outline gap split, wired into stage 2
 
 **Files:**
+
 - Create: `src/lib/cut-pattern/outline-gap.ts`
 - Test: `src/lib/cut-pattern/__tests__/outline-gap.test.ts`
 - Modify: `src/lib/cut-pattern/drop-holes.ts` (`postProcessBandPath` gains `pageScale`)
@@ -1657,8 +1803,10 @@ git commit -m "feat(post-process): disconnect-surround search"
 - Modify: `src/lib/cut-pattern/__tests__/drop-holes.test.ts` (append one integration test)
 
 **Interfaces:**
+
 - Consumes: `TaggedPath`, `BandEnds`, `Pt` (Task 1); `BandContourIndex`, `flattenPath` (Task 2); `postProcessBandPath`, `applyPostProcess` (Task 3).
 - Produces:
+
   ```ts
   export const insertGaps = (piece: TaggedPath, points: Pt[], gap: number): TaggedPath[];
   export const applyConnectSurround = (pieces: TaggedPath[], ends: BandEnds, gap: number): TaggedPath[];
@@ -1680,10 +1828,15 @@ import type { PathSegment } from '$lib/types';
 
 const length = (segs: PathSegment[]) =>
 	flattenPath(segs).reduce(
-		(n, run) => n + run.slice(1).reduce((m, p, i) => m + Math.hypot(p.x - run[i].x, p.y - run[i].y), 0),
+		(n, run) =>
+			n + run.slice(1).reduce((m, p, i) => m + Math.hypot(p.x - run[i].x, p.y - run[i].y), 0),
 		0
 	);
-const outline = (segments: PathSegment[]): TaggedPath => ({ geometry: 'pattern-outline', segments, contour: 0 });
+const outline = (segments: PathSegment[]): TaggedPath => ({
+	geometry: 'pattern-outline',
+	segments,
+	contour: 0
+});
 const square: PathSegment[] = [['M', 0, 0], ['L', 10, 0], ['L', 10, 10], ['L', 0, 10], ['Z']];
 const K = 0.5522847498 * 10;
 const circle: PathSegment[] = [
@@ -1697,7 +1850,14 @@ const circle: PathSegment[] = [
 
 describe('insertGaps', () => {
 	it('cuts one gap per point out of a line contour', () => {
-		const out = insertGaps(outline(square), [{ x: 5, y: 0 }, { x: 5, y: 10 }], 2);
+		const out = insertGaps(
+			outline(square),
+			[
+				{ x: 5, y: 0 },
+				{ x: 5, y: 10 }
+			],
+			2
+		);
 		const gaps = out.filter((p) => p.geometry === 'outline-gap');
 		const rest = out.filter((p) => p.geometry === 'pattern-outline');
 		expect(gaps).toHaveLength(2);
@@ -1709,10 +1869,22 @@ describe('insertGaps', () => {
 
 	it('cuts gaps out of a cubic contour within tolerance', () => {
 		const total = length(circle);
-		const out = insertGaps(outline(circle), [{ x: 0, y: -10 }, { x: 0, y: 10 }], 2);
-		out.filter((p) => p.geometry === 'outline-gap').forEach((g) => expect(length(g.segments)).toBeCloseTo(2, 1));
+		const out = insertGaps(
+			outline(circle),
+			[
+				{ x: 0, y: -10 },
+				{ x: 0, y: 10 }
+			],
+			2
+		);
+		out
+			.filter((p) => p.geometry === 'outline-gap')
+			.forEach((g) => expect(length(g.segments)).toBeCloseTo(2, 1));
 		// both sides are 8-sample flattenings of differently split curves; compare to within 0.5
-		expect(length(out.find((p) => p.geometry === 'pattern-outline')!.segments)).toBeCloseTo(total - 4, 0);
+		expect(length(out.find((p) => p.geometry === 'pattern-outline')!.segments)).toBeCloseTo(
+			total - 4,
+			0
+		);
 	});
 
 	it('handles a window that wraps the contour start', () => {
@@ -1724,9 +1896,14 @@ describe('insertGaps', () => {
 	});
 
 	it('merges overlapping windows', () => {
-		const gaps = insertGaps(outline(square), [{ x: 4, y: 0 }, { x: 5, y: 0 }], 2).filter(
-			(p) => p.geometry === 'outline-gap'
-		);
+		const gaps = insertGaps(
+			outline(square),
+			[
+				{ x: 4, y: 0 },
+				{ x: 5, y: 0 }
+			],
+			2
+		).filter((p) => p.geometry === 'outline-gap');
 		expect(gaps).toHaveLength(1);
 		expect(length(gaps[0].segments)).toBeCloseTo(3, 6);
 	});
@@ -1774,7 +1951,9 @@ it('inserts gaps in stage 2 when connect surround is on', () => {
 	const pieces = postProcessBandPath(path, index, config, 2); // 1 mm × 2 units/mm = 2 units
 	expect(pieces.filter((p) => p.geometry === 'outline-gap')).toHaveLength(2);
 	expect(
-		postProcessBandPath(path, index, { ...config, dropOutline: true }, 2).some((p) => p.geometry === 'outline-gap')
+		postProcessBandPath(path, index, { ...config, dropOutline: true }, 2).some(
+			(p) => p.geometry === 'outline-gap'
+		)
 	).toBe(false);
 });
 ```
@@ -1793,7 +1972,10 @@ type Cubic = { kind: 'C'; q: Quad4; len: number; lut: number[] };
 type Edge = Line | Cubic;
 
 const LUT_N = 64;
-const lerp = (a: Pt, b: Pt, t: number): Pt => ({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
+const lerp = (a: Pt, b: Pt, t: number): Pt => ({
+	x: a.x + (b.x - a.x) * t,
+	y: a.y + (b.y - a.y) * t
+});
 const dist = (a: Pt, b: Pt) => Math.hypot(a.x - b.x, a.y - b.y);
 
 const cubicAt = ([p0, c1, c2, p1]: Quad4, t: number): Pt => {
@@ -1813,7 +1995,10 @@ const splitCubic = (q: Quad4, t: number): [Quad4, Quad4] => {
 	const d = lerp(a, b, t);
 	const e = lerp(b, c, t);
 	const f = lerp(d, e, t);
-	return [[p0, a, d, f], [f, e, c, p1]];
+	return [
+		[p0, a, d, f],
+		[f, e, c, p1]
+	];
 };
 
 /** The part of a cubic between t0 and t1, exactly. */
@@ -1875,7 +2060,8 @@ const edgesOf = (segs: PathSegment[]): Edge[] | null => {
 			edges.push(cubicEdge([cur, lerp(cur, c, 2 / 3), lerp(p1, c, 2 / 3), p1]));
 			cur = p1;
 		} else if (s[0] === 'Z') {
-			if (dist(cur, start) > 1e-9) edges.push({ kind: 'L', p0: cur, p1: start, len: dist(cur, start) });
+			if (dist(cur, start) > 1e-9)
+				edges.push({ kind: 'L', p0: cur, p1: start, len: dist(cur, start) });
 			cur = start;
 		}
 	}
@@ -1904,7 +2090,10 @@ const closestArc = (edges: Edge[], cum: number[], p: Pt): { s: number; d: number
 		if (e.kind === 'L') {
 			const dx = e.p1.x - e.p0.x;
 			const dy = e.p1.y - e.p0.y;
-			const t = Math.max(0, Math.min(1, ((p.x - e.p0.x) * dx + (p.y - e.p0.y) * dy) / (e.len * e.len)));
+			const t = Math.max(
+				0,
+				Math.min(1, ((p.x - e.p0.x) * dx + (p.y - e.p0.y) * dy) / (e.len * e.len))
+			);
 			const d = dist(p, lerp(e.p0, e.p1, t));
 			if (d < best.d) best = { s: cum[i] + t * e.len, d };
 			return;
@@ -2008,7 +2197,8 @@ export const insertGaps = (piece: TaggedPath, points: Pt[], gap: number): Tagged
 		const next = merged[(k + 1) % merged.length];
 		const restStart = w.start + w.span;
 		const restEnd = k + 1 < merged.length ? next.start : next.start + total;
-		if (restEnd - restStart > 1e-9) outlineSegs.push(...sliceCyclic(edges, cum, restStart, restEnd - restStart));
+		if (restEnd - restStart > 1e-9)
+			outlineSegs.push(...sliceCyclic(edges, cum, restStart, restEnd - restStart));
 	});
 	return [{ geometry: 'pattern-outline', segments: outlineSegs, contour: piece.contour }, ...gaps];
 };
@@ -2021,7 +2211,11 @@ const distanceTo = (piece: TaggedPath, p: Pt): number => {
 };
 
 /** Connect surround: one gap per band end, in whichever outline piece the end lies on. */
-export const applyConnectSurround = (pieces: TaggedPath[], ends: BandEnds, gap: number): TaggedPath[] => {
+export const applyConnectSurround = (
+	pieces: TaggedPath[],
+	ends: BandEnds,
+	gap: number
+): TaggedPath[] => {
 	const assigned = new Map<number, Pt[]>();
 	for (const end of [ends.start, ends.end]) {
 		let bestI = -1;
@@ -2047,11 +2241,11 @@ export const applyConnectSurround = (pieces: TaggedPath[], ends: BandEnds, gap: 
 In `drop-holes.ts`, import `applyConnectSurround` from `./outline-gap`, change the signature to `(path, index, config, pageScale = 1)`, and at the end of `postProcessBandPath` replace `return pieces;` with:
 
 ```ts
-	const cs = config.connectSurround;
-	if (cs?.enabled && !config.dropOutline && index.ends) {
-		return applyConnectSurround(pieces, index.ends, cs.gapMm * pageScale);
-	}
-	return pieces;
+const cs = config.connectSurround;
+if (cs?.enabled && !config.dropOutline && index.ends) {
+	return applyConnectSurround(pieces, index.ends, cs.gapMm * pageScale);
+}
+return pieces;
 ```
 
 In `mergedPathStore.ts`, `applyPostProcess(raw, indexes, config, pageScale = 1)` passes `pageScale` through to `postProcessBandPath`. Add a narrowed page-scale store and feed it to `mergedBandPaths`:
@@ -2092,14 +2286,17 @@ git commit -m "feat(post-process): connect surround — outline gaps at band end
 ## Task 7: Page labels — text, measurement, placement (pure)
 
 **Files:**
+
 - Create: `src/lib/svg-text-metrics.ts`
 - Create: `src/lib/cut-pattern/page-post-process/page-label.ts`
 - Test: `src/lib/cut-pattern/page-post-process/__tests__/page-label.test.ts`
 - Modify: `src/components/cut-pattern/SvgText/svg-text.ts` (use the shared `CHAR_GAP`)
 
 **Interfaces:**
+
 - Consumes: `PlacedBand`, `Disconnect`, `PageLabelResult`, `Pt` (Task 1); `PageLabelConfig` (Task 1); `PageRect`; `pointInPolygon`; `segmentsIntersect`, `segmentsOf` and `Seg` from `./segments` (**Task 5, which runs in parallel**). If `segments.ts` is not on your branch, create it with exactly Task 5's `segments.ts` content (copy it from Task 5 in this plan), but do NOT commit it. Report that you did this; Task 5's commit supplies the file.
 - Produces:
+
   ```ts
   // svg-text-metrics.ts
   export const CHAR_GAP = 0.3;
@@ -2112,6 +2309,7 @@ git commit -m "feat(post-process): connect surround — outline gaps at band end
   export const placeBox = (args: { content: Box; width: number; height: number; obstacles: Seg[]; solids: Pt[][] }): Pt | null; // top-left
   export const buildPageLabels = (args: { pages: PageRect[]; marginPx: number; pageScale: number; bands: PlacedBand[]; disconnects: Disconnect[]; config: PageLabelConfig | undefined; configName: string | undefined; dict: GlyphDict }): PageLabelResult[];
   ```
+
   A `PageLabelResult` renders as `<SvgText string={text} anchor={origin} size={size} offset={{ x: 0, y: 0 }} geometry="page-label" />`. The `svgTextDictionary` store value is a `GlyphDict` (its entries carry `path` and `width`).
 
 - [ ] **Step 1: Failing tests**
@@ -2129,21 +2327,41 @@ import {
 import type { PlacedBand } from '../../post-process-types';
 import type { PathSegment } from '$lib/types';
 
-const glyphPath: PathSegment[] = [['M', 0, 0], ['L', 1, 0], ['L', 1, 1]];
+const glyphPath: PathSegment[] = [
+	['M', 0, 0],
+	['L', 1, 0],
+	['L', 1, 1]
+];
 const glyph = { path: glyphPath, width: 1 };
 const dict: GlyphDict = {
-	a: glyph, b: glyph, '?': glyph, o: glyph, f: glyph, '1': glyph, '2': glyph,
+	a: glyph,
+	b: glyph,
+	'?': glyph,
+	o: glyph,
+	f: glyph,
+	'1': glyph,
+	'2': glyph,
 	' ': { path: [], width: 0.5 }
 };
 const rectPoly = (x0: number, y0: number, x1: number, y1: number) => [
-	{ x: x0, y: y0 }, { x: x1, y: y0 }, { x: x1, y: y1 }, { x: x0, y: y1 }, { x: x0, y: y0 }
+	{ x: x0, y: y0 },
+	{ x: x1, y: y0 },
+	{ x: x1, y: y1 },
+	{ x: x0, y: y1 },
+	{ x: x0, y: y0 }
 ];
 
 describe('composePageLabel', () => {
 	it('joins the enabled parts', () => {
-		expect(composePageLabel({ text: 'hello', configName: true, pageNumber: true }, 'shade', 0, 3)).toBe('hello - shade - 1 of 3');
-		expect(composePageLabel({ text: '', configName: false, pageNumber: true }, 'shade', 1, 3)).toBe('2 of 3');
-		expect(composePageLabel({ text: '', configName: true, pageNumber: false }, undefined, 0, 1)).toBe('');
+		expect(
+			composePageLabel({ text: 'hello', configName: true, pageNumber: true }, 'shade', 0, 3)
+		).toBe('hello - shade - 1 of 3');
+		expect(composePageLabel({ text: '', configName: false, pageNumber: true }, 'shade', 1, 3)).toBe(
+			'2 of 3'
+		);
+		expect(
+			composePageLabel({ text: '', configName: true, pageNumber: false }, undefined, 0, 1)
+		).toBe('');
 		expect(composePageLabel(undefined, 'x', 0, 1)).toBe('');
 	});
 });
@@ -2171,21 +2389,43 @@ describe('placeBox', () => {
 		expect(p.y + 5).toBeCloseTo(90, 6);
 	});
 	it('avoids a band covering the corner', () => {
-		const p = placeBox({ content, width: 20, height: 5, obstacles: [], solids: [rectPoly(40, 60, 95, 95)] })!;
+		const p = placeBox({
+			content,
+			width: 20,
+			height: 5,
+			obstacles: [],
+			solids: [rectPoly(40, 60, 95, 95)]
+		})!;
 		expect(p.x + 20 > 40 && p.y + 5 > 60).toBe(false);
 	});
 	it('returns null when nothing fits', () => {
-		expect(placeBox({ content, width: 20, height: 5, obstacles: [], solids: [rectPoly(0, 0, 100, 100)] })).toBeNull();
+		expect(
+			placeBox({ content, width: 20, height: 5, obstacles: [], solids: [rectPoly(0, 0, 100, 100)] })
+		).toBeNull();
 	});
 });
 
 describe('buildPageLabels', () => {
 	it('numbers pages and flags unplaceable ones', () => {
-		const pages = [{ x: 0, y: 0, width: 100, height: 100 }, { x: 0, y: 110, width: 100, height: 100 }];
-		const full: PlacedBand = { bandId: 'f', page: 1, outlines: [rectPoly(0, 110, 100, 210)], holes: [] };
+		const pages = [
+			{ x: 0, y: 0, width: 100, height: 100 },
+			{ x: 0, y: 110, width: 100, height: 100 }
+		];
+		const full: PlacedBand = {
+			bandId: 'f',
+			page: 1,
+			outlines: [rectPoly(0, 110, 100, 210)],
+			holes: []
+		};
 		const labels = buildPageLabels({
-			pages, marginPx: 5, pageScale: 1, bands: [full], disconnects: [],
-			config: { text: '', configName: false, pageNumber: true }, configName: undefined, dict
+			pages,
+			marginPx: 5,
+			pageScale: 1,
+			bands: [full],
+			disconnects: [],
+			config: { text: '', configName: false, pageNumber: true },
+			configName: undefined,
+			dict
 		});
 		expect(labels.map((l) => l.text)).toEqual(['1 of 2', '2 of 2']);
 		expect(labels[0].unplaced).toBeUndefined();
@@ -2194,8 +2434,14 @@ describe('buildPageLabels', () => {
 	it('returns nothing when the label is empty', () => {
 		expect(
 			buildPageLabels({
-				pages: [{ x: 0, y: 0, width: 100, height: 100 }], marginPx: 5, pageScale: 1, bands: [],
-				disconnects: [], config: undefined, configName: 'x', dict
+				pages: [{ x: 0, y: 0, width: 100, height: 100 }],
+				marginPx: 5,
+				pageScale: 1,
+				bands: [],
+				disconnects: [],
+				config: undefined,
+				configName: 'x',
+				dict
 			})
 		).toEqual([]);
 	});
@@ -2291,7 +2537,8 @@ const boxHits = (b: Box, obstacles: Seg[], solids: Pt[][]): boolean => {
 		{ x: b.x, y: b.y + b.height }
 	];
 	const edges: Seg[] = corners.map((a, i) => ({ a, b: corners[(i + 1) % 4] }));
-	const inBox = (p: Pt) => p.x >= b.x && p.x <= b.x + b.width && p.y >= b.y && p.y <= b.y + b.height;
+	const inBox = (p: Pt) =>
+		p.x >= b.x && p.x <= b.x + b.width && p.y >= b.y && p.y <= b.y + b.height;
 	for (const s of [...obstacles, ...segmentsOf(solids)]) {
 		if (inBox(s.a) || inBox(s.b)) return true;
 		if (edges.some((e) => segmentsIntersect(e, s))) return true;
@@ -2314,7 +2561,8 @@ export const placeBox = (args: {
 	solids: Pt[][];
 }): Pt | null => {
 	const { content, width, height, obstacles, solids } = args;
-	if (!(width > 0) || !(height > 0) || width > content.width || height > content.height) return null;
+	if (!(width > 0) || !(height > 0) || width > content.width || height > content.height)
+		return null;
 	const stepX = width / 4;
 	const stepY = height / 2;
 	for (let y = content.y + content.height - height; y >= content.y - 1e-9; y -= stepY) {
@@ -2396,12 +2644,15 @@ git commit -m "feat(post-process): page label text, measurement and placement"
 ## Task 8: LightBurn `.lbrn2` writer, path encoding, template parsing
 
 **Files:**
+
 - Create: `src/lib/lightburn/lbrn2-path.ts`, `src/lib/lightburn/lbrn2-writer.ts`, `src/lib/lightburn/template.ts`
 - Test: `src/lib/lightburn/__tests__/lbrn2-path.test.ts`, `lbrn2-writer.test.ts`, `template.test.ts`
 
 **Interfaces:**
+
 - Consumes: `LbProject`, `LbShape` (Task 1); `layerByIndex`, `isToolLayer` (Task 1).
 - Produces:
+
   ```ts
   // lbrn2-path.ts
   export const fmt = (n: number): string;
@@ -2432,18 +2683,23 @@ describe('fmt', () => {
 
 describe('encodeSubpaths', () => {
 	it('encodes a closed polyline', () => {
-		expect(encodeSubpaths([['M', 0, 0], ['L', 10, 0], ['L', 10, 10], ['L', 0, 10], ['Z']])).toEqual([
-			{
-				vertList: 'V0 0c0x1c1x1V10 0c0x1c1x1V10 10c0x1c1x1V0 10c0x1c1x1',
-				primList: 'L0 1L1 2L2 3L3 0'
-			}
-		]);
+		expect(encodeSubpaths([['M', 0, 0], ['L', 10, 0], ['L', 10, 10], ['L', 0, 10], ['Z']])).toEqual(
+			[
+				{
+					vertList: 'V0 0c0x1c1x1V10 0c0x1c1x1V10 10c0x1c1x1V0 10c0x1c1x1',
+					primList: 'L0 1L1 2L2 3L3 0'
+				}
+			]
+		);
 	});
 
 	it('stores cubic controls as c0 on the start and c1 on the end vertex', () => {
-		expect(encodeSubpaths([['M', 0, 0], ['C', 0, 5, 5, 10, 10, 10]])).toEqual([
-			{ vertList: 'V0 0c0x0c0y5c1x1V10 10c0x1c1x5c1y10', primList: 'B0 1' }
-		]);
+		expect(
+			encodeSubpaths([
+				['M', 0, 0],
+				['C', 0, 5, 5, 10, 10, 10]
+			])
+		).toEqual([{ vertList: 'V0 0c0x0c0y5c1x1V10 10c0x1c1x5c1y10', primList: 'B0 1' }]);
 	});
 
 	it('folds a closing point that repeats the start into vertex 0', () => {
@@ -2453,21 +2709,41 @@ describe('encodeSubpaths', () => {
 	});
 
 	it('emits one entry per M-run', () => {
-		expect(encodeSubpaths([['M', 0, 0], ['L', 1, 0], ['M', 5, 5], ['L', 6, 5]])).toHaveLength(2);
+		expect(
+			encodeSubpaths([
+				['M', 0, 0],
+				['L', 1, 0],
+				['M', 5, 5],
+				['L', 6, 5]
+			])
+		).toHaveLength(2);
 	});
 
 	it('rejects arcs', () => {
-		expect(() => encodeSubpaths([['M', 0, 0], ['A', 1, 1, 0, 0, 1, 2, 0]])).toThrow();
+		expect(() =>
+			encodeSubpaths([
+				['M', 0, 0],
+				['A', 1, 1, 0, 0, 1, 2, 0]
+			])
+		).toThrow();
 	});
 });
 
 describe('toCubicSegments', () => {
 	it('elevates quadratics exactly', () => {
-		expect(toCubicSegments([['M', 0, 0], ['Q', 3, 3, 6, 0]])[1]).toEqual(['C', 2, 2, 4, 2, 6, 0]);
+		expect(
+			toCubicSegments([
+				['M', 0, 0],
+				['Q', 3, 3, 6, 0]
+			])[1]
+		).toEqual(['C', 2, 2, 4, 2, 6, 0]);
 	});
 
 	it('turns a half-circle arc into cubics ending on the endpoint', () => {
-		const out = toCubicSegments([['M', -10, 0], ['A', 10, 10, 0, 0, 1, 10, 0]]);
+		const out = toCubicSegments([
+			['M', -10, 0],
+			['A', 10, 10, 0, 0, 1, 10, 0]
+		]);
 		expect(out.every((s) => ['M', 'L', 'C', 'Z'].includes(s[0]))).toBe(true);
 		const last = out[out.length - 1];
 		expect(last[0]).toBe('C');
@@ -2530,7 +2806,14 @@ const project: LbProject = {
 			shapes: [
 				{ kind: 'rect', cutIndex: 30, x: 0, y: 0, width: 300, height: 300 },
 				{ kind: 'path', cutIndex: 0, segments: [['M', 0, 0], ['L', 10, 0], ['L', 10, 10], ['Z']] },
-				{ kind: 'path', cutIndex: 1, segments: [['M', 1, 1], ['L', 2, 2]] }
+				{
+					kind: 'path',
+					cutIndex: 1,
+					segments: [
+						['M', 1, 1],
+						['L', 2, 2]
+					]
+				}
 			]
 		},
 		{ shapes: [{ kind: 'rect', cutIndex: 30, x: 0, y: 310, width: 300, height: 300 }] }
@@ -2891,12 +3174,15 @@ git commit -m "feat(lightburn): .lbrn2 writer, path encoding and template parsin
 ## Task 9: File naming, millimetre export frame, `d` parsing, shapes → `LbProject`
 
 **Files:**
+
 - Create: `src/lib/download/file-stamp.ts`, `src/lib/download/export-frame.ts`, `src/lib/download/parse-path-d.ts`, `src/lib/lightburn/build-lb-project.ts`
 - Test: `src/lib/download/__tests__/file-stamp.test.ts`, `export-frame.test.ts`, `parse-path-d.test.ts`, `src/lib/lightburn/__tests__/build-lb-project.test.ts`
 
 **Interfaces:**
+
 - Consumes: `GeometryType` (Task 1); `LbProject`, `LayerMap`, `resolveLayer` (Task 1); `PageRect`.
 - Produces:
+
   ```ts
   export const fileStamp = (name: string | undefined, now?: Date): string;
   export type ExportFrame = { width: string; height: string; viewBox: string; contentTransform: string; widthMm: number; heightMm: number };
@@ -2945,7 +3231,10 @@ describe('exportFrame', () => {
 	});
 	it('spans every page from their union origin', () => {
 		const f = exportFrame(
-			[{ x: 100, y: 50, width: 600, height: 600 }, { x: 100, y: 670, width: 600, height: 600 }],
+			[
+				{ x: 100, y: 50, width: 600, height: 600 },
+				{ x: 100, y: 670, width: 600, height: 600 }
+			],
 			2
 		);
 		expect(f.heightMm).toBe(610);
@@ -2967,12 +3256,21 @@ import { parsePathD, applyMatrix } from '../parse-path-d';
 describe('parsePathD', () => {
 	it('parses what svgPathStringFromSegments writes', () => {
 		expect(parsePathD('M 0 0\nL 10 0\nC 1 2 3 4 5 6\nQ 1 1 2 2\nA 5 5 0 0 1 10 10\nZ')).toEqual([
-			['M', 0, 0], ['L', 10, 0], ['C', 1, 2, 3, 4, 5, 6], ['Q', 1, 1, 2, 2], ['A', 5, 5, 0, 0, 1, 10, 10], ['Z']
+			['M', 0, 0],
+			['L', 10, 0],
+			['C', 1, 2, 3, 4, 5, 6],
+			['Q', 1, 1, 2, 2],
+			['A', 5, 5, 0, 0, 1, 10, 10],
+			['Z']
 		]);
 	});
 	it('handles H, V, exponents and implicit repeats', () => {
 		expect(parsePathD('M0,0 H5 V-1e-1 L1 1 2 2')).toEqual([
-			['M', 0, 0], ['L', 5, 0], ['L', 5, -0.1], ['L', 1, 1], ['L', 2, 2]
+			['M', 0, 0],
+			['L', 5, 0],
+			['L', 5, -0.1],
+			['L', 1, 1],
+			['L', 2, 2]
 		]);
 	});
 	it('rejects relative commands', () => {
@@ -2983,7 +3281,14 @@ describe('parsePathD', () => {
 describe('applyMatrix', () => {
 	it('maps every point', () => {
 		expect(
-			applyMatrix([['M', 1, 0], ['C', 1, 0, 1, 0, 1, 0], ['Z']], { a: 0, b: 1, c: -1, d: 0, e: 10, f: 0 })
+			applyMatrix([['M', 1, 0], ['C', 1, 0, 1, 0, 1, 0], ['Z']], {
+				a: 0,
+				b: 1,
+				c: -1,
+				d: 0,
+				e: 10,
+				f: 0
+			})
 		).toEqual([['M', 10, 1], ['C', 10, 1, 10, 1, 10, 1], ['Z']]);
 	});
 });
@@ -3004,23 +3309,69 @@ describe('buildLbProject', () => {
 	it('makes one group per page with a T1 page rect in mm, Y up', () => {
 		const p = buildLbProject({ shapes: [], pages, pageScale: 2 });
 		expect(p.pages).toHaveLength(2);
-		expect(p.pages[0].shapes[0]).toEqual({ kind: 'rect', cutIndex: 30, x: 0, y: 310, width: 300, height: 300 });
-		expect(p.pages[1].shapes[0]).toEqual({ kind: 'rect', cutIndex: 30, x: 0, y: 0, width: 300, height: 300 });
+		expect(p.pages[0].shapes[0]).toEqual({
+			kind: 'rect',
+			cutIndex: 30,
+			x: 0,
+			y: 310,
+			width: 300,
+			height: 300
+		});
+		expect(p.pages[1].shapes[0]).toEqual({
+			kind: 'rect',
+			cutIndex: 30,
+			x: 0,
+			y: 0,
+			width: 300,
+			height: 300
+		});
 	});
 
 	it('scales, flips and assigns shapes to their page and layer', () => {
 		const p = buildLbProject({
 			shapes: [
-				{ geometry: 'pattern-outline', segments: [['M', 100, 100], ['L', 200, 100]] },
-				{ geometry: 'outline-gap', segments: [['M', 100, 700], ['L', 110, 700]] },
-				{ geometry: 'page-outline', segments: [['M', 0, 0], ['L', 1, 1]] }
+				{
+					geometry: 'pattern-outline',
+					segments: [
+						['M', 100, 100],
+						['L', 200, 100]
+					]
+				},
+				{
+					geometry: 'outline-gap',
+					segments: [
+						['M', 100, 700],
+						['L', 110, 700]
+					]
+				},
+				{
+					geometry: 'page-outline',
+					segments: [
+						['M', 0, 0],
+						['L', 1, 1]
+					]
+				}
 			],
 			pages,
 			pageScale: 2,
 			layerMap: { 'outline-gap': 'C05' }
 		});
-		expect(p.pages[0].shapes[1]).toEqual({ kind: 'path', cutIndex: 0, segments: [['M', 50, 560], ['L', 100, 560]] });
-		expect(p.pages[1].shapes[1]).toEqual({ kind: 'path', cutIndex: 5, segments: [['M', 50, 260], ['L', 55, 260]] });
+		expect(p.pages[0].shapes[1]).toEqual({
+			kind: 'path',
+			cutIndex: 0,
+			segments: [
+				['M', 50, 560],
+				['L', 100, 560]
+			]
+		});
+		expect(p.pages[1].shapes[1]).toEqual({
+			kind: 'path',
+			cutIndex: 5,
+			segments: [
+				['M', 50, 260],
+				['L', 55, 260]
+			]
+		});
 		expect(p.pages[0].shapes).toHaveLength(2); // the DOM page-outline is ignored; the rect comes from page data
 	});
 });
@@ -3119,7 +3470,8 @@ export const parsePathD = (d: string): PathSegment[] => {
 		const n = ARITY[cmd];
 		if (!cmd || !n) throw new Error(`parsePathD: stray number at token ${i}`);
 		const v = tokens.slice(i, i + n).map(Number);
-		if (v.length < n || v.some((x) => !Number.isFinite(x))) throw new Error('parsePathD: truncated command');
+		if (v.length < n || v.some((x) => !Number.isFinite(x)))
+			throw new Error('parsePathD: truncated command');
 		i += n;
 		switch (cmd) {
 			case 'M':
@@ -3169,7 +3521,15 @@ export const applyMatrix = (segs: PathSegment[], m: Matrix): PathSegment[] => {
 			case 'L':
 				return ['L', X(s[1], s[2]), Y(s[1], s[2])];
 			case 'C':
-				return ['C', X(s[1], s[2]), Y(s[1], s[2]), X(s[3], s[4]), Y(s[3], s[4]), X(s[5], s[6]), Y(s[5], s[6])];
+				return [
+					'C',
+					X(s[1], s[2]),
+					Y(s[1], s[2]),
+					X(s[3], s[4]),
+					Y(s[3], s[4]),
+					X(s[5], s[6]),
+					Y(s[5], s[6])
+				];
 			case 'Q':
 				return ['Q', X(s[1], s[2]), Y(s[1], s[2]), X(s[3], s[4]), Y(s[3], s[4])];
 			case 'Z':
@@ -3304,6 +3664,7 @@ Each task runs in its own worktree branched from the merged wave-1 result. The f
 ## Task 10: Stage 3 wiring — place bands, compose, render annotations
 
 **Files:**
+
 - Create: `src/lib/cut-pattern/page-post-process/place-bands.ts`
 - Create: `src/lib/cut-pattern/page-post-process/index.ts`
 - Create: `src/components/cut-pattern/PageAnnotations.svelte`
@@ -3311,14 +3672,17 @@ Each task runs in its own worktree branched from the merged wave-1 result. The f
 - Test: `src/lib/cut-pattern/page-post-process/__tests__/place-bands.test.ts`, `index.test.ts`
 
 **Interfaces:**
+
 - Consumes: `computeDisconnects` (Task 5); `buildPageLabels`, `GlyphDict` (Task 7); `flattenPath`, `BandContourIndex` (Task 2); `TaggedPath`, `PlacedBand`, `Placement`, `PagePostProcessResult` (Task 1); stores `mergedBandPathsRaw`, `bandContourIndexes`, `mergedBandPaths`, `postProcessConfig`, `layerStrokes`, `exportPagesStore`, `superGlobuleStore`; `svgTextDictionary`, `processSvg`, `Fonts` (existing SvgText modules).
 - Produces:
+
   ```ts
   export const toPageSpace = (p: Pt, pl: Placement): Pt;
   export const rotateDirection = (v: Pt, deg: number): Pt;
   export const placeBand = (args: { bandId: string; placement: Placement; raw: PathSegment[]; index: BandContourIndex; pieces: TaggedPath[]; pages: PageRect[] }): PlacedBand;
   export const pagePostProcess = (input: { bands: PlacedBand[]; pages: PageRect[]; pageScale: number; marginPx: number; gap: number; config: PostProcessConfig; configName: string | undefined; dict: GlyphDict | undefined }): PagePostProcessResult;
   ```
+
   `exportPagesStore` is set to `{ pages, pageScale }` while page layout is active and without overflow, and to `null` otherwise.
 
 - [ ] **Step 1: Failing tests**
@@ -3333,19 +3697,31 @@ import type { PathSegment } from '$lib/types';
 describe('toPageSpace', () => {
 	it('matches bandTransform: translate(origin) rotate(rotation, pivot)', () => {
 		// rotate (2,0) by 90° about (1,0) → (1,1); then translate by (10,20)
-		const p = toPageSpace({ x: 2, y: 0 }, { origin: { x: 10, y: 20 }, rotation: 90, pivot: { x: 1, y: 0 } });
+		const p = toPageSpace(
+			{ x: 2, y: 0 },
+			{ origin: { x: 10, y: 20 }, rotation: 90, pivot: { x: 1, y: 0 } }
+		);
 		expect(p.x).toBeCloseTo(11, 9);
 		expect(p.y).toBeCloseTo(21, 9);
 	});
 	it('is a plain translate at rotation 0', () => {
-		expect(toPageSpace({ x: 2, y: 3 }, { origin: { x: 1, y: 1 }, rotation: 0, pivot: { x: 9, y: 9 } })).toEqual({ x: 3, y: 4 });
+		expect(
+			toPageSpace({ x: 2, y: 3 }, { origin: { x: 1, y: 1 }, rotation: 0, pivot: { x: 9, y: 9 } })
+		).toEqual({ x: 3, y: 4 });
 	});
 });
 
 describe('placeBand', () => {
 	const raw: PathSegment[] = [
-		['M', 0, 0], ['L', 10, 0], ['L', 10, 50], ['L', 0, 50], ['Z'],
-		['M', 4, 4], ['L', 6, 4], ['L', 6, 6], ['Z']
+		['M', 0, 0],
+		['L', 10, 0],
+		['L', 10, 50],
+		['L', 0, 50],
+		['Z'],
+		['M', 4, 4],
+		['L', 6, 4],
+		['L', 6, 6],
+		['Z']
 	];
 	const index = {
 		seed: 0,
@@ -3358,7 +3734,10 @@ describe('placeBand', () => {
 			end: { point: { x: 5, y: 50 }, outward: { x: 0, y: 1 } }
 		}
 	};
-	const pages = [{ x: 0, y: 0, width: 100, height: 100 }, { x: 0, y: 110, width: 100, height: 100 }];
+	const pages = [
+		{ x: 0, y: 0, width: 100, height: 100 },
+		{ x: 0, y: 110, width: 100, height: 100 }
+	];
 
 	it('moves outlines, surviving holes and ends into page space and finds the page', () => {
 		const placed = placeBand({
@@ -3380,7 +3759,10 @@ describe('placeBand', () => {
 		const placed = placeBand({
 			bandId: 'b',
 			placement: { origin: { x: 0, y: 0 }, rotation: 0, pivot: { x: 0, y: 0 } },
-			raw, index, pieces: [], pages
+			raw,
+			index,
+			pieces: [],
+			pages
 		});
 		expect(placed.holes).toHaveLength(0);
 		expect(placed.outlines).toHaveLength(1);
@@ -3397,7 +3779,11 @@ import type { PlacedBand } from '../../post-process-types';
 import { DEFAULT_POST_PROCESS } from '../../hole-drop-config';
 
 const rectPoly = (x0: number, y0: number, x1: number, y1: number) => [
-	{ x: x0, y: y0 }, { x: x1, y: y0 }, { x: x1, y: y1 }, { x: x0, y: y1 }, { x: x0, y: y0 }
+	{ x: x0, y: y0 },
+	{ x: x1, y: y0 },
+	{ x: x1, y: y1 },
+	{ x: x0, y: y1 },
+	{ x: x0, y: y0 }
 ];
 const band: PlacedBand = {
 	bandId: 'a',
@@ -3416,22 +3802,39 @@ const base = {
 	marginPx: 5,
 	gap: 2,
 	configName: 'shade',
-	dict: { '1': { path: [['M', 0, 0], ['L', 1, 1]], width: 1 } } as never
+	dict: {
+		'1': {
+			path: [
+				['M', 0, 0],
+				['L', 1, 1]
+			],
+			width: 1
+		}
+	} as never
 };
 
 describe('pagePostProcess', () => {
 	it('does nothing with everything off', () => {
-		expect(pagePostProcess({ ...base, config: DEFAULT_POST_PROCESS })).toEqual({ disconnects: [], pageLabels: [] });
+		expect(pagePostProcess({ ...base, config: DEFAULT_POST_PROCESS })).toEqual({
+			disconnects: [],
+			pageLabels: []
+		});
 	});
 	it('emits disconnects when enabled', () => {
-		const r = pagePostProcess({ ...base, config: { ...DEFAULT_POST_PROCESS, disconnectSurround: true } });
+		const r = pagePostProcess({
+			...base,
+			config: { ...DEFAULT_POST_PROCESS, disconnectSurround: true }
+		});
 		expect(r.disconnects).toHaveLength(2);
 	});
 	it('skips labels without a font dictionary', () => {
 		const r = pagePostProcess({
 			...base,
 			dict: undefined,
-			config: { ...DEFAULT_POST_PROCESS, pageLabel: { pageNumber: true, configName: false, text: '' } }
+			config: {
+				...DEFAULT_POST_PROCESS,
+				pageLabel: { pageNumber: true, configName: false, text: '' }
+			}
 		});
 		expect(r.pageLabels).toEqual([]);
 	});
@@ -3487,11 +3890,17 @@ export const placeBand = (args: {
 			.filter((c) => c.kind === 'outline')
 			.flatMap((c) => flattenPath(raw.slice(c.start, c.end)))
 	);
-	const holes = move(pieces.filter((p) => p.geometry === 'pattern-hole').flatMap((p) => flattenPath(p.segments)));
+	const holes = move(
+		pieces.filter((p) => p.geometry === 'pattern-hole').flatMap((p) => flattenPath(p.segments))
+	);
 
 	const pts = outlines.flat();
-	const cx = pts.length ? (Math.min(...pts.map((p) => p.x)) + Math.max(...pts.map((p) => p.x))) / 2 : NaN;
-	const cy = pts.length ? (Math.min(...pts.map((p) => p.y)) + Math.max(...pts.map((p) => p.y))) / 2 : NaN;
+	const cx = pts.length
+		? (Math.min(...pts.map((p) => p.x)) + Math.max(...pts.map((p) => p.x))) / 2
+		: NaN;
+	const cy = pts.length
+		? (Math.min(...pts.map((p) => p.y)) + Math.max(...pts.map((p) => p.y))) / 2
+		: NaN;
 	let page = pages.findIndex(
 		(r) => cx >= r.x && cx <= r.x + r.width && cy >= r.y && cy <= r.y + r.height
 	);
@@ -3536,7 +3945,16 @@ export const pagePostProcess = (input: {
 	const { bands, pages, pageScale, marginPx, gap, config, configName, dict } = input;
 	const disconnects = config.disconnectSurround ? computeDisconnects(bands, pages, gap) : [];
 	const pageLabels = dict
-		? buildPageLabels({ pages, marginPx, pageScale, bands, disconnects, config: config.pageLabel, configName, dict })
+		? buildPageLabels({
+				pages,
+				marginPx,
+				pageScale,
+				bands,
+				disconnects,
+				config: config.pageLabel,
+				configName,
+				dict
+			})
 		: [];
 	return { disconnects, pageLabels };
 };
@@ -3587,83 +4005,89 @@ Add imports: `placeBand` from `$lib/cut-pattern/page-post-process/place-bands`, 
 After `usePageLayout` is defined, add:
 
 ```ts
-	// Stage 3 needs the same font dictionary SvgText lazily builds; build it here
-	// if no label has rendered yet.
-	let glyphDict = $derived.by(() => {
-		if (!$svgTextDictionary) {
-			$svgTextDictionary = processSvg(Fonts.reliefSingleLine.keyString, Fonts.reliefSingleLine.svgString);
-		}
-		return $svgTextDictionary;
-	});
+// Stage 3 needs the same font dictionary SvgText lazily builds; build it here
+// if no label has rendered yet.
+let glyphDict = $derived.by(() => {
+	if (!$svgTextDictionary) {
+		$svgTextDictionary = processSvg(
+			Fonts.reliefSingleLine.keyString,
+			Fonts.reliefSingleLine.svgString
+		);
+	}
+	return $svgTextDictionary;
+});
 
-	// Stage 3: disconnects and page labels. Only prepared bands in a page layout
-	// have final placement. Memoised by $derived on its inputs; view-only changes
-	// (zoom, pan) do not touch any of them.
-	let stage3 = $derived.by(() => {
-		if (!usePageLayout || !pageResult || !pageLayoutCfg || $mergedBandPaths.size === 0) return null;
-		const config = $postProcessConfig;
-		const wantsLabel = !!config.pageLabel && (config.pageLabel.pageNumber || config.pageLabel.configName || !!config.pageLabel.text);
-		if (!config.disconnectSurround && !wantsLabel) return null;
-		const pages = pageResult.pages;
-		const bands = pageBands.flatMap(({ band }, i) => {
-			const raw = $mergedBandPathsRaw.get(band.id);
-			const index = $bandContourIndexes.get(band.id);
-			const pieces = $mergedBandPaths.get(band.id);
-			if (!raw || !index || !pieces) return [];
-			return [
-				placeBand({
-					bandId: band.id,
-					placement: {
-						origin: pageResult.origins[i],
-						rotation: pageResult.rotations[i] ?? 0,
-						pivot: pivots.get(band) ?? { x: 0, y: 0 }
-					},
-					raw,
-					index,
-					pieces,
-					pages
-				})
-			];
-		});
-		const geom = buildPageGeom(pageLayoutCfg);
-		return pagePostProcess({
-			bands,
-			pages,
-			pageScale: pageLayoutCfg.pageScale,
-			marginPx: geom.marginPx,
-			gap,
-			config,
-			configName: $superGlobuleStore.name,
-			dict: glyphDict as never
-		});
+// Stage 3: disconnects and page labels. Only prepared bands in a page layout
+// have final placement. Memoised by $derived on its inputs; view-only changes
+// (zoom, pan) do not touch any of them.
+let stage3 = $derived.by(() => {
+	if (!usePageLayout || !pageResult || !pageLayoutCfg || $mergedBandPaths.size === 0) return null;
+	const config = $postProcessConfig;
+	const wantsLabel =
+		!!config.pageLabel &&
+		(config.pageLabel.pageNumber || config.pageLabel.configName || !!config.pageLabel.text);
+	if (!config.disconnectSurround && !wantsLabel) return null;
+	const pages = pageResult.pages;
+	const bands = pageBands.flatMap(({ band }, i) => {
+		const raw = $mergedBandPathsRaw.get(band.id);
+		const index = $bandContourIndexes.get(band.id);
+		const pieces = $mergedBandPaths.get(band.id);
+		if (!raw || !index || !pieces) return [];
+		return [
+			placeBand({
+				bandId: band.id,
+				placement: {
+					origin: pageResult.origins[i],
+					rotation: pageResult.rotations[i] ?? 0,
+					pivot: pivots.get(band) ?? { x: 0, y: 0 }
+				},
+				raw,
+				index,
+				pieces,
+				pages
+			})
+		];
 	});
+	const geom = buildPageGeom(pageLayoutCfg);
+	return pagePostProcess({
+		bands,
+		pages,
+		pageScale: pageLayoutCfg.pageScale,
+		marginPx: geom.marginPx,
+		gap,
+		config,
+		configName: $superGlobuleStore.name,
+		dict: glyphDict as never
+	});
+});
 
-	// Publish page rects for the exporters. Value-key guarded, as the page info above.
-	let lastExportPagesKey = '';
-	$effect(() => {
-		const value =
-			usePageLayout && pageResult && pageLayoutCfg
-				? { pages: pageResult.pages, pageScale: pageLayoutCfg.pageScale }
-				: null;
-		const key = JSON.stringify(value);
-		if (key === lastExportPagesKey) return;
-		lastExportPagesKey = key;
-		exportPagesStore.set(value);
-	});
+// Publish page rects for the exporters. Value-key guarded, as the page info above.
+let lastExportPagesKey = '';
+$effect(() => {
+	const value =
+		usePageLayout && pageResult && pageLayoutCfg
+			? { pages: pageResult.pages, pageScale: pageLayoutCfg.pageScale }
+			: null;
+	const key = JSON.stringify(value);
+	if (key === lastExportPagesKey) return;
+	lastExportPagesKey = key;
+	exportPagesStore.set(value);
+});
 
-	// One toast per distinct set of pages whose label found no room.
-	let lastUnplacedKey = '';
-	$effect(() => {
-		const unplaced = stage3?.pageLabels.filter((l) => l.unplaced).map((l) => l.page + 1) ?? [];
-		const key = unplaced.join(',');
-		if (key === lastUnplacedKey) return;
-		lastUnplacedKey = key;
-		if (unplaced.length)
-			toastStore.add({ type: 'warning', message: `No room for the page label on page ${key}.` });
-	});
+// One toast per distinct set of pages whose label found no room.
+let lastUnplacedKey = '';
+$effect(() => {
+	const unplaced = stage3?.pageLabels.filter((l) => l.unplaced).map((l) => l.page + 1) ?? [];
+	const key = unplaced.join(',');
+	if (key === lastUnplacedKey) return;
+	lastUnplacedKey = key;
+	if (unplaced.length)
+		toastStore.add({ type: 'warning', message: `No room for the page label on page ${key}.` });
+});
 ```
 
 Notes for the implementer:
+
 - `pivots`, `pageBands`, `pageLayoutCfg`, `gap`, `buildPageGeom` already exist in this component. Check that the `pivots` map key is the `band` object, as in the existing `pivot={pivots.get(band)}` call.
 - If `toastStore.add` requires fields beyond `type` and `message`, check `src/lib/stores/toastStore.ts` and pass them.
 - If `Fonts.reliefSingleLine` is not the default font's key, use the key `SvgText.svelte` defaults to (`fontName = 'reliefSingleLine'`).
@@ -3672,9 +4096,9 @@ Notes for the implementer:
 In the markup, directly after the `<g id="cut-pattern">…</g>` inside `{#if usePageLayout && pageResult}`, add:
 
 ```svelte
-		{#if stage3}
-			<PageAnnotations result={stage3} />
-		{/if}
+{#if stage3}
+	<PageAnnotations result={stage3} />
+{/if}
 ```
 
 - [ ] **Step 6: Check and smoke**
@@ -3694,13 +4118,16 @@ git commit -m "feat(post-process): stage 3 wiring — disconnects and page label
 ## Task 11: Post Process panel controls and LightBurn template upload
 
 **Files:**
+
 - Create: `src/lib/lightburn/template-status.ts`
 - Test: `src/lib/lightburn/__tests__/template-status.test.ts`
 - Modify: `src/components/modal/editor/PostProcess.svelte`
 
 **Interfaces:**
+
 - Consumes: `PostProcessConfig` fields (Task 1); `LIGHTBURN_LAYERS`, `layerOptionLabel`, `resolveLayer`, `isToolLayer`, `LayerId`, `DEFAULT_LAYER_MAP` (Task 1); `GEOMETRY_TYPES`, `GEOMETRY_TYPE_LABELS` (Task 1); `parseTemplate` (Task 8); `lightburnTemplateStore` (Task 1); `DEFAULT_CONNECT_GAP_MM` (Task 1).
 - Produces:
+
   ```ts
   export const readTemplateUpload = (fileName: string, xml: string, now?: Date): { ok: true; template: LightburnTemplate } | { ok: false; error: string };
   export const missingTemplateLayers = (layerMap: LayerMap | undefined, templateXml: string | undefined): LayerId[];
@@ -3717,10 +4144,16 @@ const XML = `<LightBurnProject><CutSetting type="Cut"><index Value="0"/><name Va
 describe('readTemplateUpload', () => {
 	it('accepts a LightBurn project with cut layers', () => {
 		const r = readTemplateUpload('cutter.lbrn2', XML, new Date('2026-09-27T12:00:00Z'));
-		expect(r).toEqual({ ok: true, template: { fileName: 'cutter.lbrn2', xml: XML, loadedAt: '2026-09-27T12:00:00.000Z' } });
+		expect(r).toEqual({
+			ok: true,
+			template: { fileName: 'cutter.lbrn2', xml: XML, loadedAt: '2026-09-27T12:00:00.000Z' }
+		});
 	});
 	it('rejects other files and projects with no cut layers', () => {
-		expect(readTemplateUpload('x.svg', '<svg/>')).toEqual({ ok: false, error: 'Not a LightBurn project file' });
+		expect(readTemplateUpload('x.svg', '<svg/>')).toEqual({
+			ok: false,
+			error: 'Not a LightBurn project file'
+		});
 		expect(readTemplateUpload('e.lbrn2', '<LightBurnProject></LightBurnProject>')).toEqual({
 			ok: false,
 			error: 'The template has no cut layers'
@@ -3754,7 +4187,8 @@ export const readTemplateUpload = (
 	now: Date = new Date()
 ): { ok: true; template: LightburnTemplate } | { ok: false; error: string } => {
 	try {
-		if (parseTemplate(xml).cutSettings.size === 0) return { ok: false, error: 'The template has no cut layers' };
+		if (parseTemplate(xml).cutSettings.size === 0)
+			return { ok: false, error: 'The template has no cut layers' };
 		return { ok: true, template: { fileName, xml, loadedAt: now.toISOString() } };
 	} catch (e) {
 		return { ok: false, error: e instanceof Error ? e.message : 'Unreadable template' };
@@ -3762,14 +4196,19 @@ export const readTemplateUpload = (
 };
 
 /** Mapped, non-tool layers with no CutSetting in the template, sorted by index. */
-export const missingTemplateLayers = (layerMap: LayerMap | undefined, templateXml: string | undefined): LayerId[] => {
+export const missingTemplateLayers = (
+	layerMap: LayerMap | undefined,
+	templateXml: string | undefined
+): LayerId[] => {
 	let have = new Set<number>();
 	try {
 		if (templateXml) have = new Set(parseTemplate(templateXml).cutSettings.keys());
 	} catch {
 		// An unreadable stored template counts as none.
 	}
-	const layers = new Map(GEOMETRY_TYPES.map((t) => resolveLayer(t, layerMap)).map((l) => [l.id, l]));
+	const layers = new Map(
+		GEOMETRY_TYPES.map((t) => resolveLayer(t, layerMap)).map((l) => [l.id, l])
+	);
 	return [...layers.values()]
 		.filter((l) => !isToolLayer(l) && !have.has(l.index))
 		.sort((a, b) => a.index - b.index)
@@ -3784,40 +4223,52 @@ Run the test → PASS.
 Add imports:
 
 ```ts
-	import { lightburnTemplateStore } from '$lib/stores';
-	import { DEFAULT_CONNECT_GAP_MM, type PageLabelConfig } from '$lib/cut-pattern/hole-drop-config';
-	import { GEOMETRY_TYPES, GEOMETRY_TYPE_LABELS, type GeometryType } from '$lib/cut-pattern/post-process-types';
-	import { LIGHTBURN_LAYERS, layerOptionLabel, resolveLayer, type LayerId } from '$lib/lightburn/layers';
-	import { readTemplateUpload, missingTemplateLayers } from '$lib/lightburn/template-status';
+import { lightburnTemplateStore } from '$lib/stores';
+import { DEFAULT_CONNECT_GAP_MM, type PageLabelConfig } from '$lib/cut-pattern/hole-drop-config';
+import {
+	GEOMETRY_TYPES,
+	GEOMETRY_TYPE_LABELS,
+	type GeometryType
+} from '$lib/cut-pattern/post-process-types';
+import {
+	LIGHTBURN_LAYERS,
+	layerOptionLabel,
+	resolveLayer,
+	type LayerId
+} from '$lib/lightburn/layers';
+import { readTemplateUpload, missingTemplateLayers } from '$lib/lightburn/template-status';
 ```
 
 Add these helpers next to `setFlag`. Every write goes to the store, as the existing comment requires:
 
 ```ts
-	const patch = (next: Partial<typeof postProcess>) => {
-		$patternConfigStore.patternConfig.postProcess = { ...postProcess, ...next };
-	};
-	let connect = $derived(postProcess.connectSurround ?? { enabled: false, gapMm: DEFAULT_CONNECT_GAP_MM });
-	let pageLabel = $derived<PageLabelConfig>(
-		postProcess.pageLabel ?? { pageNumber: false, configName: false, text: '' }
-	);
-	const setPageLabel = (next: Partial<PageLabelConfig>) => patch({ pageLabel: { ...pageLabel, ...next } });
-	const setLayer = (type: GeometryType, id: LayerId) =>
-		patch({ layerMap: { ...(postProcess.layerMap ?? {}), [type]: id } });
+const patch = (next: Partial<typeof postProcess>) => {
+	$patternConfigStore.patternConfig.postProcess = { ...postProcess, ...next };
+};
+let connect = $derived(
+	postProcess.connectSurround ?? { enabled: false, gapMm: DEFAULT_CONNECT_GAP_MM }
+);
+let pageLabel = $derived<PageLabelConfig>(
+	postProcess.pageLabel ?? { pageNumber: false, configName: false, text: '' }
+);
+const setPageLabel = (next: Partial<PageLabelConfig>) =>
+	patch({ pageLabel: { ...pageLabel, ...next } });
+const setLayer = (type: GeometryType, id: LayerId) =>
+	patch({ layerMap: { ...(postProcess.layerMap ?? {}), [type]: id } });
 
-	// Transient upload feedback; losing it on panel remount is harmless.
-	let templateError = $state('');
-	const onTemplate = async (e: Event & { currentTarget: HTMLInputElement }) => {
-		const file = e.currentTarget.files?.[0];
-		if (!file) return;
-		const result = readTemplateUpload(file.name, await file.text());
-		if (result.ok) {
-			$lightburnTemplateStore = result.template;
-			templateError = '';
-		} else templateError = result.error;
-		e.currentTarget.value = '';
-	};
-	let missing = $derived(missingTemplateLayers(postProcess.layerMap, $lightburnTemplateStore?.xml));
+// Transient upload feedback; losing it on panel remount is harmless.
+let templateError = $state('');
+const onTemplate = async (e: Event & { currentTarget: HTMLInputElement }) => {
+	const file = e.currentTarget.files?.[0];
+	if (!file) return;
+	const result = readTemplateUpload(file.name, await file.text());
+	if (result.ok) {
+		$lightburnTemplateStore = result.template;
+		templateError = '';
+	} else templateError = result.error;
+	e.currentTarget.value = '';
+};
+let missing = $derived(missingTemplateLayers(postProcess.layerMap, $lightburnTemplateStore?.xml));
 ```
 
 Change the `setFlag` flag type to `'dropOutline' | 'dropLabelText' | 'disconnectSurround'`.
@@ -3905,21 +4356,21 @@ Append this markup inside `<Container direction="column">`, after the existing `
 Add styles:
 
 ```css
-	.swatch {
-		display: inline-block;
-		width: 0.8em;
-		height: 0.8em;
-		margin-right: 0.3em;
-		border: 1px solid #888;
-	}
-	.error {
-		color: #b00;
-		font-size: 0.8em;
-		margin: 0;
-	}
-	h4 {
-		margin: 0.6em 0 0.2em;
-	}
+.swatch {
+	display: inline-block;
+	width: 0.8em;
+	height: 0.8em;
+	margin-right: 0.3em;
+	border: 1px solid #888;
+}
+.error {
+	color: #b00;
+	font-size: 0.8em;
+	margin: 0;
+}
+h4 {
+	margin: 0.6em 0 0.2em;
+}
 ```
 
 If `NumberInput`'s `onChange` has a different signature, follow the existing `setChance` usage in this file.
@@ -3940,6 +4391,7 @@ git commit -m "feat(ui): post-process controls for surround, page labels, layers
 ## Task 12: Downloads — mm SVG, `.lbrn2`, naming, guard, auto-prepare
 
 **Files:**
+
 - Create: `src/lib/lightburn/collect-dom-shapes.ts`
 - Modify: `src/lib/util.ts` (`generateSvgUrl`, `downloadSvg`)
 - Modify: `src/components/nav-header/NavHeader.svelte` (download button, CSV filename)
@@ -3947,8 +4399,10 @@ git commit -m "feat(ui): post-process controls for surround, page labels, layers
 - Modify: `src/lib/__tests__/generate-svg-url.test.ts` if its expectations change
 
 **Interfaces:**
+
 - Consumes: `exportFrame` (Task 9), `fileStamp` (Task 9), `parsePathD`, `applyMatrix` (Task 9), `buildLbProject`, `ExportShape` (Task 9), `toCubicSegments` (Task 8), `writeLbrn2` (Task 8), `collectExportNodes`, `findUntagged`, `untaggedMessage` (Task 4), `isGeometryType` (Task 1), stores `exportPagesStore`, `lightburnTemplateStore`, `postProcessConfig`, `superGlobuleStore`, `mergedBandPaths`, `toastStore`.
 - Produces:
+
   ```ts
   // util.ts
   export const SCREEN_ONLY_SELECTOR: string; // now exported
@@ -3961,6 +4415,7 @@ git commit -m "feat(ui): post-process controls for surround, page labels, layers
 - [ ] **Step 1: Export SVG in mm, behind the guard**
 
 In `util.ts`:
+
 - Export `SCREEN_ONLY_SELECTOR`.
 - Import `exportFrame`'s `ExportFrame` type and `collectExportNodes`, `findUntagged`, `untaggedMessage` from `$lib/cut-pattern/export-guard`.
 - Replace `generateSvgUrl` and `downloadSvg` with the code below.
@@ -3995,7 +4450,9 @@ export const buildExportSvg = (frame: ExportFrame): { svg: Element } | { error: 
 export const generateSvgUrl = (frame: ExportFrame): string | { error: string } => {
 	const built = buildExportSvg(frame);
 	if ('error' in built) return built;
-	const blob = new Blob([new XMLSerializer().serializeToString(built.svg)], { type: 'image/svg+xml' });
+	const blob = new Blob([new XMLSerializer().serializeToString(built.svg)], {
+		type: 'image/svg+xml'
+	});
 	return URL.createObjectURL(blob);
 };
 
@@ -4076,6 +4533,7 @@ If importing `$lib/util` here creates a cycle, move `SCREEN_ONLY_SELECTOR` into 
 - [ ] **Step 3: NavHeader download**
 
 Imports:
+
 - `tick` (already imported) and `get` (already imported)
 - `exportPagesStore`, `lightburnTemplateStore`, `postProcessConfig` from `$lib/stores`
 - `toastStore`
@@ -4089,56 +4547,62 @@ Imports:
 Add:
 
 ```ts
-	const handleDownload = async () => {
-		// Export only ever ships prepared geometry — for BOTH pattern types.
-		if (get(mergedBandPaths).size === 0) {
-			if (!(await handlePrepare())) return;
-			await tick();
-		}
-		const pages = get(exportPagesStore);
-		if (!pages) {
-			toastStore.add({ type: 'error', message: 'Switch the pattern view to page layout to export real-world sizes.' });
+const handleDownload = async () => {
+	// Export only ever ships prepared geometry — for BOTH pattern types.
+	if (get(mergedBandPaths).size === 0) {
+		if (!(await handlePrepare())) return;
+		await tick();
+	}
+	const pages = get(exportPagesStore);
+	if (!pages) {
+		toastStore.add({
+			type: 'error',
+			message: 'Switch the pattern view to page layout to export real-world sizes.'
+		});
+		return;
+	}
+	const pp = get(postProcessConfig);
+	const stamp = fileStamp(get(superGlobuleStore).name);
+
+	if (pp.downloadFormat === 'lbrn2') {
+		const root = document.getElementById('pattern-svg') as SVGSVGElement | null;
+		if (!root) return;
+		const probe = root.cloneNode(true) as Element;
+		probe.querySelectorAll(SCREEN_ONLY_SELECTOR).forEach((n) => n.remove());
+		const bad = findUntagged(collectExportNodes(probe));
+		if (bad.length) {
+			toastStore.add({ type: 'error', message: untaggedMessage(bad) });
 			return;
 		}
-		const pp = get(postProcessConfig);
-		const stamp = fileStamp(get(superGlobuleStore).name);
-
-		if (pp.downloadFormat === 'lbrn2') {
-			const root = document.getElementById('pattern-svg') as SVGSVGElement | null;
-			if (!root) return;
-			const probe = root.cloneNode(true) as Element;
-			probe.querySelectorAll(SCREEN_ONLY_SELECTOR).forEach((n) => n.remove());
-			const bad = findUntagged(collectExportNodes(probe));
-			if (bad.length) {
-				toastStore.add({ type: 'error', message: untaggedMessage(bad) });
-				return;
-			}
-			const project = buildLbProject({
-				shapes: collectDomShapes(root),
-				pages: pages.pages,
-				pageScale: pages.pageScale,
-				layerMap: pp.layerMap
+		const project = buildLbProject({
+			shapes: collectDomShapes(root),
+			pages: pages.pages,
+			pageScale: pages.pageScale,
+			layerMap: pp.layerMap
+		});
+		const { xml, missingLayers } = writeLbrn2(project, get(lightburnTemplateStore)?.xml);
+		if (missingLayers.length) {
+			const ids = missingLayers.map((i) => layerByIndex(i)?.id ?? String(i)).join(', ');
+			toastStore.add({
+				type: 'warning',
+				message: `No template settings for ${ids}; LightBurn defaults apply.`
 			});
-			const { xml, missingLayers } = writeLbrn2(project, get(lightburnTemplateStore)?.xml);
-			if (missingLayers.length) {
-				const ids = missingLayers.map((i) => layerByIndex(i)?.id ?? String(i)).join(', ');
-				toastStore.add({ type: 'warning', message: `No template settings for ${ids}; LightBurn defaults apply.` });
-			}
-			downloadTextFile(xml, `${stamp}.lbrn2`, 'application/xml');
-			return;
 		}
+		downloadTextFile(xml, `${stamp}.lbrn2`, 'application/xml');
+		return;
+	}
 
-		const result = downloadSvg(`${stamp}.svg`, exportFrame(pages.pages, pages.pageScale));
-		if (!result.ok) toastStore.add({ type: 'error', message: result.error });
-	};
+	const result = downloadSvg(`${stamp}.svg`, exportFrame(pages.pages, pages.pageScale));
+	if (!result.ok) toastStore.add({ type: 'error', message: result.error });
+};
 ```
 
 Replace the existing Download SVG button with:
 
 ```svelte
-			<Button disabled={prepareState === 'running'} onclick={handleDownload}>
-				{$postProcessConfig.downloadFormat === 'lbrn2' ? 'Download LightBurn' : 'Download SVG'}
-			</Button>
+<Button disabled={prepareState === 'running'} onclick={handleDownload}>
+	{$postProcessConfig.downloadFormat === 'lbrn2' ? 'Download LightBurn' : 'Download SVG'}
+</Button>
 ```
 
 Change the CSV download filename (the `pattern-map ${…}.csv` string in this file) to `` `${fileStamp($superGlobuleStore.name)} pattern-map.csv` ``.
@@ -4149,6 +4613,7 @@ Run `grep -rn "downloadSvg(\|generateSvgUrl(" src` and update any other caller t
 
 Run `npx jest 2>&1 | tail -5`: all tests must pass. Run `npm run check 2>&1 | tail -3`: the error count must not be above the baseline.
 Restart the dev server, then run a scratchpad Playwright script to check the following:
+
 1. Download an SVG. The `download.suggestedFilename()` matches `/^.+ - \d{4}-\d{2}-\d{2} \d{2}\.\d{2}\.\d{2}\.svg$/`, and the file's root has `width="<page mm>mm"`.
 2. Set `downloadFormat: 'lbrn2'` and download. The file contains `<LightBurnProject` and exactly as many `<Shape Type="Group"` as there are pages.
 3. **CTM sanity:** in the page, take the `page-outline` rect's transformed corners via `collectDomShapes` and compare them with `exportPagesStore`'s page rects. They must be equal within 1e-6. If they differ, the root matrix is wrong: `#pattern-svg`'s viewBox was either not included or included twice. Fix the root matrix before committing.
@@ -4167,9 +4632,11 @@ git commit -m "feat(download): millimetre SVG and LightBurn export with stamped 
 ## Task 13: End-to-end verification
 
 **Files:**
+
 - Create: `tests/post-process-2.spec.ts`
 
 **Interfaces:**
+
 - Consumes: everything above. Reuse `selectVoronoiGeometry` and `settleBandCount` from `tests/hole-drop.spec.ts`, copying them into the new spec. Read and write stores through the dynamic import of `/src/lib/stores/index.ts`, as that spec does.
 
 - [ ] **Step 1: Write the spec**
@@ -4217,7 +4684,9 @@ test.describe('post-processing 2', () => {
 		await expect(page.locator('[data-geometry="surround-disconnect"]').first()).toBeVisible();
 		expect(await page.locator('[data-geometry="outline-gap"]').count()).toBeGreaterThan(0);
 		expect(await page.locator('[data-geometry="page-label"]').count()).toBeGreaterThan(0);
-		expect(await page.locator('path[data-geometry="outline-gap"]').first().getAttribute('stroke')).toBe('#0000FF');
+		expect(
+			await page.locator('path[data-geometry="outline-gap"]').first().getAttribute('stroke')
+		).toBe('#0000FF');
 		await expect(page.locator('.prepare-status.done')).toBeVisible(); // no re-merge
 	});
 
@@ -4281,6 +4750,7 @@ git commit -m "test(e2e): post-processing 2 — tags, surround, page labels, mm 
 - [ ] **Step 4: Manual cutter check (Ben)**
 
 Hand this to Ben, not to an agent:
+
 1. On the cutter, save a `.lbrn2` with your real layers configured.
 2. Load it with "Template (.lbrn2)" in the Post Process panel.
 3. Export a one-page pattern as LightBurn and open it on the cutter.

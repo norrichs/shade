@@ -65,8 +65,7 @@ export const migrateGlobulePatternConfig = <T extends Partial<GlobulePatternConf
 ): T => {
 	if (!config || typeof config !== 'object') return config;
 	const patternTypeConfig = config.patternTypeConfig as
-		| ((TiledPatternConfig | OutlinedPatternConfig) & { labels?: unknown })
-		| undefined;
+		((TiledPatternConfig | OutlinedPatternConfig) & { labels?: unknown }) | undefined;
 	if (patternTypeConfig && patternTypeConfig.labels) {
 		const migrated = migratePatternLabels(patternTypeConfig.labels);
 		if (migrated) {
@@ -74,8 +73,7 @@ export const migrateGlobulePatternConfig = <T extends Partial<GlobulePatternConf
 		}
 	}
 	const pvc = config.patternViewConfig as
-		| { lineWrap?: boolean; patternLayoutMode?: string }
-		| undefined;
+		{ lineWrap?: boolean; patternLayoutMode?: string } | undefined;
 	if (pvc && pvc.patternLayoutMode === undefined) {
 		pvc.patternLayoutMode = pvc.lineWrap ? 'line-wrap' : 'linear';
 	}

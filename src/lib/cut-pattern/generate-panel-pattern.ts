@@ -840,8 +840,7 @@ const getFacet = (tubes: Tube[], address: GlobuleAddress_Facet | GlobuleAddress_
 export const getFlatTriangle = ({ triangle, base }: { triangle: Triangle; base: PanelBase }) => {
 	const { p0, p1 } = base;
 	const p2 = ['a', 'b', 'c'].find((char) => char !== p0 && char !== p1) as
-		| TrianglePoint
-		| undefined;
+		TrianglePoint | undefined;
 
 	if (p2 === undefined) throw new Error('missing third triangle vector');
 
