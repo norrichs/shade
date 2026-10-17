@@ -541,6 +541,26 @@ const getMeridianPoint = (
 	return meridianPoint;
 };
 
+export type SilhouetteLevelSample = { t: number; x: number; y: number };
+
+/**
+ * The silhouette point for each of the `divisions + 1` uniformly sampled levels,
+ * level i at t = i / divisions (the last exactly 1). divideCurve samples by curve
+ * parameter, every other method by arc length.
+ */
+export function silhouetteLevelSamples(
+	silhouette: CurvePath<Vector2>,
+	sampleMethod: CurveSampleMethod
+): SilhouetteLevelSample[] {
+	const { divisions } = sampleMethod;
+	return Array.from({ length: divisions + 1 }, (_, i) => {
+		const t = i === divisions ? 1 : i * (1 / divisions);
+		const { x, y } =
+			sampleMethod.method === 'divideCurve' ? silhouette.getPoint(t) : silhouette.getPointAt(t);
+		return { t, x, y };
+	});
+}
+
 const generateRawLevels = ({
 	silhouette,
 	depthCurve,
@@ -554,40 +574,28 @@ const generateRawLevels = ({
 	prototypeAt: PrototypeAt;
 	sampleMethod: CurveSampleMethod;
 }): Level[] => {
-	const fractionalDivisions: number[] = [];
-	const spacing = 1 / sampleMethod.divisions;
-	for (let i = 0; i < sampleMethod.divisions + 1; i++) {
-		if (i === sampleMethod.divisions) {
-			fractionalDivisions.push(1);
-		} else {
-			fractionalDivisions.push(i * spacing);
-		}
-	}
-
 	const rawLevels: Level[] = [];
 
-	fractionalDivisions.forEach((division, i) => {
-		const silhouetteValue =
-			sampleMethod.method === 'divideCurve'
-				? silhouette.getPoint(division)
-				: silhouette.getPointAt(division);
-		const depthValue =
-			sampleMethod.method === 'divideCurve'
-				? depthCurve.getPoint(division).x / depthBaseline
-				: depthCurve.getPointAt(division).x / depthBaseline;
-		const offset: LevelOffset = {
-			x: 0,
-			y: 0,
-			z: silhouetteValue.y,
-			rotX: 0,
-			rotY: 0,
-			rotZ: 0,
-			scaleX: silhouetteValue.x * 2,
-			scaleY: silhouetteValue.x * 2,
-			depth: depthValue
-		};
-		rawLevels.push(generateLevel(offset, prototypeAt(division), i));
-	});
+	silhouetteLevelSamples(silhouette, sampleMethod).forEach(
+		({ t: division, ...silhouetteValue }, i) => {
+			const depthValue =
+				sampleMethod.method === 'divideCurve'
+					? depthCurve.getPoint(division).x / depthBaseline
+					: depthCurve.getPointAt(division).x / depthBaseline;
+			const offset: LevelOffset = {
+				x: 0,
+				y: 0,
+				z: silhouetteValue.y,
+				rotX: 0,
+				rotY: 0,
+				rotZ: 0,
+				scaleX: silhouetteValue.x * 2,
+				scaleY: silhouetteValue.x * 2,
+				depth: depthValue
+			};
+			rawLevels.push(generateLevel(offset, prototypeAt(division), i));
+		}
+	);
 
 	return rawLevels;
 };
