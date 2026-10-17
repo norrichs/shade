@@ -1,4 +1,6 @@
 import { normalizeShapeConfigs } from '$lib/gcs/migrate-shape-configs';
+import { applyBlocks, backfillBlocked, gcsBlockedPipelines } from '$lib/gcs/gcs-gates';
+import { validateGlobuleShapeConfigs } from '$lib/generate-shape';
 import { AUTO_PERSIST_KEY, bootstrapShouldUsePersisted, persistable } from '$lib/persistable';
 import { generateDefaultSuperGlobuleConfig } from '$lib/shades-config';
 import type {
@@ -237,6 +239,10 @@ let isInitialized = false;
 // Track last valid result for error recovery
 let lastValidResult: SuperGlobule | null = null;
 
+// Last cross-section validation message surfaced as a toast; an unchanged message is
+// not re-raised on every regeneration (e.g. while dragging an unrelated slider).
+let lastGcsToastMessage: string | null = null;
+
 /**
  * Triggers async generation of the SuperGlobule
  * Debounces rapid changes to avoid unnecessary work
@@ -265,10 +271,20 @@ function triggerAsyncGeneration(config: SuperGlobuleConfig): void {
 		console.log('SUPER GLOBULE STORE - Starting async generation');
 
 		try {
-			const gates = pipelineGatesFromViewControls(get(viewControlStore));
-			const result = await generateSuperGlobuleAsync(config, gates);
+			const userGates = pipelineGatesFromViewControls(get(viewControlStore));
+			const { blocked, message } = gcsBlockedPipelines(config, validateGlobuleShapeConfigs);
+			const raw = await generateSuperGlobuleAsync(config, applyBlocks(userGates, blocked));
+			// Blocked pipelines keep their previous output instead of going empty.
+			const result = backfillBlocked(raw, lastValidResult, blocked, userGates);
 			lastValidResult = result; // Store successful result
 			superGlobuleInternal.set(result);
+			// Set after the worker result: the worker clears workerError on every result.
+			if (message === null) {
+				lastGcsToastMessage = null;
+			} else if (message !== lastGcsToastMessage) {
+				lastGcsToastMessage = message;
+				workerError.set(message);
+			}
 			console.log('SUPER GLOBULE STORE - Async generation complete');
 		} catch (error) {
 			console.error('SUPER GLOBULE STORE - Async generation failed:', error);
