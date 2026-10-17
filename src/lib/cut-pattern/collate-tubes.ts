@@ -46,7 +46,6 @@ export const collateTubes = (input: CollateTubesInput): TubeCutPattern[] => {
 		voronoiSurfacePattern,
 		showGlobuleTubeGeometry,
 		showProjectionGeometry,
-		showVoronoiGeometry,
 		patternSource
 	} = input;
 

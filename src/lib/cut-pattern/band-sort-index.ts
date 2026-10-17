@@ -148,7 +148,7 @@ const buildEndConnectionIndex = (tubes: TubeCutPattern[]): BandSortIndex => {
 			if (claimed.has(key)) break;
 			claimed.add(key);
 			chain.push(current);
-			const next = neighboursOf(current).find((n) => {
+			const next: BandRef | undefined = neighboursOf(current).find((n) => {
 				const nk = bandKey(n);
 				return nk !== prevKey && !claimed.has(nk);
 			});

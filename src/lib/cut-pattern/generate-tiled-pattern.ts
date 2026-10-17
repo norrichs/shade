@@ -1,7 +1,5 @@
 import type {
 	Band,
-	BandAddressed,
-	GeometryAddress,
 	PathSegment,
 	BandCutPattern,
 	CutPattern,
@@ -193,7 +191,7 @@ export const applyTubePatternPostProcessing = (
 	tubeCutPattern: TubeCutPattern,
 	tiledPatternConfig: TiledPatternConfig
 ): TubeCutPattern => {
-	let processedBands = tubeCutPattern.bands.map((band) => {
+	let processedBands: BandCutPattern[] = tubeCutPattern.bands.map((band) => {
 		const patternBand = {
 			...band,
 			facets: band.facets.map((facet) => {
@@ -237,7 +235,7 @@ export type GenerateTilingProps = {
 	quadBands: Quadrilateral[][];
 	bands: Band[];
 	tiledPatternConfig: TiledPatternConfig;
-	address: GlobuleAddress_Tube | GeometryAddress<BandAddressed>;
+	address: GlobuleAddress_Tube;
 	bandIndexOffset?: number;
 	/** Total number of visible bands in the tube (used to detect the last band). */
 	totalBandCount?: number;
@@ -259,12 +257,7 @@ export const generateTiling = ({
 	patternBandIndexOf = (_tube: number, realBand: number) => realBand
 }: GenerateTilingProps): BandCutPattern[] => {
 	const bandCount = totalBandCount ?? quadBands.length;
-	const tiling: {
-		facets: CutPattern[];
-		svgPath?: string | undefined;
-		id: string;
-		tagAnchorPoint: Point;
-	}[] = quadBands.map((quadBand, bandIndex) => {
+	const tiling: BandCutPattern[] = quadBands.map((quadBand, bandIndex) => {
 		const entry = resolvePatternEntry(tiledPatternConfig.type) as UnitPatternGenerator;
 		const { getPattern, tagAnchor, adjustAfterMapping, getSubunitPatterns } = entry;
 		const subunitCount = entry.subunitCount ?? 1;
@@ -297,9 +290,7 @@ export const generateTiling = ({
 		const finishOuterEdge = globalBandIndex === bandCount - 1 && hasFreeSide;
 		const realLeftPartner = sourceBand ? getLeftPartnerBandIndex(sourceBand) : undefined;
 		const leftPartnerBand =
-			realLeftPartner === undefined
-				? undefined
-				: patternBandIndexOf((address as GlobuleAddress_Tube).tube, realLeftPartner);
+			realLeftPartner === undefined ? undefined : patternBandIndexOf(address.tube, realLeftPartner);
 		const bandContext = {
 			hasOuterPartner: !hasFreeSide,
 			bandIndex: globalBandIndex,
@@ -307,21 +298,17 @@ export const generateTiling = ({
 		};
 
 		if (quadBand.length % subunitCount !== 0) {
-			// Match the type looseness of the address/bounds accesses on the normal
-			// return path below (both pre-existing type gaps) rather than introducing
-			// new svelte-check errors at this new call site.
-			const tubeAddress = address as GlobuleAddress_Tube;
 			return {
 				facets: [],
 				sideOrientation: bands[bandIndex].sideOrientation,
 				svgPath: undefined,
-				id: `${tiledPatternConfig.type}-band-${tubeAddress.globule}-${tubeAddress.tube}-${globalBandIndex}${pieceSuffix}`,
+				id: `${tiledPatternConfig.type}-band-${address.globule}-${address.tube}-${globalBandIndex}${pieceSuffix}`,
 				tagAnchorPoint: { x: 0, y: 0 },
 				projectionType: 'patterned',
 				address: addressWithPiece,
-				bounds: (bands[bandIndex] as unknown as { bounds?: BandCutPattern['bounds'] }).bounds,
+				bounds: bands[bandIndex].bounds,
 				error: `${tiledPatternConfig.type} needs a quad count divisible by ${subunitCount} (got ${quadBand.length})`
-			} as BandCutPattern;
+			};
 		}
 
 		let mappedPatternBand: PathSegment[][] | PathSegment[];

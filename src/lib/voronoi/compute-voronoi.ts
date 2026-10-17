@@ -1,4 +1,4 @@
-import { Delaunay } from 'd3-delaunay';
+import { Delaunay, type Voronoi } from 'd3-delaunay';
 import type { VoronoiEdge, VoronoiResult } from './types';
 
 const UV_BOUNDS: [number, number, number, number] = [0, 0, 1, 1];
@@ -36,7 +36,7 @@ export function computeVoronoi(seeds: [number, number][]): VoronoiResult {
 }
 
 function findNeighborSharingEdge(
-	voronoi: ReturnType<Delaunay['voronoi']>,
+	voronoi: Voronoi<Delaunay.Point>,
 	cellIdx: number,
 	v0: [number, number],
 	v1: [number, number]

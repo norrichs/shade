@@ -1,5 +1,10 @@
 import { Vector3, Triangle } from 'three';
-import { generateMultiFacetFullTab, generateFullTab, generateTrapTab, isStrut } from '../generate-shape';
+import {
+	generateMultiFacetFullTab,
+	generateFullTab,
+	generateTrapTab,
+	isStrut
+} from '../generate-shape';
 import { getFlatTriangle } from './generate-panel-pattern';
 import { getBandBasePoints } from './generate-pattern';
 import type {
@@ -15,7 +20,8 @@ import type {
 	Strut,
 	TabStyle,
 	TrianglePoint,
-	BandCutPattern
+	BandCutPattern,
+	DynamicStrokeConfig
 } from '$lib/types';
 
 const alignTriangle = (triangle: Triangle, config: AlignTrianglesConfig): Triangle => {
@@ -223,7 +229,7 @@ export const generateEdgeConfig = (
 
 export const applyStrokeWidth = (
 	bands: BandCutPattern[],
-	{ dynamicStroke, dynamicStrokeMax, dynamicStrokeMin }: object & DynamicStrokeConfig
+	{ dynamicStroke, dynamicStrokeMax, dynamicStrokeMin }: DynamicStrokeConfig
 ): BandCutPattern[] => {
 	let patternBands = [...bands];
 	const widthVariesByBand = true;

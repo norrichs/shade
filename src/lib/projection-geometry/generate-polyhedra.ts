@@ -140,7 +140,8 @@ export const getPolygonEdgesFromSequence = ({
 }: {
 	row: PolygonMapRow;
 	levels: PolarVertex[][];
-	standardEdgeConfig: EdgeConfig<undefined, number, number, number>;
+	// vertex1 is supplied per edge below, so the template omits it
+	standardEdgeConfig: Omit<EdgeConfig<undefined, number, number, number>, 'vertex1'>;
 	polygonIndex: number;
 	radialSymmetry?: number;
 }): EdgeConfig<undefined, number, number, number>[] => {

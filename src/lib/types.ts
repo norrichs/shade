@@ -772,6 +772,11 @@ export type PatternLabelsConfig = {
 	};
 };
 
+export type DynamicStrokeConfig = Pick<
+	TiledPatternConfig['config'],
+	'dynamicStroke' | 'dynamicStrokeMin' | 'dynamicStrokeMax'
+>;
+
 export type TiledPatternConfig = {
 	type: TiledPattern;
 	tiling: TilingBasis;
@@ -1053,6 +1058,14 @@ export type Band = {
 	/** Set only on pieces of a split band. Parent bands leave these undefined. */
 	parentQuadOffset?: number;
 	seamAt?: { start?: true; end?: true };
+	/** Flat-layout bounding box, set by `alignBands` / `normalizeBand` after flattening. */
+	bounds?: {
+		left: number;
+		top: number;
+		width: number;
+		height: number;
+		center: Vector3;
+	};
 	/**
 	 * Index of this piece's parent within the band array that was split, i.e.
 	 * the same index space `generateTiling` already works in (`selectedBands`,

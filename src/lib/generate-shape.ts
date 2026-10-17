@@ -336,7 +336,10 @@ const generateCircumferenceBands = (config: GlobuleConfig, levels: Level[]): Ban
 				triangle1.c.clone(),
 				triangle1.b.clone()
 			);
-			band.facets.push({ triangle: triangle1 }, { triangle: triangle2 });
+			band.facets.push(
+				{ triangle: triangle1, orientation: band.orientation },
+				{ triangle: triangle2, orientation: band.orientation }
+			);
 		});
 
 		bands.push(band);
@@ -412,14 +415,17 @@ const generateHelicalStrut = (bandIndex: number, levels: Level[], config: StrutC
 				getStrutVector('outer', upper, width, orientation),
 				getStrutVector('inner', lower, width, orientation),
 				getStrutVector('outer', lower, width, orientation)
-			)
+			),
+			// tiling is guaranteed 'helical-right' above, whose facet orientation is axial-right
+			orientation: 'axial-right'
 		};
 		const facet2: Facet = {
 			triangle: new Triangle(
 				getStrutVector('inner', lower, width, orientation),
 				getStrutVector('outer', upper, width, orientation),
 				getStrutVector('inner', upper, width, orientation)
-			)
+			),
+			orientation: 'axial-right'
 		};
 
 		strut.facets.push(facet1, facet2);
@@ -628,8 +634,9 @@ const generateTabs = (bands: Band[], config: BandConfig, struts?: Strut[]) => {
 };
 
 export const generateMultiFacetFullTab = (
-	baseFacet: Facet,
-	pointFacet: Facet,
+	// Only the triangles are read; callers pass tab footprints, which are not full facets.
+	baseFacet: Pick<Facet, 'triangle'>,
+	pointFacet: Pick<Facet, 'triangle'>,
 	edgeConfig: EdgeConfig,
 	side: StripSide,
 	tabStyle: TabStyle

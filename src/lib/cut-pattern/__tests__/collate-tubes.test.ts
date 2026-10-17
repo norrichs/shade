@@ -134,6 +134,7 @@ describe('collateTubes', () => {
 			globuleTubePattern: makeCutPattern(['gt-0']),
 			projectionPattern: undefined,
 			surfaceProjectionPattern: undefined,
+			...voronoiDefaults,
 			...allOff,
 			patternSource: 'projection'
 		});
