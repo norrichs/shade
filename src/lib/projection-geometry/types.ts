@@ -321,7 +321,7 @@ type GlobuleAddress_Quad = GlobuleAddress_Band & {
 
 /**
  * A piece of a split band. `band` stays stable so band-index-dependent logic
- * (finishOuterEdge, totalBandCount, the sort index, saved selections) is
+ * (the sort index, saved selections) is
  * unaffected; the piece index distinguishes siblings.
  */
 export type GlobuleAddress_BandPiece = GlobuleAddress_Band & { piece: number };

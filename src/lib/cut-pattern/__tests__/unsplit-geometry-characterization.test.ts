@@ -225,20 +225,15 @@ const EXPECTED: Record<string, unknown> = {
 		meta: '790b7260abc57ac4',
 		rest: 'f62c12b17cbcebec'
 	},
-	'tiled tiledAsanohaPattern-1': {
-		paths: '56898577b87c9e85',
-		meta: '492a0cbff818b41d',
-		rest: '185b9a01550c6983'
-	},
 	'tiled tiledHexparquetPattern-0': {
 		paths: '282371e2288834a2',
 		meta: '254679a5394a9dfb',
 		rest: '1513b5345d416630'
 	},
-	'tiled tiledAsanohaSplitPattern-0': {
+	'tiled tiledAsanohaPattern-1': {
 		paths: '3acf77b9ad2553f0',
 		meta: '492a0cbff818b41d',
-		rest: 'd580db70f30d37cd'
+		rest: '377df920d30c3e94'
 	},
 	'tiled tiledBoxPattern-0': {
 		paths: '18db8164d916dee7',

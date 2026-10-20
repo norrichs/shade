@@ -24,7 +24,11 @@
 	import LabeledControl from './LabeledControl.svelte';
 
 	// Patterns that cycle subunits along the band: no row control, and a band-seam toggle.
-	const SUBUNIT_PATTERN_TYPES = ['tiledHexparquetPattern-0', 'tiledAsanohaSplitPattern-0'];
+	const SUBUNIT_PATTERN_TYPES = [
+		'tiledHexparquetPattern-0',
+		'tiledAsanohaPattern-1',
+		'tiledAsanohaSplitPattern-0'
+	];
 
 	let patternTypeConfig = $derived($patternConfigStore.patternTypeConfig);
 	let isOutlined = $derived(isOutlinedPatternConfig(patternTypeConfig));

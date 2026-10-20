@@ -170,7 +170,6 @@ export const generateTubeCutPattern = ({
 		tiledPatternConfig,
 		address,
 		bandIndexOffset: rangeStart,
-		totalBandCount: visibleBands.length,
 		patternBandIndexOf: toPatternBandIndex
 	});
 
@@ -236,8 +235,6 @@ export type GenerateTilingProps = {
 	tiledPatternConfig: TiledPatternConfig;
 	address: GlobuleAddress_Tube;
 	bandIndexOffset?: number;
-	/** Total number of visible bands in the tube (used to detect the last band). */
-	totalBandCount?: number;
 	/**
 	 * Translate a real tube band index (facet meta) to the band index space
 	 * `address.band` uses (see pattern-band-index.ts). Defaults to identity, for
@@ -252,18 +249,16 @@ export const generateTiling = ({
 	tiledPatternConfig,
 	address,
 	bandIndexOffset = 0,
-	totalBandCount,
 	patternBandIndexOf = (_tube: number, realBand: number) => realBand
 }: GenerateTilingProps): BandCutPattern[] => {
-	const bandCount = totalBandCount ?? quadBands.length;
 	const tiling: BandCutPattern[] = quadBands.map((quadBand, bandIndex) => {
 		const entry = resolvePatternEntry(tiledPatternConfig.type) as UnitPatternGenerator;
 		const { getPattern, tagAnchor, adjustAfterMapping, getSubunitPatterns } = entry;
 		const subunitCount = entry.subunitCount ?? 1;
 		// `bands` is the post-split array, so `bandIndex` is a PIECE index. Every
 		// use below wants the parent band's index in the pre-split (selected
-		// visible band) space — which is the space `address.band`, bandCount,
-		// finishOuterEdge and leftPartnerBand have always worked in. An unsplit
+		// visible band) space — which is the space `address.band` and
+		// leftPartnerBand have always worked in. An unsplit
 		// band has no parentIndex and falls through to today's value exactly.
 		const parentBandIndex = bands?.[bandIndex]?.parentIndex ?? bandIndex;
 		const globalBandIndex = parentBandIndex + bandIndexOffset;
@@ -275,18 +270,12 @@ export const generateTiling = ({
 				: { ...address, band: globalBandIndex, piece };
 		const { rowCount, columnCount, variant } = tiledPatternConfig.config;
 
-		// The LAST band of a non-tubular (surface-projection) tube has no adjacent band
-		// partner on its outer (w6) side, so it needs its own finished edge there.
-		// Tubular tubes wrap around, so the last band DOES have a partner and must not
-		// get the extra line. Distinguish the two by reading the partner meta: an "edge"
-		// band has at least one facet whose outer (side) edge has no partner. (Band 0 is
-		// also an edge band, but its free side is x=0, which is already finished by the
-		// start/end verticals — the mirror only completes the w6 side.)
+		// An "edge" band has at least one facet whose outer (side) edge has no
+		// partner: the last band of a non-tubular (surface-projection) tube.
 		// Treat a missing band as having a free side (no outer partner) rather
 		// than throwing.
 		const sourceBand = bands?.[bandIndex];
 		const hasFreeSide = sourceBand ? bandHasFreeSide(sourceBand) : true;
-		const finishOuterEdge = globalBandIndex === bandCount - 1 && hasFreeSide;
 		const realLeftPartner = sourceBand ? getLeftPartnerBandIndex(sourceBand) : undefined;
 		const leftPartnerBand =
 			realLeftPartner === undefined ? undefined : patternBandIndexOf(address.tube, realLeftPartner);
@@ -317,8 +306,7 @@ export const generateTiling = ({
 				columnCount || 1,
 				undefined,
 				variant,
-				bands[bandIndex].sideOrientation,
-				finishOuterEdge
+				bands[bandIndex].sideOrientation
 			);
 			// Check if unitPattern is PathSegment[] (not DynamicPathCollection)
 			if (Array.isArray(unitPattern)) {
@@ -356,7 +344,6 @@ export const generateTiling = ({
 				mappedPatternBand,
 				quadBand,
 				tiledPatternConfig,
-				finishOuterEdge,
 				bandContext
 			);
 		} else {
