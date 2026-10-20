@@ -23,6 +23,12 @@ import {
 	generateHexparquetPreview,
 	generateHexparquetSubunits
 } from './tiled-hexparquet-pattern';
+import {
+	ASANOHA_SPLIT_SUBUNIT_COUNT,
+	adjustAsanohaSplitAfterMapping,
+	generateAsanohaSplitPreview,
+	generateAsanohaSplitSubunits
+} from './tiled-asanoha-split-pattern';
 import { generateGridPattern, adjustGridPatternAfterMapping } from './tiled-grid-pattern';
 import { algorithms } from './pattern-registry';
 import {
@@ -99,6 +105,20 @@ export const patterns: { [key: string]: PatternGenerator } = {
 				getAsanohaSegments,
 				finishOuterEdge ?? false
 			)
+	},
+	'tiledAsanohaSplitPattern-0': {
+		subunitCount: ASANOHA_SPLIT_SUBUNIT_COUNT,
+		// The single-unit form is the preview (A, B, A, B stacked into one quad).
+		getPattern: (_rows: number, columns: number) => generateAsanohaSplitPreview(columns),
+		getSubunitPatterns: (columns: number) => generateAsanohaSplitSubunits(columns),
+		tagAnchor: { facetIndex: 0, quadEdge: { edge: 'ab', position: 'midPoint' } },
+		adjustAfterMapping: (
+			patternBand: PathSegment[][],
+			quadBand: Quadrilateral[],
+			tiledPatternConfig: TiledPatternConfig,
+			_finishOuterEdge?: boolean,
+			bandContext?: { hasOuterPartner: boolean; bandIndex: number; leftPartnerBand?: number }
+		) => adjustAsanohaSplitAfterMapping(patternBand, quadBand, tiledPatternConfig, bandContext)
 	},
 	'tiledHexparquetPattern-0': {
 		subunitCount: HEXPARQUET_SUBUNIT_COUNT,
