@@ -2,28 +2,22 @@ import { Vector3 } from 'three';
 import type { PathSegment, Quadrilateral, TiledPatternConfig } from '#lib/types.js';
 import { transformPatternByQuad } from '../quadrilateral';
 import {
-	adjustAsanohaPatternAfterMapping,
-	generateAsanohaPattern,
-	getAsanohaSegments
+	ASANOHA_SUBUNIT_COUNT,
+	adjustAsanohaAfterMapping,
+	generateAsanohaPreview,
+	generateAsanohaSubunits,
+	getAsanohaDropIndices
 } from '../tiled-asanoha-pattern';
 
-// Consecutive quads share an edge exactly like real flattened bands:
-// quad[i+1].a === quad[i].d and quad[i+1].b === quad[i].c. A slight skew keeps
-// the coordinates non-trivial.
-const makeQuadBand = (count: number): Quadrilateral[] =>
-	Array.from({ length: count }, (_, i) => ({
-		a: new Vector3(i * 0.3, i * 10, 0),
-		b: new Vector3(17 + i * 0.3, i * 10 + 0.5, 0),
-		c: new Vector3(17 + (i + 1) * 0.3, (i + 1) * 10 + 0.5, 0),
-		d: new Vector3((i + 1) * 0.3, (i + 1) * 10, 0)
-	}));
-
-const makeConfig = (overrides: Partial<TiledPatternConfig['config']>): TiledPatternConfig => ({
+const config = (
+	columnCount = 1,
+	overrides: Partial<TiledPatternConfig['config']> = {}
+): TiledPatternConfig => ({
 	type: 'tiledAsanohaPattern-1',
 	tiling: 'quadrilateral',
 	config: {
 		rowCount: 1,
-		columnCount: 1,
+		columnCount,
 		dynamicStroke: 'quadWidth',
 		dynamicStrokeEasing: 'linear',
 		dynamicStrokeMin: 1,
@@ -36,56 +30,148 @@ const makeConfig = (overrides: Partial<TiledPatternConfig['config']>): TiledPatt
 	}
 });
 
-// Round so the snapshot is insensitive to harmless floating-point reordering.
-const round = (band: PathSegment[][]) =>
-	band.map((facet) =>
-		facet.map((seg) => seg.map((v) => (typeof v === 'number' ? Math.round(v * 1e6) / 1e6 : v)))
-	);
+// Unit-width rectangular quads stacked along +y.
+const quads = (count: number): Quadrilateral[] =>
+	Array.from({ length: count }, (_, i) => ({
+		a: new Vector3(0, i, 0),
+		b: new Vector3(1, i, 0),
+		c: new Vector3(1, i + 1, 0),
+		d: new Vector3(0, i + 1, 0)
+	}));
 
-describe('asanoha adjustAfterMapping (characterization)', () => {
-	for (const rows of [1, 2]) {
-		for (const columns of [1, 2]) {
-			for (const hasOuterMirror of [false, true]) {
-				for (const endsMatched of [false, true]) {
-					for (const endsTrimmed of [false, true]) {
-						it(`rows=${rows} columns=${columns} mirror=${hasOuterMirror} matched=${endsMatched} trimmed=${endsTrimmed}`, () => {
-							const quadBand = makeQuadBand(4);
-							const unit = generateAsanohaPattern({
-								size: 1,
-								rows,
-								columns,
-								finishOuterEdge: hasOuterMirror
-							});
-							const mapped = quadBand.map((quad) => transformPatternByQuad(unit, quad));
-							const result = adjustAsanohaPatternAfterMapping(
-								mapped,
-								quadBand,
-								makeConfig({ rowCount: rows, columnCount: columns, endsMatched, endsTrimmed }),
-								getAsanohaSegments,
-								hasOuterMirror
-							);
-							expect(round(result)).toMatchSnapshot();
-						});
-					}
-				}
-			}
-		}
+const mapBand = (qs: Quadrilateral[], columns = 1): PathSegment[][] => {
+	const subunits = generateAsanohaSubunits(columns);
+	return qs.map((q, i) => transformPatternByQuad(subunits[i % 2], q));
+};
+
+type Line = [number, number, number, number];
+const lines = (path: PathSegment[]): Line[] => {
+	const out: Line[] = [];
+	for (let i = 0; i < path.length; i += 2) {
+		const [, x0, y0] = path[i] as [string, number, number];
+		const [, x1, y1] = path[i + 1] as [string, number, number];
+		out.push([x0, y0, x1, y1]);
 	}
+	return out;
+};
+const r = (v: number) => Math.round(v * 1e6) / 1e6;
+// Undirected, rounded: identifies a drawn line regardless of direction.
+const key = ([x0, y0, x1, y1]: Line) => {
+	const a = `${r(x0)},${r(y0)}`;
+	const b = `${r(x1)},${r(y1)}`;
+	return a < b ? `${a}|${b}` : `${b}|${a}`;
+};
+const isVerticalAt = (x: number) => (l: Line) =>
+	Math.abs(l[0] - x) < 1e-9 && Math.abs(l[2] - x) < 1e-9;
 
-	it('snaps each facet start node onto the previous facet end node', () => {
-		const quadBand = makeQuadBand(3);
-		const unit = generateAsanohaPattern({ size: 1, rows: 1, columns: 1 });
-		const mapped = quadBand.map((quad) => transformPatternByQuad(unit, quad));
-		const result = adjustAsanohaPatternAfterMapping(
-			mapped,
-			quadBand,
-			makeConfig({}),
-			getAsanohaSegments,
-			false
+describe('generateAsanohaSubunits', () => {
+	it('emits two subunits made only of M/L pairs', () => {
+		const subunits = generateAsanohaSubunits(2);
+		expect(subunits).toHaveLength(ASANOHA_SUBUNIT_COUNT);
+		for (const path of subunits) {
+			path.forEach((seg, i) => expect(seg[0]).toBe(i % 2 === 0 ? 'M' : 'L'));
+		}
+	});
+
+	it('B is A mirrored top-to-bottom, less the shared middle line', () => {
+		const [a, b] = generateAsanohaSubunits(1).map(lines);
+		const mirroredA = new Set(a.map(([x0, y0, x1, y1]) => key([x0, 1 - y0, x1, 1 - y1])));
+		const bKeys = b.map(key);
+		bKeys.forEach((k) => expect(mirroredA.has(k)).toBe(true));
+		// A owns the shared line (its top); B has no line along its bottom.
+		expect(b.some(([, y0, , y1]) => y0 === 0 && y1 === 0)).toBe(false);
+		expect(a.some(([, y0, , y1]) => y0 === 1 && y1 === 1)).toBe(true);
+	});
+
+	it('reproduces the legacy unit when four strips are stacked', () => {
+		// A, B, A, B stacked into one unit square = one legacy row; every
+		// non-vertical legacy line appears (split at the strip boundaries).
+		const stacked = generateAsanohaPreview(1);
+		const keys = new Set(lines(stacked).map(key));
+		const legacyDiagonals: Line[] = [
+			[1 / 3, 1 / 4, 1 / 2, 0], // blue 1
+			[1 / 2, 0, 2 / 3, 1 / 4],
+			[1 / 6, 0, 0, 1 / 4], // red left
+			[5 / 6, 2 / 4, 1, 3 / 4], // red right
+			[0, 3 / 4, 1 / 2, 2 / 4], // pink 2
+			[1 / 6, 2 / 4, 5 / 6, 2 / 4], // brown middle
+			[2 / 3, 3 / 4, 1, 3 / 4] // purple
+		];
+		legacyDiagonals.forEach((l) => expect(keys.has(key(l))).toBe(true));
+	});
+});
+
+describe('getAsanohaDropIndices', () => {
+	const dropped = (
+		facetIndex: number,
+		columns: number,
+		opts: Parameters<typeof getAsanohaDropIndices>[2]
+	) => {
+		const path = generateAsanohaSubunits(columns)[facetIndex % 2];
+		const all = lines(path);
+		const indices = new Set(getAsanohaDropIndices(facetIndex, columns, opts));
+		return all.filter((_, s) => indices.has(2 * s));
+	};
+
+	it('keeps everything on the first facet of a band with no left partner', () => {
+		expect(dropped(0, 1, { hasLeftPartner: false })).toEqual([]);
+	});
+
+	it("drops A's bottom line after the first facet", () => {
+		expect(dropped(2, 1, { hasLeftPartner: false }).map(key)).toEqual([key([1 / 6, 0, 5 / 6, 0])]);
+		expect(dropped(1, 1, { hasLeftPartner: false })).toEqual([]);
+	});
+
+	it('drops the left edge of every column after the first', () => {
+		const d = dropped(1, 2, { hasLeftPartner: false });
+		expect(d.map(key)).toEqual([key([0.5, 0, 0.5, 1])]);
+	});
+
+	it('drops the seam when there is a left partner, unless the seam is kept', () => {
+		expect(dropped(1, 1, { hasLeftPartner: true }).map(key)).toEqual([key([0, 0, 0, 1])]);
+		expect(dropped(1, 1, { hasLeftPartner: true, keepPartnerSeam: true })).toEqual([]);
+	});
+});
+
+describe('adjustAsanohaAfterMapping', () => {
+	it('leaves one seam line along x = 0 per facet without a partner', () => {
+		const qs = quads(4);
+		const adjusted = adjustAsanohaAfterMapping(mapBand(qs), qs, config(), {
+			hasOuterPartner: false,
+			bandIndex: 0
+		});
+		adjusted.forEach((path) => expect(lines(path).filter(isVerticalAt(0))).toHaveLength(1));
+		adjusted.forEach((path) => expect(lines(path).filter(isVerticalAt(1))).toHaveLength(1));
+	});
+
+	it('drops the x = 0 seam for a band with a left partner', () => {
+		const qs = quads(4);
+		const adjusted = adjustAsanohaAfterMapping(mapBand(qs), qs, config(), {
+			hasOuterPartner: true,
+			bandIndex: 1,
+			leftPartnerBand: 0
+		});
+		adjusted.forEach((path) => expect(lines(path).filter(isVerticalAt(0))).toHaveLength(0));
+	});
+
+	it('keeps the x = 0 seam when keepPartnerSeam is on', () => {
+		const qs = quads(4);
+		const adjusted = adjustAsanohaAfterMapping(
+			mapBand(qs),
+			qs,
+			config(1, { keepPartnerSeam: true }),
+			{ hasOuterPartner: true, bandIndex: 1, leftPartnerBand: 0 }
 		);
-		const [[startM]] = getAsanohaSegments('start', 1, 1, mapped[1].length);
-		const [[endM]] = getAsanohaSegments('end', 1, 1, mapped[0].length);
-		expect(result[1][startM][1]).toBeCloseTo(mapped[0][endM][1] as number);
-		expect(result[1][startM][2]).toBeCloseTo(mapped[0][endM][2] as number);
+		adjusted.forEach((path) => expect(lines(path).filter(isVerticalAt(0))).toHaveLength(1));
+	});
+
+	it('never draws a line twice within a band', () => {
+		const qs = quads(6);
+		const adjusted = adjustAsanohaAfterMapping(mapBand(qs, 3), qs, config(3), {
+			hasOuterPartner: false,
+			bandIndex: 0
+		});
+		const keys = adjusted.flatMap((path) => lines(path).map(key));
+		expect(new Set(keys).size).toBe(keys.length);
 	});
 });
