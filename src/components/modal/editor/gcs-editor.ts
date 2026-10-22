@@ -1,5 +1,5 @@
 /** Pure list operations for the multi-GCS editor. Each returns a new array. */
-import type { ShapeConfig } from '#lib/types.js';
+import type { GcsBlend, ShapeConfig } from '#lib/types.js';
 
 /** Insert a copy of `list[index]` right after it, as a non-primary, unpinned GCS. */
 export const addGcs = (list: ShapeConfig[], index: number): ShapeConfig[] => {
@@ -42,3 +42,11 @@ export const setGcsLevel = (
 	index: number,
 	level: number | undefined
 ): ShapeConfig[] => list.map((s, i) => (i === index ? { ...s, level } : s));
+
+/** Set how `list[index]` blends toward the next GCS. */
+export const setGcsBlend = (list: ShapeConfig[], index: number, blend: GcsBlend): ShapeConfig[] =>
+	list.map((s, i) => (i === index ? { ...s, blend: structuredClone(blend) } : s));
+
+/** Give every transition the same blend (each GCS gets its own copy). */
+export const setAllGcsBlends = (list: ShapeConfig[], blend: GcsBlend): ShapeConfig[] =>
+	list.map((s) => ({ ...s, blend: structuredClone(blend) }));

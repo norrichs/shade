@@ -1,5 +1,5 @@
 import { describe, it, expect } from '@jest/globals';
-import { allPointsInUnitSquare } from '../path-editor';
+import { allPointsInUnitSquare, lockEndPoints } from '../path-editor';
 import type { BezierConfig, PointConfig2 } from '#lib/types.js';
 
 const pt = (x: number, y: number): PointConfig2 => ({ type: 'PointConfig2', x, y });
@@ -43,5 +43,41 @@ describe('allPointsInUnitSquare', () => {
 		});
 
 		expect(result[0].points[2].y).toBe(1);
+	});
+});
+
+describe('lockEndPoints', () => {
+	const curveDef = (): BezierConfig[] => [
+		{ type: 'BezierConfig', points: [pt(0, 0), pt(0.3, 0.3), pt(0.6, 0.6), pt(1, 1)] }
+	];
+
+	it('keeps the terminal anchors where they were', () => {
+		const first = lockEndPoints({
+			curveIndex: 0,
+			pointIndex: 0,
+			curveDef: curveDef(),
+			newPoint: pt(0.4, 0.2),
+			oldPoint: pt(0, 0)
+		});
+		expect(first[0].points[0]).toMatchObject({ x: 0, y: 0 });
+		const last = lockEndPoints({
+			curveIndex: 0,
+			pointIndex: 3,
+			curveDef: curveDef(),
+			newPoint: pt(0.5, 0.9),
+			oldPoint: pt(1, 1)
+		});
+		expect(last[0].points[3]).toMatchObject({ x: 1, y: 1 });
+	});
+
+	it('lets the handles move', () => {
+		const result = lockEndPoints({
+			curveIndex: 0,
+			pointIndex: 2,
+			curveDef: curveDef(),
+			newPoint: pt(0.7, 0.9),
+			oldPoint: pt(0.6, 0.6)
+		});
+		expect(result[0].points[2]).toMatchObject({ x: 0.7, y: 0.9 });
 	});
 });

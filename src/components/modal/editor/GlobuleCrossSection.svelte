@@ -5,6 +5,7 @@
 	import type {
 		BezierConfig,
 		CurveSampleMethod,
+		GcsBlend,
 		PointConfig2,
 		ShapeConfig,
 		SuperGlobuleConfig
@@ -19,13 +20,28 @@
 	import Editor from './Editor.svelte';
 	import LabeledControl from './LabeledControl.svelte';
 	import PathEditor, { type PathEditorOverlayContext } from './PathEditor.svelte';
-	import { neighborPointMatch, pointOnRay, radialEndLock } from './path-editor';
+	import {
+		allPointsInUnitSquare,
+		lockEndPoints,
+		neighborPointMatch,
+		pointOnRay,
+		radialEndLock
+	} from './path-editor';
 	import { pathFromCurves, radializeCurves } from './curve-preview';
 	import { isReflectedSymmetry, radialUnitAngle } from '#lib/geometry/radial-shape.js';
 	import { effectiveGcsLevels, gcsLabel } from '#lib/gcs/gcs-placement.js';
 	import { generateLevelPrototype, validateGlobuleShapeConfigs } from '#lib/generate-shape.js';
 	import { selectedGcsIndex } from './gcs-editor-store';
-	import { addGcs, deleteGcs, moveGcs, setGcsLevel, setPrimary } from './gcs-editor';
+	import {
+		addGcs,
+		deleteGcs,
+		moveGcs,
+		setAllGcsBlends,
+		setGcsBlend,
+		setGcsLevel,
+		setPrimary
+	} from './gcs-editor';
+	import { DEFAULT_GCS_EASE, defaultGcsBlend } from '#lib/gcs/gcs-blend.js';
 
 	// Derived from the store so an externally loaded config shows up here; the old
 	// version read into a plain `let` and never updated.
@@ -259,6 +275,31 @@
 	// satisfy p3 === rot(p0, wedge), which forces a shared radius.
 	let isReflected = $derived(!!shapeConfig && isReflectedSymmetry(shapeConfig.symmetry));
 
+	// The blend applies to the transition from this GCS to the next, so the last
+	// one has nothing to edit. An unset blend is the default smooth ease.
+	let hasNext = $derived(selected < shapeConfigs.length - 1);
+	let blend = $derived<GcsBlend>(shapeConfig?.blend ?? DEFAULT_GCS_EASE);
+	let blendCurves = $derived(blend.mode === 'bezier' ? [blend.curve] : []);
+
+	const writeBlend = (next: GcsBlend) => updateList((list) => setGcsBlend(list, selected, next));
+
+	const setBlendMode = (event: Event) => {
+		const mode = (event.target as HTMLSelectElement).value;
+		if (mode === blend.mode) return;
+		writeBlend(mode === 'linear' ? { mode: 'linear' } : defaultGcsBlend());
+	};
+
+	const setBlendCurve = (curves: BezierConfig[]) =>
+		writeBlend({ mode: 'bezier', curve: curves[0] });
+
+	// x: position between the two cross sections; y: how far the shape has morphed.
+	const blendEditorConfig = {
+		gutter: 0.1,
+		padding: 0.1,
+		contentBounds: { top: 0, left: 0, width: 1, height: 1 },
+		size: { width: 160, height: 160 }
+	};
+
 	let limits = $derived(
 		isRadial
 			? [radialEndLock(unitAngle, { coupleRadius: !isReflected }), neighborPointMatch]
@@ -429,6 +470,62 @@
 							hasButtons
 						/>
 					</LabeledControl>
+					{#if hasNext}
+						<header class="group">Blend → {gcsLabel(selected + 1)}</header>
+						<LabeledControl label="Blend">
+							<select value={blend.mode} onchange={setBlendMode}>
+								<option value="bezier">Smooth (curve)</option>
+								<option value="linear">Linear</option>
+							</select>
+						</LabeledControl>
+						{#if blend.mode === 'bezier'}
+							<PathEditor
+								flipY
+								curveDef={blendCurves}
+								onChangeCurveDef={setBlendCurve}
+								config={blendEditorConfig}
+								limits={[allPointsInUnitSquare, lockEndPoints]}
+								editorId="gcs-blend"
+							>
+								<!-- Display space is y-flipped: model (0,0) is drawn at (0,1). -->
+								<rect
+									x="0"
+									y="0"
+									width="1"
+									height="1"
+									fill="none"
+									stroke="rgba(0,0,0,0.3)"
+									stroke-width="0.004"
+								/>
+								<line
+									x1="0"
+									y1="1"
+									x2="1"
+									y2="0"
+									stroke="rgba(0,0,0,0.25)"
+									stroke-width="0.004"
+									stroke-dasharray="0.02 0.02"
+								/>
+							</PathEditor>
+							<p class="gcs-note">
+								x: between cross sections · y: how far the shape has morphed. Level handles = no
+								crease.
+							</p>
+						{/if}
+						<div class="gcs-blend-actions">
+							<button
+								type="button"
+								title="Standard ease-in-out"
+								onclick={() => writeBlend(defaultGcsBlend())}>Reset</button
+							>
+							<button
+								type="button"
+								title="Use this blend for every transition"
+								onclick={() => updateList((list) => setAllGcsBlends(list, blend))}
+								>Apply to all</button
+							>
+						</div>
+					{/if}
 				{/if}
 			</Container>
 		</Container>
@@ -457,6 +554,16 @@
 	.gcs-auto {
 		opacity: 0.55;
 		font-style: italic;
+	}
+	header.group {
+		background-color: rgba(0, 0, 0, 0.06);
+		padding: 2px 4px;
+		font-size: 0.85em;
+		margin-top: 6px;
+	}
+	.gcs-blend-actions {
+		display: flex;
+		gap: 4px;
 	}
 	.gcs-readout,
 	.gcs-note {
