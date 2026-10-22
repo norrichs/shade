@@ -1074,7 +1074,20 @@ export type CurveSampleMethodMethod = CurveSampleMethod['method'];
 export const isCurveSampleMethodMethod = (m: string): m is CurveSampleMethodMethod =>
 	['divideCurvePath', 'divideCurve', 'divideSide', 'preserveAspectRatio', 'spineCurve'].includes(m);
 
-export type GcsBlend = { mode: 'linear' };
+/**
+ * How a cross section blends toward the next one. `u` (0..1, the position between
+ * the two) is mapped through the blend before the shapes are interpolated.
+ *
+ * - `linear` — constant-rate morph. The rate jumps at each cross section, which
+ *   shows as a crease in the surface there.
+ * - `bezier` — `curve` read like CSS `cubic-bezier`: x is u, y is the morph
+ *   fraction. Only the two handles count; the ends are always (0,0) and (1,1).
+ *   Handles with y = 0 and y = 1 (the default) start and stop the morph at rest,
+ *   so it is smooth through every cross section.
+ *
+ * Absent means the default smooth bezier (see DEFAULT_GCS_EASE).
+ */
+export type GcsBlend = { mode: 'linear' } | { mode: 'bezier'; curve: BezierConfig };
 
 export type ShapeConfig = {
 	type: 'ShapeConfig';

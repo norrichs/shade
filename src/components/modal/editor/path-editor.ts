@@ -182,6 +182,23 @@ export const allPointsInUnitSquare: LimitFunction = ({
 	return curveDef;
 };
 
+/**
+ * Pin the two terminal anchors where they are; only interior points move. For
+ * curves whose ends are fixed by meaning, like a blend curve from (0,0) to (1,1).
+ */
+export const lockEndPoints: LimitFunction = ({
+	curveIndex,
+	pointIndex,
+	curveDef,
+	newPoint,
+	oldPoint
+}) => {
+	curveDef[curveIndex].points[pointIndex] = isEndPoint(curveIndex, pointIndex, curveDef)
+		? { ...newPoint, x: oldPoint.x, y: oldPoint.y }
+		: { ...newPoint };
+	return curveDef;
+};
+
 export const endPointsLockedY: LimitFunction = ({
 	curveIndex,
 	pointIndex,
