@@ -39,8 +39,16 @@ const withConfig = (
 	overrides: Partial<TiledPatternConfig['config']>
 ): TiledPatternConfig => ({ ...config, config: { ...config.config, ...overrides } });
 
+// An alias id (e.g. tiledAsanohaSplitPattern-0) shares its entry object; test it once.
 const registered = Object.entries(patterns)
 	.filter(([, entry]) => !!entry.adjustAfterTiling)
+	.filter(
+		([type, entry]) =>
+			!!configs[type] ||
+			!Object.entries(patterns).some(
+				([other, e]) => e === entry && other !== type && configs[other]
+			)
+	)
 	.map(([type]) => type)
 	.sort();
 
@@ -65,6 +73,7 @@ describe('guard: adjustAfterTiling never mutates its inputs', () => {
 	it('fixture: the registered adjuster families', () => {
 		expect(registered).toEqual([
 			'bandedBranchedPattern-0',
+			'tiledAsanohaPattern-1',
 			'tiledBoxPattern-0',
 			'tiledCarnationPattern-0',
 			'tiledCarnationPattern-1',
