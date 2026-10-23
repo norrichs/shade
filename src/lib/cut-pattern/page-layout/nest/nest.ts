@@ -1,4 +1,5 @@
 import { Vector3 } from 'three';
+import { pageOrigin } from '../page-grid';
 import type { PageGeom, PageLayoutResult, PageRect } from '../types';
 import type { NestShape, Pt, Raster } from './types';
 import {
@@ -116,8 +117,7 @@ const fitFactor = (prep: Prepared, cw: number, ch: number) =>
 	prep.bbox.map((b) => Math.max(b.w / cw, b.h / ch));
 
 export const nestPageLayout = (shapes: NestShape[], geom: NestGeom): PageLayoutResult => {
-	const { pageScale, pageWidth, pageHeight, contentWidth, contentHeight, marginPx, pageGap, gap } =
-		geom;
+	const { pageScale, pageWidth, pageHeight, contentWidth, contentHeight, marginPx, gap } = geom;
 	const cell = nestCellSize(geom);
 	// Each piece is dilated by k cells, so two non-overlapping dilated rasters keep
 	// ≥ 2k cells between the real pieces; the +1 covers rasterisation rounding and
@@ -174,12 +174,7 @@ export const nestPageLayout = (shapes: NestShape[], geom: NestGeom): PageLayoutR
 	type PageState = { grid: Grid; coarse: Grid; used: number };
 	const state: PageState[] = [];
 	const newPage = () => {
-		pages.push({
-			x: 0,
-			y: pages.length * (pageHeight + pageGap),
-			width: pageWidth,
-			height: pageHeight
-		});
+		pages.push({ ...pageOrigin(pages.length, geom), width: pageWidth, height: pageHeight });
 		const grid = new Grid(W, H);
 		state.push({ grid, coarse: grid.coarsen(NEST_COARSE), used: 0 });
 	};
@@ -196,7 +191,8 @@ export const nestPageLayout = (shapes: NestShape[], geom: NestGeom): PageLayoutR
 	for (const i of order) {
 		const s = shapes[i];
 		if (!hasGeom(i)) {
-			origins[i] = new Vector3(marginPx, pages[pages.length - 1].y + marginPx, 0);
+			const last = pages[pages.length - 1];
+			origins[i] = new Vector3(last.x + marginPx, last.y + marginPx, 0);
 			continue;
 		}
 		const prep = prepared[i];
@@ -223,7 +219,7 @@ export const nestPageLayout = (shapes: NestShape[], geom: NestGeom): PageLayoutR
 		}
 		const pg = state[p];
 		const r = prep.fine[hit.a];
-		const X0 = marginPx - k * cell;
+		const X0 = pages[p].x + marginPx - k * cell;
 		const Y0 = pages[p].y + marginPx - k * cell;
 		origins[i] = new Vector3(
 			X0 + (hit.gx - r.ox) * cell - s.pivot.x,
