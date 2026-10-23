@@ -51,6 +51,30 @@ describe('flexWrapPageLayout', () => {
 		expect(r.origins[1].y).toBe(200);
 	});
 
+	it('flows pages into wrapping rows at wrapWidth, items following their page', () => {
+		// 100-wide pages, 50 gap: 260 fits two per row (100 + 50 + 100).
+		const g = geom({
+			pageWidth: 100,
+			pageHeight: 150,
+			contentWidth: 100,
+			contentHeight: 150,
+			marginPx: 0,
+			pageGap: 50,
+			wrapWidth: 260
+		});
+		const r = flexWrapPageLayout([item(100, 100), item(100, 100), item(100, 100)], g);
+		expect(r.pages.map(({ x, y }) => [x, y])).toEqual([
+			[0, 0],
+			[150, 0],
+			[0, 200]
+		]);
+		expect(r.origins.map((o) => [o.x, o.y])).toEqual([
+			[0, 0],
+			[150, 0],
+			[0, 200]
+		]);
+	});
+
 	it('offsets origins by margin and page index', () => {
 		const g = geom({ marginPx: 10 });
 		const r = flexWrapPageLayout([item(50, 50)], g);

@@ -1,7 +1,8 @@
 import { Vector3 } from 'three';
+import { pageOrigin } from './page-grid';
 import type { LayoutItem, PageGeom, PageLayoutResult, PageRect } from './types';
 
-export const PAGE_STACK_GAP = 40; // pattern units (default vertical gap between stacked pages)
+export const PAGE_STACK_GAP = 40; // pattern units (default gap between neighbouring pages)
 
 type Interval = { x0: number; x1: number; bottom: number };
 
@@ -9,8 +10,7 @@ const skylineBottom = (placed: Interval[], x0: number, x1: number): number =>
 	placed.reduce((max, iv) => (iv.x1 > x0 && iv.x0 < x1 ? Math.max(max, iv.bottom) : max), 0);
 
 export const flexWrapPageLayout = (items: LayoutItem[], geom: PageGeom): PageLayoutResult => {
-	const { pageScale, pageWidth, pageHeight, contentWidth, contentHeight, marginPx, pageGap, gap } =
-		geom;
+	const { pageScale, pageWidth, pageHeight, contentWidth, contentHeight, marginPx, gap } = geom;
 
 	// Overflow: any single item larger than the content box. Compute the smallest
 	// pageScale that makes every offending item fit both dimensions.
@@ -45,7 +45,7 @@ export const flexWrapPageLayout = (items: LayoutItem[], geom: PageGeom): PageLay
 
 	const ensurePage = (idx: number) => {
 		if (pages[idx]) return;
-		pages[idx] = { x: 0, y: idx * (pageHeight + pageGap), width: pageWidth, height: pageHeight };
+		pages[idx] = { ...pageOrigin(idx, geom), width: pageWidth, height: pageHeight };
 	};
 	ensurePage(0);
 
@@ -73,8 +73,8 @@ export const flexWrapPageLayout = (items: LayoutItem[], geom: PageGeom): PageLay
 		itemTop = Math.min(itemTop, rowTop);
 		itemTop = Math.max(itemTop, 0);
 
-		const contentOriginX = marginPx;
-		const contentOriginY = page * (pageHeight + pageGap) + marginPx;
+		const contentOriginX = pages[page].x + marginPx;
+		const contentOriginY = pages[page].y + marginPx;
 
 		origins.push(
 			new Vector3(

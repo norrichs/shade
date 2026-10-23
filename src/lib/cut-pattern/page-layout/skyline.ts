@@ -1,4 +1,5 @@
 import { Vector3 } from 'three';
+import { pageOrigin } from './page-grid';
 import type { LayoutItem, PageGeom, PageLayoutResult, PageRect } from './types';
 
 const EPS = 1e-6;
@@ -98,7 +99,6 @@ export const skylinePageLayout = (items: LayoutItem[], geom: PageGeom): PageLayo
 		contentWidth,
 		contentHeight,
 		marginPx,
-		pageGap,
 		gap,
 		reorderWindow,
 		allowRotation
@@ -146,7 +146,7 @@ export const skylinePageLayout = (items: LayoutItem[], geom: PageGeom): PageLayo
 	let sky: SkySeg[] = [{ x: 0, width: packWidth, top: 0 }];
 	const ensurePage = (idx: number) => {
 		if (!pages[idx]) {
-			pages[idx] = { x: 0, y: idx * (pageHeight + pageGap), width: pageWidth, height: pageHeight };
+			pages[idx] = { ...pageOrigin(idx, geom), width: pageWidth, height: pageHeight };
 		}
 	};
 	ensurePage(0);
@@ -154,14 +154,14 @@ export const skylinePageLayout = (items: LayoutItem[], geom: PageGeom): PageLayo
 	const commit = (qi: number, p: Placement) => {
 		const idx = queue[qi];
 		const it = items[idx];
-		const pageOffsetY = page * (pageHeight + pageGap);
+		const { x: pageX, y: pageY } = pages[page];
 		const cx = it.left + it.width / 2; // local bounds-center
 		const cy = it.top + it.height / 2;
 		// The real item box is left/top-aligned in its inflated cell, so the origin
 		// uses the real (o.w, o.h); the skyline reserves the inflated footprint.
 		origins[idx] = new Vector3(
-			marginPx + p.x + p.o.w / 2 - cx,
-			pageOffsetY + marginPx + p.top + p.o.h / 2 - cy,
+			pageX + marginPx + p.x + p.o.w / 2 - cx,
+			pageY + marginPx + p.top + p.o.h / 2 - cy,
 			0
 		);
 		rotations[idx] = p.o.rot;
