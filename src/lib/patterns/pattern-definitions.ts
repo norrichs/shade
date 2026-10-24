@@ -20,7 +20,7 @@ import {
 } from './tiled-hexparquet-pattern';
 import {
 	ASANOHA_SUBUNIT_COUNT,
-	adjustAsanohaAfterMapping,
+	adjustAsanohaAfterTiling,
 	generateAsanohaPreview,
 	generateAsanohaSubunits
 } from './tiled-asanoha-pattern';
@@ -71,12 +71,9 @@ export const patterns: { [key: string]: PatternGenerator } = {
 		getPattern: (_rows: number, columns: number) => generateAsanohaPreview(columns),
 		getSubunitPatterns: (columns: number) => generateAsanohaSubunits(columns),
 		tagAnchor: { facetIndex: 0, quadEdge: { edge: 'ab', position: 'midPoint' } },
-		adjustAfterMapping: (
-			patternBand: PathSegment[][],
-			quadBand: Quadrilateral[],
-			tiledPatternConfig: TiledPatternConfig,
-			bandContext?: { hasOuterPartner: boolean; bandIndex: number; leftPartnerBand?: number }
-		) => adjustAsanohaAfterMapping(patternBand, quadBand, tiledPatternConfig, bandContext)
+		adjustAfterTiling: (bands: BandCutPattern[], tiledPatternConfig: TiledPatternConfig) =>
+			adjustAsanohaAfterTiling(bands, tiledPatternConfig),
+		adjustAfterTilingNeedsEndPartners: false
 	},
 	'tiledHexparquetPattern-0': {
 		subunitCount: HEXPARQUET_SUBUNIT_COUNT,

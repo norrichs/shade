@@ -231,9 +231,9 @@ const EXPECTED: Record<string, unknown> = {
 		rest: '1513b5345d416630'
 	},
 	'tiled tiledAsanohaPattern-1': {
-		paths: '3acf77b9ad2553f0',
+		paths: 'c44932eab945d205',
 		meta: '492a0cbff818b41d',
-		rest: '377df920d30c3e94'
+		rest: '86da3b55a4881168'
 	},
 	'tiled tiledBoxPattern-0': {
 		paths: '18db8164d916dee7',
