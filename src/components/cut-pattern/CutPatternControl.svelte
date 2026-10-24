@@ -4,6 +4,9 @@
 	import CheckboxInput from '../controls/CheckboxInput.svelte';
 	import NumberInput from '../controls/super-control/NumberInput.svelte';
 	import PanControl from './PanControl.svelte';
+	import PageNavControl from './PageNavControl.svelte';
+
+	export let onNavigate: (() => void) | undefined = undefined;
 
 	let rangeTubes: ProjectionRange['tubes'] = $patternConfigStore.patternViewConfig.range?.tubes;
 	let rangeBands: ProjectionRange['bands'] = $patternConfigStore.patternViewConfig.range?.bands;
@@ -24,6 +27,7 @@
 </script>
 
 <div class="view-control-box">
+	<PageNavControl {onNavigate} />
 	<div class="row">
 		<PanControl />
 		<div>
@@ -133,9 +137,7 @@
 		gap: 0px;
 	}
 	.view-control-box {
-		position: absolute;
-		top: 20px;
-		left: 20px;
+		flex: none;
 		background-color: rgba(200, 200, 200, 0.9);
 		padding: 8px;
 		border-radius: 3px;
