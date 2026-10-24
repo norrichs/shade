@@ -27,7 +27,8 @@ import type { GlobuleAddress_BandPiece } from '#lib/projection-geometry/types.js
  * inside or on its quad, so neighbouring subunits and columns meet exactly
  * through the quad mapping and nothing needs snapping.
  *
- * Band outline. A band's outline is not its quads' straight edges but a zigzag
+ * Band outline (with `keepPartnerSeam`; without it bands are left as tiled,
+ * with no band-to-band changes). A band's outline is not its quads' straight edges but a zigzag
  * of pattern lines (the seam S), so neighbouring bands interlock. In a
  * column's grid the right seam is
  *
@@ -55,10 +56,10 @@ type P = [number, number];
 /**
  * - `leftEdge`: the column's x = 0 vertical, which retraces the previous
  *   column's x = 6 vertical.
- * - `seamLeft`: a left-seam line the band draws itself. Dropped when a left
- *   partner draws the seam; gained, one column right, by the left partner.
+ * - `seamLeft`: a left-seam line inside the band's own quads. Gained, one
+ *   column right, by the left partner.
  * - `seamRight`: a right-seam line inside the band's own quads. Gained, one
- *   column left, by the right partner when it keeps its seam.
+ *   column left, by the right partner.
  * - `giveRight`: lies right of the right seam, in the right partner's band.
  * - `openLeft`: lies left of the open-side outline; dropped with no left partner.
  * - `pastStart` / `pastEnd`: a gained copy would run past the band's start/end.
@@ -187,8 +188,8 @@ export const generateHexparquet2Preview = (columns: number): PathSegment[] =>
  * Path indices to remove from one facet's own lines.
  *
  * - `leftEdge` in columns after the first: retraces the previous column.
- * - `seamLeft` in column 0 when a left partner draws the seam (unless
- *   `keepPartnerSeam`, which keeps every band self-contained).
+ *
+ * With `interBand` (the band outline follows the zigzag seam):
  * - `giveRight` in the last column: it belongs to the right partner, or, with
  *   none, lies outside the open-side outline.
  * - `openLeft` in column 0 with no left partner: outside the open-side outline.
@@ -196,10 +197,7 @@ export const generateHexparquet2Preview = (columns: number): PathSegment[] =>
 export const getHexparquet2DropIndices = (
 	facetIndex: number,
 	columns: number,
-	{
-		hasLeftPartner,
-		keepPartnerSeam = false
-	}: { hasLeftPartner: boolean; keepPartnerSeam?: boolean }
+	{ hasLeftPartner, interBand }: { hasLeftPartner: boolean; interBand: boolean }
 ): number[] => {
 	const segs = SUBUNITS[subunitIndexOf(facetIndex)];
 	const out: number[] = [];
@@ -207,9 +205,8 @@ export const getHexparquet2DropIndices = (
 		segs.forEach(({ tags = [] }, s) => {
 			const drop =
 				(c > 0 && tags.includes('leftEdge')) ||
-				(c === 0 && hasLeftPartner && !keepPartnerSeam && tags.includes('seamLeft')) ||
-				(c === columns - 1 && tags.includes('giveRight')) ||
-				(c === 0 && !hasLeftPartner && tags.includes('openLeft'));
+				(interBand && c === columns - 1 && tags.includes('giveRight')) ||
+				(interBand && c === 0 && !hasLeftPartner && tags.includes('openLeft'));
 			if (drop) {
 				const base = 2 * (c * segs.length + s);
 				out.push(base, base + 1);
@@ -223,20 +220,16 @@ type BandEnds = { isStart: boolean; isEnd: boolean };
 const reachesPastEnd = ({ tags = [] }: Seg, { isStart, isEnd }: BandEnds) =>
 	(isStart && tags.includes('pastStart')) || (isEnd && tags.includes('pastEnd'));
 
-/** The left partner's lines this facet gains: what it gives away, plus its seam if kept. */
+/** The left partner's lines this facet gains: what it gives away, and its right seam. */
 export const hexparquet2LeftGain = (
 	facetIndex: number,
-	{
-		keepPartnerSeam = false,
-		seamFlaps = 'mapped',
-		...ends
-	}: BandEnds & { keepPartnerSeam?: boolean; seamFlaps?: SeamFlaps }
+	{ seamFlaps = 'mapped', ...ends }: BandEnds & { seamFlaps?: SeamFlaps }
 ): Seg[] =>
 	SUBUNITS[subunitIndexOf(facetIndex)].filter(
 		(s) =>
 			(!reachesPastEnd(s, ends) || (seamFlaps === 'voids' && !!s.tags?.includes('endChevron'))) &&
 			!(seamFlaps === 'voids' && s.tags?.includes('void')) &&
-			(s.tags?.includes('giveRight') || (keepPartnerSeam && s.tags?.includes('seamRight')))
+			(s.tags?.includes('giveRight') || s.tags?.includes('seamRight'))
 	);
 
 /** The right partner's lines this facet gains: its left seam, bar the vertical this band repeats. */
@@ -435,6 +428,10 @@ const partnerQuadAlongside = (
  * outside an open side, then append the lines gained from each partner and the
  * end cap. Runs per tube because gains read the neighbouring bands' quads.
  *
+ * The band-to-band part (drops for the seam, gains from either partner) runs
+ * only with `keepPartnerSeam`. Without it each band keeps exactly its own
+ * quads' lines, bar the repeated column-edge vertical, plus the end cap.
+ *
  * Gained lines that cross the neighbour's quad boundaries come apart when laid
  * flat (see `SeamFlaps` and `stitchJoints`). Every band is scored
  * (`seamDeviation`, per facet).
@@ -448,14 +445,14 @@ export const adjustHexparquet2AfterTiling = (
 	tiledPatternConfig: TiledPatternConfig
 ): BandCutPattern[] => {
 	const columns = tiledPatternConfig.config.columnCount || 1;
-	const keepPartnerSeam = tiledPatternConfig.config.keepPartnerSeam ?? false;
+	const interBand = tiledPatternConfig.config.keepPartnerSeam ?? false;
 	const seamFlaps = tiledPatternConfig.config.seamFlaps ?? 'mapped';
 
 	return bands.map((band) => {
 		if (band.error || band.facets.length === 0) return band;
 		const hasLeftPartner = band.leftPartnerBand !== undefined;
 		const left = hasLeftPartner ? findLeftPartner(bands, band) : undefined;
-		const right = findRightPartner(bands, band);
+		const right = interBand ? findRightPartner(bands, band) : undefined;
 		const last = band.facets.length - 1;
 		const quads = band.facets.map((facet) => (facet.quad ? toQuad(facet.quad) : undefined));
 		const joints: Joint[][] = band.facets.map(() => []);
@@ -463,7 +460,7 @@ export const adjustHexparquet2AfterTiling = (
 		const paths = band.facets.map((facet, f) => {
 			const path = structuredClone(facet.path);
 			removeInPlace({
-				indices: getHexparquet2DropIndices(f, columns, { hasLeftPartner, keepPartnerSeam }),
+				indices: getHexparquet2DropIndices(f, columns, { hasLeftPartner, interBand }),
 				target: path
 			});
 			const quad = quads[f];
@@ -475,11 +472,11 @@ export const adjustHexparquet2AfterTiling = (
 				path.push(...gain.path);
 			};
 
-			if (hasLeftPartner) {
+			if (interBand && hasLeftPartner) {
 				append(
 					mapGain(
 						'left',
-						hexparquet2LeftGain(f, { keepPartnerSeam, seamFlaps, ...ends }),
+						hexparquet2LeftGain(f, { seamFlaps, ...ends }),
 						s,
 						columns,
 						quad,

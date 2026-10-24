@@ -132,17 +132,18 @@ describe('HexParquet2 subunits', () => {
 });
 
 describe('adjustHexparquet2AfterTiling', () => {
-	it('draws every line of a wrapping tube exactly once, plus the end caps', () => {
+	const interlock = (columns = 1) => config(columns, { keepPartnerSeam: true });
+
+	it('covers the tiling of a wrapping tube, seams drawn by both bands, plus the end caps', () => {
 		const bandCount = 3;
 		const tube = wrappingTube(bandCount, 6);
-		const adjusted = adjustHexparquet2AfterTiling(tube, config());
+		const adjusted = adjustHexparquet2AfterTiling(tube, interlock());
 		const counts = countKeys(
 			adjusted.flatMap((b) => b.facets.map((f) => f.path)),
 			bandCount
 		);
-		expect([...counts.values()].every((n) => n === 1)).toBe(true);
+		expect(Math.max(...counts.values())).toBe(2);
 
-		// The full tiling, with each column-edge vertical drawn once.
 		const tiling = countKeys(
 			tube.flatMap((b) => b.facets.map((f) => f.path)),
 			bandCount
@@ -154,18 +155,38 @@ describe('adjustHexparquet2AfterTiling', () => {
 		caps.forEach((k) => expect(k).toMatch(/,6\.166667/));
 	});
 
-	it('also tiles exactly once with two columns per band', () => {
+	it('also covers the tiling with two columns per band', () => {
 		const bandCount = 3;
-		const adjusted = adjustHexparquet2AfterTiling(wrappingTube(bandCount, 3, 2), config(2));
+		const tube = wrappingTube(bandCount, 3, 2);
+		const adjusted = adjustHexparquet2AfterTiling(tube, interlock(2));
 		const counts = countKeys(
 			adjusted.flatMap((b) => b.facets.map((f) => f.path)),
 			bandCount
 		);
-		expect([...counts.values()].every((n) => n === 1)).toBe(true);
+		const tiling = countKeys(
+			tube.flatMap((b) => b.facets.map((f) => f.path)),
+			bandCount
+		);
+		expect(Math.max(...counts.values())).toBe(2);
+		expect([...tiling.keys()].every((k) => counts.has(k))).toBe(true);
+	});
+
+	it('without keepPartnerSeam, leaves each band as tiled, plus the end cap', () => {
+		const tube = wrappingTube(3, 6, 2);
+		const adjusted = adjustHexparquet2AfterTiling(tube, config(2));
+		adjusted.forEach((band, b) => {
+			const own = countKeys(tube[b].facets.map((f) => f.path));
+			const counts = countKeys(band.facets.map((f) => f.path));
+			// Every own line once (the repeated column-edge vertical drawn once).
+			expect([...own.keys()].every((k) => counts.get(k) === 1)).toBe(true);
+			// Nothing else but the cap: two peak lines per column.
+			expect([...counts.keys()].filter((k) => !own.has(k))).toHaveLength(4);
+			expect(band.seamDeviation?.every((s) => s === 0)).toBe(true);
+		});
 	});
 
 	it("gains the right partner's left seam in the middle subunit", () => {
-		const [, band1] = adjustHexparquet2AfterTiling(wrappingTube(3, 3), config());
+		const [, band1] = adjustHexparquet2AfterTiling(wrappingTube(3, 3), interlock());
 		// Grid (6,8)→(7,9)→(7,11)→(6,12) in band 1's middle subunit (x0 = 1, y ∈ [1, 2]).
 		const middle = band1.facets[1].path;
 		expect(has(middle, [2, 1 + 4 / 6, 2 + 1 / 6, 1 + 3 / 6])).toBe(true);
@@ -174,7 +195,7 @@ describe('adjustHexparquet2AfterTiling', () => {
 	});
 
 	it('gives the top-right diagonal to the right partner, which draws it beyond its left edge', () => {
-		const [, band1, band2] = adjustHexparquet2AfterTiling(wrappingTube(3, 3), config());
+		const [, band1, band2] = adjustHexparquet2AfterTiling(wrappingTube(3, 3), interlock());
 		// Grid (6,0)→(4,2) in band 1's top subunit: x 2 → 1 + 4/6, y 3 → 2 + 4/6.
 		const diagonal: Line = [2, 3, 1 + 4 / 6, 2 + 4 / 6];
 		expect(has(band1.facets[2].path, diagonal)).toBe(false);
@@ -217,29 +238,6 @@ describe('adjustHexparquet2AfterTiling', () => {
 		}
 	});
 
-	it('closes the left outline of a middle unit with the default config', () => {
-		const keep = tiledPatternConfigs['tiledHexparquet2Pattern-0'];
-		const [, band1] = adjustHexparquet2AfterTiling(wrappingTube(3, 9), keep);
-		const all = band1.facets.flatMap((f) => f.path);
-		// The left seam of the middle unit (y 3..6), in band 1's design grid.
-		const g = ([x, row]: [number, number]): [number, number] => [1 + x / 6, 3 + (18 - row) / 6];
-		const seam: [number, number][] = [
-			[-2, 0],
-			[-2, 2],
-			[-2, 6],
-			[0, 8],
-			[1, 9],
-			[1, 11],
-			[0, 12],
-			[0, 16],
-			[-2, 18]
-		];
-		for (let i = 1; i < seam.length; i++) {
-			const line = [...g(seam[i - 1]), ...g(seam[i])] as Line;
-			expect([key(line), has(all, line)]).toEqual([key(line), true]);
-		}
-	});
-
 	it('leaves out gained seam lines that would run past the band ends', () => {
 		const [, band1] = adjustHexparquet2AfterTiling(
 			wrappingTube(3, 3),
@@ -251,7 +249,7 @@ describe('adjustHexparquet2AfterTiling', () => {
 	});
 
 	it('follows its own lines on an open left side and gains nothing there', () => {
-		const [band0] = adjustHexparquet2AfterTiling(openTube(3, 3), config());
+		const [band0] = adjustHexparquet2AfterTiling(openTube(3, 3), interlock());
 		const top = band0.facets[2].path;
 		// Grid (0,0)→(2,2) is outside the open-side outline.
 		expect(has(top, [0, 3, 2 / 6, 2 + 4 / 6])).toBe(false);
@@ -260,7 +258,7 @@ describe('adjustHexparquet2AfterTiling', () => {
 
 	it('gains nothing on an open right side', () => {
 		const tube = openTube(3, 3);
-		const [, , last] = adjustHexparquet2AfterTiling(tube, config());
+		const [, , last] = adjustHexparquet2AfterTiling(tube, interlock());
 		const right = 3;
 		for (const facet of last.facets)
 			expect(

@@ -465,7 +465,9 @@
 					{#if SUBUNIT_PATTERN_TYPES.includes(patternTypeConfig.type)}
 						<!-- On: a band keeps its own seam segments even where another band
 						     abuts, so every band is self-contained and the seam is drawn
-						     twice. Off (the default) cedes that line to the partner. -->
+						     twice. Off (the default) cedes that line to the partner.
+						     HexParquet2: on interlocks bands along the zigzag seam; off leaves
+						     every band as tiled, with no band-to-band changes. -->
 						<LabeledControl label="Keep Partner Seam">
 							<input
 								type="checkbox"
