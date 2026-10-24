@@ -375,6 +375,7 @@ export const tiledPatternConfigs: { [key: string]: TiledPatternConfig } = {
 			endsMatched: false,
 			endsTrimmed: false,
 			endLooped: 0,
+			keepPartnerSeam: false,
 			scaleConfig: defaultScaleConfig
 		}
 	},
@@ -392,6 +393,24 @@ export const tiledPatternConfigs: { [key: string]: TiledPatternConfig } = {
 			endsTrimmed: false,
 			endLooped: 0,
 			keepPartnerSeam: false,
+			scaleConfig: defaultScaleConfig
+		}
+	},
+	'tiledHexparquet2Pattern-0': {
+		type: 'tiledHexparquet2Pattern-0',
+		tiling: 'quadrilateral',
+		config: {
+			rowCount: 1,
+			columnCount: 1,
+			dynamicStroke: 'quadWidth',
+			dynamicStrokeEasing: 'linear',
+			dynamicStrokeMin: 1,
+			dynamicStrokeMax: 3,
+			endsMatched: false,
+			endsTrimmed: false,
+			endLooped: 0,
+			// Bands interlock along a zigzag seam and are cut apart, so each draws its whole outline.
+			keepPartnerSeam: true,
 			scaleConfig: defaultScaleConfig
 		}
 	},

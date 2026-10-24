@@ -18,7 +18,8 @@ export type PageGeom = {
 	contentWidth: number; // page minus 2× margin
 	contentHeight: number;
 	marginPx: number; // margin in pattern units
-	pageGap: number; // vertical gap between stacked pages, pattern units
+	pageGap: number; // gap between neighbouring pages, pattern units
+	wrapWidth?: number; // row width pages wrap at (see pageOrigin); absent → one column
 	gap: number; // spacing between items, pattern units
 	reorderWindow: number; // skyline lookahead window (>= 1)
 	allowRotation: boolean; // skyline: permit 90° rotation

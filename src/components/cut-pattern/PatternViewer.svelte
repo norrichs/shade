@@ -12,6 +12,7 @@
 	import ProjectionPanelPatterns from './ProjectionPanelPatterns.svelte';
 	import { mmFromInches } from '#lib/patterns/utils.js';
 	import CutPatternRenderer from './CutPatternRenderer.svelte';
+	import { pinchZoom } from './pinch-zoom.js';
 	import { buildBandSortIndex } from '#lib/cut-pattern/band-sort-index.js';
 	import { collectBandErrors } from '#lib/cut-pattern/collect-band-errors.js';
 	import type { BandSortIndex, BandSortMode, TubeCutPattern } from '#lib/types.js';
@@ -43,6 +44,11 @@
 	$: sortIndex =
 		sortMode === 'tube-order' ? undefined : buildBandSortIndex(collatedPatterns, sortMode);
 
+	// Page navigation lines a page's top-left up with the view's, which only
+	// holds while the svg area is scrolled to its own top-left.
+	let svgArea: HTMLDivElement;
+	const resetScroll = () => svgArea?.scrollTo(0, 0);
+
 	let bandErrors: string[];
 	$: bandErrors = collectBandErrors([
 		$superGlobulePatternStore.globuleTubePattern,
@@ -53,7 +59,8 @@
 	]);
 </script>
 
-<div class="container-svg scroll-container" class:showBands>
+<div class="container-svg" class:showBands>
+	<CutPatternControl onNavigate={resetScroll} />
 	{#if bandErrors.length}
 		<div class="band-errors" role="alert">
 			<strong>{bandErrors.length} band{bandErrors.length === 1 ? '' : 's'} not patterned</strong>
@@ -64,7 +71,7 @@
 			</ul>
 		</div>
 	{/if}
-	<div class="scroll-container">
+	<div class="scroll-container" bind:this={svgArea} use:pinchZoom>
 		<CutPatternSvg width={6000} height={6000}>
 			<CutPatternRenderer
 				tubes={collatedPatterns}
@@ -86,13 +93,12 @@
 			<!-- <SvgLogger /> -->
 		</CutPatternSvg>
 	</div>
-	<CutPatternControl />
 </div>
 
 <style>
 	.scroll-container {
-		height: inherit;
-		width: inherit;
+		flex: 1 1 auto;
+		min-height: 0;
 		overflow-y: scroll;
 		overflow-x: scroll;
 	}
@@ -103,6 +109,9 @@
 		padding: 0px;
 		box-shadow: 0 0 10px 2px black;
 		position: relative;
+		height: 100%;
+		box-sizing: border-box;
+		overflow: hidden;
 	}
 	.showBands {
 		display: flex;

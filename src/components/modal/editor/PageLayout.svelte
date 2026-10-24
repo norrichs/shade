@@ -305,7 +305,7 @@
 		<input type="number" min="0" step="1" bind:value={$patternConfigStore.patternViewConfig.gap} />
 	</label>
 
-	{#if mode === 'line-wrap'}
+	{#if mode === 'line-wrap' || mode === 'page'}
 		<label>
 			wrap width
 			<input

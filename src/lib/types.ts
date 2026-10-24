@@ -147,15 +147,13 @@ export type UnitPatternGenerator = {
 		columns: number,
 		quadBand?: Quadrilateral[],
 		variant?: TiledPatternVariant,
-		sideOrientation?: Band['sideOrientation'],
-		finishOuterEdge?: boolean
+		sideOrientation?: Band['sideOrientation']
 	) => PathSegment[];
 	tagAnchor?: TagAnchor;
 	adjustAfterMapping?: (
 		patternBand: PathSegment[][],
 		quadBand: Quadrilateral[],
 		tiledPatternConfig: TiledPatternConfig,
-		finishOuterEdge?: boolean,
 		bandContext?: { hasOuterPartner: boolean; bandIndex: number; leftPartnerBand?: number }
 	) => PathSegment[][];
 	adjustAfterTiling?: AdjustAfterTiling;
@@ -722,8 +720,9 @@ export type TiledPatternConfig = {
 		 */
 		dropEdgeSegments?: boolean;
 		/**
-		 * Hexparquet only. By default a band that has a left partner drops its
-		 * `partnerDrop` segments, because the partner's edge already draws that
+		 * Hexparquet, HexParquet2 and Asanoha. By default a band that has a left partner
+		 * drops its seam segments (hexparquet: `partnerDrop`; Asanoha: the
+		 * column-0 left edge), because the partner's edge already draws that
 		 * line and the seam would otherwise be cut twice. When true the band keeps
 		 * them, so every band is self-contained. Absent or false is the historical
 		 * behaviour, so no saved config changes meaning.
@@ -986,7 +985,7 @@ export type Band = {
 	 * Index of this piece's parent within the band array that was split, i.e.
 	 * the same index space `generateTiling` already works in (`selectedBands`,
 	 * the post-range slice of visible bands). This is what keeps `address.band`,
-	 * `finishOuterEdge`, `bandContext.bandIndex` and `leftPartnerBand` in the
+	 * `bandContext.bandIndex` and `leftPartnerBand` in the
 	 * space they use today — see Task 9 Step 4.
 	 *
 	 * NOT an address component: two of the three band-construction branches in
@@ -1022,6 +1021,11 @@ export type SilhouetteConfig = {
 	type: 'SilhouetteConfig';
 	id?: number;
 	curves: BezierConfig[];
+	/**
+	 * The last anchor is held on the first, and that pair edits as an ordinary
+	 * joint (dragged together, smooth/angled toggle). Absent means open.
+	 */
+	loopEnds?: boolean;
 };
 
 /**
@@ -1071,7 +1075,20 @@ export type CurveSampleMethodMethod = CurveSampleMethod['method'];
 export const isCurveSampleMethodMethod = (m: string): m is CurveSampleMethodMethod =>
 	['divideCurvePath', 'divideCurve', 'divideSide', 'preserveAspectRatio', 'spineCurve'].includes(m);
 
-export type GcsBlend = { mode: 'linear' };
+/**
+ * How a cross section blends toward the next one. `u` (0..1, the position between
+ * the two) is mapped through the blend before the shapes are interpolated.
+ *
+ * - `linear` — constant-rate morph. The rate jumps at each cross section, which
+ *   shows as a crease in the surface there.
+ * - `bezier` — `curve` read like CSS `cubic-bezier`: x is u, y is the morph
+ *   fraction. Only the two handles count; the ends are always (0,0) and (1,1).
+ *   Handles with y = 0 and y = 1 (the default) start and stop the morph at rest,
+ *   so it is smooth through every cross section.
+ *
+ * Absent means the default smooth bezier (see DEFAULT_GCS_EASE).
+ */
+export type GcsBlend = { mode: 'linear' } | { mode: 'bezier'; curve: BezierConfig };
 
 export type ShapeConfig = {
 	type: 'ShapeConfig';

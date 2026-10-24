@@ -12,17 +12,24 @@ import { adjustCarnation, generateCarnation } from './tiled-carnation-pattern';
 import { generateAuxetic } from './tiled-bowtie-pattern';
 import { generateBranched } from './banded-branched-pattern';
 import {
-	adjustAsanohaPatternAfterMapping,
-	generateAsanohaPattern,
-	getAsanohaSegments
-} from './tiled-asanoha-pattern';
-import {
 	HEXPARQUET_SUBUNIT_COUNT,
 	adjustHexparquetAfterMapping,
 	adjustHexparquetAfterTiling,
 	generateHexparquetPreview,
 	generateHexparquetSubunits
 } from './tiled-hexparquet-pattern';
+import {
+	HEXPARQUET2_SUBUNIT_COUNT,
+	adjustHexparquet2AfterTiling,
+	generateHexparquet2Preview,
+	generateHexparquet2Subunits
+} from './tiled-hexparquet2-pattern';
+import {
+	ASANOHA_SUBUNIT_COUNT,
+	adjustAsanohaAfterTiling,
+	generateAsanohaPreview,
+	generateAsanohaSubunits
+} from './tiled-asanoha-pattern';
 import { generateGridPattern, adjustGridPatternAfterMapping } from './tiled-grid-pattern';
 import { algorithms } from './pattern-registry';
 import {
@@ -65,40 +72,14 @@ export const patterns: { [key: string]: PatternGenerator } = {
 		}
 	},
 	'tiledAsanohaPattern-1': {
-		getPattern: (
-			rows: number,
-			columns: number,
-			_quadBand?: Quadrilateral[],
-			_variant?: unknown,
-			_sideOrientation?: unknown,
-			finishOuterEdge?: boolean
-		) => {
-			const unitPattern = generateAsanohaPattern({
-				size: 1,
-				rows,
-				columns,
-				finishOuterEdge
-			});
-			return unitPattern;
-		},
-		// Anchor at the midpoint of the end facet's quad 'ab' edge. The quad-edge
-		// anchor is path-order independent, so it stays put regardless of how
-		// `endsTrimmed`/`rowCount` reorder the mapped path. The label angle is then
-		// derived from the nearest quad edge.
+		subunitCount: ASANOHA_SUBUNIT_COUNT,
+		// The single-unit form is the preview (A, B, A, B stacked into one quad).
+		getPattern: (_rows: number, columns: number) => generateAsanohaPreview(columns),
+		getSubunitPatterns: (columns: number) => generateAsanohaSubunits(columns),
 		tagAnchor: { facetIndex: 0, quadEdge: { edge: 'ab', position: 'midPoint' } },
-		adjustAfterMapping: (
-			patternBand: PathSegment[][],
-			quadBand: Quadrilateral[],
-			tiledPatternConfig: TiledPatternConfig,
-			finishOuterEdge?: boolean
-		) =>
-			adjustAsanohaPatternAfterMapping(
-				patternBand,
-				quadBand,
-				tiledPatternConfig,
-				getAsanohaSegments,
-				finishOuterEdge ?? false
-			)
+		adjustAfterTiling: (bands: BandCutPattern[], tiledPatternConfig: TiledPatternConfig) =>
+			adjustAsanohaAfterTiling(bands, tiledPatternConfig),
+		adjustAfterTilingNeedsEndPartners: false
 	},
 	'tiledHexparquetPattern-0': {
 		subunitCount: HEXPARQUET_SUBUNIT_COUNT,
@@ -113,6 +94,16 @@ export const patterns: { [key: string]: PatternGenerator } = {
 		) => adjustHexparquetAfterMapping(patternBand, quadBand, tiledPatternConfig),
 		adjustAfterTiling: (bands: BandCutPattern[], tiledPatternConfig: TiledPatternConfig) =>
 			adjustHexparquetAfterTiling(bands, tiledPatternConfig),
+		adjustAfterTilingNeedsEndPartners: false
+	},
+	'tiledHexparquet2Pattern-0': {
+		subunitCount: HEXPARQUET2_SUBUNIT_COUNT,
+		// The single-unit form is the preview (all subunits stacked into one quad).
+		getPattern: (_rows: number, columns: number) => generateHexparquet2Preview(columns),
+		getSubunitPatterns: (columns: number) => generateHexparquet2Subunits(columns),
+		tagAnchor: { facetIndex: 0, quadEdge: { edge: 'ab', position: 'midPoint' } },
+		adjustAfterTiling: (bands: BandCutPattern[], tiledPatternConfig: TiledPatternConfig) =>
+			adjustHexparquet2AfterTiling(bands, tiledPatternConfig),
 		adjustAfterTilingNeedsEndPartners: false
 	},
 	'tiledGridPattern-0': {
@@ -130,7 +121,6 @@ export const patterns: { [key: string]: PatternGenerator } = {
 			patternBand: PathSegment[][],
 			quadBand: Quadrilateral[],
 			tiledPatternConfig: TiledPatternConfig,
-			_finishOuterEdge?: boolean,
 			bandContext?: { hasOuterPartner: boolean; bandIndex: number }
 		) => adjustGridPatternAfterMapping(patternBand, quadBand, tiledPatternConfig, bandContext)
 	},
@@ -164,3 +154,7 @@ export const patterns: { [key: string]: PatternGenerator } = {
 		}
 	}
 };
+
+// The id Asanoha had while it shipped beside the legacy version; designs saved
+// then still resolve. Not in `tiledPatternConfigs`, so the picker shows Asanoha once.
+patterns['tiledAsanohaSplitPattern-0'] = patterns['tiledAsanohaPattern-1'];
