@@ -6,6 +6,8 @@ import {
 	generateHexparquet2Preview,
 	generateHexparquet2Subunits
 } from '../tiled-hexparquet2-pattern';
+import { tiledPatternConfigs } from '#lib/shades-config.js';
+import { tiledPatternConfigs } from '#lib/shades-config.js';
 
 const config = (
 	columnCount = 1,
@@ -185,6 +187,52 @@ describe('adjustHexparquet2AfterTiling', () => {
 		expect(has(band0.facets[0].path, vertical)).toBe(true);
 		// Band 1 gains band 0's right stem, grid (4,2)→(4,6) one column left.
 		expect(has(band1.facets[2].path, [1 - 2 / 6, 2 + 4 / 6, 1 - 2 / 6, 2])).toBe(true);
+	});
+
+	it('closes the left outline of a middle unit with the default config', () => {
+		const keep = tiledPatternConfigs['tiledHexparquet2Pattern-0'];
+		const [, band1] = adjustHexparquet2AfterTiling(wrappingTube(3, 9), keep);
+		const all = band1.facets.flatMap((f) => f.path);
+		// The left seam of the middle unit (y 3..6), in band 1's design grid.
+		const g = ([x, row]: [number, number]): [number, number] => [1 + x / 6, 3 + (18 - row) / 6];
+		const seam: [number, number][] = [
+			[-2, 0],
+			[-2, 2],
+			[-2, 6],
+			[0, 8],
+			[1, 9],
+			[1, 11],
+			[0, 12],
+			[0, 16],
+			[-2, 18]
+		];
+		for (let i = 1; i < seam.length; i++) {
+			const line = [...g(seam[i - 1]), ...g(seam[i])] as Line;
+			expect([key(line), has(all, line)]).toEqual([key(line), true]);
+		}
+	});
+
+	it('closes the left outline of a middle unit with the default config', () => {
+		const keep = tiledPatternConfigs['tiledHexparquet2Pattern-0'];
+		const [, band1] = adjustHexparquet2AfterTiling(wrappingTube(3, 9), keep);
+		const all = band1.facets.flatMap((f) => f.path);
+		// The left seam of the middle unit (y 3..6), in band 1's design grid.
+		const g = ([x, row]: [number, number]): [number, number] => [1 + x / 6, 3 + (18 - row) / 6];
+		const seam: [number, number][] = [
+			[-2, 0],
+			[-2, 2],
+			[-2, 6],
+			[0, 8],
+			[1, 9],
+			[1, 11],
+			[0, 12],
+			[0, 16],
+			[-2, 18]
+		];
+		for (let i = 1; i < seam.length; i++) {
+			const line = [...g(seam[i - 1]), ...g(seam[i])] as Line;
+			expect([key(line), has(all, line)]).toEqual([key(line), true]);
+		}
 	});
 
 	it('leaves out gained seam lines that would run past the band ends', () => {

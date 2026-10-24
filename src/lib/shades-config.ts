@@ -409,7 +409,8 @@ export const tiledPatternConfigs: { [key: string]: TiledPatternConfig } = {
 			endsMatched: false,
 			endsTrimmed: false,
 			endLooped: 0,
-			keepPartnerSeam: false,
+			// Bands interlock along a zigzag seam and are cut apart, so each draws its whole outline.
+			keepPartnerSeam: true,
 			scaleConfig: defaultScaleConfig
 		}
 	},
