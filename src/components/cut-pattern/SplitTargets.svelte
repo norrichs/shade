@@ -84,8 +84,10 @@
 		pointer-events: none;
 	}
 	.split-target.active .hairline {
-		stroke: #d33;
-		stroke-width: 2;
+		stroke: #b39ddb;
+		stroke-opacity: 0.25;
+		stroke-width: 1;
+		stroke-linecap: round;
 		stroke-dasharray: none;
 	}
 	/* Width is per boundary (see `hitWidth`), set inline: bands taper, and a
