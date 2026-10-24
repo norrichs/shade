@@ -1,290 +1,260 @@
-import type { PathSegment, Quadrilateral, TiledPatternConfig } from '#lib/types.js';
-import { translatePS } from './utils';
-import { snapAdjacentFacets, type FacetSnapRule } from './adjust/snap-adjacent-facets';
-
-export const generateAsanohaPattern = ({
-	size,
-	rows,
-	columns,
-	finishOuterEdge = false
-}: {
-	size: number;
-	rows: number;
-	columns: number;
-	/**
-	 * When true, finish the free OUTER edge of an edge band by mirroring the
-	 * `start`/`end` verticals onto the far-right (w6) side, so it becomes a full-height
-	 * line instead of only `edgeSegment`'s middle third. Used for the outermost band of
-	 * a non-tubular (surface-projection) tube, whose outer side has no adjacent band
-	 * partner and so needs its own finished edge.
-	 *
-	 * The mirror is appended to the rightmost column's `start`/`end` segment arrays so it
-	 * flows through the same post-mapping processing as the x=0 line: `getAsanohaSnapRules`
-	 * (applied via `snapAdjacentFacets`) chains it across quads and `endsTrimmed` trims it at
-	 * the band's lengthwise ends.
-	 * `getAsanohaSegments` must be called with the matching `hasOuterMirror` flag so the
-	 * indices line up.
-	 */
-	finishOuterEdge?: boolean;
-}) => {
-	const row = size / rows;
-	const col = size / columns;
-
-	// const w = col / 6;
-	const h = row / 4;
-	// const w2 = ((col / 2) * Math.sqrt(3)) ;
-	// const w3 = col - w2;
-	const w1 = col / 6; //(2 / Math.sqrt(3)) * ((col / 2 )/ (Math.sqrt(3) / 2));
-	const w2 = col / 2 - w1;
-	const w3 = col / 2;
-	const w4 = col / 2 + w1;
-	const w5 = col - w1;
-	const w6 = col;
-
-	const edgeSegment: PathSegment[] = [
-		['M', w6, h],
-		['L', w6, 3 * h]
-	];
-
-	// The far-left side of the unit (x = 0) is finished by a full-height vertical line:
-	// the `start` segment (0→h) + greens (h→3h) + `end` segment (3h→4h). The far-right
-	// side (x = w6) only gets `edgeSegment` (h→3h). To finish the free OUTER edge of an
-	// edge band, mirror the `start`/`end` verticals onto the w6 side so it too becomes a
-	// full-height line. These are appended to the `start`/`end` arrays (not `middle`) so
-	// they get the same straighten/trim processing — mirrorStart is the top (0→h),
-	// mirrorEnd the bottom (3h→4h), together complementing edgeSegment's middle (h→3h).
-	const mirrorStartSegment: PathSegment[] = [
-		['M', w6, 0],
-		['L', w6, h]
-	];
-	const mirrorEndSegment: PathSegment[] = [
-		['M', w6, 3 * h],
-		['L', w6, 4 * h]
-	];
-
-	const unitPattern = (
-		edge = false,
-		start = false
-	): {
-		start: PathSegment[];
-		middle: PathSegment[];
-		// nonEnd: PathSegment[];
-		end: PathSegment[];
-	} => ({
-		start: [
-			//yellow
-			['M', 0, 0],
-			['L', 0, h],
-			// mirror top on the w6 side, appended so it shares the start-region processing
-			...(start ? mirrorStartSegment : [])
-		],
-		end: [
-			//yellow
-			['M', 0, 3 * h],
-			['L', 0, 4 * h],
-			// mirror bottom on the w6 side, appended so it shares the end-region processing
-			...(start ? mirrorEndSegment : [])
-		],
-		middle: [
-			// blue 1
-			['M', w2, h],
-			['L', w3, 0],
-			['L', w4, h],
-			['L', w3, 2 * h],
-			['L', w2, h],
-			// blue 2
-			['M', w2, 3 * h],
-			['L', w3, 2 * h],
-			['L', w4, 3 * h],
-			['L', w3, 4 * h],
-			['L', w2, 3 * h],
-			//red left
-			['M', w1, 0],
-			['L', 0, h],
-			['L', w1, 2 * h],
-			['L', 0, 3 * h],
-			['L', w1, 4 * h],
-			//red right
-			['M', w5, 0],
-			['L', w6, h],
-			['L', w5, 2 * h],
-			['L', w6, 3 * h],
-			['L', w5, 4 * h],
-			//pink 1
-			['M', 0, h],
-			['L', w3, 0],
-			['L', w6, h],
-			['L', w3, 2 * h],
-			['L', 0, h],
-			//pink 2
-			['M', 0, 3 * h],
-			['L', w3, 2 * h],
-			['L', w6, 3 * h],
-			['L', w3, 4 * h],
-			['L', 0, 3 * h],
-			//purples
-			['M', 0, h],
-			['L', w2, h],
-			['M', w4, h],
-			['L', w6, h],
-			['M', 0, 3 * h],
-			['L', w2, 3 * h],
-			['M', w4, 3 * h],
-			['L', w6, 3 * h],
-			// greens
-			['M', 0, h],
-			['L', 0, 3 * h],
-			['M', w3, 0],
-			['L', w3, 2 * h],
-			['M', w3, 2 * h],
-			['L', w3, 4 * h],
-			...(edge ? edgeSegment : []),
-			// browns
-			['M', w1, 0],
-			['L', w5, 0],
-			['M', w1, 2 * h],
-			['L', w5, 2 * h],
-			['M', w1, 4 * h],
-			['L', w5, 4 * h]
-		]
-	});
-
-	const startSegments: PathSegment[] = [];
-	const middleSegments: PathSegment[] = [];
-	const endSegments: PathSegment[] = [];
-
-	for (let c = 0; c < columns; c++) {
-		for (let r = 0; r < rows; r++) {
-			const unit = unitPattern(c === columns - 1, finishOuterEdge && c === columns - 1);
-			if (r > 0 && r < rows - 1) {
-				middleSegments.push(
-					...translatePS(unit.start, col * c, row * r),
-					...translatePS(unit.middle, col * c, row * r),
-					...translatePS(unit.end, col * c, row * r)
-				);
-				continue;
-			}
-
-			if (rows === 1) {
-				startSegments.push(...translatePS(unit.start, col * c, row * r));
-				endSegments.push(...translatePS(unit.end, col * c, row * r));
-			} else if (r === 0) {
-				middleSegments.push(...translatePS(unit.end, col * c, row * r));
-				startSegments.push(...translatePS(unit.start, col * c, row * r));
-			} else if (r === rows - 1) {
-				middleSegments.push(...translatePS(unit.start, col * c, row * r));
-				endSegments.push(...translatePS(unit.end, col * c, row * r));
-			}
-			middleSegments.push(...translatePS(unit.middle, col * c, row * r));
-		}
-	}
-
-	return [...startSegments, ...middleSegments, ...endSegments];
-};
-
-/////////////////////////////////////////////////
-// Adjustment functions — built on the shared adjacent-facet snapper.
-
-export type GetSegmentFunction = (
-	end: 'start' | 'end',
-	rows: number,
-	columns: number,
-	facetLength: number,
-	hasOuterMirror?: boolean
-) => [number, number][];
+import { Vector3 } from 'three';
+import type { BandCutPattern, PathSegment, Quadrilateral, TiledPatternConfig } from '#lib/types.js';
+import { removeInPlace } from './tesselation/shared/helpers';
+import { transformPatternByQuad } from './quadrilateral';
+import { getAngle, rotatePoint } from './utils';
+import { pieceIndexOf } from '#lib/cut-pattern/resolve-partner-band.js';
+import { isSameParentBand } from '#lib/util.js';
 
 /**
- * Asanoha's snap rules for one facet: each start pair's first node snaps onto the
- * previous facet's matching end pair's first node, and each end pair's second node
- * snaps onto the next facet's matching start pair's second node. This chains the
- * x = 0 (and mirrored w6) verticals across quads.
+ * Asanoha: the hemp-leaf row cut into quarter-height strips, one strip per quad,
+ * for finer conformance to 3D curvature. The row repeats every half, and each half is two strips that
+ * mirror each other across the star-centre line, so two subunits cycle along a
+ * band: A (bottom: brown star line, top: purple star line) then B (A mirrored).
+ *
+ * Unit frame: x across the band in sixths of a column, y along the band.
+ * Every node lies inside or on the quad, so adjacent strips meet exactly
+ * through the quad mapping and nothing needs snapping — only drops and additions.
+ *
+ * Band ends. A physical end (a band's start, or its last piece's end) is capped:
+ * the brown line is extended to the column edges. A split seam instead
+ * interlocks: the lower piece drops the column-edge verticals of its last strip,
+ * leaving a hexagonal end, and the higher piece borrows those verticals and the
+ * red zigzags beside them, so its start reaches back in spikes along the edges.
  */
-const getAsanohaSnapRules = (
-	getSegments: GetSegmentFunction,
-	rows: number,
-	columns: number,
-	facetLength: number,
-	hasOuterMirror: boolean
-): FacetSnapRule[] => {
-	if (rows < 1 || columns < 1) {
-		console.error(`bad row or column count, rows: ${rows}, columns: ${columns}`);
-		return [];
-	}
-	const start = getSegments('start', rows, columns, facetLength, hasOuterMirror);
-	const end = getSegments('end', rows, columns, facetLength, hasOuterMirror);
-	return [
-		{ from: 'prev', pairs: start.map(([first], k) => ({ target: first, source: end[k][0] })) },
-		{ from: 'next', pairs: end.map(([, second], k) => ({ target: second, source: start[k][1] })) }
-	];
-};
 
-export const adjustAsanohaPatternAfterMapping = (
-	patternBand: PathSegment[][],
-	quadBand: Quadrilateral[],
-	tiledPatternConfig: TiledPatternConfig,
-	getSegments: GetSegmentFunction,
-	// True for the outermost band, whose facets carry the mirrored w6 finishing line in
-	// their start/end regions — the segment-index lookups must account for it.
-	hasOuterMirror = false
-): PathSegment[][] => {
-	const { endsMatched, endsTrimmed, rowCount, columnCount } = tiledPatternConfig.config;
-	const rows = rowCount || 1;
-	const columns = columnCount || 1;
-	const mapped = patternBand;
-	patternBand = snapAdjacentFacets(
-		mapped,
-		quadBand,
-		(i) => getAsanohaSnapRules(getSegments, rows, columns, mapped[i].length, hasOuterMirror),
-		{ endsMatched: !!endsMatched }
-	);
+type P = [number, number];
+/**
+ * - `leftEdge`: the column's x = 0 line, drawn by the previous column or ceded to a partner band.
+ * - `unitBottom`: A's bottom line, which retraces the previous B's top.
+ * - `columnEdge`: a B vertical, dropped where a piece ends at a split.
+ * - `spike`: a B segment the next piece borrows across a split.
+ */
+type Tag = 'leftEdge' | 'unitBottom' | 'columnEdge' | 'spike';
+type Seg = { from: P; to: P; tags?: Tag[] };
 
-	if (endsTrimmed) {
-		const startSegments = getSegments(
-			'start',
-			rows,
-			columns,
-			patternBand[0].length,
-			hasOuterMirror
-		).flat();
-		const endSegments = getSegments(
-			'end',
-			rows,
-			columns,
-			patternBand[patternBand.length - 1].length,
-			hasOuterMirror
-		).flat();
-		patternBand[0].splice(0, startSegments.length);
-		patternBand[patternBand.length - 1].splice(Math.min(...endSegments), endSegments.length);
-	}
-	return patternBand;
-};
+export const ASANOHA_SUBUNIT_COUNT = 2;
 
-export const getAsanohaSegments = (
-	end: 'start' | 'end',
-	rows: number,
-	columns: number,
-	facetLength: number,
-	hasOuterMirror = false
-): [number, number][] => {
-	const indices: [number, number][] = [];
-	// The start/end regions each hold one [M, L] pair per column, plus one extra mirror
-	// pair (the w6 finishing line) when the band carries the outer mirror.
-	const regionSize = columns * 2 + (hasOuterMirror ? 2 : 0);
-	const endRegionStart = facetLength - regionSize;
+const A: Seg[] = [
+	// blue diamond, lower half
+	{ from: [2 / 6, 1], to: [3 / 6, 0] },
+	{ from: [3 / 6, 0], to: [4 / 6, 1] },
+	// red zigzags
+	{ from: [1 / 6, 0], to: [0, 1] },
+	{ from: [5 / 6, 0], to: [1, 1] },
+	// pink diamond, lower half
+	{ from: [0, 1], to: [3 / 6, 0] },
+	{ from: [3 / 6, 0], to: [1, 1] },
+	// purples: the line A shares with B is A's top
+	{ from: [0, 1], to: [2 / 6, 1] },
+	{ from: [4 / 6, 1], to: [1, 1] },
+	// greens
+	{ from: [3 / 6, 0], to: [3 / 6, 1] },
+	{ from: [0, 0], to: [0, 1], tags: ['leftEdge'] },
+	{ from: [1, 0], to: [1, 1] },
+	// brown: coincides with the previous B's top, so only the band's first unit keeps it
+	{ from: [1 / 6, 0], to: [5 / 6, 0], tags: ['unitBottom'] }
+];
+
+const B: Seg[] = [
+	// blue diamond, upper half
+	{ from: [2 / 6, 0], to: [3 / 6, 1] },
+	{ from: [3 / 6, 1], to: [4 / 6, 0] },
+	// red zigzags
+	{ from: [0, 0], to: [1 / 6, 1], tags: ['spike'] },
+	{ from: [1, 0], to: [5 / 6, 1], tags: ['spike'] },
+	// pink diamond, upper half
+	{ from: [0, 0], to: [3 / 6, 1] },
+	{ from: [3 / 6, 1], to: [1, 0] },
+	// greens
+	{ from: [3 / 6, 0], to: [3 / 6, 1] },
+	{ from: [0, 0], to: [0, 1], tags: ['leftEdge', 'columnEdge', 'spike'] },
+	{ from: [1, 0], to: [1, 1], tags: ['columnEdge', 'spike'] },
+	// brown
+	{ from: [1 / 6, 1], to: [5 / 6, 1] }
+];
+
+// The brown line's missing ends, closing a physical band end.
+const START_CAP: Seg[] = [
+	{ from: [0, 0], to: [1 / 6, 0] },
+	{ from: [5 / 6, 0], to: [1, 0] }
+];
+const END_CAP: Seg[] = [
+	{ from: [0, 1], to: [1 / 6, 1] },
+	{ from: [5 / 6, 1], to: [1, 1] }
+];
+
+const SUBUNITS = [A, B];
+const subunitOf = (facetIndex: number) => SUBUNITS[facetIndex % ASANOHA_SUBUNIT_COUNT];
+
+/** `segsOf(c)` repeated across the columns, as M/L pairs in unit coordinates. */
+const columnsPath = (columns: number, segsOf: (c: number) => Seg[]): PathSegment[] => {
+	const path: PathSegment[] = [];
 	for (let c = 0; c < columns; c++) {
-		if (end === 'start') {
-			indices.push([c * 2, c * 2 + 1]);
-		} else {
-			indices.push([endRegionStart + c * 2, endRegionStart + c * 2 + 1]);
+		const x = (v: number) => (c + v) / columns;
+		for (const { from, to } of segsOf(c)) {
+			path.push(['M', x(from[0]), from[1]], ['L', x(to[0]), to[1]]);
 		}
 	}
-	if (hasOuterMirror) {
-		// Mirror pair sits immediately after the per-column pairs in each region.
-		if (end === 'start') {
-			indices.push([columns * 2, columns * 2 + 1]);
-		} else {
-			indices.push([endRegionStart + columns * 2, endRegionStart + columns * 2 + 1]);
-		}
+	return path;
+};
+
+export const generateAsanohaSubunits = (columns: number): PathSegment[][] =>
+	SUBUNITS.map((segs) => columnsPath(columns, () => segs));
+
+/** A, B, A, B stacked into one unit square: one legacy Asanoha row. */
+export const generateAsanohaPreview = (columns: number): PathSegment[] => {
+	const [a, b] = generateAsanohaSubunits(columns);
+	const strips = [a, b, a, b];
+	return strips.flatMap((path, s) =>
+		path.map((seg) => {
+			const [command, x, y] = seg as ['M' | 'L', number, number];
+			return [command, x, (s + y) / strips.length] as PathSegment;
+		})
+	);
+};
+
+/**
+ * Path indices to remove from one facet.
+ *
+ * - `leftEdge` in columns after the first: retraces the previous column's right edge.
+ * - `leftEdge` in column 0 when the band has a left partner: the partner's right
+ *   edge already draws the band seam. `keepPartnerSeam` keeps it, so every band
+ *   is self-contained and the seam is drawn by both bands.
+ * - `unitBottom` after facet 0: retraces the previous B's top line.
+ * - `columnEdge` when `endsAtSplit`: the last strip of a piece followed by
+ *   another; the next piece draws these verticals instead.
+ *
+ * Facet indices are piece-local; splits fall on multiples of the subunit count,
+ * so every piece starts on A and keeps its own bottom line as a physical end.
+ */
+/** A `leftEdge` the previous column, or a partner band (`partnerDrop`), draws instead. */
+const isCededEdge = (tags: Tag[], column: number, partnerDrop: boolean) =>
+	tags.includes('leftEdge') && (column > 0 || partnerDrop);
+
+export const getAsanohaDropIndices = (
+	facetIndex: number,
+	columns: number,
+	{
+		hasLeftPartner,
+		keepPartnerSeam = false,
+		endsAtSplit = false
+	}: { hasLeftPartner: boolean; keepPartnerSeam?: boolean; endsAtSplit?: boolean }
+): number[] => {
+	const segs = subunitOf(facetIndex);
+	const out: number[] = [];
+	for (let c = 0; c < columns; c++) {
+		segs.forEach(({ tags = [] }, s) => {
+			const drop =
+				isCededEdge(tags, c, hasLeftPartner && !keepPartnerSeam) ||
+				(facetIndex > 0 && tags.includes('unitBottom')) ||
+				(endsAtSplit && tags.includes('columnEdge'));
+			if (drop) {
+				const base = 2 * (c * segs.length + s);
+				out.push(base, base + 1);
+			}
+		});
 	}
-	return indices;
+	return out;
+};
+
+type Point3 = { x: number; y: number; z?: number };
+/** A facet's stored quad is a structured clone (plain points); rebuild Vector3s to map through it. */
+export const toQuad = (q: Record<'a' | 'b' | 'c' | 'd', Point3>): Quadrilateral => {
+	const v = ({ x, y, z = 0 }: Point3) => new Vector3(x, y, z);
+	return { a: v(q.a), b: v(q.b), c: v(q.c), d: v(q.d) };
+};
+
+/**
+ * The previous piece's last quad, moved rigidly so its top edge (d→c) lies on
+ * this piece's bottom edge (a→b). Pieces are a partition of one flat layout
+ * re-aligned separately, so the two edges are congruent.
+ */
+const alignPrevPieceQuad = (prev: Quadrilateral, first: Quadrilateral): Quadrilateral => {
+	const angle = getAngle(first.a, first.b) - getAngle(prev.d, prev.c);
+	const move = (p: Vector3) => {
+		const { x, y } = rotatePoint(prev.d, p, angle);
+		return new Vector3(x - prev.d.x + first.a.x, y - prev.d.y + first.a.y, 0);
+	};
+	return { a: move(prev.a), b: move(prev.b), c: move(prev.c), d: move(prev.d) };
+};
+
+/** Without the previous piece, extend this piece's first quad back by its own height. */
+const extrapolatePrevQuad = ({ a, b, c, d }: Quadrilateral): Quadrilateral => ({
+	a: a.clone().multiplyScalar(2).sub(d),
+	b: b.clone().multiplyScalar(2).sub(c),
+	c: b.clone(),
+	d: a.clone()
+});
+
+/**
+ * Tube-level adjustment: drops, physical end caps and split-seam spikes. Runs
+ * here rather than per band because a piece's seam reads its sibling piece.
+ *
+ * A piece's siblings share its parent address. Splits fall on multiples of the
+ * subunit count, so every piece starts on A and ends on B, and facet indices
+ * are piece-local. Drops read complete paths, so they run first; additions are
+ * appended after them.
+ */
+export const adjustAsanohaAfterTiling = (
+	bands: BandCutPattern[],
+	tiledPatternConfig: TiledPatternConfig
+): BandCutPattern[] => {
+	const columns = tiledPatternConfig.config.columnCount || 1;
+	const keepPartnerSeam = tiledPatternConfig.config.keepPartnerSeam ?? false;
+
+	return bands.map((band) => {
+		if (band.error || band.facets.length === 0) return band;
+		const hasLeftPartner = band.leftPartnerBand !== undefined;
+		const partnerDrop = hasLeftPartner && !keepPartnerSeam;
+		const piece = pieceIndexOf(band.address);
+		const siblings = bands.filter((b) => b && isSameParentBand(b.address, band.address));
+		const sibling = (p: number) => siblings.find((b) => pieceIndexOf(b.address) === p);
+		const startsAtSplit = piece > 0;
+		const endsAtSplit = !!sibling(piece + 1);
+		const last = band.facets.length - 1;
+
+		const facets = band.facets.map((facet, f) => {
+			const path = structuredClone(facet.path);
+			removeInPlace({
+				indices: getAsanohaDropIndices(f, columns, {
+					hasLeftPartner,
+					keepPartnerSeam,
+					endsAtSplit: endsAtSplit && f === last
+				}),
+				target: path
+			});
+			if (!facet.quad) return { ...facet, path };
+			const quad = toQuad(facet.quad);
+
+			if (f === 0 && !startsAtSplit) {
+				path.push(
+					...transformPatternByQuad(
+						columnsPath(columns, () => START_CAP),
+						quad
+					)
+				);
+			}
+			if (f === 0 && startsAtSplit) {
+				const prevFacet = sibling(piece - 1)?.facets.at(-1);
+				const prevQuad = prevFacet?.quad
+					? alignPrevPieceQuad(toQuad(prevFacet.quad), quad)
+					: extrapolatePrevQuad(quad);
+				const spikes = columnsPath(columns, (c) =>
+					B.filter(({ tags = [] }) => tags.includes('spike') && !isCededEdge(tags, c, partnerDrop))
+				);
+				path.push(...transformPatternByQuad(spikes, prevQuad));
+			}
+			if (f === last && !endsAtSplit) {
+				path.push(
+					...transformPatternByQuad(
+						columnsPath(columns, () => END_CAP),
+						quad
+					)
+				);
+			}
+			return { ...facet, path };
+		});
+		return { ...band, facets };
+	});
 };

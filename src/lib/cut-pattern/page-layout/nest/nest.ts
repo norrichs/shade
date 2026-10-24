@@ -1,4 +1,5 @@
 import { Vector3 } from 'three';
+import { pageOrigin } from '../page-grid';
 import type { PageGeom, PageLayoutResult, PageRect } from '../types';
 import type { NestShape, Pt, Raster } from './types';
 import {
@@ -10,6 +11,7 @@ import {
 	rotateAbout
 } from './raster';
 import { Grid } from './grid';
+import { keepOutFitFactor } from '../registration-mark';
 
 export type NestGeom = PageGeom & { rotationStep: number; cellMm: number };
 export const NEST_CELL_MM = 1;
@@ -111,12 +113,17 @@ const bestOver = (prep: Prepared, find: (a: number) => Pos | null): Hit | null =
 	return best;
 };
 
-/** Per-angle scale-up factor needed for the undilated bbox to fit the content box. */
-const fitFactor = (prep: Prepared, cw: number, ch: number) =>
-	prep.bbox.map((b) => Math.max(b.w / cw, b.h / ch));
+/** Per-angle scale-up factor needed for the undilated bbox to fit the content box beside or below the keep-out. */
+const fitFactor = (
+	prep: Prepared,
+	cw: number,
+	ch: number,
+	keepOut?: PageGeom['keepOut'],
+	gap = 0
+) => prep.bbox.map((b) => keepOutFitFactor(b.w, b.h, cw, ch, keepOut, gap));
 
 export const nestPageLayout = (shapes: NestShape[], geom: NestGeom): PageLayoutResult => {
-	const { pageScale, pageWidth, pageHeight, contentWidth, contentHeight, marginPx, pageGap, gap } =
+	const { pageScale, pageWidth, pageHeight, contentWidth, contentHeight, marginPx, gap, keepOut } =
 		geom;
 	const cell = nestCellSize(geom);
 	// Each piece is dilated by k cells, so two non-overlapping dilated rasters keep
@@ -148,8 +155,8 @@ export const nestPageLayout = (shapes: NestShape[], geom: NestGeom): PageLayoutR
 	let factor = 0;
 	prepared.forEach((p, i) => {
 		if (!hasGeom(i)) return;
-		if (p.bbox.some((b) => b.w <= contentWidth + EPS && b.h <= contentHeight + EPS)) return;
-		const f = Math.min(...fitFactor(p, contentWidth, contentHeight));
+		const f = Math.min(...fitFactor(p, contentWidth, contentHeight, keepOut, gap));
+		if (f <= 1 + EPS) return;
 		if (f > factor) {
 			factor = f;
 			worst = i;
@@ -173,14 +180,22 @@ export const nestPageLayout = (shapes: NestShape[], geom: NestGeom): PageLayoutR
 	const pages: PageRect[] = [];
 	type PageState = { grid: Grid; coarse: Grid; used: number };
 	const state: PageState[] = [];
+	// The keep-out in grid cells, dilated by k like every piece so the two stay
+	// ≥ 2k cells apart. Content cell (0, 0) is grid (k, k); the far side runs into
+	// the ring. Not counted in `used`, so utilisation stays about the pieces.
+	const keepOutStamp: { r: Raster; gx: number } | null = (() => {
+		if (!keepOut) return null;
+		const gx = Math.max(0, Math.floor((contentWidth - keepOut.width) / cell));
+		const h = Math.min(H, Math.ceil(keepOut.height / cell) + 2 * k);
+		const w = W - gx;
+		if (w <= 0 || h <= 0) return null;
+		const rows = Array.from({ length: h }, (): [number, number][] => [[0, w]]);
+		return { r: { w, h, rows, ox: 0, oy: 0, area: w * h }, gx };
+	})();
 	const newPage = () => {
-		pages.push({
-			x: 0,
-			y: pages.length * (pageHeight + pageGap),
-			width: pageWidth,
-			height: pageHeight
-		});
+		pages.push({ ...pageOrigin(pages.length, geom), width: pageWidth, height: pageHeight });
 		const grid = new Grid(W, H);
+		if (keepOutStamp) grid.place(keepOutStamp.r, keepOutStamp.gx, 0);
 		state.push({ grid, coarse: grid.coarsen(NEST_COARSE), used: 0 });
 	};
 	newPage();
@@ -196,7 +211,8 @@ export const nestPageLayout = (shapes: NestShape[], geom: NestGeom): PageLayoutR
 	for (const i of order) {
 		const s = shapes[i];
 		if (!hasGeom(i)) {
-			origins[i] = new Vector3(marginPx, pages[pages.length - 1].y + marginPx, 0);
+			const last = pages[pages.length - 1];
+			origins[i] = new Vector3(last.x + marginPx, last.y + marginPx, 0);
 			continue;
 		}
 		const prep = prepared[i];
@@ -223,7 +239,7 @@ export const nestPageLayout = (shapes: NestShape[], geom: NestGeom): PageLayoutR
 		}
 		const pg = state[p];
 		const r = prep.fine[hit.a];
-		const X0 = marginPx - k * cell;
+		const X0 = pages[p].x + marginPx - k * cell;
 		const Y0 = pages[p].y + marginPx - k * cell;
 		origins[i] = new Vector3(
 			X0 + (hit.gx - r.ox) * cell - s.pivot.x,

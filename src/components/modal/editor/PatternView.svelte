@@ -23,6 +23,14 @@
 	import Editor from './Editor.svelte';
 	import LabeledControl from './LabeledControl.svelte';
 
+	// Patterns that cycle subunits along the band: no row control, and a band-seam toggle.
+	const SUBUNIT_PATTERN_TYPES = [
+		'tiledHexparquetPattern-0',
+		'tiledHexparquet2Pattern-0',
+		'tiledAsanohaPattern-1',
+		'tiledAsanohaSplitPattern-0'
+	];
+
 	let patternTypeConfig = $derived($patternConfigStore.patternTypeConfig);
 	let isOutlined = $derived(isOutlinedPatternConfig(patternTypeConfig));
 	let isTiled = $derived(isTiledPatternConfig(patternTypeConfig));
@@ -346,7 +354,7 @@
 						</LabeledControl>
 					{/if}
 					{#if inner.rowCount && inner.columnCount}
-						{#if patternTypeConfig.type !== 'tiledHexparquetPattern-0'}
+						{#if !SUBUNIT_PATTERN_TYPES.includes(patternTypeConfig.type)}
 							<LabeledControl label="Rows">
 								<input
 									type="number"
@@ -448,7 +456,7 @@
 							/>
 						</LabeledControl>
 					{/if}
-					{#if patternTypeConfig.type === 'tiledHexparquetPattern-0'}
+					{#if SUBUNIT_PATTERN_TYPES.includes(patternTypeConfig.type)}
 						<!-- On: a band keeps its own seam segments even where another band
 						     abuts, so every band is self-contained and the seam is drawn
 						     twice. Off (the default) cedes that line to the partner. -->

@@ -1,5 +1,14 @@
 import { describe, it, expect } from '@jest/globals';
-import { addGcs, deleteGcs, moveGcs, setGcsLevel, setPrimary } from '../gcs-editor';
+import {
+	addGcs,
+	deleteGcs,
+	moveGcs,
+	setAllGcsBlends,
+	setGcsBlend,
+	setGcsLevel,
+	setPrimary
+} from '../gcs-editor';
+import { defaultGcsBlend } from '#lib/gcs/gcs-blend.js';
 import { generateDefaultRadialShapeConfig } from '#lib/shades-config.js';
 import type { ShapeConfig } from '#lib/types.js';
 
@@ -66,5 +75,21 @@ describe('gcs-editor', () => {
 		const ids = moved.map((s) => s.id).filter((v) => v !== undefined);
 		expect(new Set(ids).size).toBe(ids.length);
 		expect(ids.length).toBe(1);
+	});
+
+	it('setGcsBlend sets one blend as its own copy', () => {
+		const list = [mk(1), mk(2)];
+		const blend = defaultGcsBlend();
+		const out = setGcsBlend(list, 0, blend);
+		expect(out[0].blend).toEqual(blend);
+		expect(out[0].blend).not.toBe(blend);
+		expect(out[1].blend).toBeUndefined();
+		expect(list[0].blend).toBeUndefined();
+	});
+
+	it('setAllGcsBlends gives every GCS an independent copy', () => {
+		const out = setAllGcsBlends([mk(1), mk(2), mk(3)], { mode: 'linear' });
+		expect(out.map((s) => s.blend?.mode)).toEqual(['linear', 'linear', 'linear']);
+		expect(out[0].blend).not.toBe(out[1].blend);
 	});
 });

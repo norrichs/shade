@@ -1,4 +1,6 @@
 import { Vector3 } from 'three';
+import { pageOrigin } from './page-grid';
+import { keepOutFitFactor } from './registration-mark';
 import type { LayoutItem, PageGeom, PageLayoutResult, PageRect } from './types';
 
 const EPS = 1e-6;
@@ -98,10 +100,10 @@ export const skylinePageLayout = (items: LayoutItem[], geom: PageGeom): PageLayo
 		contentWidth,
 		contentHeight,
 		marginPx,
-		pageGap,
 		gap,
 		reorderWindow,
-		allowRotation
+		allowRotation,
+		keepOut
 	} = geom;
 	const W = Math.max(1, Math.floor(reorderWindow));
 	// Expand the packing box by `gap` so each item's reserved right/bottom spacing
@@ -110,18 +112,20 @@ export const skylinePageLayout = (items: LayoutItem[], geom: PageGeom): PageLayo
 	const packHeight = contentHeight + gap;
 
 	// Overflow: an item whose inflated footprint cannot fit a fresh page in any
-	// orientation. (The +gap terms cancel, so this reduces to w<=contentWidth etc.)
+	// orientation. (The +gap terms cancel against the packing box, so without a
+	// keep-out this reduces to w<=contentWidth etc.)
+	// Measured against the BARE content box, not the gap-inflated packing box:
+	// `gap` is a constant in pattern units and does not scale with pageScale, so
+	// the inflated ratio under-reports the scale needed and the layout still
+	// overflows at the reported value.
 	let worst = -1;
 	let factor = 0;
 	items.forEach((it, i) => {
 		const os = orientsOf(it, allowRotation);
-		const fits = os.some((o) => o.w + gap <= packWidth + EPS && o.h + gap <= packHeight + EPS);
-		if (!fits) {
-			// Measure against the BARE content box, not the gap-inflated packing box:
-			// `gap` is a constant in pattern units and does not scale with pageScale,
-			// so the inflated ratio under-reports the scale needed and the layout
-			// still overflows at the reported value.
-			const f = Math.min(...os.map((o) => Math.max(o.w / contentWidth, o.h / contentHeight)));
+		const f = Math.min(
+			...os.map((o) => keepOutFitFactor(o.w, o.h, contentWidth, contentHeight, keepOut, gap))
+		);
+		if (f > 1 + EPS) {
 			if (f > factor) {
 				factor = f;
 				worst = i;
@@ -142,11 +146,24 @@ export const skylinePageLayout = (items: LayoutItem[], geom: PageGeom): PageLayo
 	const rotations: number[] = new Array(items.length).fill(0);
 	const pages: PageRect[] = [];
 
+	// A fresh page's skyline. The keep-out stands as a raised segment at the right,
+	// widened by `gap` on its left so nothing packs closer than `gap` beside it;
+	// its top already includes the `gap` below it.
+	const freshSky = (): SkySeg[] => {
+		if (!keepOut) return [{ x: 0, width: packWidth, top: 0 }];
+		const x = contentWidth - keepOut.width;
+		if (x <= EPS) return [{ x: 0, width: packWidth, top: keepOut.height + gap }];
+		return [
+			{ x: 0, width: x, top: 0 },
+			{ x, width: packWidth - x, top: keepOut.height + gap }
+		];
+	};
+
 	let page = 0;
-	let sky: SkySeg[] = [{ x: 0, width: packWidth, top: 0 }];
+	let sky = freshSky();
 	const ensurePage = (idx: number) => {
 		if (!pages[idx]) {
-			pages[idx] = { x: 0, y: idx * (pageHeight + pageGap), width: pageWidth, height: pageHeight };
+			pages[idx] = { ...pageOrigin(idx, geom), width: pageWidth, height: pageHeight };
 		}
 	};
 	ensurePage(0);
@@ -154,14 +171,14 @@ export const skylinePageLayout = (items: LayoutItem[], geom: PageGeom): PageLayo
 	const commit = (qi: number, p: Placement) => {
 		const idx = queue[qi];
 		const it = items[idx];
-		const pageOffsetY = page * (pageHeight + pageGap);
+		const { x: pageX, y: pageY } = pages[page];
 		const cx = it.left + it.width / 2; // local bounds-center
 		const cy = it.top + it.height / 2;
 		// The real item box is left/top-aligned in its inflated cell, so the origin
 		// uses the real (o.w, o.h); the skyline reserves the inflated footprint.
 		origins[idx] = new Vector3(
-			marginPx + p.x + p.o.w / 2 - cx,
-			pageOffsetY + marginPx + p.top + p.o.h / 2 - cy,
+			pageX + marginPx + p.x + p.o.w / 2 - cx,
+			pageY + marginPx + p.top + p.o.h / 2 - cy,
 			0
 		);
 		rotations[idx] = p.o.rot;
@@ -193,7 +210,7 @@ export const skylinePageLayout = (items: LayoutItem[], geom: PageGeom): PageLayo
 			// Nothing in the window fits the current page: new page, place the front item.
 			page += 1;
 			ensurePage(page);
-			sky = [{ x: 0, width: packWidth, top: 0 }];
+			sky = freshSky();
 			const front = bestPlacement(items[queue[0]], sky, packWidth, packHeight, allowRotation, gap);
 			// Non-null: overflow was pre-checked, so it fits a fresh page.
 			commit(0, front as Placement);

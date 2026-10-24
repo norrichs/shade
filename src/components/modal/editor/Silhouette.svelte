@@ -16,7 +16,7 @@
 	import Editor from './Editor.svelte';
 	import LabeledControl from './LabeledControl.svelte';
 	import PathEditor, { type PathEditorOverlayContext } from './PathEditor.svelte';
-	import { neighborPointMatch } from './path-editor';
+	import { closeLoop, neighborPointMatch } from './path-editor';
 	import { fillPathToAxis, mirrorCurvesAcrossY } from './curve-preview';
 	import { silhouetteTab, type SilhouetteTab } from './silhouette-editor-store';
 
@@ -70,6 +70,19 @@
 		updateGlobule((globule) => ({
 			...globule,
 			silhouetteConfig: { ...globule.silhouetteConfig, curves }
+		}));
+
+	/** Turning the loop on snaps the last anchor onto the first; turning it off leaves them where they are. */
+	const setLoopEnds = (loopEnds: boolean) =>
+		updateGlobule((globule) => ({
+			...globule,
+			silhouetteConfig: {
+				...globule.silhouetteConfig,
+				loopEnds,
+				curves: loopEnds
+					? closeLoop(globule.silhouetteConfig.curves)
+					: globule.silhouetteConfig.curves
+			}
 		}));
 
 	const setDepthCurves = (curves: BezierConfig[]) =>
@@ -242,6 +255,7 @@
 						showPointInputsToggle
 						editorId="silhouette"
 						overlay={silhouetteOverlay}
+						closed={silhouetteConfig.loopEnds ?? false}
 					>
 						<line x1="0" y1="-100" x2="0" y2="100" stroke="black" stroke-width="0.25" />
 						<!-- Silhouette x below this is a narrow span: see NarrowRegionConfig -->
@@ -288,6 +302,15 @@
 			</Container>
 
 			<Container direction="column">
+				{#if $silhouetteTab === 'silhouette' && silhouetteConfig}
+					<LabeledControl label="Loop ends">
+						<input
+							type="checkbox"
+							checked={silhouetteConfig.loopEnds ?? false}
+							onchange={(event) => setLoopEnds((event.currentTarget as HTMLInputElement).checked)}
+						/>
+					</LabeledControl>
+				{/if}
 				{#if $silhouetteTab === 'depth' && depthCurveConfig}
 					<LabeledControl label="Baseline">
 						<NumberInput

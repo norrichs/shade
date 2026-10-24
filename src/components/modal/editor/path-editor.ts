@@ -86,6 +86,11 @@ export type LimitProps = {
 	curveDef: BezierConfig[];
 	newPoint: PointConfig2;
 	oldPoint: PointConfig2;
+	/**
+	 * The run is a loop: the last curve's end anchor sits on the first curve's
+	 * start anchor, and that pair is an ordinary joint rather than two free ends.
+	 */
+	closed?: boolean;
 };
 
 export type LimitFunction = (props: LimitProps) => BezierConfig[];
@@ -177,6 +182,23 @@ export const allPointsInUnitSquare: LimitFunction = ({
 	return curveDef;
 };
 
+/**
+ * Pin the two terminal anchors where they are; only interior points move. For
+ * curves whose ends are fixed by meaning, like a blend curve from (0,0) to (1,1).
+ */
+export const lockEndPoints: LimitFunction = ({
+	curveIndex,
+	pointIndex,
+	curveDef,
+	newPoint,
+	oldPoint
+}) => {
+	curveDef[curveIndex].points[pointIndex] = isEndPoint(curveIndex, pointIndex, curveDef)
+		? { ...newPoint, x: oldPoint.x, y: oldPoint.y }
+		: { ...newPoint };
+	return curveDef;
+};
+
 export const endPointsLockedY: LimitFunction = ({
 	curveIndex,
 	pointIndex,
@@ -216,21 +238,35 @@ export const neighborPointMatch: LimitFunction = ({
 	curveIndex,
 	pointIndex,
 	curveDef,
-	newPoint
+	newPoint,
+	closed
 }) => {
 	curveDef[curveIndex].points[pointIndex] = { ...newPoint };
-	if (isEndPoint(curveIndex, pointIndex, curveDef) || isDirectionPoint(pointIndex)) return curveDef;
+	if (isEndPoint(curveIndex, pointIndex, curveDef, closed) || isDirectionPoint(pointIndex))
+		return curveDef;
 
 	const partnerPointIndex = pointIndex === 0 ? 3 : 0;
-	const partnerCurveIndex = pointIndex === 0 ? curveIndex - 1 : curveIndex + 1;
-	curveDef[partnerCurveIndex].points[partnerPointIndex] = { ...newPoint };
+	const partnerCurveIndex = joinedCurveIndex(curveIndex, pointIndex, curveDef, closed);
+	if (partnerCurveIndex === undefined) return curveDef;
+	curveDef[partnerCurveIndex].points[partnerPointIndex] = {
+		...curveDef[partnerCurveIndex].points[partnerPointIndex],
+		x: newPoint.x,
+		y: newPoint.y
+	};
 
 	return curveDef;
 };
 
 // Utility functions
 
-const isEndPoint = (curveIndex: number, pointIndex: number, curveDef: unknown[]) => {
+/** A free end of the run. A closed run has none: its ends are joined to each other. */
+const isEndPoint = (
+	curveIndex: number,
+	pointIndex: number,
+	curveDef: unknown[],
+	closed = false
+) => {
+	if (closed) return false;
 	return (
 		(curveIndex === 0 && pointIndex === 0) ||
 		(curveIndex === curveDef.length - 1 && pointIndex === 3)
@@ -309,11 +345,17 @@ export const addCurve = (curveDef: BezierConfig[], step: number): BezierConfig[]
 	return newCurveDef;
 };
 
-/** Split the middle curve in two without changing the rendered path. */
-export const splitCurves = (curveDef: BezierConfig[]): BezierConfig[] => {
+/**
+ * Split a curve in two without changing the rendered path — the middle curve by
+ * default. A closed run grows this way (splitting its last curve) because
+ * appending past the end would tear the loop open.
+ */
+export const splitCurves = (
+	curveDef: BezierConfig[],
+	insertIndex = Math.ceil((curveDef.length - 1) / 2)
+): BezierConfig[] => {
 	if (curveDef.length === 0) return curveDef;
 	const newCurveDef = deepCloneCurves(curveDef);
-	const insertIndex = Math.ceil((curveDef.length - 1) / 2);
 	const p = newCurveDef[insertIndex].points;
 	const m0 = getMidPoint(p[0], p[1]);
 	const m1 = getMidPoint(p[3], p[2]);
@@ -334,10 +376,34 @@ export const splitCurves = (curveDef: BezierConfig[]): BezierConfig[] => {
  * all the way to an empty array, after which every `curveDef[0].points[0]` read
  * in the renderer throws.
  */
-export const removeCurve = (curveDef: BezierConfig[], minCurves = 1): BezierConfig[] => {
+export const removeCurve = (
+	curveDef: BezierConfig[],
+	minCurves = 1,
+	closed = false
+): BezierConfig[] => {
 	if (curveDef.length <= minCurves) return curveDef;
 	const newCurveDef = deepCloneCurves(curveDef);
 	newCurveDef.pop();
+	return closed ? closeLoop(newCurveDef) : newCurveDef;
+};
+
+/**
+ * Pull the last curve's end anchor onto the first curve's start anchor, carrying
+ * its handle with it so the closing curve keeps its shape. The new joint starts
+ * 'angled' — its handles are not yet colinear — and is double-clickable like any
+ * other joint.
+ */
+export const closeLoop = (curveDef: BezierConfig[]): BezierConfig[] => {
+	if (curveDef.length === 0) return curveDef;
+	const newCurveDef = deepCloneCurves(curveDef);
+	const first = newCurveDef[0].points[0];
+	const lastPoints = newCurveDef[newCurveDef.length - 1].points;
+	const end = lastPoints[3];
+	lastPoints[2].x += first.x - end.x;
+	lastPoints[2].y += first.y - end.y;
+	const pointType = first.pointType ?? 'angled';
+	lastPoints[3] = { ...end, x: first.x, y: first.y, pointType };
+	newCurveDef[0].points[0] = { ...first, pointType };
 	return newCurveDef;
 };
 
@@ -345,26 +411,23 @@ export const removeCurve = (curveDef: BezierConfig[], minCurves = 1): BezierConf
  * Flip an interior anchor between 'angled' and 'smooth'. Both sides of the joint
  * carry the type, so they are set together.
  *
- * No-ops on direction handles and on the two outer terminal anchors, which have
- * no partner to join to. Returns a new curveDef rather than mutating and firing
- * a callback, matching the `onChangeCurveDef` contract.
+ * No-ops on direction handles and, unless the run is `closed`, on the two outer
+ * terminal anchors, which have no partner to join to. Returns a new curveDef
+ * rather than mutating and firing a callback, matching the `onChangeCurveDef`
+ * contract.
  */
 export const togglePointType = (
 	curveDef: BezierConfig[],
 	curveIndex: number,
-	pointIndex: number
+	pointIndex: number,
+	closed = false
 ): BezierConfig[] => {
 	if (pointIndex === 1 || pointIndex === 2) return curveDef;
-	if (
-		(pointIndex === 0 && curveIndex === 0) ||
-		(pointIndex === 3 && curveIndex === curveDef.length - 1)
-	) {
-		return curveDef;
-	}
+	const partnerIndex = joinedCurveIndex(curveIndex, pointIndex, curveDef, closed);
+	if (partnerIndex === undefined) return curveDef;
 	const newCurveDef = deepCloneCurves(curveDef);
 	const point = newCurveDef[curveIndex].points[pointIndex];
-	const partnerCurve = newCurveDef[pointIndex === 3 ? curveIndex + 1 : curveIndex - 1];
-	if (!partnerCurve) return curveDef;
+	const partnerCurve = newCurveDef[partnerIndex];
 	const partner = partnerCurve.points[pointIndex === 3 ? 0 : 3];
 	const newType = point.pointType === 'angled' ? 'smooth' : 'angled';
 	point.pointType = newType;
@@ -387,9 +450,19 @@ export const togglePointType = (
 
 const isAnchor = (pointIndex: number) => pointIndex === 0 || pointIndex === 3;
 
-/** The curve joined to this one at `pointIndex`, if there is one. */
-const joinedCurveIndex = (curveIndex: number, pointIndex: number, curveDef: BezierConfig[]) => {
+/**
+ * The curve joined to this one at `pointIndex`, if there is one. A closed run
+ * wraps, so its first and last curves are joined (a single closed curve is
+ * joined to itself).
+ */
+const joinedCurveIndex = (
+	curveIndex: number,
+	pointIndex: number,
+	curveDef: BezierConfig[],
+	closed = false
+) => {
 	const index = pointIndex <= 1 ? curveIndex - 1 : curveIndex + 1;
+	if (closed && curveDef.length > 0) return (index + curveDef.length) % curveDef.length;
 	return index >= 0 && index < curveDef.length ? index : undefined;
 };
 
@@ -406,7 +479,8 @@ export const anchorDragsHandles: LimitFunction = ({
 	pointIndex,
 	curveDef,
 	newPoint,
-	oldPoint
+	oldPoint,
+	closed
 }) => {
 	curveDef[curveIndex].points[pointIndex] = { ...newPoint };
 	if (!isAnchor(pointIndex)) return curveDef;
@@ -418,7 +492,7 @@ export const anchorDragsHandles: LimitFunction = ({
 	handle.x += dx;
 	handle.y += dy;
 
-	const partnerIndex = joinedCurveIndex(curveIndex, pointIndex, curveDef);
+	const partnerIndex = joinedCurveIndex(curveIndex, pointIndex, curveDef, closed);
 	if (partnerIndex === undefined) return curveDef;
 
 	const partner = curveDef[partnerIndex];
@@ -449,12 +523,13 @@ export const mirrorSmoothHandles: LimitFunction = ({
 	curveIndex,
 	pointIndex,
 	curveDef,
-	newPoint
+	newPoint,
+	closed
 }) => {
 	curveDef[curveIndex].points[pointIndex] = { ...newPoint };
 	if (isAnchor(pointIndex)) return curveDef;
 
-	const partnerIndex = joinedCurveIndex(curveIndex, pointIndex, curveDef);
+	const partnerIndex = joinedCurveIndex(curveIndex, pointIndex, curveDef, closed);
 	if (partnerIndex === undefined) return curveDef;
 
 	const anchor = curveDef[curveIndex].points[pointIndex === 1 ? 0 : 3];

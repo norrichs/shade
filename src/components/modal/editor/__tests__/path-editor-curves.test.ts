@@ -3,6 +3,7 @@ import {
 	addCurve,
 	anchorDragsHandles,
 	applyLimits,
+	closeLoop,
 	mirrorSmoothHandles,
 	neighborPointMatch,
 	pointOnRay,
@@ -358,5 +359,130 @@ describe('pointOnRay', () => {
 	it('sweeps toward -x', () => {
 		expect(pointOnRay(5, Math.PI / 2).x).toBeCloseTo(-5);
 		expect(pointOnRay(5, Math.PI / 2).y).toBeCloseTo(0);
+	});
+});
+
+describe('closed runs (loop ends)', () => {
+	/** A two-curve loop through (0,0) and (10,0); the closing joint is (0,0). */
+	const loop = (jointType?: 'smooth' | 'angled'): BezierConfig[] => [
+		curve([pt(0, 0, jointType), pt(0, 4), pt(10, 4), pt(10, 0)]),
+		curve([pt(10, 0), pt(10, -4), pt(0, -4), pt(0, 0, jointType)])
+	];
+	const closedCoupling = [neighborPointMatch, anchorDragsHandles, mirrorSmoothHandles];
+
+	it('closeLoop pulls the last anchor and its handle onto the first anchor', () => {
+		const open = [curve([pt(0, 0), pt(1, 1), pt(4, 5), pt(5, 5)])];
+		const result = closeLoop(open);
+		expect(result[0].points[3]).toMatchObject({ x: 0, y: 0, pointType: 'angled' });
+		expect(result[0].points[2]).toMatchObject({ x: -1, y: 0 });
+		expect(result[0].points[0].pointType).toBe('angled');
+		expect(open[0].points[3].x).toBe(5);
+	});
+
+	it('dragging the first anchor carries the last anchor and both facing handles', () => {
+		const result = applyLimits({
+			limits: closedCoupling,
+			curveDef: loop(),
+			curveIndex: 0,
+			pointIndex: 0,
+			newPoint: pt(1, 2),
+			oldPoint: pt(0, 0),
+			closed: true
+		});
+		expect(result[1].points[3]).toMatchObject({ x: 1, y: 2 });
+		expect(result[0].points[1]).toMatchObject({ x: 1, y: 6 });
+		expect(result[1].points[2]).toMatchObject({ x: 1, y: -2 });
+	});
+
+	it('dragging the last anchor carries the first', () => {
+		const result = applyLimits({
+			limits: closedCoupling,
+			curveDef: loop(),
+			curveIndex: 1,
+			pointIndex: 3,
+			newPoint: pt(-3, 0),
+			oldPoint: pt(0, 0),
+			closed: true
+		});
+		expect(result[0].points[0]).toMatchObject({ x: -3, y: 0 });
+	});
+
+	it('leaves the ends independent when the run is open', () => {
+		const result = applyLimits({
+			limits: closedCoupling,
+			curveDef: loop(),
+			curveIndex: 0,
+			pointIndex: 0,
+			newPoint: pt(1, 2),
+			oldPoint: pt(0, 0)
+		});
+		expect(result[1].points[3]).toMatchObject({ x: 0, y: 0 });
+		expect(result[1].points[2]).toMatchObject({ x: 0, y: -4 });
+	});
+
+	it('a smooth closing joint keeps its handles colinear', () => {
+		const result = applyLimits({
+			limits: closedCoupling,
+			curveDef: loop('smooth'),
+			curveIndex: 0,
+			pointIndex: 1,
+			newPoint: pt(3, 4),
+			oldPoint: pt(0, 4),
+			closed: true
+		});
+		// The partner handle keeps its length (4) and points straight away from (3,4).
+		expect(result[1].points[2].x).toBeCloseTo(-2.4);
+		expect(result[1].points[2].y).toBeCloseTo(-3.2);
+	});
+
+	it('an angled closing joint leaves the partner handle alone', () => {
+		const result = applyLimits({
+			limits: closedCoupling,
+			curveDef: loop('angled'),
+			curveIndex: 0,
+			pointIndex: 1,
+			newPoint: pt(3, 4),
+			oldPoint: pt(0, 4),
+			closed: true
+		});
+		expect(result[1].points[2]).toMatchObject({ x: 0, y: -4 });
+	});
+
+	it('double-click toggles the closing joint on both sides', () => {
+		const fromFirst = togglePointType(loop('angled'), 0, 0, true);
+		expect(fromFirst[0].points[0].pointType).toBe('smooth');
+		expect(fromFirst[1].points[3].pointType).toBe('smooth');
+		const fromLast = togglePointType(fromFirst, 1, 3, true);
+		expect(fromLast[0].points[0].pointType).toBe('angled');
+		expect(fromLast[1].points[3].pointType).toBe('angled');
+	});
+
+	it('the ends do not toggle when the run is open', () => {
+		const input = loop('angled');
+		expect(togglePointType(input, 0, 0)).toBe(input);
+	});
+
+	it('a single closed curve is joined to itself', () => {
+		const single = closeLoop([curve([pt(0, 0), pt(5, 5), pt(5, -5), pt(9, 9)])]);
+		const toggled = togglePointType(single, 0, 3, true);
+		expect(toggled[0].points[0].pointType).toBe('smooth');
+		const dragged = applyLimits({
+			limits: closedCoupling,
+			curveDef: single,
+			curveIndex: 0,
+			pointIndex: 0,
+			newPoint: pt(2, 0),
+			oldPoint: pt(0, 0),
+			closed: true
+		});
+		expect(dragged[0].points[3]).toMatchObject({ x: 2, y: 0 });
+	});
+
+	it('removeCurve re-closes the loop', () => {
+		const three = splitCurves(loop(), 1);
+		expect(three).toHaveLength(3);
+		const result = removeCurve(three, 1, true);
+		expect(result).toHaveLength(2);
+		expect(result[1].points[3]).toMatchObject({ x: 0, y: 0 });
 	});
 });

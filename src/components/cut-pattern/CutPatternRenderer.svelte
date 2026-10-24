@@ -280,7 +280,7 @@
 		);
 	});
 	let nestGeom = $derived(
-		isNest && pageLayoutCfg ? { ...buildNestGeom(pageLayoutCfg), gap } : undefined
+		isNest && pageLayoutCfg ? { ...buildNestGeom(pageLayoutCfg), gap, wrapWidth } : undefined
 	);
 
 	// $state.raw: the result holds Vector3s; a deep proxy loops
@@ -326,8 +326,9 @@
 	let pageLayout = $derived.by((): { result?: PageLayoutResult; fallback: boolean } => {
 		if (layoutMode !== 'page' || !pageLayoutCfg) return { fallback: false };
 		const items = toLayoutItems(pageBands);
-		// Use the single shared gap so all three layout modes stay consistent.
-		const geom = { ...buildPageGeom(pageLayoutCfg), gap };
+		// Use the single shared gap so all three layout modes stay consistent; pages
+		// wrap into rows at the same wrap width line-wrap mode uses.
+		const geom = { ...buildPageGeom(pageLayoutCfg), gap, wrapWidth };
 		if (pageLayoutCfg.algorithm === 'nest') {
 			// Latest worker result for the CURRENT inputs; until it lands, skyline
 			// with rotation so the page never blanks.
@@ -412,6 +413,8 @@
 			{
 				contentWidth: geom.contentWidth,
 				contentHeight: geom.contentHeight,
+				keepOut: geom.keepOut,
+				gap,
 				// Skyline (when enabled) and nest (when its step reaches 90°) can turn a
 				// piece onto its side; flex-wrap never rotates.
 				allowRotation:
@@ -473,6 +476,8 @@
 		notifyOverflow(pageResult?.overflow);
 	});
 
+	let pageGeom = $derived(pageLayoutCfg ? buildPageGeom(pageLayoutCfg) : undefined);
+
 	let usePageLayout = $derived(layoutMode === 'page' && !!pageResult && !pageResult.overflow);
 
 	// Stage 3 needs the same font dictionary SvgText lazily builds; build it here
@@ -527,6 +532,7 @@
 				pages,
 				pageScale: pageLayoutCfg.pageScale,
 				marginPx: geom.marginPx,
+				keepOut: geom.keepOut,
 				gap,
 				config,
 				configName,
@@ -595,7 +601,11 @@
 				pages={pageResult.pages}
 				label={$postProcessConfigs.length > 1 ? postProcessLabel(ppConfig, k) : undefined}
 			>
-				<PageGeometry pages={pageResult.pages} />
+				<PageGeometry
+					pages={pageResult.pages}
+					marginPx={pageGeom?.marginPx}
+					markSize={pageGeom?.keepOut?.width}
+				/>
 				<g id={k === 0 ? 'cut-pattern' : `cut-pattern-${k}`}>
 					{#each pageBands as { band, tube }, i (concatAddress(band.address))}
 						<BandComponent
