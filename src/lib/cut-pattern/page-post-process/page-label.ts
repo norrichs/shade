@@ -1,6 +1,7 @@
 import type { PathSegment } from '#lib/types.js';
 import { CHAR_GAP } from '#lib/svg-text-metrics.js';
-import type { PageRect } from '../page-layout/types';
+import type { KeepOut, PageRect } from '../page-layout/types';
+import { registrationMarkRect } from '../page-layout/registration-mark';
 import type { PageLabelConfig } from '../hole-drop-config';
 import type { Disconnect, PageLabelResult, PlacedBand, Pt } from '../post-process-types';
 import { pointInPolygon } from '../path-contours';
@@ -107,9 +108,19 @@ export const placeBox = (args: {
 	return null;
 };
 
+const rectPolygon = (r: Box): Pt[] => [
+	{ x: r.x, y: r.y },
+	{ x: r.x + r.width, y: r.y },
+	{ x: r.x + r.width, y: r.y + r.height },
+	{ x: r.x, y: r.y + r.height },
+	{ x: r.x, y: r.y }
+];
+
 export const buildPageLabels = (args: {
 	pages: PageRect[];
 	marginPx: number;
+	/** The registration mark's square, kept clear like a solid. */
+	keepOut?: KeepOut;
 	pageScale: number;
 	bands: PlacedBand[];
 	disconnects: Disconnect[];
@@ -117,7 +128,8 @@ export const buildPageLabels = (args: {
 	configName: string | undefined;
 	dict: GlyphDict;
 }): PageLabelResult[] => {
-	const { pages, marginPx, pageScale, bands, disconnects, config, configName, dict } = args;
+	const { pages, marginPx, keepOut, pageScale, bands, disconnects, config, configName, dict } =
+		args;
 	const out: PageLabelResult[] = [];
 	pages.forEach((page, p) => {
 		const text = sanitizeLabelText(composePageLabel(config, configName, p, pages.length), dict);
@@ -142,7 +154,10 @@ export const buildPageLabels = (args: {
 				...onPage.flatMap((b) => segmentsOf(b.holes)),
 				...disconnects.filter((d) => d.page === p).map((d) => ({ a: d.a, b: d.b }))
 			],
-			solids: onPage.flatMap((b) => b.outlines)
+			solids: [
+				...onPage.flatMap((b) => b.outlines),
+				...(keepOut ? [rectPolygon(registrationMarkRect(page, marginPx, keepOut.width))] : [])
+			]
 		});
 		if (!at) {
 			out.push({ page: p, text, origin: { x: 0, y: 0 }, size, unplaced: true });

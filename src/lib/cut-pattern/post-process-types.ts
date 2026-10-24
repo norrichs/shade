@@ -14,6 +14,7 @@ export const GEOMETRY_TYPES = [
 	'surround-disconnect',
 	'label-text',
 	'page-label',
+	'registration-mark',
 	'page-outline'
 ] as const;
 export type GeometryType = (typeof GEOMETRY_TYPES)[number];
@@ -25,6 +26,7 @@ export const GEOMETRY_TYPE_LABELS: Record<GeometryType, string> = {
 	'surround-disconnect': 'Surround disconnects',
 	'label-text': 'Label text',
 	'page-label': 'Page labels',
+	'registration-mark': 'Registration marks',
 	'page-outline': 'Page outlines'
 };
 
