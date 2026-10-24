@@ -240,10 +240,19 @@ const findRightPartner = (bands: BandCutPattern[], band: BandCutPattern) => {
 };
 
 /**
+ * A gained node on the neighbour quad's top (y = 1) or bottom (y = 0) edge,
+ * away from the shared edge. The facet above or below gains the same node
+ * through the neighbour's next quad; laid flat separately, the two copies
+ * only meet when the bands are folded.
+ */
+type Joint = { key: string; edge: 'top' | 'bottom'; index: number };
+
+/**
  * Map a neighbour's lines into this facet's frame. `path` is in the
  * neighbour's unit frame; with the neighbour's alongside facet it is mapped
  * through that facet's quad and laid onto this quad's shared edge, otherwise
  * it is shifted one band sideways and extrapolated through this quad.
+ * `joints` index into the returned path.
  */
 const mapGain = (
 	side: 'left' | 'right',
@@ -252,25 +261,83 @@ const mapGain = (
 	columns: number,
 	ownQuad: Quadrilateral,
 	partnerQuad: Quadrilateral | undefined
-): PathSegment[] => {
-	if (segs.length === 0) return [];
+): { path: PathSegment[]; joints: Joint[] } => {
+	if (segs.length === 0) return { path: [], joints: [] };
 	// The left partner's last column, or the right partner's first.
 	const column = side === 'left' ? columns - 1 : 0;
-	const inPartner = columnsPath(1, s, () => segs).map((seg) => {
-		const [command, x, y] = seg as ['M' | 'L', number, number];
-		return [command, (column + x) / columns, y] as PathSegment;
+	const sharedEdge = side === 'left' ? 1 : 0;
+	const joints: Joint[] = [];
+	const inPartner = columnsPath(1, s, () => segs).map((seg, index) => {
+		const [command, ux, y] = seg as ['M' | 'L', number, number];
+		const x = (column + ux) / columns;
+		const onEdge = Math.abs(y) < 1e-9 || Math.abs(y - 1) < 1e-9;
+		if (onEdge && Math.abs(x - sharedEdge) > 1e-9) {
+			joints.push({ key: `${side}:${x.toFixed(6)}`, edge: y > 0.5 ? 'top' : 'bottom', index });
+		}
+		return [command, x, y] as PathSegment;
 	});
 	if (partnerQuad) {
 		const mapped = transformPatternByQuad(inPartner, partnerQuad);
-		return side === 'left'
-			? alignPrevBandPath(mapped, partnerQuad, ownQuad)
-			: alignNextBandPath(mapped, partnerQuad, ownQuad);
+		const path =
+			side === 'left'
+				? alignPrevBandPath(mapped, partnerQuad, ownQuad)
+				: alignNextBandPath(mapped, partnerQuad, ownQuad);
+		return { path, joints };
 	}
 	const shifted = inPartner.map((seg) => {
 		const [command, x, y] = seg as ['M' | 'L', number, number];
 		return [command, x + (side === 'left' ? -1 : 1), y] as PathSegment;
 	});
-	return transformPatternByQuad(shifted, ownQuad);
+	return { path: transformPatternByQuad(shifted, ownQuad), joints };
+};
+
+/** A quad's size for normalising deviations: the square root of its area. */
+const quadSize = ({ a, b, c, d }: Quadrilateral) => {
+	const twiceArea =
+		a.x * b.y -
+		b.x * a.y +
+		(b.x * c.y - c.x * b.y) +
+		(c.x * d.y - d.x * c.y) +
+		(d.x * a.y - a.x * d.y);
+	return Math.sqrt(Math.abs(twiceArea) / 2);
+};
+
+/**
+ * Pair each facet's top-edge joints with the next facet's bottom-edge joints of
+ * the same key, and score both facets by how far a node would move to meet its
+ * copy: half the gap, over the quad's size. A facet's score is its worst joint.
+ * With `stitch`, both copies move to their midpoint, so the gained flap is one
+ * closed outline in this band's flat layout.
+ */
+const stitchJoints = (
+	paths: PathSegment[][],
+	joints: Joint[][],
+	quads: (Quadrilateral | undefined)[],
+	stitch: boolean
+): number[] => {
+	const scores = paths.map(() => 0);
+	for (let f = 1; f < paths.length; f++) {
+		const below = joints[f - 1].filter((j) => j.edge === 'top');
+		const above = joints[f].filter((j) => j.edge === 'bottom');
+		for (const key of new Set(below.map((j) => j.key))) {
+			const lower = below.filter((j) => j.key === key);
+			const upper = above.filter((j) => j.key === key);
+			if (upper.length === 0) continue;
+			const [, px, py] = paths[f - 1][lower[0].index] as ['M' | 'L', number, number];
+			const [, qx, qy] = paths[f][upper[0].index] as ['M' | 'L', number, number];
+			const moved = Math.hypot(px - qx, py - qy) / 2;
+			for (const g of [f - 1, f]) {
+				const quad = quads[g];
+				const size = quad ? quadSize(quad) : 0;
+				if (size > 0) scores[g] = Math.max(scores[g], moved / size);
+			}
+			if (!stitch) continue;
+			const mid = (command: string) => [command, (px + qx) / 2, (py + qy) / 2] as PathSegment;
+			for (const j of lower) paths[f - 1][j.index] = mid(paths[f - 1][j.index][0]);
+			for (const j of upper) paths[f][j.index] = mid(paths[f][j.index][0]);
+		}
+	}
+	return scores;
 };
 
 /**
@@ -294,6 +361,10 @@ const partnerQuadAlongside = (
  * outside an open side, then append the lines gained from each partner and the
  * end cap. Runs per tube because gains read the neighbouring bands' quads.
  *
+ * Gained lines that cross the neighbour's quad boundaries come apart when laid
+ * flat (see `stitchJoints`). Every band is scored (`seamDeviation`, per facet)
+ * and, with `stitchGainedSeam`, stitched closed.
+ *
  * Facet indices are piece-local. Splits fall on multiples of the subunit
  * count, so every piece starts on subunit 0 and ends on subunit 2, and a
  * piece's ends are treated as band ends.
@@ -304,6 +375,7 @@ export const adjustHexparquet2AfterTiling = (
 ): BandCutPattern[] => {
 	const columns = tiledPatternConfig.config.columnCount || 1;
 	const keepPartnerSeam = tiledPatternConfig.config.keepPartnerSeam ?? false;
+	const stitch = tiledPatternConfig.config.stitchGainedSeam ?? false;
 
 	return bands.map((band) => {
 		if (band.error || band.facets.length === 0) return band;
@@ -311,21 +383,27 @@ export const adjustHexparquet2AfterTiling = (
 		const left = hasLeftPartner ? findLeftPartner(bands, band) : undefined;
 		const right = findRightPartner(bands, band);
 		const last = band.facets.length - 1;
+		const quads = band.facets.map((facet) => (facet.quad ? toQuad(facet.quad) : undefined));
+		const joints: Joint[][] = band.facets.map(() => []);
 
-		const facets = band.facets.map((facet, f) => {
+		const paths = band.facets.map((facet, f) => {
 			const path = structuredClone(facet.path);
 			removeInPlace({
 				indices: getHexparquet2DropIndices(f, columns, { hasLeftPartner, keepPartnerSeam }),
 				target: path
 			});
-			if (!facet.quad) return { ...facet, path };
-			const quad = toQuad(facet.quad);
+			const quad = quads[f];
+			if (!quad) return path;
 			const s = subunitIndexOf(f);
 			const ends = { isStart: f === 0, isEnd: f === last };
+			const append = (gain: { path: PathSegment[]; joints: Joint[] }) => {
+				joints[f].push(...gain.joints.map((j) => ({ ...j, index: j.index + path.length })));
+				path.push(...gain.path);
+			};
 
 			if (hasLeftPartner) {
-				path.push(
-					...mapGain(
+				append(
+					mapGain(
 						'left',
 						hexparquet2LeftGain(f, { keepPartnerSeam, ...ends }),
 						s,
@@ -336,8 +414,8 @@ export const adjustHexparquet2AfterTiling = (
 				);
 			}
 			if (right) {
-				path.push(
-					...mapGain(
+				append(
+					mapGain(
 						'right',
 						hexparquet2RightGain(f, ends),
 						s,
@@ -355,8 +433,14 @@ export const adjustHexparquet2AfterTiling = (
 					)
 				);
 			}
-			return { ...facet, path };
+			return path;
 		});
-		return { ...band, facets };
+
+		const seamDeviation = stitchJoints(paths, joints, quads, stitch);
+		return {
+			...band,
+			facets: band.facets.map((facet, f) => ({ ...facet, path: paths[f] })),
+			seamDeviation
+		};
 	});
 };

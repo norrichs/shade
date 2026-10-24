@@ -52,5 +52,8 @@ describe('HexParquet2 end to end (projections, real geometry)', () => {
 		);
 		expect(coords.every(Number.isFinite)).toBe(true);
 		expect(bands.filter((b) => b.leftPartnerBand !== undefined).length).toBeGreaterThan(0);
+		const scores = bands.flatMap((b) => b.seamDeviation ?? []);
+		expect(scores).toHaveLength(bands.length * 3);
+		expect(scores.every(Number.isFinite)).toBe(true);
 	});
 });

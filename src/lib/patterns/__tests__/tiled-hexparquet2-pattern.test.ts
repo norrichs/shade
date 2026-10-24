@@ -7,7 +7,6 @@ import {
 	generateHexparquet2Subunits
 } from '../tiled-hexparquet2-pattern';
 import { tiledPatternConfigs } from '#lib/shades-config.js';
-import { tiledPatternConfigs } from '#lib/shades-config.js';
 
 const config = (
 	columnCount = 1,
@@ -273,5 +272,74 @@ describe('adjustHexparquet2AfterTiling', () => {
 	it('leaves refused bands untouched', () => {
 		const refused = { ...cutBand(0, 0), error: 'nope' } as BandCutPattern;
 		expect(adjustHexparquet2AfterTiling([refused], config())[0]).toEqual(refused);
+	});
+});
+
+describe('seam flap stitching', () => {
+	/**
+	 * Band 0's right edge (b→c, shared with band 1) bends at a different angle
+	 * per quad while keeping band 1's edge length, as two flattened bands of a
+	 * curved tube do. Band 1 (rectangular, at x = 1) gains band 0's flap, and
+	 * laying each quad onto band 1's straight edge separately opens the joints.
+	 */
+	const angles = [0, 0.15, 0.3, 0.15, 0, -0.1];
+	const taperedBand = (): BandCutPattern => {
+		const right = [new Vector3(1, 0, 0)];
+		for (const t of angles)
+			right.push(
+				right
+					.at(-1)!
+					.clone()
+					.add(new Vector3(Math.sin(t), Math.cos(t), 0))
+			);
+		const qs: Quadrilateral[] = angles.map((_, i) => ({
+			a: right[i].clone().sub(new Vector3(1, 0, 0)),
+			b: right[i].clone(),
+			c: right[i + 1].clone(),
+			d: right[i + 1].clone().sub(new Vector3(1, 0, 0))
+		}));
+		const subunits = generateHexparquet2Subunits(1);
+		return {
+			...cutBand(0, 6),
+			facets: qs.map((q, i) => ({
+				path: transformPatternByQuad(subunits[i % 3], q),
+				quad: q,
+				label: `${i}`
+			}))
+		} as BandCutPattern;
+	};
+	const tube = () => [taperedBand(), cutBand(1, 6, 0)];
+	const keep = (stitchGainedSeam: boolean) =>
+		config(1, { keepPartnerSeam: true, stitchGainedSeam });
+
+	/** Pairs of endpoints closer than `near` that are not the same point. */
+	const nearMisses = (paths: PathSegment[][], near = 0.1) => {
+		const points = paths.flat().map((seg) => [seg[1], seg[2]] as [number, number]);
+		let misses = 0;
+		for (let i = 0; i < points.length; i++)
+			for (let j = i + 1; j < points.length; j++) {
+				const d = Math.hypot(points[i][0] - points[j][0], points[i][1] - points[j][1]);
+				if (d > 1e-9 && d < near) misses++;
+			}
+		return misses;
+	};
+
+	it('scores the joints of a flap gained from a tilted partner', () => {
+		const [, band1] = adjustHexparquet2AfterTiling(tube(), keep(false));
+		expect(band1.seamDeviation).toHaveLength(6);
+		expect(Math.max(...(band1.seamDeviation as number[]))).toBeGreaterThan(0.01);
+		expect(nearMisses(band1.facets.map((f) => f.path))).toBeGreaterThan(0);
+	});
+
+	it('closes those joints when stitching, and still reports the score', () => {
+		const [, open] = adjustHexparquet2AfterTiling(tube(), keep(false));
+		const [, stitched] = adjustHexparquet2AfterTiling(tube(), keep(true));
+		expect(nearMisses(stitched.facets.map((f) => f.path))).toBe(0);
+		expect(stitched.seamDeviation).toEqual(open.seamDeviation);
+	});
+
+	it('scores nothing when the partner quads line up', () => {
+		const adjusted = adjustHexparquet2AfterTiling(wrappingTube(3, 6), keep(true));
+		for (const band of adjusted) expect(band.seamDeviation?.every((s) => s < 1e-9)).toBe(true);
 	});
 });

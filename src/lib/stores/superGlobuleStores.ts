@@ -47,6 +47,11 @@ import {
 import { browser } from '$app/env';
 import { toastStore } from './toastStore';
 import { createDroppedSplitsNotifier } from '#lib/cut-pattern/dropped-splits-notice.js';
+import {
+	DEFAULT_SEAM_DEVIATION_THRESHOLD,
+	collectSeamDeviations,
+	createSeamDeviationNotifier
+} from '#lib/cut-pattern/seam-deviation-notice.js';
 import { viewControlStore, type ViewControls } from './viewControlStore';
 import { Box3, Vector3 } from 'three';
 
@@ -571,6 +576,27 @@ if (browser) {
 	// list is never pruned.
 	const notifyDroppedSplits = createDroppedSplitsNotifier(toastStore);
 	superGlobulePatternStore.subscribe(($result) => notifyDroppedSplits($result.rejectedSplits));
+
+	// HexParquet2 scores how far its gained seam flaps are off when laid flat;
+	// quads over the pattern's threshold are flagged.
+	const notifySeamDeviation = createSeamDeviationNotifier(toastStore);
+	superGlobulePatternStore.subscribe(($result) => {
+		const { patternTypeConfig } = get(patternConfigStore);
+		const threshold =
+			(patternTypeConfig as { config?: { seamDeviationThreshold?: number } }).config
+				?.seamDeviationThreshold ?? DEFAULT_SEAM_DEVIATION_THRESHOLD;
+		const flagged = collectSeamDeviations(
+			[
+				$result.globuleTubePattern,
+				$result.projectionPattern,
+				$result.surfaceProjectionPattern,
+				$result.voronoiPattern,
+				$result.voronoiSurfacePattern
+			],
+			threshold
+		);
+		notifySeamDeviation(flagged, threshold);
+	});
 
 	patternInputs.subscribe(
 		([

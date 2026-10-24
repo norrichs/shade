@@ -402,6 +402,11 @@ export type BandCutPattern = {
 	tagAnchorAutoAngle?: number;
 	/** Set when the band could not be patterned (e.g. quad count not divisible by subunitCount). */
 	error?: string;
+	/**
+	 * HexParquet2: per facet, how far gained seam nodes are off when the band is
+	 * laid flat, as a fraction of the quad's size (√area). 0 where nothing is off.
+	 */
+	seamDeviation?: number[];
 	/** Band index (same space as address.band) of the band on this band's left (unit x = 0) side. */
 	leftPartnerBand?: number;
 	projectionType: 'patterned';
@@ -727,6 +732,18 @@ export type TiledPatternConfig = {
 		 * behaviour, so no saved config changes meaning.
 		 */
 		keepPartnerSeam?: boolean;
+		/**
+		 * HexParquet2. Gained seam lines that cross the partner band's quad
+		 * boundaries come apart when laid flat; when true their joints move to
+		 * the midpoint so the band outline is closed. Absent or false leaves them
+		 * as mapped.
+		 */
+		stitchGainedSeam?: boolean;
+		/**
+		 * HexParquet2. A facet whose `seamDeviation` exceeds this fraction of its
+		 * quad size is reported in a warning. Default 0.1.
+		 */
+		seamDeviationThreshold?: number;
 		aspectRatio?: number;
 		skipEdges?: SkipEdges;
 		distributePanels?: boolean;

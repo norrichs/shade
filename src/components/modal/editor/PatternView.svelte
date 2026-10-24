@@ -471,6 +471,34 @@
 							/>
 						</LabeledControl>
 					{/if}
+					{#if patternTypeConfig.type === 'tiledHexparquet2Pattern-0'}
+						<!-- Gained seam lines crossing the partner's quad boundaries come apart
+						     when laid flat; stitching moves their joints to the midpoint. -->
+						<LabeledControl label="Stitch Seam Flaps">
+							<input
+								type="checkbox"
+								checked={!!inner.stitchGainedSeam}
+								onchange={(event) =>
+									setInner({
+										stitchGainedSeam: (event.currentTarget as HTMLInputElement).checked
+									})}
+							/>
+						</LabeledControl>
+						<!-- Quads whose flap nodes are off by more than this fraction of the
+						     quad's size are flagged in a warning. -->
+						<LabeledControl label="Flap Warning Threshold">
+							<input
+								type="number"
+								min="0"
+								step="0.01"
+								value={inner.seamDeviationThreshold ?? 0.1}
+								onchange={(event) =>
+									setInner({
+										seamDeviationThreshold: (event.currentTarget as HTMLInputElement).valueAsNumber
+									})}
+							/>
+						</LabeledControl>
+					{/if}
 					<LabeledControl label="Loop Ends">
 						<input
 							type="number"
