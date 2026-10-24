@@ -64,8 +64,8 @@ type P = [number, number];
  * - `pastStart` / `pastEnd`: a gained copy would run past the band's start/end.
  * - `void`: left out of a gained flap with `seamFlaps: 'voids'`, opening the
  *   large hexagon the flap would otherwise enclose.
- * - `voidAtEnd`: with voids, also left out on the band's last facet, where the
- *   vertical it joins runs past the end.
+ * - `endChevron`: with voids, gained on the band's last facet although it runs
+ *   past the end: it is the vertical of the end chevron (see `END_CHEVRON`).
  */
 type Tag =
 	| 'leftEdge'
@@ -76,7 +76,7 @@ type Tag =
 	| 'pastStart'
 	| 'pastEnd'
 	| 'void'
-	| 'voidAtEnd';
+	| 'endChevron';
 
 /*
  * `SeamFlaps`: how a flap gained from the left partner is laid flat. Its lines
@@ -131,17 +131,26 @@ const MIDDLE: Seg[] = [
 const TOP: Seg[] = [
 	seg([0, 0], [2, 2], 'openLeft'),
 	seg([2, 2], [3, 3]),
-	seg([6, 0], [4, 2], 'giveRight', 'voidAtEnd'),
+	seg([6, 0], [4, 2], 'giveRight'),
 	seg([4, 2], [3, 3]),
 	seg([2, 0], [2, 2]),
 	seg([2, 2], [2, 6]),
-	seg([4, 0], [4, 2], 'seamRight', 'pastEnd'),
+	seg([4, 0], [4, 2], 'seamRight', 'pastEnd', 'endChevron'),
 	seg([4, 2], [4, 6], 'seamRight', 'void'),
 	seg([3, 3], [3, 6])
 ];
 
 /** The next unit's peak, closing the band's end (subunit 2's grid). */
 const END_CAP: Seg[] = [seg([2, 0], [3, -1]), seg([3, -1], [4, 0])];
+
+/**
+ * With voids, the band's last facet closes its flap as a full chevron, like
+ * the flaps between units: the gained vertical's top (−2,0) rises to a peak
+ * on the x = 0 edge extended past the end (where the next unit's (0,16) would
+ * be), which comes back down to this band's node (2,0). Subunit 2's grid.
+ */
+const END_CHEVRON_PEAK: P = [0, -2];
+const END_CHEVRON_ARM: Seg = seg(END_CHEVRON_PEAK, [2, 0]);
 
 const SUBUNITS = [BOTTOM, MIDDLE, TOP];
 const subunitIndexOf = (facetIndex: number) => facetIndex % HEXPARQUET2_SUBUNIT_COUNT;
@@ -225,9 +234,8 @@ export const hexparquet2LeftGain = (
 ): Seg[] =>
 	SUBUNITS[subunitIndexOf(facetIndex)].filter(
 		(s) =>
-			!reachesPastEnd(s, ends) &&
+			(!reachesPastEnd(s, ends) || (seamFlaps === 'voids' && !!s.tags?.includes('endChevron'))) &&
 			!(seamFlaps === 'voids' && s.tags?.includes('void')) &&
-			!(seamFlaps === 'voids' && ends.isEnd && s.tags?.includes('voidAtEnd')) &&
 			(s.tags?.includes('giveRight') || (keepPartnerSeam && s.tags?.includes('seamRight')))
 	);
 
@@ -381,6 +389,32 @@ const stitchJoints = (
 };
 
 /**
+ * The end chevron's two arms (`END_CHEVRON_PEAK`): peak → the gained vertical's
+ * top, and peak → (2,0). The peak and (2,0) map through this quad (the peak
+ * extrapolated past its end); the vertical's top is its one top-edge joint, as
+ * mapped from the partner. Empty when no vertical was gained.
+ */
+const endChevron = (
+	path: PathSegment[],
+	joints: Joint[],
+	s: number,
+	columns: number,
+	quad: Quadrilateral
+): PathSegment[] => {
+	const top = joints.find((j) => j.edge === 'top');
+	if (!top) return [];
+	const [, tx, ty] = path[top.index] as ['M' | 'L', number, number];
+	const [peak, , armStart, armEnd] = transformPatternByQuad(
+		[
+			...columnsPath(columns, s, (c) => (c === 0 ? [seg(END_CHEVRON_PEAK, END_CHEVRON_PEAK)] : [])),
+			...columnsPath(columns, s, (c) => (c === 0 ? [END_CHEVRON_ARM] : []))
+		],
+		quad
+	);
+	return [['M', peak[1], peak[2]] as PathSegment, ['L', tx, ty], armStart, armEnd];
+};
+
+/**
  * The partner's quad alongside facet `f`, when the partner covers it with the
  * same subunit. Otherwise the gain falls back to extrapolation.
  */
@@ -452,6 +486,8 @@ export const adjustHexparquet2AfterTiling = (
 						partnerQuadAlongside(band, f, left)
 					)
 				);
+				if (seamFlaps === 'voids' && ends.isEnd)
+					path.push(...endChevron(path, joints[f], s, columns, quad));
 			}
 			if (right) {
 				append(

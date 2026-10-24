@@ -347,10 +347,10 @@ describe('seam flap stitching', () => {
 		const [, stitched] = adjustHexparquet2AfterTiling(tube(), keep('stitched'));
 		const [, voids] = adjustHexparquet2AfterTiling(tube(), keep('voids'));
 		// One gained segment fewer (two path entries) in each middle and top facet:
-		// grid (−2,6)→(0,8) and (−2,2)→(−2,6). The last facet also leaves out
-		// (0,0)→(−2,2), whose vertical runs past the band's end.
+		// grid (−2,6)→(0,8) and (−2,2)→(−2,6). The last facet instead gains three
+		// more for the end chevron: the vertical (−2,0)→(−2,2) and two arms.
 		expect(voids.facets.map((f, i) => stitched.facets[i].path.length - f.path.length)).toEqual([
-			0, 2, 2, 0, 2, 4
+			0, 2, 2, 0, 2, -4
 		]);
 		expect(nearMisses(voids.facets.map((f) => f.path))).toBe(0);
 	});
@@ -361,6 +361,18 @@ describe('seam flap stitching', () => {
 		// Facet 3's only joint is the bottom diagonal's end, (−2,18).
 		expect(open.seamDeviation![3]).toBeGreaterThan(0.001);
 		expect(voids.seamDeviation![3]).toBeCloseTo(2 * open.seamDeviation![3]);
+	});
+
+	it('with voids, closes the band end with a full chevron', () => {
+		const [, band1] = adjustHexparquet2AfterTiling(wrappingTube(3, 6), keep('voids'));
+		const top = band1.facets[5].path;
+		// Band 1 (x0 = 1), last quad y ∈ [5, 6]; grid x in sixths, rows above the end.
+		const g = (x: number, row: number): [number, number] => [1 + x / 6, 6 - row / 6];
+		const chevron: [number, number][] = [g(0, 0), g(-2, 2), g(-2, 0), g(0, -2), g(2, 0)];
+		for (let i = 1; i < chevron.length; i++) {
+			const line = [...chevron[i - 1], ...chevron[i]] as Line;
+			expect([key(line), has(top, line)]).toEqual([key(line), true]);
+		}
 	});
 
 	it('scores nothing when the partner quads line up', () => {
