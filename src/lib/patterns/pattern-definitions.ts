@@ -19,6 +19,12 @@ import {
 	generateHexparquetSubunits
 } from './tiled-hexparquet-pattern';
 import {
+	HEXPARQUET2_SUBUNIT_COUNT,
+	adjustHexparquet2AfterTiling,
+	generateHexparquet2Preview,
+	generateHexparquet2Subunits
+} from './tiled-hexparquet2-pattern';
+import {
 	ASANOHA_SUBUNIT_COUNT,
 	adjustAsanohaAfterTiling,
 	generateAsanohaPreview,
@@ -88,6 +94,16 @@ export const patterns: { [key: string]: PatternGenerator } = {
 		) => adjustHexparquetAfterMapping(patternBand, quadBand, tiledPatternConfig),
 		adjustAfterTiling: (bands: BandCutPattern[], tiledPatternConfig: TiledPatternConfig) =>
 			adjustHexparquetAfterTiling(bands, tiledPatternConfig),
+		adjustAfterTilingNeedsEndPartners: false
+	},
+	'tiledHexparquet2Pattern-0': {
+		subunitCount: HEXPARQUET2_SUBUNIT_COUNT,
+		// The single-unit form is the preview (all subunits stacked into one quad).
+		getPattern: (_rows: number, columns: number) => generateHexparquet2Preview(columns),
+		getSubunitPatterns: (columns: number) => generateHexparquet2Subunits(columns),
+		tagAnchor: { facetIndex: 0, quadEdge: { edge: 'ab', position: 'midPoint' } },
+		adjustAfterTiling: (bands: BandCutPattern[], tiledPatternConfig: TiledPatternConfig) =>
+			adjustHexparquet2AfterTiling(bands, tiledPatternConfig),
 		adjustAfterTilingNeedsEndPartners: false
 	},
 	'tiledGridPattern-0': {

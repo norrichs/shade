@@ -16,3 +16,19 @@ export const alignPrevBandPath = (
 	const translated = translatePS(structuredClone(path), offset.x, offset.y);
 	return rotatePS(translated, angle, referenceQuad.a);
 };
+
+/**
+ * Bring a facet path from the next (right-hand) band into this band's frame:
+ * the next quad's left edge (a→d, unit x = 0) is laid onto the reference
+ * quad's right edge (b→c, unit x = 1). The mirror of `alignPrevBandPath`.
+ */
+export const alignNextBandPath = (
+	path: PathSegment[],
+	nextQuad: Quadrilateral,
+	referenceQuad: Quadrilateral
+): PathSegment[] => {
+	const offset = { x: referenceQuad.b.x - nextQuad.a.x, y: referenceQuad.b.y - nextQuad.a.y };
+	const angle = getAngle(referenceQuad.b, referenceQuad.c) - getAngle(nextQuad.a, nextQuad.d);
+	const translated = translatePS(structuredClone(path), offset.x, offset.y);
+	return rotatePS(translated, angle, referenceQuad.b);
+};

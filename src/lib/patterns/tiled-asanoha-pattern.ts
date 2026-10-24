@@ -160,7 +160,7 @@ export const getAsanohaDropIndices = (
 
 type Point3 = { x: number; y: number; z?: number };
 /** A facet's stored quad is a structured clone (plain points); rebuild Vector3s to map through it. */
-const toQuad = (q: Record<'a' | 'b' | 'c' | 'd', Point3>): Quadrilateral => {
+export const toQuad = (q: Record<'a' | 'b' | 'c' | 'd', Point3>): Quadrilateral => {
 	const v = ({ x, y, z = 0 }: Point3) => new Vector3(x, y, z);
 	return { a: v(q.a), b: v(q.b), c: v(q.c), d: v(q.d) };
 };

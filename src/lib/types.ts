@@ -719,7 +719,7 @@ export type TiledPatternConfig = {
 		 */
 		dropEdgeSegments?: boolean;
 		/**
-		 * Hexparquet and Asanoha. By default a band that has a left partner
+		 * Hexparquet, HexParquet2 and Asanoha. By default a band that has a left partner
 		 * drops its seam segments (hexparquet: `partnerDrop`; Asanoha: the
 		 * column-0 left edge), because the partner's edge already draws that
 		 * line and the seam would otherwise be cut twice. When true the band keeps

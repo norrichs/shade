@@ -26,6 +26,7 @@
 	// Patterns that cycle subunits along the band: no row control, and a band-seam toggle.
 	const SUBUNIT_PATTERN_TYPES = [
 		'tiledHexparquetPattern-0',
+		'tiledHexparquet2Pattern-0',
 		'tiledAsanohaPattern-1',
 		'tiledAsanohaSplitPattern-0'
 	];

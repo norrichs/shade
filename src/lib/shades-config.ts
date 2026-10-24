@@ -396,6 +396,23 @@ export const tiledPatternConfigs: { [key: string]: TiledPatternConfig } = {
 			scaleConfig: defaultScaleConfig
 		}
 	},
+	'tiledHexparquet2Pattern-0': {
+		type: 'tiledHexparquet2Pattern-0',
+		tiling: 'quadrilateral',
+		config: {
+			rowCount: 1,
+			columnCount: 1,
+			dynamicStroke: 'quadWidth',
+			dynamicStrokeEasing: 'linear',
+			dynamicStrokeMin: 1,
+			dynamicStrokeMax: 3,
+			endsMatched: false,
+			endsTrimmed: false,
+			endLooped: 0,
+			keepPartnerSeam: false,
+			scaleConfig: defaultScaleConfig
+		}
+	},
 	'tiledBoxPattern-0': {
 		type: 'tiledBoxPattern-0',
 		tiling: 'quadrilateral',
