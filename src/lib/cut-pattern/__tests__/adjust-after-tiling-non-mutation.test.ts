@@ -78,6 +78,7 @@ describe('guard: adjustAfterTiling never mutates its inputs', () => {
 			'tiledCarnationPattern-0',
 			'tiledCarnationPattern-1',
 			'tiledHexPattern-1',
+			'tiledHexparquet2Pattern-0',
 			'tiledHexparquetPattern-0',
 			'tiledShieldTesselationPattern'
 		]);
