@@ -12,6 +12,7 @@
 	import type {
 		GlobulePatternConfig,
 		GridVariant,
+		SeamFlaps,
 		TabEdgeOption,
 		TabShape,
 		TiledPatternConfig,
@@ -130,6 +131,11 @@
 	let tileGroups = $derived(getTileGroups(tiledPatternConfigs, $tilePatternSpecStore.variants));
 
 	const tabShapes: TabShape[] = ['rectangle', 'rounded', 'inset', 'partner', 'partner-inset'];
+	const seamFlapOptions: [SeamFlaps, string][] = [
+		['mapped', 'As mapped'],
+		['stitched', 'Stitched'],
+		['voids', 'With voids']
+	];
 	const edgeOptions = ['none', 'before', 'after', 'beforeAndAfter'];
 </script>
 
@@ -472,17 +478,18 @@
 						</LabeledControl>
 					{/if}
 					{#if patternTypeConfig.type === 'tiledHexparquet2Pattern-0'}
-						<!-- Gained seam lines crossing the partner's quad boundaries come apart
-						     when laid flat; stitching moves their joints to the midpoint. -->
-						<LabeledControl label="Stitch Seam Flaps">
-							<input
-								type="checkbox"
-								checked={!!inner.stitchGainedSeam}
+						<!-- Gained seam flaps cross the partner's quad boundaries and come apart
+						     when laid flat: leave them, stitch their joints to the midpoint, or
+						     keep only the short vertical and open the hexagon as a void. -->
+						<LabeledControl label="Seam Flaps">
+							<select
+								value={inner.seamFlaps ?? 'mapped'}
 								onchange={(event) =>
-									setInner({
-										stitchGainedSeam: (event.currentTarget as HTMLInputElement).checked
-									})}
-							/>
+									setInner({ seamFlaps: (event.currentTarget as HTMLSelectElement).value })}
+							>
+								{#each seamFlapOptions as [value, label] (value)}<option {value}>{label}</option
+									>{/each}
+							</select>
 						</LabeledControl>
 						<!-- Quads whose flap nodes are off by more than this fraction of the
 						     quad's size are flagged in a warning. -->

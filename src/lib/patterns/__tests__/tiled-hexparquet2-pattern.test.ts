@@ -1,5 +1,11 @@
 import { Vector3 } from 'three';
-import type { BandCutPattern, PathSegment, Quadrilateral, TiledPatternConfig } from '#lib/types.js';
+import type {
+	BandCutPattern,
+	PathSegment,
+	Quadrilateral,
+	SeamFlaps,
+	TiledPatternConfig
+} from '#lib/types.js';
 import { transformPatternByQuad } from '../quadrilateral';
 import {
 	adjustHexparquet2AfterTiling,
@@ -309,8 +315,7 @@ describe('seam flap stitching', () => {
 		} as BandCutPattern;
 	};
 	const tube = () => [taperedBand(), cutBand(1, 6, 0)];
-	const keep = (stitchGainedSeam: boolean) =>
-		config(1, { keepPartnerSeam: true, stitchGainedSeam });
+	const keep = (seamFlaps: SeamFlaps) => config(1, { keepPartnerSeam: true, seamFlaps });
 
 	/** Pairs of endpoints closer than `near` that are not the same point. */
 	const nearMisses = (paths: PathSegment[][], near = 0.1) => {
@@ -325,21 +330,41 @@ describe('seam flap stitching', () => {
 	};
 
 	it('scores the joints of a flap gained from a tilted partner', () => {
-		const [, band1] = adjustHexparquet2AfterTiling(tube(), keep(false));
+		const [, band1] = adjustHexparquet2AfterTiling(tube(), keep('mapped'));
 		expect(band1.seamDeviation).toHaveLength(6);
 		expect(Math.max(...(band1.seamDeviation as number[]))).toBeGreaterThan(0.01);
 		expect(nearMisses(band1.facets.map((f) => f.path))).toBeGreaterThan(0);
 	});
 
 	it('closes those joints when stitching, and still reports the score', () => {
-		const [, open] = adjustHexparquet2AfterTiling(tube(), keep(false));
-		const [, stitched] = adjustHexparquet2AfterTiling(tube(), keep(true));
+		const [, open] = adjustHexparquet2AfterTiling(tube(), keep('mapped'));
+		const [, stitched] = adjustHexparquet2AfterTiling(tube(), keep('stitched'));
 		expect(nearMisses(stitched.facets.map((f) => f.path))).toBe(0);
 		expect(stitched.seamDeviation).toEqual(open.seamDeviation);
 	});
 
+	it('with voids, keeps only the vertical and its diagonals, joined to the vertical', () => {
+		const [, stitched] = adjustHexparquet2AfterTiling(tube(), keep('stitched'));
+		const [, voids] = adjustHexparquet2AfterTiling(tube(), keep('voids'));
+		// One gained segment fewer (two path entries) in each middle and top facet:
+		// grid (−2,6)→(0,8) and (−2,2)→(−2,6). The last facet also leaves out
+		// (0,0)→(−2,2), whose vertical runs past the band's end.
+		expect(voids.facets.map((f, i) => stitched.facets[i].path.length - f.path.length)).toEqual([
+			0, 2, 2, 0, 2, 4
+		]);
+		expect(nearMisses(voids.facets.map((f) => f.path))).toBe(0);
+	});
+
+	it('with voids, scores the whole move of the diagonal onto the vertical', () => {
+		const [, open] = adjustHexparquet2AfterTiling(tube(), keep('mapped'));
+		const [, voids] = adjustHexparquet2AfterTiling(tube(), keep('voids'));
+		// Facet 3's only joint is the bottom diagonal's end, (−2,18).
+		expect(open.seamDeviation![3]).toBeGreaterThan(0.001);
+		expect(voids.seamDeviation![3]).toBeCloseTo(2 * open.seamDeviation![3]);
+	});
+
 	it('scores nothing when the partner quads line up', () => {
-		const adjusted = adjustHexparquet2AfterTiling(wrappingTube(3, 6), keep(true));
+		const adjusted = adjustHexparquet2AfterTiling(wrappingTube(3, 6), keep('stitched'));
 		for (const band of adjusted) expect(band.seamDeviation?.every((s) => s < 1e-9)).toBe(true);
 	});
 });

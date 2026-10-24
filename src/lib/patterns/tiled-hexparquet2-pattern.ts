@@ -1,4 +1,10 @@
-import type { BandCutPattern, PathSegment, Quadrilateral, TiledPatternConfig } from '#lib/types.js';
+import type {
+	BandCutPattern,
+	PathSegment,
+	Quadrilateral,
+	SeamFlaps,
+	TiledPatternConfig
+} from '#lib/types.js';
 import { removeInPlace } from './tesselation/shared/helpers';
 import { transformPatternByQuad } from './quadrilateral';
 import { alignNextBandPath, alignPrevBandPath } from './adjust/align-prev-band';
@@ -56,9 +62,32 @@ type P = [number, number];
  * - `giveRight`: lies right of the right seam, in the right partner's band.
  * - `openLeft`: lies left of the open-side outline; dropped with no left partner.
  * - `pastStart` / `pastEnd`: a gained copy would run past the band's start/end.
+ * - `void`: left out of a gained flap with `seamFlaps: 'voids'`, opening the
+ *   large hexagon the flap would otherwise enclose.
+ * - `voidAtEnd`: with voids, also left out on the band's last facet, where the
+ *   vertical it joins runs past the end.
  */
 type Tag =
-	'leftEdge' | 'seamLeft' | 'seamRight' | 'giveRight' | 'openLeft' | 'pastStart' | 'pastEnd';
+	| 'leftEdge'
+	| 'seamLeft'
+	| 'seamRight'
+	| 'giveRight'
+	| 'openLeft'
+	| 'pastStart'
+	| 'pastEnd'
+	| 'void'
+	| 'voidAtEnd';
+
+/*
+ * `SeamFlaps`: how a flap gained from the left partner is laid flat. Its lines
+ * cross the partner's quad boundaries, and each partner quad is laid onto this
+ * band separately, so the flap's joints come apart.
+ * - `mapped`: as laid, joints open.
+ * - `stitched`: both copies of a joint move to their midpoint.
+ * - `voids`: only the short vertical (from the partner quad) and the two
+ *   diagonals joining it to this band's nodes are kept; the joint snaps onto
+ *   the vertical's end.
+ */
 type Seg = { from: P; to: P; tags?: Tag[] };
 
 export const HEXPARQUET2_SUBUNIT_COUNT = 3;
@@ -83,7 +112,7 @@ const BOTTOM: Seg[] = [
 const MIDDLE: Seg[] = [
 	seg([3, 6], [3, 7]),
 	seg([2, 6], [0, 8]),
-	seg([4, 6], [6, 8], 'seamRight'),
+	seg([4, 6], [6, 8], 'seamRight', 'void'),
 	seg([0, 8], [1, 9], 'seamLeft'),
 	seg([6, 8], [5, 9]),
 	seg([1, 9], [3, 7]),
@@ -102,12 +131,12 @@ const MIDDLE: Seg[] = [
 const TOP: Seg[] = [
 	seg([0, 0], [2, 2], 'openLeft'),
 	seg([2, 2], [3, 3]),
-	seg([6, 0], [4, 2], 'giveRight'),
+	seg([6, 0], [4, 2], 'giveRight', 'voidAtEnd'),
 	seg([4, 2], [3, 3]),
 	seg([2, 0], [2, 2]),
 	seg([2, 2], [2, 6]),
 	seg([4, 0], [4, 2], 'seamRight', 'pastEnd'),
-	seg([4, 2], [4, 6], 'seamRight'),
+	seg([4, 2], [4, 6], 'seamRight', 'void'),
 	seg([3, 3], [3, 6])
 ];
 
@@ -188,11 +217,17 @@ const reachesPastEnd = ({ tags = [] }: Seg, { isStart, isEnd }: BandEnds) =>
 /** The left partner's lines this facet gains: what it gives away, plus its seam if kept. */
 export const hexparquet2LeftGain = (
 	facetIndex: number,
-	{ keepPartnerSeam = false, ...ends }: BandEnds & { keepPartnerSeam?: boolean }
+	{
+		keepPartnerSeam = false,
+		seamFlaps = 'mapped',
+		...ends
+	}: BandEnds & { keepPartnerSeam?: boolean; seamFlaps?: SeamFlaps }
 ): Seg[] =>
 	SUBUNITS[subunitIndexOf(facetIndex)].filter(
 		(s) =>
 			!reachesPastEnd(s, ends) &&
+			!(seamFlaps === 'voids' && s.tags?.includes('void')) &&
+			!(seamFlaps === 'voids' && ends.isEnd && s.tags?.includes('voidAtEnd')) &&
 			(s.tags?.includes('giveRight') || (keepPartnerSeam && s.tags?.includes('seamRight')))
 	);
 
@@ -304,16 +339,19 @@ const quadSize = ({ a, b, c, d }: Quadrilateral) => {
 
 /**
  * Pair each facet's top-edge joints with the next facet's bottom-edge joints of
- * the same key, and score both facets by how far a node would move to meet its
- * copy: half the gap, over the quad's size. A facet's score is its worst joint.
- * With `stitch`, both copies move to their midpoint, so the gained flap is one
- * closed outline in this band's flat layout.
+ * the same key, and score both facets by how far a node moves to meet its copy,
+ * over the quad's size. A facet's score is its worst joint.
+ * - `mapped` / `stitched`: half the gap, the move to the midpoint. `stitched`
+ *   makes that move, so the gained flap is one closed outline.
+ * - `voids`: the whole gap. The only joint left is the end of the vertical,
+ *   which lies in the lower facet (subunit 2); the upper facet's diagonal snaps
+ *   onto it.
  */
 const stitchJoints = (
 	paths: PathSegment[][],
 	joints: Joint[][],
 	quads: (Quadrilateral | undefined)[],
-	stitch: boolean
+	seamFlaps: SeamFlaps
 ): number[] => {
 	const scores = paths.map(() => 0);
 	for (let f = 1; f < paths.length; f++) {
@@ -325,16 +363,18 @@ const stitchJoints = (
 			if (upper.length === 0) continue;
 			const [, px, py] = paths[f - 1][lower[0].index] as ['M' | 'L', number, number];
 			const [, qx, qy] = paths[f][upper[0].index] as ['M' | 'L', number, number];
-			const moved = Math.hypot(px - qx, py - qy) / 2;
+			const gap = Math.hypot(px - qx, py - qy);
+			const moved = seamFlaps === 'voids' ? gap : gap / 2;
 			for (const g of [f - 1, f]) {
 				const quad = quads[g];
 				const size = quad ? quadSize(quad) : 0;
 				if (size > 0) scores[g] = Math.max(scores[g], moved / size);
 			}
-			if (!stitch) continue;
-			const mid = (command: string) => [command, (px + qx) / 2, (py + qy) / 2] as PathSegment;
-			for (const j of lower) paths[f - 1][j.index] = mid(paths[f - 1][j.index][0]);
-			for (const j of upper) paths[f][j.index] = mid(paths[f][j.index][0]);
+			if (seamFlaps === 'mapped') continue;
+			const [tx, ty] = seamFlaps === 'voids' ? [px, py] : [(px + qx) / 2, (py + qy) / 2];
+			const to = (command: string) => [command, tx, ty] as PathSegment;
+			for (const j of lower) paths[f - 1][j.index] = to(paths[f - 1][j.index][0]);
+			for (const j of upper) paths[f][j.index] = to(paths[f][j.index][0]);
 		}
 	}
 	return scores;
@@ -362,8 +402,8 @@ const partnerQuadAlongside = (
  * end cap. Runs per tube because gains read the neighbouring bands' quads.
  *
  * Gained lines that cross the neighbour's quad boundaries come apart when laid
- * flat (see `stitchJoints`). Every band is scored (`seamDeviation`, per facet)
- * and, with `stitchGainedSeam`, stitched closed.
+ * flat (see `SeamFlaps` and `stitchJoints`). Every band is scored
+ * (`seamDeviation`, per facet).
  *
  * Facet indices are piece-local. Splits fall on multiples of the subunit
  * count, so every piece starts on subunit 0 and ends on subunit 2, and a
@@ -375,7 +415,7 @@ export const adjustHexparquet2AfterTiling = (
 ): BandCutPattern[] => {
 	const columns = tiledPatternConfig.config.columnCount || 1;
 	const keepPartnerSeam = tiledPatternConfig.config.keepPartnerSeam ?? false;
-	const stitch = tiledPatternConfig.config.stitchGainedSeam ?? false;
+	const seamFlaps = tiledPatternConfig.config.seamFlaps ?? 'mapped';
 
 	return bands.map((band) => {
 		if (band.error || band.facets.length === 0) return band;
@@ -405,7 +445,7 @@ export const adjustHexparquet2AfterTiling = (
 				append(
 					mapGain(
 						'left',
-						hexparquet2LeftGain(f, { keepPartnerSeam, ...ends }),
+						hexparquet2LeftGain(f, { keepPartnerSeam, seamFlaps, ...ends }),
 						s,
 						columns,
 						quad,
@@ -436,7 +476,7 @@ export const adjustHexparquet2AfterTiling = (
 			return path;
 		});
 
-		const seamDeviation = stitchJoints(paths, joints, quads, stitch);
+		const seamDeviation = stitchJoints(paths, joints, quads, seamFlaps);
 		return {
 			...band,
 			facets: band.facets.map((facet, f) => ({ ...facet, path: paths[f] })),

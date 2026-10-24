@@ -701,6 +701,9 @@ export type DynamicStrokeConfig = Pick<
 	'dynamicStroke' | 'dynamicStrokeMin' | 'dynamicStrokeMax'
 >;
 
+/** HexParquet2's handling of gained seam flaps; see `TiledPatternConfig.config.seamFlaps`. */
+export type SeamFlaps = 'mapped' | 'stitched' | 'voids';
+
 export type TiledPatternConfig = {
 	type: TiledPattern;
 	tiling: TilingBasis;
@@ -733,12 +736,13 @@ export type TiledPatternConfig = {
 		 */
 		keepPartnerSeam?: boolean;
 		/**
-		 * HexParquet2. Gained seam lines that cross the partner band's quad
-		 * boundaries come apart when laid flat; when true their joints move to
-		 * the midpoint so the band outline is closed. Absent or false leaves them
-		 * as mapped.
+		 * HexParquet2. How gained seam flaps, which cross the partner band's quad
+		 * boundaries and come apart when laid flat, are drawn: 'mapped' (as laid),
+		 * 'stitched' (joints moved to their midpoint) or 'voids' (only the short
+		 * vertical and its diagonals; the hexagon is left open). Absent is
+		 * 'mapped'. See `SeamFlaps` in tiled-hexparquet2-pattern.ts.
 		 */
-		stitchGainedSeam?: boolean;
+		seamFlaps?: SeamFlaps;
 		/**
 		 * HexParquet2. A facet whose `seamDeviation` exceeds this fraction of its
 		 * quad size is reported in a warning. Default 0.1.
