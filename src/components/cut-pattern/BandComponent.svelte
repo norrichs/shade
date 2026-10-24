@@ -12,7 +12,6 @@
 	import { resolveTabLabel } from '#lib/cut-pattern/resolve-tab-label.js';
 	import {
 		assemblerHighlight,
-		dropLabelText,
 		isPrepared,
 		patternBandSpaces,
 		patternConfigStore,
@@ -37,6 +36,7 @@
 		patternBandSelectionToReal
 	} from '#lib/cut-pattern/pattern-band-space.js';
 	import SplitTargets from './SplitTargets.svelte';
+	import { getPostProcessScope } from './post-process-scope';
 	import {
 		applySplitToggle,
 		resolveSplitSubunitCount,
@@ -78,6 +78,8 @@
 		selectionTarget?: PatternSource;
 		children?: Snippet;
 	} = $props();
+
+	const { dropLabelText } = getPostProcessScope();
 
 	let patternTypeConfig = $derived($patternConfigStore.patternTypeConfig);
 	// Pattern units, resolved from the stored mm through the page scale.

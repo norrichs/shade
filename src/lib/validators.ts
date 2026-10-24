@@ -56,6 +56,59 @@ const migratePatternLabels = (labels: unknown): PatternLabelsConfig | undefined 
 	return obj as PatternLabelsConfig;
 };
 
+/** Repair one post-process block in place: malformed fields are dropped or clamped. */
+const repairPostProcess = (pp: Record<string, unknown>) => {
+	if ('name' in pp && typeof pp.name !== 'string') delete pp.name;
+	if (typeof pp.runSeed !== 'number' || !Number.isFinite(pp.runSeed)) pp.runSeed = 0;
+	// Optional flags: absent means false, so only a malformed value is removed.
+	for (const flag of ['dropOutline', 'dropLabelText', 'disconnectSurround'] as const) {
+		if (flag in pp && typeof pp[flag] !== 'boolean') delete pp[flag];
+	}
+	if ('connectSurround' in pp) {
+		const cs = pp.connectSurround as { enabled?: unknown; gapMm?: unknown } | null;
+		if (!cs || typeof cs !== 'object') delete pp.connectSurround;
+		else {
+			const gap =
+				typeof cs.gapMm === 'number' && Number.isFinite(cs.gapMm)
+					? cs.gapMm
+					: DEFAULT_CONNECT_GAP_MM;
+			pp.connectSurround = {
+				enabled: cs.enabled === true,
+				gapMm: Math.min(20, Math.max(0.1, gap))
+			};
+		}
+	}
+	if ('pageLabel' in pp) {
+		const pl = pp.pageLabel as Record<string, unknown> | null;
+		if (!pl || typeof pl !== 'object') delete pp.pageLabel;
+		else
+			pp.pageLabel = {
+				pageNumber: pl.pageNumber === true,
+				configName: pl.configName === true,
+				text: typeof pl.text === 'string' ? pl.text.trim() : ''
+			};
+	}
+	if ('layerMap' in pp) {
+		const lm = pp.layerMap as Record<string, unknown> | null;
+		if (!lm || typeof lm !== 'object') delete pp.layerMap;
+		else
+			for (const key of Object.keys(lm)) {
+				if (!(GEOMETRY_TYPES as readonly string[]).includes(key) || !isLayerId(lm[key]))
+					delete lm[key];
+			}
+	}
+	if ('downloadFormat' in pp && pp.downloadFormat !== 'svg' && pp.downloadFormat !== 'lbrn2')
+		delete pp.downloadFormat;
+	const drop = pp.dropHoles as { mode?: string; chance?: number } | undefined;
+	const mode = drop?.mode;
+	if (!drop || (mode !== 'none' && mode !== 'all' && mode !== 'random' && mode !== 'variable')) {
+		pp.dropHoles = { mode: 'none' };
+	} else if (mode === 'random') {
+		const chance = typeof drop.chance === 'number' ? drop.chance : 0;
+		drop.chance = chance < 0 ? 0 : chance > 1 ? 1 : chance;
+	}
+};
+
 /**
  * Normalize a persisted `GlobulePatternConfig` at the load boundary, migrating
  * any legacy shapes to the current types. Mutates and returns the input.
@@ -113,62 +166,29 @@ export const migrateGlobulePatternConfig = <T extends Partial<GlobulePatternConf
 	// Hole-drop post-processing. Absent decodes to "drop nothing", so this
 	// backfill is for the editor panel's convenience rather than correctness —
 	// but a malformed block would reach the cut file, so it is repaired here.
-	const ppHost = config.patternConfig as { postProcess?: Record<string, unknown> } | undefined;
+	const ppHost = config.patternConfig as
+		{ postProcess?: Record<string, unknown>; additionalPostProcesses?: unknown } | undefined;
 	if (ppHost) {
 		const pp = ppHost.postProcess;
 		if (!pp || typeof pp !== 'object') {
 			ppHost.postProcess = { dropHoles: { mode: 'none' }, runSeed: 0 };
 		} else {
-			if (typeof pp.runSeed !== 'number' || !Number.isFinite(pp.runSeed)) pp.runSeed = 0;
-			// Optional flags: absent means false, so only a malformed value is removed.
-			for (const flag of ['dropOutline', 'dropLabelText', 'disconnectSurround'] as const) {
-				if (flag in pp && typeof pp[flag] !== 'boolean') delete pp[flag];
-			}
-			if ('connectSurround' in pp) {
-				const cs = pp.connectSurround as { enabled?: unknown; gapMm?: unknown } | null;
-				if (!cs || typeof cs !== 'object') delete pp.connectSurround;
-				else {
-					const gap =
-						typeof cs.gapMm === 'number' && Number.isFinite(cs.gapMm)
-							? cs.gapMm
-							: DEFAULT_CONNECT_GAP_MM;
-					pp.connectSurround = {
-						enabled: cs.enabled === true,
-						gapMm: Math.min(20, Math.max(0.1, gap))
-					};
+			repairPostProcess(pp);
+		}
+		if ('additionalPostProcesses' in ppHost) {
+			const extras = ppHost.additionalPostProcesses;
+			if (!Array.isArray(extras)) delete ppHost.additionalPostProcesses;
+			else {
+				// Export-wide fields belong to the first config only.
+				const kept = extras.filter(
+					(e): e is Record<string, unknown> => !!e && typeof e === 'object'
+				);
+				for (const extra of kept) {
+					repairPostProcess(extra);
+					delete extra.layerMap;
+					delete extra.downloadFormat;
 				}
-			}
-			if ('pageLabel' in pp) {
-				const pl = pp.pageLabel as Record<string, unknown> | null;
-				if (!pl || typeof pl !== 'object') delete pp.pageLabel;
-				else
-					pp.pageLabel = {
-						pageNumber: pl.pageNumber === true,
-						configName: pl.configName === true,
-						text: typeof pl.text === 'string' ? pl.text.trim() : ''
-					};
-			}
-			if ('layerMap' in pp) {
-				const lm = pp.layerMap as Record<string, unknown> | null;
-				if (!lm || typeof lm !== 'object') delete pp.layerMap;
-				else
-					for (const key of Object.keys(lm)) {
-						if (!(GEOMETRY_TYPES as readonly string[]).includes(key) || !isLayerId(lm[key]))
-							delete lm[key];
-					}
-			}
-			if ('downloadFormat' in pp && pp.downloadFormat !== 'svg' && pp.downloadFormat !== 'lbrn2')
-				delete pp.downloadFormat;
-			const drop = pp.dropHoles as { mode?: string; chance?: number } | undefined;
-			const mode = drop?.mode;
-			if (
-				!drop ||
-				(mode !== 'none' && mode !== 'all' && mode !== 'random' && mode !== 'variable')
-			) {
-				pp.dropHoles = { mode: 'none' };
-			} else if (mode === 'random') {
-				const chance = typeof drop.chance === 'number' ? drop.chance : 0;
-				drop.chance = chance < 0 ? 0 : chance > 1 ? 1 : chance;
+				ppHost.additionalPostProcesses = kept;
 			}
 		}
 	}

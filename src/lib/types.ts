@@ -291,7 +291,8 @@ export type PatternConfig = {
 		| PageSize
 		| PageLayoutConfig
 		| SplitConfig
-		| PostProcessConfig;
+		| PostProcessConfig
+		| PostProcessConfig[];
 	showPattern: PatternShowConfig;
 	axis: Axis;
 	origin: PointConfig2;
@@ -310,6 +311,9 @@ export type PatternConfig = {
 	// backfill in validators.ts is a convenience for the editor panel, not a
 	// correctness fix.
 	postProcess?: PostProcessConfig;
+	// Further post-process configs, each rendered and exported as its own group
+	// of pages after the first's. Absent means just `postProcess`.
+	additionalPostProcesses?: PostProcessConfig[];
 	// patternedConfig: CutPatternConfig;
 };
 

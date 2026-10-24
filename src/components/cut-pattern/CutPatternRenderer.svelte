@@ -13,7 +13,8 @@
 		mergedBandPathsRaw,
 		bandContourIndexes,
 		mergedBandPaths,
-		postProcessConfig,
+		mergedBandPathsList,
+		postProcessConfigs,
 		loadedConfigName,
 		exportPagesStore,
 		resolvedPatternLabels
@@ -77,6 +78,8 @@
 	import { pagePostProcess } from '#lib/cut-pattern/page-post-process/index.js';
 	import type { GlyphDict } from '#lib/cut-pattern/page-post-process/page-label.js';
 	import PageAnnotations from './PageAnnotations.svelte';
+	import PostProcessGroup from './PostProcessGroup.svelte';
+	import { postProcessLabel, stackPageGroups } from '#lib/cut-pattern/post-process-list.js';
 	import { svgTextDictionary } from './SvgText/svg-text-store';
 	import { processSvg } from './SvgText/svg-text';
 	import Fonts from './SvgText/fonts';
@@ -483,49 +486,61 @@
 	let glyphDict: GlyphDict | undefined = $derived($svgTextDictionary);
 	let configName = $derived($loadedConfigName);
 
-	// Stage 3: disconnects and page labels. Only prepared bands in a page layout
-	// have final placement. Memoised by $derived on its inputs; view-only changes
-	// (zoom, pan) do not touch any of them.
-	let stage3 = $derived.by(() => {
-		if (!usePageLayout || !pageResult || !pageLayoutCfg || $mergedBandPaths.size === 0) return null;
-		const config = $postProcessConfig;
-		const wantsLabel =
-			!!config.pageLabel &&
-			(config.pageLabel.pageNumber || config.pageLabel.configName || !!config.pageLabel.text);
-		if (!config.disconnectSurround && !wantsLabel) return null;
+	// Stage 3: disconnects and page labels, once per post-process config. Only
+	// prepared bands in a page layout have final placement. Memoised by $derived
+	// on its inputs; view-only changes (zoom, pan) do not touch any of them.
+	// Every group shares the page layout, so each is computed in the first
+	// group's page space and the group's transform moves it down.
+	let stage3s = $derived.by(() => {
+		if (!usePageLayout || !pageResult || !pageLayoutCfg || $mergedBandPaths.size === 0) return [];
 		const pages = pageResult.pages;
-		const bands = pageBands.flatMap(({ band }, i) => {
-			const raw = $mergedBandPathsRaw.get(band.id);
-			const index = $bandContourIndexes.get(band.id);
-			const pieces = $mergedBandPaths.get(band.id);
-			if (!raw || !index || !pieces) return [];
-			return [
-				placeBand({
-					bandId: band.id,
-					placement: {
-						origin: pageResult.origins[i],
-						rotation: pageResult.rotations[i] ?? 0,
-						pivot: pivots.get(band) ?? { x: 0, y: 0 }
-					},
-					raw,
-					index,
-					pieces,
-					pages
-				})
-			];
-		});
 		const geom = buildPageGeom(pageLayoutCfg);
-		return pagePostProcess({
-			bands,
-			pages,
-			pageScale: pageLayoutCfg.pageScale,
-			marginPx: geom.marginPx,
-			gap,
-			config,
-			configName,
-			dict: glyphDict
+		return $postProcessConfigs.map((config, k) => {
+			const wantsLabel =
+				!!config.pageLabel &&
+				(config.pageLabel.pageNumber || config.pageLabel.configName || !!config.pageLabel.text);
+			if (!config.disconnectSurround && !wantsLabel) return null;
+			const groupPaths = $mergedBandPathsList[k];
+			if (!groupPaths) return null;
+			const bands = pageBands.flatMap(({ band }, i) => {
+				const raw = $mergedBandPathsRaw.get(band.id);
+				const index = $bandContourIndexes.get(band.id);
+				const pieces = groupPaths.get(band.id);
+				if (!raw || !index || !pieces) return [];
+				return [
+					placeBand({
+						bandId: band.id,
+						placement: {
+							origin: pageResult.origins[i],
+							rotation: pageResult.rotations[i] ?? 0,
+							pivot: pivots.get(band) ?? { x: 0, y: 0 }
+						},
+						raw,
+						index,
+						pieces,
+						pages
+					})
+				];
+			});
+			return pagePostProcess({
+				bands,
+				pages,
+				pageScale: pageLayoutCfg.pageScale,
+				marginPx: geom.marginPx,
+				gap,
+				config,
+				configName,
+				dict: glyphDict
+			});
 		});
 	});
+
+	// One page group per post-process config, stacked down the canvas.
+	let pageGroups = $derived(
+		usePageLayout && pageResult
+			? stackPageGroups(pageResult.pages, $postProcessConfigs.length)
+			: { stride: 0, pages: [] }
+	);
 
 	// Publish page rects for the exporters. Value-key guarded, as the page info
 	// above. A layout with no pages (flex-wrap over zero items, e.g. an empty
@@ -533,8 +548,8 @@
 	let lastExportPagesKey = '';
 	$effect(() => {
 		const value =
-			usePageLayout && pageResult && pageLayoutCfg && pageResult.pages.length > 0
-				? { pages: pageResult.pages, pageScale: pageLayoutCfg.pageScale }
+			usePageLayout && pageLayoutCfg && pageGroups.pages.length > 0
+				? { pages: pageGroups.pages, pageScale: pageLayoutCfg.pageScale }
 				: null;
 		const key = JSON.stringify(value);
 		if (key === lastExportPagesKey) return;
@@ -554,8 +569,16 @@
 	// One toast per distinct set of pages whose label found no room.
 	let lastUnplacedKey = '';
 	$effect(() => {
-		const unplaced = stage3?.pageLabels.filter((l) => l.unplaced).map((l) => l.page + 1) ?? [];
-		const key = unplaced.join(',');
+		const multi = stage3s.length > 1;
+		const unplaced = stage3s.flatMap(
+			(result, k) =>
+				result?.pageLabels
+					.filter((l) => l.unplaced)
+					.map((l) =>
+						multi ? `${l.page + 1} (${postProcessLabel($postProcessConfigs[k], k)})` : l.page + 1
+					) ?? []
+		);
+		const key = unplaced.join(', ');
 		if (key === lastUnplacedKey) return;
 		lastUnplacedKey = key;
 		if (unplaced.length)
@@ -565,47 +588,56 @@
 
 {#if showPattern}
 	{#if usePageLayout && pageResult}
-		<PageGeometry pages={pageResult.pages} />
-		<g id="cut-pattern">
-			{#each pageBands as { band, tube }, i (concatAddress(band.address))}
-				<BandComponent
-					{band}
-					{tube}
-					{tubes}
-					index={i}
-					origin={pageResult.origins[i]}
-					rotation={pageResult.rotations[i] ?? 0}
-					pivot={pivots.get(band)}
-					tagAnchorPoint={tagAnchors.get(band)!}
-					tagAngle={band.tagAngle}
-					groupCode={groupCodeFor(band.address)}
-					showBounds={false}
-					layoutBounds={effBoundsFor(band)}
-					{selectionTarget}
-				>
-					{#if band.projectionType === 'patterned'}
-						<BandCutPatternComponent
+		{#each $postProcessConfigs as ppConfig, k (k)}
+			<PostProcessGroup
+				index={k}
+				offsetY={k * pageGroups.stride}
+				pages={pageResult.pages}
+				label={$postProcessConfigs.length > 1 ? postProcessLabel(ppConfig, k) : undefined}
+			>
+				<PageGeometry pages={pageResult.pages} />
+				<g id={k === 0 ? 'cut-pattern' : `cut-pattern-${k}`}>
+					{#each pageBands as { band, tube }, i (concatAddress(band.address))}
+						<BandComponent
 							{band}
-							renderAsSinglePath={true}
-							highlightFirstFacet={false}
-							partnerBands={getPartnerBands(band, tubes)}
-							showQuadLabels={false}
-							showPathPointIndices={false}
-							partnerFacets={[
-								band.meta?.translatedStartPartnerFacet,
-								band.meta?.translatedEndPartnerFacet
-							].filter((el) => el !== undefined)}
-							showPartnerBands={false}
-							showAdjacentFacets={false}
+							{tube}
+							{tubes}
+							index={i}
+							origin={pageResult.origins[i]}
+							rotation={pageResult.rotations[i] ?? 0}
+							pivot={pivots.get(band)}
+							tagAnchorPoint={tagAnchors.get(band)!}
+							tagAngle={band.tagAngle}
+							groupCode={groupCodeFor(band.address)}
 							showBounds={false}
-						/>
-					{/if}
-				</BandComponent>
-			{/each}
-		</g>
-		{#if stage3}
-			<PageAnnotations result={stage3} />
-		{/if}
+							layoutBounds={effBoundsFor(band)}
+							{selectionTarget}
+						>
+							{#if band.projectionType === 'patterned'}
+								<BandCutPatternComponent
+									{band}
+									renderAsSinglePath={true}
+									highlightFirstFacet={false}
+									partnerBands={getPartnerBands(band, tubes)}
+									showQuadLabels={false}
+									showPathPointIndices={false}
+									partnerFacets={[
+										band.meta?.translatedStartPartnerFacet,
+										band.meta?.translatedEndPartnerFacet
+									].filter((el) => el !== undefined)}
+									showPartnerBands={false}
+									showAdjacentFacets={false}
+									showBounds={false}
+								/>
+							{/if}
+						</BandComponent>
+					{/each}
+				</g>
+				{#if stage3s[k]}
+					<PageAnnotations result={stage3s[k]} />
+				{/if}
+			</PostProcessGroup>
+		{/each}
 	{:else if indexedBands && flatOrigins}
 		<g id="cut-pattern">
 			{#each indexedBands as { band, tube }, i (concatAddress(band.address))}

@@ -5,6 +5,8 @@ import {
 	mergedBandPathsRaw,
 	bandContourIndexes,
 	applyPostProcess,
+	dropLabelTextList,
+	mergedBandPathsList,
 	isPrepared
 } from '../mergedPathStore';
 import { patternConfigStore } from '../globulePatternStores';
@@ -181,5 +183,59 @@ describe('post-processed merged paths', () => {
 		expect(get(mergedBandPaths).get('b')).not.toEqual(before);
 		expect(get(mergedBandPathsRaw).get('b')).toBe(path);
 		expect(get(bandContourIndexes).get('b')!.seed).toBe(5);
+	});
+});
+
+describe('post-process config list', () => {
+	afterEach(() => {
+		mergedBandPathsRaw.set(new Map());
+		bandContourIndexes.set(new Map());
+		patternConfigStore.update((c) => {
+			c.patternConfig.postProcess = { dropHoles: { mode: 'none' }, runSeed: 0 };
+			delete c.patternConfig.additionalPostProcesses;
+			return c;
+		});
+	});
+
+	it('derives one prepared path map per config, the first being mergedBandPaths', () => {
+		mergedBandPathsRaw.set(new Map([['b', donut()]]));
+		bandContourIndexes.set(oneHole());
+		patternConfigStore.update((c) => {
+			c.patternConfig.additionalPostProcesses = [
+				{ dropHoles: { mode: 'all' }, runSeed: 0 },
+				{ dropHoles: { mode: 'none' }, runSeed: 0, dropOutline: true, dropLabelText: true }
+			];
+			return c;
+		});
+
+		const list = get(mergedBandPathsList);
+		expect(list).toHaveLength(3);
+		expect(concatPieces(list[0].get('b')!)).toHaveLength(10);
+		expect(concatPieces(list[1].get('b')!)).toHaveLength(5);
+		expect(concatPieces(list[2].get('b')!)).toEqual(donut().slice(5));
+		expect(get(dropLabelTextList)).toEqual([false, false, true]);
+	});
+
+	it("keeps an unchanged extra config's paths when another changes", () => {
+		mergedBandPathsRaw.set(new Map([['b', donut()]]));
+		bandContourIndexes.set(oneHole());
+		const setExtras = (secondMode: 'all' | 'none') =>
+			patternConfigStore.update((c) => {
+				c.patternConfig.additionalPostProcesses = [
+					{ dropHoles: { mode: 'all' }, runSeed: 0 },
+					{ dropHoles: { mode: secondMode }, runSeed: 0 }
+				];
+				return c;
+			});
+		setExtras('none');
+		const unsubscribe = mergedBandPathsList.subscribe(() => {});
+		const before = get(mergedBandPathsList);
+		setExtras('all');
+		const after = get(mergedBandPathsList);
+		unsubscribe();
+
+		expect(after[1]).toBe(before[1]);
+		expect(after[2]).not.toBe(before[2]);
+		expect(concatPieces(after[2].get('b')!)).toHaveLength(5);
 	});
 });

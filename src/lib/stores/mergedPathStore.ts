@@ -3,6 +3,7 @@ import type { PathSegment } from '#lib/types.js';
 import type { BandContourIndex } from '#lib/cut-pattern/contour-index.js';
 import { postProcessBandPath } from '#lib/cut-pattern/drop-holes.js';
 import { DEFAULT_POST_PROCESS, type PostProcessConfig } from '#lib/cut-pattern/hole-drop-config.js';
+import { postProcessList } from '#lib/cut-pattern/post-process-list.js';
 import { patternConfigStore } from './globulePatternStores';
 import {
 	GEOMETRY_TYPES,
@@ -128,16 +129,18 @@ export const resolvedPatternLabels = derived<
  * path, so they must not rebuild every band's `<path>` either. JSON-guarded like
  * `postProcessConfig`.
  */
+const stage2Slice = (config: PostProcessConfig): PostProcessConfig => ({
+	dropHoles: config.dropHoles,
+	runSeed: config.runSeed,
+	dropOutline: config.dropOutline,
+	connectSurround: config.connectSurround
+});
+
 let lastStage2Json = '';
 const stage2Config = derived<typeof postProcessConfig, PostProcessConfig>(
 	postProcessConfig,
 	($config, set) => {
-		const next: PostProcessConfig = {
-			dropHoles: $config.dropHoles,
-			runSeed: $config.runSeed,
-			dropOutline: $config.dropOutline,
-			connectSurround: $config.connectSurround
-		};
+		const next = stage2Slice($config);
 		const json = JSON.stringify(next);
 		if (json === lastStage2Json) return;
 		lastStage2Json = json;
@@ -171,6 +174,74 @@ export const mergedBandPaths = derived(
  * and are stripped at export instead (`SCREEN_ONLY_SELECTOR` in `util.ts`).
  */
 export const isPrepared = derived(mergedBandPaths, (paths) => paths.size > 0);
+
+let lastPostProcessListJson = '';
+/**
+ * Every post-process config, first one first. Each produces its own group of
+ * pages; see `post-process-list.ts`. JSON-guarded like `postProcessConfig`.
+ */
+export const postProcessConfigs = derived<typeof patternConfigStore, PostProcessConfig[]>(
+	patternConfigStore,
+	($config, set) => {
+		const next = postProcessList($config.patternConfig);
+		const json = JSON.stringify(next);
+		if (json === lastPostProcessListJson) return;
+		lastPostProcessListJson = json;
+		set(next);
+	},
+	[DEFAULT_POST_PROCESS]
+);
+
+type Stage2Entry = {
+	json: string;
+	raw: Map<string, PathSegment[]>;
+	indexes: Map<string, BandContourIndex>;
+	pageScale: number;
+	paths: Map<string, TaggedPath[]>;
+};
+let stage2Cache: Stage2Entry[] = [];
+
+/**
+ * `mergedBandPaths` for every post-process config, by list position. The first
+ * entry IS `mergedBandPaths`; the rest are rebuilt only when their own stage-2
+ * slice (or the shared stage-1 result) changes, so editing one group leaves the
+ * others' paths — and their rendered `<path>`s — alone.
+ */
+export const mergedBandPathsList = derived(
+	[mergedBandPaths, mergedBandPathsRaw, bandContourIndexes, postProcessConfigs, pageScaleValue],
+	([$first, $raw, $indexes, $configs, $pageScale]) => {
+		const next: Stage2Entry[] = [];
+		const out = [$first];
+		$configs.slice(1).forEach((config, i) => {
+			const slice = stage2Slice(config);
+			const json = JSON.stringify(slice);
+			const hit = stage2Cache[i];
+			const entry =
+				hit &&
+				hit.json === json &&
+				hit.raw === $raw &&
+				hit.indexes === $indexes &&
+				hit.pageScale === $pageScale
+					? hit
+					: {
+							json,
+							raw: $raw,
+							indexes: $indexes,
+							pageScale: $pageScale,
+							paths: applyPostProcess($raw, $indexes, slice, $pageScale)
+						};
+			next.push(entry);
+			out.push(entry.paths);
+		});
+		stage2Cache = next;
+		return out;
+	}
+);
+
+/** `dropLabelText` for every post-process config, by list position. */
+export const dropLabelTextList = derived(postProcessConfigs, (configs) =>
+	configs.map((config) => config.dropLabelText === true)
+);
 
 /**
  * Stroke hex per geometry type, from the post-process layer map. Every exported
