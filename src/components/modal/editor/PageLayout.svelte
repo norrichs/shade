@@ -7,6 +7,7 @@
 	} from '#lib/stores/index.js';
 	import { model3dBoundsStore, model3dOpeningsStore } from '#lib/stores/superGlobuleStores.js';
 	import { PAGE_PRESETS } from '#lib/cut-pattern/page-layout/page-presets.js';
+	import { REGISTRATION_MARK_MM } from '#lib/cut-pattern/page-layout/registration-mark.js';
 	import {
 		derivePageDimensions,
 		deriveDistance,
@@ -244,7 +245,7 @@
 		const w = cfg.pageSize.width * k;
 		const h = cfg.pageSize.height * k;
 		const m = cfg.margin * k;
-		return { w, h, m, x: (120 - w) / 2, y: (120 - h) / 2 };
+		return { w, h, m, mark: REGISTRATION_MARK_MM * k, x: (120 - w) / 2, y: (120 - h) / 2 };
 	});
 
 	const fmt = (n: number) => n.toFixed(2);
@@ -448,6 +449,16 @@
 			/>
 		</label>
 
+		<!-- Layout-level, not post-process: every algorithm keeps the mark's corner
+		     clear, so toggling it moves geometry. -->
+		<label class="indicator-toggle">
+			<input
+				type="checkbox"
+				bind:checked={$patternConfigStore.patternConfig.pageLayout.registrationMark}
+			/>
+			registration marks
+		</label>
+
 		<svg class="preview" viewBox="0 0 120 120" width="120" height="120">
 			<rect
 				x={preview.x}
@@ -466,6 +477,12 @@
 				stroke="#ccc"
 				stroke-dasharray="3 3"
 			/>
+			{#if cfg.registrationMark}
+				{@const s = preview.mark}
+				{@const x = preview.x + preview.w - preview.m - s}
+				{@const y = preview.y + preview.m}
+				<path d="M {x} {y + s / 2} h {s} M {x + s / 2} {y} v {s}" fill="none" stroke="#000" />
+			{/if}
 		</svg>
 
 		<div class="derived">

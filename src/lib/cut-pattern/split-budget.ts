@@ -1,3 +1,6 @@
+import type { KeepOut } from './page-layout/types';
+import { keepOutFitFactor } from './page-layout/registration-mark';
+
 /**
  * The per-piece length budget auto-split is sized against, and the two
  * preconditions the Auto-split button gates on.
@@ -51,6 +54,10 @@ export type SplitBudgetBand = {
 export type SplitBudgetGeom = {
 	contentWidth: number;
 	contentHeight: number;
+	/** The registration-mark keep-out every page reserves (`PageGeom.keepOut`). */
+	keepOut?: KeepOut;
+	/** Item spacing, pattern units; only matters beside the keep-out. */
+	gap?: number;
 	/** True only where the active algorithm actually minimises over orientations. */
 	allowRotation: boolean;
 };
@@ -76,11 +83,16 @@ export const EMPTY_SPLIT_BUDGET: SplitBudget = {
 	widthBlocked: false
 };
 
+// The same beside-or-below test the layouts' overflow checks use.
+const fits = (w: number, h: number, geom: SplitBudgetGeom): boolean =>
+	keepOutFitFactor(w, h, geom.contentWidth, geom.contentHeight, geom.keepOut, geom.gap ?? 0) <=
+	1 + 1e-9;
+
 const fitsUpright = (band: SplitBudgetBand, geom: SplitBudgetGeom): boolean =>
-	band.width <= geom.contentWidth && band.height <= geom.contentHeight;
+	fits(band.width, band.height, geom);
 
 const fitsRotated = (band: SplitBudgetBand, geom: SplitBudgetGeom): boolean =>
-	band.height <= geom.contentWidth && band.width <= geom.contentHeight;
+	fits(band.height, band.width, geom);
 
 export const computeSplitBudget = (
 	bands: SplitBudgetBand[],
@@ -91,8 +103,15 @@ export const computeSplitBudget = (
 	let perPieceFootprint = 0;
 	let lengthOverflow = false;
 	let widthBlocked = false;
+	// A piece too wide to sit beside the keep-out must start below it, which
+	// costs every piece that much length budget (only one budget is published).
+	let besideKeepOut = true;
+	const besideWidth = geom.keepOut
+		? geom.contentWidth - geom.keepOut.width - (geom.gap ?? 0)
+		: Infinity;
 
 	for (const band of bands) {
+		if (band.width > besideWidth) besideKeepOut = false;
 		const overhang = band.height - band.rawHeight;
 		// A non-finite measurement is skipped rather than propagated: NaN would
 		// make every later comparison false and silently report a zero footprint
@@ -110,7 +129,10 @@ export const computeSplitBudget = (
 	return {
 		measured: true,
 		perPieceFootprint,
-		pieceLengthBudget: geom.contentHeight - perPieceFootprint,
+		pieceLengthBudget:
+			geom.contentHeight -
+			perPieceFootprint -
+			(besideKeepOut || !geom.keepOut ? 0 : geom.keepOut.height + (geom.gap ?? 0)),
 		lengthOverflow,
 		widthBlocked
 	};

@@ -1,4 +1,5 @@
 import { Vector3 } from 'three';
+import { keepOutFitFactor } from './registration-mark';
 import type { LayoutItem, PageGeom, PageLayoutResult, PageRect } from './types';
 
 export const PAGE_STACK_GAP = 40; // pattern units (default vertical gap between stacked pages)
@@ -9,16 +10,26 @@ const skylineBottom = (placed: Interval[], x0: number, x1: number): number =>
 	placed.reduce((max, iv) => (iv.x1 > x0 && iv.x0 < x1 ? Math.max(max, iv.bottom) : max), 0);
 
 export const flexWrapPageLayout = (items: LayoutItem[], geom: PageGeom): PageLayoutResult => {
-	const { pageScale, pageWidth, pageHeight, contentWidth, contentHeight, marginPx, pageGap, gap } =
-		geom;
+	const {
+		pageScale,
+		pageWidth,
+		pageHeight,
+		contentWidth,
+		contentHeight,
+		marginPx,
+		pageGap,
+		gap,
+		keepOut
+	} = geom;
 
-	// Overflow: any single item larger than the content box. Compute the smallest
-	// pageScale that makes every offending item fit both dimensions.
+	// Overflow: any single item that fits a fresh page neither beside nor below the
+	// keep-out (or, without one, is larger than the content box). Compute the
+	// smallest pageScale that makes every offending item fit.
 	let factor = 0;
 	let worst = -1;
 	items.forEach((it, i) => {
-		if (it.width > contentWidth || it.height > contentHeight) {
-			const f = Math.max(it.width / contentWidth, it.height / contentHeight);
+		const f = keepOutFitFactor(it.width, it.height, contentWidth, contentHeight, keepOut, gap);
+		if (f > 1) {
 			if (f > factor) {
 				factor = f;
 				worst = i;
@@ -41,7 +52,20 @@ export const flexWrapPageLayout = (items: LayoutItem[], geom: PageGeom): PageLay
 	let cursorX = 0;
 	let rowTop = 0;
 	let rowMaxH = 0;
-	let placed: Interval[] = [];
+	// The keep-out, gap-inflated on its left, is a pre-placed obstacle on every
+	// page so push-up packing never raises an item beside or into it.
+	const pageObstacles = (): Interval[] =>
+		keepOut
+			? [{ x0: contentWidth - keepOut.width - gap, x1: contentWidth, bottom: keepOut.height }]
+			: [];
+	let placed: Interval[] = pageObstacles();
+	// A row whose top is level with the keep-out must end short of it.
+	const rowLimit = () =>
+		keepOut && rowTop < keepOut.height + gap ? contentWidth - keepOut.width - gap : contentWidth;
+	// An item too wide to sit beside the keep-out starts its row below it.
+	const dropBelowKeepOut = (it: LayoutItem) => {
+		if (keepOut && cursorX === 0 && it.width > rowLimit()) rowTop = keepOut.height + gap;
+	};
 
 	const ensurePage = (idx: number) => {
 		if (pages[idx]) return;
@@ -51,11 +75,12 @@ export const flexWrapPageLayout = (items: LayoutItem[], geom: PageGeom): PageLay
 
 	for (const it of items) {
 		// Wrap to a new row when the item would exceed the content width.
-		if (cursorX > 0 && cursorX + it.width > contentWidth) {
+		if (cursorX > 0 && cursorX + it.width > rowLimit()) {
 			rowTop = rowTop + rowMaxH + gap;
 			cursorX = 0;
 			rowMaxH = 0;
 		}
+		dropBelowKeepOut(it);
 		// Page break when the row's top + this item's height exceeds content height.
 		if (rowTop + it.height > contentHeight) {
 			page += 1;
@@ -63,7 +88,8 @@ export const flexWrapPageLayout = (items: LayoutItem[], geom: PageGeom): PageLay
 			cursorX = 0;
 			rowTop = 0;
 			rowMaxH = 0;
-			placed = [];
+			placed = pageObstacles();
+			dropBelowKeepOut(it);
 		}
 
 		// Push-up packing: raise the item into the previous row's ragged underside,

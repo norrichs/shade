@@ -409,6 +409,8 @@
 			{
 				contentWidth: geom.contentWidth,
 				contentHeight: geom.contentHeight,
+				keepOut: geom.keepOut,
+				gap,
 				// Skyline (when enabled) and nest (when its step reaches 90°) can turn a
 				// piece onto its side; flex-wrap never rotates.
 				allowRotation:
@@ -470,6 +472,8 @@
 		notifyOverflow(pageResult?.overflow);
 	});
 
+	let pageGeom = $derived(pageLayoutCfg ? buildPageGeom(pageLayoutCfg) : undefined);
+
 	let usePageLayout = $derived(layoutMode === 'page' && !!pageResult && !pageResult.overflow);
 
 	// Stage 3 needs the same font dictionary SvgText lazily builds; build it here
@@ -520,6 +524,7 @@
 			pages,
 			pageScale: pageLayoutCfg.pageScale,
 			marginPx: geom.marginPx,
+			keepOut: geom.keepOut,
 			gap,
 			config,
 			configName,
@@ -565,7 +570,11 @@
 
 {#if showPattern}
 	{#if usePageLayout && pageResult}
-		<PageGeometry pages={pageResult.pages} />
+		<PageGeometry
+			pages={pageResult.pages}
+			marginPx={pageGeom?.marginPx}
+			markSize={pageGeom?.keepOut?.width}
+		/>
 		<g id="cut-pattern">
 			{#each pageBands as { band, tube }, i (concatAddress(band.address))}
 				<BandComponent

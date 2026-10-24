@@ -107,6 +107,7 @@ export const DEFAULT_LAYER_MAP: Record<GeometryType, LayerId> = {
 	'outline-gap': 'C01',
 	'label-text': 'C02',
 	'page-label': 'C02',
+	'registration-mark': 'C00',
 	'page-outline': 'T1'
 };
 

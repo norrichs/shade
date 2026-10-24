@@ -249,6 +249,7 @@ export type PageLayoutConfig = {
 	allowRotation: boolean; // skyline only: permit 90° rotation
 	keepConnected: number; // px-wide uncut bridge left in each prepared cut path (0 = off)
 	rotationStep: number; // nest only: rotation step in degrees (0 = none)
+	registrationMark: boolean; // "+" at every page's top-right content corner; layout keeps it clear
 };
 
 /**
