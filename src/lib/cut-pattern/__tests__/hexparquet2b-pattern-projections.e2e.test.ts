@@ -62,7 +62,7 @@ describe('HexParquet2b end to end (projections, real geometry)', () => {
 		expect(bands.filter((b) => b.leftPartnerBand !== undefined).length).toBeGreaterThan(0);
 	});
 
-	it("lands gained lines on the band's own nodes: the only loose end is the end spur", () => {
-		expect(bands.map(looseEnds)).toEqual(bands.map(() => 1));
+	it("lands gained lines on the band's own nodes, leaving no loose ends", () => {
+		expect(bands.map(looseEnds)).toEqual(bands.map(() => 0));
 	});
 });

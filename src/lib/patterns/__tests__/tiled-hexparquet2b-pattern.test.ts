@@ -161,9 +161,10 @@ describe('adjustHexparquet2bAfterTiling', () => {
 			expect(Math.max(...counts.values())).toBe(2);
 			// Per band and unit, 7 seam lines are drawn by both bands: in subunit 1
 			// the x = 3 stem and its two chevron arms, in subunit 0 the three bump
-			// lines and the band-edge vertical.
+			// lines and the band-edge vertical. The top arm of each band's last
+			// unit is the dropped end spur, drawn by the right partner alone.
 			const twice = [...counts.values()].filter((n) => n === 2).length;
-			expect(twice).toBe(7 * bandCount * units);
+			expect(twice).toBe(7 * bandCount * units - bandCount);
 			// Four zigzag lines per column at each band's start, below y = 0.
 			const caps = [...counts.keys()].filter((k) => !tiling.has(k));
 			expect(caps).toHaveLength(4 * columns * bandCount);
@@ -199,7 +200,8 @@ describe('adjustHexparquet2bAfterTiling', () => {
 	});
 
 	it('gives the diagonal right of the stem to the right partner', () => {
-		const [, band1, band2] = adjustHexparquet2bAfterTiling(wrappingTube(3, 2), interlock());
+		// Two units, so facet 1 is not the band's end.
+		const [, band1, band2] = adjustHexparquet2bAfterTiling(wrappingTube(3, 4), interlock());
 		const diagonal = line(1, [3, 3], [4, 2]);
 		expect(has(band1.facets[1].path, diagonal)).toBe(false);
 		expect(has(band2.facets[1].path, diagonal)).toBe(true);
@@ -212,6 +214,15 @@ describe('adjustHexparquet2bAfterTiling', () => {
 		const [band] = adjustHexparquet2bAfterTiling([cutBand(0, 2, undefined, 2)], interlock(2));
 		// Column 0's (3,3)→(4,2): x 3/8 → 1/2 of the band, y 1 + 3/6 → 1 + 4/6.
 		expect(has(band.facets[1].path, [3 / 8, 1.5, 0.5, 1 + 4 / 6])).toBe(true);
+	});
+
+	it('drops the end spur, which the right partner still draws', () => {
+		const [, band1, band2] = adjustHexparquet2bAfterTiling(wrappingTube(3, 4), interlock());
+		const spur = (u: number) => line(1, [3, 1], [4, 0], u);
+		expect(has(band1.facets[3].path, spur(1))).toBe(false);
+		expect(has(band2.facets[3].path, spur(1))).toBe(true);
+		// Below the end it joins the next unit's zigzag, so it stays.
+		expect(has(band1.facets[1].path, spur(0))).toBe(true);
 	});
 
 	it('closes the outline of a middle unit with the default config', () => {

@@ -36,7 +36,9 @@ import {
  * HexParquet2's flaps). An open side (no partner) gains the same lines,
  * extrapolated through the band's own quad.
  *
- * Band ends. The end closes on subunit 1's own zigzag. The start is capped
+ * Band ends. The end closes on subunit 1's own zigzag, less the right arm
+ * (3,1)→(4,0), which would stick out alone (the right partner still draws it,
+ * joined to its own zigzag). The start is capped
  * with the zigzag of the unit below, (0,12)→(1,13)→(2,12)→(3,13)→(4,12).
  */
 
@@ -47,8 +49,10 @@ type P = [number, number];
  * - `seamLeft`: gained, one column right, by the left partner.
  * - `seamRight`: gained, one column left, by the right partner.
  * - `giveRight`: lies inside the right partner's piece; dropped in the last column.
+ * - `endSpur`: at the band's end its outer node meets nothing; dropped in the
+ *   last column of the last facet.
  */
-type Tag = 'leftEdge' | 'seamLeft' | 'seamRight' | 'giveRight';
+type Tag = 'leftEdge' | 'seamLeft' | 'seamRight' | 'giveRight' | 'endSpur';
 type Seg = { from: P; to: P; tags?: Tag[] };
 
 export const HEXPARQUET2B_SUBUNIT_COUNT = 2;
@@ -78,7 +82,7 @@ const TOP: Seg[] = [
 	seg([0, 0], [1, 1]),
 	seg([1, 1], [2, 0]),
 	seg([2, 0], [3, 1]),
-	seg([3, 1], [4, 0], 'seamRight'),
+	seg([3, 1], [4, 0], 'seamRight', 'endSpur'),
 	seg([1, 1], [1, 5]),
 	seg([3, 1], [3, 5], 'seamRight'),
 	seg([0, 2], [2, 4]),
@@ -134,11 +138,12 @@ export const generateHexparquet2bPreview = (columns: number): PathSegment[] =>
  * - `leftEdge` in columns after the first: retraces the previous column.
  * - With `interBand`, `giveRight` in the last column: it lies inside the right
  *   partner's piece, which draws it.
+ * - With `interBand`, `endSpur` in the last column of the band's last facet.
  */
 export const getHexparquet2bDropIndices = (
 	facetIndex: number,
 	columns: number,
-	interBand: boolean
+	{ interBand, isEnd }: { interBand: boolean; isEnd: boolean }
 ): number[] => {
 	const segs = SUBUNITS[subunitIndexOf(facetIndex)];
 	const out: number[] = [];
@@ -146,7 +151,9 @@ export const getHexparquet2bDropIndices = (
 		segs.forEach(({ tags = [] }, s) => {
 			const drop =
 				(c > 0 && tags.includes('leftEdge')) ||
-				(interBand && c === columns - 1 && tags.includes('giveRight'));
+				(interBand &&
+					c === columns - 1 &&
+					(tags.includes('giveRight') || (isEnd && tags.includes('endSpur'))));
 			if (drop) {
 				const base = 2 * (c * segs.length + s);
 				out.push(base, base + 1);
@@ -200,7 +207,10 @@ export const adjustHexparquet2bAfterTiling = (
 		const facets = band.facets.map((facet, f) => {
 			const path = structuredClone(facet.path);
 			removeInPlace({
-				indices: getHexparquet2bDropIndices(f, columns, interBand),
+				indices: getHexparquet2bDropIndices(f, columns, {
+					interBand,
+					isEnd: f === band.facets.length - 1
+				}),
 				target: path
 			});
 			if (!facet.quad) return { ...facet, path };
