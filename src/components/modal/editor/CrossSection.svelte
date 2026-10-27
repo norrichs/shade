@@ -18,6 +18,8 @@
 	let { editCurve = true, sectionIndex = 0 }: { editCurve?: boolean; sectionIndex?: number } =
 		$props();
 
+	const commit = () => superConfigStore.set(get(superConfigStore));
+
 	const handleChangeSampleMethod = (event: Event, crossSection: CrossSectionConfig) => {
 		const newMethod = (event.target as HTMLSelectElement)
 			.value as ProjectionCurveSampleMethod['method'];
@@ -34,7 +36,7 @@
 						divisionsArray: Array.from({ length: divisions - 1 }, (_, i) => (i + 1) / divisions)
 					};
 		crossSection.sampleMethod = newSampleMethod as ProjectionCurveSampleMethod;
-		superConfigStore.set(get(superConfigStore));
+		commit();
 	};
 
 	const handleChangeDivisions = (newDivisions: number, crossSection: CrossSectionConfig) => {
@@ -59,8 +61,25 @@
 			console.log('newDivisions', newDivisions);
 			crossSection.sampleMethod.divisions = newDivisions;
 		}
-		superConfigStore.set(get(superConfigStore));
+		commit();
 	};
+
+	// The Voronoi model sweeps its own cross section (voronoiConfig.crossSectionConfig);
+	// projections sweep the polyhedron's crossSectionCurves. List both so the one
+	// driving the visible model is always editable.
+	let crossSections = $derived.by(() => {
+		const config = $superConfigStore;
+		const projectionSections =
+			config.projectionConfigs[0].projectorConfig.polyhedron.crossSectionCurves.map(
+				(crossSection, index) => ({ label: `Projection ${index}`, crossSection })
+			);
+		return config.voronoiConfig
+			? [
+					{ label: 'Voronoi', crossSection: config.voronoiConfig.crossSectionConfig },
+					...projectionSections
+				]
+			: projectionSections;
+	});
 
 	// Sphere and capsule surfaces carry a numeric radius; globule and imported
 	// surfaces have none, so it is undefined there and the slider max falls
@@ -73,9 +92,9 @@
 </script>
 
 <Editor>
-	{#each $superConfigStore.projectionConfigs[0].projectorConfig.polyhedron.crossSectionCurves as crossSection, crossSectionIndex (crossSectionIndex)}
+	{#each crossSections as { label, crossSection } (label)}
 		<section class="cross-section-container">
-			<header>{crossSectionIndex}</header>
+			<header>{label}</header>
 			<Container>
 				<Container direction="column">
 					<LabeledControl label="Edit Curve:">
@@ -104,7 +123,7 @@
 							}}
 							onChangeCurveDef={(curveDef) => {
 								crossSection.curves = curveDef;
-								superConfigStore.set(get(superConfigStore));
+								commit();
 							}}
 							limits={[endPointsZeroX, endPointsInRange, neighborPointMatch]}
 						>
@@ -117,7 +136,7 @@
 									x: 0.5,
 									y: 0.5
 								});
-								superConfigStore.set(get(superConfigStore));
+								commit();
 							}}>Insert Point</Button
 						>
 					{/if}
@@ -156,7 +175,13 @@
 										min={0}
 										max={1}
 										step={0.001}
-										bind:value={crossSection.sampleMethod.divisionsArray[index]}
+										value={division}
+										oninput={(event) => {
+											const { sampleMethod } = crossSection;
+											if (sampleMethod.method !== 'manualDivisions') return;
+											sampleMethod.divisionsArray[index] = Number(event.currentTarget.value);
+											commit();
+										}}
 									/>
 								{/each}
 							</div>
@@ -168,7 +193,11 @@
 							min={0}
 							step={1}
 							max={surfaceRadius || 100 * 2}
-							bind:value={crossSection.scaling.width}
+							value={crossSection.scaling.width}
+							oninput={(event) => {
+								crossSection.scaling.width = Number(event.currentTarget.value);
+								commit();
+							}}
 						/>
 					</LabeledControl>
 					<LabeledControl label={`Height: ${crossSection.scaling.height}`}>
@@ -177,11 +206,22 @@
 							min={0}
 							step={1}
 							max={surfaceRadius || 100 * 2}
-							bind:value={crossSection.scaling.height}
+							value={crossSection.scaling.height}
+							oninput={(event) => {
+								crossSection.scaling.height = Number(event.currentTarget.value);
+								commit();
+							}}
 						/>
 					</LabeledControl>
 					<LabeledControl label="Should Skew Curve:">
-						<input type="checkbox" bind:checked={crossSection.shouldSkewCurve} />
+						<input
+							type="checkbox"
+							checked={crossSection.shouldSkewCurve}
+							onchange={(event) => {
+								crossSection.shouldSkewCurve = event.currentTarget.checked;
+								commit();
+							}}
+						/>
 					</LabeledControl>
 				</Container>
 			</Container>
