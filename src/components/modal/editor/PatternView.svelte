@@ -28,6 +28,7 @@
 	const SUBUNIT_PATTERN_TYPES = [
 		'tiledHexparquetPattern-0',
 		'tiledHexparquet2Pattern-0',
+		'tiledHexparquet2bPattern-0',
 		'tiledAsanohaPattern-1',
 		'tiledAsanohaSplitPattern-0'
 	];
@@ -467,7 +468,8 @@
 						     abuts, so every band is self-contained and the seam is drawn
 						     twice. Off (the default) cedes that line to the partner.
 						     HexParquet2: on interlocks bands along the zigzag seam; off leaves
-						     every band as tiled, with no band-to-band changes. -->
+						     every band as tiled, with no band-to-band changes. HexParquet2b
+						     likewise. -->
 						<LabeledControl label="Keep Partner Seam">
 							<input
 								type="checkbox"
