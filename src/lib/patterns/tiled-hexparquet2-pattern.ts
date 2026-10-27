@@ -7,14 +7,13 @@ import type {
 } from '#lib/types.js';
 import { removeInPlace } from './tesselation/shared/helpers';
 import { transformPatternByQuad } from './quadrilateral';
-import { alignNextBandPath, alignPrevBandPath } from './adjust/align-prev-band';
 import { toQuad } from './tiled-asanoha-pattern';
 import {
-	alongsideFacetIndex,
-	findSideNeighbourInBands,
-	pieceIndexOf
-} from '#lib/cut-pattern/resolve-partner-band.js';
-import type { GlobuleAddress_BandPiece } from '#lib/projection-geometry/types.js';
+	findLeftPartner,
+	findRightPartner,
+	layPartnerPath,
+	partnerQuadAlongside
+} from './adjust/side-partners';
 
 /**
  * HexParquet2: interlaced hexagons over Y-shaped stems, three subunits cycled
@@ -238,43 +237,6 @@ export const hexparquet2RightGain = (facetIndex: number, ends: BandEnds): Seg[] 
 		(s) => !reachesPastEnd(s, ends) && s.tags?.includes('seamLeft') && !s.tags.includes('leftEdge')
 	);
 
-/** The parent-band address with band index `band`, keeping every other component of `of`. */
-const withBand = (of: BandCutPattern, band: number) => {
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	const { piece, ...parent } = of.address as GlobuleAddress_BandPiece;
-	return { ...parent, band };
-};
-
-const findLeftPartner = (bands: BandCutPattern[], band: BandCutPattern) =>
-	band.leftPartnerBand === undefined
-		? undefined
-		: findSideNeighbourInBands(
-				bands,
-				withBand(band, band.leftPartnerBand),
-				pieceIndexOf(band.address)
-			);
-
-/**
- * The band that names `band` as its left partner, or undefined when `band`'s
- * right side is free (the last band of an open tube) or that band is not
- * generated. Pieces resolve with the side-neighbour rule, as on the left.
- */
-const findRightPartner = (bands: BandCutPattern[], band: BandCutPattern) => {
-	const right = bands.find(
-		(b) =>
-			b.leftPartnerBand === band.address.band &&
-			b.address.globule === band.address.globule &&
-			b.address.tube === band.address.tube
-	);
-	return right
-		? findSideNeighbourInBands(
-				bands,
-				withBand(band, right.address.band),
-				pieceIndexOf(band.address)
-			)
-		: undefined;
-};
-
 /**
  * A gained node on the neighbour quad's top (y = 1) or bottom (y = 0) edge,
  * away from the shared edge. The facet above or below gains the same node
@@ -312,19 +274,7 @@ const mapGain = (
 		}
 		return [command, x, y] as PathSegment;
 	});
-	if (partnerQuad) {
-		const mapped = transformPatternByQuad(inPartner, partnerQuad);
-		const path =
-			side === 'left'
-				? alignPrevBandPath(mapped, partnerQuad, ownQuad)
-				: alignNextBandPath(mapped, partnerQuad, ownQuad);
-		return { path, joints };
-	}
-	const shifted = inPartner.map((seg) => {
-		const [command, x, y] = seg as ['M' | 'L', number, number];
-		return [command, x + (side === 'left' ? -1 : 1), y] as PathSegment;
-	});
-	return { path: transformPatternByQuad(shifted, ownQuad), joints };
+	return { path: layPartnerPath(side, inPartner, ownQuad, partnerQuad), joints };
 };
 
 /** A quad's size for normalising deviations: the square root of its area. */
@@ -408,22 +358,6 @@ const endChevron = (
 };
 
 /**
- * The partner's quad alongside facet `f`, when the partner covers it with the
- * same subunit. Otherwise the gain falls back to extrapolation.
- */
-const partnerQuadAlongside = (
-	band: BandCutPattern,
-	f: number,
-	partner: BandCutPattern | undefined
-): Quadrilateral | undefined => {
-	if (!partner || partner.error) return undefined;
-	const index = alongsideFacetIndex(band, f, partner);
-	if (index === undefined || subunitIndexOf(index) !== subunitIndexOf(f)) return undefined;
-	const quad = partner.facets[index].quad;
-	return quad ? toQuad(quad) : undefined;
-};
-
-/**
  * Tube-level adjustment: drop the lines that belong to a neighbour or lie
  * outside an open side, then append the lines gained from each partner and the
  * end cap. Runs per tube because gains read the neighbouring bands' quads.
@@ -480,7 +414,7 @@ export const adjustHexparquet2AfterTiling = (
 						s,
 						columns,
 						quad,
-						partnerQuadAlongside(band, f, left)
+						partnerQuadAlongside(band, f, left, HEXPARQUET2_SUBUNIT_COUNT)
 					)
 				);
 				if (seamFlaps === 'voids' && ends.isEnd)
@@ -494,7 +428,7 @@ export const adjustHexparquet2AfterTiling = (
 						s,
 						columns,
 						quad,
-						partnerQuadAlongside(band, f, right)
+						partnerQuadAlongside(band, f, right, HEXPARQUET2_SUBUNIT_COUNT)
 					)
 				);
 			}

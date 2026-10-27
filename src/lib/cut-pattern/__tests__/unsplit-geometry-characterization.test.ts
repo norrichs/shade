@@ -235,6 +235,11 @@ const EXPECTED: Record<string, unknown> = {
 		meta: '254679a5394a9dfb',
 		rest: '1f28b228072b828b'
 	},
+	'tiled tiledHexparquet2bPattern-0': {
+		paths: '4f94445161e9b947',
+		meta: '492a0cbff818b41d',
+		rest: '0849928f77bf5849'
+	},
 	'tiled tiledAsanohaPattern-1': {
 		paths: 'c44932eab945d205',
 		meta: '492a0cbff818b41d',
