@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { getMidPoint, svgPathStringFromSegments } from '#lib/patterns/utils.js';
 	import type { TransformConfig } from '#lib/projection-geometry/types.js';
-	import { patternConfigStore, mergedBandPaths, layerStrokes } from '#lib/stores/index.js';
+	import { patternConfigStore, layerStrokes } from '#lib/stores/index.js';
+	import { getPostProcessScope } from './post-process-scope';
 	import { resolveBandRenderMode } from '#lib/cut-pattern/band-render-mode.js';
 	import { concatPieces } from '#lib/cut-pattern/drop-holes.js';
 	import type { BandCutPattern, CutPattern, Quadrilateral } from '#lib/types.js';
@@ -37,6 +38,8 @@
 		showOriginalPath?: boolean;
 		showBounds?: boolean;
 	} = $props();
+
+	const { mergedBandPaths } = getPostProcessScope();
 
 	const postTransformPF = false;
 	const RAINBOW = false;

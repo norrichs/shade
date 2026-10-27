@@ -1,13 +1,21 @@
 <script lang="ts">
 	import { patternConfigStore, lightburnTemplateStore } from '#lib/stores/index.js';
 	import {
-		DEFAULT_POST_PROCESS,
 		DEFAULT_CONNECT_GAP_MM,
 		defaultDropCurve,
 		type HoleDropConfig,
 		type HoleDropMode,
-		type PageLabelConfig
+		type PageLabelConfig,
+		type PostProcessConfig
 	} from '#lib/cut-pattern/hole-drop-config.js';
+	import {
+		addPostProcess,
+		deletePostProcess,
+		movePostProcess,
+		postProcessLabel,
+		postProcessList,
+		splitPostProcessList
+	} from '#lib/cut-pattern/post-process-list.js';
 	import {
 		GEOMETRY_TYPES,
 		GEOMETRY_TYPE_LABELS,
@@ -27,13 +35,20 @@
 	import LabeledControl from './LabeledControl.svelte';
 	import PathEditor from './PathEditor.svelte';
 	import { allPointsInUnitSquare } from './path-editor';
+	import { selectedPostProcessIndex } from './post-process-editor-store';
 
-	// Shallow copy, as PageLayout.svelte does: reading the stored object itself
+	let configs = $derived(postProcessList($patternConfigStore.patternConfig));
+	// Clamp so a shrunken list (or an externally loaded config) never leaves the
+	// selection out of range.
+	let selected = $derived(
+		Math.min(Math.max($selectedPostProcessIndex, 0), Math.max(configs.length - 1, 0))
+	);
+	// Shallow copies, as PageLayout.svelte does: reading the stored object itself
 	// would hand `$derived` the same reference on every run, so in-place edits
 	// would never propagate to the readouts below.
-	let postProcess = $derived({
-		...($patternConfigStore.patternConfig.postProcess ?? DEFAULT_POST_PROCESS)
-	});
+	let postProcess = $derived({ ...configs[selected] });
+	// The layer map and download format are export-wide and live on the first config.
+	let exportSettings = $derived({ ...configs[0] });
 	let dropHoles = $derived(postProcess.dropHoles);
 	let isOutlined = $derived($patternConfigStore.patternTypeConfig.type === 'outlined');
 
@@ -46,23 +61,46 @@
 
 	// Every write goes to the config store, never to component state: Floater
 	// fully remounts its panel content on close, so panel-local state is wiped.
-	const write = (nextDropHoles: HoleDropConfig, runSeed = postProcess.runSeed) => {
-		$patternConfigStore.patternConfig.postProcess = {
-			...postProcess,
-			dropHoles: nextDropHoles,
-			runSeed
-		};
+	// `exportFrom` is the config whose export settings the stored first entry
+	// keeps: the current first one unless the write changes them.
+	const writeList = (next: PostProcessConfig[], exportFrom: PostProcessConfig = configs[0]) => {
+		const stored = splitPostProcessList(next, exportFrom);
+		patternConfigStore.update((config) => {
+			config.patternConfig.postProcess = stored.postProcess;
+			if (stored.additionalPostProcesses.length)
+				config.patternConfig.additionalPostProcesses = stored.additionalPostProcesses;
+			else delete config.patternConfig.additionalPostProcesses;
+			return config;
+		});
 	};
 
-	const setFlag = (
-		flag: 'dropOutline' | 'dropLabelText' | 'disconnectSurround',
-		value: boolean
-	) => {
-		$patternConfigStore.patternConfig.postProcess = { ...postProcess, [flag]: value };
-	};
+	const patch = (next: Partial<PostProcessConfig>) =>
+		writeList(configs.map((config, i) => (i === selected ? { ...postProcess, ...next } : config)));
 
-	const patch = (next: Partial<typeof postProcess>) => {
-		$patternConfigStore.patternConfig.postProcess = { ...postProcess, ...next };
+	const patchExport = (next: Pick<PostProcessConfig, 'layerMap' | 'downloadFormat'>) =>
+		writeList(configs, { ...exportSettings, ...next });
+
+	const write = (nextDropHoles: HoleDropConfig, runSeed = postProcess.runSeed) =>
+		patch({ dropHoles: nextDropHoles, runSeed });
+
+	const setFlag = (flag: 'dropOutline' | 'dropLabelText' | 'disconnectSurround', value: boolean) =>
+		patch({ [flag]: value });
+
+	const onAdd = () => {
+		writeList(addPostProcess(configs, selected));
+		selectedPostProcessIndex.set(selected + 1);
+	};
+	const onDelete = () => {
+		// Compute before writeList: the store (and so `configs`) updates synchronously.
+		const next = Math.max(0, Math.min(selected, configs.length - 2));
+		writeList(deletePostProcess(configs, selected));
+		selectedPostProcessIndex.set(next);
+	};
+	const onMove = (dir: -1 | 1) => {
+		const target = selected + dir;
+		if (target < 0 || target >= configs.length) return;
+		writeList(movePostProcess(configs, selected, dir));
+		selectedPostProcessIndex.set(target);
 	};
 	let connect = $derived(
 		postProcess.connectSurround ?? { enabled: false, gapMm: DEFAULT_CONNECT_GAP_MM }
@@ -73,7 +111,7 @@
 	const setPageLabel = (next: Partial<PageLabelConfig>) =>
 		patch({ pageLabel: { ...pageLabel, ...next } });
 	const setLayer = (type: GeometryType, id: LayerId) =>
-		patch({ layerMap: { ...(postProcess.layerMap ?? {}), [type]: id } });
+		patchExport({ layerMap: { ...(exportSettings.layerMap ?? {}), [type]: id } });
 
 	// Transient upload feedback; losing it on panel remount is harmless.
 	let templateError = $state('');
@@ -90,7 +128,9 @@
 		} else templateError = result.error;
 		target.value = '';
 	};
-	let missing = $derived(missingTemplateLayers(postProcess.layerMap, $lightburnTemplateStore?.xml));
+	let missing = $derived(
+		missingTemplateLayers(exportSettings.layerMap, $lightburnTemplateStore?.xml)
+	);
 
 	const setMode = (mode: HoleDropMode) => {
 		if (mode === dropHoles.mode) return;
@@ -116,6 +156,49 @@
 
 <Editor>
 	<Container direction="column">
+		<div class="pp-strip">
+			{#each configs as config, i (i)}
+				<button
+					type="button"
+					class="pp-chip"
+					class:selected={i === selected}
+					onclick={() => selectedPostProcessIndex.set(i)}
+				>
+					{postProcessLabel(config, i)}
+				</button>
+			{/each}
+			<button type="button" title="Duplicate after selected" onclick={onAdd}>+</button>
+			<button
+				type="button"
+				title="Delete selected"
+				disabled={configs.length <= 1}
+				onclick={onDelete}>−</button
+			>
+			<button
+				type="button"
+				title="Move earlier"
+				disabled={selected === 0}
+				onclick={() => onMove(-1)}>←</button
+			>
+			<button
+				type="button"
+				title="Move later"
+				disabled={selected >= configs.length - 1}
+				onclick={() => onMove(1)}>→</button
+			>
+		</div>
+		{#if configs.length > 1}
+			<p class="hint">Each config adds its own group of pages to the output.</p>
+		{/if}
+		<LabeledControl label="Name">
+			<input
+				type="text"
+				value={postProcess.name ?? ''}
+				placeholder={postProcessLabel(undefined, selected)}
+				onchange={(e) => patch({ name: e.currentTarget.value.trim() || undefined })}
+			/>
+		</LabeledControl>
+
 		<LabeledControl label="Drop label text">
 			<input
 				type="checkbox"
@@ -229,9 +312,9 @@
 			/>
 		</LabeledControl>
 
-		<h4>Layers</h4>
+		<h4>Layers <span class="scope">· all configs</span></h4>
 		{#each GEOMETRY_TYPES as type (type)}
-			{@const current = resolveLayer(type, postProcess.layerMap)}
+			{@const current = resolveLayer(type, exportSettings.layerMap)}
 			<LabeledControl label={GEOMETRY_TYPE_LABELS[type]}>
 				<span class="swatch" style="background: {current.hex}"></span>
 				<select
@@ -245,12 +328,12 @@
 			</LabeledControl>
 		{/each}
 
-		<h4>LightBurn</h4>
+		<h4>LightBurn <span class="scope">· all configs</span></h4>
 		<LabeledControl label="Download as LightBurn">
 			<input
 				type="checkbox"
-				checked={postProcess.downloadFormat === 'lbrn2'}
-				onchange={(e) => patch({ downloadFormat: e.currentTarget.checked ? 'lbrn2' : 'svg' })}
+				checked={exportSettings.downloadFormat === 'lbrn2'}
+				onchange={(e) => patchExport({ downloadFormat: e.currentTarget.checked ? 'lbrn2' : 'svg' })}
 			/>
 		</LabeledControl>
 		<LabeledControl label="Template (.lbrn2)">
@@ -273,6 +356,20 @@
 </Editor>
 
 <style>
+	.pp-strip {
+		display: flex;
+		gap: 4px;
+		flex-wrap: wrap;
+	}
+	.pp-chip.selected {
+		font-weight: bold;
+		outline: 2px solid currentColor;
+	}
+	.scope {
+		font-weight: normal;
+		font-size: 0.8em;
+		opacity: 0.7;
+	}
 	.swatch {
 		display: inline-block;
 		width: 0.8em;

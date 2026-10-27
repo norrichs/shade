@@ -25,6 +25,8 @@ export type HoleDropConfig =
  * `seedFor` in `drop-holes.ts` for why it cannot live in the band payload.
  */
 export type PostProcessConfig = {
+	/** Shown on the editor chip and above this config's page group. */
+	name?: string;
 	dropHoles: HoleDropConfig;
 	runSeed: number;
 	/**
@@ -39,8 +41,12 @@ export type PostProcessConfig = {
 	/** One gap per band end in the outline, re-emitted as `outline-gap`. */
 	connectSurround?: ConnectSurroundConfig;
 	pageLabel?: PageLabelConfig;
-	/** Geometry type → LightBurn layer. Absent entries use DEFAULT_LAYER_MAP. */
+	/**
+	 * Geometry type → LightBurn layer. Absent entries use DEFAULT_LAYER_MAP.
+	 * Export-wide: read from the first config only (see `post-process-list.ts`).
+	 */
 	layerMap?: LayerMap;
+	/** Export-wide, like `layerMap`. */
 	downloadFormat?: 'svg' | 'lbrn2';
 };
 

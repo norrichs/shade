@@ -603,7 +603,8 @@ export const defaultPatternConfig = (): PatternConfig => ({
 		reorderWindow: 8,
 		allowRotation: false,
 		keepConnected: 0,
-		rotationStep: 15
+		rotationStep: 15,
+		registrationMark: true
 	},
 	splits: { tubeSplits: [] },
 	postProcess: { dropHoles: { mode: 'none' }, runSeed: 0 },

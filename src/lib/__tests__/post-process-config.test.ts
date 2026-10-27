@@ -132,3 +132,36 @@ describe('postProcess config', () => {
 		).toEqual({ enabled: true, gapMm: 1.5 });
 	});
 });
+
+describe('additionalPostProcesses', () => {
+	const migrateExtras = (additionalPostProcesses: unknown) =>
+		migrateGlobulePatternConfig({
+			patternConfig: {
+				pageLayout: { keepConnected: 0 },
+				postProcess: { dropHoles: { mode: 'none' }, runSeed: 0 },
+				additionalPostProcesses
+			}
+		} as unknown as GlobulePatternConfig).patternConfig as Record<string, unknown>;
+
+	it('repairs each extra like the first, dropping export-wide fields', () => {
+		const pc = migrateExtras([
+			{
+				name: 'holes',
+				dropHoles: { mode: 'random', chance: 3 },
+				dropOutline: 'yes',
+				layerMap: { 'pattern-hole': 'T2' },
+				downloadFormat: 'lbrn2'
+			},
+			null,
+			{ name: 7, dropHoles: { mode: 'all' }, runSeed: 2 }
+		]);
+		expect(pc.additionalPostProcesses).toEqual([
+			{ name: 'holes', dropHoles: { mode: 'random', chance: 1 }, runSeed: 0 },
+			{ dropHoles: { mode: 'all' }, runSeed: 2 }
+		]);
+	});
+
+	it('removes a non-array block', () => {
+		expect('additionalPostProcesses' in migrateExtras({ nope: true })).toBe(false);
+	});
+});

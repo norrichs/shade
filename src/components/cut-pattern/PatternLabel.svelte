@@ -11,12 +11,10 @@
 		FALLBACK_TEXT_WIDTH,
 		FALLBACK_TEXT_HEIGHT
 	} from '#lib/cut-pattern/label-outline-path.js';
-	import {
-		dropLabelText,
-		layerStrokes,
-		mergedBandPaths,
-		setLabelTextDimension
-	} from '#lib/stores/index.js';
+	import { layerStrokes, setLabelTextDimension } from '#lib/stores/index.js';
+	import { getPostProcessScope } from './post-process-scope';
+
+	const { mergedBandPaths, dropLabelText } = getPostProcessScope();
 
 	let {
 		id = undefined,

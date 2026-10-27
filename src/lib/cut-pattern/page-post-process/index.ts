@@ -1,4 +1,4 @@
-import type { PageRect } from '../page-layout/types';
+import type { KeepOut, PageRect } from '../page-layout/types';
 import type { PostProcessConfig } from '../hole-drop-config';
 import type { PagePostProcessResult, PlacedBand } from '../post-process-types';
 import { computeDisconnects } from './disconnect';
@@ -10,17 +10,19 @@ export const pagePostProcess = (input: {
 	pages: PageRect[];
 	pageScale: number;
 	marginPx: number;
+	keepOut?: KeepOut;
 	gap: number;
 	config: PostProcessConfig;
 	configName: string | undefined;
 	dict: GlyphDict | undefined;
 }): PagePostProcessResult => {
-	const { bands, pages, pageScale, marginPx, gap, config, configName, dict } = input;
+	const { bands, pages, pageScale, marginPx, keepOut, gap, config, configName, dict } = input;
 	const disconnects = config.disconnectSurround ? computeDisconnects(bands, pages, gap) : [];
 	const pageLabels = dict
 		? buildPageLabels({
 				pages,
 				marginPx,
+				keepOut,
 				pageScale,
 				bands,
 				disconnects,
