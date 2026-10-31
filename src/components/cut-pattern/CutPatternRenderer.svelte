@@ -63,6 +63,7 @@
 		type ResolvedBand
 	} from '#lib/cut-pattern/resolve-index-bands.js';
 	import PageGeometry from './PageGeometry.svelte';
+	import { pageOfPoint } from '#lib/cut-pattern/page-layout/page-of.js';
 	import {
 		buildNestGeom,
 		buildPageGeom,
@@ -541,6 +542,17 @@
 		});
 	});
 
+	// Page each band sits on, parallel to `pageBands`. A band rotates about its
+	// pivot (its bounds centre), so origin + pivot is its page-space centre.
+	let bandPages = $derived.by((): number[] => {
+		if (!usePageLayout || !pageResult) return [];
+		const { origins, pages } = pageResult;
+		return pageBands.map(({ band }, i) => {
+			const pivot = pivots.get(band) ?? { x: 0, y: 0 };
+			return pageOfPoint({ x: origins[i].x + pivot.x, y: origins[i].y + pivot.y }, pages);
+		});
+	});
+
 	// One page group per post-process config, stacked down the canvas.
 	let pageGroups = $derived(
 		usePageLayout && pageResult
@@ -601,48 +613,57 @@
 				pages={pageResult.pages}
 				label={$postProcessConfigs.length > 1 ? postProcessLabel(ppConfig, k) : undefined}
 			>
-				<PageGeometry
-					pages={pageResult.pages}
-					marginPx={pageGeom?.marginPx}
-					markSize={pageGeom?.keepOut?.width}
-				/>
-				<g id={k === 0 ? 'cut-pattern' : `cut-pattern-${k}`}>
-					{#each pageBands as { band, tube }, i (concatAddress(band.address))}
-						<BandComponent
-							{band}
-							{tube}
-							{tubes}
-							index={i}
-							origin={pageResult.origins[i]}
-							rotation={pageResult.rotations[i] ?? 0}
-							pivot={pivots.get(band)}
-							tagAnchorPoint={tagAnchors.get(band)!}
-							tagAngle={band.tagAngle}
-							groupCode={groupCodeFor(band.address)}
-							showBounds={false}
-							layoutBounds={effBoundsFor(band)}
-							{selectionTarget}
+				{#each pageResult.pages as page, p (p)}
+					<g class="page" data-page={p + 1}>
+						<PageGeometry
+							pages={[page]}
+							marginPx={pageGeom?.marginPx}
+							markSize={pageGeom?.keepOut?.width}
+						/>
+						<g
+							class="cut-pattern"
+							id={k === 0 ? `cut-pattern-page-${p + 1}` : `cut-pattern-${k}-page-${p + 1}`}
 						>
-							{#if band.projectionType === 'patterned'}
-								<BandCutPatternComponent
-									{band}
-									renderAsSinglePath={true}
-									highlightFirstFacet={false}
-									partnerBands={getPartnerBands(band, tubes)}
-									showQuadLabels={false}
-									showPathPointIndices={false}
-									partnerFacets={[
-										band.meta?.translatedStartPartnerFacet,
-										band.meta?.translatedEndPartnerFacet
-									].filter((el) => el !== undefined)}
-									showPartnerBands={false}
-									showAdjacentFacets={false}
-									showBounds={false}
-								/>
-							{/if}
-						</BandComponent>
-					{/each}
-				</g>
+							{#each pageBands as { band, tube }, i (concatAddress(band.address))}
+								{#if bandPages[i] === p}
+									<BandComponent
+										{band}
+										{tube}
+										{tubes}
+										index={i}
+										origin={pageResult.origins[i]}
+										rotation={pageResult.rotations[i] ?? 0}
+										pivot={pivots.get(band)}
+										tagAnchorPoint={tagAnchors.get(band)!}
+										tagAngle={band.tagAngle}
+										groupCode={groupCodeFor(band.address)}
+										showBounds={false}
+										layoutBounds={effBoundsFor(band)}
+										{selectionTarget}
+									>
+										{#if band.projectionType === 'patterned'}
+											<BandCutPatternComponent
+												{band}
+												renderAsSinglePath={true}
+												highlightFirstFacet={false}
+												partnerBands={getPartnerBands(band, tubes)}
+												showQuadLabels={false}
+												showPathPointIndices={false}
+												partnerFacets={[
+													band.meta?.translatedStartPartnerFacet,
+													band.meta?.translatedEndPartnerFacet
+												].filter((el) => el !== undefined)}
+												showPartnerBands={false}
+												showAdjacentFacets={false}
+												showBounds={false}
+											/>
+										{/if}
+									</BandComponent>
+								{/if}
+							{/each}
+						</g>
+					</g>
+				{/each}
 				{#if stage3s[k]}
 					<PageAnnotations result={stage3s[k]} />
 				{/if}
