@@ -29,6 +29,7 @@
 		'tiledHexparquetPattern-0',
 		'tiledHexparquet2Pattern-0',
 		'tiledHexparquet2bPattern-0',
+		'tiledSimpleHexPattern-0',
 		'tiledAsanohaPattern-1',
 		'tiledAsanohaSplitPattern-0'
 	];

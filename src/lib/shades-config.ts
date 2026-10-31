@@ -434,6 +434,24 @@ export const tiledPatternConfigs: { [key: string]: TiledPatternConfig } = {
 			scaleConfig: defaultScaleConfig
 		}
 	},
+	'tiledSimpleHexPattern-0': {
+		type: 'tiledSimpleHexPattern-0',
+		tiling: 'quadrilateral',
+		config: {
+			rowCount: 1,
+			columnCount: 1,
+			dynamicStroke: 'quadWidth',
+			dynamicStrokeEasing: 'linear',
+			dynamicStrokeMin: 1,
+			dynamicStrokeMax: 3,
+			endsMatched: false,
+			endsTrimmed: false,
+			endLooped: 0,
+			// Bands interlock along a zigzag seam and are cut apart, so each draws its whole outline.
+			keepPartnerSeam: true,
+			scaleConfig: defaultScaleConfig
+		}
+	},
 	'tiledBoxPattern-0': {
 		type: 'tiledBoxPattern-0',
 		tiling: 'quadrilateral',
