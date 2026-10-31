@@ -4,6 +4,7 @@ import { nestPageLayout, type NestGeom } from '../nest/nest';
 import { rect } from '../nest/__tests__/fixtures';
 import { buildPageGeom } from '../registry';
 import {
+	KEEP_OUT_HEIGHT_MM,
 	keepOutFitFactor,
 	registrationMarkPath,
 	registrationMarkRect,
@@ -92,7 +93,7 @@ describe('registration mark geometry', () => {
 		]);
 	});
 
-	it('buildPageGeom reserves a 10mm keep-out only when marks are on', () => {
+	it('buildPageGeom reserves the mark plus the page number below it, only when marks are on', () => {
 		const cfg = {
 			pageSize: { width: 300, height: 300 },
 			pageScale: 2,
@@ -106,8 +107,10 @@ describe('registration mark geometry', () => {
 			rotationStep: 15,
 			registrationMark: true
 		} satisfies PageLayoutConfig;
-		const size = REGISTRATION_MARK_MM * 2;
-		expect(buildPageGeom(cfg).keepOut).toEqual({ width: size, height: size });
+		expect(buildPageGeom(cfg).keepOut).toEqual({
+			width: REGISTRATION_MARK_MM * 2,
+			height: KEEP_OUT_HEIGHT_MM * 2
+		});
 		expect(buildPageGeom({ ...cfg, registrationMark: false }).keepOut).toBeUndefined();
 	});
 });

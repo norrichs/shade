@@ -4,6 +4,15 @@ import type { KeepOut, PageRect } from './types';
 /** Side of the square "+" registration mark, millimetres. */
 export const REGISTRATION_MARK_MM = 10;
 
+/** Glyph height of the page number drawn under the mark, millimetres (at most; wide numbers shrink to the mark's width). */
+export const PAGE_NUMBER_MM = 8;
+
+/** Space between the mark and the page number below it, millimetres. */
+export const PAGE_NUMBER_GAP_MM = 2;
+
+/** Height of the top-right keep-out: the mark, the gap, and the page number. */
+export const KEEP_OUT_HEIGHT_MM = REGISTRATION_MARK_MM + PAGE_NUMBER_GAP_MM + PAGE_NUMBER_MM;
+
 /**
  * Smallest factor the page (content box and keep-out, both mm-based) must be
  * scaled by for a w×h box to fit a fresh page — beside the top-right keep-out
@@ -33,6 +42,17 @@ export const registrationMarkRect = (page: PageRect, marginPx: number, size: num
 	y: page.y + marginPx,
 	width: size,
 	height: size
+});
+
+/**
+ * The page number's box, page space: directly under the mark's square, as wide
+ * as it. `pageScale` is pattern units per mm.
+ */
+export const pageNumberRect = (mark: PageRect, pageScale: number): PageRect => ({
+	x: mark.x,
+	y: mark.y + mark.height + PAGE_NUMBER_GAP_MM * pageScale,
+	width: mark.width,
+	height: PAGE_NUMBER_MM * pageScale
 });
 
 /** A "+" spanning the mark's square. */

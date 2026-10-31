@@ -5,6 +5,7 @@ import {
 	measureText,
 	placeBox,
 	buildPageLabels,
+	placePageNumber,
 	type GlyphDict
 } from '../page-label';
 import type { PlacedBand } from '../../post-process-types';
@@ -127,5 +128,39 @@ describe('buildPageLabels', () => {
 				dict
 			})
 		).toEqual([]);
+	});
+});
+
+describe('placePageNumber', () => {
+	const box = { x: 100, y: 50, width: 10, height: 8 };
+	const bboxOf = (r: ReturnType<typeof placePageNumber>) => {
+		const m = measureText(r.text, dict);
+		return {
+			x0: r.origin.x + m.minX * r.size,
+			x1: r.origin.x + m.maxX * r.size,
+			y0: r.origin.y + m.minY * r.size,
+			y1: r.origin.y + m.maxY * r.size
+		};
+	};
+
+	it('draws the one-based number only', () => {
+		expect(placePageNumber(0, box, dict).text).toBe('1');
+		expect(placePageNumber(11, box, dict).text).toBe('12');
+	});
+
+	it('fills the box height for a narrow number, top-aligned and centred', () => {
+		const r = placePageNumber(0, box, dict);
+		const b = bboxOf(r);
+		expect(b.y0).toBeCloseTo(50);
+		expect(b.y1).toBeCloseTo(58);
+		expect((b.x0 + b.x1) / 2).toBeCloseTo(105);
+	});
+
+	it('shrinks a wide number to the box width', () => {
+		const b = bboxOf(placePageNumber(11, box, dict));
+		expect(b.x0).toBeCloseTo(100);
+		expect(b.x1).toBeCloseTo(110);
+		expect(b.y0).toBeCloseTo(50);
+		expect(b.y1 - b.y0).toBeLessThan(8);
 	});
 });

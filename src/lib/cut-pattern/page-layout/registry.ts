@@ -2,7 +2,7 @@ import type { PageLayoutConfig } from '#lib/types.js';
 import { flexWrapPageLayout, PAGE_STACK_GAP } from './flex-wrap';
 import { skylinePageLayout } from './skyline';
 import { NEST_CELL_MM, type NestGeom } from './nest/nest';
-import { REGISTRATION_MARK_MM } from './registration-mark';
+import { KEEP_OUT_HEIGHT_MM, REGISTRATION_MARK_MM } from './registration-mark';
 import type { PageGeom, PageLayoutFn } from './types';
 
 export const PAGE_LAYOUT_ALGORITHMS: Record<
@@ -30,7 +30,7 @@ export const buildPageGeom = (cfg: PageLayoutConfig): PageGeom => {
 		reorderWindow: cfg.reorderWindow,
 		allowRotation: cfg.allowRotation,
 		...(cfg.registrationMark
-			? { keepOut: { width: REGISTRATION_MARK_MM * s, height: REGISTRATION_MARK_MM * s } }
+			? { keepOut: { width: REGISTRATION_MARK_MM * s, height: KEEP_OUT_HEIGHT_MM * s } }
 			: {})
 	};
 };

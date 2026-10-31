@@ -616,7 +616,9 @@
 				{#each pageResult.pages as page, p (p)}
 					<g class="page" data-page={p + 1}>
 						<PageGeometry
-							pages={[page]}
+							{page}
+							pageIndex={p}
+							dict={glyphDict}
 							marginPx={pageGeom?.marginPx}
 							markSize={pageGeom?.keepOut?.width}
 						/>

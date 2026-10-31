@@ -108,6 +108,31 @@ export const placeBox = (args: {
 	return null;
 };
 
+/**
+ * Page number under the registration mark: `pageIndex + 1`, top-aligned in
+ * `box` and centred across it, as tall as the box unless that would make it
+ * wider. Returns SvgText's `anchor` (with `offset: {x: 0, y: 0}`) and `size`.
+ */
+export const placePageNumber = (
+	pageIndex: number,
+	box: Box,
+	dict: GlyphDict
+): { text: string; origin: Pt; size: number } => {
+	const text = sanitizeLabelText(String(pageIndex + 1), dict);
+	const m = measureText(text, dict);
+	const glyphW = m.maxX - m.minX || 1;
+	const glyphH = m.maxY - m.minY || 1;
+	const size = Math.min(box.height / glyphH, box.width / glyphW);
+	return {
+		text,
+		size,
+		origin: {
+			x: box.x + (box.width - glyphW * size) / 2 - m.minX * size,
+			y: box.y - m.minY * size
+		}
+	};
+};
+
 const rectPolygon = (r: Box): Pt[] => [
 	{ x: r.x, y: r.y },
 	{ x: r.x + r.width, y: r.y },
@@ -156,7 +181,14 @@ export const buildPageLabels = (args: {
 			],
 			solids: [
 				...onPage.flatMap((b) => b.outlines),
-				...(keepOut ? [rectPolygon(registrationMarkRect(page, marginPx, keepOut.width))] : [])
+				...(keepOut
+					? [
+							rectPolygon({
+								...registrationMarkRect(page, marginPx, keepOut.width),
+								height: keepOut.height
+							})
+						]
+					: [])
 			]
 		});
 		if (!at) {
