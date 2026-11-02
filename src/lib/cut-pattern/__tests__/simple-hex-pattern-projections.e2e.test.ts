@@ -1,6 +1,7 @@
 import { describe, it, expect } from '@jest/globals';
 import { generateSuperGlobule } from '#lib/generate-superglobule.js';
 import { generateProjectionPattern } from '../generate-pattern';
+import { runPatternGeneration } from '../run-pattern-generation';
 import {
 	generateDefaultSuperGlobuleConfig,
 	generateDefaultGlobulePatternConfig,
@@ -65,5 +66,39 @@ describe('SimpleHex end to end (projections, real geometry)', () => {
 	it("lands gained lines on the band's own nodes: only the right zigzag's two end corners are loose", () => {
 		// The right outline (5,1)→(6,2) at the start and (5,1)→(6,0) at the end stops on the band's edge.
 		expect(bands.map(looseEnds)).toEqual(bands.map(() => 2));
+	});
+});
+
+describe('SimpleHex end to end at a split (projections, real geometry)', () => {
+	const gates = { globuleTube: false, projection: true, voronoi: false };
+	const superConfig = generateDefaultSuperGlobuleConfig();
+	const superGlobule = generateSuperGlobule(superConfig, gates);
+	const patternConfig = generateDefaultGlobulePatternConfig();
+	const result = runPatternGeneration({
+		superGlobule,
+		superConfig,
+		genConfig: {
+			patternTypeConfig: { ...tiledPatternConfigs['tiledSimpleHexPattern-0'] },
+			pixelScale: patternConfig.patternConfig.pixelScale,
+			showBands: true,
+			range: { tubes: undefined, bands: undefined, facets: undefined },
+			patternSource: 'projection',
+			splits: { tubeSplits: [{ tube: 0, quads: [2] }] }
+		},
+		gates
+	});
+	const pieces = (result.projectionPattern as SuperGlobuleProjectionCutPattern).projectionCutPattern
+		.tubes[0].bands;
+
+	it('splits every band of the tube into two pieces of 2 quads', () => {
+		expect(pieces.length).toBeGreaterThan(0);
+		expect(pieces.every((b) => !b.error && b.facets.length === 2)).toBe(true);
+		expect(new Set(pieces.map((b) => (b.address as { piece?: number }).piece))).toEqual(
+			new Set([0, 1])
+		);
+	});
+
+	it('joins the split cleanly: each piece keeps only its outer end corner loose', () => {
+		expect(pieces.map(looseEnds)).toEqual(pieces.map(() => 1));
 	});
 });

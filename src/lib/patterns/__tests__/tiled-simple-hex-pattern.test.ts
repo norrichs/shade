@@ -245,6 +245,71 @@ describe('adjustSimpleHexAfterTiling', () => {
 		expect(by).toBeCloseTo(ay, 9);
 	});
 
+	describe('at a split', () => {
+		/** Band 0 cut into two pieces of 2 quads; piece 1 laid out at `offset` from its true place. */
+		const split = (columns = 1, offset: [number, number] = [0, 0]) => {
+			const subunits = generateSimpleHexSubunits(columns);
+			const piece = (p: number, shift: [number, number]): BandCutPattern =>
+				({
+					id: `b0p${p}`,
+					projectionType: 'patterned',
+					tagAnchorPoint: { x: 0, y: 0 },
+					address: { globule: 0, tube: 0, band: 0, piece: p },
+					facets: quads(4, 0)
+						.slice(2 * p, 2 * p + 2)
+						.map((q, i) => {
+							const m = (v: Vector3) => new Vector3(v.x + shift[0], v.y + shift[1], 0);
+							const moved = { a: m(q.a), b: m(q.b), c: m(q.c), d: m(q.d) };
+							return {
+								path: transformPatternByQuad(subunits[i % 2], moved),
+								quad: moved,
+								label: `${i}`
+							};
+						})
+				}) as BandCutPattern;
+			return adjustSimpleHexAfterTiling([piece(0, [0, 0]), piece(1, offset)], config(columns));
+		};
+		const upperHalf = [
+			line(0, [2, 2], [3, 1], 1),
+			line(0, [3, 1], [5, 1], 1),
+			line(0, [5, 1], [6, 2], 1)
+		];
+
+		it('the earlier piece takes the straddling hexagon’s upper half', () => {
+			const [earlier] = split();
+			for (const l of upperHalf) expect(has(earlier.facets[1].path, l)).toBe(true);
+		});
+
+		it('the later piece drops the spur and keeps the rest of its bottom outline', () => {
+			const [, later] = split();
+			const first = later.facets[0].path;
+			expect(has(first, line(0, [5, 1], [6, 2], 1))).toBe(false);
+			expect(has(first, line(0, [0, 2], [2, 2], 1))).toBe(true);
+			expect(has(first, line(0, [3, 1], [2, 2], 1))).toBe(true);
+		});
+
+		it('lays the gain through the later piece’s quad wherever that piece lies', () => {
+			const [earlier] = split(1, [10, 5]);
+			for (const l of upperHalf) expect(has(earlier.facets[1].path, l)).toBe(true);
+		});
+
+		it('with 2 columns, drops the spur only in the last column and gains in each', () => {
+			const [earlier, later] = split(2);
+			const col = (c: number, [x0, y0, x1, y1]: Line): Line => [(c + x0) / 2, y0, (c + x1) / 2, y1];
+			const spur = line(0, [5, 1], [6, 2], 1);
+			expect(has(later.facets[0].path, col(0, spur))).toBe(true);
+			expect(has(later.facets[0].path, col(1, spur))).toBe(false);
+			for (const c of [0, 1])
+				for (const l of upperHalf) expect(has(earlier.facets[1].path, col(c, l))).toBe(true);
+		});
+
+		it('leaves an unsplit band’s start and end alone', () => {
+			const [band] = adjustSimpleHexAfterTiling([cutBand(0, 4)], config());
+			expect(has(band.facets[0].path, line(0, [5, 1], [6, 2]))).toBe(true);
+			expect(lines(band.facets[3].path)).toHaveLength(4);
+		});
+	});
+
 	it('defaults to keeping the partner seam', () => {
 		expect(tiledPatternConfigs['tiledSimpleHexPattern-0'].config.keepPartnerSeam).toBe(true);
 	});

@@ -1,5 +1,10 @@
-import type { BandCutPattern, PathSegment, TiledPatternConfig } from '#lib/types.js';
+import { Vector3 } from 'three';
+import type { BandCutPattern, PathSegment, Quadrilateral, TiledPatternConfig } from '#lib/types.js';
+import { removeInPlace } from './tesselation/shared/helpers';
 import { transformPatternByQuad } from './quadrilateral';
+import { getAngle, rotatePoint } from './utils';
+import { pieceIndexOf } from '#lib/cut-pattern/resolve-partner-band.js';
+import { isSameParentBand } from '#lib/util.js';
 import { toQuad } from './tiled-asanoha-pattern';
 import { findLeftPartner, layPartnerPath, partnerQuadAlongside } from './adjust/side-partners';
 
@@ -35,6 +40,14 @@ import { findLeftPartner, layPartnerPath, partnerQuadAlongside } from './adjust/
  * Band ends. No caps or trims: the start draws its own bottom line, and the
  * last facet adds its top line (the next quad's bottom, which would otherwise
  * be missing) so both ends close on the band's edge.
+ *
+ * Split seams. A hexagon straddles every split: its lower half ends the earlier
+ * piece, its upper half starts the later one. The earlier piece takes the whole
+ * hexagon: it gains the upper half (2,2)→(3,1)→(5,1)→(6,2) from the later
+ * piece's first quad. The later piece drops its last column's (5,1)→(6,2),
+ * which would otherwise be a lone spur on its cut edge, so its outline runs
+ * (0,2)→(2,2)→(3,1)→(5,1) and up its right zigzag. In inner columns that
+ * diagonal leads on to the next column, so it stays.
  */
 
 type P = [number, number];
@@ -54,6 +67,12 @@ const TOP: Seg[] = [seg([3, 1], [5, 1]), seg([2, 0], [3, 1]), seg([5, 1], [6, 0]
 
 /** Each subunit's top line, drawn by the subunit above (the band's last facet adds it). */
 const TOP_EDGE: Seg[][] = [[seg([3, 1], [5, 1])], [seg([0, 0], [2, 0])]];
+
+/** The straddling hexagon's upper half (subunit 0's grid), gained by an earlier piece at a split. */
+const SPLIT_GAIN: Seg[] = [seg([2, 2], [3, 1]), seg([3, 1], [5, 1]), seg([5, 1], [6, 2])];
+
+/** `BOTTOM`'s index of the spur a later piece drops at a split (last column only). */
+const SPLIT_SPUR = 2;
 
 const SUBUNITS = [BOTTOM, TOP];
 const subunitIndexOf = (facetIndex: number) => facetIndex % SIMPLE_HEX_SUBUNIT_COUNT;
@@ -105,15 +124,39 @@ const isApex = (seg: PathSegment, columns: number, y: number) => {
 };
 
 /**
+ * The next piece's first quad, moved rigidly so its bottom edge (a→b) lies on
+ * this piece's top edge (d→c). Pieces are a partition of one flat layout
+ * re-aligned separately, so the two edges are congruent.
+ */
+const alignNextPieceQuad = (next: Quadrilateral, lastQuad: Quadrilateral): Quadrilateral => {
+	const angle = getAngle(lastQuad.d, lastQuad.c) - getAngle(next.a, next.b);
+	const move = (p: Vector3) => {
+		const { x, y } = rotatePoint(next.a, p, angle);
+		return new Vector3(x - next.a.x + lastQuad.d.x, y - next.a.y + lastQuad.d.y, 0);
+	};
+	return { a: move(next.a), b: move(next.b), c: move(next.c), d: move(next.d) };
+};
+
+/** Without the next piece, extend this piece's last quad on by its own height. */
+const extrapolateNextQuad = ({ a, b, c, d }: Quadrilateral): Quadrilateral => ({
+	a: d.clone(),
+	b: c.clone(),
+	c: c.clone().multiplyScalar(2).sub(b),
+	d: d.clone().multiplyScalar(2).sub(a)
+});
+
+/**
  * Tube-level adjustment. With `keepPartnerSeam`, each facet gains the left
  * partner's seam diagonal, mapped through the partner's alongside quad (or
  * extrapolated with no left partner), and the chevron apexes shared by
  * consecutive facets are stitched to their midpoint. Every band's last facet
- * gets its top line.
+ * gets its top line. At a split the earlier piece gains the straddling
+ * hexagon's upper half and the later piece drops its spur (see the module doc),
+ * whatever `keepPartnerSeam` is.
  *
  * Facet indices are piece-local. Splits fall on multiples of the subunit
- * count, so every piece starts on subunit 0 and ends on subunit 1, and a
- * piece's ends are treated as band ends.
+ * count, so every piece starts on subunit 0 and ends on subunit 1. A piece's
+ * siblings share its parent address.
  */
 export const adjustSimpleHexAfterTiling = (
 	bands: BandCutPattern[],
@@ -126,11 +169,20 @@ export const adjustSimpleHexAfterTiling = (
 		if (band.error || band.facets.length === 0) return band;
 		const left = interBand ? findLeftPartner(bands, band) : undefined;
 		const last = band.facets.length - 1;
+		const piece = pieceIndexOf(band.address);
+		const sibling = (p: number) =>
+			bands.find((b) => isSameParentBand(b.address, band.address) && pieceIndexOf(b.address) === p);
+		const startsAtSplit = piece > 0;
+		const next = sibling(piece + 1);
 		/** Per facet, the index of its gained apex node in its path, if any. */
 		const apex: (number | undefined)[] = band.facets.map(() => undefined);
 
 		const paths = band.facets.map((facet, f) => {
 			const path = structuredClone(facet.path);
+			if (f === 0 && startsAtSplit) {
+				const base = 2 * ((columns - 1) * BOTTOM.length + SPLIT_SPUR);
+				removeInPlace({ indices: [base, base + 1], target: path });
+			}
 			if (!facet.quad) return path;
 			const quad = toQuad(facet.quad);
 			const s = subunitIndexOf(f);
@@ -150,6 +202,13 @@ export const adjustSimpleHexAfterTiling = (
 			}
 			if (f === last)
 				path.push(...transformPatternByQuad(columnsPath(columns, s, TOP_EDGE[s]), quad));
+			if (f === last && next && !next.error) {
+				const nextFirst = next.facets[0]?.quad;
+				const nextQuad = nextFirst
+					? alignNextPieceQuad(toQuad(nextFirst), quad)
+					: extrapolateNextQuad(quad);
+				path.push(...transformPatternByQuad(columnsPath(columns, 0, SPLIT_GAIN), nextQuad));
+			}
 			return path;
 		});
 
