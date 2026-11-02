@@ -1,6 +1,33 @@
 <script lang="ts">
 	import type { ProjectionRange } from '#lib/projection-geometry/filters.js';
-	import { patternConfigStore } from '#lib/stores/index.js';
+	import {
+		patternConfigStore,
+		patternFilterSettings,
+		patternFilterSet,
+		setPatternFilterSettings,
+		clearPatternFilter
+	} from '#lib/stores/index.js';
+	import {
+		describePatternFilter,
+		isFilteringMode,
+		type PatternFilterCombine,
+		type PatternFilterMode
+	} from '#lib/cut-pattern/pattern-filter.js';
+
+	const FILTER_MODES: { value: PatternFilterMode; label: string }[] = [
+		{ value: 'off', label: 'off' },
+		{ value: 'focus', label: 'focus' },
+		{ value: 'band', label: 'filter band' },
+		{ value: 'tube', label: 'filter tube' }
+	];
+	const onFilterMode = (e: Event) =>
+		setPatternFilterSettings({
+			mode: (e.currentTarget as HTMLSelectElement).value as PatternFilterMode
+		});
+	const onFilterCombine = (e: Event) =>
+		setPatternFilterSettings({
+			combine: (e.currentTarget as HTMLSelectElement).value as PatternFilterCombine
+		});
 	import CheckboxInput from '../controls/CheckboxInput.svelte';
 	import NumberInput from '../controls/super-control/NumberInput.svelte';
 	import PanControl from './PanControl.svelte';
@@ -28,6 +55,29 @@
 
 <div class="view-control-box">
 	<PageNavControl {onNavigate} />
+	<div class="row filter-row" data-testid="pattern-filter">
+		<label>
+			<span>Click filter</span>
+			<select value={$patternFilterSettings.mode} on:change={onFilterMode}>
+				{#each FILTER_MODES as m (m.value)}
+					<option value={m.value}>{m.label}</option>
+				{/each}
+			</select>
+		</label>
+		<select
+			value={$patternFilterSettings.combine}
+			on:change={onFilterCombine}
+			disabled={!isFilteringMode($patternFilterSettings.mode)}
+			title="exclusive: one band/tube at a time; additive: clicks add or remove"
+		>
+			<option value="exclusive">exclusive</option>
+			<option value="additive">additive</option>
+		</select>
+		{#if isFilteringMode($patternFilterSettings.mode)}
+			<span class="filter-summary">{describePatternFilter($patternFilterSet)}</span>
+			<button on:click={clearPatternFilter} disabled={!$patternFilterSet}>show all</button>
+		{/if}
+	</div>
 	<div class="row">
 		<PanControl />
 		<div>
@@ -131,6 +181,16 @@
 </div>
 
 <style>
+	.filter-row {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		gap: 6px;
+		margin-bottom: 6px;
+	}
+	.filter-summary {
+		min-width: 6em;
+	}
 	.range-inputs {
 		display: flex;
 		flex-direction: row;

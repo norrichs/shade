@@ -3,10 +3,14 @@ import {
 	assemblerHighlight,
 	assemblerRingOf,
 	patternBandSpaces,
+	patternFilterBandClicked,
 	recordBandSelection
 } from '#lib/stores/index.js';
 import type { GlobuleAddress_Band, GlobuleAddress_Facet } from '#lib/projection-geometry/types.js';
-import { assemblerHighlightForRealClick } from '#lib/cut-pattern/pattern-band-space.js';
+import {
+	assemblerHighlightForRealClick,
+	realBandToPattern
+} from '#lib/cut-pattern/pattern-band-space.js';
 import type { Vector3 } from 'three';
 import { get } from 'svelte/store';
 import { addMeasurementPoint } from '#lib/stores/measurementStore.js';
@@ -67,4 +71,8 @@ export const highlightRealBand = (source: GeometrySource, address: GlobuleAddres
 	assemblerHighlight.update((current) =>
 		assemblerHighlightForRealClick(current, source, space, real, assemblerRingOf(source))
 	);
+	// The pattern filter works in pattern band space; a band that was never
+	// patterned has nothing to show or hide.
+	const patternBand = realBandToPattern(space, real);
+	if (patternBand) patternFilterBandClicked(source, patternBand);
 };

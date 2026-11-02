@@ -3,7 +3,7 @@ import type { ThreeColor } from './colors';
 import type { GlobuleAddress_Band, GlobuleAddress_Facet } from '#lib/projection-geometry/types.js';
 import { sameGlobuleBand, type AssemblerHighlight } from '#lib/assembler-highlight.js';
 import type { SelectedProjectionGeometry } from '#lib/stores/selectionStores.js';
-import { HIGHLIGHT_PRIMARY, HIGHLIGHT_SECONDARY } from '#lib/highlight-colors.js';
+import { HIGHLIGHT_PRIMARY, HIGHLIGHT_SECONDARY, PATTERN_FILTERED } from '#lib/highlight-colors.js';
 
 const theme = {
 	colorSelected: 'rgb(0,150,255)',
@@ -112,6 +112,14 @@ export const materials = {
 		clearcoatRoughness: 0,
 		side: DoubleSide
 	}),
+	// Pattern filter (band/tube filter modes): every band the pattern pane shows.
+	// A deeper red than the clicked band's primary highlight so the two read apart.
+	patternFiltered: new MeshStandardMaterial({
+		color: PATTERN_FILTERED,
+		transparent: false,
+		opacity: 1,
+		side: DoubleSide
+	}),
 	// Assembler cross-view highlight: the other bands in the clicked band's ring.
 	assemblerSecondary: new MeshStandardMaterial({
 		color: HIGHLIGHT_SECONDARY,
@@ -195,13 +203,14 @@ const defaultMaterialSelectionConfig: MaterialSelectionConfig = {
 export const getBandMaterial = (
 	address: GlobuleAddress_Band | undefined,
 	highlight: AssemblerHighlight = null,
-	fallback: MeshStandardMaterial | MeshPhysicalMaterial = materials.default
+	fallback: MeshStandardMaterial | MeshPhysicalMaterial = materials.default,
+	filtered = false
 ) => {
-	if (address && highlight) {
-		if (sameGlobuleBand(address, highlight.band)) return materials.assemblerPrimary;
-		if (highlight.ring.some((b) => sameGlobuleBand(address, b)))
-			return materials.assemblerSecondary;
-	}
+	if (address && highlight && sameGlobuleBand(address, highlight.band))
+		return materials.assemblerPrimary;
+	if (filtered) return materials.patternFiltered;
+	if (address && highlight?.ring.some((b) => sameGlobuleBand(address, b)))
+		return materials.assemblerSecondary;
 	return fallback;
 };
 
@@ -209,15 +218,15 @@ export const getMaterial = (
 	address: GlobuleAddress_Facet,
 	selectedGeometry: SelectedProjectionGeometry,
 	config: MaterialSelectionConfig = defaultMaterialSelectionConfig,
-	highlight: AssemblerHighlight = null
+	highlight: AssemblerHighlight = null,
+	filtered = false
 ) => {
 	// Assembler cross-view highlight takes precedence over normal selection
-	// colouring so a grid-clicked band reads clearly in 3D.
-	if (highlight) {
-		if (sameGlobuleBand(address, highlight.band)) return materials.assemblerPrimary;
-		if (highlight.ring.some((b) => sameGlobuleBand(address, b)))
-			return materials.assemblerSecondary;
-	}
+	// colouring so a grid-clicked band reads clearly in 3D; the pattern filter's
+	// shown set sits between the clicked band and its ring.
+	if (highlight && sameGlobuleBand(address, highlight.band)) return materials.assemblerPrimary;
+	if (filtered) return materials.patternFiltered;
+	if (highlight?.ring.some((b) => sameGlobuleBand(address, b))) return materials.assemblerSecondary;
 
 	if (!selectedGeometry?.selected) return materials.default;
 

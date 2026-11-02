@@ -17,8 +17,11 @@
 		postProcessConfigs,
 		loadedConfigName,
 		exportPagesStore,
-		resolvedPatternLabels
+		resolvedPatternLabels,
+		patternFilterSet
 	} from '#lib/stores/index.js';
+	import { filterPatternTubes, patternFilterShows } from '#lib/cut-pattern/pattern-filter.js';
+	import { geometrySourceOfPattern } from '#lib/cut-pattern/pattern-band-space.js';
 	import { computeSplitBudget, EMPTY_SPLIT_BUDGET } from '#lib/cut-pattern/split-budget.js';
 	import { createOverflowNotifier } from '#lib/cut-pattern/page-overflow-notice.js';
 	import {
@@ -95,7 +98,20 @@
 		selectionTarget?: PatternSource;
 	} = $props();
 
-	let indexedBands = $derived(sortIndex ? resolveIndexBands(tubes, sortIndex) : undefined);
+	// The click-driven pattern filter (see `pattern-filter.ts`), applied on top of
+	// the range slice in every layout mode so the active layout re-runs over just
+	// the shown bands. A filter set on another source passes everything.
+	let filterSource = $derived(geometrySourceOfPattern(selectionTarget));
+	let filterSet = $derived($patternFilterSet);
+
+	let indexedBands = $derived.by(() => {
+		if (!sortIndex) return undefined;
+		const resolved = resolveIndexBands(tubes, sortIndex);
+		const set = filterSet;
+		return set
+			? resolved.filter(({ band }) => patternFilterShows(set, filterSource, band.address))
+			: resolved;
+	});
 
 	let codeMap = $derived(sortIndex ? buildBandCodeMap(sortIndex) : undefined);
 	const groupCodeFor = (address: GlobuleAddress_Band) => groupCodeForBand(codeMap, address);
@@ -220,10 +236,8 @@
 		];
 	};
 
-	const filtered = ({ tubes, range }: { tubes: TubeCutPattern[]; range: ProjectionRange }) => {
-		const sliced = sliceProjectionCutPattern(tubes, range);
-		return sliced;
-	};
+	const filtered = ({ tubes, range }: { tubes: TubeCutPattern[]; range: ProjectionRange }) =>
+		filterPatternTubes(sliceProjectionCutPattern(tubes, range), filterSet, filterSource);
 
 	let range = $derived($patternConfigStore.patternViewConfig.range);
 	let layoutMode = $derived($patternConfigStore.patternViewConfig.patternLayoutMode ?? 'linear');

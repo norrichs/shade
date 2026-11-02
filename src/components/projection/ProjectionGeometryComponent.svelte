@@ -35,11 +35,16 @@
 		selectedVoronoiSurface,
 		selectedVoronoiSurfaceGeometry,
 		patternBandSpaces,
+		patternFilterSet,
 		type AssemblerHighlight,
 		type GeometrySource
 	} from '#lib/stores/index.js';
 	import { handleFacetSelect, highlightRealBand } from '../three-renderer/selection-helpers';
-	import { assemblerHighlightOnSource } from '#lib/cut-pattern/pattern-band-space.js';
+	import {
+		assemblerHighlightOnSource,
+		realBandToPattern
+	} from '#lib/cut-pattern/pattern-band-space.js';
+	import { patternFilterIncludes } from '#lib/cut-pattern/pattern-filter.js';
 	import { get } from 'svelte/store';
 	import { interactionMode, isMeasureInteractionMode } from '../three-renderer/interaction-mode';
 	import { nearestVertexFromEvent } from '../three-renderer/nearest-vertex';
@@ -122,6 +127,18 @@
 		};
 	});
 
+	// The pattern filter's shown set (pattern band space) on one source's real
+	// bands, painted red in 3D. False for every band while nothing is filtered.
+	let isFiltered = $derived.by(() => {
+		const set = $patternFilterSet;
+		const spaceOf = $patternBandSpaces;
+		return (source: GeometrySource, address?: GlobuleAddress_Band): boolean => {
+			if (!set || !address || set.source !== source) return false;
+			const band = realBandToPattern(spaceOf(source, address.globule), address);
+			return !!band && patternFilterIncludes(set, source, band);
+		};
+	});
+
 	// Wrap getMaterial so every facet also respects the Assembler cross-view
 	// highlight (a band/ring clicked in the data grid). Reading `highlightFor`
 	// here registers it as a dependency of each facet's material expression.
@@ -130,7 +147,14 @@
 		address: GlobuleAddress_Facet,
 		selectedGeometry: Parameters<typeof getMaterial>[1],
 		config?: Parameters<typeof getMaterial>[2]
-	) => getMaterial(address, selectedGeometry, config, highlightFor(source));
+	) =>
+		getMaterial(
+			address,
+			selectedGeometry,
+			config,
+			highlightFor(source),
+			isFiltered(source, address)
+		);
 
 	let {
 		onClick,
@@ -312,7 +336,8 @@
 						material={getBandMaterial(
 							band.address,
 							highlightFor('surfaceProjection'),
-							materials.numbered[i % materials.numbered.length]
+							materials.numbered[i % materials.numbered.length],
+							isFiltered('surfaceProjection', band.address)
 						)}
 						raycast={bandRaycast($viewControlStore.showProjectionGeometry.facets, band.address)}
 						onclick={(ev: BandClickEvent) => handleBandClick(ev, 'surfaceProjection', band.address)}
@@ -342,7 +367,12 @@
 		{#each projectionGeometry.bands || [] as band (bandKeyOf(band))}
 			<T.Mesh
 				geometry={band.geometry}
-				material={getBandMaterial(band.address, highlightFor('projection'), materials.selected)}
+				material={getBandMaterial(
+					band.address,
+					highlightFor('projection'),
+					materials.selected,
+					isFiltered('projection', band.address)
+				)}
 				raycast={bandRaycast($viewControlStore.showProjectionGeometry.facets, band.address)}
 				onclick={(ev: BandClickEvent) => handleBandClick(ev, 'projection', band.address)}
 			/>
@@ -385,7 +415,12 @@
 		{#each voronoiGeometry.bands || [] as band (bandKeyOf(band))}
 			<T.Mesh
 				geometry={band.geometry}
-				material={getBandMaterial(band.address, highlightFor('voronoi'), materials.default)}
+				material={getBandMaterial(
+					band.address,
+					highlightFor('voronoi'),
+					materials.default,
+					isFiltered('voronoi', band.address)
+				)}
 				raycast={bandRaycast($viewControlStore.showVoronoiGeometry.facets, band.address)}
 				onclick={(ev: BandClickEvent) => handleBandClick(ev, 'voronoi', band.address)}
 			/>
@@ -394,7 +429,12 @@
 			<!-- Open-surface rim tubes, coloured red to distinguish them -->
 			<T.Mesh
 				geometry={band.geometry}
-				material={getBandMaterial(band.address, highlightFor('voronoi'), materials.numbered[1])}
+				material={getBandMaterial(
+					band.address,
+					highlightFor('voronoi'),
+					materials.numbered[1],
+					isFiltered('voronoi', band.address)
+				)}
 				raycast={bandRaycast($viewControlStore.showVoronoiGeometry.facets, band.address)}
 				onclick={(ev: BandClickEvent) => handleBandClick(ev, 'voronoi', band.address)}
 			/>
@@ -444,7 +484,12 @@
 			     here too, without needing the facet view turned on. -->
 			<T.Mesh
 				geometry={band.geometry}
-				material={getBandMaterial(band.address, highlightFor('globuleTube'))}
+				material={getBandMaterial(
+					band.address,
+					highlightFor('globuleTube'),
+					materials.default,
+					isFiltered('globuleTube', band.address)
+				)}
 				raycast={bandRaycast($viewControlStore.showGlobuleTubeGeometry.facets, band.address)}
 				onclick={(ev: BandClickEvent) => handleBandClick(ev, 'globuleTube', band.address)}
 			/>
