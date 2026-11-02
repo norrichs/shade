@@ -8,7 +8,8 @@ import {
 	tiledPatternConfigs
 } from '#lib/shades-config.js';
 import type { SuperGlobuleProjectionCutPattern } from '#lib/stores/superGlobuleStores.js';
-import type { BandCutPattern } from '#lib/types.js';
+import type { BandCutPattern, EndTermination, TubeCutPattern } from '#lib/types.js';
+import { resolveEndPartner } from '../resolve-partner-band';
 
 type Line = [number, number, number, number];
 
@@ -63,9 +64,9 @@ describe('SimpleHex end to end (projections, real geometry)', () => {
 		expect(bands.filter((b) => b.leftPartnerBand !== undefined).length).toBeGreaterThan(0);
 	});
 
-	it("lands gained lines on the band's own nodes: only the right zigzag's two end corners are loose", () => {
-		// The right outline (5,1)→(6,2) at the start and (5,1)→(6,0) at the end stops on the band's edge.
-		expect(bands.map(looseEnds)).toEqual(bands.map(() => 2));
+	it("lands gained lines on the band's own nodes, leaving no loose ends (smoothed ends)", () => {
+		// Smoothed ends join the right outline's end corners to the closed hexagons.
+		expect(bands.map(looseEnds)).toEqual(bands.map(() => 0));
 	});
 });
 
@@ -98,7 +99,55 @@ describe('SimpleHex end to end at a split (projections, real geometry)', () => {
 		);
 	});
 
-	it('joins the split cleanly: each piece keeps only its outer end corner loose', () => {
-		expect(pieces.map(looseEnds)).toEqual(pieces.map(() => 1));
+	it('joins the split cleanly, leaving no loose ends', () => {
+		expect(pieces.map(looseEnds)).toEqual(pieces.map(() => 0));
+	});
+});
+
+describe('SimpleHex end to end, extended ends (projections, real geometry)', () => {
+	const superGlobule = generateSuperGlobule(generateDefaultSuperGlobuleConfig(), {
+		globuleTube: false,
+		projection: true,
+		voronoi: false
+	});
+	const run = (endTermination: EndTermination) => {
+		const patternConfig = generateDefaultGlobulePatternConfig();
+		const base = tiledPatternConfigs['tiledSimpleHexPattern-0'];
+		patternConfig.patternTypeConfig = { ...base, config: { ...base.config, endTermination } };
+		patternConfig.patternViewConfig.range = { tubes: undefined, bands: undefined };
+		return (
+			generateProjectionPattern(
+				superGlobule.projections[0].tubes,
+				'super-1',
+				patternConfig,
+				patternConfig.patternViewConfig.range
+			) as SuperGlobuleProjectionCutPattern
+		).projectionCutPattern.tubes;
+	};
+	const extended = run('extended');
+	const natural = run('natural');
+	const bandsOf = (tubes: TubeCutPattern[]) => tubes.flatMap((t) => t.bands);
+	const lineCount = (band: BandCutPattern, end: 'start' | 'end') =>
+		(end === 'start' ? band.facets[0] : band.facets[band.facets.length - 1]).path.length / 2;
+	/** An end extends when it has more lines than under `natural`, where every spur is dropped. */
+	const extendsAt = (band: BandCutPattern, end: 'start' | 'end') => {
+		const plain = natural[band.address.tube].bands.find((b) => b.id === band.id) as BandCutPattern;
+		return lineCount(band, end) > lineCount(plain, end);
+	};
+
+	it('leaves no loose ends', () => {
+		expect(bandsOf(extended).map(looseEnds)).toEqual(bandsOf(extended).map(() => 0));
+	});
+
+	it('extends exactly one end of every partner pair', () => {
+		let pairs = 0;
+		for (const band of bandsOf(extended))
+			for (const end of ['start', 'end'] as const) {
+				const partner = resolveEndPartner(extended, band, end);
+				if (!partner || partner.band.error) continue;
+				pairs++;
+				expect(extendsAt(band, end)).not.toBe(extendsAt(partner.band, partner.partnerEnd));
+			}
+		expect(pairs).toBeGreaterThan(0);
 	});
 });

@@ -1,5 +1,12 @@
 import { Vector3 } from 'three';
-import type { BandCutPattern, PathSegment, Quadrilateral, TiledPatternConfig } from '#lib/types.js';
+import type {
+	BandCutPattern,
+	EndTermination,
+	PathSegment,
+	Quadrilateral,
+	TiledPatternConfig,
+	TubeCutPattern
+} from '#lib/types.js';
 import { transformPatternByQuad } from '../quadrilateral';
 import {
 	adjustSimpleHexAfterTiling,
@@ -111,7 +118,10 @@ const line = (b: number, [x0, r0]: G, [x1, r1]: G, u = 0): Line => [
 	2 * u + 2 - r1
 ];
 
-/** The hexagon tiling's lines over band `b`'s quads, units 0..units−1, plus the top line. */
+/**
+ * The hexagon tiling's lines over band `b`'s quads, units 0..units−1, plus the
+ * top line and the default (smoothed) end lines.
+ */
 const referenceTiling = (b: number, units: number): Line[] => {
 	const out: Line[] = [];
 	for (let u = 0; u < units; u++) {
@@ -125,6 +135,7 @@ const referenceTiling = (b: number, units: number): Line[] => {
 		);
 	}
 	out.push(line(b, [0, 0], [2, 0], units - 1));
+	out.push(line(b, [2, 2], [6, 2], 0), line(b, [2, 0], [6, 0], units - 1));
 	return out;
 };
 
@@ -213,10 +224,9 @@ describe('adjustSimpleHexAfterTiling', () => {
 		expect(has(band0.facets[1].path, line(-1, [5, 1], [6, 0]))).toBe(true);
 	});
 
-	it('closes the band end with its top line and adds no caps', () => {
+	it('closes the band end with its top line', () => {
 		const [band] = adjustSimpleHexAfterTiling([cutBand(0, 4)], config());
 		expect(has(band.facets[3].path, line(0, [0, 0], [2, 0], 1))).toBe(true);
-		expect(lines(band.facets[0].path)).toHaveLength(3);
 	});
 
 	it('stitches the chevron apex when the partner’s quads are laid apart', () => {
@@ -231,16 +241,13 @@ describe('adjustSimpleHexAfterTiling', () => {
 		const partner = cutBand(0, 2, undefined, 1, partnerQuads);
 		const band = cutBand(1, 2, 0);
 		const [, adjusted] = adjustSimpleHexAfterTiling([partner, band], interlock());
-		const apexOf = (path: PathSegment[]) => {
-			const [, x, y] = path[path.length - 2] as ['M', number, number];
-			return [x, y];
-		};
-		// Facet 0's gained line is (5,1)→(6,2): its M is the apex. Facet 1's
-		// gained line is (5,1)→(6,0), appended before the top line.
+		// Each facet's gained line starts at the apex: (5,1)→(6,2) in facet 0, followed
+		// by its smoothing line; (5,1)→(6,0) in facet 1, followed by its top and
+		// smoothing lines.
 		const f0 = adjusted.facets[0].path;
 		const f1 = adjusted.facets[1].path;
-		const [ax, ay] = apexOf(f0);
-		const [, bx, by] = f1[f1.length - 4] as ['M', number, number];
+		const [, ax, ay] = f0[f0.length - 4] as ['M', number, number];
+		const [, bx, by] = f1[f1.length - 6] as ['M', number, number];
 		expect(bx).toBeCloseTo(ax, 9);
 		expect(by).toBeCloseTo(ay, 9);
 	});
@@ -303,10 +310,116 @@ describe('adjustSimpleHexAfterTiling', () => {
 				for (const l of upperHalf) expect(has(earlier.facets[1].path, col(c, l))).toBe(true);
 		});
 
-		it('leaves an unsplit band’s start and end alone', () => {
+		it('leaves the split ends out of the end termination', () => {
+			const [earlier, later] = split();
+			expect(has(earlier.facets[1].path, line(0, [2, 0], [6, 0], 1))).toBe(false);
+			expect(has(later.facets[0].path, line(0, [2, 2], [6, 2], 1))).toBe(false);
+		});
+	});
+
+	describe('end termination', () => {
+		const ends = (termination: EndTermination, columns = 1) =>
+			adjustSimpleHexAfterTiling(
+				[cutBand(0, 4, undefined, columns)],
+				config(columns, { endTermination: termination })
+			)[0];
+		const startSpur = line(0, [5, 1], [6, 2], 0);
+		const endSpur = line(0, [5, 1], [6, 0], 1);
+		const startSmooth = line(0, [2, 2], [6, 2], 0);
+		const endSmooth = line(0, [2, 0], [6, 0], 1);
+
+		it('defaults to smoothed', () => {
+			expect(tiledPatternConfigs['tiledSimpleHexPattern-0'].config.endTermination).toBe('smoothed');
 			const [band] = adjustSimpleHexAfterTiling([cutBand(0, 4)], config());
-			expect(has(band.facets[0].path, line(0, [5, 1], [6, 2]))).toBe(true);
-			expect(lines(band.facets[3].path)).toHaveLength(4);
+			expect(has(band.facets[0].path, startSmooth)).toBe(true);
+		});
+
+		it('smoothed: keeps the spurs and closes each half hexagon along the end edge', () => {
+			const band = ends('smoothed');
+			expect(has(band.facets[0].path, startSpur)).toBe(true);
+			expect(has(band.facets[0].path, startSmooth)).toBe(true);
+			expect(has(band.facets[3].path, endSpur)).toBe(true);
+			expect(has(band.facets[3].path, endSmooth)).toBe(true);
+		});
+
+		it('smoothed, 2 columns: closes the half hexagon in every column', () => {
+			const band = ends('smoothed', 2);
+			const col = (c: number, [x0, y0, x1, y1]: Line): Line => [(c + x0) / 2, y0, (c + x1) / 2, y1];
+			for (const c of [0, 1]) {
+				expect(has(band.facets[0].path, col(c, startSmooth))).toBe(true);
+				expect(has(band.facets[3].path, col(c, endSmooth))).toBe(true);
+			}
+		});
+
+		it('natural: removes the spurs and adds nothing', () => {
+			const band = ends('natural');
+			expect(has(band.facets[0].path, startSpur)).toBe(false);
+			expect(has(band.facets[3].path, endSpur)).toBe(false);
+			expect(lines(band.facets[0].path)).toHaveLength(2);
+			expect(lines(band.facets[3].path)).toHaveLength(3);
+		});
+
+		it('extended without an end partner: smoothed', () => {
+			const band = ends('extended');
+			expect(has(band.facets[0].path, startSmooth)).toBe(true);
+			expect(has(band.facets[3].path, endSmooth)).toBe(true);
+		});
+
+		describe('extended with an end partner in another tube', () => {
+			/**
+			 * Tube 0's band 0 ends where tube 1's band 0 starts. Tube 1's band is
+			 * laid out on its own, rotated a quarter turn and moved by `offset`.
+			 */
+			const pair = () => {
+				const a = {
+					...cutBand(0, 4),
+					meta: { endPartnerBand: { globule: 0, tube: 1, band: 0 } }
+				} as BandCutPattern;
+				const turn = (v: Vector3) => new Vector3(-v.y + 20, v.x + 7, 0);
+				const bQuads = quads(4, 0).map((q) => ({
+					a: turn(q.a),
+					b: turn(q.b),
+					c: turn(q.c),
+					d: turn(q.d)
+				}));
+				const b = {
+					...cutBand(0, 4, undefined, 1, bQuads),
+					address: { globule: 0, tube: 1, band: 0 },
+					meta: { startPartnerBand: { globule: 0, tube: 0, band: 0 } }
+				} as BandCutPattern;
+				const tubes = [{ bands: [a] }, { bands: [b] }] as unknown as TubeCutPattern[];
+				const cfg = config(1, { endTermination: 'extended' });
+				return {
+					a: adjustSimpleHexAfterTiling([a], cfg, tubes)[0],
+					b: adjustSimpleHexAfterTiling([b], cfg, tubes)[0]
+				};
+			};
+
+			it('the band that sorts first extends the half hexagon into its partner', () => {
+				const { a } = pair();
+				const last = a.facets[3].path;
+				// The quad beyond the end is y 4..5: unit 2's lower subunit.
+				for (const l of [
+					line(0, [2, 2], [3, 1], 2),
+					line(0, [3, 1], [5, 1], 2),
+					line(0, [5, 1], [6, 2], 2)
+				])
+					expect(has(last, l)).toBe(true);
+				expect(has(last, endSpur)).toBe(true);
+				expect(has(last, endSmooth)).toBe(false);
+			});
+
+			it('its partner drops the spur and adds nothing', () => {
+				const { b } = pair();
+				const first = b.facets[0].path;
+				expect(lines(first)).toHaveLength(2);
+			});
+
+			it('the free ends stay smoothed', () => {
+				const { a, b } = pair();
+				expect(has(a.facets[0].path, startSmooth)).toBe(true);
+				expect(lines(b.facets[3].path)).toHaveLength(5);
+			});
 		});
 	});
 

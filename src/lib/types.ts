@@ -709,6 +709,9 @@ export type DynamicStrokeConfig = Pick<
 /** HexParquet2's handling of gained seam flaps; see `TiledPatternConfig.config.seamFlaps`. */
 export type SeamFlaps = 'mapped' | 'stitched' | 'voids';
 
+/** SimpleHex's band-end style; see `TiledPatternConfig.config.endTermination`. */
+export type EndTermination = 'smoothed' | 'natural' | 'extended';
+
 export type TiledPatternConfig = {
 	type: TiledPattern;
 	tiling: TilingBasis;
@@ -748,6 +751,15 @@ export type TiledPatternConfig = {
 		 * 'mapped'. See `SeamFlaps` in tiled-hexparquet2-pattern.ts.
 		 */
 		seamFlaps?: SeamFlaps;
+		/**
+		 * SimpleHex. How a physical band end (not a split) closes beside the lone
+		 * right-outline spur: 'smoothed' (a line along the end edge closes the
+		 * half hexagon), 'natural' (the spur is removed) or 'extended' (with an
+		 * end partner in another tube, one band of the pair extends the half
+		 * hexagon into the other's territory and the other drops its spur; an end
+		 * with no partner is smoothed). Absent is 'smoothed'.
+		 */
+		endTermination?: EndTermination;
 		/**
 		 * HexParquet2. A facet whose `seamDeviation` exceeds this fraction of its
 		 * quad size is reported in a warning. Default 0.1.

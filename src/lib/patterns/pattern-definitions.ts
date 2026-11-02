@@ -6,7 +6,8 @@ import type {
 	GridVariant,
 	PanelVariant,
 	BandCutPattern,
-	TiledPatternVariant
+	TiledPatternVariant,
+	TubeCutPattern
 } from '#lib/types.js';
 import { adjustCarnation, generateCarnation } from './tiled-carnation-pattern';
 import { generateAuxetic } from './tiled-bowtie-pattern';
@@ -134,8 +135,11 @@ export const patterns: { [key: string]: PatternGenerator } = {
 		getPattern: (_rows: number, columns: number) => generateSimpleHexPreview(columns),
 		getSubunitPatterns: (columns: number) => generateSimpleHexSubunits(columns),
 		tagAnchor: { facetIndex: 0, quadEdge: { edge: 'ab', position: 'midPoint' } },
-		adjustAfterTiling: (bands: BandCutPattern[], tiledPatternConfig: TiledPatternConfig) =>
-			adjustSimpleHexAfterTiling(bands, tiledPatternConfig),
+		adjustAfterTiling: (
+			bands: BandCutPattern[],
+			tiledPatternConfig: TiledPatternConfig,
+			tubes: TubeCutPattern[]
+		) => adjustSimpleHexAfterTiling(bands, tiledPatternConfig, tubes),
 		adjustAfterTilingNeedsEndPartners: false
 	},
 	'tiledGridPattern-0': {
