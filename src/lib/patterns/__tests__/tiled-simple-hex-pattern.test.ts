@@ -423,6 +423,88 @@ describe('adjustSimpleHexAfterTiling', () => {
 		});
 	});
 
+	describe('label anchor', () => {
+		/** Within 1e-9 of an endpoint of one of the facet's lines. */
+		const isNode = (path: PathSegment[], { x, y }: { x: number; y: number }) =>
+			path.some((seg) => Math.hypot((seg[1] as number) - x, (seg[2] as number) - y) < 1e-9);
+		/** The stem points straight out of the band start (−y): rotate(θ) maps (0,1) to (0,−1). */
+		const pointsOutOfStart = (band: BandCutPattern) =>
+			expect(Math.cos(band.tagAnchorAutoAngle as number)).toBeCloseTo(-1, 9);
+
+		it.each(['smoothed', 'natural', 'extended'] as const)(
+			'%s, unpartnered: anchors at the real (2,2) node of facet 0 (1 and 2 columns)',
+			(termination) => {
+				for (const columns of [1, 2]) {
+					const [band] = adjustSimpleHexAfterTiling(
+						[cutBand(0, 4, undefined, columns)],
+						config(columns, { endTermination: termination })
+					);
+					const [x, y] = [1 / (3 * columns), 0];
+					expect(band.tagAnchorPoint.x).toBeCloseTo(x, 9);
+					expect(band.tagAnchorPoint.y).toBeCloseTo(y, 9);
+					expect(isNode(band.facets[0].path, band.tagAnchorPoint)).toBe(true);
+					pointsOutOfStart(band);
+				}
+			}
+		);
+
+		it('at a split, the later piece anchors on its remaining bottom tab', () => {
+			const subunits = generateSimpleHexSubunits(1);
+			const piece = (p: number): BandCutPattern =>
+				({
+					...cutBand(0, 4),
+					address: { globule: 0, tube: 0, band: 0, piece: p },
+					facets: quads(4, 0)
+						.slice(2 * p, 2 * p + 2)
+						.map((q, i) => ({
+							path: transformPatternByQuad(subunits[i % 2], q),
+							quad: q,
+							label: `${i}`
+						}))
+				}) as BandCutPattern;
+			const [, later] = adjustSimpleHexAfterTiling([piece(0), piece(1)], config());
+			expect(isNode(later.facets[0].path, later.tagAnchorPoint)).toBe(true);
+			expect(later.tagAnchorPoint.y).toBeCloseTo(2, 9);
+			pointsOutOfStart(later);
+		});
+
+		it('an extending start anchors at its extension’s lowest node, pointing out', () => {
+			// Tube 0's band 0 starts where tube 1's band 0 ends. (tube 0, band 0, start)
+			// sorts first, so tube 0's start extends and tube 1's end drops its spur.
+			const a = {
+				...cutBand(0, 4),
+				meta: { startPartnerBand: { globule: 0, tube: 1, band: 0 } }
+			} as BandCutPattern;
+			const below = quads(4, 0).map((q) => {
+				const m = (v: Vector3) => new Vector3(v.x, v.y - 4, 0);
+				return { a: m(q.a), b: m(q.b), c: m(q.c), d: m(q.d) };
+			});
+			const b = {
+				...cutBand(0, 4, undefined, 1, below),
+				address: { globule: 0, tube: 1, band: 0 },
+				meta: { endPartnerBand: { globule: 0, tube: 0, band: 0 } }
+			} as BandCutPattern;
+			const tubes = [{ bands: [a] }, { bands: [b] }] as unknown as TubeCutPattern[];
+			const [adjusted] = adjustSimpleHexAfterTiling(
+				[a],
+				config(1, { endTermination: 'extended' }),
+				tubes
+			);
+			// The extension's (3,3) is grid (3,1) of subunit 1 in the quad below: (1/2, −1).
+			expect(adjusted.tagAnchorPoint.x).toBeCloseTo(0.5, 9);
+			expect(adjusted.tagAnchorPoint.y).toBeCloseTo(-1, 9);
+			expect(isNode(adjusted.facets[0].path, adjusted.tagAnchorPoint)).toBe(true);
+			pointsOutOfStart(adjusted);
+		});
+
+		it('does not mutate the input band', () => {
+			const band = cutBand(0, 4);
+			const before = structuredClone(band.tagAnchorPoint);
+			adjustSimpleHexAfterTiling([band], config());
+			expect(band.tagAnchorPoint).toEqual(before);
+		});
+	});
+
 	it('defaults to keeping the partner seam', () => {
 		expect(tiledPatternConfigs['tiledSimpleHexPattern-0'].config.keepPartnerSeam).toBe(true);
 	});

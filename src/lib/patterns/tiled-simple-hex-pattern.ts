@@ -3,10 +3,12 @@ import type {
 	BandCutPattern,
 	EndTermination,
 	PathSegment,
+	Point,
 	Quadrilateral,
 	TiledPatternConfig,
 	TubeCutPattern
 } from '#lib/types.js';
+import { computeTiledLabelAngle } from '#lib/cut-pattern/compute-tiled-label-angle.js';
 import { removeInPlace } from './tesselation/shared/helpers';
 import { transformPatternByQuad } from './quadrilateral';
 import { getAngle, rotatePoint } from './utils';
@@ -381,6 +383,48 @@ export const adjustSimpleHexAfterTiling = (
 			paths[f + 1][upper] = [cu, mx, my] as PathSegment;
 		}
 
-		return { ...band, facets: band.facets.map((facet, f) => ({ ...facet, path: paths[f] })) };
+		const label = firstQuad ? startLabelAnchor(firstQuad, startAction, columns) : undefined;
+		return {
+			...band,
+			...(label && { tagAnchorPoint: label.point, tagAnchorAutoAngle: label.angle }),
+			facets: band.facets.map((facet, f) => ({ ...facet, path: paths[f] }))
+		};
 	});
 };
+
+/** A grid point of column 0 in subunit `s`'s frame, mapped through `quad` exactly as the lines are. */
+const nodeAt = (p: P, s: number, columns: number, quad: Quadrilateral): Point => {
+	const [x, y] = toUnit(p, s);
+	const [[, mx, my]] = transformPatternByQuad([['M', x / columns, y]], quad) as [
+		['M', number, number]
+	];
+	return { x: mx, y: my };
+};
+
+/**
+ * The label anchor: a real node on the start edge after adjustment, chosen to
+ * protrude so the label clears the outline. An extending start anchors at its
+ * extension's lowest node, (3,3), with the angle taken from the extension's
+ * quad (the node lies on its far edge). Every other start anchors at the end of
+ * the bottom horizontal, (2,2), which is never dropped: a convex corner of the
+ * start's lowest tab at a split or with `natural`, and on the straight end edge
+ * when smoothed. It lies on edge ab alone, so the label points straight out.
+ */
+export const startLabelAnchor = (
+	firstQuad: Quadrilateral,
+	startAction: EndAction | undefined,
+	columns: number
+): { point: Point; angle: number } => {
+	if (startAction?.kind === 'extend') {
+		const point = nodeAt([3, 1], 1, columns, startAction.beyond);
+		return { point, angle: computeTiledLabelAngle(point, startAction.beyond) };
+	}
+	const point = nodeAt([2, 2], 0, columns, firstQuad);
+	return { point, angle: computeTiledLabelAngle(point, firstQuad) };
+};
+
+/** The pre-adjustment registry anchor: the same (2,2) node in facet 0's unit frame. */
+export const simpleHexAnchorUnitPoint = (_rows: number, columns: number): Point => ({
+	x: 1 / (3 * columns),
+	y: 0
+});

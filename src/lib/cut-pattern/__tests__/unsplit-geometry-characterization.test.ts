@@ -243,7 +243,7 @@ const EXPECTED: Record<string, unknown> = {
 	'tiled tiledSimpleHexPattern-0': {
 		paths: 'f77b5d1bb52718eb',
 		meta: '492a0cbff818b41d',
-		rest: '2f64513ef5b82ab4'
+		rest: 'e65773a02e1bc18d'
 	},
 	'tiled tiledAsanohaPattern-1': {
 		paths: 'c44932eab945d205',

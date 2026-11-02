@@ -36,6 +36,16 @@ const looseEnds = (band: BandCutPattern) => {
 	).length;
 };
 
+/** The band's label anchor is an endpoint of one of its first facet's lines (within 1e-6 px). */
+const anchoredOnNode = (band: BandCutPattern) =>
+	band.facets[0].path.some(
+		(seg) =>
+			Math.hypot(
+				(seg[1] as number) - band.tagAnchorPoint.x,
+				(seg[2] as number) - band.tagAnchorPoint.y
+			) < 1e-6
+	);
+
 describe('SimpleHex end to end (projections, real geometry)', () => {
 	// The default edge curve gives 4 quads per band: two units of 2 subunits.
 	const superGlobule = generateSuperGlobule(generateDefaultSuperGlobuleConfig(), {
@@ -67,6 +77,10 @@ describe('SimpleHex end to end (projections, real geometry)', () => {
 	it("lands gained lines on the band's own nodes, leaving no loose ends (smoothed ends)", () => {
 		// Smoothed ends join the right outline's end corners to the closed hexagons.
 		expect(bands.map(looseEnds)).toEqual(bands.map(() => 0));
+	});
+
+	it('anchors every label on a real node', () => {
+		expect(bands.map(anchoredOnNode)).toEqual(bands.map(() => true));
 	});
 });
 
@@ -101,6 +115,10 @@ describe('SimpleHex end to end at a split (projections, real geometry)', () => {
 
 	it('joins the split cleanly, leaving no loose ends', () => {
 		expect(pieces.map(looseEnds)).toEqual(pieces.map(() => 0));
+	});
+
+	it('anchors every piece’s label on a real node', () => {
+		expect(pieces.map(anchoredOnNode)).toEqual(pieces.map(() => true));
 	});
 });
 
@@ -137,6 +155,10 @@ describe('SimpleHex end to end, extended ends (projections, real geometry)', () 
 
 	it('leaves no loose ends', () => {
 		expect(bandsOf(extended).map(looseEnds)).toEqual(bandsOf(extended).map(() => 0));
+	});
+
+	it('anchors every label on a real node', () => {
+		expect(bandsOf(extended).map(anchoredOnNode)).toEqual(bandsOf(extended).map(() => true));
 	});
 
 	it('extends exactly one end of every partner pair', () => {

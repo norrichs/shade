@@ -35,7 +35,8 @@ import {
 	SIMPLE_HEX_SUBUNIT_COUNT,
 	adjustSimpleHexAfterTiling,
 	generateSimpleHexPreview,
-	generateSimpleHexSubunits
+	generateSimpleHexSubunits,
+	simpleHexAnchorUnitPoint
 } from './tiled-simple-hex-pattern';
 import {
 	ASANOHA_SUBUNIT_COUNT,
@@ -134,7 +135,8 @@ export const patterns: { [key: string]: PatternGenerator } = {
 		// The single-unit form is the preview (both subunits stacked into one quad).
 		getPattern: (_rows: number, columns: number) => generateSimpleHexPreview(columns),
 		getSubunitPatterns: (columns: number) => generateSimpleHexSubunits(columns),
-		tagAnchor: { facetIndex: 0, quadEdge: { edge: 'ab', position: 'midPoint' } },
+		// The adjuster moves the anchor to a real post-adjustment node (see `startLabelAnchor`).
+		tagAnchor: { facetIndex: 0, anchorUnitPoint: simpleHexAnchorUnitPoint },
 		adjustAfterTiling: (
 			bands: BandCutPattern[],
 			tiledPatternConfig: TiledPatternConfig,
