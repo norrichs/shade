@@ -13,6 +13,7 @@
 		GlobulePatternConfig,
 		GridVariant,
 		SeamFlaps,
+		EndTermination,
 		TabEdgeOption,
 		TabShape,
 		TiledPatternConfig,
@@ -29,6 +30,7 @@
 		'tiledHexparquetPattern-0',
 		'tiledHexparquet2Pattern-0',
 		'tiledHexparquet2bPattern-0',
+		'tiledSimpleHexPattern-0',
 		'tiledAsanohaPattern-1',
 		'tiledAsanohaSplitPattern-0'
 	];
@@ -136,6 +138,11 @@
 		['mapped', 'As mapped'],
 		['stitched', 'Stitched'],
 		['voids', 'With voids']
+	];
+	const endTerminationOptions: [EndTermination, string][] = [
+		['smoothed', 'Smoothed'],
+		['natural', 'Natural'],
+		['extended', 'Extended']
 	];
 	const edgeOptions = ['none', 'before', 'after', 'beforeAndAfter'];
 </script>
@@ -479,6 +486,25 @@
 										keepPartnerSeam: (event.currentTarget as HTMLInputElement).checked
 									})}
 							/>
+						</LabeledControl>
+					{/if}
+					{#if patternTypeConfig.type === 'tiledSimpleHexPattern-0'}
+						<!-- How a physical band end closes beside the lone right-outline spur:
+						     close the half hexagon along the edge, drop the spur, or (with a
+						     partner in another tube) extend into the partner. -->
+						<LabeledControl label="End Termination">
+							<select
+								value={inner.endTermination ?? 'smoothed'}
+								onchange={(event) =>
+									setInner({
+										endTermination: (event.currentTarget as HTMLSelectElement)
+											.value as EndTermination
+									})}
+							>
+								{#each endTerminationOptions as [value, label] (value)}<option {value}
+										>{label}</option
+									>{/each}
+							</select>
 						</LabeledControl>
 					{/if}
 					{#if patternTypeConfig.type === 'tiledHexparquet2Pattern-0'}
