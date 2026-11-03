@@ -18,9 +18,14 @@
 		loadedConfigName,
 		exportPagesStore,
 		resolvedPatternLabels,
-		patternFilterSet
+		patternFilterSet,
+		rangeShownBands
 	} from '#lib/stores/index.js';
-	import { filterPatternTubes, patternFilterShows } from '#lib/cut-pattern/pattern-filter.js';
+	import {
+		bandFilterKey,
+		filterPatternTubes,
+		patternFilterShows
+	} from '#lib/cut-pattern/pattern-filter.js';
 	import { geometrySourceOfPattern } from '#lib/cut-pattern/pattern-band-space.js';
 	import { computeSplitBudget, EMPTY_SPLIT_BUDGET } from '#lib/cut-pattern/split-budget.js';
 	import { createOverflowNotifier } from '#lib/cut-pattern/page-overflow-notice.js';
@@ -277,6 +282,30 @@
 	let pageBands = $derived.by((): ResolvedBand[] => {
 		if (indexedBands) return indexedBands;
 		return filteredTubes.flatMap((tube) => tube.bands.map((band) => ({ band, tube })));
+	});
+
+	// Publish the bands the numerical Range shows, for the 3D Selection render
+	// mode — taken from what is actually laid out, so it agrees with the pane.
+	// Null while a click filter overrides the range. Whether the range narrows
+	// anything is judged in 3D: generation applies the range too, so `tubes`
+	// here already holds only the in-range bands and cannot tell. Value-key
+	// guarded like the other store writes here.
+	let lastRangeShownKey = '';
+	$effect(() => {
+		const engaged = !!filterSet && filterSet.source === filterSource;
+		const keys = engaged
+			? []
+			: [...new Set(pageBands.map(({ band }) => bandFilterKey(band.address)))];
+		const key = engaged ? '' : `${filterSource}|${keys.join(',')}`;
+		if (key === lastRangeShownKey) return;
+		lastRangeShownKey = key;
+		rangeShownBands.set(engaged ? null : { source: filterSource, keys: new Set(keys) });
+	});
+	$effect(() => {
+		return () => {
+			lastRangeShownKey = '';
+			rangeShownBands.set(null);
+		};
 	});
 
 	// Per-band layout values, each computed once per pass and keyed by band identity.

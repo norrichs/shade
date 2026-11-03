@@ -25,6 +25,7 @@ export const patternFilterSettings = persistable<PatternFilterSettings>(
 
 import { patternFilterSet } from './patternFilterSetStore';
 export { patternFilterSet };
+export { rangeShownBands, type RangeShownBands } from './patternFilterSetStore';
 
 export const clearPatternFilter = () => patternFilterSet.set(null);
 

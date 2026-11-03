@@ -12,7 +12,8 @@
 		viewControlStore,
 		type ShowProjectionGeometries,
 		type ShowGlobuleTubeGeometries,
-		superGlobuleStore
+		superGlobuleStore,
+		superGlobulePatternStore
 	} from '#lib/stores/index.js';
 	import type {
 		Polyhedron,
@@ -37,6 +38,7 @@
 		patternBandSpaces,
 		patternFilterSet,
 		modelRenderMode,
+		rangeShownBands,
 		type AssemblerHighlight,
 		type GeometrySource
 	} from '#lib/stores/index.js';
@@ -45,7 +47,11 @@
 		assemblerHighlightOnSource,
 		realBandToPattern
 	} from '#lib/cut-pattern/pattern-band-space.js';
-	import { patternFilterIncludes } from '#lib/cut-pattern/pattern-filter.js';
+	import {
+		bandFilterKey,
+		patternFilterIncludes,
+		patternedBandCount
+	} from '#lib/cut-pattern/pattern-filter.js';
 	import { get } from 'svelte/store';
 	import { interactionMode, isMeasureInteractionMode } from '../three-renderer/interaction-mode';
 	import { nearestVertexFromEvent } from '../three-renderer/nearest-vertex';
@@ -130,7 +136,7 @@
 
 	// The pattern filter's shown set (pattern band space) on one source's real
 	// bands, painted red in 3D. False for every band while nothing is filtered.
-	let isFiltered = $derived.by(() => {
+	let isClickFiltered = $derived.by(() => {
 		const set = $patternFilterSet;
 		const spaceOf = $patternBandSpaces;
 		return (source: GeometrySource, address?: GlobuleAddress_Band): boolean => {
@@ -141,6 +147,53 @@
 	});
 
 	let selectionView = $derived($modelRenderMode === 'selection');
+
+	// The bands the numerical Range shows (pattern band space), null when it
+	// narrows nothing. Counted as selected in Selection render mode only.
+	const realTubesOf = (sg: typeof $superGlobuleStore, source: string): Tube[] | undefined => {
+		switch (source) {
+			case 'globuleTube':
+				return sg.globuleTubes;
+			case 'projection':
+				return sg.projections[0]?.tubes;
+			case 'surfaceProjection':
+				return sg.projections[0]?.surfaceProjectionTubes;
+			case 'voronoi':
+				return sg.voronoiResult?.tubes;
+			case 'voronoiSurface':
+				return sg.voronoiResult?.surfaceProjectionTubes;
+		}
+	};
+	// A range that shows every patterned band selects nothing in particular.
+	let rangeNarrows = $derived.by(() => {
+		const shown = $rangeShownBands;
+		if (!shown) return false;
+		const total = patternedBandCount(
+			realTubesOf($superGlobuleStore, shown.source),
+			$superGlobulePatternStore.keepsFillBands
+		);
+		return shown.keys.size < total;
+	});
+	let isInRange = $derived.by(() => {
+		const shown = $rangeShownBands;
+		const spaceOf = $patternBandSpaces;
+		const narrows = rangeNarrows;
+		return (source: GeometrySource, address?: GlobuleAddress_Band): boolean => {
+			if (!narrows || !shown || !address || shown.source !== source) return false;
+			const band = realBandToPattern(spaceOf(source, address.globule), address);
+			return !!band && shown.keys.has(bandFilterKey(band));
+		};
+	});
+
+	// The `filtered` flag the material resolvers take: the click filter's set
+	// (red in Model mode), plus — in Selection mode — the Range's bands.
+	let isFiltered = $derived.by(() => {
+		const clicked = isClickFiltered;
+		const inRange = isInRange;
+		const sel = selectionView;
+		return (source: GeometrySource, address?: GlobuleAddress_Band): boolean =>
+			clicked(source, address) || (sel && inRange(source, address));
+	});
 
 	// Wrap getMaterial so every facet also respects the Assembler cross-view
 	// highlight (a band/ring clicked in the data grid). Reading `highlightFor`

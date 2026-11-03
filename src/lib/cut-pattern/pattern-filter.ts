@@ -120,3 +120,17 @@ export const describePatternFilter = (set: PatternFilterSet): string => {
 	const n = set.keys.length;
 	return `${n} ${set.kind}${n === 1 ? '' : 's'}`;
 };
+
+/**
+ * How many pattern bands generation makes from `tubes`: the visible bands, less
+ * fillAll's fill bands unless the pattern keeps them — the same count the band
+ * space maps (`buildBandSpace`). Pieces of a split band count once.
+ */
+export const patternedBandCount = (
+	tubes: { bands: { visible?: boolean; isFill?: boolean }[] }[] | undefined,
+	keepFillBands: boolean
+): number =>
+	(tubes ?? []).reduce(
+		(n, tube) => n + tube.bands.filter((b) => b.visible && (keepFillBands || !b.isFill)).length,
+		0
+	);

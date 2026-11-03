@@ -4,6 +4,7 @@ import {
 	filterPatternTubes,
 	patternFilterIncludes,
 	patternFilterShows,
+	patternedBandCount,
 	type PatternFilterSet,
 	type PatternFilterSettings
 } from '../pattern-filter';
@@ -158,5 +159,19 @@ describe('describePatternFilter', () => {
 		expect(describePatternFilter({ source: 'voronoi', kind: 'tube', keys: ['a', 'b'] })).toBe(
 			'2 tubes'
 		);
+	});
+});
+
+describe('patternedBandCount', () => {
+	const tubesOf = (...bands: { visible?: boolean; isFill?: boolean }[][]) =>
+		bands.map((b) => ({ bands: b }));
+	it('counts visible bands and drops fill bands unless kept', () => {
+		const tubes = tubesOf(
+			[{ visible: true }, { visible: false }, { visible: true, isFill: true }],
+			[{ visible: true }, {}]
+		);
+		expect(patternedBandCount(tubes, false)).toBe(2);
+		expect(patternedBandCount(tubes, true)).toBe(3);
+		expect(patternedBandCount(undefined, true)).toBe(0);
 	});
 });
