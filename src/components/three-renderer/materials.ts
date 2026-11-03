@@ -74,6 +74,16 @@ export const materials = {
 		clearcoatRoughness: 0,
 		side: DoubleSide
 	}),
+	// Selection render mode: every band that is neither selected nor filtered.
+	// 97% transparent, and no depth write so it never hides the selected bands
+	// behind it.
+	selectionGhost: new MeshStandardMaterial({
+		color: theme.colorSelected,
+		transparent: true,
+		opacity: 0.03,
+		depthWrite: false,
+		side: DoubleSide
+	}),
 	// Use Standard for light variants (better performance)
 	selectedLight: new MeshStandardMaterial({
 		color: theme.colorSecondarySelected,
@@ -204,8 +214,13 @@ export const getBandMaterial = (
 	address: GlobuleAddress_Band | undefined,
 	highlight: AssemblerHighlight = null,
 	fallback: MeshStandardMaterial | MeshPhysicalMaterial = materials.default,
-	filtered = false
+	filtered = false,
+	selectionView = false
 ) => {
+	if (selectionView)
+		return (address && highlight && sameGlobuleBand(address, highlight.band)) || filtered
+			? materials.selected
+			: materials.selectionGhost;
 	if (address && highlight && sameGlobuleBand(address, highlight.band))
 		return materials.assemblerPrimary;
 	if (filtered) return materials.patternFiltered;
@@ -219,8 +234,14 @@ export const getMaterial = (
 	selectedGeometry: SelectedProjectionGeometry,
 	config: MaterialSelectionConfig = defaultMaterialSelectionConfig,
 	highlight: AssemblerHighlight = null,
-	filtered = false
+	filtered = false,
+	selectionView = false
 ) => {
+	// Selection render mode: the selected / filtered bands solid, the rest ghosted.
+	if (selectionView)
+		return (highlight && sameGlobuleBand(address, highlight.band)) || filtered
+			? materials.selected
+			: materials.selectionGhost;
 	// Assembler cross-view highlight takes precedence over normal selection
 	// colouring so a grid-clicked band reads clearly in 3D; the pattern filter's
 	// shown set sits between the clicked band and its ring.

@@ -36,6 +36,7 @@
 		selectedVoronoiSurfaceGeometry,
 		patternBandSpaces,
 		patternFilterSet,
+		modelRenderMode,
 		type AssemblerHighlight,
 		type GeometrySource
 	} from '#lib/stores/index.js';
@@ -139,6 +140,8 @@
 		};
 	});
 
+	let selectionView = $derived($modelRenderMode === 'selection');
+
 	// Wrap getMaterial so every facet also respects the Assembler cross-view
 	// highlight (a band/ring clicked in the data grid). Reading `highlightFor`
 	// here registers it as a dependency of each facet's material expression.
@@ -153,7 +156,8 @@
 			selectedGeometry,
 			config,
 			highlightFor(source),
-			isFiltered(source, address)
+			isFiltered(source, address),
+			selectionView
 		);
 
 	let {
@@ -337,7 +341,8 @@
 							band.address,
 							highlightFor('surfaceProjection'),
 							materials.numbered[i % materials.numbered.length],
-							isFiltered('surfaceProjection', band.address)
+							isFiltered('surfaceProjection', band.address),
+							selectionView
 						)}
 						raycast={bandRaycast($viewControlStore.showProjectionGeometry.facets, band.address)}
 						onclick={(ev: BandClickEvent) => handleBandClick(ev, 'surfaceProjection', band.address)}
@@ -371,7 +376,8 @@
 					band.address,
 					highlightFor('projection'),
 					materials.selected,
-					isFiltered('projection', band.address)
+					isFiltered('projection', band.address),
+					selectionView
 				)}
 				raycast={bandRaycast($viewControlStore.showProjectionGeometry.facets, band.address)}
 				onclick={(ev: BandClickEvent) => handleBandClick(ev, 'projection', band.address)}
@@ -419,7 +425,8 @@
 					band.address,
 					highlightFor('voronoi'),
 					materials.default,
-					isFiltered('voronoi', band.address)
+					isFiltered('voronoi', band.address),
+					selectionView
 				)}
 				raycast={bandRaycast($viewControlStore.showVoronoiGeometry.facets, band.address)}
 				onclick={(ev: BandClickEvent) => handleBandClick(ev, 'voronoi', band.address)}
@@ -433,7 +440,8 @@
 					band.address,
 					highlightFor('voronoi'),
 					materials.numbered[1],
-					isFiltered('voronoi', band.address)
+					isFiltered('voronoi', band.address),
+					selectionView
 				)}
 				raycast={bandRaycast($viewControlStore.showVoronoiGeometry.facets, band.address)}
 				onclick={(ev: BandClickEvent) => handleBandClick(ev, 'voronoi', band.address)}
@@ -488,7 +496,8 @@
 					band.address,
 					highlightFor('globuleTube'),
 					materials.default,
-					isFiltered('globuleTube', band.address)
+					isFiltered('globuleTube', band.address),
+					selectionView
 				)}
 				raycast={bandRaycast($viewControlStore.showGlobuleTubeGeometry.facets, band.address)}
 				onclick={(ev: BandClickEvent) => handleBandClick(ev, 'globuleTube', band.address)}
