@@ -227,7 +227,7 @@
 			width={highlightBounds.width}
 			height={highlightBounds.height}
 			fill={highlight === 'primary' ? LAYOUT_BOUNDS_FILL : HIGHLIGHT_SECONDARY}
-			fill-opacity={highlight === 'primary' ? 0.2 : 0.45}
+			fill-opacity={highlight === 'primary' ? 0.4 : 0.45}
 			stroke="none"
 			pointer-events="none"
 		/>{/if}
