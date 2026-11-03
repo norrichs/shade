@@ -13,6 +13,7 @@
 		type PatternFilterCombine,
 		type PatternFilterMode
 	} from '#lib/cut-pattern/pattern-filter.js';
+	import { get } from 'svelte/store';
 
 	const FILTER_MODES: { value: PatternFilterMode; label: string }[] = [
 		{ value: 'off', label: 'off' },
@@ -39,11 +40,22 @@
 	let rangeBands: ProjectionRange['bands'] = $patternConfigStore.patternViewConfig.range?.bands;
 	let rangeFacets: ProjectionRange['facets'] = $patternConfigStore.patternViewConfig.range?.facets;
 
+	// The range last written, as JSON. The number inputs bind into arrays that
+	// alias the store's, so an edit is detected against this rather than by
+	// comparing to the store (which has already been mutated in place).
+	let lastRangeJson = JSON.stringify([rangeTubes, rangeBands, rangeFacets]);
+
 	const updateStore = (
 		rangeTubes?: ProjectionRange['tubes'] | undefined,
 		rangeBands?: ProjectionRange['bands'] | undefined,
 		rangeFacets?: ProjectionRange['facets'] | undefined
 	) => {
+		const json = JSON.stringify([rangeTubes, rangeBands, rangeFacets]);
+		// Editing the range while a click filter is in play switches back to the
+		// numerical range: the click filter would otherwise override the edit.
+		if (json !== lastRangeJson && isFilteringMode(get(patternFilterSettings).mode))
+			setPatternFilterSettings({ mode: 'off' });
+		lastRangeJson = json;
 		$patternConfigStore.patternViewConfig.range = {
 			tubes: rangeTubes,
 			bands: rangeBands,
@@ -101,8 +113,15 @@
 			/>
 		</div>
 		<div>
-			<div>
+			<div
+				class="range-box"
+				class:overridden={!!$patternFilterSet}
+				title={$patternFilterSet
+					? 'Click filter is showing the selected bands; edit the range to switch back to it'
+					: undefined}
+			>
 				<span>Range</span>
+				{#if $patternFilterSet}<span class="range-note">(overridden by click filter)</span>{/if}
 				<button
 					on:click={() => {
 						rangeTubes = undefined;
@@ -187,6 +206,17 @@
 		align-items: center;
 		gap: 6px;
 		margin-bottom: 6px;
+	}
+	.range-box.overridden {
+		opacity: 0.45;
+	}
+	.range-box.overridden:hover,
+	.range-box.overridden:focus-within {
+		opacity: 0.8;
+	}
+	.range-note {
+		font-size: 0.8em;
+		font-style: italic;
 	}
 	.filter-summary {
 		min-width: 6em;

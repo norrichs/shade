@@ -11,6 +11,7 @@ import { migrateGlobulePatternConfig } from '#lib/validators.js';
 import type { ProjectionRange } from '#lib/projection-geometry/filters.js';
 import { derived } from 'svelte/store';
 import { loadPersistedOrDefault } from './stores';
+import { patternFilterSet } from './patternFilterSetStore';
 
 export const patternConfigStore = persistable<GlobulePatternConfig>(
 	((): GlobulePatternConfig => {
@@ -43,21 +44,24 @@ export type PatternGenerationConfig = {
 
 let lastGenerationConfigJson = '';
 
-export const patternGenerationConfig = derived<typeof patternConfigStore, PatternGenerationConfig>(
-	patternConfigStore,
-	($patternConfigStore, set) => {
-		const config: PatternGenerationConfig = {
-			patternTypeConfig: $patternConfigStore.patternTypeConfig,
-			pixelScale: $patternConfigStore.patternConfig.pixelScale,
-			showBands: $patternConfigStore.patternViewConfig.showBands,
-			range: $patternConfigStore.patternViewConfig.range,
-			patternSource: $patternConfigStore.patternViewConfig.patternSource ?? 'projection',
-			splits: $patternConfigStore.patternConfig.splits
-		};
-		const json = JSON.stringify(config);
-		if (json !== lastGenerationConfigJson) {
-			lastGenerationConfigJson = json;
-			set(config);
-		}
+export const patternGenerationConfig = derived<
+	[typeof patternConfigStore, typeof patternFilterSet],
+	PatternGenerationConfig
+>([patternConfigStore, patternFilterSet], ([$patternConfigStore, $patternFilterSet], set) => {
+	const config: PatternGenerationConfig = {
+		patternTypeConfig: $patternConfigStore.patternTypeConfig,
+		pixelScale: $patternConfigStore.patternConfig.pixelScale,
+		showBands: $patternConfigStore.patternViewConfig.showBands,
+		// An engaged click filter replaces the numerical range, and may name
+		// bands outside it, so generate every tube while one is engaged. The
+		// JSON guard below keeps further clicks from regenerating.
+		range: $patternFilterSet ? {} : $patternConfigStore.patternViewConfig.range,
+		patternSource: $patternConfigStore.patternViewConfig.patternSource ?? 'projection',
+		splits: $patternConfigStore.patternConfig.splits
+	};
+	const json = JSON.stringify(config);
+	if (json !== lastGenerationConfigJson) {
+		lastGenerationConfigJson = json;
+		set(config);
 	}
-);
+});

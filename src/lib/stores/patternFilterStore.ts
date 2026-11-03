@@ -9,7 +9,6 @@ import type { GlobuleAddress_Band } from '#lib/projection-geometry/types.js';
 import {
 	applyPatternFilterClick,
 	patternFilterShows,
-	type PatternFilterSet,
 	type PatternFilterSettings
 } from '#lib/cut-pattern/pattern-filter.js';
 import { sameGlobuleBand } from '#lib/assembler-highlight.js';
@@ -24,8 +23,8 @@ export const patternFilterSettings = persistable<PatternFilterSettings>(
 	true
 );
 
-/** The pattern bands shown, in pattern band space; null shows everything. */
-export const patternFilterSet = writable<PatternFilterSet>(null);
+import { patternFilterSet } from './patternFilterSetStore';
+export { patternFilterSet };
 
 export const clearPatternFilter = () => patternFilterSet.set(null);
 

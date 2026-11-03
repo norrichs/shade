@@ -236,8 +236,12 @@
 		];
 	};
 
+	// An engaged click filter REPLACES the numerical range rather than narrowing
+	// it: the clicked bands must show even when they fall outside the range.
 	const filtered = ({ tubes, range }: { tubes: TubeCutPattern[]; range: ProjectionRange }) =>
-		filterPatternTubes(sliceProjectionCutPattern(tubes, range), filterSet, filterSource);
+		filterSet && filterSet.source === filterSource
+			? filterPatternTubes(tubes, filterSet, filterSource)
+			: sliceProjectionCutPattern(tubes, range);
 
 	let range = $derived($patternConfigStore.patternViewConfig.range);
 	let layoutMode = $derived($patternConfigStore.patternViewConfig.patternLayoutMode ?? 'linear');
