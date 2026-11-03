@@ -116,8 +116,8 @@ export const materials = {
 	// A deeper red than the clicked band's primary highlight so the two read apart.
 	patternFiltered: new MeshStandardMaterial({
 		color: PATTERN_FILTERED,
-		transparent: false,
-		opacity: 1,
+		transparent: true,
+		opacity: 0.4,
 		side: DoubleSide
 	}),
 	// Assembler cross-view highlight: the other bands in the clicked band's ring.
