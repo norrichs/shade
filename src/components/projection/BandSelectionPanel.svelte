@@ -12,7 +12,7 @@
 	// ring picked by eye can be checked against the partner data. Mounted OUTSIDE
 	// the <Canvas> so its DOM actually renders (Scene's own DOM does not).
 
-	let collapsed = $state(false);
+	let collapsed = $state(true);
 </script>
 
 <div class="panel" class:collapsed>
