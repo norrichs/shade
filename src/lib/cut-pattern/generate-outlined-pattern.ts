@@ -18,7 +18,12 @@ import type {
 } from '#lib/types.js';
 import type { SuperGlobuleProjectionPattern } from '#lib/stores/superGlobuleStores.js';
 import type { SuperGlobuleConfig } from '#lib/types.js';
-import { resolveRangeIndices, type ProjectionRange } from '#lib/projection-geometry/filters.js';
+import {
+	keepRangeOrder,
+	resolveRangeIndices,
+	resolveRangeList,
+	type ProjectionRange
+} from '#lib/projection-geometry/filters.js';
 import { getFlatStripV2 } from './generate-cut-pattern';
 import { alignBands, computeBandAscending } from './generate-tiled-pattern';
 import { bandQuadCount, splitFlatBands, tubeQuadCountOf } from './split-flat-bands';
@@ -815,14 +820,15 @@ export const generateOutlinedProjectionPattern = (
 	projectionRange?: ProjectionRange,
 	splits?: SplitConfig
 ): SuperGlobuleProjectionPattern => {
-	const [tubeStart, tubeEnd] = resolveRangeIndices(projectionRange?.tubes, tubes.length);
+	// Selected tube indices in range order (negative / wrapping ranges allowed).
+	const tubeList = resolveRangeList(projectionRange?.tubes, tubes.length);
 
 	// Splits are persisted per tube as absolute quad indices.
 	const splitQuadsFor = (tube: number) => splitQuadsForTube(splits, tube);
 
 	const outputTubePatterns: TubeCutPattern[] = [];
 
-	for (let t = tubeStart; t < tubeEnd; t++) {
+	for (const t of tubeList) {
 		const { bands, address } = tubes[t];
 		const totalBands = bands.filter((b) => b.visible).length;
 		const [bandStart, bandEnd] = resolveRangeIndices(projectionRange?.bands, totalBands);
@@ -835,7 +841,16 @@ export const generateOutlinedProjectionPattern = (
 			{ start: bandStart, end: bandEnd },
 			splitQuadsFor(address.tube)
 		);
-		outputTubePatterns.push(tubePattern);
+		// The window above covers a wrapping range whole; keep exactly its bands.
+		outputTubePatterns.push({
+			...tubePattern,
+			bands: keepRangeOrder(
+				tubePattern.bands,
+				projectionRange?.bands,
+				totalBands,
+				(band) => band.address.band
+			)
+		});
 	}
 
 	return {

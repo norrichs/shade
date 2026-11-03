@@ -246,7 +246,9 @@
 	const filtered = ({ tubes, range }: { tubes: TubeCutPattern[]; range: ProjectionRange }) =>
 		filterSet && filterSet.source === filterSource
 			? filterPatternTubes(tubes, filterSet, filterSource)
-			: sliceProjectionCutPattern(tubes, range);
+			: // Generation already ranged tubes and bands (by index, in range order);
+				// only the facet range is left for the view.
+				sliceProjectionCutPattern(tubes, { facets: range?.facets });
 
 	let range = $derived($patternConfigStore.patternViewConfig.range);
 	let layoutMode = $derived($patternConfigStore.patternViewConfig.patternLayoutMode ?? 'linear');

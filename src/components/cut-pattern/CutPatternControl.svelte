@@ -131,24 +131,24 @@
 				>
 				<div class="range-inputs">
 					{#if Array.isArray(rangeTubes) && rangeTubes.length == 2}
-						<NumberInput label="tubes" min={0} max={1} step={1} bind:value={rangeTubes[0]} />
-						<NumberInput min={0} max={1} step={1} bind:value={rangeTubes[1]} />
+						<NumberInput label="tubes" min={-999} max={999} step={1} bind:value={rangeTubes[0]} />
+						<NumberInput min={-999} max={999} step={1} bind:value={rangeTubes[1]} />
 					{:else}
 						<button on:click={() => (rangeTubes = [0, 1])}>SetTubes</button>
 					{/if}
 				</div>
 				<div class="range-inputs">
 					{#if Array.isArray(rangeBands) && rangeBands.length == 2}
-						<NumberInput label="bands" min={0} max={1} step={1} bind:value={rangeBands[0]} />
-						<NumberInput min={0} max={1} step={1} bind:value={rangeBands[1]} />
+						<NumberInput label="bands" min={-999} max={999} step={1} bind:value={rangeBands[0]} />
+						<NumberInput min={-999} max={999} step={1} bind:value={rangeBands[1]} />
 					{:else}
 						<button on:click={() => (rangeBands = [0, 1])}>SetBands</button>
 					{/if}
 				</div>
 				<div class="range-inputs">
 					{#if Array.isArray(rangeFacets) && rangeFacets.length == 2}
-						<NumberInput label="facets" min={0} max={1} step={1} bind:value={rangeFacets[0]} />
-						<NumberInput min={0} max={1} step={1} bind:value={rangeFacets[1]} />
+						<NumberInput label="facets" min={-999} max={999} step={1} bind:value={rangeFacets[0]} />
+						<NumberInput min={-999} max={999} step={1} bind:value={rangeFacets[1]} />
 					{:else}
 						<button on:click={() => (rangeFacets = [0, 1])}>SetFacets</button>
 					{/if}
