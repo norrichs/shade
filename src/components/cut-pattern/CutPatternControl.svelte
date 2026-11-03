@@ -1,6 +1,34 @@
 <script lang="ts">
 	import type { ProjectionRange } from '#lib/projection-geometry/filters.js';
-	import { patternConfigStore } from '#lib/stores/index.js';
+	import {
+		patternConfigStore,
+		patternFilterSettings,
+		patternFilterSet,
+		setPatternFilterSettings,
+		clearPatternFilter
+	} from '#lib/stores/index.js';
+	import {
+		describePatternFilter,
+		isFilteringMode,
+		type PatternFilterCombine,
+		type PatternFilterMode
+	} from '#lib/cut-pattern/pattern-filter.js';
+	import { get } from 'svelte/store';
+
+	const FILTER_MODES: { value: PatternFilterMode; label: string }[] = [
+		{ value: 'off', label: 'off' },
+		{ value: 'focus', label: 'focus' },
+		{ value: 'band', label: 'filter band' },
+		{ value: 'tube', label: 'filter tube' }
+	];
+	const onFilterMode = (e: Event) =>
+		setPatternFilterSettings({
+			mode: (e.currentTarget as HTMLSelectElement).value as PatternFilterMode
+		});
+	const onFilterCombine = (e: Event) =>
+		setPatternFilterSettings({
+			combine: (e.currentTarget as HTMLSelectElement).value as PatternFilterCombine
+		});
 	import CheckboxInput from '../controls/CheckboxInput.svelte';
 	import NumberInput from '../controls/super-control/NumberInput.svelte';
 	import PanControl from './PanControl.svelte';
@@ -12,11 +40,22 @@
 	let rangeBands: ProjectionRange['bands'] = $patternConfigStore.patternViewConfig.range?.bands;
 	let rangeFacets: ProjectionRange['facets'] = $patternConfigStore.patternViewConfig.range?.facets;
 
+	// The range last written, as JSON. The number inputs bind into arrays that
+	// alias the store's, so an edit is detected against this rather than by
+	// comparing to the store (which has already been mutated in place).
+	let lastRangeJson = JSON.stringify([rangeTubes, rangeBands, rangeFacets]);
+
 	const updateStore = (
 		rangeTubes?: ProjectionRange['tubes'] | undefined,
 		rangeBands?: ProjectionRange['bands'] | undefined,
 		rangeFacets?: ProjectionRange['facets'] | undefined
 	) => {
+		const json = JSON.stringify([rangeTubes, rangeBands, rangeFacets]);
+		// Editing the range while a click filter is in play switches back to the
+		// numerical range: the click filter would otherwise override the edit.
+		if (json !== lastRangeJson && isFilteringMode(get(patternFilterSettings).mode))
+			setPatternFilterSettings({ mode: 'off' });
+		lastRangeJson = json;
 		$patternConfigStore.patternViewConfig.range = {
 			tubes: rangeTubes,
 			bands: rangeBands,
@@ -28,6 +67,29 @@
 
 <div class="view-control-box">
 	<PageNavControl {onNavigate} />
+	<div class="row filter-row" data-testid="pattern-filter">
+		<label>
+			<span>Click filter</span>
+			<select value={$patternFilterSettings.mode} on:change={onFilterMode}>
+				{#each FILTER_MODES as m (m.value)}
+					<option value={m.value}>{m.label}</option>
+				{/each}
+			</select>
+		</label>
+		<select
+			value={$patternFilterSettings.combine}
+			on:change={onFilterCombine}
+			disabled={!isFilteringMode($patternFilterSettings.mode)}
+			title="exclusive: one band/tube at a time; additive: clicks add or remove"
+		>
+			<option value="exclusive">exclusive</option>
+			<option value="additive">additive</option>
+		</select>
+		{#if isFilteringMode($patternFilterSettings.mode)}
+			<span class="filter-summary">{describePatternFilter($patternFilterSet)}</span>
+			<button on:click={clearPatternFilter} disabled={!$patternFilterSet}>show all</button>
+		{/if}
+	</div>
 	<div class="row">
 		<PanControl />
 		<div>
@@ -51,8 +113,15 @@
 			/>
 		</div>
 		<div>
-			<div>
+			<div
+				class="range-box"
+				class:overridden={!!$patternFilterSet}
+				title={$patternFilterSet
+					? 'Click filter is showing the selected bands; edit the range to switch back to it'
+					: undefined}
+			>
 				<span>Range</span>
+				{#if $patternFilterSet}<span class="range-note">(overridden by click filter)</span>{/if}
 				<button
 					on:click={() => {
 						rangeTubes = undefined;
@@ -62,24 +131,24 @@
 				>
 				<div class="range-inputs">
 					{#if Array.isArray(rangeTubes) && rangeTubes.length == 2}
-						<NumberInput label="tubes" min={0} max={1} step={1} bind:value={rangeTubes[0]} />
-						<NumberInput min={0} max={1} step={1} bind:value={rangeTubes[1]} />
+						<NumberInput label="tubes" min={-999} max={999} step={1} bind:value={rangeTubes[0]} />
+						<NumberInput min={-999} max={999} step={1} bind:value={rangeTubes[1]} />
 					{:else}
 						<button on:click={() => (rangeTubes = [0, 1])}>SetTubes</button>
 					{/if}
 				</div>
 				<div class="range-inputs">
 					{#if Array.isArray(rangeBands) && rangeBands.length == 2}
-						<NumberInput label="bands" min={0} max={1} step={1} bind:value={rangeBands[0]} />
-						<NumberInput min={0} max={1} step={1} bind:value={rangeBands[1]} />
+						<NumberInput label="bands" min={-999} max={999} step={1} bind:value={rangeBands[0]} />
+						<NumberInput min={-999} max={999} step={1} bind:value={rangeBands[1]} />
 					{:else}
 						<button on:click={() => (rangeBands = [0, 1])}>SetBands</button>
 					{/if}
 				</div>
 				<div class="range-inputs">
 					{#if Array.isArray(rangeFacets) && rangeFacets.length == 2}
-						<NumberInput label="facets" min={0} max={1} step={1} bind:value={rangeFacets[0]} />
-						<NumberInput min={0} max={1} step={1} bind:value={rangeFacets[1]} />
+						<NumberInput label="facets" min={-999} max={999} step={1} bind:value={rangeFacets[0]} />
+						<NumberInput min={-999} max={999} step={1} bind:value={rangeFacets[1]} />
 					{:else}
 						<button on:click={() => (rangeFacets = [0, 1])}>SetFacets</button>
 					{/if}
@@ -131,6 +200,27 @@
 </div>
 
 <style>
+	.filter-row {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		gap: 6px;
+		margin-bottom: 6px;
+	}
+	.range-box.overridden {
+		opacity: 0.45;
+	}
+	.range-box.overridden:hover,
+	.range-box.overridden:focus-within {
+		opacity: 0.8;
+	}
+	.range-note {
+		font-size: 0.8em;
+		font-style: italic;
+	}
+	.filter-summary {
+		min-width: 6em;
+	}
 	.range-inputs {
 		display: flex;
 		flex-direction: row;

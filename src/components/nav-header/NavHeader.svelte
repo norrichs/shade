@@ -20,7 +20,8 @@
 		hasPendingChanges,
 		designerPanels,
 		nextPanelLayout,
-		panelLayoutLabel
+		panelLayoutLabel,
+		modelRenderMode
 	} from '#lib/stores/uiStores.js';
 	import { triggerManualRegeneration, isGenerating } from '#lib/stores/superGlobuleStores.js';
 	import { selectedSurfaceProjection, rotateToSelection } from '#lib/stores/selectionStores.js';
@@ -449,6 +450,12 @@
 				{/each}
 			</select>
 			<Button onclick={rotateToSelection}>Rotate to selection</Button>
+			<Button
+				onclick={() => modelRenderMode.update((m) => (m === 'model' ? 'selection' : 'model'))}
+				title="Model: every band as usual. Selection: selected / filtered bands solid, the rest ghosted."
+			>
+				Render: {$modelRenderMode === 'model' ? 'Model' : 'Selection'}
+			</Button>
 			<Button onclick={toggleModal}>Edit</Button>
 
 			{#if $isManualMode}

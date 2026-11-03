@@ -261,7 +261,7 @@ describe('buildPatternCsv — labels name the physical piece', () => {
 		const withCount = (b: TubeCutPattern['bands'][number]) =>
 			({ ...b, quadCount: b.facets.length }) as unknown as TubeCutPattern['bands'][number];
 		const counted = tubes().map((t) => ({ ...t, bands: t.bands.map(withCount) }));
-		const view = sliceProjectionCutPattern(counted, { facets: [0, 1] });
+		const view = sliceProjectionCutPattern(counted, { facets: [0, 0] });
 		const r = buildPatternCsv({ mode: 'tube-order', groups: [] }, view).split('\n');
 		expect(r[1]).toBe('t0/b0,"t0/b1p0 t0/b1p1","t1/b0p0 t1/b1p1"');
 	});

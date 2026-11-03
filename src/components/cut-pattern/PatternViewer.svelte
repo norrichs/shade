@@ -4,8 +4,15 @@
 		patternConfigStore,
 		patternSourceStore,
 		viewControlStore,
-		collatedTubesStore
+		collatedTubesStore,
+		pageLayoutInfoStore,
+		patternFocusRequest
 	} from '#lib/stores/index.js';
+	import { onMount, tick } from 'svelte';
+	import { get } from 'svelte/store';
+	import { bandFilterKey } from '#lib/cut-pattern/pattern-filter.js';
+	import { geometrySourceOfPattern } from '#lib/cut-pattern/pattern-band-space.js';
+	import { bandElements, focusOffsetForBand } from './focus-pattern-band';
 	import CutPatternControl from './CutPatternControl.svelte';
 	import CutPatternSvg from './CutPatternSvg.svelte';
 
@@ -48,6 +55,49 @@
 	// holds while the svg area is scrolled to its own top-left.
 	let svgArea: HTMLDivElement;
 	const resetScroll = () => svgArea?.scrollTo(0, 0);
+
+	// Pattern filter focus: pan (never zoom) onto a clicked band once the layout
+	// has placed it. A click re-runs the layout, so the band may not be drawn, or
+	// drawn where it will end up, until a few frames later — and a nest layout
+	// answers from a worker, so wait for it to settle before the final pan.
+	const FOCUS_TIMEOUT_MS = 2000;
+	const focusBand = async (seq: number, key: string) => {
+		await tick();
+		const deadline = performance.now() + FOCUS_TIMEOUT_MS;
+		const cfg = get(patternConfigStore);
+		const nestLayout =
+			cfg.patternViewConfig.patternLayoutMode === 'page' &&
+			cfg.patternConfig.pageLayout?.algorithm === 'nest';
+		let sawPending = false;
+		const attempt = () => {
+			if (get(patternFocusRequest)?.seq !== seq) return; // superseded by a newer click
+			const pending = !!get(pageLayoutInfoStore).nestPending;
+			sawPending ||= pending;
+			if (!pending && svgArea && bandElements(svgArea, key).length > 0) {
+				const next = focusOffsetForBand(
+					svgArea,
+					key,
+					get(patternConfigStore).patternViewConfig.centerOffset
+				);
+				if (next) $patternConfigStore.patternViewConfig.centerOffset = next;
+				if (!nestLayout || sawPending) return;
+			}
+			if (performance.now() < deadline) requestAnimationFrame(attempt);
+		};
+		requestAnimationFrame(attempt);
+	};
+
+	onMount(() => {
+		let initial = true;
+		const unsubscribe = patternFocusRequest.subscribe((req) => {
+			// The current value on subscribe is an old click, not a new request.
+			if (initial || !req) return;
+			if (req.source !== geometrySourceOfPattern(get(patternSourceStore))) return;
+			focusBand(req.seq, bandFilterKey(req.band));
+		});
+		initial = false;
+		return unsubscribe;
+	});
 
 	let bandErrors: string[];
 	$: bandErrors = collectBandErrors([

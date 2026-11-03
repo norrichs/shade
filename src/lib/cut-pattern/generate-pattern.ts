@@ -26,7 +26,12 @@ import { getEdge } from '#lib/projection-geometry/generate-projection.js';
 import type { SuperGlobuleProjectionPattern } from '#lib/stores/superGlobuleStores.js';
 import { shouldUsePanelPattern, generateProjectionPanelPattern } from './generate-panel-pattern';
 import { resolveEndPartner, type BandEnd } from './resolve-partner-band';
-import { resolveRangeIndices, type ProjectionRange } from '#lib/projection-geometry/filters.js';
+import {
+	keepRangeOrder,
+	resolveRangeIndices,
+	resolveRangeList,
+	type ProjectionRange
+} from '#lib/projection-geometry/filters.js';
 
 // TODO: Refactor so that this accepts globules as tubes
 
@@ -96,8 +101,10 @@ export const generateProjectionPattern = (
 		// Most adjusters need tube-end partner transforms; entries can opt out.
 		const needsEndPartners = entry.adjustAfterTilingNeedsEndPartners ?? true;
 
-		// Resolve tube range
-		const [tubeStart, tubeEnd] = resolveRangeIndices(projectionRange?.tubes, effectiveTubes.length);
+		// Resolve tube range: the selected tube indices, in range order (a
+		// negative / wrapping range lists e.g. 29, 0, 1).
+		const tubeList = resolveRangeList(projectionRange?.tubes, effectiveTubes.length);
+		const inTubeRange = new Set(tubeList);
 
 		// Resolve band range — expand by 1 on each side if adjustAfterTiling needs neighbors
 		const bandExpand = hasAdjustAfterTiling ? 1 : 0;
@@ -110,7 +117,7 @@ export const generateProjectionPattern = (
 		// Use a sparse array so that adjustAfterTiling index lookups still work
 		let tubePatterns: (TubeCutPattern | undefined)[] = new Array(effectiveTubes.length);
 
-		for (let t = tubeStart; t < tubeEnd; t++) {
+		for (const t of tubeList) {
 			const { bands, address } = effectiveTubes[t];
 			const totalBands = bands.filter((b) => b.visible).length;
 			const [bandStart, bandEnd] = resolveRangeIndices(
@@ -135,7 +142,7 @@ export const generateProjectionPattern = (
 		// Partner bands may reference out-of-range tubes, so we generate
 		// minimal stubs for those if needed.
 		const referencedTubeIndices = new Set<number>();
-		for (let t = tubeStart; t < tubeEnd; t++) {
+		for (const t of tubeList) {
 			const tp = tubePatterns[t];
 			if (!tp) continue;
 			for (const band of tp.bands) {
@@ -163,7 +170,7 @@ export const generateProjectionPattern = (
 		// which preserves original tube indices
 		getEndPartnerTransforms(tubePatterns as TubeCutPattern[]);
 
-		const firstInRange = tubePatterns[tubeStart];
+		const firstInRange = tubePatterns[tubeList[0]];
 		const firstBandMeta = firstInRange?.bands[0]?.meta;
 		// `meta` exists only when the band has an end partner in the geometry, so
 		// with every band visible this is exactly "names a start or end partner".
@@ -181,7 +188,7 @@ export const generateProjectionPattern = (
 			// whole snapshot (`map` keeps the sparse holes tube indexing needs).
 			const tiledTubePatterns = tubePatterns;
 			tubePatterns = tiledTubePatterns.map((tp, t) =>
-				tp && t >= tubeStart && t < tubeEnd
+				tp && inTubeRange.has(t)
 					? {
 							...tp,
 							// adjustAfterTiling indexes by tube number, pass the sparse array
@@ -195,30 +202,29 @@ export const generateProjectionPattern = (
 			);
 		}
 
-		// After adjustment, trim bands back to the exact requested range (remove expanded neighbors)
-		if (projectionRange?.bands !== undefined && bandExpand > 0) {
-			for (let t = tubeStart; t < tubeEnd; t++) {
+		// After adjustment, keep exactly the requested bands, in range order. Bands
+		// were tiled over the covering window (plus neighbours for the adjuster),
+		// which for a wrapping range holds bands it does not select.
+		if (projectionRange?.bands !== undefined) {
+			for (const t of tubeList) {
 				const tp = tubePatterns[t];
 				if (!tp) continue;
 				const totalVisibleBands = effectiveTubes[t].bands.filter((b) => b.visible).length;
-				const [exactStart, exactEnd] = resolveRangeIndices(
-					projectionRange.bands,
-					totalVisibleBands
-				);
-				// Bands were generated with expanded range; now trim to exact
 				tubePatterns[t] = {
 					...tp,
-					bands: tp.bands.filter((band) => {
-						const b = band.address.band;
-						return b >= exactStart && b < exactEnd;
-					})
+					bands: keepRangeOrder(
+						tp.bands,
+						projectionRange.bands,
+						totalVisibleBands,
+						(band) => band.address.band
+					)
 				};
 			}
 		}
 
 		// Collect only in-range tube patterns for output
 		const outputTubePatterns: TubeCutPattern[] = [];
-		for (let t = tubeStart; t < tubeEnd; t++) {
+		for (const t of tubeList) {
 			const tp = tubePatterns[t];
 			if (tp) {
 				outputTubePatterns.push(applyTubePatternPostProcessing(tp, tiledPatternConfig));

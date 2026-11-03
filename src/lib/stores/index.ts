@@ -14,3 +14,4 @@ export * from '#lib/stores/bandRingStore.js';
 export * from '#lib/stores/collatedTubesStore.js';
 export * from '#lib/stores/splitBudgetStore.js';
 export * from '#lib/stores/exportStores.js';
+export * from '#lib/stores/patternFilterStore.js';

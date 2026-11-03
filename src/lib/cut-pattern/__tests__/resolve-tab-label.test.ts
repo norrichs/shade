@@ -390,7 +390,7 @@ describe('resolveTabLabel', () => {
 			const withCount = (b: BandCutPattern) =>
 				({ ...b, quadCount: b.facets.length }) as unknown as BandCutPattern;
 			const tubes = sideTubes().map((t) => ({ ...t, bands: t.bands.map(withCount) }));
-			const [, view] = sliceProjectionCutPattern(tubes, { facets: [0, 1] });
+			const [, view] = sliceProjectionCutPattern(tubes, { facets: [0, 0] });
 			const uncut = view.bands[0];
 			expect(uncut.facets).toHaveLength(1);
 			const midAt3 = tab({ position: 'mid', midIndex: 0, midCount: 2, quad: 3 });

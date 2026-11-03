@@ -28,6 +28,7 @@
 	import type { Vector3 } from 'three';
 	import type { GlobuleAddress_Band } from '#lib/projection-geometry/types.js';
 	import { concatAddress } from '#lib/util.js';
+	import { bandFilterKey } from '#lib/cut-pattern/pattern-filter.js';
 	import { buildSelfTagLines } from '#lib/cut-pattern/build-self-tag-lines.js';
 	import { bandTransform } from '#lib/cut-pattern/band-transform.js';
 	import {
@@ -193,6 +194,7 @@
 	transform={bandTransform(origin, rotation, pivot)}
 	id={`band-${band.id}`}
 	data-band={concatAddress(band.address, 'gtb')}
+	data-band-key={bandFilterKey(band.address)}
 	role="button"
 	tabindex="0"
 	onmouseover={() => handleMouseOver(band.address)}
@@ -225,7 +227,7 @@
 			width={highlightBounds.width}
 			height={highlightBounds.height}
 			fill={highlight === 'primary' ? LAYOUT_BOUNDS_FILL : HIGHLIGHT_SECONDARY}
-			fill-opacity={highlight === 'primary' ? 0.2 : 0.45}
+			fill-opacity={highlight === 'primary' ? 0.4 : 0.45}
 			stroke="none"
 			pointer-events="none"
 		/>{/if}

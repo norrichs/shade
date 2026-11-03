@@ -22,6 +22,7 @@ import { patternConfigStore } from './globulePatternStores';
 import { viewControlStore } from './viewControlStore';
 import { setAssemblerHighlight, type GeometrySource } from './selectionStores';
 import { assemblerHighlightRing } from '#lib/cut-pattern/pattern-band-space.js';
+import { patternFilterBandClicked } from './patternFilterStore';
 
 export type { BandRingLookup };
 
@@ -85,4 +86,5 @@ export const setAssemblerHighlightForBand = (
 	band: GlobuleAddress_Band
 ): void => {
 	setAssemblerHighlight(source, band, assemblerRingOf(source)(band));
+	patternFilterBandClicked(source, band);
 };

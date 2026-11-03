@@ -17,8 +17,16 @@
 		postProcessConfigs,
 		loadedConfigName,
 		exportPagesStore,
-		resolvedPatternLabels
+		resolvedPatternLabels,
+		patternFilterSet,
+		rangeShownBands
 	} from '#lib/stores/index.js';
+	import {
+		bandFilterKey,
+		filterPatternTubes,
+		patternFilterShows
+	} from '#lib/cut-pattern/pattern-filter.js';
+	import { geometrySourceOfPattern } from '#lib/cut-pattern/pattern-band-space.js';
 	import { computeSplitBudget, EMPTY_SPLIT_BUDGET } from '#lib/cut-pattern/split-budget.js';
 	import { createOverflowNotifier } from '#lib/cut-pattern/page-overflow-notice.js';
 	import {
@@ -95,7 +103,20 @@
 		selectionTarget?: PatternSource;
 	} = $props();
 
-	let indexedBands = $derived(sortIndex ? resolveIndexBands(tubes, sortIndex) : undefined);
+	// The click-driven pattern filter (see `pattern-filter.ts`), applied on top of
+	// the range slice in every layout mode so the active layout re-runs over just
+	// the shown bands. A filter set on another source passes everything.
+	let filterSource = $derived(geometrySourceOfPattern(selectionTarget));
+	let filterSet = $derived($patternFilterSet);
+
+	let indexedBands = $derived.by(() => {
+		if (!sortIndex) return undefined;
+		const resolved = resolveIndexBands(tubes, sortIndex);
+		const set = filterSet;
+		return set
+			? resolved.filter(({ band }) => patternFilterShows(set, filterSource, band.address))
+			: resolved;
+	});
 
 	let codeMap = $derived(sortIndex ? buildBandCodeMap(sortIndex) : undefined);
 	const groupCodeFor = (address: GlobuleAddress_Band) => groupCodeForBand(codeMap, address);
@@ -220,10 +241,14 @@
 		];
 	};
 
-	const filtered = ({ tubes, range }: { tubes: TubeCutPattern[]; range: ProjectionRange }) => {
-		const sliced = sliceProjectionCutPattern(tubes, range);
-		return sliced;
-	};
+	// An engaged click filter REPLACES the numerical range rather than narrowing
+	// it: the clicked bands must show even when they fall outside the range.
+	const filtered = ({ tubes, range }: { tubes: TubeCutPattern[]; range: ProjectionRange }) =>
+		filterSet && filterSet.source === filterSource
+			? filterPatternTubes(tubes, filterSet, filterSource)
+			: // Generation already ranged tubes and bands (by index, in range order);
+				// only the facet range is left for the view.
+				sliceProjectionCutPattern(tubes, { facets: range?.facets });
 
 	let range = $derived($patternConfigStore.patternViewConfig.range);
 	let layoutMode = $derived($patternConfigStore.patternViewConfig.patternLayoutMode ?? 'linear');
@@ -259,6 +284,30 @@
 	let pageBands = $derived.by((): ResolvedBand[] => {
 		if (indexedBands) return indexedBands;
 		return filteredTubes.flatMap((tube) => tube.bands.map((band) => ({ band, tube })));
+	});
+
+	// Publish the bands the numerical Range shows, for the 3D Selection render
+	// mode — taken from what is actually laid out, so it agrees with the pane.
+	// Null while a click filter overrides the range. Whether the range narrows
+	// anything is judged in 3D: generation applies the range too, so `tubes`
+	// here already holds only the in-range bands and cannot tell. Value-key
+	// guarded like the other store writes here.
+	let lastRangeShownKey = '';
+	$effect(() => {
+		const engaged = !!filterSet && filterSet.source === filterSource;
+		const keys = engaged
+			? []
+			: [...new Set(pageBands.map(({ band }) => bandFilterKey(band.address)))];
+		const key = engaged ? '' : `${filterSource}|${keys.join(',')}`;
+		if (key === lastRangeShownKey) return;
+		lastRangeShownKey = key;
+		rangeShownBands.set(engaged ? null : { source: filterSource, keys: new Set(keys) });
+	});
+	$effect(() => {
+		return () => {
+			lastRangeShownKey = '';
+			rangeShownBands.set(null);
+		};
 	});
 
 	// Per-band layout values, each computed once per pass and keyed by band identity.

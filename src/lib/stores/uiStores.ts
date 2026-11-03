@@ -48,6 +48,18 @@ export const computationMode = persistable<ComputationMode>(
 	true
 );
 
+/**
+ * How the 3D model is drawn: `model` colours every band as usual; `selection`
+ * draws only the selected / pattern-filtered bands solid and ghosts the rest.
+ */
+export type ModelRenderMode = 'model' | 'selection';
+export const modelRenderMode = persistable<ModelRenderMode>(
+	'model',
+	'ModelRenderMode',
+	AUTO_PERSIST_KEY,
+	true
+);
+
 // Flag to pause pattern updates (for manual control)
 import { writable } from 'svelte/store';
 export const pausePatternUpdates = writable(false);
