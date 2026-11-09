@@ -30,6 +30,7 @@
 	import { resolve } from '$app/paths';
 	import { exportFrame } from '#lib/download/export-frame.js';
 	import { fileStamp } from '#lib/download/file-stamp.js';
+	import { captureCurrentConfigJson } from '#lib/stores/current-saved-config.js';
 	import { buildLbProject } from '#lib/lightburn/build-lb-project.js';
 	import { collectDomShapes } from '#lib/lightburn/collect-dom-shapes.js';
 	import { writeLbrn2 } from '#lib/lightburn/lbrn2-writer.js';
@@ -361,7 +362,11 @@
 				return;
 			}
 
-			const result = downloadSvg(`${stamp}.svg`, exportFrame(pages.pages, pages.pageScale));
+			const result = downloadSvg(`${stamp}.svg`, exportFrame(pages.pages, pages.pageScale), {
+				configJson: captureCurrentConfigJson(),
+				name: get(loadedConfigName),
+				exportedAt: new Date().toISOString()
+			});
 			if (!result.ok) toastStore.add({ type: 'error', message: result.error });
 		} catch (error) {
 			console.error('[download] failed', error);

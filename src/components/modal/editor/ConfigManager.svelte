@@ -1,17 +1,13 @@
 <script lang="ts">
 	import { superConfigStore, patternConfigStore, viewControlStore } from '#lib/stores/index.js';
 	import { loadedConfigStore } from '#lib/stores/loadedConfigStore.js';
-	import { triggerManualRegeneration } from '#lib/stores/superGlobuleStores.js';
-	import { isManualMode } from '#lib/stores/uiStores.js';
 	import { tilePatternSpecStore } from '#lib/stores/tilePatternSpecStore.js';
 	import {
-		buildSavedConfig,
-		parseSavedConfig,
-		collectReferencedTilePatternSpecs
-	} from '#lib/saved-config.js';
-	import type { SuperGlobuleConfig, GlobulePatternConfig } from '#lib/types.js';
-	import type { ViewControls } from '#lib/stores/viewControlStore.js';
-	import type { TiledPatternSpec } from '#lib/patterns/spec-types.js';
+		serializeSavedConfig,
+		captureCurrentConfigJson as captureCurrentConfig,
+		applySavedConfigJson
+	} from '#lib/stores/current-saved-config.js';
+	import { extractConfigFromSvg } from '#lib/download/svg-config-metadata.js';
 	import { get } from 'svelte/store';
 	import Button from '../../design-system/Button.svelte';
 	import Container from './Container.svelte';
@@ -38,33 +34,10 @@
 	let confirmOverwrite = $state(false);
 	let overwriting = $state(false);
 
-	/** Serialize the given config state exactly as it would be persisted. */
-	function serializeConfig(
-		superConfig: SuperGlobuleConfig,
-		patternConfig: GlobulePatternConfig,
-		viewControls: ViewControls,
-		variants: TiledPatternSpec[]
-	): string {
-		const tilePatternSpecs = collectReferencedTilePatternSpecs(patternConfig, variants);
-		return JSON.stringify(
-			buildSavedConfig(superConfig, patternConfig, viewControls, tilePatternSpecs)
-		);
-	}
-
-	/** Snapshot the live stores (used at load / overwrite time). */
-	function captureCurrentConfig(): string {
-		return serializeConfig(
-			get(superConfigStore),
-			get(patternConfigStore),
-			get(viewControlStore),
-			get(tilePatternSpecStore).variants
-		);
-	}
-
 	// Reactive serialization of the working config, so `isModified` updates as the
 	// user edits. Mirrors `captureCurrentConfig` but tracks the stores reactively.
 	let currentJson = $derived(
-		serializeConfig(
+		serializeSavedConfig(
 			$superConfigStore,
 			$patternConfigStore,
 			$viewControlStore,
@@ -147,21 +120,7 @@
 			const res = await fetch(`/api/config/${id}`);
 			if (!res.ok) throw new Error('Failed to load config');
 			const data = await res.json();
-			const { superGlobuleConfig, globulePatternConfig, viewControls, tilePatternSpecs } =
-				parseSavedConfig(data.configJson);
-			// Register embedded custom specs before applying the pattern config so
-			// generation can resolve them (no-ops for ids already in the registry).
-			tilePatternSpecStore.ensureRegistered(tilePatternSpecs);
-			superConfigStore.set(superGlobuleConfig);
-			if (globulePatternConfig) {
-				patternConfigStore.set(globulePatternConfig);
-			}
-			if (viewControls) {
-				viewControlStore.set(viewControls);
-			}
-			if (get(isManualMode)) {
-				triggerManualRegeneration();
-			}
+			applySavedConfigJson(data.configJson);
 			// Track this as the loaded config and baseline its snapshot from the live
 			// stores (not the raw stored JSON) so it reads as unmodified right away,
 			// regardless of key ordering / migration during parse.
@@ -169,6 +128,38 @@
 			confirmOverwrite = false;
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'Failed to load config';
+		}
+	}
+
+	let fileInput: HTMLInputElement | undefined = $state();
+
+	/**
+	 * Load a whole config from a file: an SVG exported by Shades (config embedded
+	 * in its <metadata>) or a bare SavedConfig JSON file. It is not linked to a
+	 * DB row, so "Save as" stores it; the file name pre-fills the name field.
+	 */
+	async function loadConfigFile(event: Event) {
+		const input = event.currentTarget as HTMLInputElement;
+		const file = input.files?.[0];
+		input.value = '';
+		if (!file) return;
+		error = '';
+		try {
+			const text = await file.text();
+			let configJson = text;
+			let embeddedName: string | undefined;
+			if (/\.svg$/i.test(file.name) || text.trimStart().startsWith('<')) {
+				const extracted = extractConfigFromSvg(text);
+				if (!extracted.ok) throw new Error(extracted.error);
+				configJson = extracted.configJson;
+				embeddedName = extracted.name;
+			}
+			applySavedConfigJson(configJson);
+			loadedConfigStore.set(null);
+			confirmOverwrite = false;
+			configName = embeddedName ?? file.name.replace(/\.(svg|json)$/i, '');
+		} catch (e) {
+			error = `Could not load ${file.name}: ${e instanceof Error ? e.message : String(e)}`;
 		}
 	}
 
@@ -227,6 +218,20 @@
 			<Button onclick={saveConfig} disabled={saving || !configName.trim()}>
 				{saving ? 'Saving...' : 'Save as'}
 			</Button>
+		</Container>
+	</section>
+
+	<section>
+		<header>Load From File</header>
+		<Container direction="column">
+			<input
+				bind:this={fileInput}
+				type="file"
+				accept=".svg,.json,image/svg+xml,application/json"
+				onchange={loadConfigFile}
+				hidden
+			/>
+			<Button onclick={() => fileInput?.click()}>Load SVG or JSON…</Button>
 		</Container>
 	</section>
 

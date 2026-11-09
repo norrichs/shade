@@ -16,6 +16,7 @@ import {
 	untaggedMessage
 } from './cut-pattern/export-guard';
 import type { ExportFrame } from '#lib/download/export-frame.js';
+import { embedConfigInSvg, type EmbedMeta } from '#lib/download/svg-config-metadata.js';
 
 export { SCREEN_ONLY_SELECTOR };
 
@@ -56,10 +57,18 @@ export const buildExportSvg = (frame: ExportFrame): { svg: Element } | { error: 
 	return { svg };
 };
 
-const generateSvgUrl = (frame: ExportFrame): string | { error: string } => {
+/** The saved config to embed in the exported SVG's `<metadata>`. */
+export type SvgEmbeddedConfig = { configJson: string } & EmbedMeta;
+
+const generateSvgUrl = (
+	frame: ExportFrame,
+	embed?: SvgEmbeddedConfig
+): string | { error: string } => {
 	const built = buildExportSvg(frame);
 	if ('error' in built) return built;
-	const blob = new Blob([new XMLSerializer().serializeToString(built.svg)], {
+	let text = new XMLSerializer().serializeToString(built.svg);
+	if (embed) text = embedConfigInSvg(text, embed.configJson, embed);
+	const blob = new Blob([text], {
 		type: 'image/svg+xml'
 	});
 	return URL.createObjectURL(blob);
@@ -67,9 +76,10 @@ const generateSvgUrl = (frame: ExportFrame): string | { error: string } => {
 
 export const downloadSvg = (
 	filename: string,
-	frame: ExportFrame
+	frame: ExportFrame,
+	embed?: SvgEmbeddedConfig
 ): { ok: true } | { ok: false; error: string } => {
-	const url = generateSvgUrl(frame);
+	const url = generateSvgUrl(frame, embed);
 	if (typeof url !== 'string') return { ok: false, error: url.error };
 	const a = document.createElement('a');
 	a.href = url;
