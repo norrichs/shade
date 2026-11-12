@@ -6,11 +6,8 @@
 	import { numberPathSegments } from './number-path-segments';
 	import { onMount } from 'svelte';
 	import LabelText from './LabelText.svelte';
-	import {
-		buildLabelOutlinePath,
-		FALLBACK_TEXT_WIDTH,
-		FALLBACK_TEXT_HEIGHT
-	} from '#lib/cut-pattern/label-outline-path.js';
+	import { buildLabelOutlinePath } from '#lib/cut-pattern/label-outline-path.js';
+	import { estimateTextDims } from '#lib/cut-pattern/label-footprint.js';
 	import { layerStrokes, setLabelTextDimension } from '#lib/stores/index.js';
 	import { getPostProcessScope } from './post-process-scope';
 
@@ -45,17 +42,27 @@
 	} = $props();
 
 	// Bbox of the rendered LabelText (the addressStrings) — measured via
-	// getBBox() on the wrapping <g>. Width/height feed into the outline
-	// path so the callout body sizes to the actual rendered text + padding.
-	// `x`/`y` capture the bbox origin in the LabelText's local coord space so
-	// we can offset the LabelText to center it inside the path body.
-	let textBbox: { x: number; y: number; width: number; height: number } = $state({
-		x: 0,
-		y: 0,
-		width: FALLBACK_TEXT_WIDTH,
-		height: FALLBACK_TEXT_HEIGHT
-	});
+	// getBBox() on the hidden measurement <g>. Width/height feed into the
+	// outline path so the callout body sizes to the actual rendered text +
+	// padding. `x`/`y` capture the bbox origin in the LabelText's local coord
+	// space so we can offset the LabelText to center it inside the path body.
+	//
+	// `undefined` until a real measurement lands. getBBox() returns zeros while
+	// the pattern pane is `display: none` (e.g. a config loaded with only the
+	// model visible), so until then the outline uses an estimate scaled to the
+	// font size — never a fixed fallback, which is huge at mm label sizes — and
+	// nothing is published to `labelTextDimensions`.
+	let measuredBbox: { x: number; y: number; width: number; height: number } | undefined =
+		$state(undefined);
 	let textMeasured = $state(false);
+	/** Set when the latest measurement attempt read a zero bbox (not rendered). */
+	let measurementStale = $state(false);
+
+	let textBbox = $derived.by(() => {
+		if (measuredBbox) return measuredBbox;
+		const est = estimateTextDims(addressStrings ?? [], height);
+		return { x: 0, y: -est.height, width: est.width, height: est.height };
+	});
 
 	// LabelText element bound here so we can re-measure when its children mount.
 	let labelTextElement: SVGGElement | undefined = $state();
@@ -78,14 +85,18 @@
 		try {
 			const b = target.getBBox();
 			if (b.width === 0 || b.height === 0) {
-				// Glyph paths not yet realized — leave fallback in place but mark
-				// as measured so the path becomes visible.
+				// Not rendered (hidden pane) or glyphs not realized yet. Keep the
+				// previous measurement / estimate, and re-measure once the owning
+				// <svg> gets a size (see the ResizeObserver effect below).
+				measurementStale = true;
 				textMeasured = true;
 				return;
 			}
-			textBbox = { x: b.x, y: b.y, width: b.width, height: b.height };
+			measuredBbox = { x: b.x, y: b.y, width: b.width, height: b.height };
+			measurementStale = false;
 			textMeasured = true;
 		} catch {
+			measurementStale = true;
 			textMeasured = true;
 		}
 	};
@@ -102,15 +113,24 @@
 	});
 
 	$effect(() => {
-		if (textMeasured && bandId) {
-			// Read textBbox synchronously so Svelte tracks it as a dep — without
-			// this, the effect would only fire once when textMeasured flips true
-			// (often with a stale 0-size bbox) and never refresh.
-			const width = textBbox.width;
-			const height = textBbox.height;
+		// A measurement taken while the pattern pane was hidden read zeros. When
+		// the pane is shown, the owning <svg> goes from 0×0 to a real size, which
+		// a ResizeObserver reports — re-measure then.
+		if (!measurementStale) return;
+		const svg = measurementHost?.ownerSVGElement;
+		if (!svg || typeof ResizeObserver === 'undefined') return;
+		const observer = new ResizeObserver(() => void measureText());
+		observer.observe(svg);
+		return () => observer.disconnect();
+	});
+
+	$effect(() => {
+		if (measuredBbox && bandId) {
+			// Only real measurements are published: layout and the merge fall back
+			// to their own font-size-based estimate for bands with no entry.
 			// Batched: N labels measuring after one mount used to mean N store
 			// updates, each re-laying-out every band (see mergedPathStore).
-			setLabelTextDimension(bandId, { width, height });
+			setLabelTextDimension(bandId, { width: measuredBbox.width, height: measuredBbox.height });
 		}
 	});
 
