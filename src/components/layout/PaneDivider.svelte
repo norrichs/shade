@@ -32,8 +32,7 @@
 	let grip = $state(0);
 
 	const vertical = $derived(orientation === 'vertical');
-	const size = () =>
-		container ? (vertical ? container.clientWidth : container.clientHeight) : 0;
+	const size = () => (container ? (vertical ? container.clientWidth : container.clientHeight) : 0);
 	const report = (x: number, y: number) => {
 		const s = size();
 		if (s > 0) onchange((vertical ? x : y) / s);

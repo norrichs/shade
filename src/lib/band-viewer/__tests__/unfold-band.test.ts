@@ -108,7 +108,8 @@ describe('prepareUnfold / applyUnfold', () => {
 	});
 
 	it('keeps the anchor facet fixed at every t', () => {
-		const slice = (arr: Float32Array) => Array.from(arr.slice(plan.anchor * 9, plan.anchor * 9 + 9));
+		const slice = (arr: Float32Array) =>
+			Array.from(arr.slice(plan.anchor * 9, plan.anchor * 9 + 9));
 		const at0 = slice(run(plan, 0));
 		expect(slice(run(plan, 0.5))).toEqual(at0);
 		expect(slice(run(plan, 1))).toEqual(at0);
@@ -174,9 +175,7 @@ describe('unfold on real generated bands', () => {
 			...projectionBands,
 			...(sg.voronoiResult?.tubes ?? []).flatMap((t) => t.bands),
 			...(sg.voronoiResult?.surfaceProjectionTubes ?? []).flatMap((t) => t.bands)
-		].filter(
-			(b) => b.facets.length > 0
-		);
+		].filter((b) => b.facets.length > 0);
 	});
 
 	// The test fixture's vertex layout is not one getFlatStripV2's orientation

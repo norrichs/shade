@@ -4,13 +4,30 @@
 	import AgentCapture from './AgentCapture.svelte';
 	import type { Snippet } from 'svelte';
 
-	let { children }: { children: Snippet } = $props();
+	let {
+		children,
+		agentCapture = true,
+		pointPick = true
+	}: {
+		children: Snippet;
+		/**
+		 * Register this canvas as the agent bridge's model screenshot source. The
+		 * slot is global (last mount wins), so secondary canvases turn it off.
+		 */
+		agentCapture?: boolean;
+		/** Show the band-select interaction overlay. */
+		pointPick?: boolean;
+	} = $props();
 </script>
 
 <div class="container">
-	<PointPick />
+	{#if pointPick}
+		<PointPick />
+	{/if}
 	<Canvas>
-		<AgentCapture />
+		{#if agentCapture}
+			<AgentCapture />
+		{/if}
 		{@render children()}
 	</Canvas>
 </div>

@@ -17,6 +17,7 @@
 	import { buildPatternCsv } from '#lib/cut-pattern/build-pattern-csv.js';
 	import type { BandSortIndex, TubeCutPattern } from '#lib/types.js';
 	import PaneDivider from '../../components/layout/PaneDivider.svelte';
+	import BandViewerPane from '../../components/band-viewer/BandViewerPane.svelte';
 	import {
 		assemblerPanels,
 		clampAssemblerPanels,
@@ -83,7 +84,9 @@
 			<Scene />
 		</ThreeRenderer>
 	</section>
-	<section class="pane pane-band"></section>
+	<section class="pane pane-band">
+		<BandViewerPane />
+	</section>
 	<section class="pane pane-pattern">
 		<PatternViewer />
 	</section>
