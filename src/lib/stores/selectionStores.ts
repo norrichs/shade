@@ -510,7 +510,7 @@ export type GeometrySource =
 	| 'voronoiSurface';
 
 /** Resolve the `Tube[]` array backing a given geometry source. */
-const tubesForGeometrySource = (
+export const tubesForGeometrySource = (
 	sg: SuperGlobule,
 	source: GeometrySource,
 	globule = 0
