@@ -10,6 +10,12 @@ flattened cut-pattern shape. The band viewer shows the selected band on its
 own and lets Ben unfold it gradually, from its real 3D shape to fully flat,
 so he can be certain how the flat piece is oriented in space.
 
+The viewer is the reference, measured against the 3D model. Ben expects to use it to
+request revisions to the pattern viewer so the pattern better matches what
+he expects from the 3D model. So the band viewer follows the 3D model's
+geometry and does **not** copy the pattern pane's 2D layout (rotation,
+mirroring, position).
+
 ## Goals
 
 1. A new **Band** pane in the Assembler, between the model and pattern panes.
@@ -35,14 +41,27 @@ so he can be certain how the flat piece is oriented in space.
   "Side benefit" below; that is a separate task).
 - No multi-band or ring display: one band only, even when the highlight
   includes a ring.
+- No per-piece display. When the pattern splits a band into pieces, the
+  viewer shows the whole parent band (Ben's decision). `AssemblerHighlight`
+  stays band-granular.
+- No matching of the pattern pane's 2D orientation or handedness (see Intent).
 
 ## Anti-goals
 
 - The unfold must not jump, flip or snap at any slider value, especially
   between 99% and 100%. A visible discontinuity defeats the purpose.
-- The fully flat result must be the same shape as the band in the cut
-  pattern (up to rotation and mirroring). If it doesn't match, the view
-  misleads instead of building confidence.
+- At 0% the band must be exactly the band as it sits in the 3D model: same
+  world coordinates and winding, so front/back match the model. The anchor
+  (the facet closest to parallel with the averaged plane) never moves, so the
+  band keeps its real orientation relationship to the model at every slider
+  value. Re-centering or re-orienting the band geometry itself (rather than
+  the camera) would break this.
+- The fully flat result must be an exact isometric flattening (all edge
+  lengths and facet angles preserved). For an unsplit band its outline is
+  congruent to the cut-pattern band, reflection allowed. Any
+  rotation/mirroring difference from the pattern pane is information for Ben,
+  not a bug in the viewer. For a split band, the flat result is the whole
+  parent band and will not match any single piece.
 - Dragging the slider must not freeze or stutter the page, and must not set
   off a regeneration, a Svelte store cascade, or a re-render of the other
   panes.
@@ -166,10 +185,15 @@ the only ambiguous case. Keep the sign given by `atan2`.
 - **Anchor**: `fitPlane` over all of the band's vertices. Anchor = the
   non-degenerate facet whose normal has the largest |dot| with the plane
   normal. Its vertices never move.
-- **Framing**: on band change, center the camera on the band and look along
-  the anchor's normal from the front side, so 100% is seen face-on.
-  Orient "up" to the band's long axis in the anchor plane (matching how the
-  pattern lays bands out along Y). Don't reframe while the slider moves.
+- **Geometry stays in model world coordinates.** Only the camera moves to
+  frame it. Never translate or rotate the band's vertices for display.
+- **Framing**: on band change, target the camera on the band's centroid and
+  look along the anchor's normal from the front side (the side the generated
+  winding faces), so 100% is seen face-on. Use world +Z as camera "up" (the
+  model's vertical; globule silhouettes map to Z), falling back to world +Y
+  when the anchor normal is near-parallel to Z. That keeps "up" in the band
+  pane meaning the same as in the model. Don't reframe while the slider
+  moves; OrbitControls stays free.
 - **Meshes** (static Three.js objects created outside `$state`; see the
   `GlobuleMesh $state proxy loop` memory):
   - one `BufferGeometry` (non-indexed, one triangle per facet) shared by two
@@ -205,9 +229,9 @@ the only ambiguous case. Keep the sign given by `atan2`.
 
 Tests:
 - `t = 0` reproduces the original 3D vertices (within epsilon).
-- `t = 1` gives coplanar vertices with every edge length preserved, and the
-  shape is congruent (rotation/reflection allowed) to the same band's
-  `getFlatStripV2` output.
+- `t = 1` gives coplanar vertices (in the anchor's plane) with every edge
+  length preserved, and the shape is congruent (rotation and reflection
+  allowed) to the same band's `getFlatStripV2` output.
 - The anchor's vertices are identical at every `t`.
 - Continuity: positions at `t = 0.999` vs `t = 1` differ by O(0.001 × band size),
   with no jumps, including for a band with folds near ±π/2 and a pole
@@ -241,10 +265,17 @@ separate refactor task, not part of this one.**
 - Camera FOV, lighting, and the exact gray/blue values (light gray front, dark
   gray back, blue lines).
 
+## Decided by Ben
+
+- Band geometry follows the 3D model; the averaged-plane anchor keeps it
+  oriented relative to the model. No matching of the pattern pane's layout.
+- Split bands: show the whole parent band.
+- Draggable, persisted dividers on all three Assembler splits.
+
 ## Calls made without Ben (check while reading)
 
 - Selection source = `assemblerHighlight`; only its `band` is shown, not the ring.
 - Slider value is kept across band changes; camera reframes on band change only.
 - All hinges unfold proportionally together (not hinge by hinge from the anchor).
-- Camera faces the anchor's front side, with "up" along the band's long axis.
+- Camera faces the anchor's front side, with world +Z as "up".
 - Pattern-pipeline flattening refactor is deferred to a separate task.
