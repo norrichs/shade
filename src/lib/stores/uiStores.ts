@@ -74,7 +74,7 @@ export const assemblerPanels = persistable<AssemblerPanels>(
 	true
 );
 
-export const nextPanelLayout =(layout: PanelLayout): PanelLayout => {
+export const nextPanelLayout = (layout: PanelLayout): PanelLayout => {
 	const i = PANEL_LAYOUTS.findIndex((l) => l.value === layout);
 	return PANEL_LAYOUTS[(i + 1) % PANEL_LAYOUTS.length].value;
 };

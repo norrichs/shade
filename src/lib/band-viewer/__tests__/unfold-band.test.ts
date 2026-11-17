@@ -68,6 +68,36 @@ const planeDistances = (arr: ArrayLike<number>, plan: UnfoldPlan) => {
 	return d;
 };
 
+/**
+ * Hinges (consecutive facets sharing an edge) whose free vertices lie on the
+ * SAME side of the shared edge in a flat layout, i.e. a facet folded back over
+ * its neighbour. Hinges with a collapsed facet are skipped.
+ */
+const foldedHinges = (arr: ArrayLike<number>, facetCount: number, eps: number) => {
+	const folded: number[] = [];
+	for (let f = 0; f + 1 < facetCount; f++) {
+		const a = [0, 1, 2].map((k) => vertex(arr, f * 3 + k));
+		const b = [0, 1, 2].map((k) => vertex(arr, (f + 1) * 3 + k));
+		const pairs: [number, number][] = [];
+		a.forEach((va, i) => {
+			const j = b.findIndex(
+				(vb, jj) => !pairs.some((pp) => pp[1] === jj) && va.distanceTo(vb) < eps
+			);
+			if (j >= 0 && pairs.length < 2) pairs.push([i, j]);
+		});
+		if (pairs.length < 2) continue;
+		const h0 = a[pairs[0][0]];
+		const hinge = new Vector3().subVectors(a[pairs[1][0]], h0);
+		const fa = a[3 - pairs[0][0] - pairs[1][0]];
+		const fb = b[3 - pairs[0][1] - pairs[1][1]];
+		const na = new Vector3().subVectors(fa, h0).cross(hinge);
+		const nb = new Vector3().subVectors(fb, h0).cross(hinge);
+		if (hinge.length() < eps || na.length() < eps * eps || nb.length() < eps * eps) continue;
+		if (na.dot(nb) > 0) folded.push(f);
+	}
+	return folded;
+};
+
 const maxAbsDiff = (a: ArrayLike<number>, b: ArrayLike<number>) => {
 	let m = 0;
 	for (let i = 0; i < a.length; i++) m = Math.max(m, Math.abs(a[i] - b[i]));
@@ -148,6 +178,15 @@ describe('prepareUnfold / applyUnfold', () => {
 		expect(maxSpan).toBeGreaterThan(7.5);
 	});
 
+	it('foldedHinges detects a facet folded back over its neighbour', () => {
+		// Facet 1 shares edge (1,0)-(0,1) with facet 0 but its free vertex sits on
+		// facet 0's side of that edge.
+		const strip = [0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0.2, 0.2, 0];
+		expect(foldedHinges(strip, 2, 1e-6)).toEqual([0]);
+		const unfolded = [0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0];
+		expect(foldedHinges(unfolded, 2, 1e-6)).toEqual([]);
+	});
+
 	it('keeps a collapsed pole facet finite', () => {
 		const p = prepareUnfold(buildFoldedBand(12, wavy, { poleFacet: true }))!;
 		for (const t of [0, 0.5, 1]) {
@@ -223,6 +262,8 @@ describe('unfold on real generated bands', () => {
 			const lens = edgeLengths(flat, p.facetCount);
 			const worst = Math.max(...lens.map((l, k) => Math.abs(l - base[k])));
 			if (worst > 1e-4 * scale) problems.push(`${i}: edge drift ${worst}`);
+			const folded = foldedHinges(flat, p.facetCount, 1e-4 * scale);
+			if (folded.length) problems.push(`${i}: folded over at hinges ${folded.join(',')}`);
 		});
 		expect(problems).toEqual([]);
 	});
