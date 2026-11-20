@@ -54,6 +54,12 @@ export type PatternViewConfig = {
 		y: number;
 	};
 	range: ProjectionRange;
+	/**
+	 * Split sections (`split-sections.ts` keys) the Range hides. View-only:
+	 * kept out of `range` so toggling one never regenerates the pattern.
+	 * Absent means none hidden.
+	 */
+	hiddenSplitSections?: string[];
 	patternSource: PatternSource;
 	bandSortMode: BandSortMode;
 	lineWrap?: boolean;
