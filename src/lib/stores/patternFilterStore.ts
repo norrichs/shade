@@ -4,7 +4,6 @@
  * store-free `#lib/cut-pattern/pattern-filter.js`.
  */
 import { get, writable } from 'svelte/store';
-import { AUTO_PERSIST_KEY, persistable } from '#lib/persistable.js';
 import type { GlobuleAddress_Band } from '#lib/projection-geometry/types.js';
 import {
 	applyPatternFilterClick,
@@ -16,15 +15,8 @@ import { geometrySourceOfPattern } from '#lib/cut-pattern/pattern-band-space.js'
 import { assemblerHighlight, type GeometrySource } from './selectionStores';
 import { patternSourceStore } from './superGlobuleStores';
 
-export const patternFilterSettings = persistable<PatternFilterSettings>(
-	{ mode: 'off', combine: 'exclusive' },
-	'PatternFilterSettings',
-	AUTO_PERSIST_KEY,
-	true
-);
-
-import { patternFilterSet } from './patternFilterSetStore';
-export { patternFilterSet };
+import { patternFilterSet, patternFilterSettings } from './patternFilterSetStore';
+export { patternFilterSet, patternFilterSettings };
 export { rangeShownBands, type RangeShownBands } from './patternFilterSetStore';
 
 export const clearPatternFilter = () => patternFilterSet.set(null);
@@ -76,6 +68,11 @@ export const patternFilterBandClicked = (source: GeometrySource, band: GlobuleAd
 	// there; a click on another source's meshes (e.g. the surface projection
 	// drawn over the voronoi tubes) leaves the filter alone.
 	if (source !== geometrySourceOfPattern(get(patternSourceStore))) return;
+	// Split sections are picked from the checkbox list; a click only focuses.
+	if (settings.mode === 'split') {
+		requestPatternFocus(source, band);
+		return;
+	}
 	const next = applyPatternFilterClick(get(patternFilterSet), settings, source, band);
 	patternFilterSet.set(next);
 	if (patternFilterShows(next, source, band)) {

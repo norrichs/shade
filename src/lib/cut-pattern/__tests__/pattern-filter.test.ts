@@ -5,6 +5,9 @@ import {
 	patternFilterIncludes,
 	patternFilterShows,
 	patternedBandCount,
+	listSplitSections,
+	allSplitKeys,
+	toggleSplitSections,
 	type PatternFilterSet,
 	type PatternFilterSettings
 } from '../pattern-filter';
@@ -173,5 +176,59 @@ describe('patternedBandCount', () => {
 		expect(patternedBandCount(tubes, false)).toBe(2);
 		expect(patternedBandCount(tubes, true)).toBe(3);
 		expect(patternedBandCount(undefined, true)).toBe(0);
+	});
+});
+
+describe('split filter', () => {
+	// Tube 0 split at quads 10 and 20 (band 1 too short for the second cut);
+	// tube 1 unsplit.
+	const piece = (tube: number, band: number, piece: number, offset: number) => ({
+		address: { ...b(tube, band), piece },
+		parentQuadOffset: offset
+	});
+	const splitTubes = () =>
+		[
+			{
+				projectionType: 'patterned',
+				address: { globule: 0, tube: 0 },
+				bands: [
+					piece(0, 0, 0, 0),
+					piece(0, 0, 1, 10),
+					piece(0, 0, 2, 20),
+					piece(0, 1, 0, 0),
+					piece(0, 1, 1, 10)
+				]
+			},
+			{
+				projectionType: 'patterned',
+				address: { globule: 0, tube: 1 },
+				bands: [{ address: b(1, 0) }, { address: b(1, 1) }]
+			}
+		] as unknown as TubeCutPattern[];
+
+	it('lists sections from the generated pieces, unsplit tubes apart', () => {
+		const listed = listSplitSections(splitTubes());
+		expect(listed.sections.map((s) => [s.key, s.startQuad, s.endQuad, s.bandCount])).toEqual([
+			['0:0@0', 0, 9, 2],
+			['0:0@10', 10, 19, 2],
+			['0:0@20', 20, undefined, 1]
+		]);
+		expect(listed.unsplitKeys).toEqual(['0:1@0']);
+	});
+
+	it('unchecking a section hides its pieces only; rechecking all clears', () => {
+		const all = allSplitKeys(listSplitSections(splitTubes()));
+		const set = toggleSplitSections(null, 'voronoi', all, ['0:0@10'], false);
+		expect(set).toEqual({ source: 'voronoi', kind: 'split', keys: ['0:0@0', '0:0@20', '0:1@0'] });
+		const shown = filterPatternTubes(splitTubes(), set, 'voronoi');
+		expect(shown[0].bands.map((band) => band.parentQuadOffset)).toEqual([0, 20, 0]);
+		expect(shown[1].bands).toHaveLength(2);
+		expect(toggleSplitSections(set, 'voronoi', all, ['0:0@10'], true)).toBeNull();
+	});
+
+	it('split sets never highlight whole bands in 3D, and clicks do not change them', () => {
+		const set: PatternFilterSet = { source: 'voronoi', kind: 'split', keys: ['0:0@0'] };
+		expect(patternFilterIncludes(set, 'voronoi', b(0, 0))).toBe(false);
+		expect(click(set, settings('split'), b(0, 0))).toBe(set);
 	});
 });

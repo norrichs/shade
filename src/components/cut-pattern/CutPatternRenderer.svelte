@@ -19,6 +19,7 @@
 		exportPagesStore,
 		resolvedPatternLabels,
 		patternFilterSet,
+		patternFilterSettings,
 		rangeShownBands
 	} from '#lib/stores/index.js';
 	import {
@@ -114,7 +115,9 @@
 		const resolved = resolveIndexBands(tubes, sortIndex);
 		const set = filterSet;
 		return set
-			? resolved.filter(({ band }) => patternFilterShows(set, filterSource, band.address))
+			? resolved.filter(({ band }) =>
+					patternFilterShows(set, filterSource, band.address, band.parentQuadOffset)
+				)
 			: resolved;
 	});
 
@@ -243,12 +246,15 @@
 
 	// An engaged click filter REPLACES the numerical range rather than narrowing
 	// it: the clicked bands must show even when they fall outside the range.
+	// Split mode replaces the range even while every section is checked.
 	const filtered = ({ tubes, range }: { tubes: TubeCutPattern[]; range: ProjectionRange }) =>
 		filterSet && filterSet.source === filterSource
 			? filterPatternTubes(tubes, filterSet, filterSource)
-			: // Generation already ranged tubes and bands (by index, in range order);
-				// only the facet range is left for the view.
-				sliceProjectionCutPattern(tubes, { facets: range?.facets });
+			: $patternFilterSettings.mode === 'split'
+				? tubes
+				: // Generation already ranged tubes and bands (by index, in range order);
+					// only the facet range is left for the view.
+					sliceProjectionCutPattern(tubes, { facets: range?.facets });
 
 	let range = $derived($patternConfigStore.patternViewConfig.range);
 	let layoutMode = $derived($patternConfigStore.patternViewConfig.patternLayoutMode ?? 'linear');

@@ -5,21 +5,50 @@
 		patternFilterSettings,
 		patternFilterSet,
 		setPatternFilterSettings,
-		clearPatternFilter
+		clearPatternFilter,
+		collatedTubesStore,
+		patternSourceStore
 	} from '#lib/stores/index.js';
 	import {
+		allSplitKeys,
 		describePatternFilter,
 		isFilteringMode,
+		listSplitSections,
+		toggleSplitSections,
 		type PatternFilterCombine,
 		type PatternFilterMode
 	} from '#lib/cut-pattern/pattern-filter.js';
 	import { get } from 'svelte/store';
+	import { geometrySourceOfPattern } from '#lib/cut-pattern/pattern-band-space.js';
+
+	// Split filter: the sections the generated tubes hold, each a checkbox.
+	$: splitMode = $patternFilterSettings.mode === 'split';
+	$: splitSections = splitMode ? listSplitSections($collatedTubesStore) : undefined;
+	$: splitKeys = splitSections ? allSplitKeys(splitSections) : [];
+	$: splitSource = geometrySourceOfPattern($patternSourceStore);
+	$: splitShownKeys =
+		$patternFilterSet &&
+		$patternFilterSet.kind === 'split' &&
+		$patternFilterSet.source === splitSource
+			? new Set($patternFilterSet.keys)
+			: undefined;
+	const isSplitShown = (shown: Set<string> | undefined, keys: string[]) =>
+		!shown || keys.every((k) => shown.has(k));
+	const setSplitShown = (keys: string[], shown: boolean) =>
+		patternFilterSet.set(
+			toggleSplitSections(get(patternFilterSet), splitSource, splitKeys, keys, shown)
+		);
+	const showOnlySplit = (keys: string[]) =>
+		patternFilterSet.set(
+			keys.length ? { source: splitSource, kind: 'split', keys: [...keys] } : null
+		);
 
 	const FILTER_MODES: { value: PatternFilterMode; label: string }[] = [
 		{ value: 'off', label: 'off' },
 		{ value: 'focus', label: 'focus' },
 		{ value: 'band', label: 'filter band' },
-		{ value: 'tube', label: 'filter tube' }
+		{ value: 'tube', label: 'filter tube' },
+		{ value: 'split', label: 'filter splits' }
 	];
 	const onFilterMode = (e: Event) =>
 		setPatternFilterSettings({
@@ -79,7 +108,7 @@
 		<select
 			value={$patternFilterSettings.combine}
 			on:change={onFilterCombine}
-			disabled={!isFilteringMode($patternFilterSettings.mode)}
+			disabled={!isFilteringMode($patternFilterSettings.mode) || splitMode}
 			title="exclusive: one band/tube at a time; additive: clicks add or remove"
 		>
 			<option value="exclusive">exclusive</option>
@@ -112,49 +141,102 @@
 				bind:value={$patternConfigStore.patternViewConfig.showLabels}
 			/>
 		</div>
-		<div>
-			<div
-				class="range-box"
-				class:overridden={!!$patternFilterSet}
-				title={$patternFilterSet
-					? 'Click filter is showing the selected bands; edit the range to switch back to it'
-					: undefined}
-			>
-				<span>Range</span>
-				{#if $patternFilterSet}<span class="range-note">(overridden by click filter)</span>{/if}
-				<button
-					on:click={() => {
-						rangeTubes = undefined;
-						rangeBands = undefined;
-						rangeFacets = undefined;
-					}}>all</button
+		{#if splitSections}
+			<div class="split-box" data-testid="split-filter">
+				<span>Splits</span>
+				<button on:click={clearPatternFilter} disabled={!$patternFilterSet}>all</button>
+				<button on:click={() => showOnlySplit([])} disabled={!splitKeys.length}>none</button>
+				{#if splitSections.sections.length === 0}
+					<div class="split-note">no split tubes</div>
+				{/if}
+				<div class="split-list">
+					{#each splitSections.sections as section (section.key)}
+						<label
+							class="split-item"
+							title="tube {section.tube}, quads {section.startQuad}–{section.endQuad ??
+								'end'}, {section.bandCount} band{section.bandCount === 1 ? '' : 's'}"
+						>
+							<input
+								type="checkbox"
+								checked={isSplitShown(splitShownKeys, [section.key])}
+								on:change={(e) => setSplitShown([section.key], e.currentTarget.checked)}
+							/>
+							t{section.tube}·{section.index}
+							<span class="split-quads">{section.startQuad}–{section.endQuad ?? 'end'}</span>
+						</label>
+						<button
+							class="split-only"
+							title="show only this section"
+							on:click={() => showOnlySplit([section.key])}>only</button
+						>
+					{/each}
+				</div>
+				{#if splitSections.unsplitKeys.length}
+					<label class="split-item">
+						<input
+							type="checkbox"
+							checked={isSplitShown(splitShownKeys, splitSections.unsplitKeys)}
+							indeterminate={!!splitShownKeys &&
+								!isSplitShown(splitShownKeys, splitSections.unsplitKeys) &&
+								splitSections.unsplitKeys.some((k) => splitShownKeys?.has(k))}
+							on:change={(e) =>
+								setSplitShown(splitSections?.unsplitKeys ?? [], e.currentTarget.checked)}
+						/>
+						unsplit tubes ({splitSections.unsplitKeys.length})
+					</label>
+				{/if}
+			</div>
+		{:else}
+			<div>
+				<div
+					class="range-box"
+					class:overridden={!!$patternFilterSet}
+					title={$patternFilterSet
+						? 'Click filter is showing the selected bands; edit the range to switch back to it'
+						: undefined}
 				>
-				<div class="range-inputs">
-					{#if Array.isArray(rangeTubes) && rangeTubes.length == 2}
-						<NumberInput label="tubes" min={-999} max={999} step={1} bind:value={rangeTubes[0]} />
-						<NumberInput min={-999} max={999} step={1} bind:value={rangeTubes[1]} />
-					{:else}
-						<button on:click={() => (rangeTubes = [0, 1])}>SetTubes</button>
-					{/if}
-				</div>
-				<div class="range-inputs">
-					{#if Array.isArray(rangeBands) && rangeBands.length == 2}
-						<NumberInput label="bands" min={-999} max={999} step={1} bind:value={rangeBands[0]} />
-						<NumberInput min={-999} max={999} step={1} bind:value={rangeBands[1]} />
-					{:else}
-						<button on:click={() => (rangeBands = [0, 1])}>SetBands</button>
-					{/if}
-				</div>
-				<div class="range-inputs">
-					{#if Array.isArray(rangeFacets) && rangeFacets.length == 2}
-						<NumberInput label="facets" min={-999} max={999} step={1} bind:value={rangeFacets[0]} />
-						<NumberInput min={-999} max={999} step={1} bind:value={rangeFacets[1]} />
-					{:else}
-						<button on:click={() => (rangeFacets = [0, 1])}>SetFacets</button>
-					{/if}
+					<span>Range</span>
+					{#if $patternFilterSet}<span class="range-note">(overridden by click filter)</span>{/if}
+					<button
+						on:click={() => {
+							rangeTubes = undefined;
+							rangeBands = undefined;
+							rangeFacets = undefined;
+						}}>all</button
+					>
+					<div class="range-inputs">
+						{#if Array.isArray(rangeTubes) && rangeTubes.length == 2}
+							<NumberInput label="tubes" min={-999} max={999} step={1} bind:value={rangeTubes[0]} />
+							<NumberInput min={-999} max={999} step={1} bind:value={rangeTubes[1]} />
+						{:else}
+							<button on:click={() => (rangeTubes = [0, 1])}>SetTubes</button>
+						{/if}
+					</div>
+					<div class="range-inputs">
+						{#if Array.isArray(rangeBands) && rangeBands.length == 2}
+							<NumberInput label="bands" min={-999} max={999} step={1} bind:value={rangeBands[0]} />
+							<NumberInput min={-999} max={999} step={1} bind:value={rangeBands[1]} />
+						{:else}
+							<button on:click={() => (rangeBands = [0, 1])}>SetBands</button>
+						{/if}
+					</div>
+					<div class="range-inputs">
+						{#if Array.isArray(rangeFacets) && rangeFacets.length == 2}
+							<NumberInput
+								label="facets"
+								min={-999}
+								max={999}
+								step={1}
+								bind:value={rangeFacets[0]}
+							/>
+							<NumberInput min={-999} max={999} step={1} bind:value={rangeFacets[1]} />
+						{:else}
+							<button on:click={() => (rangeFacets = [0, 1])}>SetFacets</button>
+						{/if}
+					</div>
 				</div>
 			</div>
-		</div>
+		{/if}
 	</div>
 	<label for="svg-width">width</label>
 	<input
@@ -217,6 +299,28 @@
 	.range-note {
 		font-size: 0.8em;
 		font-style: italic;
+	}
+	.split-box {
+		max-height: 10em;
+		overflow-y: auto;
+	}
+	.split-list {
+		display: grid;
+		grid-template-columns: auto auto;
+		column-gap: 4px;
+		align-items: center;
+	}
+	.split-item {
+		white-space: nowrap;
+	}
+	.split-quads,
+	.split-note {
+		font-size: 0.8em;
+		opacity: 0.7;
+	}
+	.split-only {
+		font-size: 0.75em;
+		padding: 0 4px;
 	}
 	.filter-summary {
 		min-width: 6em;

@@ -7,7 +7,20 @@
  * `patternFilterStore.ts`, which re-exports this.
  */
 import { writable } from 'svelte/store';
-import type { PatternFilterSet } from '#lib/cut-pattern/pattern-filter.js';
+import { AUTO_PERSIST_KEY, persistable } from '#lib/persistable.js';
+import type { PatternFilterSet, PatternFilterSettings } from '#lib/cut-pattern/pattern-filter.js';
+
+/**
+ * The filter mode, persisted per browser. Here rather than in
+ * `patternFilterStore.ts` so generation config can read it (split mode drops
+ * the numerical range).
+ */
+export const patternFilterSettings = persistable<PatternFilterSettings>(
+	{ mode: 'off', combine: 'exclusive' },
+	'PatternFilterSettings',
+	AUTO_PERSIST_KEY,
+	true
+);
 
 /** The pattern bands shown, in pattern band space; null shows everything. */
 export const patternFilterSet = writable<PatternFilterSet>(null);
