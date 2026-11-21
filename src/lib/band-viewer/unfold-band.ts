@@ -60,7 +60,12 @@ const scratchW = new Vector3();
 const vertexAt = (arr: Float32Array, facet: number, k: number, target = new Vector3()) =>
 	target.set(arr[facet * 9 + k * 3], arr[facet * 9 + k * 3 + 1], arr[facet * 9 + k * 3 + 2]);
 
-export const prepareUnfold = (band: Band): UnfoldPlan | null => {
+export type PrepareUnfoldOptions = {
+	/** Facet index to anchor on instead of the auto choice; clamped to the band. */
+	anchor?: number;
+};
+
+export const prepareUnfold = (band: Band, opts: PrepareUnfoldOptions = {}): UnfoldPlan | null => {
 	const n = band.facets.length;
 	if (n === 0) return null;
 
@@ -108,6 +113,9 @@ export const prepareUnfold = (band: Band): UnfoldPlan | null => {
 		}
 	});
 	if (anchor < 0) anchor = 0;
+	if (opts.anchor !== undefined && Number.isFinite(opts.anchor)) {
+		anchor = Math.min(n - 1, Math.max(0, Math.floor(opts.anchor)));
+	}
 	const anchorNormal = (winding[anchor] ?? plane.normal).clone();
 
 	const order = new Int32Array(n);
@@ -278,4 +286,62 @@ export const applyUnfold = (plan: UnfoldPlan, t: number, out: Float32Array): voi
 			out[i + 2] = scratchV.z;
 		}
 	}
+};
+
+/** Several bands unfolded together, packed into one position buffer. */
+export type MultiUnfoldPlan = {
+	plans: UnfoldPlan[];
+	/** Float offset of each plan's first vertex in the shared buffer. */
+	offsets: Int32Array;
+	facetCount: number;
+	/** Centre and radius bounding every band at t=0 and t=1 (camera framing). */
+	centroid: Vector3;
+	radius: number;
+	/** Direction the camera looks back along. */
+	frameNormal: Vector3;
+};
+
+/**
+ * The direction to view `plans` from: one band faces its anchor's front; several
+ * are seen from outside the model (origin → their centre), +Y when that centre
+ * is at the origin.
+ */
+export const multiFrameNormal = (plans: UnfoldPlan[], centroid: Vector3): Vector3 => {
+	if (plans.length === 1) return plans[0].anchorNormal.clone();
+	return centroid.lengthSq() > 1e-18 ? centroid.clone().normalize() : new Vector3(0, 1, 0);
+};
+
+export const prepareMultiUnfold = (plans: UnfoldPlan[]): MultiUnfoldPlan | null => {
+	if (plans.length === 0) return null;
+	const offsets = new Int32Array(plans.length);
+	let facetCount = 0;
+	plans.forEach((p, i) => {
+		offsets[i] = facetCount * 9;
+		facetCount += p.facetCount;
+	});
+	// Bound the union of each band's (centroid, radius) sphere.
+	const min = new Vector3(Infinity, Infinity, Infinity);
+	const max = new Vector3(-Infinity, -Infinity, -Infinity);
+	for (const p of plans) {
+		min.min(scratchV.copy(p.centroid).subScalar(p.radius));
+		max.max(scratchV.copy(p.centroid).addScalar(p.radius));
+	}
+	const centroid = new Vector3().addVectors(min, max).multiplyScalar(0.5);
+	let radius = 0;
+	for (const p of plans) radius = Math.max(radius, p.centroid.distanceTo(centroid) + p.radius);
+	return {
+		plans,
+		offsets,
+		facetCount,
+		centroid,
+		radius,
+		frameNormal: multiFrameNormal(plans, centroid)
+	};
+};
+
+/** `applyUnfold` for every band of `multi` into its slice of `out`. */
+export const applyMultiUnfold = (multi: MultiUnfoldPlan, t: number, out: Float32Array): void => {
+	multi.plans.forEach((p, i) =>
+		applyUnfold(p, t, out.subarray(multi.offsets[i], multi.offsets[i] + p.facetCount * 9))
+	);
 };
