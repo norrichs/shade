@@ -302,13 +302,37 @@ export type MultiUnfoldPlan = {
 };
 
 /**
- * The direction to view `plans` from: one band faces its anchor's front; several
- * are seen from outside the model (origin → their centre), +Y when that centre
- * is at the origin.
+ * The direction to view `plans` from. One band faces its anchor's front.
+ * Several are viewed along the axis their anchor normals agree on most (the
+ * principal eigenvector of Σ n·nᵀ, found by power iteration), turned toward
+ * the side more bands show their front to. That keeps as many bands as
+ * possible face-on: looking from the origin toward their centre put bands on
+ * opposite sides of a sphere edge-on.
  */
 export const multiFrameNormal = (plans: UnfoldPlan[], centroid: Vector3): Vector3 => {
 	if (plans.length === 1) return plans[0].anchorNormal.clone();
-	return centroid.lengthSq() > 1e-18 ? centroid.clone().normalize() : new Vector3(0, 1, 0);
+	const m = [0, 0, 0, 0, 0, 0, 0, 0, 0];
+	const sum = new Vector3();
+	for (const { anchorNormal: n } of plans) {
+		const a = [n.x, n.y, n.z];
+		for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) m[i * 3 + j] += a[i] * a[j];
+		sum.add(n);
+	}
+	// Start off-axis so a start vector orthogonal to the answer is unlikely.
+	const d = (sum.lengthSq() > 1e-12 ? sum.clone() : new Vector3(0.3, 1, 0.2)).normalize();
+	const next = new Vector3();
+	for (let k = 0; k < 64; k++) {
+		next.set(
+			m[0] * d.x + m[1] * d.y + m[2] * d.z,
+			m[3] * d.x + m[4] * d.y + m[5] * d.z,
+			m[6] * d.x + m[7] * d.y + m[8] * d.z
+		);
+		if (next.lengthSq() < 1e-24) break;
+		d.copy(next).normalize();
+	}
+	const side = sum.lengthSq() > 1e-12 ? sum : centroid;
+	if (d.dot(side) < 0) d.negate();
+	return d;
 };
 
 export const prepareMultiUnfold = (plans: UnfoldPlan[]): MultiUnfoldPlan | null => {

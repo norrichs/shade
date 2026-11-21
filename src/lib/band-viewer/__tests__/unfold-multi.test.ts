@@ -113,15 +113,38 @@ describe('prepareMultiUnfold / applyMultiUnfold', () => {
 		expect(m.centroid.x).toBeLessThan(p1.centroid.x);
 	});
 
-	it('frameNormal: one band → its anchor normal; several → away from the origin', () => {
+	it('frameNormal: one band → its anchor normal', () => {
 		expect(prepareMultiUnfold([p0])!.frameNormal.toArray()).toEqual(p0.anchorNormal.toArray());
-		const m = prepareMultiUnfold([p0, p1])!;
-		const expected = m.centroid.clone().normalize();
-		expect(m.frameNormal.distanceTo(expected)).toBeLessThan(1e-9);
 	});
 
-	it('frameNormal falls back to +Y when the centroid is at the origin', () => {
-		expect(multiFrameNormal([p0, p1], new Vector3()).toArray()).toEqual([0, 1, 0]);
+	it('frameNormal: several → the direction the band normals agree on', () => {
+		const n0 = new Vector3(0.2, 0, 1).normalize();
+		const n1 = new Vector3(-0.2, 0, 1).normalize();
+		const fake = (n: Vector3) => ({ ...p0, anchorNormal: n }) as UnfoldPlan;
+		const d = multiFrameNormal([fake(n0), fake(n1)], new Vector3(5, 0, 0));
+		expect(d.distanceTo(new Vector3(0, 0, 1))).toBeLessThan(1e-6);
+	});
+
+	it('frameNormal faces the side most bands show their front to', () => {
+		const fake = (n: Vector3) => ({ ...p0, anchorNormal: n }) as UnfoldPlan;
+		const up = new Vector3(0, 0, 1);
+		const down = new Vector3(0, 0, -1);
+		const d = multiFrameNormal([fake(up), fake(up), fake(down)], new Vector3());
+		expect(d.distanceTo(up)).toBeLessThan(1e-6);
+	});
+
+	it('frameNormal is a finite unit vector for normals spread all round', () => {
+		const fake = (n: Vector3) => ({ ...p0, anchorNormal: n }) as UnfoldPlan;
+		const plans = [
+			[1, 0, 0],
+			[-1, 0, 0],
+			[0, 1, 0],
+			[0, -1, 0],
+			[0, 0, 1],
+			[0, 0, -1]
+		].map((n) => fake(new Vector3(...n)));
+		const d = multiFrameNormal(plans, new Vector3());
+		expect(Math.abs(d.length() - 1)).toBeLessThan(1e-9);
 	});
 });
 

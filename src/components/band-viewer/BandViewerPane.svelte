@@ -1,48 +1,105 @@
 <script lang="ts">
 	import ThreeRenderer from '../three-renderer/ThreeRenderer.svelte';
 	import BandViewerScene from './BandViewerScene.svelte';
+	import BandViewerEditor from './BandViewerEditor.svelte';
+	import Floater from '../modal/Floater.svelte';
 	import {
 		assemblerHighlight,
+		bandViewerMaxFacets,
+		bandViewerRangeSource,
+		bandViewerSelection,
 		patternBandSpaces,
+		patternSourceStore,
 		superGlobuleStore,
 		tubesForGeometrySource
 	} from '#lib/stores/index.js';
-	import { resolveHighlightedBand } from '#lib/band-viewer/resolve-band.js';
-	import { prepareUnfold } from '#lib/band-viewer/unfold-band.js';
+	import { geometrySourceOfPattern } from '#lib/cut-pattern/pattern-band-space.js';
+	import { pickRangeSource, resolveViewerBands } from '#lib/band-viewer/resolve-bands.js';
+	import { prepareMultiUnfold, prepareUnfold } from '#lib/band-viewer/unfold-band.js';
+	import type { ResolvedBand } from '#lib/band-viewer/resolve-band.js';
+	import type { GeometrySource } from '#lib/stores/selectionStores.js';
 
 	/** Flatten amount, percent. Kept across band changes so bands compare at one unfold. */
 	let percent = $state(0);
+	let editorOpen = $state(false);
 
-	const resolved = $derived.by(() => {
-		const sg = $superGlobuleStore;
+	const tubesOf = $derived((source: GeometrySource, globule: number) =>
+		tubesForGeometrySource($superGlobuleStore, source, globule)
+	);
+
+	// Range mode ranges over the pattern's source, or the first source with tubes.
+	const rangeSource = $derived(
+		pickRangeSource(
+			geometrySourceOfPattern($patternSourceStore),
+			(source) => (tubesOf(source, 0)?.length ?? 0) > 0
+		)
+	);
+
+	$effect(() => {
+		bandViewerRangeSource.set(rangeSource);
+	});
+
+	const resolved = $derived.by<ResolvedBand[]>(() => {
 		try {
-			return resolveHighlightedBand(
+			return resolveViewerBands(
+				$bandViewerSelection,
 				$assemblerHighlight,
-				(source, globule) => tubesForGeometrySource(sg, source, globule),
+				rangeSource,
+				tubesOf,
 				$patternBandSpaces
 			);
 		} catch (e) {
-			console.warn('Band viewer: failed to resolve the highlighted band', e);
-			return null;
+			console.warn('Band viewer: failed to resolve the bands to show', e);
+			return [];
 		}
 	});
 
-	// Re-prepared whenever the resolved band object changes (selection or regeneration).
-	const plan = $derived(resolved ? prepareUnfold(resolved.band) : null);
+	const anchor = $derived($bandViewerSelection.anchor);
+
+	// Re-prepared whenever the shown bands (selection or regeneration) or the anchor change.
+	const plan = $derived.by(() => {
+		const plans = resolved.flatMap((r) => {
+			const p = prepareUnfold(r.band, anchor === 'auto' ? {} : { anchor });
+			return p ? [p] : [];
+		});
+		return prepareMultiUnfold(plans);
+	});
+
+	// The camera reframes when the SET of shown bands changes, not on anchor or slider.
+	const frameKey = $derived(
+		resolved
+			.map((r) => r.key)
+			.sort()
+			.join('|')
+	);
+
+	$effect(() => {
+		bandViewerMaxFacets.set(resolved.reduce((m, r) => Math.max(m, r.band.facets.length), 0));
+	});
+
+	const hint = $derived(
+		$bandViewerSelection.mode === 'clicked'
+			? 'Click bands to add them'
+			: $bandViewerSelection.mode === 'range'
+				? 'No bands in range'
+				: 'Select a band'
+	);
 </script>
 
 <div class="band-viewer">
 	<header>
-		{#if resolved}
-			<span class="label">Band {resolved.label}</span>
+		{#if resolved.length === 1}
+			<span class="label">Band {resolved[0].label}</span>
+		{:else if resolved.length > 1}
+			<span class="label">{resolved.length} bands</span>
 		{:else}
-			<span class="hint">Select a band</span>
+			<span class="hint">{hint}</span>
 		{/if}
 	</header>
 	<div class="viewport">
 		<ThreeRenderer agentCapture={false} pointPick={false}>
-			{#if plan && resolved}
-				<BandViewerScene {plan} flatten={percent / 100} frameKey={resolved.key} />
+			{#if plan}
+				<BandViewerScene {plan} flatten={percent / 100} {frameKey} />
 			{/if}
 		</ThreeRenderer>
 	</div>
@@ -60,8 +117,22 @@
 			/>
 			<output>{percent.toFixed(1)}%</output>
 		</label>
+		<button
+			class="edit"
+			class:active={editorOpen}
+			onclick={() => (editorOpen = !editorOpen)}
+			title="Choose the bands and anchor facet"
+		>
+			Edit
+		</button>
 	</footer>
 </div>
+<Floater
+	title="Band viewer"
+	showFloater={editorOpen}
+	onClose={() => (editorOpen = false)}
+	content={BandViewerEditor}
+/>
 
 <style>
 	.band-viewer {
@@ -82,7 +153,14 @@
 		flex: 1 1 auto;
 		min-height: 0;
 	}
+	footer {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
 	footer label {
+		flex: 1 1 auto;
+		min-width: 0;
 		display: flex;
 		align-items: center;
 		gap: 8px;
@@ -90,6 +168,9 @@
 	footer input {
 		flex: 1 1 auto;
 		min-width: 0;
+	}
+	.edit.active {
+		font-weight: bold;
 	}
 	footer output {
 		flex: none;

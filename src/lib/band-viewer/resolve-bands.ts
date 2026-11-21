@@ -69,3 +69,25 @@ export const resolveViewerBands = (
 		});
 	});
 };
+
+/** Fallback order when the pattern's source has no tubes (default model first). */
+const RANGE_SOURCE_FALLBACK: GeometrySource[] = [
+	'voronoi',
+	'voronoiSurface',
+	'projection',
+	'surfaceProjection',
+	'globuleTube'
+];
+
+/**
+ * The geometry source Range mode ranges over: the pattern's source when it has
+ * tubes (so indices match the pattern pane), else the first source that does —
+ * e.g. the default Voronoi model while the pattern source still says projection.
+ */
+export const pickRangeSource = (
+	preferred: GeometrySource,
+	hasTubes: (source: GeometrySource) => boolean
+): GeometrySource =>
+	hasTubes(preferred)
+		? preferred
+		: (RANGE_SOURCE_FALLBACK.find((s) => s !== preferred && hasTubes(s)) ?? preferred);

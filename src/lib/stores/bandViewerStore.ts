@@ -28,3 +28,6 @@ export const bandViewerBandClicked = (source: GeometrySource, band: GlobuleAddre
 
 /** Most facets in any shown band; the anchor dropdown offers 0 … this − 1. */
 export const bandViewerMaxFacets = writable(0);
+
+/** The geometry source Range mode is currently ranging over (shown in the editor). */
+export const bandViewerRangeSource = writable<GeometrySource | null>(null);

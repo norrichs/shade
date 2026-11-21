@@ -63,6 +63,9 @@
 		position: fixed;
 		top: 100px;
 		right: 20px;
+		/* Above pane content: a Floater mounted inside a pane (e.g. the band
+		   viewer's editor) would otherwise sit under panes later in the DOM. */
+		z-index: 100;
 		background-color: aliceblue;
 		box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.5);
 	}

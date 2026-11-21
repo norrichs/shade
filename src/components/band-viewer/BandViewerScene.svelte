@@ -14,17 +14,18 @@
 	import type { OrbitControls as ThreeOrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 	import { untrack } from 'svelte';
 	import DesignerLighting from '../three-renderer/DesignerLighting.svelte';
-	import { applyUnfold, type UnfoldPlan } from '#lib/band-viewer/unfold-band.js';
+	import { applyMultiUnfold, type MultiUnfoldPlan } from '#lib/band-viewer/unfold-band.js';
 
 	let {
 		plan,
 		flatten,
 		frameKey
 	}: {
-		plan: UnfoldPlan;
+		/** Every shown band, packed into one buffer (one band is a plan of one). */
+		plan: MultiUnfoldPlan;
 		/** Flatten fraction, 0 (as modelled) … 1 (flat). */
 		flatten: number;
-		/** Identity of the shown band; the camera reframes only when it changes. */
+		/** Identity of the shown band set; the camera reframes only when it changes. */
 		frameKey: string;
 	} = $props();
 
@@ -74,7 +75,7 @@
 
 	$effect(() => {
 		const { positions, faces, edges } = geometry;
-		applyUnfold(plan, flatten, positions.array as Float32Array);
+		applyMultiUnfold(plan, flatten, positions.array as Float32Array);
 		positions.needsUpdate = true;
 		faces.computeVertexNormals();
 		faces.computeBoundingSphere();
@@ -86,7 +87,8 @@
 	let controls: ThreeOrbitControls | undefined = $state();
 	let framedKey: string | undefined;
 
-	// Face the anchor's front side, world +Z up (the model's vertical), far enough
+	// Look along `frameNormal` (one band: its anchor's front side; several: from
+	// outside the model), world +Z up (the model's vertical), far enough
 	// back that both the modelled and the flat shape fit.
 	$effect(() => {
 		const key = frameKey;
@@ -99,9 +101,9 @@
 		const halfV = ((FOV / 2) * Math.PI) / 180;
 		const halfH = Math.atan(Math.tan(halfV) * (camera.aspect || 1));
 		const distance = (1.1 * radius) / Math.sin(Math.min(halfV, halfH));
-		const position = p.centroid.clone().addScaledVector(p.anchorNormal, distance);
+		const position = p.centroid.clone().addScaledVector(p.frameNormal, distance);
 		// Looking straight along Z would leave "up" undefined; tip slightly off-axis.
-		if (Math.abs(p.anchorNormal.dot(new Vector3(0, 0, 1))) > 0.99) {
+		if (Math.abs(p.frameNormal.dot(new Vector3(0, 0, 1))) > 0.99) {
 			position.y += 0.05 * distance;
 		}
 		camera.position.copy(position);

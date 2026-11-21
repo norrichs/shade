@@ -2,7 +2,7 @@ import { describe, it, expect } from '@jest/globals';
 import type { Band } from '#lib/types.js';
 import type { Tube } from '#lib/projection-geometry/types.js';
 import type { BandSpace, PatternBandSpaceOf } from '#lib/cut-pattern/pattern-band-space.js';
-import { resolveViewerBands } from '../resolve-bands';
+import { pickRangeSource, resolveViewerBands } from '../resolve-bands';
 import { DEFAULT_BAND_VIEWER_SELECTION, type BandViewerSelection } from '../viewer-selection';
 
 const band = (tube: number, b: number) =>
@@ -92,5 +92,24 @@ describe('resolveViewerBands', () => {
 			spaces
 		);
 		expect(r).toEqual([]);
+	});
+});
+
+describe('pickRangeSource', () => {
+	it('keeps the preferred (pattern) source when it has tubes', () => {
+		expect(pickRangeSource('projection', (s) => s === 'projection' || s === 'voronoi')).toBe(
+			'projection'
+		);
+	});
+
+	it('falls back to the first source with tubes', () => {
+		expect(pickRangeSource('projection', (s) => s === 'globuleTube')).toBe('globuleTube');
+		expect(pickRangeSource('projection', (s) => s === 'voronoi' || s === 'globuleTube')).toBe(
+			'voronoi'
+		);
+	});
+
+	it('keeps the preferred source when nothing has tubes', () => {
+		expect(pickRangeSource('projection', () => false)).toBe('projection');
 	});
 });
