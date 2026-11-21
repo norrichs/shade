@@ -6,6 +6,7 @@ import {
 	patternFilterBandClicked,
 	recordBandSelection
 } from '#lib/stores/index.js';
+import { bandViewerBandClicked } from '#lib/stores/bandViewerStore.js';
 import type { GlobuleAddress_Band, GlobuleAddress_Facet } from '#lib/projection-geometry/types.js';
 import {
 	assemblerHighlightForRealClick,
@@ -74,5 +75,8 @@ export const highlightRealBand = (source: GeometrySource, address: GlobuleAddres
 	// The pattern filter works in pattern band space; a band that was never
 	// patterned has nothing to show or hide.
 	const patternBand = realBandToPattern(space, real);
-	if (patternBand) patternFilterBandClicked(source, patternBand);
+	if (patternBand) {
+		patternFilterBandClicked(source, patternBand);
+		bandViewerBandClicked(source, patternBand);
+	}
 };

@@ -1,5 +1,5 @@
 import type { Band } from '#lib/types.js';
-import type { Tube } from '#lib/projection-geometry/types.js';
+import type { GlobuleAddress_Band, Tube } from '#lib/projection-geometry/types.js';
 import type { AssemblerHighlight } from '#lib/assembler-highlight.js';
 import type { GeometrySource } from '#lib/stores/selectionStores.js';
 import { patternBandToReal, type PatternBandSpaceOf } from '#lib/cut-pattern/pattern-band-space.js';
@@ -24,9 +24,19 @@ export const resolveHighlightedBand = (
 	highlight: AssemblerHighlight,
 	tubesOf: (source: GeometrySource, globule: number) => Tube[] | undefined,
 	spaces: PatternBandSpaceOf
+): ResolvedBand | null =>
+	highlight ? resolvePatternBand(highlight.source, highlight.band, tubesOf, spaces) : null;
+
+/**
+ * The real 3D band behind pattern band `patternBand` of `source`. Null when the
+ * address no longer exists.
+ */
+export const resolvePatternBand = (
+	source: GeometrySource,
+	patternBand: GlobuleAddress_Band,
+	tubesOf: (source: GeometrySource, globule: number) => Tube[] | undefined,
+	spaces: PatternBandSpaceOf
 ): ResolvedBand | null => {
-	if (!highlight) return null;
-	const { source, band: patternBand } = highlight;
 	const real = patternBandToReal(spaces(source, patternBand.globule), patternBand);
 	if (!real) return null;
 	const tubes = tubesOf(source, real.globule);
