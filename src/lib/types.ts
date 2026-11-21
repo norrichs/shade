@@ -1349,6 +1349,11 @@ export type GlobuleConfig = {
 	name?: string;
 	isModified?: boolean;
 	shapeConfigs: ShapeConfig[];
+	/**
+	 * Scales every GCS's sampling `divisions` (positive integer, default 1), so
+	 * the configs' band counts can be raised together without editing each one.
+	 */
+	gcsMultiplier?: number;
 	levelConfig: LevelConfig;
 	silhouetteConfig: SilhouetteConfig;
 	depthCurveConfig: DepthCurveConfig;

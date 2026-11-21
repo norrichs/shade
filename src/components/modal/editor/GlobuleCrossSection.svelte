@@ -30,7 +30,11 @@
 	import { pathFromCurves, radializeCurves } from './curve-preview';
 	import { isReflectedSymmetry, radialUnitAngle } from '#lib/geometry/radial-shape.js';
 	import { effectiveGcsLevels, gcsLabel } from '#lib/gcs/gcs-placement.js';
-	import { generateLevelPrototype, validateGlobuleShapeConfigs } from '#lib/generate-shape.js';
+	import {
+		gcsMultiplierOf,
+		generateLevelPrototype,
+		validateGlobuleShapeConfigs
+	} from '#lib/generate-shape.js';
 	import { selectedGcsIndex } from './gcs-editor-store';
 	import {
 		addGcs,
@@ -60,8 +64,11 @@
 	let divisions = $derived(globuleConfig?.levelConfig.silhouetteSampleMethod.divisions ?? 0);
 	let validation = $derived(globuleConfig ? validateGlobuleShapeConfigs(globuleConfig) : undefined);
 	let levels = $derived(effectiveGcsLevels(shapeConfigs, divisions));
+	let multiplier = $derived(gcsMultiplierOf(globuleConfig?.gcsMultiplier));
 	let vertexCounts = $derived(
-		globuleConfig ? shapeConfigs.map((shape) => generateLevelPrototype(shape).vertices.length) : []
+		globuleConfig
+			? shapeConfigs.map((shape) => generateLevelPrototype(shape, multiplier).vertices.length)
+			: []
 	);
 	let invalidIndices = $derived(
 		new Set((validation?.errors ?? []).filter((e) => e.index !== null).map((e) => e.index))
@@ -124,6 +131,20 @@
 							shapeConfigs: transform(sub.globuleConfig.shapeConfigs)
 						}
 					}
+				: sub
+		);
+		superConfigStore.set(config);
+	};
+
+	/** The globule-wide multiplier on every GCS's divisions. */
+	const setMultiplier = (value: number) => {
+		const config: SuperGlobuleConfig = get(superConfigStore);
+		if (!config.subGlobuleConfigs[sgIndex]) return;
+		const next = gcsMultiplierOf(value);
+		if (next === multiplier) return;
+		config.subGlobuleConfigs = config.subGlobuleConfigs.map((sub, index) =>
+			index === sgIndex
+				? { ...sub, globuleConfig: { ...sub.globuleConfig, gcsMultiplier: next } }
 				: sub
 		);
 		superConfigStore.set(config);
@@ -314,43 +335,56 @@
 			<div class="gcs-error">{error.message}</div>
 		{/each}
 		<div class="gcs-strip">
-			{#each shapeConfigs as shape, i (i)}
+			<div class="gcs-strip-buttons">
+				{#each shapeConfigs as shape, i (i)}
+					<button
+						type="button"
+						class="gcs-chip"
+						class:selected={i === selected}
+						class:invalid={invalidIndices.has(i)}
+						onclick={() => selectedGcsIndex.set(i)}
+					>
+						{gcsLabel(i)}{shape.isPrimary ? ' ★' : ''}
+					</button>
+				{/each}
 				<button
 					type="button"
-					class="gcs-chip"
-					class:selected={i === selected}
-					class:invalid={invalidIndices.has(i)}
-					onclick={() => selectedGcsIndex.set(i)}
+					title={shapeConfigs.length >= divisions + 1
+						? `At most ${divisions + 1} cross sections (one per silhouette level)`
+						: 'Duplicate after selected'}
+					disabled={shapeConfigs.length >= divisions + 1}
+					onclick={onAdd}>+</button
 				>
-					{gcsLabel(i)}{shape.isPrimary ? ' ★' : ''}
-				</button>
-			{/each}
-			<button
-				type="button"
-				title={shapeConfigs.length >= divisions + 1
-					? `At most ${divisions + 1} cross sections (one per silhouette level)`
-					: 'Duplicate after selected'}
-				disabled={shapeConfigs.length >= divisions + 1}
-				onclick={onAdd}>+</button
-			>
-			<button
-				type="button"
-				title="Delete selected"
-				disabled={shapeConfigs.length <= 1}
-				onclick={onDelete}>−</button
-			>
-			<button
-				type="button"
-				title="Move earlier"
-				disabled={selected === 0}
-				onclick={() => onMove(-1)}>←</button
-			>
-			<button
-				type="button"
-				title="Move later"
-				disabled={selected >= shapeConfigs.length - 1}
-				onclick={() => onMove(1)}>→</button
-			>
+				<button
+					type="button"
+					title="Delete selected"
+					disabled={shapeConfigs.length <= 1}
+					onclick={onDelete}>−</button
+				>
+				<button
+					type="button"
+					title="Move earlier"
+					disabled={selected === 0}
+					onclick={() => onMove(-1)}>←</button
+				>
+				<button
+					type="button"
+					title="Move later"
+					disabled={selected >= shapeConfigs.length - 1}
+					onclick={() => onMove(1)}>→</button
+				>
+			</div>
+			<div class="gcs-multiplier" title="Multiplies every cross section's Divisions">
+				Multiplier
+				<NumberInput
+					value={multiplier}
+					onChange={setMultiplier}
+					min={1}
+					max={20}
+					step={1}
+					hasButtons
+				/>
+			</div>
 		</div>
 		<Container direction="row">
 			<Container direction="column">
@@ -535,9 +569,22 @@
 <style>
 	.gcs-strip {
 		display: flex;
-		gap: 4px;
+		justify-content: space-between;
+		align-items: center;
+		gap: 8px;
 		margin-bottom: 8px;
+	}
+	.gcs-strip-buttons {
+		display: flex;
+		gap: 4px;
 		flex-wrap: wrap;
+	}
+	.gcs-multiplier {
+		display: flex;
+		align-items: center;
+		gap: 4px;
+		font-size: 0.85em;
+		white-space: nowrap;
 	}
 	.gcs-chip.selected {
 		font-weight: bold;
