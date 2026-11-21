@@ -6,6 +6,7 @@ import {
 	prepareMultiUnfold,
 	applyMultiUnfold,
 	multiFrameNormal,
+	createUnfoldCache,
 	type UnfoldPlan
 } from '../unfold-band';
 import { generateSuperGlobule } from '#lib/generate-superglobule.js';
@@ -145,6 +146,38 @@ describe('prepareMultiUnfold / applyMultiUnfold', () => {
 		].map((n) => fake(new Vector3(...n)));
 		const d = multiFrameNormal(plans, new Vector3());
 		expect(Math.abs(d.length() - 1)).toBeLessThan(1e-9);
+	});
+});
+
+describe('createUnfoldCache', () => {
+	const a = buildBand(8);
+	const b = buildBand(10, new Vector3(5, 0, 0));
+
+	it('returns the same multi plan for the same bands and anchor', () => {
+		const cache = createUnfoldCache();
+		const first = cache.multiFor([a, b], 'auto');
+		expect(cache.multiFor([a, b], 'auto')).toBe(first);
+	});
+
+	it('reuses per-band plans when the set changes', () => {
+		const cache = createUnfoldCache();
+		const ab = cache.multiFor([a, b], 'auto')!;
+		const bOnly = cache.multiFor([b], 'auto')!;
+		expect(bOnly).not.toBe(ab);
+		expect(bOnly.plans[0]).toBe(ab.plans[1]);
+	});
+
+	it('re-prepares when the anchor changes', () => {
+		const cache = createUnfoldCache();
+		const auto = cache.multiFor([a], 'auto')!;
+		const two = cache.multiFor([a], 2)!;
+		expect(two).not.toBe(auto);
+		expect(two.plans[0].anchor).toBe(2);
+		expect(cache.multiFor([a], 'auto')!.plans[0]).toBe(auto.plans[0]);
+	});
+
+	it('empty → null', () => {
+		expect(createUnfoldCache().multiFor([], 'auto')).toBeNull();
 	});
 });
 

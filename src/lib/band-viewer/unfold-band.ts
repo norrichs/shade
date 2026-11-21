@@ -369,3 +369,42 @@ export const applyMultiUnfold = (multi: MultiUnfoldPlan, t: number, out: Float32
 		applyUnfold(p, t, out.subarray(multi.offsets[i], multi.offsets[i] + p.facetCount * 9))
 	);
 };
+
+/**
+ * Memoised plans for the band viewer. Per-band plans are cached by band object
+ * and anchor (a WeakMap, so regenerated bands drop out), and the multi plan is
+ * reused while the exact same plans are shown. Re-resolving the same bands
+ * (e.g. a click elsewhere) then rebuilds nothing.
+ */
+export const createUnfoldCache = () => {
+	const perBand = new WeakMap<Band, Map<string, UnfoldPlan | null>>();
+	let last: MultiUnfoldPlan | null = null;
+
+	const planFor = (band: Band, anchor: 'auto' | number) => {
+		let byAnchor = perBand.get(band);
+		if (!byAnchor) perBand.set(band, (byAnchor = new Map()));
+		const key = String(anchor);
+		if (!byAnchor.has(key)) {
+			byAnchor.set(key, prepareUnfold(band, anchor === 'auto' ? {} : { anchor }));
+		}
+		return byAnchor.get(key)!;
+	};
+
+	return {
+		multiFor(bands: Band[], anchor: 'auto' | number): MultiUnfoldPlan | null {
+			const plans = bands.flatMap((b) => {
+				const p = planFor(b, anchor);
+				return p ? [p] : [];
+			});
+			if (
+				last &&
+				last.plans.length === plans.length &&
+				last.plans.every((p, i) => p === plans[i])
+			) {
+				return last;
+			}
+			last = prepareMultiUnfold(plans);
+			return last;
+		}
+	};
+};

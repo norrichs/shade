@@ -15,7 +15,7 @@
 	} from '#lib/stores/index.js';
 	import { geometrySourceOfPattern } from '#lib/cut-pattern/pattern-band-space.js';
 	import { pickRangeSource, resolveViewerBands } from '#lib/band-viewer/resolve-bands.js';
-	import { prepareMultiUnfold, prepareUnfold } from '#lib/band-viewer/unfold-band.js';
+	import { createUnfoldCache } from '#lib/band-viewer/unfold-band.js';
 	import type { ResolvedBand } from '#lib/band-viewer/resolve-band.js';
 	import type { GeometrySource } from '#lib/stores/selectionStores.js';
 
@@ -43,7 +43,9 @@
 		try {
 			return resolveViewerBands(
 				$bandViewerSelection,
-				$assemblerHighlight,
+				// Only Selected mode shows the highlight; reading it in the other
+				// modes would re-resolve (and rebuild) every shown band on each click.
+				$bandViewerSelection.mode === 'selected' ? $assemblerHighlight : null,
 				rangeSource,
 				tubesOf,
 				$patternBandSpaces
@@ -56,14 +58,16 @@
 
 	const anchor = $derived($bandViewerSelection.anchor);
 
-	// Re-prepared whenever the shown bands (selection or regeneration) or the anchor change.
-	const plan = $derived.by(() => {
-		const plans = resolved.flatMap((r) => {
-			const p = prepareUnfold(r.band, anchor === 'auto' ? {} : { anchor });
-			return p ? [p] : [];
-		});
-		return prepareMultiUnfold(plans);
-	});
+	// Plans are cached per band object and anchor, and the combined plan is
+	// reused while the same plans are shown, so re-resolving unchanged bands
+	// rebuilds nothing; regeneration or an anchor change re-prepares.
+	const unfoldCache = createUnfoldCache();
+	const plan = $derived(
+		unfoldCache.multiFor(
+			resolved.map((r) => r.band),
+			anchor
+		)
+	);
 
 	// The camera reframes when the SET of shown bands changes, not on anchor or slider.
 	const frameKey = $derived(

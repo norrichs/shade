@@ -33,8 +33,9 @@ export const DEFAULT_BAND_VIEWER_SELECTION: BandViewerSelection = {
 
 /**
  * The selection after a click on pattern band `band` of `source`. Only Clicked
- * mode reacts (other modes return `sel` itself). Clicks toggle; a click on
- * another source starts a fresh set; an emptied set is `null`.
+ * mode reacts (other modes return `sel` itself). Clicks toggle; an emptied
+ * set is `null`. While the set holds bands, clicks on another geometry source
+ * (e.g. a stray click on an overlay) are ignored rather than wiping it.
  */
 export const toggleViewerClick = (
 	sel: BandViewerSelection,
@@ -42,8 +43,9 @@ export const toggleViewerClick = (
 	band: GlobuleAddress_Band
 ): BandViewerSelection => {
 	if (sel.mode !== 'clicked') return sel;
+	if (sel.clicked && sel.clicked.source !== source) return sel;
 	const key = bandFilterKey(band);
-	const keys = sel.clicked && sel.clicked.source === source ? sel.clicked.keys : [];
+	const keys = sel.clicked?.keys ?? [];
 	const next = keys.includes(key) ? keys.filter((k) => k !== key) : [...keys, key];
 	return { ...sel, clicked: next.length ? { source, keys: next } : null };
 };

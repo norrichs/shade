@@ -41,9 +41,13 @@ describe('toggleViewerClick', () => {
 		expect(back.clicked?.keys).toEqual(['0:2:3']);
 	});
 
-	it('a click on another source restarts the set', () => {
+	it('ignores a click on another source while the set has bands', () => {
 		const one = toggleViewerClick(clicked, 'projection', b(0, 1));
-		expect(toggleViewerClick(one, 'voronoi', b(4, 4)).clicked).toEqual({
+		expect(toggleViewerClick(one, 'voronoi', b(4, 4))).toBe(one);
+	});
+
+	it('an empty set adopts the clicked source', () => {
+		expect(toggleViewerClick(clicked, 'voronoi', b(4, 4)).clicked).toEqual({
 			source: 'voronoi',
 			keys: ['0:4:4']
 		});
