@@ -4,6 +4,7 @@ import { toQuad } from './tiled-asanoha-pattern';
 import { alignNextBandPath, alignPrevBandPath } from './adjust/align-prev-band';
 import { findLeftPartner, findRightPartner } from './adjust/side-partners';
 import { alongsideFacetIndex } from '#lib/cut-pattern/resolve-partner-band.js';
+import { computeTiledLabelAngle } from '#lib/cut-pattern/compute-tiled-label-angle.js';
 
 /**
  * Antalya: two units, A (a wide bar with ears and two X crossings) and B (A
@@ -270,6 +271,29 @@ export const generateAntalyaPreview = (columns: number): PathSegment[] => {
 	);
 };
 
+/**
+ * The label anchor: the middle of the line that closes the band's start, in
+ * the middle column, mapped exactly as the lines are. For A that is A2's bottom
+ * bar (4,3), between the ears; for B its cap (4,5), past the quad edge. The
+ * quad edge itself (where a split cuts) carries no line.
+ */
+export const antalyaStartAnchorNode = (layout: AntalyaBandLayout): AntalyaNode => {
+	const column = Math.floor((layout.columns - 1) / 2);
+	const kind = antalyaKindOf(layout.band * layout.columns + column, layout.parentQuadOffset);
+	return resolveNode([4, kind === 'A' ? 3 : 5], 0, column, layout);
+};
+
+const startLabelAnchor = (
+	layout: AntalyaBandLayout,
+	firstQuad: Quadrilateral | undefined,
+	place: (node: AntalyaNode) => [number, number] | undefined
+): { point: { x: number; y: number }; angle: number } | undefined => {
+	const placed = firstQuad ? place(antalyaStartAnchorNode(layout)) : undefined;
+	if (!placed || !firstQuad) return undefined;
+	const point = { x: placed[0], y: placed[1] };
+	return { point, angle: computeTiledLabelAngle(point, firstQuad) };
+};
+
 const mapPoint = (x: number, y: number, quad: Quadrilateral): [number, number] => {
 	const [[, px, py]] = transformPatternByQuad([['M', x, y]], quad) as [['M', number, number]];
 	return [px, py];
@@ -332,14 +356,16 @@ export const adjustAntalyaAfterTiling = (
 			return [px, py];
 		};
 
-		const segments = antalyaBandSegments({
+		const layout: AntalyaBandLayout = {
 			band: b,
 			columns,
 			parentQuadOffset: band.parentQuadOffset ?? 0,
 			facetCount: band.facets.length,
 			leftStraight,
 			rightStraight
-		});
+		};
+		const segments = antalyaBandSegments(layout);
+		const label = startLabelAnchor(layout, quads[0], place);
 
 		const facets = band.facets.map((facet, f) => {
 			if (!quads[f]) return facet;
@@ -358,6 +384,11 @@ export const adjustAntalyaAfterTiling = (
 				: rightStraight && rightBand
 					? straightNotice(band.address.tube, b, rightBand.address.band)
 					: undefined;
-		return { ...band, facets, ...(notice ? { notice } : {}) };
+		return {
+			...band,
+			...(label && { tagAnchorPoint: label.point, tagAnchorAutoAngle: label.angle }),
+			facets,
+			...(notice ? { notice } : {})
+		};
 	});
 };

@@ -303,6 +303,28 @@ describe('adjustAntalyaAfterTiling', () => {
 		expect(minX(false)).toBeCloseTo(3 - 1 / 8);
 	});
 
+	it("anchors the label on the line closing the band's start, not the quad edge", () => {
+		const [a, b] = adjustAntalyaAfterTiling(wrappingTube(4, 8), config());
+		// Band 0 starts with A: the middle of A2's bottom bar, inside the quad.
+		expect(a.tagAnchorPoint.x).toBeCloseTo(0.5);
+		expect(a.tagAnchorPoint.y).toBeCloseTo(0.25);
+		// Band 1 starts with B: the middle of its cap, past the quad edge.
+		expect(b.tagAnchorPoint.x).toBeCloseTo(1.5);
+		expect(b.tagAnchorPoint.y).toBeCloseTo(-0.25);
+		for (const band of [a, b]) {
+			const { x, y } = band.tagAnchorPoint;
+			const onLine = pathLines(band.facets[0].path).some(
+				([x0, y0, x1, y1]) =>
+					Math.abs(y0 - y) < 1e-9 &&
+					Math.abs(y1 - y) < 1e-9 &&
+					Math.min(x0, x1) < x &&
+					x < Math.max(x0, x1)
+			);
+			expect(onLine).toBe(true);
+			expect(band.tagAnchorAutoAngle).toBeDefined();
+		}
+	});
+
 	it('leaves refused bands untouched', () => {
 		const refused = { ...cutBand(0, 3), facets: [], error: 'nope' } as BandCutPattern;
 		expect(adjustAntalyaAfterTiling([refused], config())[0]).toBe(refused);
