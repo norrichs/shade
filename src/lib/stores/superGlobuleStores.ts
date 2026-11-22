@@ -52,6 +52,7 @@ import {
 	collectSeamDeviations,
 	createSeamDeviationNotifier
 } from '#lib/cut-pattern/seam-deviation-notice.js';
+import { collectBandNotices, createBandNoticeNotifier } from '#lib/cut-pattern/band-notice.js';
 import { viewControlStore, type ViewControls } from './viewControlStore';
 import { Box3, Vector3 } from 'three';
 
@@ -597,6 +598,20 @@ if (browser) {
 		);
 		notifySeamDeviation(flagged, threshold);
 	});
+
+	// Non-fatal notes adjusters leave on bands (e.g. Antalya's straight seam).
+	const notifyBandNotices = createBandNoticeNotifier(toastStore);
+	superGlobulePatternStore.subscribe(($result) =>
+		notifyBandNotices(
+			collectBandNotices([
+				$result.globuleTubePattern,
+				$result.projectionPattern,
+				$result.surfaceProjectionPattern,
+				$result.voronoiPattern,
+				$result.voronoiSurfacePattern
+			])
+		)
+	);
 
 	patternInputs.subscribe(
 		([
