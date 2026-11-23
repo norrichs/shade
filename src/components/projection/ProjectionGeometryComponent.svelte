@@ -12,8 +12,7 @@
 		viewControlStore,
 		type ShowProjectionGeometries,
 		type ShowGlobuleTubeGeometries,
-		superGlobuleStore,
-		superGlobulePatternStore
+		superGlobuleStore
 	} from '#lib/stores/index.js';
 	import type {
 		Polyhedron,
@@ -24,7 +23,6 @@
 	} from '#lib/projection-geometry/types.js';
 	import ColorMapped from './ColorMapped.svelte';
 	import {
-		assemblerHighlight,
 		selectedGlobuleTube,
 		selectedGlobuleTubeGeometry,
 		selectedProjection,
@@ -35,23 +33,9 @@
 		selectedVoronoiGeometry,
 		selectedVoronoiSurface,
 		selectedVoronoiSurfaceGeometry,
-		patternBandSpaces,
-		patternFilterSet,
-		modelRenderMode,
-		rangeShownBands,
-		type AssemblerHighlight,
 		type GeometrySource
 	} from '#lib/stores/index.js';
 	import { handleFacetSelect, highlightRealBand } from '../three-renderer/selection-helpers';
-	import {
-		assemblerHighlightOnSource,
-		realBandToPattern
-	} from '#lib/cut-pattern/pattern-band-space.js';
-	import {
-		bandFilterKey,
-		patternFilterIncludes,
-		patternedBandCount
-	} from '#lib/cut-pattern/pattern-filter.js';
 	import { get } from 'svelte/store';
 	import { interactionMode, isMeasureInteractionMode } from '../three-renderer/interaction-mode';
 	import { nearestVertexFromEvent } from '../three-renderer/nearest-vertex';
@@ -59,6 +43,7 @@
 	import { bandKey } from '#lib/cut-pattern/band-key.js';
 	import { patternSourceStore } from '#lib/stores/index.js';
 	import { patternOnModelStore } from '#lib/stores/patternOnModelStore.js';
+	import { bandHighlightState } from '#lib/stores/bandHighlightStore.js';
 	import { geometrySourceOfPattern } from '#lib/cut-pattern/pattern-band-space.js';
 
 	// Non-interactive visual meshes (bands, sections, the surface) must NOT
@@ -120,36 +105,14 @@
 	const bandKeyOf = (band: { address?: GlobuleAddress_Band; geometry: BufferGeometry }) =>
 		band.address ? bandKey(band.address) : band.geometry.uuid;
 
-	// The Assembler highlight is in its source's pattern band space; each source's
-	// meshes carry real band addresses and light only their own source's highlight.
-	// Mapped once per source per highlight (not per mesh).
-	let highlightFor = $derived.by(() => {
-		const highlight = $assemblerHighlight;
-		const spaceOf = $patternBandSpaces;
-		// Plain memo, rebuilt with each derivation; it must not be reactive itself.
-		// eslint-disable-next-line svelte/prefer-svelte-reactivity
-		const cache = new Map<GeometrySource, AssemblerHighlight>();
-		return (source: GeometrySource): AssemblerHighlight => {
-			if (!highlight) return null;
-			if (!cache.has(source))
-				cache.set(source, assemblerHighlightOnSource(spaceOf, highlight, source));
-			return cache.get(source) ?? null;
-		};
-	});
-
-	// The pattern filter's shown set (pattern band space) on one source's real
-	// bands, painted red in 3D. False for every band while nothing is filtered.
-	let isClickFiltered = $derived.by(() => {
-		const set = $patternFilterSet;
-		const spaceOf = $patternBandSpaces;
-		return (source: GeometrySource, address?: GlobuleAddress_Band): boolean => {
-			if (!set || !address || set.source !== source) return false;
-			const band = realBandToPattern(spaceOf(source, address.globule), address);
-			return !!band && patternFilterIncludes(set, source, band);
-		};
-	});
-
-	let selectionView = $derived($modelRenderMode === 'selection');
+	// Highlight / filter / range marking, shared with the Pattern-on-model overlay
+	// (see `bandHighlightStore.ts`). The Assembler highlight is in its source's
+	// pattern band space; each source's meshes light only their own source's.
+	let highlightFor = $derived($bandHighlightState.highlightFor);
+	// The `filtered` flag the material resolvers take: the click filter's set
+	// (red in Model mode), plus — in Selection mode — the Range's bands.
+	let isFiltered = $derived($bandHighlightState.isFiltered);
+	let selectionView = $derived($bandHighlightState.selectionView);
 
 	// With "Pattern on model" on, PatternOnModel draws the patterned source's bands
 	// itself; its plain band and facet meshes would fill the cut-outs, so they step aside.
@@ -157,53 +120,6 @@
 		$patternOnModelStore.enabled ? geometrySourceOfPattern($patternSourceStore) : null
 	);
 	const shows = (source: GeometrySource) => overlaidSource !== source;
-
-	// The bands the numerical Range shows (pattern band space), null when it
-	// narrows nothing. Counted as selected in Selection render mode only.
-	const realTubesOf = (sg: typeof $superGlobuleStore, source: string): Tube[] | undefined => {
-		switch (source) {
-			case 'globuleTube':
-				return sg.globuleTubes;
-			case 'projection':
-				return sg.projections[0]?.tubes;
-			case 'surfaceProjection':
-				return sg.projections[0]?.surfaceProjectionTubes;
-			case 'voronoi':
-				return sg.voronoiResult?.tubes;
-			case 'voronoiSurface':
-				return sg.voronoiResult?.surfaceProjectionTubes;
-		}
-	};
-	// A range that shows every patterned band selects nothing in particular.
-	let rangeNarrows = $derived.by(() => {
-		const shown = $rangeShownBands;
-		if (!shown) return false;
-		const total = patternedBandCount(
-			realTubesOf($superGlobuleStore, shown.source),
-			$superGlobulePatternStore.keepsFillBands
-		);
-		return shown.keys.size < total;
-	});
-	let isInRange = $derived.by(() => {
-		const shown = $rangeShownBands;
-		const spaceOf = $patternBandSpaces;
-		const narrows = rangeNarrows;
-		return (source: GeometrySource, address?: GlobuleAddress_Band): boolean => {
-			if (!narrows || !shown || !address || shown.source !== source) return false;
-			const band = realBandToPattern(spaceOf(source, address.globule), address);
-			return !!band && shown.keys.has(bandFilterKey(band));
-		};
-	});
-
-	// The `filtered` flag the material resolvers take: the click filter's set
-	// (red in Model mode), plus — in Selection mode — the Range's bands.
-	let isFiltered = $derived.by(() => {
-		const clicked = isClickFiltered;
-		const inRange = isInRange;
-		const sel = selectionView;
-		return (source: GeometrySource, address?: GlobuleAddress_Band): boolean =>
-			clicked(source, address) || (sel && inRange(source, address));
-	});
 
 	// Wrap getMaterial so every facet also respects the Assembler cross-view
 	// highlight (a band/ring clicked in the data grid). Reading `highlightFor`

@@ -28,6 +28,8 @@ export type PatternBandMesh = {
 	bandId: string;
 	/** Non-indexed, 3 floats per vertex, 3 vertices per real facet. */
 	positions: Float32Array;
+	/** Per triangle: the real 3D band's facet index it was built from (for picking). */
+	facetIndices: Int32Array;
 	/** 2 floats per vertex, normalised to `bounds`, v flipped for a canvas texture. */
 	uvs: Float32Array;
 	/** The band's path-space box the UVs are normalised to (= the texture's extent). */
@@ -102,6 +104,7 @@ export const buildPatternBandMesh = (
 	const tolerance = 1e-6 * Math.max(1, t.s) * 1000;
 	const pos: number[] = [];
 	const flat: XY[] = [];
+	const facetIndices: number[] = [];
 	for (let q = 0; q < facets.length; q++) {
 		const f = facets[q];
 		// quad.a and quad.b are triangles[0].a and .b under the transform; a miss
@@ -111,8 +114,10 @@ export const buildPatternBandMesh = (
 			if (Math.hypot(check.x - f.quad[k].x, check.y - f.quad[k].y) > tolerance) return undefined;
 		}
 		for (let j = 0; j < 2; j++) {
-			const real = realFacets[2 * (offset + q) + j]?.triangle;
+			const realIndex = 2 * (offset + q) + j;
+			const real = realFacets[realIndex]?.triangle;
 			if (!real) continue;
+			facetIndices.push(realIndex);
 			for (const k of KEYS) {
 				pos.push(real[k].x, real[k].y, real[k].z);
 				flat.push(applyFlatToPath(t, f.triangles[j][k]));
@@ -142,6 +147,7 @@ export const buildPatternBandMesh = (
 	return {
 		bandId: band.id,
 		positions: new Float32Array(pos),
+		facetIndices: new Int32Array(facetIndices),
 		uvs,
 		bounds: { minX, minY, width, height }
 	};

@@ -75,6 +75,13 @@ const judge = ({ tubes, bands, space }: ReturnType<typeof setup>) => {
 		const t = fitFlatToPath(band)!;
 		if (t.m < 0) mirrored++;
 		worst = Math.max(worst, isometryGap(mesh!, t.s));
+		// Each triangle names the real facet it was built from, and its position is
+		// that facet's triangle.
+		mesh!.facetIndices.forEach((realIndex, t) => {
+			const tri = realBand.facets[realIndex].triangle;
+			expect(mesh!.positions[9 * t]).toBeCloseTo(tri.a.x, 3);
+			expect(mesh!.positions[9 * t + 8]).toBeCloseTo(tri.c.z, 3);
+		});
 		expect(mesh!.positions.length / 9).toBe(
 			band.facets.filter((f) => f.quad && f.triangles).length * 2
 		);
