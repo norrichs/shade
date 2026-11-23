@@ -3,7 +3,7 @@
 	 * View → "Pattern on model": every pattern band rasterised (raw strokes, no
 	 * Prepare union) onto the 3D band it was cut from. UVs are the band's own path
 	 * space (`buildPatternBandMesh`), so the GPU clips anything that spills past
-	 * the band. The stroke is the material (black); the holes are translucent
+	 * the band. The stroke is the material (black); the holes are solid
 	 * white. The shadow pass cuts the holes out, so the interior light still
 	 * throws the lattice.
 	 *
@@ -43,10 +43,11 @@
 	import type { BandCutPattern } from '#lib/types.js';
 
 	const LATTICE_COLOR = '#000000';
-	/** Holes read as translucent white (vellum-like), 75% opaque. */
-	const HOLE_COLOR = 'rgba(255, 255, 255, 0.75)';
-	/** Above the holes' alpha, below the strokes': the shadow pass's cut-out. */
-	const SHADOW_ALPHA_TEST = 0.9;
+	/** Holes read as solid white on screen; they still let the interior light through. */
+	const HOLE_COLOR = '#ffffff';
+	/** The shadow texture leaves holes clear, so the caster cuts them out. */
+	const SHADOW_HOLE_COLOR = 'rgba(0, 0, 0, 0)';
+	const SHADOW_ALPHA_TEST = 0.5;
 	const noRaycast = () => {};
 
 	let enabled = $derived($patternOnModelStore.enabled);
@@ -107,19 +108,23 @@
 				const texture = new CanvasTexture(canvas);
 				texture.colorSpace = SRGBColorSpace;
 				texture.anisotropy = 8;
+				const shadowTexture = new CanvasTexture(
+					rasterizeBand(band, mapped.bounds, {
+						density,
+						color: LATTICE_COLOR,
+						holeColor: SHADOW_HOLE_COLOR,
+						outlined: isOutlined(band)
+					})
+				);
 
 				const geometry = new BufferGeometry();
 				geometry.setAttribute('position', new BufferAttribute(mapped.positions, 3));
 				geometry.setAttribute('uv', new BufferAttribute(mapped.uvs, 2));
 				geometry.computeVertexNormals();
 
-				// Blended, not cut out: the holes are translucent white. Bands are
-				// separate meshes, so Three sorts them back to front; depthWrite off
-				// keeps a near band's holes from hiding the bands behind it.
+				// Opaque: holes are solid white, so nothing on screen is cut away.
 				const material = new MeshStandardMaterial({
 					map: texture,
-					transparent: true,
-					depthWrite: false,
 					side: DoubleSide,
 					roughness: 0.85,
 					metalness: 0
@@ -131,15 +136,16 @@
 				mesh.name = band.id;
 				next.add(mesh);
 
-				// Shadows must cut the holes out (strokes opaque, holes alpha 0.75) so the
-				// interior light throws the lattice, not the whole band. A custom
-				// depth/distance material cannot do it: the shadow pass copies the
-				// visible material's alphaTest (0) over it. So an invisible twin
-				// (colorWrite off) casts the shadow with its own alphaTest.
+				// Shadows must cut the holes out so the interior light throws the
+				// lattice, not the whole band — the holes are cut-outs in the real
+				// piece, white only on screen. A custom depth/distance material cannot
+				// do it: the shadow pass copies the visible material's alphaTest and map
+				// over it. So an invisible twin (colorWrite off) casts the shadow from a
+				// stroke-only texture (holes clear) with its own alphaTest.
 				const caster = new Mesh(
 					geometry,
 					new MeshBasicMaterial({
-						map: texture,
+						map: shadowTexture,
 						alphaTest: SHADOW_ALPHA_TEST,
 						colorWrite: false,
 						depthWrite: false,
