@@ -4,8 +4,8 @@
 	 * Prepare union) onto the 3D band it was cut from, as a decal LAYER over the
 	 * normal band meshes. UVs are the band's own path space
 	 * (`buildPatternBandMesh`), so the GPU clips anything that spills past the
-	 * band. Strokes are black, holes fully transparent (alphaTest), and the layer
-	 * is pushed a hair outward from the model so it never z-fights the band.
+	 * band. Strokes are black, holes fully transparent (alphaTest); the layer sits
+	 * exactly on the band surface.
 	 *
 	 * The normal meshes underneath keep picking and highlighting; they draw in
 	 * `materials.patternModel` (user colour/opacity) where they would otherwise
@@ -46,15 +46,12 @@
 		buildPatternBandMesh,
 		type PatternBandMesh
 	} from '#lib/pattern-on-model/band-uv-mesh.js';
-	import { offsetOutward } from '#lib/pattern-on-model/offset-outward.js';
 	import { rasterizeBand } from '#lib/pattern-on-model/rasterize-band.js';
 	import type { BandCutPattern } from '#lib/types.js';
 	import type { GlobuleAddress_Band } from '#lib/projection-geometry/types.js';
 
 	const LATTICE_COLOR = '#000000';
 	const HOLE_COLOR = 'rgba(0, 0, 0, 0)';
-	/** How far the layer sits outside its band, as a fraction of the model radius. */
-	const OFFSET_FRACTION = 0.002;
 	/** Selection render mode: the pattern on bands that are neither highlighted nor filtered. */
 	const GHOST_OPACITY = 0.08;
 	const noRaycast = () => {};
@@ -134,7 +131,7 @@
 		};
 	};
 
-	const build = (items: Mapped[], c: { x: number; y: number; z: number }, r: number): Group => {
+	const build = (items: Mapped[]): Group => {
 		const next = new Group();
 		for (const { band, real, mapped } of items) {
 			const texture = new CanvasTexture(
@@ -149,10 +146,7 @@
 			texture.anisotropy = 8;
 
 			const geometry = new BufferGeometry();
-			geometry.setAttribute(
-				'position',
-				new BufferAttribute(offsetOutward(mapped.positions, c, r * OFFSET_FRACTION), 3)
-			);
+			geometry.setAttribute('position', new BufferAttribute(mapped.positions, 3));
 			geometry.setAttribute('uv', new BufferAttribute(mapped.uvs, 2));
 			geometry.computeVertexNormals();
 
@@ -166,11 +160,17 @@
 				// light throws the lattice.
 				alphaTest: 0.2,
 				alphaToCoverage: true,
+				// Coplanar with the band, so draw ORDER decides who wins, not an
+				// offset: as a transparent pass with renderOrder 1 the layer draws
+				// after the (transparent) model material and, at equal depth, on top
+				// of it. Opaque, it would draw first and the base would wash it out.
+				transparent: true,
 				side: DoubleSide,
 				roughness: 0.85,
 				metalness: 0
 			});
 			const mesh = new Mesh(geometry, material);
+			mesh.renderOrder = 1;
 			mesh.castShadow = true;
 			mesh.receiveShadow = true;
 			// The normal band meshes underneath take the clicks.
@@ -195,7 +195,7 @@
 		const started = performance.now();
 		const items = mapBands();
 		const { c, r } = boundsOf(items);
-		const next = build(items, c, r);
+		const next = build(items);
 		center = [c.x, c.y, c.z];
 		radius = r;
 		console.info(
@@ -220,11 +220,7 @@
 			const marked =
 				(!!highlight && sameGlobuleBand(real, highlight.band)) || state.isFiltered(source, real);
 			const ghost = state.selectionView && !marked;
-			if (material.transparent !== ghost) {
-				material.transparent = ghost;
-				material.depthWrite = !ghost;
-				material.needsUpdate = true;
-			}
+			material.depthWrite = !ghost;
 			material.opacity = ghost ? GHOST_OPACITY : 1;
 		}
 		// Threlte renders on demand; an in-place material edit asks for no frame.
