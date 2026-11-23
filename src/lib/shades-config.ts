@@ -434,6 +434,25 @@ export const tiledPatternConfigs: { [key: string]: TiledPatternConfig } = {
 			scaleConfig: defaultScaleConfig
 		}
 	},
+	'tiledAntalyaPattern-0': {
+		type: 'tiledAntalyaPattern-0',
+		tiling: 'quadrilateral',
+		config: {
+			rowCount: 1,
+			columnCount: 1,
+			dynamicStroke: 'quadWidth',
+			dynamicStrokeEasing: 'linear',
+			dynamicStrokeMin: 1,
+			dynamicStrokeMax: 3,
+			endsMatched: false,
+			endsTrimmed: false,
+			endLooped: 0,
+			// Bands interlock (A reaches into the neighbouring B) and are cut apart,
+			// so each draws its whole outline through the partner's quads.
+			keepPartnerSeam: true,
+			scaleConfig: defaultScaleConfig
+		}
+	},
 	'tiledSimpleHexPattern-0': {
 		type: 'tiledSimpleHexPattern-0',
 		tiling: 'quadrilateral',

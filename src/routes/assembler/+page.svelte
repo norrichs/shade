@@ -16,6 +16,22 @@
 	import { buildBandSortIndex } from '#lib/cut-pattern/band-sort-index.js';
 	import { buildPatternCsv } from '#lib/cut-pattern/build-pattern-csv.js';
 	import type { BandSortIndex, TubeCutPattern } from '#lib/types.js';
+	import PaneDivider from '../../components/layout/PaneDivider.svelte';
+	import BandViewerPane from '../../components/band-viewer/BandViewerPane.svelte';
+	import {
+		assemblerPanels,
+		clampAssemblerPanels,
+		type AssemblerPanels
+	} from '#lib/stores/uiStores.js';
+
+	let main: HTMLElement | undefined = $state();
+	// Clamp on read too, so a stale stored layout can't collapse a pane.
+	const panels = $derived(clampAssemblerPanels($assemblerPanels, 'top'));
+	// ×100: flex factors summing to just under 1 (float error) would leave space unfilled.
+	const fr = (fraction: number) => `${fraction * 100}fr`;
+	const move = (key: keyof AssemblerPanels) => (fraction: number) => {
+		$assemblerPanels = clampAssemblerPanels({ ...panels, [key]: fraction }, key);
+	};
 
 	// Collate the live tubes once, then derive the sort index and CSV from them.
 	// PatternData needs the structured `tubes`/`index` (which carry full
@@ -57,12 +73,19 @@
 	let csv = $derived(index ? buildPatternCsv(index, tubes) : '');
 </script>
 
-<main>
+<main
+	bind:this={main}
+	style:grid-template-columns={`${fr(panels.left)} ${fr(panels.right - panels.left)} ${fr(1 - panels.right)}`}
+	style:grid-template-rows={`minmax(0, ${fr(panels.top)}) minmax(0, ${fr(1 - panels.top)})`}
+>
 	<Toast />
 	<section class="pane pane-three">
 		<ThreeRenderer>
 			<Scene />
 		</ThreeRenderer>
+	</section>
+	<section class="pane pane-band">
+		<BandViewerPane />
 	</section>
 	<section class="pane pane-pattern">
 		<PatternViewer />
@@ -70,19 +93,41 @@
 	<section class="pane pane-data">
 		<PatternData {csv} {index} {tubes} />
 	</section>
+	<PaneDivider
+		orientation="vertical"
+		position={panels.left}
+		extent={panels.top}
+		container={main}
+		onchange={move('left')}
+	/>
+	<PaneDivider
+		orientation="vertical"
+		position={panels.right}
+		extent={panels.top}
+		container={main}
+		onchange={move('right')}
+	/>
+	<PaneDivider
+		orientation="horizontal"
+		position={panels.top}
+		container={main}
+		onchange={move('top')}
+	/>
 	<HoverSidebar sidebarDefinition={assemblerConfigs} />
 </main>
 
 <style>
 	main {
+		position: relative;
 		height: calc(100vh - var(--nav-header-height));
 		width: 100vw;
 
 		display: grid;
-		grid-template-columns: 1fr 1fr;
-		grid-template-rows: minmax(0, 1fr) 300px;
 	}
 	section.pane {
+		box-sizing: border-box;
+		min-width: 0;
+		min-height: 0;
 		border: 1px solid gray;
 		overflow: hidden;
 	}
@@ -90,14 +135,17 @@
 		grid-column: 1 / 2;
 		grid-row: 1 / 2;
 	}
-	section.pane-pattern {
+	section.pane-band {
 		grid-column: 2 / 3;
 		grid-row: 1 / 2;
 	}
+	section.pane-pattern {
+		grid-column: 3 / 4;
+		grid-row: 1 / 2;
+	}
 	section.pane-data {
-		grid-column: 1 / 3;
+		grid-column: 1 / 4;
 		grid-row: 2 / 3;
-		height: 300px;
 		overflow: auto;
 	}
 </style>

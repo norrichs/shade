@@ -17,6 +17,24 @@ const verticesOf = (shape: ShapeConfig): Vector2[] => {
 	return prototype.vertices;
 };
 
+describe('GCS divisions multiplier', () => {
+	it('multiplies the sampled divisions for every method', () => {
+		const methods: CurveSampleMethod['method'][] = ['divideCurvePath', 'divideCurve', 'divideSide'];
+		methods.forEach((method) => {
+			const shape = shapeWith({ method, divisions: 3 } as CurveSampleMethod);
+			const base = generateLevelPrototype(shape).vertices.length;
+			expect(generateLevelPrototype(shape, 2).vertices.length).toBe(base * 2);
+			expect(generateLevelPrototype(shape, 1).vertices.length).toBe(base);
+		});
+	});
+
+	it('treats a missing or invalid multiplier as 1', () => {
+		const shape = shapeWith({ method: 'divideCurvePath', divisions: 5 });
+		expect(generateLevelPrototype(shape, undefined).vertices).toHaveLength(5);
+		expect(generateLevelPrototype(shape, 0).vertices).toHaveLength(5);
+	});
+});
+
 describe('divideCurvePath (By Whole Curve)', () => {
 	it('produces exactly `divisions` vertices for the whole cross-section', () => {
 		// Not divisions-per-curve: the entire joined path is divided once.

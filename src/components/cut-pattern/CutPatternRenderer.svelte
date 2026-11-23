@@ -27,6 +27,7 @@
 		patternFilterShows
 	} from '#lib/cut-pattern/pattern-filter.js';
 	import { geometrySourceOfPattern } from '#lib/cut-pattern/pattern-band-space.js';
+	import { hideSplitSections, splitSectionKey } from '#lib/cut-pattern/split-sections.js';
 	import { computeSplitBudget, EMPTY_SPLIT_BUDGET } from '#lib/cut-pattern/split-budget.js';
 	import { createOverflowNotifier } from '#lib/cut-pattern/page-overflow-notice.js';
 	import {
@@ -113,8 +114,13 @@
 		if (!sortIndex) return undefined;
 		const resolved = resolveIndexBands(tubes, sortIndex);
 		const set = filterSet;
-		return set
-			? resolved.filter(({ band }) => patternFilterShows(set, filterSource, band.address))
+		if (set)
+			return resolved.filter(({ band }) => patternFilterShows(set, filterSource, band.address));
+		const hidden = new Set(hiddenSplitSections ?? []);
+		return hidden.size
+			? resolved.filter(
+					({ band, tube }) => !hidden.has(splitSectionKey(tube.address, band.parentQuadOffset))
+				)
 			: resolved;
 	});
 
@@ -247,10 +253,17 @@
 		filterSet && filterSet.source === filterSource
 			? filterPatternTubes(tubes, filterSet, filterSource)
 			: // Generation already ranged tubes and bands (by index, in range order);
-				// only the facet range is left for the view.
-				sliceProjectionCutPattern(tubes, { facets: range?.facets });
+				// only the facet range and hidden split sections are left for the view.
+				sliceProjectionCutPattern(hideSplitSections(tubes, hiddenSplitSections), {
+					facets: range?.facets
+				});
 
 	let range = $derived($patternConfigStore.patternViewConfig.range);
+	// Mutated in place by the Range checkboxes, so key on its JSON.
+	let hiddenSplitJson = $derived(
+		JSON.stringify($patternConfigStore.patternViewConfig.hiddenSplitSections ?? [])
+	);
+	let hiddenSplitSections = $derived(JSON.parse(hiddenSplitJson) as string[]);
 	let layoutMode = $derived($patternConfigStore.patternViewConfig.patternLayoutMode ?? 'linear');
 	// Page Layout controls (and the overflow toast's "Fit page") mutate
 	// `pageLayout` IN PLACE, so the store re-emits the same object reference and

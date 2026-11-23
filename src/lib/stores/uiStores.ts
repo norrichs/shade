@@ -33,6 +33,47 @@ export const designerPanels = persistable<DesignerPanels>(
 export const clampSplit = (split: number) =>
 	Math.min(1 - MIN_PANEL_FRACTION, Math.max(MIN_PANEL_FRACTION, split));
 
+/**
+ * Assembler pane dividers, as fractions of the page: `left` and `right` are the
+ * x-positions of the model|band and band|pattern dividers, `top` is the
+ * y-position of the divider above the data pane.
+ */
+export type AssemblerPanels = { left: number; right: number; top: number };
+
+export const DEFAULT_ASSEMBLER_PANELS: AssemblerPanels = { left: 0.4, right: 0.6, top: 0.7 };
+
+const MIN_ROW_FRACTION = 0.15;
+const MAX_TOP_FRACTION = 0.9;
+
+const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
+
+/**
+ * Keep every Assembler pane at least `MIN_PANEL_FRACTION` wide and the rows
+ * within [0.15, 0.9]. The `moved` divider is clamped against its neighbours,
+ * which stay where they are unless they are themselves out of range (a stale
+ * stored layout).
+ */
+export const clampAssemblerPanels = (
+	p: AssemblerPanels,
+	moved: 'left' | 'right' | 'top'
+): AssemblerPanels => {
+	const min = MIN_PANEL_FRACTION;
+	const top = clamp(p.top, MIN_ROW_FRACTION, MAX_TOP_FRACTION);
+	if (moved === 'right') {
+		const right = clamp(p.right, Math.max(p.left, min) + min, 1 - min);
+		return { left: clamp(p.left, min, right - min), right, top };
+	}
+	const left = clamp(p.left, min, Math.min(p.right, 1 - min) - min);
+	return { left, right: clamp(p.right, left + min, 1 - min), top };
+};
+
+export const assemblerPanels = persistable<AssemblerPanels>(
+	DEFAULT_ASSEMBLER_PANELS,
+	'AssemblerPanels',
+	AUTO_PERSIST_KEY,
+	true
+);
+
 export const nextPanelLayout = (layout: PanelLayout): PanelLayout => {
 	const i = PANEL_LAYOUTS.findIndex((l) => l.value === layout);
 	return PANEL_LAYOUTS[(i + 1) % PANEL_LAYOUTS.length].value;

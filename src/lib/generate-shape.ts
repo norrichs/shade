@@ -4,6 +4,7 @@ import { CurvePath, Vector2, Vector3, CubicBezierCurve, Triangle } from 'three';
 import { generateGlobuleEndCaps } from './geometry/end-caps';
 import { radialShapeCurveConfigs, radialSideCurveConfigs } from './geometry/radial-shape';
 import type {
+	CurveSampleMethod,
 	TrianglePoint,
 	TriangleSide,
 	EdgeConfig,
@@ -162,9 +163,31 @@ const normalizeConfigPoints = (
 	return normalizedShapeConfig;
 };
 
-export const generateLevelPrototype = (config: ShapeConfig): LevelPrototype => {
-	return generateRadialShapeLevelPrototype(config);
+/** The globule-wide GCS divisions multiplier: a positive integer, 1 when unset or invalid. */
+export const gcsMultiplierOf = (multiplier: number | undefined): number =>
+	multiplier && Number.isFinite(multiplier) && multiplier >= 1 ? Math.round(multiplier) : 1;
+
+/** `multiplier` scales the shape's sampling divisions (see GlobuleConfig.gcsMultiplier). */
+export const generateLevelPrototype = (
+	config: ShapeConfig,
+	multiplier?: number
+): LevelPrototype => {
+	const m = gcsMultiplierOf(multiplier);
+	return generateRadialShapeLevelPrototype(
+		m === 1
+			? config
+			: {
+					...config,
+					sampleMethod: {
+						...config.sampleMethod,
+						divisions: config.sampleMethod.divisions * m
+					} as CurveSampleMethod
+				}
+	);
 };
+
+const globulePrototypes = (config: GlobuleConfig): LevelPrototype[] =>
+	config.shapeConfigs.map((shape) => generateLevelPrototype(shape, config.gcsMultiplier));
 
 const validatePrototypes = (config: GlobuleConfig, prototypes: LevelPrototype[]): GcsValidation =>
 	validateShapeConfigs(
@@ -175,17 +198,14 @@ const validatePrototypes = (config: GlobuleConfig, prototypes: LevelPrototype[])
 
 /** Validates a globule's cross-section list against its generated prototypes. */
 export const validateGlobuleShapeConfigs = (config: GlobuleConfig): GcsValidation =>
-	validatePrototypes(
-		config,
-		config.shapeConfigs.map((shape) => generateLevelPrototype(shape))
-	);
+	validatePrototypes(config, globulePrototypes(config));
 
 /**
  * The blended cross section as a function of silhouette t. Throws the first
  * validation error for an invalid list (the worker's defense in depth).
  */
 export const buildPrototypeAt = (config: GlobuleConfig): PrototypeAt => {
-	const prototypes = config.shapeConfigs.map((shape) => generateLevelPrototype(shape));
+	const prototypes = globulePrototypes(config);
 	const validation = validatePrototypes(config, prototypes);
 	if (!validation.isValid) throw new Error(validation.errors[0].message);
 	return makePrototypeAt(

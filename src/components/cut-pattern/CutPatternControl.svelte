@@ -5,7 +5,8 @@
 		patternFilterSettings,
 		patternFilterSet,
 		setPatternFilterSettings,
-		clearPatternFilter
+		clearPatternFilter,
+		collatedTubesStore
 	} from '#lib/stores/index.js';
 	import {
 		describePatternFilter,
@@ -14,6 +15,29 @@
 		type PatternFilterMode
 	} from '#lib/cut-pattern/pattern-filter.js';
 	import { get } from 'svelte/store';
+	import { listSplitSections } from '#lib/cut-pattern/split-sections.js';
+
+	// Split sections of the tubes in range, each a Range checkbox (checked = shown).
+	$: splitSections = listSplitSections($collatedTubesStore);
+	$: hiddenSplits = new Set($patternConfigStore.patternViewConfig.hiddenSplitSections ?? []);
+	// Like a range edit, a split toggle switches an engaged click filter back to
+	// the range, which it would otherwise override.
+	const leaveClickFilter = () => {
+		if (isFilteringMode(get(patternFilterSettings).mode)) setPatternFilterSettings({ mode: 'off' });
+	};
+	const setSplitShown = (key: string, shown: boolean) => {
+		leaveClickFilter();
+		const hidden = new Set(get(patternConfigStore).patternViewConfig.hiddenSplitSections ?? []);
+		if (shown) hidden.delete(key);
+		else hidden.add(key);
+		$patternConfigStore.patternViewConfig.hiddenSplitSections = [...hidden];
+	};
+	const showOnlySplit = (key: string) => {
+		leaveClickFilter();
+		$patternConfigStore.patternViewConfig.hiddenSplitSections = splitSections
+			.map((s) => s.key)
+			.filter((k) => k !== key);
+	};
 
 	const FILTER_MODES: { value: PatternFilterMode; label: string }[] = [
 		{ value: 'off', label: 'off' },
@@ -127,6 +151,7 @@
 						rangeTubes = undefined;
 						rangeBands = undefined;
 						rangeFacets = undefined;
+						$patternConfigStore.patternViewConfig.hiddenSplitSections = [];
 					}}>all</button
 				>
 				<div class="range-inputs">
@@ -153,6 +178,33 @@
 						<button on:click={() => (rangeFacets = [0, 1])}>SetFacets</button>
 					{/if}
 				</div>
+				{#if splitSections.length}
+					<div class="split-box" data-testid="range-splits">
+						<span>splits</span>
+						<div class="split-list">
+							{#each splitSections as section (section.key)}
+								<label
+									class="split-item"
+									title="tube {section.tube}, quads {section.startQuad}–{section.endQuad ??
+										'end'}, {section.bandCount} band{section.bandCount === 1 ? '' : 's'}"
+								>
+									<input
+										type="checkbox"
+										checked={!hiddenSplits.has(section.key)}
+										on:change={(e) => setSplitShown(section.key, e.currentTarget.checked)}
+									/>
+									t{section.tube}·{section.index}
+									<span class="split-quads">{section.startQuad}–{section.endQuad ?? 'end'}</span>
+								</label>
+								<button
+									class="split-only"
+									title="show only this section of the split tubes"
+									on:click={() => showOnlySplit(section.key)}>only</button
+								>
+							{/each}
+						</div>
+					</div>
+				{/if}
 			</div>
 		</div>
 	</div>
@@ -217,6 +269,27 @@
 	.range-note {
 		font-size: 0.8em;
 		font-style: italic;
+	}
+	.split-box {
+		max-height: 10em;
+		overflow-y: auto;
+	}
+	.split-list {
+		display: grid;
+		grid-template-columns: auto auto;
+		column-gap: 4px;
+		align-items: center;
+	}
+	.split-item {
+		white-space: nowrap;
+	}
+	.split-quads {
+		font-size: 0.8em;
+		opacity: 0.7;
+	}
+	.split-only {
+		font-size: 0.75em;
+		padding: 0 4px;
 	}
 	.filter-summary {
 		min-width: 6em;
