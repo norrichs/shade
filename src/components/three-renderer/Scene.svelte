@@ -16,6 +16,7 @@
 	import { generateTempId } from '#lib/id-handler.js';
 	import ProjectionGeometryComponent from '../projection/ProjectionGeometryComponent.svelte';
 	import SurfaceCenterMarker from './SurfaceCenterMarker.svelte';
+	import PatternOnModel from './PatternOnModel.svelte';
 	import Highlight from '../projection/Highlight.svelte';
 	import type { GlobuleAddress_Facet } from '#lib/projection-geometry/types.js';
 	import { selectedProjection } from '#lib/stores/index.js';
@@ -133,5 +134,6 @@
 {/each}
 
 <ProjectionGeometryComponent onClick={handleProjectionClick} />
+<PatternOnModel />
 <SurfaceCenterMarker />
 <Highlight />

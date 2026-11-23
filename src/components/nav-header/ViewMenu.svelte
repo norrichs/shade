@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { viewControlStore } from '#lib/stores/index.js';
+	import { patternOnModelStore } from '#lib/stores/patternOnModelStore.js';
 	import CheckboxInput from '../controls/CheckboxInput.svelte';
 	import PopoverMenu from '../design-system/PopoverMenu.svelte';
 
@@ -30,6 +31,23 @@
 			<span>{key}</span>
 		</div>
 	{/each}
+	<header>Pattern on model:</header>
+	<div class="entry">
+		<input type="checkbox" bind:checked={$patternOnModelStore.enabled} />
+		<span>show</span>
+	</div>
+	<div class="entry">
+		<input type="checkbox" bind:checked={$patternOnModelStore.interiorLight} />
+		<span>lit from inside</span>
+	</div>
+	<div class="entry">
+		<select bind:value={$patternOnModelStore.density}>
+			{#each [1, 2, 3, 4] as d (d)}
+				<option value={d}>{d} px/unit</option>
+			{/each}
+		</select>
+		<span>texture density</span>
+	</div>
 </PopoverMenu>
 
 <style>

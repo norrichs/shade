@@ -363,19 +363,22 @@ const EXPECTED: Record<string, unknown> = {
 		meta: '492a0cbff818b41d',
 		rest: 'acf34c85b89248bc'
 	},
+	// Outlined `rest` re-recorded 2026-11-22 (pattern-on-model): bands now carry
+	// `sideOrientation` and each quad facet its flat `triangles`. Additive data
+	// only; tabs, labels and every path are unchanged.
 	'outlined after': {
 		tabs: 'aa476785a943ea68',
-		rest: 'f502abcf9f6ca229',
+		rest: '08a2e3edccff0bba',
 		labels: 'a9b67b2586a46371'
 	},
 	'outlined before': {
 		tabs: 'd09a89f6e87c0beb',
-		rest: 'e2411342bb0e7aa2',
+		rest: '26fe801ef5cec902',
 		labels: '4ee69bb9c146c80d'
 	},
 	'outlined beforeAndAfter': {
 		tabs: 'fd4a15e196bf4713',
-		rest: '9374777683ace75b',
+		rest: 'b2df7b4f246e2757',
 		labels: 'a4f88ca146ed83c3'
 	}
 };

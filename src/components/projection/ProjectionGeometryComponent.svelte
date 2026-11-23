@@ -57,6 +57,9 @@
 	import { nearestVertexFromEvent } from '../three-renderer/nearest-vertex';
 	import { addMeasurementPoint } from '#lib/stores/measurementStore.js';
 	import { bandKey } from '#lib/cut-pattern/band-key.js';
+	import { patternSourceStore } from '#lib/stores/index.js';
+	import { patternOnModelStore } from '#lib/stores/patternOnModelStore.js';
+	import { geometrySourceOfPattern } from '#lib/cut-pattern/pattern-band-space.js';
 
 	// Non-interactive visual meshes (bands, sections, the surface) must NOT
 	// participate in pointer raycasting — otherwise an opaque grey band/surface in
@@ -147,6 +150,13 @@
 	});
 
 	let selectionView = $derived($modelRenderMode === 'selection');
+
+	// With "Pattern on model" on, PatternOnModel draws the patterned source's bands
+	// itself; its plain band and facet meshes would fill the cut-outs, so they step aside.
+	let overlaidSource = $derived(
+		$patternOnModelStore.enabled ? geometrySourceOfPattern($patternSourceStore) : null
+	);
+	const shows = (source: GeometrySource) => overlaidSource !== source;
 
 	// The bands the numerical Range shows (pattern band space), null when it
 	// narrows nothing. Counted as selected in Selection render mode only.
@@ -364,7 +374,7 @@
 				raycast={surfaceRaycast}
 			/>
 		{/if}
-		{#if projectionGeometry.surfaceProjectionFacets}
+		{#if projectionGeometry.surfaceProjectionFacets && shows('surfaceProjection')}
 			{#each projectionGeometry.surfaceProjectionFacets as facet (facetKey(facet.address))}
 				<T.Mesh
 					geometry={facet.geometry}
@@ -385,7 +395,7 @@
 						)}
 				/>
 			{/each}
-		{:else if projectionGeometry.surfaceProjection}
+		{:else if projectionGeometry.surfaceProjection && shows('surfaceProjection')}
 			{#if Array.isArray(projectionGeometry.surfaceProjection)}
 				{#each projectionGeometry.surfaceProjection as band, i (bandKeyOf(band))}
 					<T.Mesh
@@ -422,7 +432,7 @@
 			/>
 		{/if}
 
-		{#each projectionGeometry.bands || [] as band (bandKeyOf(band))}
+		{#each shows('projection') ? projectionGeometry.bands || [] : [] as band (bandKeyOf(band))}
 			<T.Mesh
 				geometry={band.geometry}
 				material={getBandMaterial(
@@ -436,7 +446,7 @@
 				onclick={(ev: BandClickEvent) => handleBandClick(ev, 'projection', band.address)}
 			/>
 		{/each}
-		{#each projectionGeometry.facets || [] as facet (facetKey(facet.address))}
+		{#each shows('projection') ? projectionGeometry.facets || [] : [] as facet (facetKey(facet.address))}
 			<T.Mesh
 				geometry={facet.geometry}
 				material={highlightedFacetMaterial(
@@ -471,7 +481,7 @@
 				raycast={surfaceRaycast}
 			/>
 		{/if}
-		{#each voronoiGeometry.bands || [] as band (bandKeyOf(band))}
+		{#each shows('voronoi') ? voronoiGeometry.bands || [] : [] as band (bandKeyOf(band))}
 			<T.Mesh
 				geometry={band.geometry}
 				material={getBandMaterial(
@@ -500,7 +510,7 @@
 				onclick={(ev: BandClickEvent) => handleBandClick(ev, 'voronoi', band.address)}
 			/>
 		{/each}
-		{#each voronoiGeometry.facets || [] as facet (facetKey(facet.address))}
+		{#each shows('voronoi') ? voronoiGeometry.facets || [] : [] as facet (facetKey(facet.address))}
 			<T.Mesh
 				geometry={facet.geometry}
 				material={highlightedFacetMaterial('voronoi', facet.address, $selectedVoronoiGeometry)}
@@ -508,7 +518,7 @@
 					handleFacetSelect(ev, 'voronoi', facet.address, (a) => selectedVoronoi.set(a))}
 			/>
 		{/each}
-		{#each voronoiGeometry.surfaceProjectionFacets || [] as facet (facetKey(facet.address))}
+		{#each shows('voronoiSurface') ? voronoiGeometry.surfaceProjectionFacets || [] : [] as facet (facetKey(facet.address))}
 			<T.Mesh
 				geometry={facet.geometry}
 				material={highlightedFacetMaterial(
@@ -540,7 +550,7 @@
 				raycast={surfaceRaycast}
 			/>
 		{/if}
-		{#each globuleTubeGeometry.bands || [] as band (bandKeyOf(band))}
+		{#each shows('globuleTube') ? globuleTubeGeometry.bands || [] : [] as band (bandKeyOf(band))}
 			<!-- Addressed band meshes so a band clicked in the Assembler grid highlights
 			     here too, without needing the facet view turned on. -->
 			<T.Mesh
@@ -556,7 +566,7 @@
 				onclick={(ev: BandClickEvent) => handleBandClick(ev, 'globuleTube', band.address)}
 			/>
 		{/each}
-		{#each globuleTubeGeometry.facets || [] as facet (facetKey(facet.address))}
+		{#each shows('globuleTube') ? globuleTubeGeometry.facets || [] : [] as facet (facetKey(facet.address))}
 			<T.Mesh
 				geometry={facet.geometry}
 				material={highlightedFacetMaterial(

@@ -590,12 +590,19 @@ export const generateOutlinedBandPattern = (
 	};
 
 	// Quad facets for visualization (showQuads overlay)
-	const quadFacets: CutPattern[] = quads.map((quad, i) => ({
-		path: [],
-		svgPath: '',
-		label: `${bandIndex}-${i}`,
-		quad
-	}));
+	// `triangles` (the flat pair behind each quad) let the 3D view map the pattern
+	// back onto the model — see `pattern-on-model/band-uv-mesh.ts`.
+	const quadFacets: CutPattern[] = quads.map((quad, i) => {
+		const t0 = band.facets[2 * i]?.triangle;
+		const t1 = band.facets[2 * i + 1]?.triangle;
+		return {
+			path: [],
+			svgPath: '',
+			label: `${bandIndex}-${i}`,
+			quad,
+			...(t0 && t1 ? { triangles: [t0.clone(), t1.clone()] as [typeof t0, typeof t1] } : {})
+		};
+	});
 
 	// Compute bounds from all path coordinates (includes tab geometry)
 	const bounds = getBoundsFromPath(outlinePath);
@@ -676,6 +683,9 @@ export const generateOutlinedBandPattern = (
 
 	const result: BandCutPattern = {
 		projectionType: 'patterned',
+		// The orientation `getQuadrilaterals` mirrored the quads by, as tiled bands
+		// carry it; the 3D pattern overlay needs it to invert that mirror.
+		sideOrientation: band.sideOrientation,
 		facets: fillFacet ? [outlineFacet, ...quadFacets, fillFacet] : [outlineFacet, ...quadFacets],
 		svgPath: outlineFacet.svgPath,
 		id: `outlined-band-${tubeAddress.globule}-${tubeAddress.tube}-${bandIndex}${pieceSuffix}`,
