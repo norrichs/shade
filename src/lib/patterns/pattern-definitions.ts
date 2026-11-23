@@ -32,6 +32,12 @@ import {
 	generateHexparquet2bSubunits
 } from './tiled-hexparquet2b-pattern';
 import {
+	ANTALYA_SUBUNIT_COUNT,
+	adjustAntalyaAfterTiling,
+	generateAntalyaPreview,
+	generateAntalyaSubunits
+} from './tiled-antalya-pattern';
+import {
 	SIMPLE_HEX_SUBUNIT_COUNT,
 	adjustSimpleHexAfterTiling,
 	generateSimpleHexPreview,
@@ -128,6 +134,17 @@ export const patterns: { [key: string]: PatternGenerator } = {
 		tagAnchor: { facetIndex: 0, quadEdge: { edge: 'ab', position: 'midPoint' } },
 		adjustAfterTiling: (bands: BandCutPattern[], tiledPatternConfig: TiledPatternConfig) =>
 			adjustHexparquet2bAfterTiling(bands, tiledPatternConfig),
+		adjustAfterTilingNeedsEndPartners: false
+	},
+	'tiledAntalyaPattern-0': {
+		subunitCount: ANTALYA_SUBUNIT_COUNT,
+		// The single-unit form is the preview (A and B stacked into one quad).
+		getPattern: (_rows: number, columns: number) => generateAntalyaPreview(columns),
+		// Cycles a unit's two halves; the adjuster rebuilds each facet as A or B by band parity.
+		getSubunitPatterns: (columns: number) => generateAntalyaSubunits(columns),
+		tagAnchor: { facetIndex: 0, quadEdge: { edge: 'ab', position: 'midPoint' } },
+		adjustAfterTiling: (bands: BandCutPattern[], tiledPatternConfig: TiledPatternConfig) =>
+			adjustAntalyaAfterTiling(bands, tiledPatternConfig),
 		adjustAfterTilingNeedsEndPartners: false
 	},
 	'tiledSimpleHexPattern-0': {

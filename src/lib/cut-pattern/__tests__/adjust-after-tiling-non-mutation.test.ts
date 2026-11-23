@@ -73,6 +73,7 @@ describe('guard: adjustAfterTiling never mutates its inputs', () => {
 	it('fixture: the registered adjuster families', () => {
 		expect(registered).toEqual([
 			'bandedBranchedPattern-0',
+			'tiledAntalyaPattern-0',
 			'tiledAsanohaPattern-1',
 			'tiledBoxPattern-0',
 			'tiledCarnationPattern-0',

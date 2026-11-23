@@ -418,6 +418,11 @@ export type BandCutPattern = {
 	 * laid flat, as a fraction of the quad's size (√area). 0 where nothing is off.
 	 */
 	seamDeviation?: number[];
+	/**
+	 * A non-fatal note on how the band was patterned (e.g. Antalya's straight seam
+	 * around an odd tube), shown as a warning toast.
+	 */
+	notice?: string;
 	/** Band index (same space as address.band) of the band on this band's left (unit x = 0) side. */
 	leftPartnerBand?: number;
 	projectionType: 'patterned';
@@ -741,7 +746,9 @@ export type TiledPatternConfig = {
 		 */
 		dropEdgeSegments?: boolean;
 		/**
-		 * Hexparquet, HexParquet2, HexParquet2b, SimpleHex and Asanoha. By default a band that has a left partner
+		 * Hexparquet, HexParquet2, HexParquet2b, SimpleHex and Asanoha. (Antalya: when
+		 * true, lines reaching into a partner band are mapped through the partner's
+		 * quad; otherwise they are extrapolated through the band's own quad.) By default a band that has a left partner
 		 * drops its seam segments (hexparquet: `partnerDrop`; Asanoha: the
 		 * column-0 left edge), because the partner's edge already draws that
 		 * line and the seam would otherwise be cut twice. When true the band keeps
