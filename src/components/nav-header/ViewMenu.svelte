@@ -48,6 +48,20 @@
 		</select>
 		<span>texture density</span>
 	</div>
+	<div class="entry">
+		<input type="color" bind:value={$patternOnModelStore.modelColor} />
+		<span>model color</span>
+	</div>
+	<div class="entry">
+		<input
+			type="range"
+			min="0"
+			max="1"
+			step="0.05"
+			bind:value={$patternOnModelStore.modelOpacity}
+		/>
+		<span>opacity {Math.round($patternOnModelStore.modelOpacity * 100)}%</span>
+	</div>
 </PopoverMenu>
 
 <style>

@@ -1,25 +1,22 @@
 <script lang="ts">
 	/**
 	 * View → "Pattern on model": every pattern band rasterised (raw strokes, no
-	 * Prepare union) onto the 3D band it was cut from. UVs are the band's own path
-	 * space (`buildPatternBandMesh`), so the GPU clips anything that spills past
-	 * the band. The stroke is the material (black); the holes are solid
-	 * white. The shadow pass cuts the holes out, so the interior light still
-	 * throws the lattice.
+	 * Prepare union) onto the 3D band it was cut from, as a decal LAYER over the
+	 * normal band meshes. UVs are the band's own path space
+	 * (`buildPatternBandMesh`), so the GPU clips anything that spills past the
+	 * band. Strokes are black, holes fully transparent (alphaTest), and the layer
+	 * is pushed a hair outward from the model so it never z-fights the band.
+	 *
+	 * The normal meshes underneath keep picking and highlighting; they draw in
+	 * `materials.patternModel` (user colour/opacity) where they would otherwise
+	 * show a plain base colour — see ProjectionGeometryComponent.
 	 *
 	 * Meshes are built imperatively into one Group held in `$state.raw` — Three.js
 	 * objects in deep `$state` trip Svelte's effect-depth limit (GlobuleMesh notes).
-	 *
-	 * Selection: the plain band/facet meshes of this source are hidden while the
-	 * overlay is on, so the overlay takes their clicks (the same handlers, via the
-	 * triangle's real facet index) and shows their marks — band highlights as a
-	 * tint of the white holes (material colour × texture, so lines stay black; no
-	 * re-raster), selected/partner facets as a translucent layer just above.
 	 */
-	import { T } from '@threlte/core';
+	import { T, useThrelte } from '@threlte/core';
 	import { onDestroy } from 'svelte';
 	import {
-		Box3,
 		BackSide,
 		BufferAttribute,
 		BufferGeometry,
@@ -27,113 +24,51 @@
 		DoubleSide,
 		Group,
 		Mesh,
-		Color,
-		MeshBasicMaterial,
 		MeshStandardMaterial,
-		SRGBColorSpace,
-		Vector3
+		SRGBColorSpace
 	} from 'three';
 	import {
 		collatedTubesStore,
 		patternBandSpaces,
 		patternSourceStore,
 		superGlobuleStore,
-		tubesForGeometrySource
-	} from '#lib/stores/index.js';
-	import {
-		selectedGlobuleTube,
-		selectedGlobuleTubeGeometry,
-		selectedProjection,
-		selectedProjectionGeometry,
-		selectedSurfaceProjection,
-		selectedSurfaceProjectionGeometry,
-		selectedVoronoi,
-		selectedVoronoiGeometry,
-		selectedVoronoiSurface,
-		selectedVoronoiSurfaceGeometry,
-		viewControlStore,
+		tubesForGeometrySource,
 		type GeometrySource
 	} from '#lib/stores/index.js';
 	import { patternOnModelStore } from '#lib/stores/patternOnModelStore.js';
 	import { bandHighlightState } from '#lib/stores/bandHighlightStore.js';
 	import { sameGlobuleBand } from '#lib/assembler-highlight.js';
 	import {
-		HIGHLIGHT_PRIMARY,
-		HIGHLIGHT_SECONDARY,
-		PATTERN_FILTERED
-	} from '#lib/highlight-colors.js';
-	import { handleFacetSelect, highlightRealBand } from './selection-helpers';
-	import { interactionMode, isMeasureInteractionMode } from './interaction-mode';
-	import { nearestVertexFromEvent } from './nearest-vertex';
-	import { addMeasurementPoint } from '#lib/stores/measurementStore.js';
-	import { materials } from './materials';
-	import { get } from 'svelte/store';
-	import type {
-		GlobuleAddress_Band,
-		GlobuleAddress_Facet
-	} from '#lib/projection-geometry/types.js';
-	import {
 		geometrySourceOfPattern,
 		patternBandToReal
 	} from '#lib/cut-pattern/pattern-band-space.js';
-	import { buildPatternBandMesh } from '#lib/pattern-on-model/band-uv-mesh.js';
+	import {
+		buildPatternBandMesh,
+		type PatternBandMesh
+	} from '#lib/pattern-on-model/band-uv-mesh.js';
+	import { offsetOutward } from '#lib/pattern-on-model/offset-outward.js';
 	import { rasterizeBand } from '#lib/pattern-on-model/rasterize-band.js';
 	import type { BandCutPattern } from '#lib/types.js';
+	import type { GlobuleAddress_Band } from '#lib/projection-geometry/types.js';
 
 	const LATTICE_COLOR = '#000000';
-	/** Holes read as solid white on screen; they still let the interior light through. */
-	const HOLE_COLOR = '#ffffff';
-	/** The shadow texture leaves holes clear, so the caster cuts them out. */
-	const SHADOW_HOLE_COLOR = 'rgba(0, 0, 0, 0)';
-	const SHADOW_ALPHA_TEST = 0.5;
-	/** Selection render mode: bands that are neither highlighted nor filtered. */
+	const HOLE_COLOR = 'rgba(0, 0, 0, 0)';
+	/** How far the layer sits outside its band, as a fraction of the model radius. */
+	const OFFSET_FRACTION = 0.002;
+	/** Selection render mode: the pattern on bands that are neither highlighted nor filtered. */
 	const GHOST_OPACITY = 0.08;
-
-	/** What a visible band mesh carries for picking and marking. */
-	type BandMeshData = { real: GlobuleAddress_Band; facetIndices: Int32Array };
-
-	// Selected / partner facets over the pattern: translucent, pulled toward the
-	// camera so they never z-fight the band beneath. Static (module-level), so no
-	// Three.js object enters Svelte state.
-	const facetMark = (color: Color) =>
-		new MeshBasicMaterial({
-			color,
-			transparent: true,
-			opacity: 0.55,
-			depthWrite: false,
-			side: DoubleSide,
-			polygonOffset: true,
-			polygonOffsetFactor: -2,
-			polygonOffsetUnits: -2
-		});
-	const facetMarks = {
-		selected: facetMark(materials.selected.color),
-		partner: facetMark(materials.highlightedPrimary.color),
-		startPartner: facetMark(materials.numbered[4].color),
-		endPartner: facetMark(materials.numbered[1].color)
-	};
-	const TINT = {
-		none: new Color('#ffffff'),
-		primary: new Color(HIGHLIGHT_PRIMARY),
-		secondary: new Color(HIGHLIGHT_SECONDARY),
-		filtered: new Color(PATTERN_FILTERED)
-	};
 	const noRaycast = () => {};
 
+	const { invalidate } = useThrelte();
 	let enabled = $derived($patternOnModelStore.enabled);
 	let density = $derived($patternOnModelStore.density);
 	let interiorLight = $derived($patternOnModelStore.interiorLight);
+	let source: GeometrySource = $derived(geometrySourceOfPattern($patternSourceStore));
 
 	let group: Group | null = $state.raw(null);
 	// The live group, read by the effect without subscribing to `group` (which it
 	// writes) and by onDestroy.
 	let current: Group | null = null;
-	const swap = (next: Group | null) => {
-		const previous = current;
-		current = next;
-		group = next;
-		dispose(previous);
-	};
 	let center: [number, number, number] = $state.raw([0, 0, 0]);
 	let radius = $state(1);
 
@@ -141,19 +76,27 @@
 		g?.traverse((o) => {
 			if (!(o instanceof Mesh)) return;
 			o.geometry.dispose();
-			// The shadow twin shares geometry and texture; disposing twice is harmless.
-			const material = o.material as MeshStandardMaterial | MeshBasicMaterial;
+			const material = o.material as MeshStandardMaterial;
 			material.map?.dispose();
 			material.dispose();
 		});
+	};
+	const swap = (next: Group | null) => {
+		const previous = current;
+		current = next;
+		group = next;
+		dispose(previous);
 	};
 
 	/** Outlined bands lead with an outline facet that has no quad. */
 	const isOutlined = (band: BandCutPattern) =>
 		!!band.facets[0] && !band.facets[0].quad && band.facets.some((f) => f.quad);
 
-	const build = (source: GeometrySource): Group => {
-		const next = new Group();
+	type Mapped = { band: BandCutPattern; real: GlobuleAddress_Band; mapped: PatternBandMesh };
+
+	/** Every pattern band with its real 3D band and UV mesh. */
+	const mapBands = (): Mapped[] => {
+		const out: Mapped[] = [];
 		const spaceOf = $patternBandSpaces;
 		const sg = $superGlobuleStore;
 		for (const tube of $collatedTubesStore) {
@@ -166,70 +109,78 @@
 				];
 				if (!realBand) continue;
 				const mapped = buildPatternBandMesh(band, realBand.facets);
-				if (!mapped) continue;
+				if (mapped) out.push({ band, real, mapped });
+			}
+		}
+		return out;
+	};
 
-				const canvas = rasterizeBand(band, mapped.bounds, {
+	/** Center and radius of the model, from the band meshes' own positions. */
+	const boundsOf = (items: Mapped[]) => {
+		const min = [Infinity, Infinity, Infinity];
+		const max = [-Infinity, -Infinity, -Infinity];
+		for (const { mapped } of items) {
+			const p = mapped.positions;
+			for (let i = 0; i < p.length; i += 3)
+				for (let k = 0; k < 3; k++) {
+					if (p[i + k] < min[k]) min[k] = p[i + k];
+					if (p[i + k] > max[k]) max[k] = p[i + k];
+				}
+		}
+		if (!items.length) return { c: { x: 0, y: 0, z: 0 }, r: 1 };
+		return {
+			c: { x: (min[0] + max[0]) / 2, y: (min[1] + max[1]) / 2, z: (min[2] + max[2]) / 2 },
+			r: Math.max(1, Math.hypot(max[0] - min[0], max[1] - min[1], max[2] - min[2]) / 2)
+		};
+	};
+
+	const build = (items: Mapped[], c: { x: number; y: number; z: number }, r: number): Group => {
+		const next = new Group();
+		for (const { band, real, mapped } of items) {
+			const texture = new CanvasTexture(
+				rasterizeBand(band, mapped.bounds, {
 					density,
 					color: LATTICE_COLOR,
 					holeColor: HOLE_COLOR,
 					outlined: isOutlined(band)
-				});
-				const texture = new CanvasTexture(canvas);
-				texture.colorSpace = SRGBColorSpace;
-				texture.anisotropy = 8;
-				const shadowTexture = new CanvasTexture(
-					rasterizeBand(band, mapped.bounds, {
-						density,
-						color: LATTICE_COLOR,
-						holeColor: SHADOW_HOLE_COLOR,
-						outlined: isOutlined(band)
-					})
-				);
+				})
+			);
+			texture.colorSpace = SRGBColorSpace;
+			texture.anisotropy = 8;
 
-				const geometry = new BufferGeometry();
-				geometry.setAttribute('position', new BufferAttribute(mapped.positions, 3));
-				geometry.setAttribute('uv', new BufferAttribute(mapped.uvs, 2));
-				geometry.computeVertexNormals();
+			const geometry = new BufferGeometry();
+			geometry.setAttribute(
+				'position',
+				new BufferAttribute(offsetOutward(mapped.positions, c, r * OFFSET_FRACTION), 3)
+			);
+			geometry.setAttribute('uv', new BufferAttribute(mapped.uvs, 2));
+			geometry.computeVertexNormals();
 
-				// Opaque: holes are solid white, so nothing on screen is cut away.
-				const material = new MeshStandardMaterial({
-					map: texture,
-					side: DoubleSide,
-					roughness: 0.85,
-					metalness: 0
-				});
-				const mesh = new Mesh(geometry, material);
-				mesh.castShadow = false;
-				mesh.receiveShadow = true;
-				mesh.name = band.id;
-				mesh.userData = { real, facetIndices: mapped.facetIndices } satisfies BandMeshData;
-				next.add(mesh);
-
-				// Shadows must cut the holes out so the interior light throws the
-				// lattice, not the whole band — the holes are cut-outs in the real
-				// piece, white only on screen. A custom depth/distance material cannot
-				// do it: the shadow pass copies the visible material's alphaTest and map
-				// over it. So an invisible twin (colorWrite off) casts the shadow from a
-				// stroke-only texture (holes clear) with its own alphaTest.
-				const caster = new Mesh(
-					geometry,
-					new MeshBasicMaterial({
-						map: shadowTexture,
-						alphaTest: SHADOW_ALPHA_TEST,
-						colorWrite: false,
-						depthWrite: false,
-						side: DoubleSide
-					})
-				);
-				caster.castShadow = true;
-				caster.raycast = noRaycast;
-				next.add(caster);
-			}
+			const material = new MeshStandardMaterial({
+				map: texture,
+				// Strokes are ~1 unit on bands ~100 wide, so at overview zoom the mip
+				// levels average a line's alpha well under 0.5 and a plain alphaTest
+				// at 0.5 breaks it into dashes. A low threshold keeps thin lines alive
+				// further down the mip chain, and alpha-to-coverage (MSAA) smooths
+				// their edges. The shadow pass uses the same cut-out, so the interior
+				// light throws the lattice.
+				alphaTest: 0.2,
+				alphaToCoverage: true,
+				side: DoubleSide,
+				roughness: 0.85,
+				metalness: 0
+			});
+			const mesh = new Mesh(geometry, material);
+			mesh.castShadow = true;
+			mesh.receiveShadow = true;
+			// The normal band meshes underneath take the clicks.
+			mesh.raycast = noRaycast;
+			mesh.name = band.id;
+			mesh.userData = { real };
+			next.add(mesh);
 		}
 		return next;
 	};
-
-	let source: GeometrySource = $derived(geometrySourceOfPattern($patternSourceStore));
 
 	$effect(() => {
 		if (!enabled) {
@@ -242,47 +193,33 @@
 		void $patternBandSpaces;
 		void density;
 		const started = performance.now();
-		const next = build(source);
-		const box = new Box3().setFromObject(next);
-		if (!box.isEmpty()) {
-			const c = box.getCenter(new Vector3());
-			center = [c.x, c.y, c.z];
-			radius = Math.max(1, box.getSize(new Vector3()).length() / 2);
-		}
+		const items = mapBands();
+		const { c, r } = boundsOf(items);
+		const next = build(items, c, r);
+		center = [c.x, c.y, c.z];
+		radius = r;
 		console.info(
-			`[pattern-on-model] ${next.children.length / 2} bands textured in ${Math.round(performance.now() - started)} ms`
+			`[pattern-on-model] ${next.children.length} bands textured in ${Math.round(performance.now() - started)} ms`
 		);
 		swap(next);
 	});
 
 	onDestroy(() => swap(null));
 
-	// --- Marking: band highlight tint and Selection-mode ghosting -------------
-	// Material colour × texture: white holes take the tint, black lines stay
-	// black. A uniform change, so a highlight never re-rasterises anything.
+	// Selection render mode ghosts the bands that are neither highlighted nor
+	// filtered; the pattern on them fades with them.
 	$effect(() => {
 		const g = group;
 		const state = $bandHighlightState;
 		if (!g) return;
 		const highlight = state.highlightFor(source);
 		for (const child of g.children) {
-			const data = child.userData as Partial<BandMeshData>;
-			if (!data.real || !(child instanceof Mesh)) continue;
+			const real = (child.userData as { real?: GlobuleAddress_Band }).real;
+			if (!real || !(child instanceof Mesh)) continue;
 			const material = child.material as MeshStandardMaterial;
-			const isPrimary = !!highlight && sameGlobuleBand(data.real, highlight.band);
-			const filtered = state.isFiltered(source, data.real);
-			const isRing = !!highlight?.ring.some((b) => sameGlobuleBand(data.real!, b));
-			const ghost = state.selectionView && !isPrimary && !filtered;
-			const tint = state.selectionView
-				? TINT.none
-				: isPrimary
-					? TINT.primary
-					: filtered
-						? TINT.filtered
-						: isRing
-							? TINT.secondary
-							: TINT.none;
-			material.color.copy(tint);
+			const marked =
+				(!!highlight && sameGlobuleBand(real, highlight.band)) || state.isFiltered(source, real);
+			const ghost = state.selectionView && !marked;
 			if (material.transparent !== ghost) {
 				material.transparent = ghost;
 				material.depthWrite = !ghost;
@@ -290,90 +227,13 @@
 			}
 			material.opacity = ghost ? GHOST_OPACITY : 1;
 		}
+		// Threlte renders on demand; an in-place material edit asks for no frame.
+		invalidate();
 	});
-
-	// --- Picking ---------------------------------------------------------------
-	// Same behaviour as the hidden meshes: where this source shows facet meshes, a
-	// click selects the facet (partners, band log, Assembler highlight); where it
-	// shows only bands, it drives the Assembler highlight alone. Surface sources
-	// always render facets.
-	let facetsShown = $derived(
-		source === 'projection'
-			? $viewControlStore.showProjectionGeometry.facets
-			: source === 'voronoi'
-				? $viewControlStore.showVoronoiGeometry.facets
-				: source === 'globuleTube'
-					? $viewControlStore.showGlobuleTubeGeometry.facets
-					: true
-	);
-
-	const setSelectedFacet = (s: GeometrySource) => (a: GlobuleAddress_Facet) => {
-		if (s === 'projection') selectedProjection.set(a);
-		else if (s === 'surfaceProjection') selectedSurfaceProjection.set(a);
-		else if (s === 'voronoi') selectedVoronoi.set(a);
-		else if (s === 'voronoiSurface') selectedVoronoiSurface.set(a);
-		else if (s === 'globuleTube') selectedGlobuleTube.set(a);
-	};
-
-	type OverlayClick = {
-		object?: unknown;
-		faceIndex?: number | null;
-		point?: Vector3;
-		intersections?: { object: unknown }[];
-		stopPropagation?: () => void;
-	};
-	const handleClick = (ev: OverlayClick) => {
-		const data = (ev.object as Mesh | undefined)?.userData as Partial<BandMeshData> | undefined;
-		if (!data?.real || !data.facetIndices) return;
-		const facet = ev.faceIndex == null ? undefined : data.facetIndices[ev.faceIndex];
-		if (facetsShown && facet !== undefined) {
-			handleFacetSelect(ev, source, { ...data.real, facet }, setSelectedFacet(source));
-			return;
-		}
-		if (isMeasureInteractionMode(get(interactionMode))) {
-			ev.stopPropagation?.();
-			const vertex = nearestVertexFromEvent(ev);
-			if (vertex) addMeasurementPoint(vertex);
-			return;
-		}
-		ev.stopPropagation?.();
-		highlightRealBand(source, data.real);
-	};
-
-	// --- Selected / partner facets of this source ----------------------------
-	let selectedGeometry = $derived(
-		source === 'projection'
-			? $selectedProjectionGeometry
-			: source === 'surfaceProjection'
-				? $selectedSurfaceProjectionGeometry
-				: source === 'voronoi'
-					? $selectedVoronoiGeometry
-					: source === 'voronoiSurface'
-						? $selectedVoronoiSurfaceGeometry
-						: source === 'globuleTube'
-							? $selectedGlobuleTubeGeometry
-							: undefined
-	);
-	let facetMarkGeometries = $derived(
-		selectedGeometry?.selected?.length && !$bandHighlightState.selectionView
-			? (['selected', 'partner', 'startPartner', 'endPartner'] as const)
-					.map((role) => ({
-						role,
-						geometry:
-							role === 'selected'
-								? selectedGeometry.geometry.facet
-								: selectedGeometry.geometry[role]
-					}))
-					.filter((m) => !!m.geometry)
-			: []
-	);
 </script>
 
 {#if group}
-	<T is={group} onclick={handleClick} />
-	{#each facetMarkGeometries as mark (mark.role)}
-		<T.Mesh geometry={mark.geometry} material={facetMarks[mark.role]} raycast={noRaycast} />
-	{/each}
+	<T is={group} />
 	{#if interiorLight}
 		<T.PointLight
 			position={center}

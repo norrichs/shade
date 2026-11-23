@@ -1,21 +1,10 @@
 <script lang="ts">
 	import { materials } from '../three-renderer/materials';
-	import {
-		selectedProjectionGeometry,
-		partnerHighlightGeometry,
-		patternSourceStore
-	} from '#lib/stores/index.js';
-	import { patternOnModelStore } from '#lib/stores/patternOnModelStore.js';
-	import { geometrySourceOfPattern } from '#lib/cut-pattern/pattern-band-space.js';
+	import { selectedProjectionGeometry, partnerHighlightGeometry } from '#lib/stores/index.js';
 	import type { HighlightRole } from '#lib/stores/selectionStores.js';
 	import { T } from '@threlte/core';
 
 	const partnerActive = $derived($partnerHighlightGeometry.length > 0);
-	// Pattern on model draws the projection selection itself (translucent, over
-	// the pattern); this opaque copy would sit in the same plane and z-fight it.
-	const overlaid = $derived(
-		$patternOnModelStore.enabled && geometrySourceOfPattern($patternSourceStore) === 'projection'
-	);
 
 	const materialFor = (role: HighlightRole) => {
 		if (role === 'base') return materials.partnerBase;
@@ -28,7 +17,7 @@
 	};
 </script>
 
-{#if $selectedProjectionGeometry && !partnerActive && !overlaid}
+{#if $selectedProjectionGeometry && !partnerActive}
 	<T.Mesh
 		geometry={$selectedProjectionGeometry.geometry.facet}
 		material={materials.highlightedSecondary}

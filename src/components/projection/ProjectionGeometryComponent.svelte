@@ -1,7 +1,12 @@
 <script lang="ts">
-	import { T } from '@threlte/core';
+	import { T, useThrelte } from '@threlte/core';
 	import type { IntersectionEvent } from '@threlte/extras';
-	import { getBandMaterial, getMaterial, materials } from '../three-renderer/materials';
+	import {
+		getBandMaterial,
+		getMaterial,
+		isBaseMaterial,
+		materials
+	} from '../three-renderer/materials';
 	import { BufferGeometry, Mesh, Object3D, Vector3 } from 'three';
 	import {
 		collateGeometry,
@@ -114,12 +119,30 @@
 	let isFiltered = $derived($bandHighlightState.isFiltered);
 	let selectionView = $derived($bandHighlightState.selectionView);
 
-	// With "Pattern on model" on, PatternOnModel draws the patterned source's bands
-	// itself; its plain band and facet meshes would fill the cut-outs, so they step aside.
+	// With "Pattern on model" on, PatternOnModel draws the pattern as a layer just
+	// outside the patterned source's bands, which still render (and take clicks).
 	let overlaidSource = $derived(
 		$patternOnModelStore.enabled ? geometrySourceOfPattern($patternSourceStore) : null
 	);
-	const shows = (source: GeometrySource) => overlaidSource !== source;
+	// Under the pattern layer, the patterned source's bands and facets draw in the
+	// user's model material wherever they would show a plain base colour;
+	// selection and highlight marks keep their own materials.
+	const { invalidate } = useThrelte();
+	const fallbackFor = <M,>(source: GeometrySource, fallback: M) =>
+		overlaidSource === source ? materials.patternModel : fallback;
+	$effect(() => {
+		const { modelColor, modelOpacity } = $patternOnModelStore;
+		const m = materials.patternModel;
+		m.color.set(modelColor);
+		m.opacity = modelOpacity;
+		const transparent = modelOpacity < 1;
+		if (m.transparent !== transparent) {
+			m.transparent = transparent;
+			m.needsUpdate = true;
+		}
+		// Threlte renders on demand; an in-place material edit asks for no frame.
+		invalidate();
+	});
 
 	// Wrap getMaterial so every facet also respects the Assembler cross-view
 	// highlight (a band/ring clicked in the data grid). Reading `highlightFor`
@@ -129,8 +152,8 @@
 		address: GlobuleAddress_Facet,
 		selectedGeometry: Parameters<typeof getMaterial>[1],
 		config?: Parameters<typeof getMaterial>[2]
-	) =>
-		getMaterial(
+	) => {
+		const material = getMaterial(
 			address,
 			selectedGeometry,
 			config,
@@ -138,6 +161,8 @@
 			isFiltered(source, address),
 			selectionView
 		);
+		return isBaseMaterial(material) ? fallbackFor(source, material) : material;
+	};
 
 	let {
 		onClick,
@@ -290,7 +315,7 @@
 				raycast={surfaceRaycast}
 			/>
 		{/if}
-		{#if projectionGeometry.surfaceProjectionFacets && shows('surfaceProjection')}
+		{#if projectionGeometry.surfaceProjectionFacets}
 			{#each projectionGeometry.surfaceProjectionFacets as facet (facetKey(facet.address))}
 				<T.Mesh
 					geometry={facet.geometry}
@@ -311,7 +336,7 @@
 						)}
 				/>
 			{/each}
-		{:else if projectionGeometry.surfaceProjection && shows('surfaceProjection')}
+		{:else if projectionGeometry.surfaceProjection}
 			{#if Array.isArray(projectionGeometry.surfaceProjection)}
 				{#each projectionGeometry.surfaceProjection as band, i (bandKeyOf(band))}
 					<T.Mesh
@@ -319,7 +344,7 @@
 						material={getBandMaterial(
 							band.address,
 							highlightFor('surfaceProjection'),
-							materials.numbered[i % materials.numbered.length],
+							fallbackFor('surfaceProjection', materials.numbered[i % materials.numbered.length]),
 							isFiltered('surfaceProjection', band.address),
 							selectionView
 						)}
@@ -348,13 +373,13 @@
 			/>
 		{/if}
 
-		{#each shows('projection') ? projectionGeometry.bands || [] : [] as band (bandKeyOf(band))}
+		{#each projectionGeometry.bands || [] as band (bandKeyOf(band))}
 			<T.Mesh
 				geometry={band.geometry}
 				material={getBandMaterial(
 					band.address,
 					highlightFor('projection'),
-					materials.selected,
+					fallbackFor('projection', materials.selected),
 					isFiltered('projection', band.address),
 					selectionView
 				)}
@@ -362,7 +387,7 @@
 				onclick={(ev: BandClickEvent) => handleBandClick(ev, 'projection', band.address)}
 			/>
 		{/each}
-		{#each shows('projection') ? projectionGeometry.facets || [] : [] as facet (facetKey(facet.address))}
+		{#each projectionGeometry.facets || [] as facet (facetKey(facet.address))}
 			<T.Mesh
 				geometry={facet.geometry}
 				material={highlightedFacetMaterial(
@@ -397,13 +422,13 @@
 				raycast={surfaceRaycast}
 			/>
 		{/if}
-		{#each shows('voronoi') ? voronoiGeometry.bands || [] : [] as band (bandKeyOf(band))}
+		{#each voronoiGeometry.bands || [] as band (bandKeyOf(band))}
 			<T.Mesh
 				geometry={band.geometry}
 				material={getBandMaterial(
 					band.address,
 					highlightFor('voronoi'),
-					materials.default,
+					fallbackFor('voronoi', materials.default),
 					isFiltered('voronoi', band.address),
 					selectionView
 				)}
@@ -426,7 +451,7 @@
 				onclick={(ev: BandClickEvent) => handleBandClick(ev, 'voronoi', band.address)}
 			/>
 		{/each}
-		{#each shows('voronoi') ? voronoiGeometry.facets || [] : [] as facet (facetKey(facet.address))}
+		{#each voronoiGeometry.facets || [] as facet (facetKey(facet.address))}
 			<T.Mesh
 				geometry={facet.geometry}
 				material={highlightedFacetMaterial('voronoi', facet.address, $selectedVoronoiGeometry)}
@@ -434,7 +459,7 @@
 					handleFacetSelect(ev, 'voronoi', facet.address, (a) => selectedVoronoi.set(a))}
 			/>
 		{/each}
-		{#each shows('voronoiSurface') ? voronoiGeometry.surfaceProjectionFacets || [] : [] as facet (facetKey(facet.address))}
+		{#each voronoiGeometry.surfaceProjectionFacets || [] as facet (facetKey(facet.address))}
 			<T.Mesh
 				geometry={facet.geometry}
 				material={highlightedFacetMaterial(
@@ -466,7 +491,7 @@
 				raycast={surfaceRaycast}
 			/>
 		{/if}
-		{#each shows('globuleTube') ? globuleTubeGeometry.bands || [] : [] as band (bandKeyOf(band))}
+		{#each globuleTubeGeometry.bands || [] as band (bandKeyOf(band))}
 			<!-- Addressed band meshes so a band clicked in the Assembler grid highlights
 			     here too, without needing the facet view turned on. -->
 			<T.Mesh
@@ -474,7 +499,7 @@
 				material={getBandMaterial(
 					band.address,
 					highlightFor('globuleTube'),
-					materials.default,
+					fallbackFor('globuleTube', materials.default),
 					isFiltered('globuleTube', band.address),
 					selectionView
 				)}
@@ -482,7 +507,7 @@
 				onclick={(ev: BandClickEvent) => handleBandClick(ev, 'globuleTube', band.address)}
 			/>
 		{/each}
-		{#each shows('globuleTube') ? globuleTubeGeometry.facets || [] : [] as facet (facetKey(facet.address))}
+		{#each globuleTubeGeometry.facets || [] as facet (facetKey(facet.address))}
 			<T.Mesh
 				geometry={facet.geometry}
 				material={highlightedFacetMaterial(

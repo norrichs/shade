@@ -10,10 +10,15 @@ export type PatternOnModelConfig = {
 	density: number;
 	/** Dim the room and light the model from a point inside it, casting the lattice. */
 	interiorLight: boolean;
+	/** Base material of the patterned bands under the pattern layer. */
+	modelColor: string;
+	modelOpacity: number;
 };
 
 export const patternOnModelStore = writable<PatternOnModelConfig>({
 	enabled: false,
 	density: 2,
-	interiorLight: false
+	interiorLight: false,
+	modelColor: '#ffffff',
+	modelOpacity: 0.9
 });

@@ -65,6 +65,15 @@ export const materials = {
 		opacity: 0.9,
 		side: DoubleSide
 	}),
+	// View → Pattern on model: the base material of the patterned source's
+	// bands and facets under the pattern layer. Colour and opacity are user-set
+	// (patternOnModelStore), applied in place by ProjectionGeometryComponent.
+	patternModel: new MeshStandardMaterial({
+		color: theme.colorDefault,
+		transparent: true,
+		opacity: 0.9,
+		side: DoubleSide
+	}),
 	// Keep Physical material for selected (needs to stand out)
 	selected: new MeshPhysicalMaterial({
 		color: theme.colorSelected,
@@ -210,6 +219,16 @@ const defaultMaterialSelectionConfig: MaterialSelectionConfig = {
  * source picks its own (voronoi rim tubes red, projection bands `selected`, and so
  * on), so an unhighlighted band still reads the way it always did.
  */
+/**
+ * Whether a resolved material is a plain base colour (default, numbered,
+ * striped) rather than a selection/highlight mark — the ones Pattern on model
+ * replaces with `materials.patternModel`.
+ */
+export const isBaseMaterial = (material: unknown): boolean =>
+	material === materials.default ||
+	materials.numbered.includes(material as MeshStandardMaterial) ||
+	materials.striped.includes(material as MeshStandardMaterial);
+
 export const getBandMaterial = (
 	address: GlobuleAddress_Band | undefined,
 	highlight: AssemblerHighlight = null,
