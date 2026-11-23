@@ -78,7 +78,7 @@ export const fitFlatToPath = (band: BandCutPattern): FlatToPath | undefined => {
 	};
 };
 
-export const applyFlatToPath = (t: FlatToPath, p: XY): XY => ({
+const applyFlatToPath = (t: FlatToPath, p: XY): XY => ({
 	x: t.s * t.m * p.x + t.tx,
 	y: t.s * p.y + t.ty
 });

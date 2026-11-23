@@ -13,7 +13,7 @@ import type { BandCutPattern } from '#lib/types.js';
 import { svgPathStringFromSegments } from '#lib/patterns/utils.js';
 import type { PatternBandMesh } from './band-uv-mesh';
 
-export const MAX_TEXTURE_SIDE = 2048;
+const MAX_TEXTURE_SIDE = 2048;
 
 const dOf = (facet: BandCutPattern['facets'][number]) =>
 	facet.svgPath || (facet.path.length ? svgPathStringFromSegments(facet.path) : '');
