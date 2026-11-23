@@ -5,9 +5,9 @@
  *
  * Tiled: every facet path is stroked at its own `strokeWidth`, round caps and
  * joins — visually the stroke-expansion + union the cut file gets. The stroke is
- * the material; everything else stays transparent and is cut away by alphaTest.
+ * the material; everything else is a hole, painted `holeColor` (translucent).
  * Outlined: the outline is filled solid and the procedural fill (holes) is
- * punched out of it.
+ * repainted in `holeColor`.
  */
 import type { BandCutPattern } from '#lib/types.js';
 import { svgPathStringFromSegments } from '#lib/patterns/utils.js';
@@ -21,7 +21,12 @@ const dOf = (facet: BandCutPattern['facets'][number]) =>
 export const rasterizeBand = (
 	band: BandCutPattern,
 	bounds: PatternBandMesh['bounds'],
-	{ density, color, outlined }: { density: number; color: string; outlined: boolean }
+	{
+		density,
+		color,
+		holeColor,
+		outlined
+	}: { density: number; color: string; holeColor: string; outlined: boolean }
 ): HTMLCanvasElement => {
 	const scale = Math.min(density, MAX_TEXTURE_SIDE / Math.max(bounds.width, bounds.height));
 	const canvas = document.createElement('canvas');
@@ -47,15 +52,25 @@ export const rasterizeBand = (
 		const [outline, ...rest] = band.facets;
 		const d = outline ? dOf(outline) : '';
 		if (d) ctx.fill(new Path2D(d));
-		ctx.globalCompositeOperation = 'destination-out';
+		// Holes: clear the material, then lay the hole colour in their place.
+		ctx.fillStyle = holeColor;
 		for (const facet of rest) {
 			if (facet.quad) continue;
 			const fd = dOf(facet);
-			if (fd) ctx.fill(new Path2D(fd), 'evenodd');
+			if (!fd) continue;
+			const hole = new Path2D(fd);
+			ctx.globalCompositeOperation = 'destination-out';
+			ctx.fill(hole, 'evenodd');
+			ctx.globalCompositeOperation = 'source-over';
+			ctx.fill(hole, 'evenodd');
 		}
-		ctx.globalCompositeOperation = 'source-over';
 		return canvas;
 	}
+
+	// Everything the strokes leave uncovered is a hole. Only the band's own
+	// triangles are textured, so filling the whole box is safe.
+	ctx.fillStyle = holeColor;
+	ctx.fillRect(bounds.minX, bounds.minY, bounds.width, bounds.height);
 
 	// Never thinner than a texel, or a stroke can vanish from the texture entirely.
 	const minWidth = 1 / scale;

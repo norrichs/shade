@@ -3,8 +3,9 @@
 	 * View → "Pattern on model": every pattern band rasterised (raw strokes, no
 	 * Prepare union) onto the 3D band it was cut from. UVs are the band's own path
 	 * space (`buildPatternBandMesh`), so the GPU clips anything that spills past
-	 * the band. The stroke is the material; alphaTest cuts the rest away, which
-	 * also makes the lattice cast real shadows from the interior light.
+	 * the band. The stroke is the material (black); the holes are translucent
+	 * white. The shadow pass cuts the holes out, so the interior light still
+	 * throws the lattice.
 	 *
 	 * Meshes are built imperatively into one Group held in `$state.raw` — Three.js
 	 * objects in deep `$state` trip Svelte's effect-depth limit (GlobuleMesh notes).
@@ -20,6 +21,7 @@
 		DoubleSide,
 		Group,
 		Mesh,
+		MeshBasicMaterial,
 		MeshStandardMaterial,
 		SRGBColorSpace,
 		Vector3
@@ -41,6 +43,10 @@
 	import type { BandCutPattern } from '#lib/types.js';
 
 	const LATTICE_COLOR = '#000000';
+	/** Holes read as translucent white (vellum-like), 75% opaque. */
+	const HOLE_COLOR = 'rgba(255, 255, 255, 0.75)';
+	/** Above the holes' alpha, below the strokes': the shadow pass's cut-out. */
+	const SHADOW_ALPHA_TEST = 0.9;
 	const noRaycast = () => {};
 
 	let enabled = $derived($patternOnModelStore.enabled);
@@ -64,7 +70,8 @@
 		g?.traverse((o) => {
 			if (!(o instanceof Mesh)) return;
 			o.geometry.dispose();
-			const material = o.material as MeshStandardMaterial;
+			// The shadow twin shares geometry and texture; disposing twice is harmless.
+			const material = o.material as MeshStandardMaterial | MeshBasicMaterial;
 			material.map?.dispose();
 			material.dispose();
 		});
@@ -94,6 +101,7 @@
 				const canvas = rasterizeBand(band, mapped.bounds, {
 					density,
 					color: LATTICE_COLOR,
+					holeColor: HOLE_COLOR,
 					outlined: isOutlined(band)
 				});
 				const texture = new CanvasTexture(canvas);
@@ -105,26 +113,42 @@
 				geometry.setAttribute('uv', new BufferAttribute(mapped.uvs, 2));
 				geometry.computeVertexNormals();
 
+				// Blended, not cut out: the holes are translucent white. Bands are
+				// separate meshes, so Three sorts them back to front; depthWrite off
+				// keeps a near band's holes from hiding the bands behind it.
 				const material = new MeshStandardMaterial({
 					map: texture,
-					// Strokes are ~1 unit on bands ~100 wide, so at overview zoom the
-					// mip levels average a line's alpha well under 0.5 and a plain
-					// alphaTest at 0.5 breaks it into dashes. A low threshold keeps
-					// thin lines alive further down the mip chain, and alpha-to-
-					// coverage (MSAA) smooths their edges without blending's
-					// sort order. The shadow pass uses the same threshold.
-					alphaTest: 0.2,
-					alphaToCoverage: true,
+					transparent: true,
+					depthWrite: false,
 					side: DoubleSide,
 					roughness: 0.85,
 					metalness: 0
 				});
 				const mesh = new Mesh(geometry, material);
-				mesh.castShadow = true;
+				mesh.castShadow = false;
 				mesh.receiveShadow = true;
 				mesh.raycast = noRaycast;
 				mesh.name = band.id;
 				next.add(mesh);
+
+				// Shadows must cut the holes out (strokes opaque, holes alpha 0.75) so the
+				// interior light throws the lattice, not the whole band. A custom
+				// depth/distance material cannot do it: the shadow pass copies the
+				// visible material's alphaTest (0) over it. So an invisible twin
+				// (colorWrite off) casts the shadow with its own alphaTest.
+				const caster = new Mesh(
+					geometry,
+					new MeshBasicMaterial({
+						map: texture,
+						alphaTest: SHADOW_ALPHA_TEST,
+						colorWrite: false,
+						depthWrite: false,
+						side: DoubleSide
+					})
+				);
+				caster.castShadow = true;
+				caster.raycast = noRaycast;
+				next.add(caster);
 			}
 		}
 		return next;
@@ -149,7 +173,7 @@
 			radius = Math.max(1, box.getSize(new Vector3()).length() / 2);
 		}
 		console.info(
-			`[pattern-on-model] ${next.children.length} bands textured in ${Math.round(performance.now() - started)} ms`
+			`[pattern-on-model] ${next.children.length / 2} bands textured in ${Math.round(performance.now() - started)} ms`
 		);
 		swap(next);
 	});
